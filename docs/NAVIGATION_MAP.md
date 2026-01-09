@@ -57,7 +57,7 @@
 - ✅ Verification checklist / Checklist de verificação
 
 ### Step 2: Understand Workflows / Entender Workflows
-📋 **[workflows/README.md](../.github/workflows/README.md)**
+📋 **[.github/workflows/README.md](../.github/workflows/README.md)**
 - ⏱️ 15 minutes / 15 minutos
 - 🎯 All workflows explained / Todos os workflows explicados
 - 🔍 Detailed reference / Referência detalhada
@@ -147,7 +147,7 @@
 
 ### Setup & Configuration / Configuração
 - ⚙️ [ACTIVATING_PR_WORKFLOWS.md](ACTIVATING_PR_WORKFLOWS.md) - Enable workflows
-- 🔧 [workflows/README.md](../.github/workflows/README.md) - Workflow details
+- 🔧 [.github/workflows/README.md](../.github/workflows/README.md) - Workflow details
 - 🤝 [CONTRIBUTING.md](../CONTRIBUTING.md) - Contribution guide
 
 ### Project Information / Informação do Projeto
@@ -169,7 +169,7 @@
 1. **How do I create a PR?** → [QUICKSTART_PR.md](QUICKSTART_PR.md)
 2. **How do I enable workflows?** → [ACTIVATING_PR_WORKFLOWS.md](ACTIVATING_PR_WORKFLOWS.md)
 3. **What are the code standards?** → [CONTRIBUTING.md](../CONTRIBUTING.md)
-4. **How do workflows work?** → [workflows/README.md](../.github/workflows/README.md)
+4. **How do workflows work?** → [.github/workflows/README.md](../.github/workflows/README.md)
 5. **What's the project about?** → [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)
 
 ### Support Channels / Canais de Suporte

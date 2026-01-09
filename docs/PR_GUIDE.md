@@ -160,7 +160,7 @@ git push -f origin your-branch
 
 If you need help with PRs:
 1. Check [CONTRIBUTING.md](../CONTRIBUTING.md)
-2. Review [workflows/README.md](../.github/workflows/README.md)
+2. Review [.github/workflows/README.md](../.github/workflows/README.md)
 3. Open an issue with label `help wanted`
 4. Ask in GitHub Discussions
 
@@ -322,7 +322,7 @@ git push -f origin seu-branch
 
 Se você precisar de ajuda com PRs:
 1. Verifique [CONTRIBUTING.md](../CONTRIBUTING.md)
-2. Revise [workflows/README.md](../.github/workflows/README.md)
+2. Revise [.github/workflows/README.md](../.github/workflows/README.md)
 3. Abra uma issue com a label `help wanted`
 4. Pergunte no GitHub Discussions
 
