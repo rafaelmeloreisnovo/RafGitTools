@@ -62,6 +62,17 @@ All while respecting the licenses of these amazing open-source projects and addi
 - ✅ Multi-account support
 - ✅ Custom Git server support
 
+### 🔒 Privacy & Security
+- ✅ **User Data Control**: Export, view, and delete personal data (GDPR compliant)
+- ✅ **Privacy by Design**: Minimal data collection, opt-in analytics only
+- ✅ **End-to-End Encryption**: AES-256-GCM encryption for sensitive data
+- ✅ **Secure Storage**: Android Keystore for credential protection
+- ✅ **TLS 1.3**: Enforced HTTPS with certificate pinning
+- ✅ **Biometric Authentication**: Optional fingerprint/face unlock
+- ✅ **Privacy Audit Trail**: Complete log of data access and changes
+- ✅ **No Third-Party Tracking**: No ads, no analytics by default
+- ✅ **Compliance**: ISO 27001, NIST, OWASP, GDPR, CCPA
+
 ## 🏗️ Architecture
 
 RafGitTools follows Clean Architecture principles with MVVM pattern:
@@ -153,6 +164,9 @@ The project includes multiple build variants:
 
 - [Project Overview](docs/PROJECT_OVERVIEW.md) - Comprehensive project information
 - [Architecture Guide](docs/ARCHITECTURE.md) - Detailed architecture documentation
+- [Privacy Policy](docs/PRIVACY.md) - Privacy practices and data protection
+- [Security Policy](docs/SECURITY.md) - Security standards and practices
+- [Compliance Guide](docs/COMPLIANCE.md) - ISO, NIST, IEEE standards compliance
 - [License Information](docs/LICENSE_INFO.md) - License compliance and attribution
 - [Feature Matrix](docs/FEATURE_MATRIX.md) - Feature comparison with source projects
 

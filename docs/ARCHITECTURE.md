@@ -434,19 +434,295 @@ fun `when clone repository succeeds, state is updated correctly`() = runTest {
 - Use `Flow` instead of `LiveData` for better performance
 - Implement proper cancellation for coroutines
 
-## Security Considerations
+## Security and Privacy Architecture
+
+### Core Security Components
+
+#### SecurityManager
+Centralized security operations and cryptographic functions.
+
+```kotlin
+core:security/
+├── SecurityManager.kt          # Main security operations
+├── CryptoUtils.kt              # Cryptographic utilities
+├── InputValidator.kt           # Input validation and sanitization
+└── KeystoreManager.kt          # Android Keystore operations
+```
+
+**Features:**
+- AES-256-GCM encryption for sensitive data
+- Android Keystore integration (hardware-backed when available)
+- Input validation and sanitization
+- Security threat detection (root, debugger)
+- Secure random number generation
+
+**Standards Compliance:**
+- NIST SP 800-53 (Security Controls)
+- OWASP MASVS Level 2
+- FIPS 140-2 (Cryptographic algorithms)
+- ISO/IEC 27001 (Information Security)
+
+#### PrivacyManager
+User privacy controls and data management.
+
+```kotlin
+core:privacy/
+├── PrivacyManager.kt           # Privacy operations
+├── DataController.kt           # User data control
+├── ConsentManager.kt           # Consent management
+└── AuditLogger.kt              # Privacy audit trail
+```
+
+**Features:**
+- User data export (GDPR Article 20)
+- User data deletion (GDPR Article 17)
+- Privacy settings management
+- Consent tracking and management
+- Privacy audit logging
+- Analytics data anonymization
+
+**Regulatory Compliance:**
+- GDPR (General Data Protection Regulation)
+- CCPA (California Consumer Privacy Act)
+- ISO/IEC 27701 (Privacy Information Management)
+- LGPD (Brazilian Data Protection Law)
+
+#### ComplianceManager
+Standards and regulatory compliance tracking.
+
+```kotlin
+core:compliance/
+├── ComplianceManager.kt        # Compliance tracking
+├── SecurityControls.kt         # Security control implementation
+├── PrivacyControls.kt          # Privacy control implementation
+└── QualityMetrics.kt           # Quality management metrics
+```
+
+**Standards Tracked:**
+- ISO/IEC 27001 (Information Security)
+- ISO/IEC 27701 (Privacy Management)
+- ISO 9001 (Quality Management)
+- NIST Cybersecurity Framework
+- OWASP Mobile Security
+- IEEE Software Engineering Standards (730, 828, 829, 1012)
+
+### Security Architecture Layers
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Application Layer                      │
+│  (UI Components with security-aware implementations)    │
+└────────────────┬────────────────────────────────────────┘
+                 │
+┌────────────────▼────────────────────────────────────────┐
+│                  Security Middleware                     │
+│  ├─ Authentication & Authorization                      │
+│  ├─ Input Validation & Sanitization                     │
+│  ├─ Privacy Controls & Consent Management               │
+│  └─ Audit Logging & Monitoring                          │
+└────────────────┬────────────────────────────────────────┘
+                 │
+┌────────────────▼────────────────────────────────────────┐
+│                   Business Logic                         │
+│  (Domain Layer with security checks)                    │
+└────────────────┬────────────────────────────────────────┘
+                 │
+┌────────────────▼────────────────────────────────────────┐
+│                Data Security Layer                       │
+│  ├─ Encryption at Rest (AES-256-GCM)                   │
+│  ├─ Secure Storage (Android Keystore)                   │
+│  ├─ Database Encryption (SQLCipher)                     │
+│  └─ Secure Preferences (EncryptedSharedPreferences)     │
+└────────────────┬────────────────────────────────────────┘
+                 │
+┌────────────────▼────────────────────────────────────────┐
+│            Network Security Layer                        │
+│  ├─ TLS 1.3 Enforcement                                 │
+│  ├─ Certificate Pinning                                 │
+│  ├─ No Cleartext Traffic                                │
+│  └─ Secure DNS (DNS-over-HTTPS)                         │
+└─────────────────────────────────────────────────────────┘
+```
 
 ### Data Protection
-- Store credentials in Android Keystore
-- Encrypt sensitive data in database
-- Use HTTPS for all network requests
-- Clear sensitive data from memory after use
 
-### Authentication
-- OAuth 2.0 for GitHub
-- SSH key management with secure storage
-- Token refresh mechanism
-- Secure logout (clear all tokens)
+#### Encryption at Rest
+```kotlin
+// AES-256-GCM encryption using Android Keystore
+val securityManager = SecurityManager(context)
+val encrypted = securityManager.encryptData(sensitiveData, "credential_key")
+```
+
+**Implementation:**
+- Algorithm: AES-256-GCM (Galois/Counter Mode)
+- Key Storage: Android Keystore System
+- Hardware Backing: Required when available (StrongBox)
+- Key Size: 256 bits
+- IV Generation: Secure random per encryption
+
+#### Encryption in Transit
+```xml
+<!-- network_security_config.xml -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Certificate pinning for critical services -->
+    <domain-config>
+        <domain includeSubdomains="true">api.github.com</domain>
+        <pin-set>
+            <pin digest="SHA-256">primary_certificate_pin</pin>
+            <pin digest="SHA-256">backup_certificate_pin</pin>
+        </pin-set>
+    </domain-config>
+</network-security-config>
+```
+
+**Network Security:**
+- Protocol: TLS 1.3 (minimum TLS 1.2)
+- Certificate Validation: Strict
+- Certificate Pinning: Enabled for GitHub, GitLab APIs
+- Cleartext Traffic: Blocked
+- Cipher Suites: AEAD ciphers only
+
+#### Secure Storage
+```kotlin
+// Credential storage in Android Keystore
+credentials → SecurityManager.encryptData() → Android Keystore → Encrypted SharedPreferences
+
+// Database encryption
+Database → SQLCipher (AES-256-CBC) → Encrypted File → Device Storage
+```
+
+### Privacy by Design
+
+#### Data Minimization
+- Collect only necessary data for functionality
+- No advertising or tracking SDKs
+- Analytics opt-in only (default: disabled)
+- Anonymous aggregated data only
+
+#### User Control
+```kotlin
+// Privacy settings
+Settings → Privacy → {
+    - View My Data (GDPR Article 15)
+    - Export My Data (GDPR Article 20)
+    - Delete My Data (GDPR Article 17)
+    - Manage Consent
+    - Privacy Audit Log
+}
+```
+
+#### Privacy Audit Trail
+```kotlin
+// All privacy-related actions logged
+PrivacyEvent(
+    type = DATA_EXPORT_REQUESTED,
+    timestamp = Date(),
+    userId = hashedUserId,
+    details = "User requested data export"
+)
+```
+
+### Authentication and Authorization
+
+#### OAuth 2.0 Implementation
+```kotlin
+// GitHub OAuth with PKCE
+GitHubAuth.authorize()
+    .withPKCE()
+    .withScope("repo", "user")
+    .execute()
+    
+// Token storage
+accessToken → encrypt() → Android Keystore
+refreshToken → encrypt() → Android Keystore
+```
+
+#### Biometric Authentication
+```kotlin
+// Biometric-protected operations
+BiometricPrompt.authenticate(
+    cryptoObject = CryptoObject(cipher),
+    callback = { result ->
+        if (result.authenticated) {
+            performSensitiveOperation()
+        }
+    }
+)
+```
+
+### Security Monitoring
+
+#### Threat Detection
+```kotlin
+// Security checks
+if (securityManager.isDeviceRooted()) {
+    showSecurityWarning()
+}
+
+if (securityManager.isDebuggerAttached()) {
+    logSecurityEvent(DEBUGGER_DETECTED)
+}
+```
+
+#### Audit Logging
+```kotlin
+// Security events logged
+SecurityEvent(
+    type = FAILED_AUTHENTICATION,
+    timestamp = Date(),
+    severity = HIGH,
+    details = "Failed login attempt",
+    ipAddress = null // Privacy-preserving
+)
+```
+
+### Input Validation and Sanitization
+
+```kotlin
+// Prevent injection attacks
+val gitUrl = userInput
+if (!securityManager.validateInput(gitUrl, InputValidationType.GIT_URL)) {
+    throw SecurityException("Invalid Git URL")
+}
+
+val sanitized = securityManager.sanitizeInput(gitUrl, InputValidationType.GIT_URL)
+```
+
+**Protection Against:**
+- Command injection
+- Path traversal
+- SQL injection
+- XSS (in WebView components)
+- SSRF (Server-Side Request Forgery)
+
+### Secure Development Practices
+
+#### Code Security
+- Static analysis (Android Lint, SpotBugs, SonarQube)
+- Dependency scanning (OWASP Dependency-Check)
+- Security-focused code reviews
+- ProGuard/R8 obfuscation (release builds)
+- No hardcoded secrets or credentials
+
+#### Testing
+- Security unit tests
+- Penetration testing (annual)
+- Fuzzing (automated)
+- SAST/DAST scanning
+- Third-party security audits
+
+### Compliance Documentation
+
+For detailed compliance information, see:
+- [PRIVACY.md](PRIVACY.md) - Privacy policy and data protection
+- [SECURITY.md](SECURITY.md) - Security standards and practices
+- [COMPLIANCE.md](COMPLIANCE.md) - Regulatory and standards compliance
 
 ## Monitoring and Logging
 
