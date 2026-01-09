@@ -61,28 +61,41 @@ RafGitTools aims to create a comprehensive, high-performance Android application
 
 ## Core Features
 
-### Git Operations
-- Clone repositories (HTTP/HTTPS/SSH)
-- Commit changes with staging
-- Push and pull with conflict resolution
-- Branch creation and management
-- Merge and rebase operations
-- Stash management
-- Tag management
-- Submodule support
+### Git Operations (96+ Advanced Features)
+- **Clone Operations**: Full clone, shallow clone, single branch, with submodules, with LFS
+- **Commit Management**: Standard commits, amend, GPG signing, templates, interactive staging
+- **Branch Operations**: Create, delete, rename, track, compare, checkout
+- **Push/Pull**: Force push with lease, pull with rebase, tag operations, multi-remote sync
+- **Merge Operations**: Multiple strategies (recursive, ours, theirs), fast-forward, no-fast-forward, squash
+- **Rebase**: Interactive rebase, rebase --onto, autosquash, continue/skip/abort
+- **Stash Management**: With message, untracked files, apply/pop, drop/clear, stash branch
+- **Cherry-pick**: Single and range cherry-pick operations with continue/abort
+- **Tag Management**: Annotated, lightweight, signed (GPG), push/pull, deletion
+- **Submodule Support**: Add, update, init, sync, foreach commands, nested submodules
+- **Git LFS**: Install, track patterns, fetch/pull, prune operations
+- **Worktrees**: Add, list, remove, prune worktrees
+- **Advanced Operations**: Reflog, bisect, blame annotations, clean, reset (soft/mixed/hard), revert, remote management, patches, archives, bundles, sparse checkout, partial clone
 
-### GitHub Integration
-- Authentication (OAuth, PAT)
-- Repository browsing and search
-- Issue tracking and management
-- Pull request workflow
-- Code review and comments
-- GitHub Actions monitoring
-- Release management
-- Gist support
-- Organization and team management
+### GitHub Integration (169+ Comprehensive Features)
+- **Repository Management**: Browse, search, create, settings, delete, transfer, archive, templates, topics, visibility, collaborators, webhooks, secrets, environments
+- **Issue Management**: Create, edit, comment, reactions, labels, milestones, assignments, templates, forms, pinning, locking, transfer, linking, search, filters, sorting
+- **Pull Requests**: Complete workflow including creation, editing, review, multiple merge strategies, draft mode, auto-merge, templates, checks status, required reviews, review requests, suggestions, file changes, commits, conversation, reactions, labels, milestones, assignments, linked issues, conflict detection
+- **Code Review**: Inline comments, review suggestions, approval, changes requested, multi-line comments, suggested changes, batch comments, review threads
+- **Notifications**: Push notifications, in-app notifications, filters, grouping, threads, muting, custom rules, email sync, scheduling
+- **GitHub Actions**: Workflow viewing, runs, logs, re-run, cancellation, triggers, editing, Action marketplace
+- **Releases**: Creation, editing, asset upload, release notes, drafts, pre-releases, badges, auto-generation
+- **Wikis**: Browse, edit, create, search, history tracking
+- **Gists**: Create, edit, comment, star, fork, secret gists, multiple files, revisions
+- **Organizations**: Profile management, members, teams, settings, repositories, projects, events
+- **Projects**: Boards, views, items, automation, fields, insights
+- **Discussions**: Categories, creation, commenting, reactions, polls, answers
+- **Sponsors**: Tiers, goals, dashboard integration
+- **User Profiles**: Repositories, followers, activity, stars, gists, organizations
+- **Search**: Repository, code, commit, user search with advanced filters
+- **Security**: Security advisories, Dependabot alerts, code scanning, secret scanning
+- **Packages**: Container registry, package management
 
-### User Experience
+### User Experience (119+ UI/UX Features)
 - Material Design 3 (Material You)
 - Dark/Light/Auto theme
 - Intuitive gesture navigation
