@@ -58,27 +58,17 @@ jobs:
           echo "Generated changelog:"
           cat CHANGELOG.md
       
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release and Upload APK
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          release_name: RafGitTools v${{ steps.version.outputs.version }}
+          name: RafGitTools v${{ steps.version.outputs.version }}
           body_path: CHANGELOG.md
           draft: false
           prerelease: false
-      
-      - name: Upload Release APK
-        uses: actions/upload-release-asset@v1
+          files: app/build/outputs/apk/production/release/RafGitTools-${{ steps.version.outputs.version }}-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: app/build/outputs/apk/production/release/RafGitTools-${{ steps.version.outputs.version }}-release.apk
-          asset_name: RafGitTools-${{ steps.version.outputs.version }}-release.apk
-          asset_content_type: application/vnd.android.package-archive
   
   publish-to-store:
     name: Publish to Play Store (Manual)
