@@ -124,7 +124,7 @@ private fun LanguageItem(
             if (isSelected) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Selected",
+                    contentDescription = stringResource(R.string.language_selected),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }

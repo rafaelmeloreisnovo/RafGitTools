@@ -15,6 +15,10 @@ class LocalizationManager @Inject constructor() {
     
     /**
      * Updates the application context with the specified language
+     * 
+     * Note: For API levels < 24, uses the deprecated updateConfiguration method
+     * which is the only available option for those Android versions.
+     * The minimum supported API level is 24 (Android 7.0) as defined in build.gradle.
      */
     fun setLocale(context: Context, language: Language): Context {
         val locale = language.locale

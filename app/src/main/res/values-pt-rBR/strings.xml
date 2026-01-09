@@ -59,4 +59,5 @@
     <string name="language_portuguese">Português</string>
     <string name="language_spanish">Espanhol</string>
     <string name="language_select">Selecionar Idioma</string>
+    <string name="language_selected">Selecionado</string>
 </resources>
