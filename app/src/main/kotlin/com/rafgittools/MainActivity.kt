@@ -66,7 +66,11 @@ class MainActivity : ComponentActivity() {
                         onLanguageChange = { language ->
                             lifecycleScope.launch {
                                 preferencesRepository.setLanguage(language)
-                                recreate() // Recreate activity to apply new language
+                                // Note: Activity recreation is used to ensure all resources are properly reloaded.
+                                // While this approach is simple and reliable, future iterations could explore
+                                // more graceful approaches like configuration changes or recomposition triggers
+                                // to improve user experience.
+                                recreate()
                             }
                         }
                     )

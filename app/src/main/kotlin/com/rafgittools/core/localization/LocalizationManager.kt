@@ -2,7 +2,6 @@ package com.rafgittools.core.localization
 
 import android.content.Context
 import android.content.res.Configuration
-import android.os.Build
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -16,9 +15,8 @@ class LocalizationManager @Inject constructor() {
     /**
      * Updates the application context with the specified language
      * 
-     * Note: For API levels < 24, uses the deprecated updateConfiguration method
-     * which is the only available option for those Android versions.
-     * The minimum supported API level is 24 (Android 7.0) as defined in build.gradle.
+     * Since the app's minimum SDK is 24 (Android 7.0), we can always use
+     * the modern createConfigurationContext method.
      */
     fun setLocale(context: Context, language: Language): Context {
         val locale = language.locale
@@ -27,25 +25,17 @@ class LocalizationManager @Inject constructor() {
         val configuration = Configuration(context.resources.configuration)
         configuration.setLocale(locale)
         
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            context.createConfigurationContext(configuration)
-        } else {
-            @Suppress("DEPRECATION")
-            context.resources.updateConfiguration(configuration, context.resources.displayMetrics)
-            context
-        }
+        return context.createConfigurationContext(configuration)
     }
     
     /**
      * Gets the current system locale
+     * 
+     * Since the app's minimum SDK is 24 (Android 7.0), we can use the
+     * modern locales API.
      */
     fun getCurrentLocale(context: Context): Locale {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            context.resources.configuration.locales[0]
-        } else {
-            @Suppress("DEPRECATION")
-            context.resources.configuration.locale
-        }
+        return context.resources.configuration.locales[0]
     }
     
     /**
