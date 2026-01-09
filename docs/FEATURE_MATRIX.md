@@ -2,6 +2,8 @@
 
 Comparison of features across source projects and RafGitTools implementation plan.
 
+**Important Note**: This matrix represents the comprehensive vision and roadmap for RafGitTools. Features marked with ⭐ indicate planned enhancements that will differentiate RafGitTools from existing solutions. Current implementation status is tracked in the Implementation Priority section below.
+
 ## Legend
 - ✅ Fully implemented
 - 🚧 Planned/In Progress
@@ -255,22 +257,26 @@ Comparison of features across source projects and RafGitTools implementation pla
 
 ## Performance Metrics
 
+**Note**: Targets represent aspirational goals for optimal device configurations. Actual performance varies by device hardware and Android version.
+
 | Metric | Target | Current Status | Industry Leader | RafGitTools Goal |
 |--------|--------|----------------|-----------------|------------------|
-| App startup time | < 2s | ⚡ Optimizing | 1.5s | < 1s |
-| Repository list load | < 1s | ⚡ Optimizing | 800ms | < 500ms |
-| Commit operation | < 500ms | ⚡ Optimizing | 300ms | < 200ms |
-| UI frame rate | 60 FPS | ✅ Achieved | 90 FPS | 120 FPS |
-| Memory usage (idle) | < 100MB | ⚡ Optimizing | 80MB | < 50MB |
-| Memory usage (active) | < 200MB | ⚡ Optimizing | 150MB | < 100MB |
-| Battery drain (background) | Minimal | ✅ Achieved | < 2%/hr | < 1%/hr |
+| App startup time | < 2s | ⚡ Optimizing | 1.5s | < 1.5s |
+| Repository list load | < 1s | ⚡ Optimizing | 800ms | < 700ms |
+| Commit operation | < 500ms | ⚡ Optimizing | 300ms | < 300ms |
+| UI frame rate | 60 FPS | ✅ Achieved | 90 FPS | 90-120 FPS* |
+| Memory usage (idle) | < 100MB | ⚡ Optimizing | 80MB | < 70MB |
+| Memory usage (active) | < 200MB | ⚡ Optimizing | 150MB | < 120MB |
+| Battery drain (background) | Minimal | ✅ Achieved | < 2%/hr | < 1.5%/hr |
 | Battery drain (active) | Efficient | ⚡ Optimizing | < 10%/hr | < 8%/hr |
-| APK size | < 20MB | ✅ Achieved | 15MB | < 10MB |
+| APK size | < 20MB | ✅ Achieved | 15MB | < 12MB |
 | Network efficiency | Smart | ⚡ Optimizing | Excellent | Optimal |
-| Cache hit rate | > 80% | ⚡ Optimizing | 85% | > 90% |
-| ANR rate | < 0.1% | ✅ Achieved | 0.05% | < 0.01% |
-| Crash rate | < 0.5% | ✅ Achieved | 0.3% | < 0.1% |
-| Time to interactive | < 3s | ⚡ Optimizing | 2s | < 1.5s |
+| Cache hit rate | > 80% | ⚡ Optimizing | 85% | > 88% |
+| ANR rate | < 0.1% | ✅ Achieved | 0.05% | < 0.05% |
+| Crash rate | < 0.5% | ✅ Achieved | 0.3% | < 0.2% |
+| Time to interactive | < 3s | ⚡ Optimizing | 2s | < 1.8s |
+
+*120 FPS on supported high-refresh-rate displays; 90 FPS on standard high-end devices; 60 FPS minimum on all devices
 
 ## Platform Support
 
@@ -614,17 +620,20 @@ RafGitTools aims to be:
 7. **Most Innovative**: Pioneering next-generation mobile development tools
 
 ### 📈 Competitive Advantages
-| Category | Competitors | RafGitTools |
-|----------|-------------|-------------|
+
+**Note**: Comparisons based on publicly available feature lists and documentation of leading Git mobile clients as of 2024. RafGitTools aims to combine and enhance capabilities from multiple specialized tools.
+
+| Category | Typical Competitors | RafGitTools Target |
+|----------|---------------------|-------------------|
 | Git Platforms | 1-3 | 9 (GitHub, GitLab, Bitbucket, Gitea, Gogs, Azure DevOps, AWS CodeCommit, Google Cloud Source, Custom) |
-| AI Features | 0-2 | 10+ (Commit suggestions, code review, bug detection, refactoring, etc.) |
-| DevOps Integration | 1-2 | 12+ (GitHub Actions, GitLab CI, Jenkins, CircleCI, Docker, K8s, etc.) |
+| AI Features | 0-2 basic | 10+ (Commit suggestions, code review, bug detection, refactoring, etc.) |
+| DevOps Integration | 1-2 native | 12+ (GitHub Actions, GitLab CI, Jenkins, CircleCI, Docker, K8s, etc.) |
 | Collaboration Tools | Basic | Advanced (Real-time editing, video, whiteboard, presence) |
-| Analytics & Insights | Basic | Advanced (Predictive, custom dashboards, BI export) |
+| Analytics & Insights | Basic stats | Advanced (Predictive, custom dashboards, BI export) |
 | Enterprise Features | Limited | Comprehensive (LDAP, SAML, SSO, RBAC, audit, compliance) |
-| Mobile Optimization | Good | Excellent (Foldables, tablets, DeX, ChromeOS, widgets, Wear OS) |
+| Mobile Optimization | Standard | Excellent (Foldables, tablets, DeX, ChromeOS, widgets, Wear OS) |
 | Accessibility | Basic | Full (WCAG 2.1 AA, voice control, 20+ languages, RTL) |
-| Performance | Good | Exceptional (< 1s startup, 120 FPS, < 50MB RAM, < 10MB APK) |
+| Performance Target | Good | Exceptional (< 1.5s startup, 90-120 FPS, < 70MB RAM, < 12MB APK) |
 
 ### 🏆 Industry Recognition Goals
 - **Best Mobile Developer Tool** - Google Play Awards
