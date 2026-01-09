@@ -1,0 +1,76 @@
+# Dependabot configuration for automated dependency updates
+version: 2
+updates:
+  # Enable version updates for Gradle dependencies
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "rafaelmeloreisnovo"
+    assignees:
+      - "rafaelmeloreisnovo"
+    labels:
+      - "dependencies"
+      - "automated"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      # Group Android dependencies together
+      android:
+        patterns:
+          - "androidx.*"
+          - "com.android.*"
+      # Group Compose dependencies
+      compose:
+        patterns:
+          - "androidx.compose.*"
+          - "com.google.accompanist.*"
+      # Group Kotlin dependencies
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin.*"
+          - "org.jetbrains.kotlinx.*"
+      # Group Hilt dependencies
+      hilt:
+        patterns:
+          - "com.google.dagger.*"
+          - "androidx.hilt.*"
+      # Group testing dependencies
+      testing:
+        patterns:
+          - "*junit*"
+          - "*mockk*"
+          - "*espresso*"
+          - "*truth*"
+      # Group networking dependencies
+      networking:
+        patterns:
+          - "com.squareup.retrofit2.*"
+          - "com.squareup.okhttp3.*"
+    ignore:
+      # Ignore major version updates for stable dependencies
+      - dependency-name: "com.android.tools.build:gradle"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.jetbrains.kotlin:*"
+        update-types: ["version-update:semver-major"]
+  
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "rafaelmeloreisnovo"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"

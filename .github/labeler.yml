@@ -1,0 +1,68 @@
+# Auto-labeling configuration for pull requests
+# This file is used by the labeler action in pr-validation.yml
+
+# Documentation changes
+'documentation':
+  - '**/*.md'
+  - 'docs/**/*'
+
+# Source code changes
+'code':
+  - 'app/src/**/*.kt'
+  - 'app/src/**/*.java'
+
+# UI changes
+'ui':
+  - 'app/src/**/ui/**/*'
+  - 'app/src/**/theme/**/*'
+  - 'app/src/main/res/**/*'
+
+# Tests
+'tests':
+  - 'app/src/test/**/*'
+  - 'app/src/androidTest/**/*'
+  - '**/*Test.kt'
+  - '**/*Test.java'
+
+# Build configuration
+'build':
+  - '*.gradle'
+  - '*.gradle.kts'
+  - 'gradle/**/*'
+  - 'gradle.properties'
+
+# CI/CD changes
+'ci/cd':
+  - '.github/workflows/**/*'
+  - '.github/actions/**/*'
+
+# Dependencies
+'dependencies':
+  - 'gradle/libs.versions.toml'
+  - '**/build.gradle'
+  - '**/build.gradle.kts'
+
+# Git operations
+'git-operations':
+  - 'app/src/**/git/**/*'
+
+# GitHub integration
+'github-integration':
+  - 'app/src/**/github/**/*'
+  - 'app/src/**/api/**/*'
+
+# Security
+'security':
+  - 'app/src/**/auth/**/*'
+  - 'app/src/**/security/**/*'
+
+# Database
+'database':
+  - 'app/src/**/data/**/*'
+  - 'app/src/**/database/**/*'
+  - 'app/src/**/dao/**/*'
+
+# Networking
+'networking':
+  - 'app/src/**/network/**/*'
+  - 'app/src/**/api/**/*'

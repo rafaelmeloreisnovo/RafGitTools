@@ -1,0 +1,193 @@
+name: Performance Metrics
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  apk-size:
+    name: APK Size Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+      
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+      
+      - name: Build release APK
+        run: ./gradlew assembleProductionRelease
+      
+      - name: Analyze APK size
+        id: apk-size
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/production/release -name "*.apk" | head -n 1)
+          APK_SIZE=$(du -h "$APK_PATH" | cut -f1)
+          APK_SIZE_BYTES=$(stat -c%s "$APK_PATH")
+          
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+          echo "apk_size=$APK_SIZE" >> $GITHUB_OUTPUT
+          echo "apk_size_bytes=$APK_SIZE_BYTES" >> $GITHUB_OUTPUT
+          
+          echo "APK Size: $APK_SIZE ($APK_SIZE_BYTES bytes)"
+      
+      - name: Generate APK size report
+        run: |
+          APK_PATH="${{ steps.apk-size.outputs.apk_path }}"
+          
+          echo "# APK Size Analysis Report" > apk-report.md
+          echo "" >> apk-report.md
+          echo "**APK Size**: ${{ steps.apk-size.outputs.apk_size }}" >> apk-report.md
+          echo "**Size in bytes**: ${{ steps.apk-size.outputs.apk_size_bytes }}" >> apk-report.md
+          echo "" >> apk-report.md
+          
+          # Check if size is over threshold
+          SIZE_BYTES=${{ steps.apk-size.outputs.apk_size_bytes }}
+          THRESHOLD=50000000  # 50MB
+          
+          if [ $SIZE_BYTES -gt $THRESHOLD ]; then
+            echo "⚠️ **Warning**: APK size exceeds $((THRESHOLD / 1000000))MB threshold" >> apk-report.md
+          else
+            echo "✅ APK size is within acceptable limits" >> apk-report.md
+          fi
+          
+          cat apk-report.md
+      
+      - name: Upload APK size report
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-size-report
+          path: apk-report.md
+          retention-days: 30
+      
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('apk-report.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+  
+  build-time:
+    name: Build Time Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+      
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+      
+      - name: Clean build
+        run: ./gradlew clean
+      
+      - name: Measure build time
+        id: build-time
+        run: |
+          START_TIME=$(date +%s)
+          ./gradlew assembleDevDebug --profile
+          END_TIME=$(date +%s)
+          
+          BUILD_TIME=$((END_TIME - START_TIME))
+          echo "build_time=$BUILD_TIME" >> $GITHUB_OUTPUT
+          echo "Build time: ${BUILD_TIME}s"
+      
+      - name: Generate build time report
+        run: |
+          echo "# Build Time Analysis" > build-time-report.md
+          echo "" >> build-time-report.md
+          echo "**Total build time**: ${{ steps.build-time.outputs.build_time }}s" >> build-time-report.md
+          echo "" >> build-time-report.md
+          
+          BUILD_TIME=${{ steps.build-time.outputs.build_time }}
+          
+          if [ $BUILD_TIME -lt 120 ]; then
+            echo "✅ Build time is excellent (< 2 minutes)" >> build-time-report.md
+          elif [ $BUILD_TIME -lt 300 ]; then
+            echo "⚠️ Build time is acceptable (< 5 minutes)" >> build-time-report.md
+          else
+            echo "❌ Build time is too long (> 5 minutes)" >> build-time-report.md
+          fi
+          
+          cat build-time-report.md
+      
+      - name: Upload build profile
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-profile
+          path: build/reports/profile/
+          retention-days: 30
+      
+      - name: Upload build time report
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-time-report
+          path: build-time-report.md
+          retention-days: 30
+  
+  method-count:
+    name: Method Count Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+      
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+      
+      - name: Build debug APK
+        run: ./gradlew assembleDevDebug
+      
+      - name: Analyze method count
+        run: |
+          echo "# Method Count Analysis" > method-count-report.md
+          echo "" >> method-count-report.md
+          echo "Method count analysis helps track the 64K method limit for Android." >> method-count-report.md
+          echo "" >> method-count-report.md
+          echo "APK built successfully. Install dexcount plugin for detailed analysis." >> method-count-report.md
+          
+          cat method-count-report.md
+      
+      - name: Upload method count report
+        uses: actions/upload-artifact@v4
+        with:
+          name: method-count-report
+          path: method-count-report.md
+          retention-days: 30
