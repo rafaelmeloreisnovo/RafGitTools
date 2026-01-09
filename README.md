@@ -356,6 +356,13 @@ The project includes multiple build variants:
 - [License Information](docs/LICENSE_INFO.md) - License compliance and attribution
 - [Feature Matrix](docs/FEATURE_MATRIX.md) - Feature comparison with source projects
 
+### 🔄 Pull Request & Workflow Guides
+
+- [Quick Start: Pull Requests](docs/QUICKSTART_PR.md) - Create your first PR in 7 steps
+- [Complete PR Guide](docs/PR_GUIDE.md) - Comprehensive guide for contributors (English/Portuguese)
+- [Activating PR Workflows](docs/ACTIVATING_PR_WORKFLOWS.md) - Admin guide for enabling workflows (English/Portuguese)
+- [Workflow Documentation](.github/workflows/README.md) - Detailed workflow information
+
 ## 🤝 Contributing
 
 Contributions are welcome! This project respects the GPL-3.0 license.
@@ -376,11 +383,18 @@ This project is in the initial development phase. The following components are b
 
 ### How to Contribute
 
+**Quick Start**: See [Quick Start PR Guide](docs/QUICKSTART_PR.md) for step-by-step instructions in English and Portuguese.
+
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+**Detailed Guides**:
+- 📖 [Complete PR Guide](docs/PR_GUIDE.md) - Comprehensive guide for contributors (English/Portuguese)
+- 🔧 [Activating Workflows](docs/ACTIVATING_PR_WORKFLOWS.md) - For repository administrators
+- 🤝 [Contributing Guidelines](CONTRIBUTING.md) - Full contribution guidelines
 
 ## 📄 License
 
