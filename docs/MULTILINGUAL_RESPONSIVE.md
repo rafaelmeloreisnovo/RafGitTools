@@ -138,14 +138,42 @@ Hilt is used for dependency injection:
 ## Future Enhancements
 
 Potential improvements for future versions:
-1. Add more languages
+
+### Multilingual
+1. Add more languages (French, German, Italian, Japanese, Chinese, etc.)
 2. Automatic language detection based on system locale
 3. Language-specific date/time formatting
-4. RTL (Right-to-Left) language support
-5. Per-screen responsive layouts for specific features
-6. Landscape-specific layouts
-7. Foldable device support
-8. Desktop-specific optimizations
+4. RTL (Right-to-Left) language support (Arabic, Hebrew)
+5. More graceful language switching without activity recreation
+6. Synchronous language application to avoid potential race conditions
+
+### Responsive Design
+1. Per-screen responsive layouts for specific features
+2. Landscape-specific layouts
+3. Foldable device support
+4. Desktop-specific optimizations (mouse hover states, etc.)
+5. Picture-in-picture support
+
+### User Experience
+1. Theme preferences (light/dark/auto)
+2. Font size preferences
+3. Animation speed preferences
+4. Accessibility improvements
+
+## Design Decisions
+
+### Language Display Names
+Language names in the selector are shown in their native form (e.g., "English", "Português", "Español") rather than localized to the current UI language. This is a common UX pattern that helps users identify their preferred language even when the UI is in a different language.
+
+### Activity Recreation for Language Changes
+The current implementation uses activity recreation to apply language changes. While this ensures all resources are properly reloaded, it can be jarring for users and may cause loss of UI state. This approach was chosen for simplicity and reliability in the initial implementation. Future versions could explore:
+- Configuration change handling
+- Recomposition triggers
+- Saved state management
+- Smooth transitions
+
+### Async Language Application on Startup
+The application applies saved language preferences asynchronously on startup. While the MainActivity also observes language changes, there's a potential race condition where the UI might briefly show in the default language. This was deemed acceptable for the initial implementation, as the language is correctly applied after the first frame. Future versions could make this synchronous or add proper synchronization.
 
 ## Testing
 

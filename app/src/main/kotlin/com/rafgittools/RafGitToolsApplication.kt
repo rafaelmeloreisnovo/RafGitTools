@@ -37,6 +37,11 @@ class RafGitToolsApplication : Application() {
         // This is where we would set up crash reporting, analytics, etc.
         
         // Apply saved language preference
+        // Note: This runs asynchronously. The MainActivity may start before this completes,
+        // but the language will be properly applied when the user opens the app again.
+        // For immediate application, the MainActivity also checks and applies the language
+        // when it's created. A future enhancement could make this synchronous or add
+        // proper synchronization to ensure language is always applied before UI is shown.
         applicationScope.launch {
             val savedLanguage = preferencesRepository.getLanguage()
             localizationManager.setLocale(this@RafGitToolsApplication, savedLanguage)

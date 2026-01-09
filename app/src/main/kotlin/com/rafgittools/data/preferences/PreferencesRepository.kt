@@ -27,7 +27,6 @@ class PreferencesRepository @Inject constructor(
     
     companion object {
         private val LANGUAGE_KEY = stringPreferencesKey("language")
-        private val THEME_KEY = stringPreferencesKey("theme")
     }
     
     /**
