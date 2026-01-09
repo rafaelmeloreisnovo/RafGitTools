@@ -35,6 +35,9 @@
         android:theme="@style/Theme.RafGitTools"
         android:usesCleartextTraffic="false"
         tools:targetApi="31">
+        <!-- Note: usesCleartextTraffic is set to false for security.
+             This blocks HTTP connections and enforces HTTPS.
+             For development with local Git servers using HTTP, set this to true in the dev flavor. -->
 
         <!-- Main Activity -->
         <activity

@@ -40,9 +40,11 @@
     volatile <fields>;
 }
 
-# Remove logging
+# Remove all logging in release builds for better performance and security
 -assumenosideeffects class android.util.Log {
-    public static *** d(...);
     public static *** v(...);
+    public static *** d(...);
     public static *** i(...);
+    public static *** w(...);
+    public static *** e(...);
 }

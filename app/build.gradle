@@ -153,8 +153,9 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.10.1'
 
     // JGit (Git implementation)
-    implementation 'org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r'
-    implementation 'org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:6.8.0.202311291450-r'
+    def jgitVersion = '6.8.0.202311291450-r'
+    implementation "org.eclipse.jgit:org.eclipse.jgit:$jgitVersion"
+    implementation "org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:$jgitVersion"
     
     // JSch (SSH)
     implementation 'com.github.mwiede:jsch:0.2.16'

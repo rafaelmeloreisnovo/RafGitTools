@@ -1,6 +1,7 @@
 package com.rafgittools.ui.theme
 
 import android.app.Activity
+import android.content.ContextWrapper
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -63,7 +64,12 @@ fun RafGitToolsTheme(
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            (view.context as? Activity)?.window?.let { window ->
+            // Safely unwrap context to find Activity
+            var context = view.context
+            while (context is ContextWrapper && context !is Activity) {
+                context = context.baseContext
+            }
+            (context as? Activity)?.window?.let { window ->
                 window.statusBarColor = colorScheme.primary.toArgb()
                 WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
             }
