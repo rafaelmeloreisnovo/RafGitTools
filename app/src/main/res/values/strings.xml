@@ -52,4 +52,11 @@
     <!-- Loading -->
     <string name="loading">Loading…</string>
     <string name="loading_repositories">Loading repositories…</string>
+    
+    <!-- Language settings -->
+    <string name="language_settings">Language Settings</string>
+    <string name="language_english">English</string>
+    <string name="language_portuguese">Portuguese</string>
+    <string name="language_spanish">Spanish</string>
+    <string name="language_select">Select Language</string>
 </resources>
