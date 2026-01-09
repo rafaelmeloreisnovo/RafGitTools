@@ -368,12 +368,14 @@ class JGitService @Inject constructor() {
     suspend fun getRemotes(repoPath: String): Result<List<GitRemote>> = runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             git.remoteList().call().map { remote ->
+                val uris = remote.urIs
+                val pushUris = remote.pushURIs
                 GitRemote(
                     name = remote.name,
-                    url = remote.urIs.firstOrNull()?.toString() ?: "",
-                    fetchUrl = remote.urIs.firstOrNull()?.toString() ?: "",
-                    pushUrl = remote.pushURIs.firstOrNull()?.toString()
-                        ?: remote.urIs.firstOrNull()?.toString() ?: ""
+                    url = uris.firstOrNull()?.toString() ?: "",
+                    fetchUrl = uris.firstOrNull()?.toString() ?: "",
+                    pushUrl = pushUris.firstOrNull()?.toString()
+                        ?: uris.firstOrNull()?.toString() ?: ""
                 )
             }
         }
