@@ -214,12 +214,25 @@ class SecurityManager(private val context: Context) {
     /**
      * Verify app signature to detect tampering
      * 
-     * @return True if signature is valid
+     * Note: This is a placeholder implementation. In production, this should:
+     * 1. Get the app's signature from PackageManager
+     * 2. Compare against a known good signature hash
+     * 3. Return false if signatures don't match
+     * 
+     * @return True if signature is valid (currently always returns true)
      */
     fun verifyAppSignature(): Boolean {
-        // Implementation would verify app signature matches expected
-        // This helps detect repackaged/tampered apps
-        return true // Placeholder
+        // TODO: Implement actual signature verification
+        // Example implementation:
+        // val packageInfo = context.packageManager.getPackageInfo(
+        //     context.packageName, 
+        //     PackageManager.GET_SIGNATURES
+        // )
+        // val signature = packageInfo.signatures[0]
+        // val signatureHash = hashString(signature.toCharsString())
+        // return signatureHash == EXPECTED_SIGNATURE_HASH
+        
+        return true // Placeholder - always passes in this version
     }
     
     /**
@@ -280,11 +293,16 @@ class SecurityManager(private val context: Context) {
     // Validation helper methods
     
     private fun validateGitUrl(url: String): Boolean {
-        // Valid Git URL patterns
+        // Valid Git URL patterns (with or without .git suffix)
         val patterns = listOf(
-            Regex("^https://[a-zA-Z0-9.-]+/[a-zA-Z0-9._/-]+\\.git$"),
-            Regex("^git@[a-zA-Z0-9.-]+:[a-zA-Z0-9._/-]+\\.git$"),
-            Regex("^ssh://git@[a-zA-Z0-9.-]+/[a-zA-Z0-9._/-]+\\.git$")
+            // HTTPS URLs
+            Regex("^https://[a-zA-Z0-9.-]+/[a-zA-Z0-9._/-]+(\\.git)?$"),
+            // SSH URLs (git@host:path format)
+            Regex("^git@[a-zA-Z0-9.-]+:[a-zA-Z0-9._/-]+(\\.git)?$"),
+            // SSH URLs (ssh://git@host/path format)
+            Regex("^ssh://git@[a-zA-Z0-9.-]+/[a-zA-Z0-9._/-]+(\\.git)?$"),
+            // Git protocol
+            Regex("^git://[a-zA-Z0-9.-]+/[a-zA-Z0-9._/-]+(\\.git)?$")
         )
         
         return patterns.any { it.matches(url) }

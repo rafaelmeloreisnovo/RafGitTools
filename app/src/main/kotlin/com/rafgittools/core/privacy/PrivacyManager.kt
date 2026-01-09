@@ -20,6 +20,10 @@ import java.util.Date
  * - GDPR Article 20 (Right to Data Portability)
  * - CCPA Section 1798.100 (Consumer Rights)
  * - ISO/IEC 27701 (Privacy Information Management)
+ * 
+ * Note: This is a framework implementation with TODO markers for methods that require
+ * integration with the full application architecture (database, keystore, file system).
+ * These should be implemented as the application's data layer is completed.
  */
 class PrivacyManager(private val context: Context) {
     
@@ -273,8 +277,10 @@ class PrivacyManager(private val context: Context) {
     }
     
     private fun hashSessionId(sessionId: String): String {
-        // Implementation would use SHA-256 to hash session ID
-        return sessionId.hashCode().toString()
+        // Use SHA-256 for cryptographically strong hashing
+        val messageDigest = java.security.MessageDigest.getInstance("SHA-256")
+        val hashBytes = messageDigest.digest(sessionId.toByteArray(Charsets.UTF_8))
+        return hashBytes.joinToString("") { "%02x".format(it) }
     }
     
     private fun generalizeLocation(location: String): String {
