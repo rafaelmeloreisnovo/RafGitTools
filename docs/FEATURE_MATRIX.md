@@ -1167,9 +1167,202 @@ Comparison of features across source projects and RafGitTools implementation pla
 | Thai | ❌ | ❌ | ❌ | ✅ | ⭐ |
 | Indonesian | ❌ | ✅ | ✅ | ✅ | ⭐ |
 | Hebrew | ❌ | ❌ | ❌ | ✅ | ⭐ |
+| Swedish | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Norwegian | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Danish | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Finnish | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Greek | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Czech | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Hungarian | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Romanian | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Ukrainian | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Bengali | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Punjabi | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Urdu | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Persian (Farsi) | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Malay | ❌ | ✅ | ✅ | ❌ | ⭐ |
+| Tagalog | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Swahili | ❌ | ❌ | ❌ | ❌ | ⭐ |
 | RTL language support | ❌ | ❌ | ❌ | ✅ | ⭐ |
+| Bidirectional text | ❌ | ❌ | ❌ | ❌ | ⭐ |
 | Dynamic language switching | ❌ | ❌ | ❌ | ✅ | ⭐ |
+| In-app language picker | ❌ | ❌ | ❌ | ✅ | ⭐ |
 | Community translations | ❌ | ✅ | ✅ | ❌ | ⭐ |
+| Translation crowdsourcing | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Translation management | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Pluralization rules | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Number formatting | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Date/time localization | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Currency formatting | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Regional variations | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Automatic translation | ❌ | ❌ | ❌ | ❌ | ⭐ |
+
+## Documentation & Help
+
+| Feature | FastHub | MGit | PuppyGit | GitHub Mobile | RafGitTools |
+|---------|---------|------|----------|---------------|-------------|
+| User guide | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Getting started guide | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Tutorials | ❌ | ✅ | ✅ | ❌ | ⭐ |
+| Video tutorials | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Interactive tutorials | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| In-app tips | ❌ | ❌ | ✅ | ✅ | ⭐ |
+| Contextual help | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Tooltips | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Help center | ❌ | ❌ | ❌ | ✅ | ⭐ |
+| FAQ | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Knowledge base | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| API documentation | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Developer docs | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Code examples | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Sample projects | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Best practices | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Troubleshooting guide | ❌ | ✅ | ✅ | ❌ | ⭐ |
+| Error messages | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Error solutions | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Release notes | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Changelog | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Migration guides | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Upgrade guides | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Keyboard shortcuts reference | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Glossary | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Search documentation | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Documentation versioning | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Offline documentation | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Community forum | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Discussion board | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Support tickets | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Live chat support | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Email support | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Premium support | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Bug reporting | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Feature requests | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Feedback system | ❌ | ✅ | ✅ | ✅ | ⭐ |
+| User surveys | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Beta program | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Early access program | ❌ | ❌ | ❌ | ❌ | ⭐ |
+
+## Social & Community Features
+
+| Feature | FastHub | MGit | PuppyGit | GitHub Mobile | RafGitTools |
+|---------|---------|------|----------|---------------|-------------|
+| User profiles | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Profile customization | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Profile badges | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Achievement system | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Gamification | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Leaderboards | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Following users | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Followers | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Social feed | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Activity stream | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| User mentions | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| @mentions | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Hashtags | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Trending repositories | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Trending developers | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Discover | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Recommendations | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Repository suggestions | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| User suggestions | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Social sharing | ✅ | ✅ | ✅ | ✅ | ⭐ |
+| Share to social media | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Share snippets | ✅ | ❌ | ❌ | ❌ | ⭐ |
+| Share commits | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Share PRs | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Share issues | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Commenting system | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Threaded comments | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Comment reactions | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Comment editing | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Comment history | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Comment notifications | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Direct messaging | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Group chat | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Team spaces | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Community guidelines | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Code of conduct | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Moderation tools | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Report abuse | ❌ | ❌ | ❌ | ✅ | ⭐ |
+| Block users | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Mute users | ❌ | ❌ | ❌ | ❌ | ⭐ |
+
+## Import & Export
+
+| Feature | FastHub | MGit | PuppyGit | GitHub Mobile | RafGitTools |
+|---------|---------|------|----------|---------------|-------------|
+| Repository import | ❌ | ✅ | ✅ | ❌ | ⭐ |
+| Repository export | ❌ | ✅ | ✅ | ❌ | ⭐ |
+| Data import | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Data export | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Settings import | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Settings export | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Bookmarks import | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Bookmarks export | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Credentials import | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Credentials export | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| SSH keys import | ❌ | ✅ | ❌ | ❌ | ⭐ |
+| SSH keys export | ❌ | ✅ | ❌ | ❌ | ⭐ |
+| GPG keys import | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| GPG keys export | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| History export | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Logs export | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Analytics export | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Report generation | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| PDF export | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| CSV export | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| JSON export | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| XML export | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Markdown export | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| HTML export | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Migration from competitors | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Bulk operations | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Batch import | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Batch export | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Format conversion | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Data validation | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Import preview | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Import conflicts | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Import rollback | ❌ | ❌ | ❌ | ❌ | ⭐ |
+
+## Notification System
+
+| Feature | FastHub | MGit | PuppyGit | GitHub Mobile | RafGitTools |
+|---------|---------|------|----------|---------------|-------------|
+| Push notifications | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| In-app notifications | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Email notifications | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| SMS notifications | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Notification center | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Notification grouping | ❌ | ❌ | ❌ | ✅ | ⭐ |
+| Notification badges | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Notification sounds | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Custom notification sounds | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Notification vibration | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Notification LED | ✅ | ❌ | ❌ | ❌ | ⭐ |
+| Notification channels | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Notification categories | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Notification priority | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Silent notifications | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Notification actions | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Quick reply | ❌ | ❌ | ❌ | ✅ | ⭐ |
+| Notification history | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Read/unread status | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Mark all as read | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Notification filters | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Custom filters | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Notification rules | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Notification scheduling | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Do not disturb | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Quiet hours | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Notification digest | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Batch operations | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Notification sync | ✅ | ❌ | ❌ | ✅ | ⭐ |
+| Cross-device sync | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Notification forwarding | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Smart notifications | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| AI-powered filtering | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| Importance prediction | ❌ | ❌ | ❌ | ❌ | ⭐ |
 
 ## Unique RafGitTools Features (⭐)
 
