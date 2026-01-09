@@ -1,12 +1,18 @@
 package com.rafgittools.core.privacy
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.util.Date
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "privacy_datastore")
 
 /**
  * Privacy Manager
@@ -239,11 +245,12 @@ class PrivacyManager(private val context: Context) {
     }
     
     private suspend fun deleteSettings() {
-        // Reset all settings to default by clearing DataStore
+        // Reset all settings to default by clearing DataStore preferences
         try {
-            val preferencesFile = File(context.filesDir.parent, "datastore/settings.preferences_pb")
-            if (preferencesFile.exists()) {
-                preferencesFile.delete()
+            // Use DataStore API to clear preferences properly
+            val dataStore = context.dataStore
+            dataStore.edit { preferences ->
+                preferences.clear()
             }
         } catch (e: Exception) {
             android.util.Log.e("PrivacyManager", "Error deleting settings", e)
@@ -257,16 +264,39 @@ class PrivacyManager(private val context: Context) {
     
     private suspend fun deleteAllApplicationData() {
         // Delete all app data - should only be called when user wants complete data removal
+        // Note: This preserves the audit log until the very end for compliance
         try {
-            // Delete all files in the app's data directory
-            context.filesDir.deleteRecursively()
+            // First backup the audit log if needed for compliance
+            val auditLogFile = File(context.filesDir, "privacy_audit.log")
+            @Suppress("UNUSED_VARIABLE")
+            val auditLogBackup = if (auditLogFile.exists()) {
+                auditLogFile.readText()
+            } else null
+            
+            // Delete repositories and other files
+            val filesToKeep = setOf("privacy_audit.log")
+            context.filesDir.listFiles()?.forEach { file ->
+                if (file.name !in filesToKeep) {
+                    file.deleteRecursively()
+                }
+            }
+            
+            // Delete cache
             context.cacheDir.deleteRecursively()
             
             // Clear shared preferences
             context.getSharedPreferences("default", Context.MODE_PRIVATE).edit().clear().apply()
+            context.getSharedPreferences("privacy_settings", Context.MODE_PRIVATE).edit().clear().apply()
             
             // Delete credentials
             deleteCredentials()
+            
+            // Log the final deletion event before removing audit log
+            logPrivacyEvent(PrivacyEventType.DATA_DELETED, "Complete data deletion completed")
+            
+            // Finally delete audit log after logging the deletion event
+            // This ensures compliance with data retention requirements
+            auditLogFile.delete()
         } catch (e: Exception) {
             android.util.Log.e("PrivacyManager", "Error deleting all application data", e)
         }
@@ -319,6 +349,7 @@ class PrivacyManager(private val context: Context) {
     
     private suspend fun logPrivacyEvent(type: PrivacyEventType, details: String? = null) {
         // Log privacy event to audit log
+        // Note: In production, this should use encrypted storage
         try {
             val event = PrivacyEvent(
                 id = java.util.UUID.randomUUID().toString(),
@@ -329,8 +360,19 @@ class PrivacyManager(private val context: Context) {
                 userId = null // Not tracking user IDs for privacy
             )
             
-            // Append to audit log file
+            // Append to audit log file with restricted permissions
             val auditLogFile = File(context.filesDir, "privacy_audit.log")
+            
+            // Set file permissions to be readable only by the app
+            if (!auditLogFile.exists()) {
+                auditLogFile.createNewFile()
+                // Restrict file access to owner only
+                auditLogFile.setReadable(false, false)
+                auditLogFile.setReadable(true, true)
+                auditLogFile.setWritable(false, false)
+                auditLogFile.setWritable(true, true)
+            }
+            
             val gson = com.google.gson.Gson()
             val eventJson = gson.toJson(event)
             

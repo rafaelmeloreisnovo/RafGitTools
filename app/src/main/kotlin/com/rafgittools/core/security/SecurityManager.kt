@@ -217,6 +217,13 @@ class SecurityManager(private val context: Context) {
      * Compares the current app signature against the expected signature.
      * In production, this should be configured with the actual release signature hash.
      * 
+     * SECURITY NOTE: This method currently always returns true if a signature exists.
+     * To enable actual signature verification in production:
+     * 1. Build a release APK with your signing certificate
+     * 2. Extract the signature hash from the APK
+     * 3. Store the expected hash as a constant in this class
+     * 4. Uncomment the comparison logic below and update with your hash
+     * 
      * @return True if signature is valid or in debug mode
      */
     fun verifyAppSignature(): Boolean {
@@ -234,12 +241,17 @@ class SecurityManager(private val context: Context) {
                 
                 // Get the signature hash
                 val signature = signatures[0]
-                @Suppress("UNUSED_VARIABLE")
+                @Suppress("UNUSED_VARIABLE")  // Kept for future production use
                 val signatureHash = hashString(signature.toCharsString())
                 
                 // TODO: In production, compare against the actual release signature:
+                // Example:
+                // companion object {
+                //     private const val EXPECTED_RELEASE_SIGNATURE_HASH = "your_actual_signature_hash_here"
+                // }
                 // return signatureHash == EXPECTED_RELEASE_SIGNATURE_HASH
-                // For now, just verify that a signature exists
+                
+                // Currently: Just verify that a signature exists (not secure for production)
                 return true
             } else {
                 @Suppress("DEPRECATION")
@@ -255,12 +267,13 @@ class SecurityManager(private val context: Context) {
                 
                 // Get the signature hash
                 val signature = signatures[0]
-                @Suppress("UNUSED_VARIABLE")
+                @Suppress("UNUSED_VARIABLE")  // Kept for future production use
                 val signatureHash = hashString(signature.toCharsString())
                 
                 // TODO: In production, compare against the actual release signature:
                 // return signatureHash == EXPECTED_RELEASE_SIGNATURE_HASH
-                // For now, just verify that a signature exists
+                
+                // Currently: Just verify that a signature exists (not secure for production)
                 return true
             }
         } catch (e: Exception) {
