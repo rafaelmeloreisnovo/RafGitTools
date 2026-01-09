@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Network Security Configuration
+    
+    Enforces secure network communication practices:
+    - HTTPS/TLS enforcement
+    - Certificate pinning for critical services
+    - No cleartext traffic allowed
+    
+    Standards Compliance:
+    - OWASP Mobile Top 10 (M3: Insecure Communication)
+    - NIST SP 800-52 (TLS Configuration)
+    - ISO/IEC 27001 (A.13: Communications Security)
+-->
+<network-security-config>
+    <!-- Base configuration for all connections -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <!-- Trust system certificate authorities -->
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- GitHub API Configuration with Certificate Pinning -->
+    <domain-config>
+        <domain includeSubdomains="true">github.com</domain>
+        <domain includeSubdomains="true">api.github.com</domain>
+        <pin-set expiration="2027-01-01">
+            <!-- GitHub's certificate pins (SHA-256 of SPKI) -->
+            <!-- Primary pin -->
+            <pin digest="SHA-256">WoiWRyIOVNa9ihaBciRSC7XHjliYS9VwUGOIud4PB18=</pin>
+            <!-- Backup pin -->
+            <pin digest="SHA-256">RRM1dGqnDFsCJXBTHky16vi1obOlCgFFn/yOhI/y+ho=</pin>
+        </pin-set>
+    </domain-config>
+    
+    <!-- GitLab Configuration with Certificate Pinning -->
+    <domain-config>
+        <domain includeSubdomains="true">gitlab.com</domain>
+        <pin-set expiration="2027-01-01">
+            <!-- GitLab's certificate pins -->
+            <pin digest="SHA-256">YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=</pin>
+            <pin digest="SHA-256">sRHdihwgkaib1P1gxX8HFszlD+7/gTfNvuAybgLPNis=</pin>
+        </pin-set>
+    </domain-config>
+    
+    <!-- Development Configuration (Debug builds only) -->
+    <!-- This configuration is overridden in debug builds to allow local testing -->
+    <debug-overrides>
+        <trust-anchors>
+            <!-- Trust user-added certificates for debugging -->
+            <certificates src="user" />
+            <certificates src="system" />
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>
