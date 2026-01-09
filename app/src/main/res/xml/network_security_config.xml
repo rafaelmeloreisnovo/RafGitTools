@@ -21,39 +21,35 @@
         </trust-anchors>
     </base-config>
     
-    <!-- GitHub API Configuration with Certificate Pinning -->
+    <!-- GitHub API Configuration -->
+    <!-- Note: Certificate pinning is disabled for flexibility. 
+         In production, enable pinning by uncommenting the pin-set section
+         and updating with actual certificate pins obtained from:
+         openssl s_client -connect api.github.com:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64
+    -->
     <domain-config>
         <domain includeSubdomains="true">github.com</domain>
         <domain includeSubdomains="true">api.github.com</domain>
+        <!-- Certificate pinning disabled - uncomment to enable:
         <pin-set expiration="2027-01-01">
-            <!-- 
-                GitHub's certificate pins (SHA-256 of SPKI)
-                NOTE: These are placeholder pins and MUST be updated with actual pins.
-                
-                To get real certificate pins:
-                1. openssl s_client -connect api.github.com:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64
-                2. Test thoroughly before deploying to production
-                
-                Without correct pins, network requests to GitHub will fail in production.
-            -->
-            <!-- Primary pin (PLACEHOLDER - UPDATE REQUIRED) -->
-            <pin digest="SHA-256">WoiWRyIOVNa9ihaBciRSC7XHjliYS9VwUGOIud4PB18=</pin>
-            <!-- Backup pin (PLACEHOLDER - UPDATE REQUIRED) -->
-            <pin digest="SHA-256">RRM1dGqnDFsCJXBTHky16vi1obOlCgFFn/yOhI/y+ho=</pin>
+            <pin digest="SHA-256">PRIMARY_PIN_HERE</pin>
+            <pin digest="SHA-256">BACKUP_PIN_HERE</pin>
         </pin-set>
+        -->
     </domain-config>
     
-    <!-- GitLab Configuration with Certificate Pinning -->
+    <!-- GitLab Configuration -->
+    <!-- Note: Certificate pinning is disabled for flexibility.
+         In production, enable pinning and update with actual certificate pins.
+    -->
     <domain-config>
         <domain includeSubdomains="true">gitlab.com</domain>
+        <!-- Certificate pinning disabled - uncomment to enable:
         <pin-set expiration="2027-01-01">
-            <!-- 
-                GitLab's certificate pins (PLACEHOLDER - UPDATE REQUIRED)
-                Use the same method as above to get real pins.
-            -->
-            <pin digest="SHA-256">YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=</pin>
-            <pin digest="SHA-256">sRHdihwgkaib1P1gxX8HFszlD+7/gTfNvuAybgLPNis=</pin>
+            <pin digest="SHA-256">PRIMARY_PIN_HERE</pin>
+            <pin digest="SHA-256">BACKUP_PIN_HERE</pin>
         </pin-set>
+        -->
     </domain-config>
     
     <!-- Development Configuration (Debug builds only) -->

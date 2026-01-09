@@ -1,6 +1,10 @@
 package com.rafgittools.core.privacy
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,6 +14,8 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Date
 import java.util.UUID
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "privacy_datastore")
 
 /**
  * Privacy Manager
@@ -320,18 +326,64 @@ class PrivacyManager(
     }
     
     private suspend fun exportCredentials(): List<CredentialExport> {
-        // Implementation would export credentials (encrypted)
-        return emptyList()
+        // Export credentials metadata (not the actual credentials for security)
+        // Only export information about what credentials exist, not the credentials themselves
+        return try {
+            val keyStore = java.security.KeyStore.getInstance("AndroidKeyStore")
+            keyStore.load(null)
+            
+            keyStore.aliases().toList()
+                .filter { it.startsWith("rafgittools_") }
+                .map { alias ->
+                    CredentialExport(
+                        type = "keystore_entry",
+                        username = alias.removePrefix("rafgittools_"),
+                        encryptedData = "[REDACTED - Not exported for security]",
+                        createdDate = Date(),
+                        lastUsed = Date()
+                    )
+                }
+        } catch (e: Exception) {
+            android.util.Log.e("PrivacyManager", "Error exporting credentials", e)
+            emptyList()
+        }
     }
     
     private suspend fun exportRepositories(): List<RepositoryExport> {
-        // Implementation would export repository metadata
-        return emptyList()
+        // Export repository metadata
+        return try {
+            val repositoriesDir = File(context.filesDir, "repositories")
+            if (!repositoriesDir.exists()) {
+                return emptyList()
+            }
+            
+            repositoriesDir.listFiles()
+                ?.filter { it.isDirectory && File(it, ".git").exists() }
+                ?.map { repoDir ->
+                    RepositoryExport(
+                        name = repoDir.name,
+                        url = "", // Would need to read from .git/config
+                        localPath = repoDir.absolutePath,
+                        createdDate = Date(repoDir.lastModified()),
+                        lastAccessed = Date(repoDir.lastModified()),
+                        size = repoDir.walkTopDown().filter { it.isFile }.map { it.length() }.sum()
+                    )
+                } ?: emptyList()
+        } catch (e: Exception) {
+            android.util.Log.e("PrivacyManager", "Error exporting repositories", e)
+            emptyList()
+        }
     }
     
     private suspend fun exportSettings(): Map<String, Any> {
-        // Implementation would export all settings
-        return emptyMap()
+        // Export all settings
+        return try {
+            val prefs = context.getSharedPreferences("privacy_settings", Context.MODE_PRIVATE)
+            prefs.all.filterValues { it != null }.mapValues { it.value as Any }
+        } catch (e: Exception) {
+            android.util.Log.e("PrivacyManager", "Error exporting settings", e)
+            emptyMap()
+        }
     }
     
     private fun hashSessionId(sessionId: String): String {

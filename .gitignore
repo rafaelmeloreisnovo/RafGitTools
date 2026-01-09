@@ -1,9 +1,9 @@
-gradle.properties
 local.properties
 *.iml
 .gradle
 .idea
-/build
+build/
+app/build/
 /captures
 .externalNativeBuild
 .cxx
