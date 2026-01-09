@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RafGitTools</string>
+    
+    <!-- Feature descriptions -->
+    <string name="app_description">Cliente Android Unificado Git/GitHub</string>
+    
+    <!-- Common actions -->
+    <string name="action_clone">Clonar</string>
+    <string name="action_commit">Confirmar</string>
+    <string name="action_push">Enviar</string>
+    <string name="action_pull">Puxar</string>
+    <string name="action_sync">Sincronizar</string>
+    <string name="action_refresh">Atualizar</string>
+    <string name="action_search">Pesquisar</string>
+    <string name="action_settings">Configurações</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_save">Salvar</string>
+    <string name="action_delete">Excluir</string>
+    
+    <!-- Repository -->
+    <string name="repository_list">Repositórios</string>
+    <string name="repository_detail">Detalhes do Repositório</string>
+    <string name="repository_empty">Nenhum repositório encontrado</string>
+    <string name="repository_clone_url">URL de Clonagem</string>
+    <string name="repository_local_path">Caminho Local</string>
+    
+    <!-- Git operations -->
+    <string name="git_status">Status do Git</string>
+    <string name="git_log">Histórico de Commits</string>
+    <string name="git_branch">Branches</string>
+    <string name="git_tag">Tags</string>
+    <string name="git_stash">Stash</string>
+    
+    <!-- GitHub -->
+    <string name="github_issues">Issues</string>
+    <string name="github_pull_requests">Pull Requests</string>
+    <string name="github_actions">Actions</string>
+    <string name="github_releases">Lançamentos</string>
+    
+    <!-- Authentication -->
+    <string name="auth_login">Entrar</string>
+    <string name="auth_logout">Sair</string>
+    <string name="auth_token">Token de Acesso</string>
+    
+    <!-- Errors -->
+    <string name="error_network">Erro de rede</string>
+    <string name="error_auth">Autenticação falhou</string>
+    <string name="error_git">Operação Git falhou</string>
+    <string name="error_unknown">Erro desconhecido ocorreu</string>
+    
+    <!-- Loading -->
+    <string name="loading">Carregando…</string>
+    <string name="loading_repositories">Carregando repositórios…</string>
+    
+    <!-- Language settings -->
+    <string name="language_settings">Configurações de Idioma</string>
+    <string name="language_english">Inglês</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_spanish">Espanhol</string>
+    <string name="language_select">Selecionar Idioma</string>
+    <string name="language_selected">Selecionado</string>
+</resources>
