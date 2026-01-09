@@ -47,7 +47,13 @@ class JGitService @Inject constructor() {
                     )
                 }
                 is Credentials.SshKey -> {
-                    // SSH key configuration would be implemented here
+                    // TODO: Implement SSH key authentication
+                    // Requires JschConfigSessionFactory configuration
+                    // See: https://www.eclipse.org/jgit/documentation/
+                    throw NotImplementedError(
+                        "SSH key authentication is not yet implemented. " +
+                        "Use token or username/password authentication instead."
+                    )
                 }
             }
         }
@@ -261,7 +267,11 @@ class JGitService @Inject constructor() {
                         )
                     }
                     is Credentials.SshKey -> {
-                        // SSH key configuration
+                        // TODO: Implement SSH key authentication for push
+                        throw NotImplementedError(
+                            "SSH key authentication is not yet implemented. " +
+                            "Use token or username/password authentication instead."
+                        )
                     }
                 }
             }
@@ -299,7 +309,11 @@ class JGitService @Inject constructor() {
                         )
                     }
                     is Credentials.SshKey -> {
-                        // SSH key configuration
+                        // TODO: Implement SSH key authentication for pull
+                        throw NotImplementedError(
+                            "SSH key authentication is not yet implemented. " +
+                            "Use token or username/password authentication instead."
+                        )
                     }
                 }
             }
@@ -334,7 +348,11 @@ class JGitService @Inject constructor() {
                         )
                     }
                     is Credentials.SshKey -> {
-                        // SSH key configuration
+                        // TODO: Implement SSH key authentication for fetch
+                        throw NotImplementedError(
+                            "SSH key authentication is not yet implemented. " +
+                            "Use token or username/password authentication instead."
+                        )
                     }
                 }
             }

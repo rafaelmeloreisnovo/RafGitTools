@@ -24,8 +24,11 @@ class GitRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getLocalRepositories(): Result<List<GitRepository>> {
-        // This would typically scan a known directory for repositories
-        // For now, returning empty list - can be implemented based on requirements
+        // TODO: Implement directory scanning for Git repositories
+        // This should scan a configurable base directory (e.g., /storage/emulated/0/git-repos)
+        // and look for .git directories to identify repositories.
+        // For now, returning empty list - will be implemented when UI directory picker is added.
+        // Issue: Track in GitHub issue for "Repository Discovery Feature"
         return Result.success(emptyList())
     }
     

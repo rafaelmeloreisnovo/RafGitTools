@@ -14,7 +14,7 @@ interface GitRepository {
         url: String,
         localPath: String,
         credentials: Credentials? = null
-    ): Result<GitRepository>
+    ): Result<com.rafgittools.domain.model.GitRepository>
     
     /**
      * Get all local repositories
