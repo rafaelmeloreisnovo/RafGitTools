@@ -1,6 +1,7 @@
 package com.rafgittools.domain.repository
 
 import com.rafgittools.domain.model.*
+import com.rafgittools.domain.model.GitRepository as DomainGitRepository
 
 /**
  * Repository interface for Git operations
@@ -14,17 +15,17 @@ interface GitRepository {
         url: String,
         localPath: String,
         credentials: Credentials? = null
-    ): Result<com.rafgittools.domain.model.GitRepository>
+    ): Result<DomainGitRepository>
     
     /**
      * Get all local repositories
      */
-    suspend fun getLocalRepositories(): Result<List<com.rafgittools.domain.model.GitRepository>>
+    suspend fun getLocalRepositories(): Result<List<DomainGitRepository>>
     
     /**
      * Get repository by path
      */
-    suspend fun getRepository(path: String): Result<com.rafgittools.domain.model.GitRepository>
+    suspend fun getRepository(path: String): Result<DomainGitRepository>
     
     /**
      * Get repository status

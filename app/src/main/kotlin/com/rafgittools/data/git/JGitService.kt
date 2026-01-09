@@ -19,6 +19,14 @@ import javax.inject.Singleton
 @Singleton
 class JGitService @Inject constructor() {
     
+    companion object {
+        private const val SSH_NOT_IMPLEMENTED_ERROR = 
+            "SSH key authentication is not yet implemented. " +
+            "This feature is planned for a future release. " +
+            "For now, please use token authentication (recommended) or username/password. " +
+            "GitHub personal access tokens can be created at: https://github.com/settings/tokens"
+    }
+    
     /**
      * Clone repository
      */
@@ -50,10 +58,7 @@ class JGitService @Inject constructor() {
                     // TODO: Implement SSH key authentication
                     // Requires JschConfigSessionFactory configuration
                     // See: https://www.eclipse.org/jgit/documentation/
-                    throw NotImplementedError(
-                        "SSH key authentication is not yet implemented. " +
-                        "Use token or username/password authentication instead."
-                    )
+                    throw NotImplementedError(SSH_NOT_IMPLEMENTED_ERROR)
                 }
             }
         }
@@ -268,10 +273,7 @@ class JGitService @Inject constructor() {
                     }
                     is Credentials.SshKey -> {
                         // TODO: Implement SSH key authentication for push
-                        throw NotImplementedError(
-                            "SSH key authentication is not yet implemented. " +
-                            "Use token or username/password authentication instead."
-                        )
+                        throw NotImplementedError(SSH_NOT_IMPLEMENTED_ERROR)
                     }
                 }
             }
@@ -310,10 +312,7 @@ class JGitService @Inject constructor() {
                     }
                     is Credentials.SshKey -> {
                         // TODO: Implement SSH key authentication for pull
-                        throw NotImplementedError(
-                            "SSH key authentication is not yet implemented. " +
-                            "Use token or username/password authentication instead."
-                        )
+                        throw NotImplementedError(SSH_NOT_IMPLEMENTED_ERROR)
                     }
                 }
             }
@@ -349,10 +348,7 @@ class JGitService @Inject constructor() {
                     }
                     is Credentials.SshKey -> {
                         // TODO: Implement SSH key authentication for fetch
-                        throw NotImplementedError(
-                            "SSH key authentication is not yet implemented. " +
-                            "Use token or username/password authentication instead."
-                        )
+                        throw NotImplementedError(SSH_NOT_IMPLEMENTED_ERROR)
                     }
                 }
             }
