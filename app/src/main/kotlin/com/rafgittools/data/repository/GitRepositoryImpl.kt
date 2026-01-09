@@ -4,6 +4,7 @@ import com.rafgittools.data.git.JGitService
 import com.rafgittools.domain.model.*
 import com.rafgittools.domain.repository.Credentials
 import com.rafgittools.domain.repository.GitRepository as IGitRepository
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,12 +25,30 @@ class GitRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getLocalRepositories(): Result<List<GitRepository>> {
-        // TODO: Implement directory scanning for Git repositories
-        // This should scan a configurable base directory (e.g., /storage/emulated/0/git-repos)
-        // and look for .git directories to identify repositories.
-        // For now, returning empty list - will be implemented when UI directory picker is added.
-        // Issue: Track in GitHub issue for "Repository Discovery Feature"
-        return Result.success(emptyList())
+        return try {
+            // Scan common repository locations
+            val repositories = mutableListOf<GitRepository>()
+            
+            // Check the app's files directory for repositories
+            val appReposDir = File("/storage/emulated/0/RafGitTools/repositories")
+            if (appReposDir.exists() && appReposDir.isDirectory) {
+                appReposDir.listFiles()?.forEach { dir ->
+                    if (dir.isDirectory) {
+                        val gitDir = File(dir, ".git")
+                        if (gitDir.exists() && gitDir.isDirectory) {
+                            // This is a valid Git repository
+                            getRepository(dir.absolutePath).getOrNull()?.let { repo ->
+                                repositories.add(repo)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Result.success(repositories)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
     
     override suspend fun getRepository(path: String): Result<GitRepository> = runCatching {
@@ -39,7 +58,7 @@ class GitRepositoryImpl @Inject constructor(
             
             GitRepository(
                 id = path,
-                name = repository.directory.parentFile.name,
+                name = repository.directory.parentFile?.name ?: File(path).name,
                 path = path,
                 remoteUrl = remotes?.firstOrNull()?.url,
                 currentBranch = repository.branch,
