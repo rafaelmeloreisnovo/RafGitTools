@@ -33,4 +33,29 @@ sealed class Screen(val route: String) {
     object Profile : Screen("profile/{username}") {
         fun createRoute(username: String) = "profile/$username"
     }
+    object FileBrowser : Screen("file_browser/{repoPath}") {
+        fun createRoute(repoPath: String) = "file_browser/${java.net.URLEncoder.encode(repoPath, "UTF-8")}"
+    }
+    object DiffViewer : Screen("diff_viewer/{repoPath}") {
+        fun createRoute(repoPath: String) = "diff_viewer/${java.net.URLEncoder.encode(repoPath, "UTF-8")}"
+    }
+    object StashList : Screen("stash_list/{repoPath}") {
+        fun createRoute(repoPath: String) = "stash_list/${java.net.URLEncoder.encode(repoPath, "UTF-8")}"
+    }
+    object TagList : Screen("tag_list/{repoPath}") {
+        fun createRoute(repoPath: String) = "tag_list/${java.net.URLEncoder.encode(repoPath, "UTF-8")}"
+    }
+    object Releases : Screen("releases/{owner}/{repo}") {
+        fun createRoute(owner: String, repo: String) = "releases/$owner/$repo"
+    }
+    object ReleaseDetail : Screen("release_detail/{owner}/{repo}/{id}") {
+        fun createRoute(owner: String, repo: String, id: Long) = "release_detail/$owner/$repo/$id"
+    }
+    object Notifications : Screen("notifications")
+    object CreateIssue : Screen("create_issue/{owner}/{repo}") {
+        fun createRoute(owner: String, repo: String) = "create_issue/$owner/$repo"
+    }
+    object CreatePullRequest : Screen("create_pr/{owner}/{repo}") {
+        fun createRoute(owner: String, repo: String) = "create_pr/$owner/$repo"
+    }
 }

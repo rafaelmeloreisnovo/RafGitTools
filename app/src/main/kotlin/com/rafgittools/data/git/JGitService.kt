@@ -446,4 +446,918 @@ class JGitService @Inject constructor() {
         isCurrent = org.eclipse.jgit.lib.Repository.shortenRefName(name) == currentBranch,
         commitSha = objectId?.name
     )
+    
+    // ============================================
+    // Stash Operations
+    // ============================================
+    
+    /**
+     * List all stash entries
+     */
+    suspend fun listStashes(repoPath: String): Result<List<GitStash>> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val stashList = git.stashList().call()
+            stashList.mapIndexed { index, revCommit ->
+                GitStash(
+                    index = index,
+                    message = revCommit.shortMessage,
+                    sha = revCommit.name,
+                    branch = revCommit.fullMessage.substringAfter("WIP on ").substringBefore(":"),
+                    timestamp = revCommit.commitTime.toLong() * 1000
+                )
+            }
+        }
+    }
+    
+    /**
+     * Create a new stash
+     */
+    suspend fun stash(
+        repoPath: String,
+        message: String?,
+        includeUntracked: Boolean = false
+    ): Result<GitStash> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val command = git.stashCreate()
+            if (includeUntracked) {
+                command.setIncludeUntracked(true)
+            }
+            
+            val revCommit = command.call()
+                ?: throw IllegalStateException("No local changes to stash")
+            
+            GitStash(
+                index = 0,
+                message = message ?: revCommit.shortMessage,
+                sha = revCommit.name,
+                branch = git.repository.branch,
+                timestamp = System.currentTimeMillis()
+            )
+        }
+    }
+    
+    /**
+     * Apply a stash
+     */
+    suspend fun stashApply(
+        repoPath: String,
+        stashRef: String? = null
+    ): Result<Unit> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val command = git.stashApply()
+            stashRef?.let { command.setStashRef(it) }
+            command.call()
+            Unit
+        }
+    }
+    
+    /**
+     * Pop a stash (apply and drop)
+     */
+    suspend fun stashPop(
+        repoPath: String,
+        stashRef: String? = null
+    ): Result<Unit> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            // First apply
+            val applyCommand = git.stashApply()
+            stashRef?.let { applyCommand.setStashRef(it) }
+            applyCommand.call()
+            
+            // Then drop
+            git.stashDrop().call()
+            Unit
+        }
+    }
+    
+    /**
+     * Drop a stash entry
+     */
+    suspend fun stashDrop(
+        repoPath: String,
+        stashIndex: Int = 0
+    ): Result<Unit> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            git.stashDrop()
+                .setStashRef(stashIndex)
+                .call()
+            Unit
+        }
+    }
+    
+    /**
+     * Clear all stashes
+     */
+    suspend fun stashClear(repoPath: String): Result<Unit> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            // Drop all stashes one by one
+            while (git.stashList().call().isNotEmpty()) {
+                git.stashDrop().setStashRef(0).call()
+            }
+            Unit
+        }
+    }
+    
+    // ============================================
+    // Tag Operations
+    // ============================================
+    
+    /**
+     * List all tags
+     */
+    suspend fun listTags(repoPath: String): Result<List<GitTag>> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val tags = mutableListOf<GitTag>()
+            
+            git.tagList().call().forEach { ref ->
+                val tagName = org.eclipse.jgit.lib.Repository.shortenRefName(ref.name)
+                val objectId = ref.peeledObjectId ?: ref.objectId
+                
+                // Try to get tag object for annotated tags
+                try {
+                    val revWalk = org.eclipse.jgit.revwalk.RevWalk(git.repository)
+                    val obj = revWalk.parseAny(ref.objectId)
+                    
+                    if (obj is org.eclipse.jgit.revwalk.RevTag) {
+                        // Annotated tag
+                        tags.add(GitTag(
+                            name = tagName,
+                            sha = objectId?.name ?: "",
+                            message = obj.fullMessage,
+                            tagger = obj.taggerIdent?.let { 
+                                GitAuthor(it.name, it.emailAddress) 
+                            },
+                            timestamp = obj.taggerIdent?.whenAsInstant?.toEpochMilli(),
+                            isAnnotated = true
+                        ))
+                    } else {
+                        // Lightweight tag
+                        tags.add(GitTag(
+                            name = tagName,
+                            sha = objectId?.name ?: "",
+                            message = null,
+                            tagger = null,
+                            timestamp = null,
+                            isAnnotated = false
+                        ))
+                    }
+                    revWalk.close()
+                } catch (e: Exception) {
+                    // Fallback for lightweight tags
+                    tags.add(GitTag(
+                        name = tagName,
+                        sha = objectId?.name ?: "",
+                        message = null,
+                        tagger = null,
+                        timestamp = null,
+                        isAnnotated = false
+                    ))
+                }
+            }
+            
+            tags
+        }
+    }
+    
+    /**
+     * Create a lightweight tag
+     */
+    suspend fun createLightweightTag(
+        repoPath: String,
+        tagName: String,
+        commitSha: String? = null
+    ): Result<GitTag> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val command = git.tag()
+                .setName(tagName)
+                .setAnnotated(false)
+            
+            commitSha?.let { 
+                val objectId = git.repository.resolve(it)
+                command.setObjectId(org.eclipse.jgit.revwalk.RevWalk(git.repository).parseCommit(objectId))
+            }
+            
+            val ref = command.call()
+            
+            GitTag(
+                name = tagName,
+                sha = ref.objectId?.name ?: "",
+                message = null,
+                tagger = null,
+                timestamp = null,
+                isAnnotated = false
+            )
+        }
+    }
+    
+    /**
+     * Create an annotated tag
+     */
+    suspend fun createAnnotatedTag(
+        repoPath: String,
+        tagName: String,
+        message: String,
+        tagger: GitAuthor? = null,
+        commitSha: String? = null
+    ): Result<GitTag> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val command = git.tag()
+                .setName(tagName)
+                .setMessage(message)
+                .setAnnotated(true)
+            
+            tagger?.let {
+                command.setTagger(PersonIdent(it.name, it.email))
+            }
+            
+            commitSha?.let { 
+                val objectId = git.repository.resolve(it)
+                command.setObjectId(org.eclipse.jgit.revwalk.RevWalk(git.repository).parseCommit(objectId))
+            }
+            
+            val ref = command.call()
+            
+            GitTag(
+                name = tagName,
+                sha = ref.objectId?.name ?: "",
+                message = message,
+                tagger = tagger,
+                timestamp = System.currentTimeMillis(),
+                isAnnotated = true
+            )
+        }
+    }
+    
+    /**
+     * Delete a tag
+     */
+    suspend fun deleteTag(
+        repoPath: String,
+        tagName: String
+    ): Result<Unit> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            git.tagDelete()
+                .setTags(tagName)
+                .call()
+            Unit
+        }
+    }
+    
+    // ============================================
+    // Diff Operations
+    // ============================================
+    
+    /**
+     * Get diff for working directory changes
+     */
+    suspend fun getDiff(
+        repoPath: String,
+        cached: Boolean = false
+    ): Result<List<GitDiff>> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val diffFormatter = org.eclipse.jgit.diff.DiffFormatter(java.io.ByteArrayOutputStream())
+            diffFormatter.setRepository(git.repository)
+            diffFormatter.setDetectRenames(true)
+            
+            val reader = git.repository.newObjectReader()
+            val newTree = if (cached) {
+                // Compare HEAD to index
+                org.eclipse.jgit.treewalk.CanonicalTreeParser().apply {
+                    val headId = git.repository.resolve(Constants.HEAD + "^{tree}")
+                    if (headId != null) {
+                        reset(reader, headId)
+                    }
+                }
+            } else {
+                // Compare index to working tree
+                org.eclipse.jgit.treewalk.FileTreeIterator(git.repository)
+            }
+            
+            val oldTree = if (cached) {
+                org.eclipse.jgit.dircache.DirCacheIterator(git.repository.readDirCache())
+            } else {
+                org.eclipse.jgit.treewalk.CanonicalTreeParser().apply {
+                    val headId = git.repository.resolve(Constants.HEAD + "^{tree}")
+                    if (headId != null) {
+                        reset(reader, headId)
+                    }
+                }
+            }
+            
+            val diffs = if (cached) {
+                git.diff()
+                    .setCached(true)
+                    .call()
+            } else {
+                git.diff()
+                    .setCached(false)
+                    .call()
+            }
+            
+            diffs.map { diffEntry ->
+                val changeType = when (diffEntry.changeType) {
+                    org.eclipse.jgit.diff.DiffEntry.ChangeType.ADD -> DiffChangeType.ADD
+                    org.eclipse.jgit.diff.DiffEntry.ChangeType.MODIFY -> DiffChangeType.MODIFY
+                    org.eclipse.jgit.diff.DiffEntry.ChangeType.DELETE -> DiffChangeType.DELETE
+                    org.eclipse.jgit.diff.DiffEntry.ChangeType.RENAME -> DiffChangeType.RENAME
+                    org.eclipse.jgit.diff.DiffEntry.ChangeType.COPY -> DiffChangeType.COPY
+                }
+                
+                // Get the raw diff content
+                val outputStream = java.io.ByteArrayOutputStream()
+                val formatter = org.eclipse.jgit.diff.DiffFormatter(outputStream)
+                formatter.setRepository(git.repository)
+                formatter.format(diffEntry)
+                formatter.flush()
+                
+                val diffContent = outputStream.toString("UTF-8")
+                val hunks = parseDiffHunks(diffContent)
+                
+                GitDiff(
+                    oldPath = if (diffEntry.oldPath != "/dev/null") diffEntry.oldPath else null,
+                    newPath = if (diffEntry.newPath != "/dev/null") diffEntry.newPath else null,
+                    changeType = changeType,
+                    oldContent = null, // Would need to load from repository
+                    newContent = null,
+                    hunks = hunks
+                )
+            }
+        }
+    }
+    
+    /**
+     * Get diff between two commits
+     */
+    suspend fun getDiffBetweenCommits(
+        repoPath: String,
+        oldCommitSha: String,
+        newCommitSha: String
+    ): Result<List<GitDiff>> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val reader = git.repository.newObjectReader()
+            
+            val oldTree = org.eclipse.jgit.treewalk.CanonicalTreeParser().apply {
+                val treeId = git.repository.resolve("$oldCommitSha^{tree}")
+                reset(reader, treeId)
+            }
+            
+            val newTree = org.eclipse.jgit.treewalk.CanonicalTreeParser().apply {
+                val treeId = git.repository.resolve("$newCommitSha^{tree}")
+                reset(reader, treeId)
+            }
+            
+            val diffs = git.diff()
+                .setOldTree(oldTree)
+                .setNewTree(newTree)
+                .call()
+            
+            diffs.map { diffEntry ->
+                val changeType = when (diffEntry.changeType) {
+                    org.eclipse.jgit.diff.DiffEntry.ChangeType.ADD -> DiffChangeType.ADD
+                    org.eclipse.jgit.diff.DiffEntry.ChangeType.MODIFY -> DiffChangeType.MODIFY
+                    org.eclipse.jgit.diff.DiffEntry.ChangeType.DELETE -> DiffChangeType.DELETE
+                    org.eclipse.jgit.diff.DiffEntry.ChangeType.RENAME -> DiffChangeType.RENAME
+                    org.eclipse.jgit.diff.DiffEntry.ChangeType.COPY -> DiffChangeType.COPY
+                }
+                
+                val outputStream = java.io.ByteArrayOutputStream()
+                val formatter = org.eclipse.jgit.diff.DiffFormatter(outputStream)
+                formatter.setRepository(git.repository)
+                formatter.format(diffEntry)
+                formatter.flush()
+                
+                val diffContent = outputStream.toString("UTF-8")
+                val hunks = parseDiffHunks(diffContent)
+                
+                GitDiff(
+                    oldPath = if (diffEntry.oldPath != "/dev/null") diffEntry.oldPath else null,
+                    newPath = if (diffEntry.newPath != "/dev/null") diffEntry.newPath else null,
+                    changeType = changeType,
+                    oldContent = null,
+                    newContent = null,
+                    hunks = hunks
+                )
+            }
+        }
+    }
+    
+    /**
+     * Parse diff content into hunks
+     */
+    private fun parseDiffHunks(diffContent: String): List<DiffHunk> {
+        val hunks = mutableListOf<DiffHunk>()
+        val lines = diffContent.lines()
+        
+        var currentHunk: MutableList<DiffLine>? = null
+        var oldStart = 0
+        var oldLines = 0
+        var newStart = 0
+        var newLines = 0
+        var oldLineNum = 0
+        var newLineNum = 0
+        
+        for (line in lines) {
+            when {
+                line.startsWith("@@") -> {
+                    // Save previous hunk
+                    currentHunk?.let {
+                        hunks.add(DiffHunk(oldStart, oldLines, newStart, newLines, it))
+                    }
+                    
+                    // Parse hunk header: @@ -start,lines +start,lines @@
+                    val regex = Regex("@@ -(\\d+)(?:,(\\d+))? \\+(\\d+)(?:,(\\d+))? @@")
+                    regex.find(line)?.let { match ->
+                        oldStart = match.groupValues[1].toIntOrNull() ?: 0
+                        oldLines = match.groupValues[2].toIntOrNull() ?: 1
+                        newStart = match.groupValues[3].toIntOrNull() ?: 0
+                        newLines = match.groupValues[4].toIntOrNull() ?: 1
+                    }
+                    
+                    oldLineNum = oldStart
+                    newLineNum = newStart
+                    currentHunk = mutableListOf()
+                }
+                line.startsWith("+") && !line.startsWith("+++") -> {
+                    currentHunk?.add(DiffLine(
+                        type = DiffLineType.ADD,
+                        content = line.substring(1),
+                        oldLineNumber = null,
+                        newLineNumber = newLineNum++
+                    ))
+                }
+                line.startsWith("-") && !line.startsWith("---") -> {
+                    currentHunk?.add(DiffLine(
+                        type = DiffLineType.DELETE,
+                        content = line.substring(1),
+                        oldLineNumber = oldLineNum++,
+                        newLineNumber = null
+                    ))
+                }
+                line.startsWith(" ") -> {
+                    currentHunk?.add(DiffLine(
+                        type = DiffLineType.CONTEXT,
+                        content = line.substring(1),
+                        oldLineNumber = oldLineNum++,
+                        newLineNumber = newLineNum++
+                    ))
+                }
+            }
+        }
+        
+        // Add last hunk
+        currentHunk?.let {
+            hunks.add(DiffHunk(oldStart, oldLines, newStart, newLines, it))
+        }
+        
+        return hunks
+    }
+    
+    // ============================================
+    // File Browser Operations
+    // ============================================
+    
+    /**
+     * List files in a directory of the repository
+     */
+    suspend fun listFiles(
+        repoPath: String,
+        path: String = "",
+        ref: String? = null
+    ): Result<List<GitFile>> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val files = mutableListOf<GitFile>()
+            val resolvedRef = ref ?: Constants.HEAD
+            
+            val revWalk = org.eclipse.jgit.revwalk.RevWalk(git.repository)
+            val commitId = git.repository.resolve(resolvedRef)
+            val commit = revWalk.parseCommit(commitId)
+            val tree = commit.tree
+            
+            val treeWalk = org.eclipse.jgit.treewalk.TreeWalk(git.repository)
+            treeWalk.addTree(tree)
+            treeWalk.isRecursive = false
+            
+            if (path.isNotEmpty()) {
+                treeWalk.filter = org.eclipse.jgit.treewalk.filter.PathFilter.create(path)
+                // Need to enter the directory
+                while (treeWalk.next()) {
+                    if (treeWalk.pathString == path && treeWalk.isSubtree) {
+                        treeWalk.enterSubtree()
+                        break
+                    }
+                }
+            }
+            
+            while (treeWalk.next()) {
+                val filePath = treeWalk.pathString
+                val fileName = filePath.substringAfterLast("/")
+                
+                // Only include direct children, not nested
+                if (path.isEmpty() && filePath.contains("/")) continue
+                if (path.isNotEmpty() && filePath.removePrefix("$path/").contains("/")) continue
+                
+                val mode = treeWalk.fileMode
+                val isDirectory = treeWalk.isSubtree
+                
+                files.add(GitFile(
+                    name = fileName,
+                    path = filePath,
+                    isDirectory = isDirectory,
+                    size = if (!isDirectory) {
+                        try {
+                            val loader = git.repository.open(treeWalk.getObjectId(0))
+                            loader.size
+                        } catch (e: Exception) {
+                            0L
+                        }
+                    } else 0L,
+                    mode = mode.toString(),
+                    sha = treeWalk.getObjectId(0)?.name
+                ))
+            }
+            
+            treeWalk.close()
+            revWalk.close()
+            
+            files.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
+        }
+    }
+    
+    /**
+     * Get file content from repository
+     */
+    suspend fun getFileContent(
+        repoPath: String,
+        filePath: String,
+        ref: String? = null
+    ): Result<FileContent> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val resolvedRef = ref ?: Constants.HEAD
+            
+            val revWalk = org.eclipse.jgit.revwalk.RevWalk(git.repository)
+            val commitId = git.repository.resolve(resolvedRef)
+            val commit = revWalk.parseCommit(commitId)
+            val tree = commit.tree
+            
+            val treeWalk = org.eclipse.jgit.treewalk.TreeWalk.forPath(
+                git.repository, 
+                filePath, 
+                tree
+            ) ?: throw IllegalArgumentException("File not found: $filePath")
+            
+            val objectId = treeWalk.getObjectId(0)
+            val loader = git.repository.open(objectId)
+            val bytes = loader.bytes
+            
+            // Detect if file is binary
+            val isBinary = bytes.take(8000).any { it.toInt() == 0 }
+            
+            val content = if (isBinary) {
+                "[Binary file - ${bytes.size} bytes]"
+            } else {
+                String(bytes, Charsets.UTF_8)
+            }
+            
+            val fileName = filePath.substringAfterLast("/")
+            val extension = fileName.substringAfterLast(".", "")
+            val language = detectLanguage(extension)
+            
+            treeWalk.close()
+            revWalk.close()
+            
+            FileContent(
+                path = filePath,
+                name = fileName,
+                content = content,
+                encoding = "UTF-8",
+                size = bytes.size.toLong(),
+                language = language,
+                isBinary = isBinary
+            )
+        }
+    }
+    
+    /**
+     * Detect programming language from file extension
+     */
+    private fun detectLanguage(extension: String): String? {
+        return when (extension.lowercase()) {
+            "kt", "kts" -> "Kotlin"
+            "java" -> "Java"
+            "py" -> "Python"
+            "js" -> "JavaScript"
+            "ts" -> "TypeScript"
+            "jsx" -> "JavaScript (React)"
+            "tsx" -> "TypeScript (React)"
+            "html", "htm" -> "HTML"
+            "css" -> "CSS"
+            "scss", "sass" -> "SCSS"
+            "xml" -> "XML"
+            "json" -> "JSON"
+            "yaml", "yml" -> "YAML"
+            "md" -> "Markdown"
+            "sh", "bash" -> "Shell"
+            "c" -> "C"
+            "cpp", "cc", "cxx" -> "C++"
+            "h", "hpp" -> "C/C++ Header"
+            "cs" -> "C#"
+            "go" -> "Go"
+            "rs" -> "Rust"
+            "rb" -> "Ruby"
+            "php" -> "PHP"
+            "swift" -> "Swift"
+            "sql" -> "SQL"
+            "gradle" -> "Gradle"
+            "properties" -> "Properties"
+            "txt" -> "Plain Text"
+            else -> null
+        }
+    }
+    
+    // ============================================
+    // Rebase Operations
+    // ============================================
+    
+    /**
+     * Start interactive rebase
+     */
+    suspend fun rebase(
+        repoPath: String,
+        upstream: String
+    ): Result<Unit> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            git.rebase()
+                .setUpstream(upstream)
+                .call()
+            Unit
+        }
+    }
+    
+    /**
+     * Continue rebase after resolving conflicts
+     */
+    suspend fun rebaseContinue(repoPath: String): Result<Unit> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            git.rebase()
+                .setOperation(org.eclipse.jgit.api.RebaseCommand.Operation.CONTINUE)
+                .call()
+            Unit
+        }
+    }
+    
+    /**
+     * Abort rebase
+     */
+    suspend fun rebaseAbort(repoPath: String): Result<Unit> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            git.rebase()
+                .setOperation(org.eclipse.jgit.api.RebaseCommand.Operation.ABORT)
+                .call()
+            Unit
+        }
+    }
+    
+    /**
+     * Skip current commit during rebase
+     */
+    suspend fun rebaseSkip(repoPath: String): Result<Unit> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            git.rebase()
+                .setOperation(org.eclipse.jgit.api.RebaseCommand.Operation.SKIP)
+                .call()
+            Unit
+        }
+    }
+    
+    // ============================================
+    // Cherry-pick Operations
+    // ============================================
+    
+    /**
+     * Cherry-pick a commit
+     */
+    suspend fun cherryPick(
+        repoPath: String,
+        commitSha: String
+    ): Result<GitCommit> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val commitId = git.repository.resolve(commitSha)
+            val revWalk = org.eclipse.jgit.revwalk.RevWalk(git.repository)
+            val commit = revWalk.parseCommit(commitId)
+            
+            val result = git.cherryPick()
+                .include(commit)
+                .call()
+            
+            revWalk.close()
+            
+            result.newHead?.toGitCommit() 
+                ?: throw IllegalStateException("Cherry-pick failed")
+        }
+    }
+    
+    /**
+     * Continue cherry-pick after resolving conflicts
+     */
+    suspend fun cherryPickContinue(repoPath: String): Result<Unit> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            // In JGit, continuing cherry-pick requires committing manually
+            // if there were conflicts
+            git.commit()
+                .setMessage("Cherry-pick continued after conflict resolution")
+                .call()
+            Unit
+        }
+    }
+    
+    /**
+     * Abort cherry-pick
+     */
+    suspend fun cherryPickAbort(repoPath: String): Result<Unit> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            git.reset()
+                .setMode(org.eclipse.jgit.api.ResetCommand.ResetType.HARD)
+                .setRef(Constants.HEAD)
+                .call()
+            Unit
+        }
+    }
+    
+    // ============================================
+    // Reset Operations  
+    // ============================================
+    
+    /**
+     * Reset to a specific commit
+     */
+    suspend fun reset(
+        repoPath: String,
+        commitSha: String,
+        mode: ResetMode = ResetMode.MIXED
+    ): Result<Unit> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val resetType = when (mode) {
+                ResetMode.SOFT -> org.eclipse.jgit.api.ResetCommand.ResetType.SOFT
+                ResetMode.MIXED -> org.eclipse.jgit.api.ResetCommand.ResetType.MIXED
+                ResetMode.HARD -> org.eclipse.jgit.api.ResetCommand.ResetType.HARD
+            }
+            
+            git.reset()
+                .setRef(commitSha)
+                .setMode(resetType)
+                .call()
+            Unit
+        }
+    }
+    
+    /**
+     * Revert a commit
+     */
+    suspend fun revert(
+        repoPath: String,
+        commitSha: String
+    ): Result<GitCommit> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val commitId = git.repository.resolve(commitSha)
+            val revWalk = org.eclipse.jgit.revwalk.RevWalk(git.repository)
+            val commit = revWalk.parseCommit(commitId)
+            
+            val result = git.revert()
+                .include(commit)
+                .call()
+            
+            revWalk.close()
+            
+            result.toGitCommit()
+        }
+    }
+    
+    // ============================================
+    // Clean Operations
+    // ============================================
+    
+    /**
+     * Clean untracked files
+     */
+    suspend fun clean(
+        repoPath: String,
+        dryRun: Boolean = false,
+        directories: Boolean = false,
+        force: Boolean = true
+    ): Result<List<String>> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            git.clean()
+                .setDryRun(dryRun)
+                .setCleanDirectories(directories)
+                .setForce(force)
+                .call()
+                .toList()
+        }
+    }
+    
+    // ============================================
+    // Log/Reflog Operations
+    // ============================================
+    
+    /**
+     * Get reflog entries
+     */
+    suspend fun getReflog(
+        repoPath: String,
+        ref: String = Constants.HEAD,
+        limit: Int = 50
+    ): Result<List<ReflogEntry>> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            git.reflog()
+                .setRef(ref)
+                .call()
+                .take(limit)
+                .mapIndexed { index, entry ->
+                    ReflogEntry(
+                        index = index,
+                        oldId = entry.oldId?.name ?: "",
+                        newId = entry.newId?.name ?: "",
+                        comment = entry.comment,
+                        who = GitAuthor(
+                            name = entry.who?.name ?: "Unknown",
+                            email = entry.who?.emailAddress ?: ""
+                        ),
+                        timestamp = entry.who?.whenAsInstant?.toEpochMilli() ?: 0
+                    )
+                }
+        }
+    }
+    
+    // ============================================
+    // Blame Operations
+    // ============================================
+    
+    /**
+     * Get blame information for a file
+     */
+    suspend fun blame(
+        repoPath: String,
+        filePath: String
+    ): Result<List<BlameLine>> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val result = git.blame()
+                .setFilePath(filePath)
+                .call()
+            
+            val blameLines = mutableListOf<BlameLine>()
+            val resultSize = result.resultContents?.size() ?: 0
+            
+            for (i in 0 until resultSize) {
+                val commit = result.getSourceCommit(i)
+                val content = result.resultContents?.getString(i) ?: ""
+                
+                blameLines.add(BlameLine(
+                    lineNumber = i + 1,
+                    content = content,
+                    commitSha = commit?.name ?: "",
+                    author = commit?.let { 
+                        GitAuthor(
+                            name = it.authorIdent.name,
+                            email = it.authorIdent.emailAddress
+                        )
+                    } ?: GitAuthor("Unknown", ""),
+                    timestamp = commit?.commitTime?.toLong()?.times(1000) ?: 0
+                ))
+            }
+            
+            blameLines
+        }
+    }
 }
+
+/**
+ * Reset mode enum
+ */
+enum class ResetMode {
+    SOFT,
+    MIXED,
+    HARD
+}
+
+/**
+ * Reflog entry model
+ */
+data class ReflogEntry(
+    val index: Int,
+    val oldId: String,
+    val newId: String,
+    val comment: String,
+    val who: GitAuthor,
+    val timestamp: Long
+)
+
+/**
+ * Blame line model
+ */
+data class BlameLine(
+    val lineNumber: Int,
+    val content: String,
+    val commitSha: String,
+    val author: GitAuthor,
+    val timestamp: Long
+)
