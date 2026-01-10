@@ -9,6 +9,14 @@
 -keep class org.eclipse.jgit.** { *; }
 -dontwarn org.eclipse.jgit.**
 
+# Keep JSch/SSH classes
+-keep class com.jcraft.jsch.** { *; }
+-dontwarn com.jcraft.jsch.**
+
+# SLF4J - Ignore missing implementation classes
+-dontwarn org.slf4j.impl.**
+-dontwarn org.slf4j.**
+
 # Keep Retrofit
 -keepattributes Signature
 -keepattributes Exceptions
@@ -27,6 +35,9 @@
 # Keep data classes
 -keep class com.rafgittools.data.model.** { *; }
 -keep class com.rafgittools.domain.model.** { *; }
+
+# Keep cache entities for Room
+-keep class com.rafgittools.data.cache.** { *; }
 
 # Keep Hilt generated classes
 -keep class dagger.hilt.** { *; }
