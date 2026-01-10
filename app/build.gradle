@@ -155,7 +155,9 @@ dependencies {
     // JGit (Git implementation)
     def jgitVersion = '6.8.0.202311291450-r'
     implementation "org.eclipse.jgit:org.eclipse.jgit:$jgitVersion"
-    implementation "org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:$jgitVersion"
+    implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:$jgitVersion") {
+        exclude group: 'com.jcraft', module: 'jsch'
+    }
     
     // JSch (SSH)
     implementation 'com.github.mwiede:jsch:2.27.7'
