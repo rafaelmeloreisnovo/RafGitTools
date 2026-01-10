@@ -261,7 +261,7 @@ class SecurityManager(private val context: Context) {
                 )
                 @Suppress("DEPRECATION")
                 val signatures = packageInfo.signatures
-                if (signatures.isEmpty()) {
+                if (signatures.isNullOrEmpty()) {
                     return false
                 }
                 

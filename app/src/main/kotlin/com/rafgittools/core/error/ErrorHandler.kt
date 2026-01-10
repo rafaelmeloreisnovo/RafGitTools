@@ -51,8 +51,8 @@ object ErrorHandler {
      */
     inline fun <T> execute(
         operation: () -> T,
-        inputValidator: (() -> Boolean)? = null,
-        outputValidator: ((T) -> Boolean)? = null,
+        noinline inputValidator: (() -> Boolean)? = null,
+        noinline outputValidator: ((T) -> Boolean)? = null,
         fallback: T? = null,
         context: String = "unknown"
     ): Result<T> {
@@ -65,7 +65,7 @@ object ErrorHandler {
                     context = context,
                     timestamp = System.currentTimeMillis()
                 )
-                logError(error)
+                logErrorInternal(error)
                 return if (fallback != null) {
                     Result.success(fallback)
                 } else {
@@ -84,7 +84,7 @@ object ErrorHandler {
                     context = context,
                     timestamp = System.currentTimeMillis()
                 )
-                logError(error)
+                logErrorInternal(error)
                 return if (fallback != null) {
                     Result.success(fallback)
                 } else {
@@ -103,7 +103,7 @@ object ErrorHandler {
                 timestamp = System.currentTimeMillis(),
                 stackTrace = e.stackTraceToString()
             )
-            logError(error)
+            logErrorInternal(error)
             
             // Layer 5: Recovery or Fallback
             if (fallback != null) {
@@ -133,7 +133,7 @@ object ErrorHandler {
                     context = context,
                     timestamp = System.currentTimeMillis()
                 )
-                logError(error)
+                logErrorInternal(error)
                 return if (fallback != null) {
                     Result.success(fallback)
                 } else {
@@ -152,7 +152,7 @@ object ErrorHandler {
                     context = context,
                     timestamp = System.currentTimeMillis()
                 )
-                logError(error)
+                logErrorInternal(error)
                 return if (fallback != null) {
                     Result.success(fallback)
                 } else {
@@ -171,7 +171,7 @@ object ErrorHandler {
                 timestamp = System.currentTimeMillis(),
                 stackTrace = e.stackTraceToString()
             )
-            logError(error)
+            logErrorInternal(error)
             
             // Layer 5: Recovery or Fallback
             if (fallback != null) {
@@ -194,17 +194,25 @@ object ErrorHandler {
                 timestamp = System.currentTimeMillis(),
                 stackTrace = throwable.stackTraceToString()
             )
-            logError(error)
+            logErrorInternal(error)
             Log.e(TAG, "Coroutine exception in $context", throwable)
         }
+    }
+    
+    /**
+     * Log error to persistent storage and analytics (internal, accessible from inline functions)
+     */
+    @PublishedApi
+    internal fun logErrorInternal(error: ErrorDetails) {
+        Log.e(TAG, "Error [${error.type}] in ${error.context}: ${error.message}")
+        errorLogger?.log(error)
     }
     
     /**
      * Log error to persistent storage and analytics
      */
     private fun logError(error: ErrorDetails) {
-        Log.e(TAG, "Error [${error.type}] in ${error.context}: ${error.message}")
-        errorLogger?.log(error)
+        logErrorInternal(error)
     }
     
     /**

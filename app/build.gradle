@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.compose'
     id 'com.google.dagger.hilt.android'
     id 'com.google.devtools.ksp'
     id 'kotlin-parcelize'
@@ -8,12 +9,12 @@ plugins {
 
 android {
     namespace 'com.rafgittools'
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.rafgittools"
         minSdk 24
-        targetSdk 34
+        targetSdk 36
         versionCode 1
         versionName "1.0.0-alpha"
 
@@ -28,12 +29,32 @@ android {
         }
     }
 
+    // Signing configuration for unsigned/debug-signed builds
+    // This allows the app to be installed without Play Store signature
+    signingConfigs {
+        // Debug config is used automatically, but we explicitly define it for clarity
+        debug {
+            // Uses default debug keystore automatically
+        }
+        
+        // Unsigned release config - uses debug keystore for local installs
+        unsignedRelease {
+            // Falls back to debug keystore for local installation
+            // In production, replace with actual release keystore
+            storeFile file(System.getProperty("user.home") + "/.android/debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+    }
+    
     buildTypes {
         debug {
             applicationIdSuffix ".debug"
             versionNameSuffix "-debug"
             debuggable true
             minifyEnabled false
+            signingConfig signingConfigs.debug
         }
         
         release {
@@ -41,8 +62,9 @@ android {
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             
-            // Signing configuration would go here
-            // signingConfig signingConfigs.release
+            // Use unsignedRelease config to allow local installation without Play Store
+            // This makes the APK installable on any device without store signature
+            signingConfig signingConfigs.unsignedRelease
         }
     }
 
@@ -86,10 +108,6 @@ android {
         buildConfig true
     }
 
-    composeOptions {
-        kotlinCompilerExtensionVersion '1.5.4'
-    }
-
     packaging {
         resources {
             excludes += [
@@ -111,6 +129,12 @@ android {
         checkReleaseBuilds true
         warningsAsErrors false
     }
+}
+
+// Exclude BouncyCastle globally due to Java 21 class file compatibility issues
+configurations.all {
+    exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
+    exclude group: 'org.bouncycastle', module: 'bcutil-jdk18on'
 }
 
 dependencies {
@@ -159,8 +183,11 @@ dependencies {
         exclude group: 'com.jcraft', module: 'jsch'
     }
     
-    // JSch (SSH)
-    implementation 'com.github.mwiede:jsch:2.27.7'
+    // JSch (SSH) - Using version compatible with Java 17
+    implementation('com.github.mwiede:jsch:0.2.18') {
+        // Exclude BouncyCastle to avoid Java 21 class file issues
+        exclude group: 'org.bouncycastle'
+    }
 
     // Coil (Image Loading)
     implementation 'io.coil-kt:coil-compose:2.7.0'

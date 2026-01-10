@@ -6,8 +6,12 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,6 +29,7 @@ class PersistentErrorLogger @Inject constructor(
 ) : ErrorLogger {
     
     private val dataStore = context.errorDataStore
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     
     companion object {
         private val ERROR_LOG_KEY = stringPreferencesKey("error_log")
@@ -35,7 +40,7 @@ class PersistentErrorLogger @Inject constructor(
      * Log error to persistent storage
      */
     override fun log(error: ErrorDetails) {
-        kotlinx.coroutines.GlobalScope.launch {
+        scope.launch {
             try {
                 dataStore.edit { preferences ->
                     val existingLog = preferences[ERROR_LOG_KEY] ?: "[]"
@@ -77,7 +82,7 @@ class PersistentErrorLogger @Inject constructor(
      * Clear all error logs
      */
     override fun clearErrors() {
-        kotlinx.coroutines.GlobalScope.launch {
+        scope.launch {
             try {
                 dataStore.edit { preferences ->
                     preferences.remove(ERROR_LOG_KEY)

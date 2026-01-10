@@ -16,6 +16,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.rafgittools.core.localization.Language
 import com.rafgittools.core.localization.LocalizationManager
 import com.rafgittools.data.preferences.PreferencesRepository
@@ -23,6 +26,9 @@ import com.rafgittools.ui.components.LanguageFAB
 import com.rafgittools.ui.components.LanguageSelector
 import com.rafgittools.ui.components.getResponsiveContentWidth
 import com.rafgittools.ui.components.getResponsivePadding
+import com.rafgittools.ui.navigation.Screen
+import com.rafgittools.ui.screens.auth.AuthScreen
+import com.rafgittools.ui.screens.home.HomeScreen
 import com.rafgittools.ui.theme.RafGitToolsTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -86,37 +92,45 @@ fun RafGitToolsApp(
     onLanguageChange: (Language) -> Unit = {}
 ) {
     var showLanguageSelector by remember { mutableStateOf(false) }
-    val responsivePadding = getResponsivePadding()
-    val contentWidth = getResponsiveContentWidth()
+    val navController = rememberNavController()
     
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        floatingActionButton = {
-            LanguageFAB(
-                onClick = { showLanguageSelector = true }
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
+    Box(modifier = Modifier.fillMaxSize()) {
+        NavHost(
+            navController = navController,
+            startDestination = Screen.Home.route
         ) {
-            Box(
-                modifier = Modifier
-                    .let { modifier ->
-                        if (contentWidth != null) {
-                            modifier.widthIn(max = contentWidth)
-                        } else {
-                            modifier.fillMaxWidth()
-                        }
+            composable(Screen.Home.route) {
+                HomeScreen(
+                    onNavigateToAuth = {
+                        navController.navigate(Screen.Auth.route)
+                    },
+                    onNavigateToRepository = { repo ->
+                        // Handle repository navigation
                     }
-                    .padding(responsivePadding),
-                contentAlignment = Alignment.Center
-            ) {
-                WelcomeScreen()
+                )
             }
+            
+            composable(Screen.Auth.route) {
+                AuthScreen(
+                    onAuthSuccess = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+        }
+        
+        // Language FAB
+        FloatingActionButton(
+            onClick = { showLanguageSelector = true },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        ) {
+            Text(
+                text = getLanguageFlag(currentLanguage),
+                style = MaterialTheme.typography.titleLarge
+            )
         }
         
         if (showLanguageSelector) {
@@ -129,36 +143,21 @@ fun RafGitToolsApp(
     }
 }
 
-@Composable
-fun WelcomeScreen() {
-    val context = LocalContext.current
-    Text(
-        text = context.getString(R.string.app_description) + "\n\n" +
-                """
-            Welcome to RafGitTools! 🚀
-            
-            A unified Git/GitHub Android client
-            combining the best features from:
-            
-            • FastHub - GitHub integration
-            • MGit - Local Git operations
-            • PuppyGit - Modern UI/UX
-            • Termux - Terminal capabilities
-            
-            Development in progress...
-            
-            Use the language button to change the app language.
-        """.trimIndent(),
-        style = MaterialTheme.typography.bodyLarge,
-        textAlign = TextAlign.Center,
-        color = MaterialTheme.colorScheme.onBackground
-    )
+/**
+ * Get flag emoji for language
+ */
+private fun getLanguageFlag(language: Language): String {
+    return when (language) {
+        Language.ENGLISH -> "🇺🇸"
+        Language.PORTUGUESE -> "🇧🇷"
+        Language.SPANISH -> "🇪🇸"
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
     RafGitToolsTheme {
-        WelcomeScreen()
+        RafGitToolsApp()
     }
 }

@@ -4,6 +4,8 @@ package com.rafgittools.ui.navigation
  * Navigation routes for the app
  */
 sealed class Screen(val route: String) {
+    object Home : Screen("home")
+    object Auth : Screen("auth")
     object RepositoryList : Screen("repository_list")
     object RepositoryDetail : Screen("repository_detail/{repoPath}") {
         fun createRoute(repoPath: String) = "repository_detail/$repoPath"

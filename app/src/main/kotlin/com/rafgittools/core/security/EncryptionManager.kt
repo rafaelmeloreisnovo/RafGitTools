@@ -140,8 +140,7 @@ class EncryptionManager @Inject constructor(
                 ).getOrThrow()
                 
                 // Perform hashing
-                val result = securityManager.hashPassword(data)
-                    .getOrThrow()
+                val result = securityManager.hashString(data)
                 
                 // Validate output
                 Validator.validateString(
