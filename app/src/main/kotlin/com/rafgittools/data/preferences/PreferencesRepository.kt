@@ -3,6 +3,7 @@ package com.rafgittools.data.preferences
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -27,6 +28,7 @@ class PreferencesRepository @Inject constructor(
     
     companion object {
         private val LANGUAGE_KEY = stringPreferencesKey("language")
+        private val DARK_MODE_KEY = booleanPreferencesKey("dark_mode")
     }
     
     /**
@@ -36,6 +38,14 @@ class PreferencesRepository @Inject constructor(
         .map { preferences ->
             val languageCode = preferences[LANGUAGE_KEY] ?: Language.ENGLISH.code
             Language.fromCode(languageCode)
+        }
+    
+    /**
+     * Flow of dark mode preference
+     */
+    val isDarkModeFlow: Flow<Boolean> = dataStore.data
+        .map { preferences ->
+            preferences[DARK_MODE_KEY] ?: false
         }
     
     /**
@@ -52,5 +62,57 @@ class PreferencesRepository @Inject constructor(
      */
     suspend fun getLanguage(): Language {
         return languageFlow.first()
+    }
+    
+    /**
+     * Set dark mode preference
+     */
+    suspend fun setDarkMode(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[DARK_MODE_KEY] = enabled
+        }
+    }
+    
+    /**
+     * Get dark mode preference
+     */
+    suspend fun isDarkMode(): Boolean {
+        return isDarkModeFlow.first()
+    }
+    
+    /**
+     * Set a string preference
+     */
+    suspend fun setString(key: String, value: String) {
+        val prefKey = stringPreferencesKey(key)
+        dataStore.edit { preferences ->
+            preferences[prefKey] = value
+        }
+    }
+    
+    /**
+     * Get a string preference
+     */
+    suspend fun getString(key: String, defaultValue: String = ""): String {
+        val prefKey = stringPreferencesKey(key)
+        return dataStore.data.first()[prefKey] ?: defaultValue
+    }
+    
+    /**
+     * Set a boolean preference
+     */
+    suspend fun setBoolean(key: String, value: Boolean) {
+        val prefKey = booleanPreferencesKey(key)
+        dataStore.edit { preferences ->
+            preferences[prefKey] = value
+        }
+    }
+    
+    /**
+     * Get a boolean preference
+     */
+    suspend fun getBoolean(key: String, defaultValue: Boolean = false): Boolean {
+        val prefKey = booleanPreferencesKey(key)
+        return dataStore.data.first()[prefKey] ?: defaultValue
     }
 }
