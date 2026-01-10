@@ -80,10 +80,10 @@ class BranchListViewModel @Inject constructor(
     
     fun deleteBranch(branch: GitBranch) {
         viewModelScope.launch {
-            // Note: JGit doesn't have a direct delete method in our interface
-            // This would need to be implemented in JGitService
-            _operationStatus.value = "Branch deletion requires implementation"
-            // For now, just refresh
+            // Note: Branch deletion is not yet implemented in JGitService
+            // This would need to be added to the GitRepository interface
+            _operationStatus.value = "Branch deletion is not yet supported. This feature will be available in a future update."
+            // Refresh to ensure UI is in sync
             loadBranches(currentRepoPath)
         }
     }

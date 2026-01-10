@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rafgittools.domain.model.github.GithubPullRequest
+import com.rafgittools.ui.theme.GitHubColors
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -206,10 +207,10 @@ private fun PullRequestCard(
                         },
                         contentDescription = null,
                         tint = when {
-                            pullRequest.draft -> Color.Gray
-                            pullRequest.mergedAt != null -> Color(0xFF8957E5)  // GitHub purple
-                            pullRequest.state == "open" -> Color(0xFF238636)  // GitHub green
-                            else -> Color(0xFFCF222E)  // GitHub red
+                            pullRequest.draft -> GitHubColors.DraftGray
+                            pullRequest.mergedAt != null -> GitHubColors.MergedPurple
+                            pullRequest.state == "open" -> GitHubColors.OpenGreen
+                            else -> GitHubColors.ClosedRed
                         },
                         modifier = Modifier.size(20.dp)
                     )
@@ -320,10 +321,10 @@ private fun PullRequestCard(
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = when {
-                        pullRequest.mergedAt != null -> Color(0xFF8957E5)
-                        pullRequest.draft -> Color.Gray
-                        pullRequest.state == "open" -> Color(0xFF238636)
-                        else -> Color(0xFFCF222E)
+                        pullRequest.mergedAt != null -> GitHubColors.MergedPurple
+                        pullRequest.draft -> GitHubColors.DraftGray
+                        pullRequest.state == "open" -> GitHubColors.OpenGreen
+                        else -> GitHubColors.ClosedRed
                     }
                 )
             }

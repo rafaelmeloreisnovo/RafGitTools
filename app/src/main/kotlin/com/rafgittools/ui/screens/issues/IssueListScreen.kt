@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rafgittools.domain.model.github.GithubIssue
+import com.rafgittools.ui.theme.GitHubColors
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -212,9 +213,9 @@ private fun IssueCard(
                         },
                         contentDescription = null,
                         tint = if (issue.state == "open") {
-                            Color(0xFF238636)  // GitHub green
+                            GitHubColors.OpenGreen
                         } else {
-                            Color(0xFF8957E5)  // GitHub purple
+                            GitHubColors.MergedPurple
                         },
                         modifier = Modifier.size(20.dp)
                     )

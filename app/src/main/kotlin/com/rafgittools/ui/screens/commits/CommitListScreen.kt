@@ -167,7 +167,7 @@ private fun CommitCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Commit,
+                        imageVector = Icons.Default.Circle,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.primary

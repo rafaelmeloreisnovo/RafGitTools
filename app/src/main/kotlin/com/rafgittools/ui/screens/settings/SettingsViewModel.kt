@@ -96,12 +96,13 @@ class SettingsViewModel @Inject constructor(
     }
     
     fun openPrivacyPolicy() {
-        // This would typically open a URL in the browser
-        // The URL opening would be handled by the Activity
+        // The actual URL opening would be handled by an Activity callback
+        // This is intentionally a no-op as URL handling needs Activity context
     }
     
     fun openLicenses() {
-        // This would open the licenses screen or URL
+        // The actual license viewing would be handled by navigation callback
+        // This is intentionally a no-op as it needs Activity context
     }
 }
 
