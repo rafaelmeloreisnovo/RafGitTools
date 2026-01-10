@@ -1,5 +1,12 @@
 package com.rafgittools.di
 
+import android.content.Context
+import androidx.room.Room
+import com.rafgittools.data.auth.AuthInterceptor
+import com.rafgittools.data.cache.CacheDao
+import com.rafgittools.data.cache.CacheDatabase
+import com.rafgittools.data.cache.RepositoryNameCacheDao
+import com.rafgittools.data.cache.UserCacheDao
 import com.rafgittools.data.github.GithubApiService
 import com.rafgittools.data.repository.GitRepositoryImpl
 import com.rafgittools.domain.repository.GitRepository
@@ -7,6 +14,7 @@ import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -24,12 +32,13 @@ object NetworkModule {
     
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
         
         return OkHttpClient.Builder()
+            .addInterceptor(authInterceptor) // Add auth interceptor for PAT authentication
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
@@ -51,6 +60,42 @@ object NetworkModule {
     @Singleton
     fun provideGithubApiService(retrofit: Retrofit): GithubApiService {
         return retrofit.create(GithubApiService::class.java)
+    }
+}
+
+/**
+ * Cache module for dependency injection
+ */
+@Module
+@InstallIn(SingletonComponent::class)
+object CacheModule {
+    
+    @Provides
+    @Singleton
+    fun provideCacheDatabase(@ApplicationContext context: Context): CacheDatabase {
+        return Room.databaseBuilder(
+            context,
+            CacheDatabase::class.java,
+            "rafgittools_cache.db"
+        ).build()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideCacheDao(database: CacheDatabase): CacheDao {
+        return database.cacheDao()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideRepositoryNameCacheDao(database: CacheDatabase): RepositoryNameCacheDao {
+        return database.repositoryNameCacheDao()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideUserCacheDao(database: CacheDatabase): UserCacheDao {
+        return database.userCacheDao()
     }
 }
 
