@@ -79,6 +79,139 @@ class JGitService @Inject constructor() {
     }
     
     /**
+     * Clone repository with depth (shallow clone)
+     * Feature #20 from roadmap
+     */
+    suspend fun cloneShallow(
+        url: String,
+        localPath: String,
+        depth: Int = 1,
+        credentials: Credentials?
+    ): Result<GitRepository> = runCatching {
+        val directory = File(localPath)
+        
+        val cloneCommand = Git.cloneRepository()
+            .setURI(url)
+            .setDirectory(directory)
+            .setDepth(depth)
+        
+        applyCredentials(cloneCommand, credentials)
+        
+        val git = cloneCommand.call()
+        val repository = git.repository
+        
+        GitRepository(
+            id = directory.absolutePath,
+            name = directory.name,
+            path = directory.absolutePath,
+            remoteUrl = url,
+            currentBranch = repository.branch,
+            lastUpdated = System.currentTimeMillis()
+        ).also {
+            git.close()
+        }
+    }
+    
+    /**
+     * Clone single branch only
+     * Feature #21 from roadmap
+     */
+    suspend fun cloneSingleBranch(
+        url: String,
+        localPath: String,
+        branch: String,
+        credentials: Credentials?
+    ): Result<GitRepository> = runCatching {
+        val directory = File(localPath)
+        
+        val cloneCommand = Git.cloneRepository()
+            .setURI(url)
+            .setDirectory(directory)
+            .setBranch(branch)
+            .setCloneAllBranches(false)
+            .setBranchesToClone(listOf("refs/heads/$branch"))
+        
+        applyCredentials(cloneCommand, credentials)
+        
+        val git = cloneCommand.call()
+        val repository = git.repository
+        
+        GitRepository(
+            id = directory.absolutePath,
+            name = directory.name,
+            path = directory.absolutePath,
+            remoteUrl = url,
+            currentBranch = repository.branch,
+            lastUpdated = System.currentTimeMillis()
+        ).also {
+            git.close()
+        }
+    }
+    
+    /**
+     * Clone with submodules
+     * Feature #22 from roadmap
+     */
+    suspend fun cloneWithSubmodules(
+        url: String,
+        localPath: String,
+        credentials: Credentials?
+    ): Result<GitRepository> = runCatching {
+        val directory = File(localPath)
+        
+        val cloneCommand = Git.cloneRepository()
+            .setURI(url)
+            .setDirectory(directory)
+            .setCloneSubmodules(true)
+        
+        applyCredentials(cloneCommand, credentials)
+        
+        val git = cloneCommand.call()
+        val repository = git.repository
+        
+        // Initialize and update submodules
+        git.submoduleInit().call()
+        git.submoduleUpdate().call()
+        
+        GitRepository(
+            id = directory.absolutePath,
+            name = directory.name,
+            path = directory.absolutePath,
+            remoteUrl = url,
+            currentBranch = repository.branch,
+            lastUpdated = System.currentTimeMillis()
+        ).also {
+            git.close()
+        }
+    }
+    
+    /**
+     * Helper function to apply credentials to clone command
+     */
+    private fun applyCredentials(
+        cloneCommand: org.eclipse.jgit.api.CloneCommand,
+        credentials: Credentials?
+    ) {
+        credentials?.let {
+            when (it) {
+                is Credentials.UsernamePassword -> {
+                    cloneCommand.setCredentialsProvider(
+                        UsernamePasswordCredentialsProvider(it.username, it.password)
+                    )
+                }
+                is Credentials.Token -> {
+                    cloneCommand.setCredentialsProvider(
+                        UsernamePasswordCredentialsProvider(it.token, "")
+                    )
+                }
+                is Credentials.SshKey -> {
+                    throw NotImplementedError(SSH_NOT_IMPLEMENTED_ERROR)
+                }
+            }
+        }
+    }
+    
+    /**
      * Open existing repository
      */
     fun openRepository(path: String): Result<Git> = runCatching {
@@ -144,7 +277,11 @@ class JGitService @Inject constructor() {
             
             // Local branches
             git.branchList().call().forEach { ref ->
-                branches.add(ref.toGitBranch(currentBranch, true, false))
+                branches.add(ref.toGitBranch(
+                    currentBranch = currentBranch,
+                    isLocal = true,
+                    isRemote = false
+                ))
             }
             
             // Remote branches
@@ -152,7 +289,11 @@ class JGitService @Inject constructor() {
                 .setListMode(org.eclipse.jgit.api.ListBranchCommand.ListMode.REMOTE)
                 .call()
                 .forEach { ref ->
-                    branches.add(ref.toGitBranch(currentBranch, false, true))
+                    branches.add(ref.toGitBranch(
+                        currentBranch = currentBranch,
+                        isLocal = false,
+                        isRemote = true
+                    ))
                 }
             
             branches
@@ -174,7 +315,51 @@ class JGitService @Inject constructor() {
             startPoint?.let { command.setStartPoint(it) }
             
             val ref = command.call()
-            ref.toGitBranch(git.repository.branch, true, false)
+            ref.toGitBranch(
+                currentBranch = git.repository.branch,
+                isLocal = true,
+                isRemote = false
+            )
+        }
+    }
+    
+    /**
+     * Delete branch
+     * Feature #32 from roadmap
+     */
+    suspend fun deleteBranch(
+        repoPath: String,
+        branchName: String,
+        force: Boolean = false
+    ): Result<Unit> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            git.branchDelete()
+                .setBranchNames(branchName)
+                .setForce(force)
+                .call()
+            Unit
+        }
+    }
+    
+    /**
+     * Rename branch
+     * Feature #33 from roadmap
+     */
+    suspend fun renameBranch(
+        repoPath: String,
+        oldName: String,
+        newName: String
+    ): Result<GitBranch> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val ref = git.branchRename()
+                .setOldName(oldName)
+                .setNewName(newName)
+                .call()
+            ref.toGitBranch(
+                currentBranch = git.repository.branch,
+                isLocal = true,
+                isRemote = false
+            )
         }
     }
     
