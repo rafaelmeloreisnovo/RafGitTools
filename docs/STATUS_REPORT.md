@@ -16,8 +16,8 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 
 | Métrica / Metric | Valor / Value |
 |-----------------|---------------|
-| Arquivos Kotlin / Kotlin Files | 101 |
-| Linhas de Código / Lines of Code | ~19,500 |
+| Arquivos Kotlin / Kotlin Files | 104 |
+| Linhas de Código / Lines of Code | ~20,500 |
 | Arquivos de Documentação / Documentation Files | 28 |
 | Arquivos de Testes Unitários / Unit Test Files | 7 |
 
@@ -202,6 +202,27 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 
 **Implementação**: Color.kt e Theme.kt com ThemeMode enum para suporte completo a tema AMOLED.
 
+### 6. Custom Themes (🟢 L4 - Completo)
+
+| Item | Status | Notas |
+|------|--------|-------|
+| Predefined Themes | ✅ Implementado | GitHub, GitLab, Bitbucket, Azure DevOps, Dracula, Nord, Solarized, Monokai |
+| Theme Selection | ✅ Implementado | 8 custom themes with light/dark variants |
+| Theme Persistence | ✅ Implementado | DataStore preferences integration |
+
+**Implementação**: CustomTheme.kt com 8 temas predefinidos e PreferencesRepository.kt atualizado.
+
+### 7. Haptic Feedback (🟢 L4 - Completo)
+
+| Item | Status | Notas |
+|------|--------|-------|
+| Click Feedback | ✅ Implementado | Light haptic for button presses |
+| Confirm/Reject Feedback | ✅ Implementado | Different patterns for success/error |
+| Gesture Feedback | ✅ Implementado | Start/end haptics for swipes |
+| Pull-to-Refresh | ✅ Implementado | Haptic when threshold reached |
+
+**Implementação**: HapticFeedbackManager.kt com suporte completo à Android Haptics API.
+
 ---
 
 ## 🔴 Pendências / Pending Items
@@ -244,8 +265,8 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 | # | Feature | Status | Prioridade |
 |---|---------|--------|-----------|
 | 220 | AMOLED black theme | ✅ Implementado | Baixa |
-| 221 | Custom themes | 🔴 Pendente | Baixa |
-| 232 | Haptic feedback | 🔴 Pendente | Baixa |
+| 221 | Custom themes | ✅ Implementado | Baixa |
+| 232 | Haptic feedback | ✅ Implementado | Baixa |
 | 253-270 | Comprehensive testing | 🔴 Pendente | Alta |
 | 271-288 | Release preparation | 🔴 Pendente | Alta |
 
@@ -260,8 +281,8 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 | Fase 1: Fundação | 72 | 52 (72%) | 8 (11%) | 12 (17%) |
 | Fase 2: GitHub | 72 | 45 (63%) | 10 (14%) | 17 (23%) |
 | Fase 3: Avançado | 72 | 10 (14%) | 5 (7%) | 57 (79%) |
-| Fase 4: Release | 72 | 6 (8%) | 3 (4%) | 63 (88%) |
-| **Total** | **288** | **113 (39%)** | **26 (9%)** | **149 (52%)** |
+| Fase 4: Release | 72 | 8 (11%) | 3 (4%) | 61 (85%) |
+| **Total** | **288** | **115 (40%)** | **26 (9%)** | **147 (51%)** |
 
 ### Por Categoria / By Category
 
@@ -269,13 +290,13 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 Arquitetura:     ████████████████████ 100%
 Git Operations:  ██████████████████░░  90%
 GitHub API:      ████████████████░░░░  80%
-UI/UX:           ████████████████░░░░  80%
+UI/UX:           ██████████████████░░  90%
 Security:        ████████████████████ 100%
 Localization:    ██████████████░░░░░░  70%
 Testing:         ████░░░░░░░░░░░░░░░░  20%
 Terminal:        ░░░░░░░░░░░░░░░░░░░░   0%
 Multi-platform:  ░░░░░░░░░░░░░░░░░░░░   0%
-Release:         ██░░░░░░░░░░░░░░░░░░  10%
+Release:         ████░░░░░░░░░░░░░░░░  20%
 ```
 
 ---
@@ -298,10 +319,11 @@ Release:         ██░░░░░░░░░░░░░░░░░░  1
 
 ### Baixa Prioridade / Low Priority
 
-9. ~~**Themes**: AMOLED e custom themes~~ ✅ AMOLED Implementado
-10. **YubiKey**: Hardware key support
-11. **Worktrees**: Git worktrees
-12. **Bisect**: Git bisect
+9. ~~**Themes**: AMOLED e custom themes~~ ✅ Implementado (AMOLED + 8 temas customizados)
+10. ~~**Haptic Feedback**~~ ✅ Implementado
+11. **YubiKey**: Hardware key support
+12. **Worktrees**: Git worktrees
+13. **Bisect**: Git bisect
 
 ---
 
@@ -318,6 +340,8 @@ Release:         ██░░░░░░░░░░░░░░░░░░  1
 | SecurityManager.kt | ~300 | Criptografia e validação |
 | SshKeyManager.kt | ~290 | Geração e gerenciamento de chaves SSH |
 | BiometricAuthManager.kt | ~230 | Autenticação biométrica |
+| HapticFeedbackManager.kt | ~260 | Haptic feedback |
+| CustomTheme.kt | ~350 | Custom themes (8 predefinidos) |
 
 ### Dependências Principais / Main Dependencies
 
