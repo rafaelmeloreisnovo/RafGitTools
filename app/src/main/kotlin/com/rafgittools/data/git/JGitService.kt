@@ -277,7 +277,11 @@ class JGitService @Inject constructor() {
             
             // Local branches
             git.branchList().call().forEach { ref ->
-                branches.add(ref.toGitBranch(currentBranch, true, false))
+                branches.add(ref.toGitBranch(
+                    currentBranch = currentBranch,
+                    isLocal = true,
+                    isRemote = false
+                ))
             }
             
             // Remote branches
@@ -285,7 +289,11 @@ class JGitService @Inject constructor() {
                 .setListMode(org.eclipse.jgit.api.ListBranchCommand.ListMode.REMOTE)
                 .call()
                 .forEach { ref ->
-                    branches.add(ref.toGitBranch(currentBranch, false, true))
+                    branches.add(ref.toGitBranch(
+                        currentBranch = currentBranch,
+                        isLocal = false,
+                        isRemote = true
+                    ))
                 }
             
             branches
@@ -307,7 +315,11 @@ class JGitService @Inject constructor() {
             startPoint?.let { command.setStartPoint(it) }
             
             val ref = command.call()
-            ref.toGitBranch(git.repository.branch, true, false)
+            ref.toGitBranch(
+                currentBranch = git.repository.branch,
+                isLocal = true,
+                isRemote = false
+            )
         }
     }
     
@@ -343,7 +355,11 @@ class JGitService @Inject constructor() {
                 .setOldName(oldName)
                 .setNewName(newName)
                 .call()
-            ref.toGitBranch(git.repository.branch, true, false)
+            ref.toGitBranch(
+                currentBranch = git.repository.branch,
+                isLocal = true,
+                isRemote = false
+            )
         }
     }
     
