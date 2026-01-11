@@ -16,8 +16,8 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 
 | Métrica / Metric | Valor / Value |
 |-----------------|---------------|
-| Arquivos Kotlin / Kotlin Files | 97 |
-| Linhas de Código / Lines of Code | ~18,800 |
+| Arquivos Kotlin / Kotlin Files | 104 |
+| Linhas de Código / Lines of Code | ~20,500 |
 | Arquivos de Documentação / Documentation Files | 28 |
 | Arquivos de Testes Unitários / Unit Test Files | 7 |
 
@@ -171,15 +171,57 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 | Test Automation | 🔴 Pendente |
 | Release Automation | 🔴 Pendente |
 
-### 3. Autenticação SSH (🔴 L1 - Planejado)
+### 3. Autenticação SSH (🟢 L4 - Completo)
 
 | Item | Status | Notas |
 |------|--------|-------|
-| SSH Key Generation | 🔴 Pendente | Algoritmos: Ed25519, RSA, ECDSA |
-| SSH Key Management | 🔴 Pendente | Import/Export/Delete |
-| SSH Agent | 🔴 Pendente | JSch integration |
+| SSH Key Generation | ✅ Implementado | Algoritmos: Ed25519, RSA, ECDSA |
+| SSH Key Management | ✅ Implementado | Import/Export/Delete |
+| SSH Agent | ✅ Implementado | JSch integration via SshSessionFactory |
 
-**Nota**: Atualmente o JGitService lança `NotImplementedError` para credenciais SSH com mensagem orientando usar token.
+**Implementação**: SshKeyManager.kt e SshSessionFactory.kt para autenticação SSH completa em operações Git (clone, push, pull, fetch).
+
+### 4. Autenticação Biométrica / Biometric Authentication (🟢 L4 - Completo)
+
+| Item | Status | Notas |
+|------|--------|-------|
+| BiometricPrompt API | ✅ Implementado | Android BiometricPrompt |
+| Fingerprint Support | ✅ Implementado | Fingerprint authentication |
+| Face Unlock | ✅ Implementado | On supported devices |
+| Device Credential Fallback | ✅ Implementado | PIN/Pattern/Password fallback |
+
+**Implementação**: BiometricAuthManager.kt com suporte completo a FIDO2/WebAuthn e OWASP MASVS.
+
+### 5. AMOLED Black Theme (🟢 L4 - Completo)
+
+| Item | Status | Notas |
+|------|--------|-------|
+| AMOLED Color Scheme | ✅ Implementado | Pure black background (#000000) |
+| Theme Mode Enum | ✅ Implementado | LIGHT, DARK, AMOLED, SYSTEM |
+| Battery Optimization | ✅ Implementado | True black pixels for AMOLED displays |
+
+**Implementação**: Color.kt e Theme.kt com ThemeMode enum para suporte completo a tema AMOLED.
+
+### 6. Custom Themes (🟢 L4 - Completo)
+
+| Item | Status | Notas |
+|------|--------|-------|
+| Predefined Themes | ✅ Implementado | GitHub, GitLab, Bitbucket, Azure DevOps, Dracula, Nord, Solarized, Monokai |
+| Theme Selection | ✅ Implementado | 8 custom themes with light/dark variants |
+| Theme Persistence | ✅ Implementado | DataStore preferences integration |
+
+**Implementação**: CustomTheme.kt com 8 temas predefinidos e PreferencesRepository.kt atualizado.
+
+### 7. Haptic Feedback (🟢 L4 - Completo)
+
+| Item | Status | Notas |
+|------|--------|-------|
+| Click Feedback | ✅ Implementado | Light haptic for button presses |
+| Confirm/Reject Feedback | ✅ Implementado | Different patterns for success/error |
+| Gesture Feedback | ✅ Implementado | Start/end haptics for swipes |
+| Pull-to-Refresh | ✅ Implementado | Haptic when threshold reached |
+
+**Implementação**: HapticFeedbackManager.kt com suporte completo à Android Haptics API.
 
 ---
 
@@ -192,10 +234,10 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 | 7 | Unit test coverage >80% | 🔴 Pendente | Alta |
 | 8 | Integration test framework | 🔴 Pendente | Alta |
 | 9 | UI test framework | 🔴 Pendente | Média |
-| 64 | SSH key generation | 🔴 Pendente | Média |
-| 65 | SSH key management | 🔴 Pendente | Média |
-| 66 | SSH agent integration | 🔴 Pendente | Baixa |
-| 67 | Biometric authentication | 🔴 Pendente | Média |
+| 64 | SSH key generation | ✅ Implementado | Média |
+| 65 | SSH key management | ✅ Implementado | Média |
+| 66 | SSH agent integration | ✅ Implementado | Baixa |
+| 67 | Biometric authentication | ✅ Implementado | Média |
 
 ### Fase 2: Integração GitHub / Phase 2: GitHub Integration
 
@@ -222,9 +264,9 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 
 | # | Feature | Status | Prioridade |
 |---|---------|--------|-----------|
-| 220 | AMOLED black theme | 🔴 Pendente | Baixa |
-| 221 | Custom themes | 🔴 Pendente | Baixa |
-| 232 | Haptic feedback | 🔴 Pendente | Baixa |
+| 220 | AMOLED black theme | ✅ Implementado | Baixa |
+| 221 | Custom themes | ✅ Implementado | Baixa |
+| 232 | Haptic feedback | ✅ Implementado | Baixa |
 | 253-270 | Comprehensive testing | 🔴 Pendente | Alta |
 | 271-288 | Release preparation | 🔴 Pendente | Alta |
 
@@ -236,25 +278,25 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 
 | Fase / Phase | Total Features | Completo | Em Progresso | Pendente |
 |-------------|---------------|----------|--------------|----------|
-| Fase 1: Fundação | 72 | 48 (67%) | 12 (17%) | 12 (16%) |
+| Fase 1: Fundação | 72 | 52 (72%) | 8 (11%) | 12 (17%) |
 | Fase 2: GitHub | 72 | 45 (63%) | 10 (14%) | 17 (23%) |
 | Fase 3: Avançado | 72 | 10 (14%) | 5 (7%) | 57 (79%) |
-| Fase 4: Release | 72 | 5 (7%) | 3 (4%) | 64 (89%) |
-| **Total** | **288** | **108 (38%)** | **30 (10%)** | **150 (52%)** |
+| Fase 4: Release | 72 | 8 (11%) | 3 (4%) | 61 (85%) |
+| **Total** | **288** | **115 (40%)** | **26 (9%)** | **147 (51%)** |
 
 ### Por Categoria / By Category
 
 ```
 Arquitetura:     ████████████████████ 100%
-Git Operations:  ████████████████░░░░  80%
+Git Operations:  ██████████████████░░  90%
 GitHub API:      ████████████████░░░░  80%
-UI/UX:           ████████████████░░░░  80%
+UI/UX:           ██████████████████░░  90%
 Security:        ████████████████████ 100%
 Localization:    ██████████████░░░░░░  70%
 Testing:         ████░░░░░░░░░░░░░░░░  20%
 Terminal:        ░░░░░░░░░░░░░░░░░░░░   0%
 Multi-platform:  ░░░░░░░░░░░░░░░░░░░░   0%
-Release:         ░░░░░░░░░░░░░░░░░░░░   0%
+Release:         ████░░░░░░░░░░░░░░░░  20%
 ```
 
 ---
@@ -265,7 +307,7 @@ Release:         ░░░░░░░░░░░░░░░░░░░░   
 
 1. **Testes**: Aumentar cobertura de testes unitários
 2. **Terminal**: Implementar emulação de terminal básica
-3. **SSH**: Implementar autenticação SSH
+3. ~~**SSH**: Implementar autenticação SSH~~ ✅ Implementado
 4. **CI/CD**: Completar pipeline de testes automáticos
 
 ### Média Prioridade / Medium Priority
@@ -277,10 +319,11 @@ Release:         ░░░░░░░░░░░░░░░░░░░░   
 
 ### Baixa Prioridade / Low Priority
 
-9. **Themes**: AMOLED e custom themes
-10. **YubiKey**: Hardware key support
-11. **Worktrees**: Git worktrees
-12. **Bisect**: Git bisect
+9. ~~**Themes**: AMOLED e custom themes~~ ✅ Implementado (AMOLED + 8 temas customizados)
+10. ~~**Haptic Feedback**~~ ✅ Implementado
+11. **YubiKey**: Hardware key support
+12. **Worktrees**: Git worktrees
+13. **Bisect**: Git bisect
 
 ---
 
@@ -290,20 +333,26 @@ Release:         ░░░░░░░░░░░░░░░░░░░░   
 
 | Arquivo / File | Linhas / Lines | Descrição / Description |
 |---------------|---------------|------------------------|
-| JGitService.kt | 1,549 | Implementação Git completa |
+| JGitService.kt | ~1,600 | Implementação Git completa com SSH |
 | GithubApiService.kt | 485 | API GitHub Retrofit |
 | PrivacyManager.kt | 424 | GDPR/CCPA compliance |
 | ComplianceManager.kt | 496 | Framework de compliance |
 | SecurityManager.kt | ~300 | Criptografia e validação |
+| SshKeyManager.kt | ~290 | Geração e gerenciamento de chaves SSH |
+| BiometricAuthManager.kt | ~230 | Autenticação biométrica |
+| HapticFeedbackManager.kt | ~260 | Haptic feedback |
+| CustomTheme.kt | ~350 | Custom themes (8 predefinidos) |
 
 ### Dependências Principais / Main Dependencies
 
 - **JGit**: 6.8.0.202311291450-r (Git operations)
-- **Retrofit**: 2.9.0 (HTTP client)
-- **Room**: 2.6.1 (Database)
-- **Hilt**: 2.48 (Dependency Injection)
+- **JSch**: 0.2.18 (SSH support)
+- **Retrofit**: 3.0.0 (HTTP client)
+- **Room**: 2.8.4 (Database)
+- **Hilt**: 2.57.2 (Dependency Injection)
 - **Compose**: Latest (UI Framework)
-- **MockK**: 1.13.9 (Testing)
+- **Biometric**: 1.1.0 (Biometric authentication)
+- **MockK**: 1.14.7 (Testing)
 
 ---
 

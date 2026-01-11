@@ -44,21 +44,73 @@ private val LightColorScheme = lightColorScheme(
     onError = OnError
 )
 
+/**
+ * AMOLED Black color scheme - Feature #220 from roadmap
+ * Pure black background for AMOLED displays to save battery
+ * and reduce eye strain in dark environments.
+ */
+private val AmoledBlackColorScheme = darkColorScheme(
+    primary = PrimaryAmoled,
+    secondary = SecondaryAmoled,
+    tertiary = InfoAmoled,
+    background = BackgroundAmoled,
+    surface = SurfaceAmoled,
+    surfaceVariant = SurfaceVariantAmoled,
+    error = ErrorAmoled,
+    onPrimary = OnPrimaryAmoled,
+    onSecondary = OnSecondaryAmoled,
+    onBackground = OnBackgroundAmoled,
+    onSurface = OnSurfaceAmoled,
+    onSurfaceVariant = OnSurfaceVariantAmoled,
+    onError = OnErrorAmoled,
+    outline = OutlineAmoled
+)
+
+/**
+ * Theme mode for the application
+ */
+enum class ThemeMode {
+    LIGHT,
+    DARK,
+    AMOLED,
+    SYSTEM // Follow system setting
+}
+
 @Composable
 fun RafGitToolsTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
+    // AMOLED black theme - Feature #220
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    val colorScheme = when (themeMode) {
+        ThemeMode.AMOLED -> AmoledBlackColorScheme
+        ThemeMode.LIGHT -> {
+            if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                dynamicLightColorScheme(LocalContext.current)
+            } else {
+                LightColorScheme
+            }
         }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        ThemeMode.DARK -> {
+            if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                dynamicDarkColorScheme(LocalContext.current)
+            } else {
+                DarkColorScheme
+            }
+        }
+        ThemeMode.SYSTEM -> {
+            when {
+                dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+                    val context = LocalContext.current
+                    if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+                }
+                darkTheme -> DarkColorScheme
+                else -> LightColorScheme
+            }
+        }
     }
     
     val view = LocalView.current
@@ -71,7 +123,9 @@ fun RafGitToolsTheme(
             }
             (context as? Activity)?.window?.let { window ->
                 window.statusBarColor = colorScheme.primary.toArgb()
-                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+                val isLightTheme = themeMode == ThemeMode.LIGHT || 
+                    (themeMode == ThemeMode.SYSTEM && !darkTheme)
+                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = isLightTheme
             }
         }
     }

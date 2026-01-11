@@ -1,30 +1,36 @@
 package com.rafgittools.data.git
 
+import com.rafgittools.core.security.SshSessionFactory
 import com.rafgittools.domain.model.*
 import com.rafgittools.domain.repository.Credentials
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.TransportConfigCallback
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
+import org.eclipse.jgit.transport.SshTransport
+import org.eclipse.jgit.transport.Transport
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
+import org.eclipse.jgit.transport.SshSessionFactory as JGitSshSessionFactory
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * JGit implementation for Git operations
+ * 
+ * Supports multiple authentication methods:
+ * - Token authentication (recommended for GitHub)
+ * - Username/password authentication
+ * - SSH key authentication (Ed25519, RSA, ECDSA)
  */
 @Singleton
 class JGitService @Inject constructor() {
     
     companion object {
-        private const val SSH_NOT_IMPLEMENTED_ERROR = 
-            "SSH key authentication is not yet implemented. " +
-            "This feature is planned for a future release. " +
-            "For now, please use token authentication (recommended) or username/password. " +
-            "GitHub personal access tokens can be created at: https://github.com/settings/tokens"
+        // SSH authentication is now implemented
     }
     
     /**
@@ -55,10 +61,13 @@ class JGitService @Inject constructor() {
                     )
                 }
                 is Credentials.SshKey -> {
-                    // TODO: Implement SSH key authentication
-                    // Requires JschConfigSessionFactory configuration
-                    // See: https://www.eclipse.org/jgit/documentation/
-                    throw NotImplementedError(SSH_NOT_IMPLEMENTED_ERROR)
+                    // SSH key authentication - Feature #64, #65, #66
+                    val sshSessionFactory = if (it.passphrase != null) {
+                        SshSessionFactory.createWithPassphrase(it.privateKeyPath, it.passphrase)
+                    } else {
+                        SshSessionFactory.create(it.privateKeyPath)
+                    }
+                    cloneCommand.setTransportConfigCallback(createSshTransportCallback(sshSessionFactory))
                 }
             }
         }
@@ -75,6 +84,17 @@ class JGitService @Inject constructor() {
             lastUpdated = System.currentTimeMillis()
         ).also {
             git.close()
+        }
+    }
+    
+    /**
+     * Create SSH transport callback for JGit commands
+     */
+    private fun createSshTransportCallback(sshSessionFactory: SshSessionFactory): TransportConfigCallback {
+        return TransportConfigCallback { transport: Transport ->
+            if (transport is SshTransport) {
+                transport.sshSessionFactory = sshSessionFactory as JGitSshSessionFactory
+            }
         }
     }
     
@@ -205,7 +225,13 @@ class JGitService @Inject constructor() {
                     )
                 }
                 is Credentials.SshKey -> {
-                    throw NotImplementedError(SSH_NOT_IMPLEMENTED_ERROR)
+                    // SSH key authentication - Feature #64, #65, #66
+                    val sshSessionFactory = if (it.passphrase != null) {
+                        SshSessionFactory.createWithPassphrase(it.privateKeyPath, it.passphrase)
+                    } else {
+                        SshSessionFactory.create(it.privateKeyPath)
+                    }
+                    cloneCommand.setTransportConfigCallback(createSshTransportCallback(sshSessionFactory))
                 }
             }
         }
@@ -457,8 +483,13 @@ class JGitService @Inject constructor() {
                         )
                     }
                     is Credentials.SshKey -> {
-                        // TODO: Implement SSH key authentication for push
-                        throw NotImplementedError(SSH_NOT_IMPLEMENTED_ERROR)
+                        // SSH key authentication - Feature #64, #65, #66
+                        val sshSessionFactory = if (it.passphrase != null) {
+                            SshSessionFactory.createWithPassphrase(it.privateKeyPath, it.passphrase)
+                        } else {
+                            SshSessionFactory.create(it.privateKeyPath)
+                        }
+                        command.setTransportConfigCallback(createSshTransportCallback(sshSessionFactory))
                     }
                 }
             }
@@ -496,8 +527,13 @@ class JGitService @Inject constructor() {
                         )
                     }
                     is Credentials.SshKey -> {
-                        // TODO: Implement SSH key authentication for pull
-                        throw NotImplementedError(SSH_NOT_IMPLEMENTED_ERROR)
+                        // SSH key authentication - Feature #64, #65, #66
+                        val sshSessionFactory = if (it.passphrase != null) {
+                            SshSessionFactory.createWithPassphrase(it.privateKeyPath, it.passphrase)
+                        } else {
+                            SshSessionFactory.create(it.privateKeyPath)
+                        }
+                        command.setTransportConfigCallback(createSshTransportCallback(sshSessionFactory))
                     }
                 }
             }
@@ -532,8 +568,13 @@ class JGitService @Inject constructor() {
                         )
                     }
                     is Credentials.SshKey -> {
-                        // TODO: Implement SSH key authentication for fetch
-                        throw NotImplementedError(SSH_NOT_IMPLEMENTED_ERROR)
+                        // SSH key authentication - Feature #64, #65, #66
+                        val sshSessionFactory = if (it.passphrase != null) {
+                            SshSessionFactory.createWithPassphrase(it.privateKeyPath, it.passphrase)
+                        } else {
+                            SshSessionFactory.create(it.privateKeyPath)
+                        }
+                        command.setTransportConfigCallback(createSshTransportCallback(sshSessionFactory))
                     }
                 }
             }

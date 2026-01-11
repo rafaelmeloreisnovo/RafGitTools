@@ -8,6 +8,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.rafgittools.core.localization.Language
+import com.rafgittools.ui.theme.CustomTheme
+import com.rafgittools.ui.theme.ThemeMode
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -29,6 +31,10 @@ class PreferencesRepository @Inject constructor(
     companion object {
         private val LANGUAGE_KEY = stringPreferencesKey("language")
         private val DARK_MODE_KEY = booleanPreferencesKey("dark_mode")
+        private val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
+        private val CUSTOM_THEME_KEY = stringPreferencesKey("custom_theme")
+        private val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
+        private val HAPTIC_FEEDBACK_KEY = booleanPreferencesKey("haptic_feedback")
     }
     
     /**
@@ -46,6 +52,44 @@ class PreferencesRepository @Inject constructor(
     val isDarkModeFlow: Flow<Boolean> = dataStore.data
         .map { preferences ->
             preferences[DARK_MODE_KEY] ?: false
+        }
+    
+    /**
+     * Flow of theme mode preference
+     */
+    val themeModeFlow: Flow<ThemeMode> = dataStore.data
+        .map { preferences ->
+            val themeModeStr = preferences[THEME_MODE_KEY] ?: ThemeMode.SYSTEM.name
+            try {
+                ThemeMode.valueOf(themeModeStr)
+            } catch (e: IllegalArgumentException) {
+                ThemeMode.SYSTEM
+            }
+        }
+    
+    /**
+     * Flow of custom theme preference
+     */
+    val customThemeFlow: Flow<CustomTheme> = dataStore.data
+        .map { preferences ->
+            val themeStr = preferences[CUSTOM_THEME_KEY] ?: CustomTheme.GITHUB.name
+            CustomTheme.fromName(themeStr) ?: CustomTheme.GITHUB
+        }
+    
+    /**
+     * Flow of dynamic color preference
+     */
+    val dynamicColorFlow: Flow<Boolean> = dataStore.data
+        .map { preferences ->
+            preferences[DYNAMIC_COLOR_KEY] ?: true
+        }
+    
+    /**
+     * Flow of haptic feedback preference
+     */
+    val hapticFeedbackFlow: Flow<Boolean> = dataStore.data
+        .map { preferences ->
+            preferences[HAPTIC_FEEDBACK_KEY] ?: true
         }
     
     /**
@@ -78,6 +122,70 @@ class PreferencesRepository @Inject constructor(
      */
     suspend fun isDarkMode(): Boolean {
         return isDarkModeFlow.first()
+    }
+    
+    /**
+     * Set theme mode preference
+     */
+    suspend fun setThemeMode(themeMode: ThemeMode) {
+        dataStore.edit { preferences ->
+            preferences[THEME_MODE_KEY] = themeMode.name
+        }
+    }
+    
+    /**
+     * Get theme mode preference
+     */
+    suspend fun getThemeMode(): ThemeMode {
+        return themeModeFlow.first()
+    }
+    
+    /**
+     * Set custom theme preference
+     */
+    suspend fun setCustomTheme(theme: CustomTheme) {
+        dataStore.edit { preferences ->
+            preferences[CUSTOM_THEME_KEY] = theme.name
+        }
+    }
+    
+    /**
+     * Get custom theme preference
+     */
+    suspend fun getCustomTheme(): CustomTheme {
+        return customThemeFlow.first()
+    }
+    
+    /**
+     * Set dynamic color preference
+     */
+    suspend fun setDynamicColor(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[DYNAMIC_COLOR_KEY] = enabled
+        }
+    }
+    
+    /**
+     * Get dynamic color preference
+     */
+    suspend fun isDynamicColor(): Boolean {
+        return dynamicColorFlow.first()
+    }
+    
+    /**
+     * Set haptic feedback preference
+     */
+    suspend fun setHapticFeedback(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[HAPTIC_FEEDBACK_KEY] = enabled
+        }
+    }
+    
+    /**
+     * Get haptic feedback preference
+     */
+    suspend fun isHapticFeedbackEnabled(): Boolean {
+        return hapticFeedbackFlow.first()
     }
     
     /**
