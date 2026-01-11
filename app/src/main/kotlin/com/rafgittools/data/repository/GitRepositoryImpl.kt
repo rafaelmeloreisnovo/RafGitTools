@@ -1,9 +1,15 @@
 package com.rafgittools.data.repository
 
 import com.rafgittools.data.git.JGitService
+import com.rafgittools.data.git.ResetMode as JGitResetMode
+import com.rafgittools.data.git.ReflogEntry as JGitReflogEntry
+import com.rafgittools.data.git.BlameLine as JGitBlameLine
 import com.rafgittools.domain.model.*
 import com.rafgittools.domain.repository.Credentials
 import com.rafgittools.domain.repository.GitRepository as IGitRepository
+import com.rafgittools.domain.repository.ResetMode
+import com.rafgittools.domain.repository.ReflogEntry
+import com.rafgittools.domain.repository.BlameLine
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -163,5 +169,270 @@ class GitRepositoryImpl @Inject constructor(
         url: String
     ): Result<GitRemote> {
         return jGitService.addRemote(repoPath, name, url)
+    }
+    
+    // ============================================
+    // Advanced Clone Operations (Features 20-22)
+    // ============================================
+    
+    override suspend fun cloneShallow(
+        url: String,
+        localPath: String,
+        depth: Int,
+        credentials: Credentials?
+    ): Result<GitRepository> {
+        return jGitService.cloneShallow(url, localPath, depth, credentials)
+    }
+    
+    override suspend fun cloneSingleBranch(
+        url: String,
+        localPath: String,
+        branch: String,
+        credentials: Credentials?
+    ): Result<GitRepository> {
+        return jGitService.cloneSingleBranch(url, localPath, branch, credentials)
+    }
+    
+    override suspend fun cloneWithSubmodules(
+        url: String,
+        localPath: String,
+        credentials: Credentials?
+    ): Result<GitRepository> {
+        return jGitService.cloneWithSubmodules(url, localPath, credentials)
+    }
+    
+    // ============================================
+    // Stash Operations (Feature 40)
+    // ============================================
+    
+    override suspend fun listStashes(repoPath: String): Result<List<GitStash>> {
+        return jGitService.listStashes(repoPath)
+    }
+    
+    override suspend fun stash(
+        repoPath: String,
+        message: String?,
+        includeUntracked: Boolean
+    ): Result<GitStash> {
+        return jGitService.stash(repoPath, message, includeUntracked)
+    }
+    
+    override suspend fun stashApply(
+        repoPath: String,
+        stashRef: String?
+    ): Result<Unit> {
+        return jGitService.stashApply(repoPath, stashRef)
+    }
+    
+    override suspend fun stashPop(
+        repoPath: String,
+        stashRef: String?
+    ): Result<Unit> {
+        return jGitService.stashPop(repoPath, stashRef)
+    }
+    
+    override suspend fun stashDrop(
+        repoPath: String,
+        stashIndex: Int
+    ): Result<Unit> {
+        return jGitService.stashDrop(repoPath, stashIndex)
+    }
+    
+    override suspend fun stashClear(repoPath: String): Result<Unit> {
+        return jGitService.stashClear(repoPath)
+    }
+    
+    // ============================================
+    // Tag Operations (Features 168-169)
+    // ============================================
+    
+    override suspend fun listTags(repoPath: String): Result<List<GitTag>> {
+        return jGitService.listTags(repoPath)
+    }
+    
+    override suspend fun createLightweightTag(
+        repoPath: String,
+        tagName: String,
+        commitSha: String?
+    ): Result<GitTag> {
+        return jGitService.createLightweightTag(repoPath, tagName, commitSha)
+    }
+    
+    override suspend fun createAnnotatedTag(
+        repoPath: String,
+        tagName: String,
+        message: String,
+        tagger: GitAuthor?,
+        commitSha: String?
+    ): Result<GitTag> {
+        return jGitService.createAnnotatedTag(repoPath, tagName, message, tagger, commitSha)
+    }
+    
+    override suspend fun deleteTag(
+        repoPath: String,
+        tagName: String
+    ): Result<Unit> {
+        return jGitService.deleteTag(repoPath, tagName)
+    }
+    
+    // ============================================
+    // Diff Operations (Feature 39)
+    // ============================================
+    
+    override suspend fun getDiff(
+        repoPath: String,
+        cached: Boolean
+    ): Result<List<GitDiff>> {
+        return jGitService.getDiff(repoPath, cached)
+    }
+    
+    override suspend fun getDiffBetweenCommits(
+        repoPath: String,
+        oldCommitSha: String,
+        newCommitSha: String
+    ): Result<List<GitDiff>> {
+        return jGitService.getDiffBetweenCommits(repoPath, oldCommitSha, newCommitSha)
+    }
+    
+    // ============================================
+    // File Browser Operations (Features 43-45)
+    // ============================================
+    
+    override suspend fun listFiles(
+        repoPath: String,
+        path: String,
+        ref: String?
+    ): Result<List<GitFile>> {
+        return jGitService.listFiles(repoPath, path, ref)
+    }
+    
+    override suspend fun getFileContent(
+        repoPath: String,
+        filePath: String,
+        ref: String?
+    ): Result<FileContent> {
+        return jGitService.getFileContent(repoPath, filePath, ref)
+    }
+    
+    // ============================================
+    // Rebase Operations (Features 163-165)
+    // ============================================
+    
+    override suspend fun rebase(
+        repoPath: String,
+        upstream: String
+    ): Result<Unit> {
+        return jGitService.rebase(repoPath, upstream)
+    }
+    
+    override suspend fun rebaseContinue(repoPath: String): Result<Unit> {
+        return jGitService.rebaseContinue(repoPath)
+    }
+    
+    override suspend fun rebaseAbort(repoPath: String): Result<Unit> {
+        return jGitService.rebaseAbort(repoPath)
+    }
+    
+    override suspend fun rebaseSkip(repoPath: String): Result<Unit> {
+        return jGitService.rebaseSkip(repoPath)
+    }
+    
+    // ============================================
+    // Cherry-pick Operations (Features 166-167)
+    // ============================================
+    
+    override suspend fun cherryPick(
+        repoPath: String,
+        commitSha: String
+    ): Result<GitCommit> {
+        return jGitService.cherryPick(repoPath, commitSha)
+    }
+    
+    override suspend fun cherryPickContinue(repoPath: String): Result<Unit> {
+        return jGitService.cherryPickContinue(repoPath)
+    }
+    
+    override suspend fun cherryPickAbort(repoPath: String): Result<Unit> {
+        return jGitService.cherryPickAbort(repoPath)
+    }
+    
+    // ============================================
+    // Reset/Revert Operations
+    // ============================================
+    
+    override suspend fun reset(
+        repoPath: String,
+        commitSha: String,
+        mode: ResetMode
+    ): Result<Unit> {
+        val jgitMode = when (mode) {
+            ResetMode.SOFT -> JGitResetMode.SOFT
+            ResetMode.MIXED -> JGitResetMode.MIXED
+            ResetMode.HARD -> JGitResetMode.HARD
+        }
+        return jGitService.reset(repoPath, commitSha, jgitMode)
+    }
+    
+    override suspend fun revert(
+        repoPath: String,
+        commitSha: String
+    ): Result<GitCommit> {
+        return jGitService.revert(repoPath, commitSha)
+    }
+    
+    // ============================================
+    // Clean Operations
+    // ============================================
+    
+    override suspend fun clean(
+        repoPath: String,
+        dryRun: Boolean,
+        directories: Boolean,
+        force: Boolean
+    ): Result<List<String>> {
+        return jGitService.clean(repoPath, dryRun, directories, force)
+    }
+    
+    // ============================================
+    // Reflog/Blame Operations
+    // ============================================
+    
+    override suspend fun getReflog(
+        repoPath: String,
+        ref: String,
+        limit: Int
+    ): Result<List<ReflogEntry>> {
+        return jGitService.getReflog(repoPath, ref, limit).map { entries ->
+            entries.map { ReflogEntry(it.index, it.oldId, it.newId, it.comment, it.who, it.timestamp) }
+        }
+    }
+    
+    override suspend fun blame(
+        repoPath: String,
+        filePath: String
+    ): Result<List<BlameLine>> {
+        return jGitService.blame(repoPath, filePath).map { lines ->
+            lines.map { BlameLine(it.lineNumber, it.content, it.commitSha, it.author, it.timestamp) }
+        }
+    }
+    
+    // ============================================
+    // Branch Operations
+    // ============================================
+    
+    override suspend fun deleteBranch(
+        repoPath: String,
+        branchName: String,
+        force: Boolean
+    ): Result<Unit> {
+        return jGitService.deleteBranch(repoPath, branchName, force)
+    }
+    
+    override suspend fun renameBranch(
+        repoPath: String,
+        oldName: String,
+        newName: String
+    ): Result<GitBranch> {
+        return jGitService.renameBranch(repoPath, oldName, newName)
     }
 }
