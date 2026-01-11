@@ -1009,8 +1009,9 @@ class JGitService @Inject constructor() {
             val loader = git.repository.open(objectId)
             val bytes = loader.bytes
             
-            // Detect if file is binary
-            val isBinary = bytes.take(8000).any { it.toInt() == 0 }
+            // Detect if file is binary by checking first 512 bytes for null bytes
+            // This is more efficient than checking 8000 bytes
+            val isBinary = bytes.take(512).any { it.toInt() == 0 }
             
             val content = if (isBinary) {
                 "[Binary file - ${bytes.size} bytes]"

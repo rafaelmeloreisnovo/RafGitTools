@@ -1,9 +1,11 @@
 package com.rafgittools.ui.screens.filebrowser
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -186,9 +188,6 @@ private fun BreadcrumbBar(
         }
     }
 }
-
-@Composable
-private fun rememberScrollState() = androidx.compose.foundation.rememberScrollState()
 
 @Composable
 private fun FileList(
