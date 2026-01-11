@@ -30,10 +30,31 @@ val OnBackgroundDark = Color(0xFFC9D1D9)  // GitHub dark text
 val OnSurfaceDark = Color(0xFFC9D1D9)
 val OnErrorDark = Color(0xFF0D1117)
 
+// AMOLED Black theme colors (Feature #220)
+// Pure black background for AMOLED screens to save battery and reduce eye strain
+val PrimaryAmoled = Color(0xFF58A6FF)        // GitHub blue (same as dark)
+val PrimaryVariantAmoled = Color(0xFF1F6FEB)
+val SecondaryAmoled = Color(0xFFBC8CFF)      // Purple accent
+val SecondaryVariantAmoled = Color(0xFF9E7FCC)
+val BackgroundAmoled = Color(0xFF000000)     // Pure black
+val SurfaceAmoled = Color(0xFF0A0A0A)        // Near black for surfaces
+val SurfaceVariantAmoled = Color(0xFF121212) // Slightly lighter for elevated surfaces
+val ErrorAmoled = Color(0xFFFF7B72)          // GitHub red
+val OnPrimaryAmoled = Color(0xFF000000)
+val OnSecondaryAmoled = Color(0xFF000000)
+val OnBackgroundAmoled = Color(0xFFE6EDF3)   // Slightly brighter text for contrast
+val OnSurfaceAmoled = Color(0xFFE6EDF3)
+val OnSurfaceVariantAmoled = Color(0xFF8B949E)
+val OnErrorAmoled = Color(0xFF000000)
+val OutlineAmoled = Color(0xFF30363D)        // Border color
+
 // Additional semantic colors
 val Success = Color(0xFF2DA44E)           // GitHub green
 val SuccessDark = Color(0xFF3FB950)
+val SuccessAmoled = Color(0xFF3FB950)     // Same as dark for AMOLED
 val Warning = Color(0xFFBF8700)           // GitHub yellow
 val WarningDark = Color(0xFFD29922)
-val Info = Color(0xFF218BFF)             // GitHub blue
+val WarningAmoled = Color(0xFFD29922)     // Same as dark for AMOLED
+val Info = Color(0xFF218BFF)              // GitHub blue
 val InfoDark = Color(0xFF58A6FF)
+val InfoAmoled = Color(0xFF58A6FF)        // Same as dark for AMOLED
