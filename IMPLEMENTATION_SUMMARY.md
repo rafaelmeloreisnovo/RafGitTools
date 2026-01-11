@@ -1,5 +1,7 @@
 # Implementation Summary: Multilingual and Responsive Design
 
+> **📊 For complete project status, see [docs/STATUS_REPORT.md](docs/STATUS_REPORT.md)**
+
 ## Task Completion ✅
 
 **Original Requirement** (translated from Portuguese):
