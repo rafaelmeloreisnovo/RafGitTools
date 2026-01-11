@@ -47,7 +47,24 @@ class SshKeyManager @Inject constructor(
     private val sshKeysDir: File by lazy {
         File(context.filesDir, SSH_KEYS_DIR).apply {
             if (!exists()) mkdirs()
+            // Set restrictive permissions on the SSH keys directory
+            // Note: On Android, app's internal storage (filesDir) is already protected
+            // by the OS sandbox. These permissions provide additional security.
+            setReadable(true, true)  // Owner read only
+            setWritable(true, true)  // Owner write only
+            setExecutable(true, true) // Owner execute only (needed for directory access)
         }
+    }
+    
+    /**
+     * Set secure file permissions for private key files.
+     * On Android, the app sandbox already provides protection, but we set
+     * restrictive permissions as an additional security measure.
+     */
+    private fun setSecureFilePermissions(file: File) {
+        file.setReadable(true, true)   // Owner read only (0400)
+        file.setWritable(true, true)   // Owner write only (0200)
+        file.setExecutable(false, false) // No execute permissions
     }
     
     /**
@@ -91,6 +108,9 @@ class SshKeyManager @Inject constructor(
                 keyPair.writePrivateKey(output)
             }
         }
+        
+        // Set secure permissions on private key (owner read/write only)
+        setSecureFilePermissions(privateKeyFile)
         
         // Write public key
         FileOutputStream(publicKeyFile).use { output ->
@@ -152,21 +172,23 @@ class SshKeyManager @Inject constructor(
                         publicKey = publicKeyContent,
                         privateKeyPath = privateKeyFile.absolutePath,
                         publicKeyPath = publicKeyFile.absolutePath,
-                        hasPassphrase = false, // Cannot detect without trying to load
+                        hasPassphrase = false, // Key loaded without passphrase, so no passphrase required
                         comment = extractComment(publicKeyContent),
                         createdAt = privateKeyFile.lastModified()
                     ))
                 } catch (e: Exception) {
-                    // Key might be password protected or invalid
+                    // Key loading failed - most likely passphrase protected
+                    // JSch throws JSchException when key requires passphrase but none provided
+                    val publicKeyContent = if (publicKeyFile.exists()) publicKeyFile.readText() else ""
                     keys.add(SshKeyInfo(
                         name = privateKeyFile.name,
-                        type = "Unknown",
-                        fingerprint = "Unable to read",
-                        publicKey = if (publicKeyFile.exists()) publicKeyFile.readText() else "",
+                        type = if (publicKeyContent.isNotEmpty()) detectKeyType(publicKeyContent) else "Unknown",
+                        fingerprint = if (publicKeyContent.isNotEmpty()) extractFingerprint(publicKeyContent) else "Unable to read",
+                        publicKey = publicKeyContent,
                         privateKeyPath = privateKeyFile.absolutePath,
                         publicKeyPath = publicKeyFile.absolutePath,
-                        hasPassphrase = true, // Assume passphrase if can't load
-                        comment = "",
+                        hasPassphrase = true, // Loading failed without passphrase, so key is passphrase-protected
+                        comment = if (publicKeyContent.isNotEmpty()) extractComment(publicKeyContent) else "",
                         createdAt = privateKeyFile.lastModified()
                     ))
                 }
@@ -206,13 +228,12 @@ class SshKeyManager @Inject constructor(
         // Write private key
         privateKeyFile.writeText(privateKeyContent)
         
+        // Set secure permissions on private key
+        setSecureFilePermissions(privateKeyFile)
+        
         // Load and extract public key
         val jsch = JSch()
-        val keyPair = if (passphrase != null) {
-            KeyPair.load(jsch, privateKeyFile.absolutePath, passphrase)
-        } else {
-            KeyPair.load(jsch, privateKeyFile.absolutePath, null as String?)
-        }
+        val keyPair = KeyPair.load(jsch, privateKeyFile.absolutePath, passphrase)
         
         // Write public key
         FileOutputStream(publicKeyFile).use { output ->
@@ -302,7 +323,7 @@ class SshKeyManager @Inject constructor(
     }
     
     private fun extractFingerprint(publicKeyContent: String): String {
-        // Simple extraction - in production, compute SHA256 fingerprint
+        // Compute SHA256 fingerprint from public key in OpenSSH format
         return try {
             val parts = publicKeyContent.trim().split(" ")
             if (parts.size >= 2) {

@@ -26,7 +26,9 @@ class SshSessionFactory(
     
     override fun configure(hc: OpenSshConfig.Host, session: Session) {
         // Configure session properties
-        session.setConfig("StrictHostKeyChecking", "no")
+        // Note: Using "accept-new" for a more secure approach - accepts new keys but rejects changed keys
+        // For maximum security, use "yes" with proper known_hosts management
+        session.setConfig("StrictHostKeyChecking", "accept-new")
         session.setConfig("PreferredAuthentications", "publickey")
         
         // Set user info for passphrase handling
