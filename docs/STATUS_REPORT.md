@@ -19,7 +19,7 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 | Arquivos Kotlin / Kotlin Files | 97 |
 | Linhas de Código / Lines of Code | ~18,800 |
 | Arquivos de Documentação / Documentation Files | 28 |
-| Testes Unitários / Unit Tests | 7 |
+| Arquivos de Testes Unitários / Unit Test Files | 7 |
 
 ---
 
