@@ -1,8 +1,10 @@
 # Implementation Notes and Future Work
 
+> **📊 For current project status, see [STATUS_REPORT.md](STATUS_REPORT.md)**
+
 ## Overview
 
-This document outlines the implementation status, known limitations, and future work required for the privacy, security, and compliance features added to RafGitTools.
+This document outlines the implementation details, known limitations, and future work required for the privacy, security, and compliance features added to RafGitTools.
 
 ## Current Implementation Status
 
