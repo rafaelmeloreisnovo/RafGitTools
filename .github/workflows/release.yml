@@ -59,7 +59,7 @@ jobs:
           cat CHANGELOG.md
       
       - name: Create Release and Upload APK
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: RafGitTools v${{ steps.version.outputs.version }}
