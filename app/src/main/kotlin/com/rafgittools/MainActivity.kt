@@ -32,12 +32,25 @@ import com.rafgittools.ui.navigation.Screen
 import com.rafgittools.ui.screens.auth.AuthScreen
 import com.rafgittools.ui.screens.branches.BranchListScreen
 import com.rafgittools.ui.screens.commits.CommitListScreen
+import com.rafgittools.ui.screens.createissue.CreateIssueScreen
+import com.rafgittools.ui.screens.createpr.CreatePullRequestScreen
+import com.rafgittools.ui.screens.diff.DiffViewerScreen
+import com.rafgittools.ui.screens.filebrowser.FileBrowserScreen
 import com.rafgittools.ui.screens.home.HomeScreen
+import com.rafgittools.ui.screens.issues.IssueDetailScreen
 import com.rafgittools.ui.screens.issues.IssueListScreen
+import com.rafgittools.ui.screens.notifications.NotificationsScreen
+import com.rafgittools.ui.screens.profile.ProfileScreen
+import com.rafgittools.ui.screens.pullrequests.PullRequestDetailScreen
 import com.rafgittools.ui.screens.pullrequests.PullRequestListScreen
+import com.rafgittools.ui.screens.releases.ReleaseDetailScreen
+import com.rafgittools.ui.screens.releases.ReleasesScreen
 import com.rafgittools.ui.screens.repository.RepositoryDetailScreen
 import com.rafgittools.ui.screens.repository.RepositoryListScreen
+import com.rafgittools.ui.screens.search.SearchScreen
 import com.rafgittools.ui.screens.settings.SettingsScreen
+import com.rafgittools.ui.screens.stash.StashListScreen
+import com.rafgittools.ui.screens.tags.TagListScreen
 import com.rafgittools.ui.theme.RafGitToolsTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -206,8 +219,31 @@ fun RafGitToolsApp(
                     owner = owner,
                     repo = repo,
                     onNavigateBack = { navController.popBackStack() },
-                    onIssueClick = { /* TODO: Navigate to issue detail */ },
-                    onCreateIssue = { /* TODO: Navigate to create issue */ }
+                    onIssueClick = { issue ->
+                        navController.navigate(Screen.IssueDetail.createRoute(owner, repo, issue.number))
+                    },
+                    onCreateIssue = {
+                        navController.navigate(Screen.CreateIssue.createRoute(owner, repo))
+                    }
+                )
+            }
+            
+            composable(
+                route = Screen.IssueDetail.route,
+                arguments = listOf(
+                    navArgument("owner") { type = NavType.StringType },
+                    navArgument("repo") { type = NavType.StringType },
+                    navArgument("number") { type = NavType.IntType }
+                )
+            ) { backStackEntry ->
+                val owner = backStackEntry.arguments?.getString("owner") ?: ""
+                val repo = backStackEntry.arguments?.getString("repo") ?: ""
+                val number = backStackEntry.arguments?.getInt("number") ?: 0
+                IssueDetailScreen(
+                    owner = owner,
+                    repo = repo,
+                    issueNumber = number,
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
             
@@ -224,7 +260,186 @@ fun RafGitToolsApp(
                     owner = owner,
                     repo = repo,
                     onNavigateBack = { navController.popBackStack() },
-                    onPullRequestClick = { /* TODO: Navigate to PR detail */ }
+                    onPullRequestClick = { pr ->
+                        navController.navigate(Screen.PullRequestDetail.createRoute(owner, repo, pr.number))
+                    }
+                )
+            }
+            
+            composable(
+                route = Screen.PullRequestDetail.route,
+                arguments = listOf(
+                    navArgument("owner") { type = NavType.StringType },
+                    navArgument("repo") { type = NavType.StringType },
+                    navArgument("number") { type = NavType.IntType }
+                )
+            ) { backStackEntry ->
+                val owner = backStackEntry.arguments?.getString("owner") ?: ""
+                val repo = backStackEntry.arguments?.getString("repo") ?: ""
+                val number = backStackEntry.arguments?.getInt("number") ?: 0
+                PullRequestDetailScreen(
+                    owner = owner,
+                    repo = repo,
+                    prNumber = number,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            composable(
+                route = Screen.FileBrowser.route,
+                arguments = listOf(navArgument("repoPath") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val repoPath = backStackEntry.arguments?.getString("repoPath")?.let {
+                    URLDecoder.decode(it, "UTF-8")
+                } ?: ""
+                FileBrowserScreen(
+                    repoPath = repoPath,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            composable(
+                route = Screen.DiffViewer.route,
+                arguments = listOf(navArgument("repoPath") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val repoPath = backStackEntry.arguments?.getString("repoPath")?.let {
+                    URLDecoder.decode(it, "UTF-8")
+                } ?: ""
+                DiffViewerScreen(
+                    repoPath = repoPath,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            composable(
+                route = Screen.StashList.route,
+                arguments = listOf(navArgument("repoPath") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val repoPath = backStackEntry.arguments?.getString("repoPath")?.let {
+                    URLDecoder.decode(it, "UTF-8")
+                } ?: ""
+                StashListScreen(
+                    repoPath = repoPath,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            composable(
+                route = Screen.TagList.route,
+                arguments = listOf(navArgument("repoPath") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val repoPath = backStackEntry.arguments?.getString("repoPath")?.let {
+                    URLDecoder.decode(it, "UTF-8")
+                } ?: ""
+                TagListScreen(
+                    repoPath = repoPath,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            composable(Screen.Search.route) {
+                SearchScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onRepositoryClick = { owner, repo ->
+                        // Navigate to GitHub repository view (issues/PRs)
+                        // For local repositories, use Screen.RepositoryDetail instead
+                        navController.navigate(Screen.IssueList.createRoute(owner, repo))
+                    },
+                    onIssueClick = { owner, repo, number ->
+                        navController.navigate(Screen.IssueDetail.createRoute(owner, repo, number))
+                    },
+                    onUserClick = { username ->
+                        navController.navigate(Screen.Profile.createRoute(username))
+                    }
+                )
+            }
+            
+            composable(
+                route = Screen.Profile.route,
+                arguments = listOf(navArgument("username") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val username = backStackEntry.arguments?.getString("username") ?: ""
+                ProfileScreen(
+                    username = username,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            composable(
+                route = Screen.Releases.route,
+                arguments = listOf(
+                    navArgument("owner") { type = NavType.StringType },
+                    navArgument("repo") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val owner = backStackEntry.arguments?.getString("owner") ?: ""
+                val repo = backStackEntry.arguments?.getString("repo") ?: ""
+                ReleasesScreen(
+                    owner = owner,
+                    repo = repo,
+                    onNavigateBack = { navController.popBackStack() },
+                    onReleaseClick = { releaseId ->
+                        navController.navigate(Screen.ReleaseDetail.createRoute(owner, repo, releaseId))
+                    }
+                )
+            }
+            
+            composable(
+                route = Screen.ReleaseDetail.route,
+                arguments = listOf(
+                    navArgument("owner") { type = NavType.StringType },
+                    navArgument("repo") { type = NavType.StringType },
+                    navArgument("id") { type = NavType.LongType }
+                )
+            ) { backStackEntry ->
+                val owner = backStackEntry.arguments?.getString("owner") ?: ""
+                val repo = backStackEntry.arguments?.getString("repo") ?: ""
+                val releaseId = backStackEntry.arguments?.getLong("id") ?: 0L
+                ReleaseDetailScreen(
+                    owner = owner,
+                    repo = repo,
+                    releaseId = releaseId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            composable(Screen.Notifications.route) {
+                NotificationsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            composable(
+                route = Screen.CreateIssue.route,
+                arguments = listOf(
+                    navArgument("owner") { type = NavType.StringType },
+                    navArgument("repo") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val owner = backStackEntry.arguments?.getString("owner") ?: ""
+                val repo = backStackEntry.arguments?.getString("repo") ?: ""
+                CreateIssueScreen(
+                    owner = owner,
+                    repo = repo,
+                    onNavigateBack = { navController.popBackStack() },
+                    onIssueCreated = { navController.popBackStack() }
+                )
+            }
+            
+            composable(
+                route = Screen.CreatePullRequest.route,
+                arguments = listOf(
+                    navArgument("owner") { type = NavType.StringType },
+                    navArgument("repo") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val owner = backStackEntry.arguments?.getString("owner") ?: ""
+                val repo = backStackEntry.arguments?.getString("repo") ?: ""
+                CreatePullRequestScreen(
+                    owner = owner,
+                    repo = repo,
+                    onNavigateBack = { navController.popBackStack() },
+                    onPullRequestCreated = { navController.popBackStack() }
                 )
             }
         }
