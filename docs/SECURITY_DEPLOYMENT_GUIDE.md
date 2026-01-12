@@ -31,7 +31,8 @@ val packageInfo = packageManager.getPackageInfo(
     PackageManager.GET_SIGNING_CERTIFICATES
 )
 val signature = packageInfo.signingInfo?.apkContentsSigners?.get(0)
-val hash = SecurityManager.hashString(signature.toCharsString())
+val signatureBytes = signature?.toByteArray() ?: byteArrayOf()
+val hash = SecurityManager.hashString(signatureBytes.toString())
 println("Release signature hash: $hash")
 ```
 
@@ -197,7 +198,7 @@ The RafGitTools application implements security controls aligned with:
 If a security vulnerability is discovered:
 
 1. **DO NOT** file a public issue
-2. Email security concerns to: [ADD YOUR SECURITY EMAIL]
+2. Email security concerns to: security@yourdomain.com (replace with your actual security contact email)
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce

@@ -259,6 +259,8 @@ All while respecting the licenses of these amazing open-source projects and addi
 - ✅ **No Third-Party Tracking**: No ads, no analytics by default
 - ✅ **Compliance**: ISO 27001, NIST, OWASP, GDPR, CCPA
 
+📖 **For production deployment security requirements, see [docs/SECURITY_DEPLOYMENT_GUIDE.md](docs/SECURITY_DEPLOYMENT_GUIDE.md)**
+
 ## 🏗️ Architecture
 
 RafGitTools follows Clean Architecture principles with MVVM pattern:

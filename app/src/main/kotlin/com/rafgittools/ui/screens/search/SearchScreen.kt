@@ -77,7 +77,7 @@ fun SearchScreen(
                     FilterChip(
                         selected = searchType == type,
                         onClick = { viewModel.setSearchType(type) },
-                        label = { Text(type.name.lowercase().capitalize()) }
+                        label = { Text(type.name.lowercase().replaceFirstChar { it.uppercase() }) }
                     )
                 }
             }
