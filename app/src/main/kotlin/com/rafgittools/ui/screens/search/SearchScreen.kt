@@ -74,10 +74,13 @@ fun SearchScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SearchViewModel.SearchType.values().forEach { type ->
+                    val displayName = remember(type) {
+                        type.name.lowercase().replaceFirstChar { it.uppercase() }
+                    }
                     FilterChip(
                         selected = searchType == type,
                         onClick = { viewModel.setSearchType(type) },
-                        label = { Text(type.name.lowercase().replaceFirstChar { it.uppercase() }) }
+                        label = { Text(displayName) }
                     )
                 }
             }

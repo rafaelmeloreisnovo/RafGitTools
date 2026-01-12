@@ -341,6 +341,8 @@ fun RafGitToolsApp(
                 SearchScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onRepositoryClick = { owner, repo ->
+                        // Navigate to GitHub repository view (issues/PRs)
+                        // For local repositories, use Screen.RepositoryDetail instead
                         navController.navigate(Screen.IssueList.createRoute(owner, repo))
                     },
                     onIssueClick = { owner, repo, number ->
