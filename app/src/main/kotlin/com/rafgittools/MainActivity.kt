@@ -168,18 +168,6 @@ fun RafGitToolsApp(
                     },
                     onNavigateToBranches = { path ->
                         navController.navigate(Screen.BranchList.createRoute(path))
-                    },
-                    onNavigateToTags = { path ->
-                        navController.navigate(Screen.TagList.createRoute(path))
-                    },
-                    onNavigateToStashes = { path ->
-                        navController.navigate(Screen.StashList.createRoute(path))
-                    },
-                    onNavigateToFiles = { path ->
-                        navController.navigate(Screen.FileBrowser.createRoute(path))
-                    },
-                    onNavigateToDiff = { path ->
-                        navController.navigate(Screen.DiffViewer.createRoute(path))
                     }
                 )
             }
