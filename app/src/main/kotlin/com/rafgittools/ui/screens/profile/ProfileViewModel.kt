@@ -2,6 +2,7 @@ package com.rafgittools.ui.screens.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rafgittools.data.github.GithubDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +14,9 @@ import javax.inject.Inject
  * ViewModel for the user profile screen
  */
 @HiltViewModel
-class ProfileViewModel @Inject constructor() : ViewModel() {
+class ProfileViewModel @Inject constructor(
+    private val githubDataRepository: GithubDataRepository
+) : ViewModel() {
     
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -40,15 +43,25 @@ class ProfileViewModel @Inject constructor() : ViewModel() {
         viewModelScope.launch {
             _uiState.value = UiState.Loading
             try {
-                _username.value = username
-                // TODO: Implement actual profile loading from GitHub API
-                // For now, set placeholder values
-                _name.value = null
-                _bio.value = null
-                _publicRepos.value = 0
-                _followers.value = 0
-                _following.value = 0
-                _uiState.value = UiState.Success
+                val result = if (username.isBlank()) {
+                    githubDataRepository.getAuthenticatedUserSync()
+                } else {
+                    githubDataRepository.getUser(username)
+                }
+                result.fold(
+                    onSuccess = { user ->
+                        _username.value = user.login
+                        _name.value = user.name
+                        _bio.value = user.bio
+                        _publicRepos.value = user.publicRepos
+                        _followers.value = user.followers
+                        _following.value = user.following
+                        _uiState.value = UiState.Success
+                    },
+                    onFailure = { error ->
+                        _uiState.value = UiState.Error(error.message ?: "Failed to load profile")
+                    }
+                )
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e.message ?: "Failed to load profile")
             }

@@ -43,7 +43,10 @@ data class GithubUser(
     val email: String? = null,
     val bio: String? = null,
     val location: String? = null,
-    val company: String? = null
+    val company: String? = null,
+    val publicRepos: Int = 0,
+    val followers: Int = 0,
+    val following: Int = 0
 ) : Parcelable
 
 /**

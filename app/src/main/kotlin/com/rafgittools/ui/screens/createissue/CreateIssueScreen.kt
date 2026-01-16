@@ -21,6 +21,7 @@ fun CreateIssueScreen(
     val uiState by viewModel.uiState.collectAsState()
     val title by viewModel.title.collectAsState()
     val body by viewModel.body.collectAsState()
+    val isLoading = uiState is CreateIssueViewModel.UiState.Loading
     
     LaunchedEffect(uiState) {
         if (uiState is CreateIssueViewModel.UiState.Success) {
@@ -44,6 +45,10 @@ fun CreateIssueScreen(
             modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (isLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+            
             OutlinedTextField(
                 value = title,
                 onValueChange = { viewModel.setTitle(it) },
@@ -61,12 +66,28 @@ fun CreateIssueScreen(
                 minLines = 10
             )
             
+            if (uiState is CreateIssueViewModel.UiState.Error) {
+                Text(
+                    text = (uiState as CreateIssueViewModel.UiState.Error).message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            
             Button(
-                onClick = { viewModel.createIssue() },
+                onClick = { viewModel.createIssue(owner, repo) },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = title.isNotBlank()
+                enabled = title.isNotBlank() && !isLoading
             ) {
-                Text("Create Issue")
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Create Issue")
+                }
             }
         }
     }

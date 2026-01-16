@@ -3,6 +3,7 @@ package com.rafgittools.data.github
 import com.rafgittools.data.auth.AuthRepository
 import com.rafgittools.data.cache.AsyncCacheManager
 import com.rafgittools.data.cache.RepositoryNameCache
+import com.rafgittools.domain.model.github.GithubIssue
 import com.rafgittools.domain.model.github.GithubRepository as GithubRepoModel
 import com.rafgittools.domain.model.github.GithubUser
 import kotlinx.coroutines.flow.Flow
@@ -161,6 +162,54 @@ class GithubDataRepository @Inject constructor(
     ): Result<List<GithubRepoModel>> {
         return try {
             val response = githubApiService.searchRepositories(query, page, perPage)
+            Result.success(response.items)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Search issues
+     */
+    suspend fun searchIssues(
+        query: String,
+        page: Int = 1,
+        perPage: Int = 30
+    ): Result<List<GithubIssue>> {
+        return try {
+            val response = githubApiService.searchIssues(query, page, perPage)
+            Result.success(response.items)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Search users
+     */
+    suspend fun searchUsers(
+        query: String,
+        page: Int = 1,
+        perPage: Int = 30
+    ): Result<List<GithubUser>> {
+        return try {
+            val response = githubApiService.searchUsers(query, page, perPage)
+            Result.success(response.items)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Search code
+     */
+    suspend fun searchCode(
+        query: String,
+        page: Int = 1,
+        perPage: Int = 30
+    ): Result<List<GithubCodeSearchItem>> {
+        return try {
+            val response = githubApiService.searchCode(query, page, perPage)
             Result.success(response.items)
         } catch (e: Exception) {
             Result.failure(e)

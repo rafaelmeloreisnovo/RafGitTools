@@ -2,6 +2,8 @@ package com.rafgittools.ui.screens.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rafgittools.data.github.GithubApiService
+import com.rafgittools.data.github.GithubDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +15,10 @@ import javax.inject.Inject
  * ViewModel for the search screen
  */
 @HiltViewModel
-class SearchViewModel @Inject constructor() : ViewModel() {
+class SearchViewModel @Inject constructor(
+    private val githubDataRepository: GithubDataRepository,
+    private val githubApiService: GithubApiService
+) : ViewModel() {
     
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -37,11 +42,56 @@ class SearchViewModel @Inject constructor() : ViewModel() {
     
     fun search() {
         viewModelScope.launch {
+            if (query.value.isBlank()) {
+                _uiState.value = UiState.Error("Search query cannot be empty")
+                _results.value = emptyList()
+                return@launch
+            }
             _uiState.value = UiState.Loading
             try {
-                // TODO: Implement actual search logic with GitHub API or local Git search
-                // For now, simulate with empty results
-                _results.value = emptyList()
+                _results.value = when (searchType.value) {
+                    SearchType.REPOSITORIES -> {
+                        val result = githubDataRepository.searchRepositories(query.value)
+                        result.getOrThrow().map { repo ->
+                            SearchResult.Repository(
+                                name = repo.name,
+                                owner = repo.owner.login,
+                                description = repo.description
+                            )
+                        }
+                    }
+                    SearchType.CODE -> {
+                        val response = githubApiService.searchCode(query.value)
+                        response.items.map { codeItem ->
+                            SearchResult.Code(
+                                path = codeItem.path,
+                                repo = codeItem.repository.fullName,
+                                snippet = codeItem.textMatches?.firstOrNull()?.fragment
+                                    ?: "Snippet unavailable"
+                            )
+                        }
+                    }
+                    SearchType.ISSUES -> {
+                        val response = githubApiService.searchIssues(query.value)
+                        response.items.map { issue ->
+                            SearchResult.Issue(
+                                title = issue.title,
+                                number = issue.number,
+                                repo = extractRepoFromUrl(issue.htmlUrl)
+                            )
+                        }
+                    }
+                    SearchType.USERS -> {
+                        val result = githubDataRepository.searchUsers(query.value)
+                        result.getOrThrow().map { user ->
+                            SearchResult.User(
+                                login = user.login,
+                                name = user.name,
+                                avatarUrl = user.avatarUrl
+                            )
+                        }
+                    }
+                }
                 _uiState.value = UiState.Success
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e.message ?: "Search failed")
@@ -52,6 +102,16 @@ class SearchViewModel @Inject constructor() : ViewModel() {
     fun clearResults() {
         _results.value = emptyList()
         _uiState.value = UiState.Idle
+    }
+
+    private fun extractRepoFromUrl(htmlUrl: String): String {
+        val normalized = htmlUrl.removePrefix("https://github.com/")
+        val parts = normalized.split("/")
+        return if (parts.size >= 2) {
+            "${parts[0]}/${parts[1]}"
+        } else {
+            "Unknown repository"
+        }
     }
     
     sealed class UiState {
