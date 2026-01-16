@@ -29,6 +29,27 @@ interface GithubApiService {
         @Query("page") page: Int = 1,
         @Query("per_page") perPage: Int = 30
     ): SearchResponse<GithubRepository>
+
+    @GET("search/issues")
+    suspend fun searchIssues(
+        @Query("q") query: String,
+        @Query("page") page: Int = 1,
+        @Query("per_page") perPage: Int = 30
+    ): SearchResponse<GithubSearchIssue>
+
+    @GET("search/users")
+    suspend fun searchUsers(
+        @Query("q") query: String,
+        @Query("page") page: Int = 1,
+        @Query("per_page") perPage: Int = 30
+    ): SearchResponse<GithubSearchUser>
+
+    @GET("search/code")
+    suspend fun searchCode(
+        @Query("q") query: String,
+        @Query("page") page: Int = 1,
+        @Query("per_page") perPage: Int = 30
+    ): SearchResponse<GithubSearchCode>
     
     // User
     @GET("user")
