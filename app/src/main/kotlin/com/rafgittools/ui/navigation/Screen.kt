@@ -13,10 +13,15 @@ sealed class Screen(val route: String) {
     object CommitList : Screen("commit_list/{repoPath}") {
         fun createRoute(repoPath: String) = "commit_list/${java.net.URLEncoder.encode(repoPath, "UTF-8")}"
     }
+    object CommitDetail : Screen("commit_detail/{repoPath}/{commitSha}") {
+        fun createRoute(repoPath: String, commitSha: String) =
+            "commit_detail/${java.net.URLEncoder.encode(repoPath, "UTF-8")}/${java.net.URLEncoder.encode(commitSha, "UTF-8")}"
+    }
     object BranchList : Screen("branch_list/{repoPath}") {
         fun createRoute(repoPath: String) = "branch_list/${java.net.URLEncoder.encode(repoPath, "UTF-8")}"
     }
     object Settings : Screen("settings")
+    object AddRepository : Screen("add_repository")
     object IssueList : Screen("issue_list/{owner}/{repo}") {
         fun createRoute(owner: String, repo: String) = "issue_list/$owner/$repo"
     }
