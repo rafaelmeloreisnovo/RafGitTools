@@ -36,6 +36,7 @@ interface GithubApiService {
         @Query("q") query: String,
         @Query("page") page: Int = 1,
         @Query("per_page") perPage: Int = 30
+    ): SearchResponse<GithubSearchIssue>
     ): SearchResponse<GithubIssue>
 
     @GET("search/users")

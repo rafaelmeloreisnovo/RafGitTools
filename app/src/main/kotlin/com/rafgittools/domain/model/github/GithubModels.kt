@@ -50,6 +50,50 @@ data class GithubUser(
 ) : Parcelable
 
 /**
+ * GitHub search user model
+ */
+@Parcelize
+data class GithubSearchUser(
+    val id: Long,
+    val login: String,
+    val avatar_url: String?,
+    val html_url: String?
+) : Parcelable
+
+/**
+ * GitHub search repository model (minimal)
+ */
+@Parcelize
+data class GithubSearchRepository(
+    val full_name: String,
+    val name: String,
+    val owner: GithubSearchUser
+) : Parcelable
+
+/**
+ * GitHub search issue model
+ */
+@Parcelize
+data class GithubSearchIssue(
+    val id: Long,
+    val number: Int,
+    val title: String,
+    val repository_url: String,
+    val html_url: String?
+) : Parcelable
+
+/**
+ * GitHub search code model
+ */
+@Parcelize
+data class GithubSearchCode(
+    val name: String,
+    val path: String,
+    val html_url: String?,
+    val repository: GithubSearchRepository
+) : Parcelable
+
+/**
  * GitHub issue model
  */
 @Parcelize
