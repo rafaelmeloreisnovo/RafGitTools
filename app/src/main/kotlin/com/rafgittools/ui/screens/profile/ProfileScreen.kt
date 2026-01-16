@@ -23,6 +23,7 @@ fun ProfileScreen(
     onNavigateBack: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val viewModelUsername by viewModel.username.collectAsState()
     val name by viewModel.name.collectAsState()
     val bio by viewModel.bio.collectAsState()
     val publicRepos by viewModel.publicRepos.collectAsState()
@@ -36,7 +37,7 @@ fun ProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(username) },
+                title = { Text(viewModelUsername.ifBlank { username }) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -83,7 +84,7 @@ fun ProfileScreen(
                                 )
                                 Column {
                                     Text(
-                                        username,
+                                        viewModelUsername.ifBlank { username },
                                         style = MaterialTheme.typography.headlineSmall,
                                         fontWeight = FontWeight.Bold
                                     )

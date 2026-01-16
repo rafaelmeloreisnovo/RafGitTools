@@ -1,5 +1,6 @@
 package com.rafgittools.data.github
 
+import com.google.gson.annotations.SerializedName
 import com.rafgittools.domain.model.github.*
 import retrofit2.http.*
 
@@ -36,20 +37,22 @@ interface GithubApiService {
         @Query("page") page: Int = 1,
         @Query("per_page") perPage: Int = 30
     ): SearchResponse<GithubSearchIssue>
+    ): SearchResponse<GithubIssue>
 
     @GET("search/users")
     suspend fun searchUsers(
         @Query("q") query: String,
         @Query("page") page: Int = 1,
         @Query("per_page") perPage: Int = 30
-    ): SearchResponse<GithubSearchUser>
+    ): SearchResponse<GithubUser>
 
+    @Headers("Accept: application/vnd.github.v3.text-match+json")
     @GET("search/code")
     suspend fun searchCode(
         @Query("q") query: String,
         @Query("page") page: Int = 1,
         @Query("per_page") perPage: Int = 30
-    ): SearchResponse<GithubSearchCode>
+    ): SearchResponse<GithubCodeSearchItem>
     
     // User
     @GET("user")
@@ -376,6 +379,24 @@ data class SearchResponse<T>(
     val total_count: Int,
     val incomplete_results: Boolean,
     val items: List<T>
+)
+
+/**
+ * Code search item
+ */
+data class GithubCodeSearchItem(
+    val name: String,
+    val path: String,
+    val repository: GithubRepository,
+    @SerializedName("text_matches")
+    val textMatches: List<GithubTextMatch>? = null
+)
+
+/**
+ * Text match fragment for search results
+ */
+data class GithubTextMatch(
+    val fragment: String
 )
 
 /**

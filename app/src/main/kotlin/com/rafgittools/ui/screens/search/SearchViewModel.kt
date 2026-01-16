@@ -3,6 +3,7 @@ package com.rafgittools.ui.screens.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rafgittools.data.github.GithubApiService
+import com.rafgittools.data.github.GithubDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,6 +16,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class SearchViewModel @Inject constructor(
+    private val githubDataRepository: GithubDataRepository,
     private val githubApiService: GithubApiService
 ) : ViewModel() {
     
@@ -58,6 +60,11 @@ class SearchViewModel @Inject constructor(
         resetSearchState()
         _results.value = emptyList()
         viewModelScope.launch {
+            if (query.value.isBlank()) {
+                _uiState.value = UiState.Error("Search query cannot be empty")
+                _results.value = emptyList()
+                return@launch
+            }
             _uiState.value = UiState.Loading
             try {
                 val searchResults = fetchSearchResults(trimmedQuery, page = 1)
@@ -178,6 +185,13 @@ class SearchViewModel @Inject constructor(
             parts.takeLast(2).joinToString("/")
         } else {
             url
+    private fun extractRepoFromUrl(htmlUrl: String): String {
+        val normalized = htmlUrl.removePrefix("https://github.com/")
+        val parts = normalized.split("/")
+        return if (parts.size >= 2) {
+            "${parts[0]}/${parts[1]}"
+        } else {
+            "Unknown repository"
         }
     }
     

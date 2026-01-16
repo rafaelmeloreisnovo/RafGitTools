@@ -23,6 +23,7 @@ fun CreatePullRequestScreen(
     val body by viewModel.body.collectAsState()
     val baseBranch by viewModel.baseBranch.collectAsState()
     val headBranch by viewModel.headBranch.collectAsState()
+    val isLoading = uiState is CreatePullRequestViewModel.UiState.Loading
     
     LaunchedEffect(uiState) {
         if (uiState is CreatePullRequestViewModel.UiState.Success) {
@@ -46,6 +47,10 @@ fun CreatePullRequestScreen(
             modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (isLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+            
             OutlinedTextField(
                 value = title,
                 onValueChange = { viewModel.setTitle(it) },
@@ -82,12 +87,28 @@ fun CreatePullRequestScreen(
                 minLines = 10
             )
             
+            if (uiState is CreatePullRequestViewModel.UiState.Error) {
+                Text(
+                    text = (uiState as CreatePullRequestViewModel.UiState.Error).message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            
             Button(
-                onClick = { viewModel.createPullRequest() },
+                onClick = { viewModel.createPullRequest(owner, repo) },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = title.isNotBlank() && headBranch.isNotBlank()
+                enabled = title.isNotBlank() && headBranch.isNotBlank() && !isLoading
             ) {
-                Text("Create Pull Request")
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Create Pull Request")
+                }
             }
         }
     }
