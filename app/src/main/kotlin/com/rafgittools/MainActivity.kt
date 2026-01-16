@@ -31,6 +31,7 @@ import com.rafgittools.ui.components.getResponsivePadding
 import com.rafgittools.ui.navigation.Screen
 import com.rafgittools.ui.screens.auth.AuthScreen
 import com.rafgittools.ui.screens.branches.BranchListScreen
+import com.rafgittools.ui.screens.commits.CommitDetailScreen
 import com.rafgittools.ui.screens.commits.CommitListScreen
 import com.rafgittools.ui.screens.createissue.CreateIssueScreen
 import com.rafgittools.ui.screens.createpr.CreatePullRequestScreen
@@ -45,6 +46,7 @@ import com.rafgittools.ui.screens.pullrequests.PullRequestDetailScreen
 import com.rafgittools.ui.screens.pullrequests.PullRequestListScreen
 import com.rafgittools.ui.screens.releases.ReleaseDetailScreen
 import com.rafgittools.ui.screens.releases.ReleasesScreen
+import com.rafgittools.ui.screens.repository.AddRepositoryScreen
 import com.rafgittools.ui.screens.repository.RepositoryDetailScreen
 import com.rafgittools.ui.screens.repository.RepositoryListScreen
 import com.rafgittools.ui.screens.search.SearchScreen
@@ -148,8 +150,14 @@ fun RafGitToolsApp(
                         navController.navigate(Screen.RepositoryDetail.createRoute(repo.path))
                     },
                     onAddRepository = {
-                        // TODO: Navigate to add repository screen
+                        navController.navigate(Screen.AddRepository.route)
                     }
+                )
+            }
+
+            composable(Screen.AddRepository.route) {
+                AddRepositoryScreen(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
             
@@ -182,7 +190,29 @@ fun RafGitToolsApp(
                 CommitListScreen(
                     repoPath = repoPath,
                     onNavigateBack = { navController.popBackStack() },
-                    onCommitClick = { /* TODO: Navigate to commit detail */ }
+                    onCommitClick = { commit ->
+                        navController.navigate(Screen.CommitDetail.createRoute(repoPath, commit.sha))
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.CommitDetail.route,
+                arguments = listOf(
+                    navArgument("repoPath") { type = NavType.StringType },
+                    navArgument("commitSha") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val repoPath = backStackEntry.arguments?.getString("repoPath")?.let {
+                    URLDecoder.decode(it, "UTF-8")
+                } ?: ""
+                val commitSha = backStackEntry.arguments?.getString("commitSha")?.let {
+                    URLDecoder.decode(it, "UTF-8")
+                } ?: ""
+                CommitDetailScreen(
+                    repoPath = repoPath,
+                    commitSha = commitSha,
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
             
