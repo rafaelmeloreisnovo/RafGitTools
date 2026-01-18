@@ -60,4 +60,13 @@
     <string name="language_spanish">Espanhol</string>
     <string name="language_select">Selecionar Idioma</string>
     <string name="language_selected">Selecionado</string>
+
+    <!-- Profile -->
+    <string name="profile_tab_repositories">Repositórios</string>
+    <string name="profile_tab_stars">Estrelas</string>
+    <string name="profile_tab_activity">Atividade</string>
+    <string name="profile_empty_title">Nada por aqui ainda</string>
+    <string name="profile_empty_repositories_body">A lista de repositórios aparecerá aqui.</string>
+    <string name="profile_empty_stars_body">Os repositórios com estrela aparecerão aqui.</string>
+    <string name="profile_empty_activity_body">A atividade recente aparecerá aqui.</string>
 </resources>
