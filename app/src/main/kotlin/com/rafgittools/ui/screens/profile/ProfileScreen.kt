@@ -8,9 +8,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.res.stringResource
+import com.rafgittools.R
 
 /**
  * User profile screen
@@ -29,6 +33,24 @@ fun ProfileScreen(
     val publicRepos by viewModel.publicRepos.collectAsState()
     val followers by viewModel.followers.collectAsState()
     val following by viewModel.following.collectAsState()
+    var selectedTab by rememberSaveable { mutableStateOf(0) }
+    val tabs = listOf(
+        ProfileTab(
+            titleRes = R.string.profile_tab_repositories,
+            icon = Icons.Default.Folder,
+            emptyBodyRes = R.string.profile_empty_repositories_body
+        ),
+        ProfileTab(
+            titleRes = R.string.profile_tab_stars,
+            icon = Icons.Default.Star,
+            emptyBodyRes = R.string.profile_empty_stars_body
+        ),
+        ProfileTab(
+            titleRes = R.string.profile_tab_activity,
+            icon = Icons.Default.History,
+            emptyBodyRes = R.string.profile_empty_activity_body
+        )
+    )
     
     LaunchedEffect(username) {
         viewModel.loadProfile(username)
@@ -118,28 +140,22 @@ fun ProfileScreen(
                         StatCard("Following", following.toString())
                     }
                     
-                    // TODO: Add tabs for repositories, stars, etc.
-                    Card(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                Icons.Default.Code,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.outline
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                "Profile details coming soon",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.outline
+                    TabRow(selectedTabIndex = selectedTab) {
+                        tabs.forEachIndexed { index, tab ->
+                            Tab(
+                                selected = selectedTab == index,
+                                onClick = { selectedTab = index },
+                                text = { Text(stringResource(tab.titleRes)) },
+                                icon = { Icon(tab.icon, contentDescription = null) }
                             )
                         }
                     }
+
+                    ProfileTabPlaceholder(
+                        icon = tabs[selectedTab].icon,
+                        title = stringResource(R.string.profile_empty_title),
+                        body = stringResource(tabs[selectedTab].emptyBodyRes)
+                    )
                 }
             }
             is ProfileViewModel.UiState.Error -> {
@@ -189,6 +205,47 @@ private fun StatCard(label: String, value: String) {
             Text(
                 label,
                 style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline
+            )
+        }
+    }
+}
+
+private data class ProfileTab(
+    val titleRes: Int,
+    val icon: ImageVector,
+    val emptyBodyRes: Int
+)
+
+@Composable
+private fun ProfileTabPlaceholder(
+    icon: ImageVector,
+    title: String,
+    body: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = MaterialTheme.colorScheme.outline
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                body,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.outline
             )
         }
