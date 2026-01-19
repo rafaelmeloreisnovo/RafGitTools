@@ -249,7 +249,14 @@ enum class ErrorType {
         fun fromException(e: Throwable): ErrorType {
             return when (e) {
                 is ValidationException -> VALIDATION_ERROR
-                is java.io.IOException -> IO_ERROR
+                is java.io.IOException -> {
+                    val message = e.message.orEmpty()
+                    if (message.contains("cleartext", ignoreCase = true)) {
+                        NETWORK_ERROR
+                    } else {
+                        IO_ERROR
+                    }
+                }
                 is javax.crypto.AEADBadTagException,
                 is java.security.GeneralSecurityException -> ENCRYPTION_ERROR
                 is SecurityException -> PERMISSION_ERROR

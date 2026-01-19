@@ -42,6 +42,7 @@ class JGitService @Inject constructor() {
         credentials: Credentials?
     ): Result<GitRepository> = runCatching {
         val directory = File(localPath)
+        validateCloneTarget(directory)
         
         val cloneCommand = Git.cloneRepository()
             .setURI(url)
@@ -109,6 +110,7 @@ class JGitService @Inject constructor() {
         credentials: Credentials?
     ): Result<GitRepository> = runCatching {
         val directory = File(localPath)
+        validateCloneTarget(directory)
         
         val cloneCommand = Git.cloneRepository()
             .setURI(url)
@@ -143,6 +145,7 @@ class JGitService @Inject constructor() {
         credentials: Credentials?
     ): Result<GitRepository> = runCatching {
         val directory = File(localPath)
+        validateCloneTarget(directory)
         
         val cloneCommand = Git.cloneRepository()
             .setURI(url)
@@ -178,6 +181,7 @@ class JGitService @Inject constructor() {
         credentials: Credentials?
     ): Result<GitRepository> = runCatching {
         val directory = File(localPath)
+        validateCloneTarget(directory)
         
         val cloneCommand = Git.cloneRepository()
             .setURI(url)
@@ -234,6 +238,19 @@ class JGitService @Inject constructor() {
                     cloneCommand.setTransportConfigCallback(createSshTransportCallback(sshSessionFactory))
                 }
             }
+        }
+    }
+
+    private fun validateCloneTarget(directory: File) {
+        val parent = directory.parentFile
+        if (parent != null && (!parent.exists() || !parent.canWrite())) {
+            throw SecurityException("Permission denied for ${parent.absolutePath}")
+        }
+        if (directory.exists() && !directory.canWrite()) {
+            throw SecurityException("Permission denied for ${directory.absolutePath}")
+        }
+        if (!directory.exists() && parent != null) {
+            parent.mkdirs()
         }
     }
     
