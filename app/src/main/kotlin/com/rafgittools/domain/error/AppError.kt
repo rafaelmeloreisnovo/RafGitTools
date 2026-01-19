@@ -18,6 +18,9 @@ sealed class AppError(
         class NoConnection(message: String = "No internet connection") : NetworkError(message)
         class Timeout(message: String = "Request timed out") : NetworkError(message)
         class ServerError(val code: Int, message: String) : NetworkError(message)
+        class CleartextNotPermitted(
+            message: String = "Cleartext HTTP traffic is blocked. Use HTTPS/TLS or enable cleartext in a dev build."
+        ) : NetworkError(message)
         class Unknown(message: String, cause: Throwable? = null) : NetworkError(message, cause)
     }
     
@@ -85,6 +88,14 @@ fun Throwable.toAppError(): AppError {
         is AppError -> this
         is java.net.UnknownHostException -> AppError.NetworkError.NoConnection()
         is java.net.SocketTimeoutException -> AppError.NetworkError.Timeout()
+        is java.io.IOException -> {
+            val message = this.message.orEmpty()
+            if (message.contains("cleartext", ignoreCase = true)) {
+                AppError.NetworkError.CleartextNotPermitted()
+            } else {
+                AppError.NetworkError.Unknown(message.ifBlank { "Network error" }, this)
+            }
+        }
         is java.io.FileNotFoundException -> AppError.StorageError.FileNotFound(message ?: "unknown")
         is SecurityException -> AppError.StorageError.PermissionDenied(message ?: "unknown")
         is IllegalArgumentException -> AppError.ValidationError.InvalidFormat("input", message ?: "invalid")
