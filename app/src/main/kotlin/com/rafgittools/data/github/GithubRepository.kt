@@ -3,6 +3,7 @@ package com.rafgittools.data.github
 import com.rafgittools.data.auth.AuthRepository
 import com.rafgittools.data.cache.AsyncCacheManager
 import com.rafgittools.data.cache.RepositoryNameCache
+import com.rafgittools.domain.error.toAppError
 import com.rafgittools.domain.model.github.GithubIssue
 import com.rafgittools.domain.model.github.GithubRepository as GithubRepoModel
 import com.rafgittools.domain.model.github.GithubUser
@@ -65,7 +66,12 @@ class GithubDataRepository @Inject constructor(
             cacheManager.cacheUserAsync(user)
             Result.success(user)
         } catch (e: Exception) {
-            Result.failure(e)
+            val cachedUser = authRepository.getUsername()?.let { cacheManager.getCachedUser(it) }
+            if (cachedUser != null) {
+                Result.success(cachedUser.toGithubUser())
+            } else {
+                Result.failure(e.toAppError())
+            }
         }
     }
     
@@ -111,6 +117,7 @@ class GithubDataRepository @Inject constructor(
         page: Int = 1,
         perPage: Int = 30
     ): Result<List<GithubRepoModel>> {
+        val cachedRepos = if (page == 1) cacheManager.getCachedRepositories() else emptyList()
         return try {
             val repositories = githubApiService.getUserRepositories(
                 page = page,
@@ -121,7 +128,11 @@ class GithubDataRepository @Inject constructor(
             }
             Result.success(repositories)
         } catch (e: Exception) {
-            Result.failure(e)
+            if (cachedRepos.isNotEmpty()) {
+                Result.success(cachedRepos.map { it.toGithubRepository() })
+            } else {
+                Result.failure(e.toAppError())
+            }
         }
     }
     
@@ -144,11 +155,16 @@ class GithubDataRepository @Inject constructor(
      * Get a specific repository
      */
     suspend fun getRepository(owner: String, repo: String): Result<GithubRepoModel> {
+        val cachedRepo = cacheManager.getCachedRepositoryByFullName("$owner/$repo")
         return try {
             val repository = githubApiService.getRepository(owner, repo)
             Result.success(repository)
         } catch (e: Exception) {
-            Result.failure(e)
+            if (cachedRepo != null) {
+                Result.success(cachedRepo.toGithubRepository())
+            } else {
+                Result.failure(e.toAppError())
+            }
         }
     }
     
@@ -164,7 +180,12 @@ class GithubDataRepository @Inject constructor(
             val response = githubApiService.searchRepositories(query, page, perPage)
             Result.success(response.items)
         } catch (e: Exception) {
-            Result.failure(e)
+            val cached = if (page == 1) cacheManager.searchCachedRepositories(query) else emptyList()
+            if (cached.isNotEmpty()) {
+                Result.success(cached.map { it.toGithubRepository() })
+            } else {
+                Result.failure(e.toAppError())
+            }
         }
     }
 
@@ -180,7 +201,7 @@ class GithubDataRepository @Inject constructor(
             val response = githubApiService.searchIssues(query, page, perPage)
             Result.success(response.items)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(e.toAppError())
         }
     }
 
@@ -196,7 +217,7 @@ class GithubDataRepository @Inject constructor(
             val response = githubApiService.searchUsers(query, page, perPage)
             Result.success(response.items)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(e.toAppError())
         }
     }
 
@@ -212,7 +233,7 @@ class GithubDataRepository @Inject constructor(
             val response = githubApiService.searchCode(query, page, perPage)
             Result.success(response.items)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(e.toAppError())
         }
     }
     
@@ -231,7 +252,7 @@ class GithubDataRepository @Inject constructor(
             cacheManager.cacheUserAsync(user)
             Result.success(user)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(e.toAppError())
         }
     }
     

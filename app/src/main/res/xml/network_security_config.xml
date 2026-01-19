@@ -22,34 +22,16 @@
     </base-config>
     
     <!-- GitHub API Configuration -->
-    <!-- Note: Certificate pinning is disabled for flexibility. 
-         In production, enable pinning by uncommenting the pin-set section
-         and updating with actual certificate pins obtained from:
-         openssl s_client -connect api.github.com:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64
-    -->
+    <!-- Note: Certificate pinning is disabled for flexibility. -->
     <domain-config>
         <domain includeSubdomains="true">github.com</domain>
         <domain includeSubdomains="true">api.github.com</domain>
-        <!-- Certificate pinning disabled - uncomment to enable:
-        <pin-set expiration="2027-01-01">
-            <pin digest="SHA-256">PRIMARY_PIN_HERE</pin>
-            <pin digest="SHA-256">BACKUP_PIN_HERE</pin>
-        </pin-set>
-        -->
     </domain-config>
     
     <!-- GitLab Configuration -->
-    <!-- Note: Certificate pinning is disabled for flexibility.
-         In production, enable pinning and update with actual certificate pins.
-    -->
+    <!-- Note: Certificate pinning is disabled for flexibility. -->
     <domain-config>
         <domain includeSubdomains="true">gitlab.com</domain>
-        <!-- Certificate pinning disabled - uncomment to enable:
-        <pin-set expiration="2027-01-01">
-            <pin digest="SHA-256">PRIMARY_PIN_HERE</pin>
-            <pin digest="SHA-256">BACKUP_PIN_HERE</pin>
-        </pin-set>
-        -->
     </domain-config>
     
     <!-- Development Configuration (Debug builds only) -->

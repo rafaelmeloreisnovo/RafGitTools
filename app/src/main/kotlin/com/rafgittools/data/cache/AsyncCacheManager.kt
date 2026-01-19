@@ -73,12 +73,26 @@ class AsyncCacheManager @Inject constructor(
     suspend fun getCachedRepositories(): List<RepositoryNameCache> {
         return repositoryNameCacheDao.getAllRepositories()
     }
+
+    /**
+     * Get cached repository by full name
+     */
+    suspend fun getCachedRepositoryByFullName(fullName: String): RepositoryNameCache? {
+        return repositoryNameCacheDao.getRepositoryByFullName(fullName)
+    }
     
     /**
      * Search cached repositories by name
      */
     fun searchCachedRepositoriesFlow(query: String): Flow<List<RepositoryNameCache>> {
         return repositoryNameCacheDao.searchRepositoriesFlow(query)
+    }
+
+    /**
+     * Search cached repositories synchronously
+     */
+    suspend fun searchCachedRepositories(query: String): List<RepositoryNameCache> {
+        return repositoryNameCacheDao.searchRepositories(query)
     }
     
     // ==================== User Cache ====================
