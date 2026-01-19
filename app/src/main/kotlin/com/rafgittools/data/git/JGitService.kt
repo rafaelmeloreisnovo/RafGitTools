@@ -1,5 +1,8 @@
 package com.rafgittools.data.git
 
+import com.rafgittools.core.logging.DiffAuditEntry
+import com.rafgittools.core.logging.DiffAuditLogger
+import com.rafgittools.core.logging.md5Hex
 import com.rafgittools.core.security.SshSessionFactory
 import com.rafgittools.domain.model.*
 import com.rafgittools.domain.repository.Credentials
@@ -27,7 +30,9 @@ import javax.inject.Singleton
  * - SSH key authentication (Ed25519, RSA, ECDSA)
  */
 @Singleton
-class JGitService @Inject constructor() {
+class JGitService @Inject constructor(
+    private val diffAuditLogger: DiffAuditLogger
+) {
     
     companion object {
         // SSH authentication is now implemented
@@ -1015,6 +1020,7 @@ class JGitService @Inject constructor() {
                 
                 val diffContent = outputStream.toString("UTF-8")
                 val hunks = parseDiffHunks(diffContent)
+                logDiffAudit(repoPath, diffEntry, diffContent)
                 
                 GitDiff(
                     oldPath = if (diffEntry.oldPath != "/dev/null") diffEntry.oldPath else null,
@@ -1071,6 +1077,7 @@ class JGitService @Inject constructor() {
                 
                 val diffContent = outputStream.toString("UTF-8")
                 val hunks = parseDiffHunks(diffContent)
+                logDiffAudit(repoPath, diffEntry, diffContent)
                 
                 GitDiff(
                     oldPath = if (diffEntry.oldPath != "/dev/null") diffEntry.oldPath else null,
@@ -1153,6 +1160,32 @@ class JGitService @Inject constructor() {
         }
         
         return hunks
+    }
+
+    private fun logDiffAudit(
+        repoPath: String,
+        diffEntry: org.eclipse.jgit.diff.DiffEntry,
+        diffContent: String
+    ) {
+        val oldPath = diffEntry.oldPath.takeUnless { it == "/dev/null" }
+        val newPath = diffEntry.newPath.takeUnless { it == "/dev/null" }
+        val candidatePath = newPath ?: oldPath
+        val file = candidatePath?.let { java.io.File(repoPath, it) }
+        val fileBytes = if (file != null && file.exists() && file.isFile) {
+            file.readBytes()
+        } else {
+            ByteArray(0)
+        }
+        val entry = DiffAuditEntry(
+            oldPath = oldPath,
+            newPath = newPath,
+            changeType = diffEntry.changeType.name,
+            timestamp = System.currentTimeMillis(),
+            diffSizeBytes = diffContent.toByteArray(Charsets.UTF_8).size.toLong(),
+            fileSizeBytes = fileBytes.size.toLong(),
+            md5 = if (fileBytes.isNotEmpty()) md5Hex(fileBytes) else ""
+        )
+        diffAuditLogger.logDiff(entry)
     }
     
     // ============================================
