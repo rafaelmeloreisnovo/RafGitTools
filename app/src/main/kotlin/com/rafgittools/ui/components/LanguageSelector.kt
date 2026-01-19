@@ -28,6 +28,8 @@ fun LanguageSelector(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val languages = remember { Language.values().toList() }
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = modifier
@@ -66,7 +68,7 @@ fun LanguageSelector(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(Language.values()) { language ->
+                    items(languages, key = { it.code }) { language ->
                         LanguageItem(
                             language = language,
                             isSelected = language == currentLanguage,

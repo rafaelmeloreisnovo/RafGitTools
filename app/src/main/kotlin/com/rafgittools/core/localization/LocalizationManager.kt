@@ -5,12 +5,15 @@ import android.content.res.Configuration
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Manages application localization and language changes
  */
 @Singleton
 class LocalizationManager @Inject constructor() {
+    private val localeMutex = Mutex()
     
     /**
      * Updates the application context with the specified language
@@ -26,6 +29,15 @@ class LocalizationManager @Inject constructor() {
         configuration.setLocale(locale)
         
         return context.createConfigurationContext(configuration)
+    }
+
+    /**
+     * Apply locale safely during app startup to avoid race conditions.
+     */
+    suspend fun applyLocale(context: Context, language: Language): Context {
+        return localeMutex.withLock {
+            setLocale(context, language)
+        }
     }
     
     /**

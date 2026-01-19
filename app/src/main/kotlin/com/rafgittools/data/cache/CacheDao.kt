@@ -55,12 +55,18 @@ interface RepositoryNameCacheDao {
     
     @Query("SELECT * FROM repository_name_cache WHERE id = :id")
     suspend fun getRepositoryById(id: Long): RepositoryNameCache?
+
+    @Query("SELECT * FROM repository_name_cache WHERE fullName = :fullName")
+    suspend fun getRepositoryByFullName(fullName: String): RepositoryNameCache?
     
     @Query("SELECT * FROM repository_name_cache WHERE ownerLogin = :owner")
     fun getRepositoriesByOwnerFlow(owner: String): Flow<List<RepositoryNameCache>>
     
     @Query("SELECT * FROM repository_name_cache WHERE name LIKE '%' || :query || '%' OR fullName LIKE '%' || :query || '%'")
     fun searchRepositoriesFlow(query: String): Flow<List<RepositoryNameCache>>
+
+    @Query("SELECT * FROM repository_name_cache WHERE name LIKE '%' || :query || '%' OR fullName LIKE '%' || :query || '%'")
+    suspend fun searchRepositories(query: String): List<RepositoryNameCache>
     
     @Query("DELETE FROM repository_name_cache WHERE id = :id")
     suspend fun deleteRepository(id: Long)
