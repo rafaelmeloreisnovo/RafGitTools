@@ -3,12 +3,20 @@ package com.rafgittools.core.security
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import com.rafgittools.BuildConfig
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import java.util.Base64
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 /**
  * Security Manager
@@ -22,6 +30,8 @@ import java.util.Base64
  * - ISO/IEC 27001 (Information Security)
  * - FIPS 140-2 (Cryptographic Module Security)
  */
+private val Context.securityDataStore: DataStore<Preferences> by preferencesDataStore(name = "security")
+
 class SecurityManager(private val context: Context) {
     
     companion object {
@@ -31,11 +41,13 @@ class SecurityManager(private val context: Context) {
         private const val KEY_SIZE = 256
         private const val GCM_TAG_LENGTH = 128
         private const val GCM_IV_LENGTH = 12
+        private val TRUSTED_SIGNATURE_HASH = stringPreferencesKey("trusted_signature_hash")
     }
     
     private val keyStore: KeyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply {
         load(null)
     }
+    private val securityDataStore = context.securityDataStore
     
     /**
      * Encrypt data using AES-256-GCM
@@ -212,23 +224,19 @@ class SecurityManager(private val context: Context) {
     }
     
     /**
-     * Verify app signature to detect tampering
-     * 
-     * Compares the current app signature against the expected signature.
-     * In production, this should be configured with the actual release signature hash.
-     * 
-     * SECURITY NOTE: This method currently always returns true if a signature exists.
-     * To enable actual signature verification in production:
-     * 1. Build a release APK with your signing certificate
-     * 2. Extract the signature hash from the APK
-     * 3. Store the expected hash as a constant in this class
-     * 4. Uncomment the comparison logic below and update with your hash
-     * 
-     * @return True if signature is valid or in debug mode
+     * Verify app signature to detect tampering.
+     *
+     * Uses a trust-on-first-use (TOFU) strategy for release builds:
+     * - On first launch, stores the current signature hash.
+     * - On subsequent launches, verifies the signature matches the stored value.
+     *
+     * @return True if signature is valid or in debug mode.
      */
     fun verifyAppSignature(): Boolean {
         try {
-            // In debug builds, skip signature verification
+            if (BuildConfig.DEBUG) {
+                return true
+            }
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
                 val packageInfo = context.packageManager.getPackageInfo(
                     context.packageName,
@@ -239,20 +247,9 @@ class SecurityManager(private val context: Context) {
                     return false
                 }
                 
-                // Get the signature hash
                 val signature = signatures[0]
-                @Suppress("UNUSED_VARIABLE")  // Kept for future production use
                 val signatureHash = hashString(signature.toCharsString())
-                
-                // TODO: In production, compare against the actual release signature:
-                // Example:
-                // companion object {
-                //     private const val EXPECTED_RELEASE_SIGNATURE_HASH = "your_actual_signature_hash_here"
-                // }
-                // return signatureHash == EXPECTED_RELEASE_SIGNATURE_HASH
-                
-                // Currently: Just verify that a signature exists (not secure for production)
-                return true
+                return verifyTrustedSignature(signatureHash)
             } else {
                 @Suppress("DEPRECATION")
                 val packageInfo = context.packageManager.getPackageInfo(
@@ -265,21 +262,28 @@ class SecurityManager(private val context: Context) {
                     return false
                 }
                 
-                // Get the signature hash
                 val signature = signatures[0]
-                @Suppress("UNUSED_VARIABLE")  // Kept for future production use
                 val signatureHash = hashString(signature.toCharsString())
-                
-                // TODO: In production, compare against the actual release signature:
-                // return signatureHash == EXPECTED_RELEASE_SIGNATURE_HASH
-                
-                // Currently: Just verify that a signature exists (not secure for production)
-                return true
+                return verifyTrustedSignature(signatureHash)
             }
         } catch (e: Exception) {
             // If we can't verify, assume it's not valid
             android.util.Log.e("SecurityManager", "Error verifying app signature", e)
             return false
+        }
+    }
+
+    private fun verifyTrustedSignature(signatureHash: String): Boolean {
+        return runBlocking {
+            val trustedHash = securityDataStore.data.first()[TRUSTED_SIGNATURE_HASH]
+            if (trustedHash.isNullOrBlank()) {
+                securityDataStore.edit { preferences ->
+                    preferences[TRUSTED_SIGNATURE_HASH] = signatureHash
+                }
+                true
+            } else {
+                trustedHash == signatureHash
+            }
         }
     }
     
