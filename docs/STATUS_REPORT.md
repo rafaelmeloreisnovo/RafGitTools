@@ -132,6 +132,7 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 | Data Quality Metrics | ✅ Implementado | ISO 8000, ISO 9001 |
 | Data Classification | ✅ Implementado | ISO 27001 |
 | Retention & Deletion | ✅ Implementado | GDPR, LGPD |
+| Process Review & Correction | ✅ Implementado | ISO 8000, ISO 9001 |
 
 ### 7. Localização / Localization (🟡 L3 - Avançado)
 

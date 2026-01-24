@@ -40,6 +40,12 @@ RafGitTools applies ISO 8000 data quality concepts through a data governance mod
 - Duplicate record rate < 0.5%
 - Metadata completeness > 95%
 
+**Process Review and Correction Loop**
+- Monthly data quality review with owners and stewards
+- Root-cause analysis for recurring defects
+- Corrective action tracking with due dates
+- Evidence archived in audit logs and compliance reports
+
 ### ISO/IEC 27001:2022 - Information Security Management
 
 #### Information Security Management System (ISMS)
