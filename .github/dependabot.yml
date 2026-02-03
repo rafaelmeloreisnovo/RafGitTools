@@ -8,7 +8,10 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
+      timezone: "America/Sao_Paulo"
     open-pull-requests-limit: 10
+    rebase-strategy: "auto"
+    versioning-strategy: "increase"
     reviewers:
       - "rafaelmeloreisnovo"
     assignees:
@@ -17,8 +20,11 @@ updates:
       - "dependencies"
       - "automated"
     commit-message:
-      prefix: "chore"
+      prefix: "chore(deps)"
       include: "scope"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
     groups:
       # Group Android dependencies together
       android:
@@ -66,11 +72,17 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
+      timezone: "America/Sao_Paulo"
     open-pull-requests-limit: 5
+    rebase-strategy: "auto"
+    versioning-strategy: "increase"
     reviewers:
       - "rafaelmeloreisnovo"
     labels:
       - "dependencies"
       - "github-actions"
     commit-message:
-      prefix: "ci"
+      prefix: "ci(deps)"
+      include: "scope"
+    allow:
+      - dependency-type: "direct"
