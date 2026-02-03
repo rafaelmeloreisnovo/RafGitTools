@@ -116,6 +116,7 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 |-------------------------|--------|------------------|
 | Encryption (AES-256-GCM) | ✅ Implementado | NIST SP 800-38D |
 | Android Keystore | ✅ Implementado | OWASP MASVS |
+| Credential validation (PAT/username) | ✅ Implementado | OWASP ASVS |
 | Privacy Manager (GDPR) | ✅ Implementado | GDPR Art. 15, 17, 20 |
 | CCPA Compliance | ✅ Implementado | Section 1798 |
 | Audit Logging | ✅ Implementado | ISO 27001 |

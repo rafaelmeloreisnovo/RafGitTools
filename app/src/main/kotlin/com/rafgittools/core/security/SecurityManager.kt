@@ -152,6 +152,7 @@ class SecurityManager(private val context: Context) {
             InputValidationType.BRANCH_NAME -> validateBranchName(input)
             InputValidationType.COMMIT_MESSAGE -> validateCommitMessage(input)
             InputValidationType.USERNAME -> validateUsername(input)
+            InputValidationType.ACCESS_TOKEN -> validateAccessToken(input)
         }
     }
     
@@ -186,6 +187,10 @@ class SecurityManager(private val context: Context) {
             InputValidationType.USERNAME -> {
                 // Keep only alphanumeric and safe characters
                 sanitized = sanitized.replace(Regex("[^a-zA-Z0-9._-]"), "")
+            }
+            InputValidationType.ACCESS_TOKEN -> {
+                // Tokens should not be altered beyond trimming whitespace
+                sanitized = sanitized.replace(Regex("\\s+"), "")
             }
         }
         
@@ -395,6 +400,26 @@ class SecurityManager(private val context: Context) {
         // Standard username validation
         return username.matches(Regex("^[a-zA-Z0-9._-]{1,39}$"))
     }
+
+    private fun validateAccessToken(token: String): Boolean {
+        if (token.isBlank() || token.contains(Regex("\\s"))) {
+            return false
+        }
+
+        val knownPatterns = listOf(
+            Regex("^ghp_[A-Za-z0-9]{36,}$"),
+            Regex("^gho_[A-Za-z0-9]{36,}$"),
+            Regex("^ghs_[A-Za-z0-9]{36,}$"),
+            Regex("^ghu_[A-Za-z0-9]{36,}$"),
+            Regex("^github_pat_[A-Za-z0-9_]{22,}$")
+        )
+
+        if (knownPatterns.any { it.matches(token) }) {
+            return true
+        }
+
+        return token.length in 20..200
+    }
 }
 
 /**
@@ -405,7 +430,8 @@ enum class InputValidationType {
     FILE_PATH,
     BRANCH_NAME,
     COMMIT_MESSAGE,
-    USERNAME
+    USERNAME,
+    ACCESS_TOKEN
 }
 
 /**

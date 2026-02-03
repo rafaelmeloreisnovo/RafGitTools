@@ -6,7 +6,9 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.rafgittools.core.security.InputValidationType
 import com.rafgittools.core.security.SecurityManager
+import com.rafgittools.core.security.SecurityException
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -77,6 +79,13 @@ class AuthRepository @Inject constructor(
      */
     suspend fun savePat(token: String, username: String): Result<Unit> {
         return try {
+            if (!securityManager.validateInput(username, InputValidationType.USERNAME)) {
+                return Result.failure(SecurityException("Invalid username format"))
+            }
+            if (!securityManager.validateInput(token, InputValidationType.ACCESS_TOKEN)) {
+                return Result.failure(SecurityException("Invalid personal access token format"))
+            }
+
             // Encrypt the token before storing
             val encryptedToken = securityManager.encryptData(token, PAT_KEY_ALIAS)
                 .getOrThrow()
