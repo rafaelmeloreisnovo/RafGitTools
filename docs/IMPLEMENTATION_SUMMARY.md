@@ -41,6 +41,7 @@ The original problem statement (in Portuguese) requested:
 ### 3. Application Core
 - ✅ **RafGitToolsApplication** - Hilt-enabled application class
 - ✅ **MainActivity** - Main entry point with Compose integration
+- ✅ **Localization startup sync** - Cached language applied before UI creation
 - ✅ **Theme system** - GitHub-inspired color scheme
   - Light theme with GitHub blue (#0969DA)
   - Dark theme with GitHub dark palette

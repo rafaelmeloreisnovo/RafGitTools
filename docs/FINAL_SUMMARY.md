@@ -122,7 +122,7 @@ The task was to implement ("ativar") the missing points for RafGitTools:
 - Import alias suggestion
 - SSH error message improvements
 - TODO format suggestion
-- Localization suggestions
+- Localization suggestions (startup sync now implemented)
 
 **Resolution:** Major issues addressed (alias, error messages) ✅
 
