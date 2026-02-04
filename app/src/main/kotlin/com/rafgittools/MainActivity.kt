@@ -82,7 +82,7 @@ class MainActivity : ComponentActivity() {
             newBase,
             LocalizationEntryPoint::class.java
         )
-        val savedLanguage = runBlocking { entryPoint.preferencesRepository().getLanguage() }
+        val savedLanguage = entryPoint.preferencesRepository().getLanguageSync()
         val localizedContext = entryPoint.localizationManager().setLocale(newBase, savedLanguage)
         super.attachBaseContext(localizedContext)
     }

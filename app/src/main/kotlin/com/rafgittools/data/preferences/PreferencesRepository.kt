@@ -11,11 +11,13 @@ import com.rafgittools.core.localization.Language
 import com.rafgittools.ui.theme.CustomTheme
 import com.rafgittools.ui.theme.ThemeMode
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,10 +31,12 @@ class PreferencesRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private val dataStore = context.dataStore
+    private val syncPreferences = context.getSharedPreferences("settings_sync", Context.MODE_PRIVATE)
     private val languageMutex = Mutex()
     
     companion object {
         private val LANGUAGE_KEY = stringPreferencesKey("language")
+        private const val SYNC_LANGUAGE_KEY = "language_sync"
         private val DARK_MODE_KEY = booleanPreferencesKey("dark_mode")
         private val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
         private val CUSTOM_THEME_KEY = stringPreferencesKey("custom_theme")
@@ -104,8 +108,9 @@ class PreferencesRepository @Inject constructor(
                 preferences[LANGUAGE_KEY] = language.code
             }
         }
+        setLanguageSync(language)
     }
-    
+
     /**
      * Get the currently selected language
      */
@@ -113,6 +118,23 @@ class PreferencesRepository @Inject constructor(
         return languageMutex.withLock {
             languageFlow.first()
         }
+    }
+
+    /**
+     * Get the language synchronously for early startup (fallbacks to DataStore once if needed).
+     */
+    fun getLanguageSync(): Language {
+        val cached = syncPreferences.getString(SYNC_LANGUAGE_KEY, null)
+        if (cached != null) {
+            return Language.fromCode(cached)
+        }
+        val fallback = runBlocking(Dispatchers.IO) { languageFlow.first() }
+        setLanguageSync(fallback)
+        return fallback
+    }
+
+    private fun setLanguageSync(language: Language) {
+        syncPreferences.edit().putString(SYNC_LANGUAGE_KEY, language.code).apply()
     }
     
     /**
