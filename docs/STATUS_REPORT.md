@@ -143,6 +143,7 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 | Portuguese (pt-BR) | ✅ Completo |
 | Spanish (es) | ✅ Completo |
 | Runtime Language Switch | ✅ Implementado |
+| Startup Language Sync | ✅ Implementado |
 | RTL Support | 🔴 Pendente |
 
 ### 8. Sistema de Cache / Caching System (🟡 L3 - Avançado)
