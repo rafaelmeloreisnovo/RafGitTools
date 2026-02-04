@@ -22,6 +22,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.rafgittools.core.localization.Language
+import com.rafgittools.core.localization.LocalizationEntryPoint
 import com.rafgittools.core.localization.LocalizationManager
 import com.rafgittools.data.preferences.PreferencesRepository
 import com.rafgittools.ui.components.LanguageFAB
@@ -55,6 +56,7 @@ import com.rafgittools.ui.screens.stash.StashListScreen
 import com.rafgittools.ui.screens.tags.TagListScreen
 import com.rafgittools.ui.theme.RafGitToolsTheme
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.launch
 import java.net.URLDecoder
 import javax.inject.Inject
@@ -73,6 +75,16 @@ class MainActivity : ComponentActivity() {
     
     @Inject
     lateinit var preferencesRepository: PreferencesRepository
+
+    override fun attachBaseContext(newBase: Context) {
+        val entryPoint = EntryPointAccessors.fromApplication(
+            newBase,
+            LocalizationEntryPoint::class.java
+        )
+        val savedLanguage = entryPoint.preferencesRepository().getLanguageSync()
+        val localizedContext = entryPoint.localizationManager().setLocale(newBase, savedLanguage)
+        super.attachBaseContext(localizedContext)
+    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
