@@ -5,6 +5,7 @@ import com.rafgittools.data.cache.AsyncCacheManager
 import com.rafgittools.data.cache.RepositoryNameCache
 import com.rafgittools.domain.error.toAppError
 import com.rafgittools.domain.model.github.GithubIssue
+import com.rafgittools.domain.model.github.GithubSearchIssue
 import com.rafgittools.domain.model.github.GithubRepository as GithubRepoModel
 import com.rafgittools.domain.model.github.GithubUser
 import kotlinx.coroutines.flow.Flow
@@ -196,7 +197,7 @@ class GithubDataRepository @Inject constructor(
         query: String,
         page: Int = 1,
         perPage: Int = 30
-    ): Result<List<GithubIssue>> {
+    ): Result<List<GithubSearchIssue>> {
         return try {
             val response = githubApiService.searchIssues(query, page, perPage)
             Result.success(response.items)

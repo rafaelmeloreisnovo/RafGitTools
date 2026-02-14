@@ -138,6 +138,7 @@ dependencies {
 
     // Biometric Authentication (Feature #67)
     implementation 'androidx.biometric:biometric:1.1.0'
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
 
     // Compose
     def composeBom = platform('androidx.compose:compose-bom:2026.01.00')
