@@ -141,7 +141,7 @@ class SearchViewModel @Inject constructor(
                 response.items.map { code ->
                     SearchResult.Code(
                         path = code.path,
-                        repo = code.repository.full_name,
+                        repo = code.repository.fullName,
                         snippet = code.name
                     )
                 }
@@ -172,7 +172,7 @@ class SearchViewModel @Inject constructor(
                     SearchResult.User(
                         login = user.login,
                         name = null,
-                        avatarUrl = user.avatar_url
+                        avatarUrl = user.avatarUrl
                     )
                 }
             }
@@ -185,13 +185,6 @@ class SearchViewModel @Inject constructor(
             parts.takeLast(2).joinToString("/")
         } else {
             url
-    private fun extractRepoFromUrl(htmlUrl: String): String {
-        val normalized = htmlUrl.removePrefix("https://github.com/")
-        val parts = normalized.split("/")
-        return if (parts.size >= 2) {
-            "${parts[0]}/${parts[1]}"
-        } else {
-            "Unknown repository"
         }
     }
     

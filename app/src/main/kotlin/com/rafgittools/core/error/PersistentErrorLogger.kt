@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,7 +26,7 @@ private val Context.errorDataStore: DataStore<Preferences> by preferencesDataSto
  */
 @Singleton
 class PersistentErrorLogger @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) : ErrorLogger {
     
     private val dataStore = context.errorDataStore

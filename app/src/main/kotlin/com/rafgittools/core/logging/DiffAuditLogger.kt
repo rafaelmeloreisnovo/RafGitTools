@@ -64,7 +64,7 @@ class DiffAuditLogger @Inject constructor(
 
     private fun serializeEntries(entries: List<DiffAuditEntry>): String {
         val items = entries.map { entry ->
-            """{"oldPath":"${escapeJson(entry.oldPath)}","newPath":"${escapeJson(entry.newPath)}","changeType":"${entry.changeType}","timestamp":${entry.timestamp},"diffSizeBytes":${entry.diffSizeBytes},"fileSizeBytes":${entry.fileSizeBytes},"md5":"${escapeJson(entry.md5)}"}"""
+            """{"oldPath":"${escapeJson(entry.oldPath.orEmpty())}","newPath":"${escapeJson(entry.newPath.orEmpty())}","changeType":"${entry.changeType}","timestamp":${entry.timestamp},"diffSizeBytes":${entry.diffSizeBytes},"fileSizeBytes":${entry.fileSizeBytes},"md5":"${escapeJson(entry.md5)}"}"""
         }
         return "[${items.joinToString(",")}]"
     }
