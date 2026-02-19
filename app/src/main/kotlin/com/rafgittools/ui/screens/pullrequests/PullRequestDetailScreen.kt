@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -174,7 +175,7 @@ private fun PullRequestHeader(
     pullRequest: GithubPullRequest,
     modifier: Modifier = Modifier
 ) {
-    val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+    val dateFormat = remember { SimpleDateFormat(stringResource(R.string.date_format_short_date), Locale.getDefault()) }
     
     Column(modifier = modifier) {
         // State badge and PR info
@@ -502,7 +503,7 @@ private fun FileChangeCard(file: GithubPullRequestFile) {
 
 @Composable
 private fun CommitsTab(commits: List<GithubCommit>) {
-    val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy 'at' HH:mm", Locale.getDefault()) }
+    val dateFormat = remember { SimpleDateFormat(stringResource(R.string.date_format_datetime_with_at), Locale.getDefault()) }
     
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -576,7 +577,7 @@ private fun CommitsTab(commits: List<GithubCommit>) {
 
 @Composable
 private fun ReviewsTab(reviews: List<GithubReview>) {
-    val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy 'at' HH:mm", Locale.getDefault()) }
+    val dateFormat = remember { SimpleDateFormat(stringResource(R.string.date_format_datetime_with_at), Locale.getDefault()) }
     
     LazyColumn(
         modifier = Modifier.fillMaxSize(),

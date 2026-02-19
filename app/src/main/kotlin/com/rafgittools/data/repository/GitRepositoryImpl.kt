@@ -135,6 +135,23 @@ class GitRepositoryImpl @Inject constructor(
         return jGitService.push(repoPath, remote, branch, credentials)
     }
     
+
+    override suspend fun forcePushWithLease(
+        repoPath: String,
+        remote: String,
+        branch: String,
+        expectedOldObjectId: String,
+        credentials: Credentials?
+    ): Result<Unit> {
+        return jGitService.forcePushWithLease(
+            repoPath = repoPath,
+            remote = remote,
+            branch = branch,
+            expectedOldObjectId = expectedOldObjectId,
+            credentials = credentials
+        )
+    }
+
     override suspend fun pull(
         repoPath: String,
         remote: String,

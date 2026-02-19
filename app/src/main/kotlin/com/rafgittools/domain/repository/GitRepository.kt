@@ -98,6 +98,18 @@ interface GitRepository {
         credentials: Credentials? = null
     ): Result<Unit>
     
+
+    /**
+     * Force push with lease (safe force-push)
+     */
+    suspend fun forcePushWithLease(
+        repoPath: String,
+        remote: String = "origin",
+        branch: String,
+        expectedOldObjectId: String,
+        credentials: Credentials? = null
+    ): Result<Unit>
+
     /**
      * Pull changes from remote
      */

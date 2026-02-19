@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -514,7 +515,7 @@ private fun BranchItem(
 
 @Composable
 private fun CommitItem(commit: GitCommit) {
-    val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()) }
+    val dateFormat = remember { SimpleDateFormat(stringResource(R.string.date_format_short_datetime), Locale.getDefault()) }
     
     Card(
         modifier = Modifier.fillMaxWidth()

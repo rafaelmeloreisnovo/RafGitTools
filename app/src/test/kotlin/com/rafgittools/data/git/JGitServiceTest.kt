@@ -82,6 +82,40 @@ class JGitServiceTest {
         assertFalse(branches.any { it.shortName == "feature/test" && it.isLocal })
     }
 
+
+    @Test
+    fun `forcePushWithLease with stale lease should fail`() = runTest {
+        val remoteBare = Files.createTempDirectory("remote-bare").toFile()
+        Git.init().setBare(true).setDirectory(remoteBare).call().close()
+
+        val seedRepoDir = createRepositoryWithInitialCommit("seed-repo")
+        Git.open(seedRepoDir).use { seedGit ->
+            seedGit.remoteAdd()
+                .setName("origin")
+                .setUri(org.eclipse.jgit.transport.URIish(remoteBare.absolutePath))
+                .call()
+            seedGit.push().setRemote("origin").call()
+        }
+
+        val cloneDir = Files.createTempDirectory("lease-clone").toFile().resolve("repo")
+        jgitService.cloneRepository(remoteBare.absolutePath, cloneDir.absolutePath, null).getOrThrow()
+
+        val branch = Git.open(cloneDir).use { it.repository.branch }
+        File(cloneDir, "lease.txt").writeText("lease-change")
+        jgitService.stageFiles(cloneDir.absolutePath, listOf("lease.txt")).getOrThrow()
+        jgitService.commit(cloneDir.absolutePath, "lease commit", GitAuthor("Tester", "tester@example.com")).getOrThrow()
+
+        val result = jgitService.forcePushWithLease(
+            repoPath = cloneDir.absolutePath,
+            remote = "origin",
+            branch = branch,
+            expectedOldObjectId = "0000000000000000000000000000000000000000",
+            credentials = null
+        )
+
+        assertTrue(result.isFailure)
+    }
+
     private fun createRepositoryWithInitialCommit(prefix: String): File {
         val dir = Files.createTempDirectory(prefix).toFile()
         Git.init().setDirectory(dir).call().use { git ->
