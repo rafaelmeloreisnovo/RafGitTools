@@ -1,17 +1,23 @@
 package com.rafgittools.presentation.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.compose.*
-import com.rafgittools.presentation.auth.AuthViewModel
-import com.rafgittools.presentation.auth.LoginScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.rafgittools.ui.screens.auth.AuthScreen
+import com.rafgittools.ui.screens.auth.AuthViewModel
 
 @Composable
-fun AppNavHost(vm: AuthViewModel) {
+fun AppNavHost(vm: AuthViewModel = hiltViewModel()) {
     val navController = rememberNavController()
 
-    NavHost(navController, startDestination = if (vm.hasSession()) "main" else "login") {
+    NavHost(navController, startDestination = if (vm.isAuthenticated.value) "main" else "login") {
         composable("login") {
-            LoginScreen(vm) { navController.navigate("main") }
+            AuthScreen(
+                viewModel = vm,
+                onAuthSuccess = { navController.navigate("main") }
+            )
         }
         composable("main") {
             // Placeholder main screen

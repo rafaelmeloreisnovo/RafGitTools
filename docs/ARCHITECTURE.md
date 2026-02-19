@@ -630,18 +630,30 @@ PrivacyEvent(
 
 ### Authentication and Authorization
 
-#### OAuth 2.0 Implementation
+#### Canonical Authentication Flow (PAT)
+The official authentication implementation is centralized in:
+- `ui/screens/auth/AuthScreen.kt`
+- `ui/screens/auth/AuthViewModel.kt`
+- `data/auth/AuthRepository.kt`
+
+Legacy credential UI/viewmodel files from `presentation/auth/` were removed to avoid duplicated auth paths and inconsistent state handling.
+
 ```kotlin
-// GitHub OAuth with PKCE
-GitHubAuth.authorize()
-    .withPKCE()
-    .withScope("repo", "user")
-    .execute()
-    
-// Token storage
-accessToken → encrypt() → Android Keystore
-refreshToken → encrypt() → Android Keystore
+// UI entry point (Compose)
+AuthScreen(onAuthSuccess = { navController.popBackStack() })
+
+// ViewModel flow
+AuthViewModel.authenticateWithPat(token)
+    -> AuthRepository.savePat(token, "temp")
+    -> GithubDataRepository.getAuthenticatedUser()
+    -> AuthRepository.savePat(token, username)
 ```
+
+**Storage and validation pipeline:**
+1. Validate PAT and username with `SecurityManager`.
+2. Encrypt PAT with AES-256-GCM (`SecurityManager.encryptData`).
+3. Persist encrypted PAT and username in DataStore.
+4. Route all authenticated API traffic through auth-aware repositories/interceptors.
 
 #### Biometric Authentication
 ```kotlin
