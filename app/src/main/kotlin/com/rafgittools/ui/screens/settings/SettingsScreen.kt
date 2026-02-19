@@ -10,8 +10,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.rafgittools.R
 import com.rafgittools.core.localization.Language
 
 /**
@@ -36,10 +38,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -57,14 +59,14 @@ fun SettingsScreen(
         ) {
             // Appearance Section
             item {
-                SettingsSectionHeader(title = "Appearance")
+                SettingsSectionHeader(title = stringResource(R.string.settings_section_appearance))
             }
             
             item {
                 SwitchSettingsItem(
                     icon = Icons.Default.DarkMode,
-                    title = "Dark Mode",
-                    subtitle = "Use dark theme",
+                    title = stringResource(R.string.settings_dark_mode_title),
+                    subtitle = stringResource(R.string.settings_dark_mode_subtitle),
                     checked = isDarkMode,
                     onCheckedChange = { viewModel.setDarkMode(it) }
                 )
@@ -73,7 +75,7 @@ fun SettingsScreen(
             item {
                 ClickableSettingsItem(
                     icon = Icons.Default.Language,
-                    title = "Language",
+                    title = stringResource(R.string.settings_language_title),
                     subtitle = currentLanguage.displayName,
                     onClick = { showLanguageDialog = true }
                 )
@@ -81,14 +83,14 @@ fun SettingsScreen(
             
             // Git Configuration Section
             item {
-                SettingsSectionHeader(title = "Git Configuration")
+                SettingsSectionHeader(title = stringResource(R.string.settings_section_git_config))
             }
             
             item {
                 ClickableSettingsItem(
                     icon = Icons.Default.Person,
-                    title = "User Name",
-                    subtitle = gitConfig.userName.ifBlank { "Not set" },
+                    title = stringResource(R.string.settings_user_name_title),
+                    subtitle = gitConfig.userName.ifBlank { stringResource(R.string.settings_not_set) },
                     onClick = { showGitConfigDialog = true }
                 )
             }
@@ -96,8 +98,8 @@ fun SettingsScreen(
             item {
                 ClickableSettingsItem(
                     icon = Icons.Default.Email,
-                    title = "User Email",
-                    subtitle = gitConfig.userEmail.ifBlank { "Not set" },
+                    title = stringResource(R.string.settings_user_email_title),
+                    subtitle = gitConfig.userEmail.ifBlank { stringResource(R.string.settings_not_set) },
                     onClick = { showGitConfigDialog = true }
                 )
             }
@@ -105,8 +107,8 @@ fun SettingsScreen(
             item {
                 SwitchSettingsItem(
                     icon = Icons.Default.Commit,
-                    title = "Sign Commits",
-                    subtitle = "Sign commits with GPG key",
+                    title = stringResource(R.string.settings_sign_commits_title),
+                    subtitle = stringResource(R.string.settings_sign_commits_subtitle),
                     checked = gitConfig.signCommits,
                     onCheckedChange = { viewModel.setSignCommits(it) }
                 )
@@ -114,14 +116,14 @@ fun SettingsScreen(
             
             // Storage Section
             item {
-                SettingsSectionHeader(title = "Storage")
+                SettingsSectionHeader(title = stringResource(R.string.settings_section_storage))
             }
             
             item {
                 ClickableSettingsItem(
                     icon = Icons.Default.Storage,
-                    title = "Clear Cache",
-                    subtitle = "Free up storage space",
+                    title = stringResource(R.string.settings_clear_cache_title),
+                    subtitle = stringResource(R.string.settings_clear_cache_subtitle),
                     onClick = { showCacheDialog = true }
                 )
             }
@@ -129,22 +131,22 @@ fun SettingsScreen(
             item {
                 ClickableSettingsItem(
                     icon = Icons.Default.Folder,
-                    title = "Repository Location",
-                    subtitle = "/storage/emulated/0/RafGitTools/repositories",
+                    title = stringResource(R.string.settings_repository_location_title),
+                    subtitle = stringResource(R.string.settings_repository_location_subtitle),
                     onClick = { /* Could open folder picker */ }
                 )
             }
             
             // About Section
             item {
-                SettingsSectionHeader(title = "About")
+                SettingsSectionHeader(title = stringResource(R.string.settings_section_about))
             }
             
             item {
                 ClickableSettingsItem(
                     icon = Icons.Default.Info,
-                    title = "About RafGitTools",
-                    subtitle = "Version 1.0.0-alpha",
+                    title = stringResource(R.string.settings_about_title),
+                    subtitle = stringResource(R.string.settings_version),
                     onClick = { showAboutDialog = true }
                 )
             }
@@ -152,8 +154,8 @@ fun SettingsScreen(
             item {
                 ClickableSettingsItem(
                     icon = Icons.Default.Policy,
-                    title = "Privacy Policy",
-                    subtitle = "Read our privacy policy",
+                    title = stringResource(R.string.settings_privacy_policy_title),
+                    subtitle = stringResource(R.string.settings_privacy_policy_subtitle),
                     onClick = { viewModel.openPrivacyPolicy() }
                 )
             }
@@ -161,8 +163,8 @@ fun SettingsScreen(
             item {
                 ClickableSettingsItem(
                     icon = Icons.Default.Code,
-                    title = "Open Source Licenses",
-                    subtitle = "View third-party licenses",
+                    title = stringResource(R.string.settings_open_source_licenses_title),
+                    subtitle = stringResource(R.string.settings_open_source_licenses_subtitle),
                     onClick = { viewModel.openLicenses() }
                 )
             }
@@ -198,8 +200,8 @@ fun SettingsScreen(
         if (showCacheDialog) {
             AlertDialog(
                 onDismissRequest = { showCacheDialog = false },
-                title = { Text("Clear Cache") },
-                text = { Text("This will clear all cached data including repository metadata. This cannot be undone.") },
+                title = { Text(stringResource(R.string.settings_clear_cache_title)) },
+                text = { Text(stringResource(R.string.settings_clear_cache_dialog_message)) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -210,12 +212,12 @@ fun SettingsScreen(
                             contentColor = MaterialTheme.colorScheme.error
                         )
                     ) {
-                        Text("Clear")
+                        Text(stringResource(R.string.settings_clear_action))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showCacheDialog = false }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.action_cancel))
                     }
                 }
             )
@@ -294,7 +296,7 @@ private fun LanguageSelectionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Select Language") },
+        title = { Text(stringResource(R.string.language_select)) },
         text = {
             Column {
                 Language.entries.forEach { language ->
@@ -313,7 +315,7 @@ private fun LanguageSelectionDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
@@ -331,7 +333,7 @@ private fun GitConfigDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Git Configuration") },
+        title = { Text(stringResource(R.string.settings_section_git_config)) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -339,14 +341,14 @@ private fun GitConfigDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("User Name") },
+                    label = { Text(stringResource(R.string.settings_user_name_title)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("User Email") },
+                    label = { Text(stringResource(R.string.settings_user_email_title)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -354,12 +356,12 @@ private fun GitConfigDialog(
         },
         confirmButton = {
             TextButton(onClick = { onSave(name, email) }) {
-                Text("Save")
+                Text(stringResource(R.string.action_save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
@@ -369,7 +371,7 @@ private fun GitConfigDialog(
 private fun AboutDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("About RafGitTools") },
+        title = { Text(stringResource(R.string.settings_about_title)) },
         text = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -385,12 +387,12 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
-                    text = "RafGitTools",
+                    text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.headlineSmall
                 )
                 
                 Text(
-                    text = "Version 1.0.0-alpha",
+                    text = stringResource(R.string.settings_version),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -398,7 +400,7 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
-                    text = "A unified Git/GitHub Android client combining the best features from FastHub, MGit, PuppyGit, and Termux.",
+                    text = stringResource(R.string.settings_about_description),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -406,13 +408,13 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
-                    text = "© 2024 RafGitTools Team",
+                    text = stringResource(R.string.settings_about_copyright),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
                 Text(
-                    text = "Licensed under GPL-3.0",
+                    text = stringResource(R.string.settings_about_license),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -420,7 +422,7 @@ private fun AboutDialog(onDismiss: () -> Unit) {
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text(stringResource(R.string.settings_close_action))
             }
         }
     )
