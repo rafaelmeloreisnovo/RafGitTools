@@ -15,11 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.rafgittools.R
 import com.rafgittools.domain.model.github.*
 import com.rafgittools.ui.theme.GitHubColors
 import java.text.SimpleDateFormat
@@ -66,7 +68,7 @@ fun PullRequestDetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -75,7 +77,7 @@ fun PullRequestDetailScreen(
                 ),
                 actions = {
                     IconButton(onClick = { viewModel.refresh() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.action_refresh))
                     }
                 }
             )
@@ -126,7 +128,7 @@ fun PullRequestDetailScreen(
                                                     contentDescription = null,
                                                     modifier = Modifier.size(16.dp)
                                                 )
-                                                Text(tab.title)
+                                                Text(stringResource(tab.titleRes))
                                                 val count = when (tab) {
                                                     PullRequestTab.FILES -> files.size
                                                     PullRequestTab.COMMITS -> commits.size
@@ -184,22 +186,22 @@ private fun PullRequestHeader(
                 pullRequest.mergedAt != null -> Triple(
                     GitHubColors.MergedPurple,
                     Icons.Default.CallMerge,
-                    "Merged"
+                    stringResource(R.string.pr_state_merged)
                 )
                 pullRequest.state == "closed" -> Triple(
                     GitHubColors.ClosedRed,
                     Icons.Default.Close,
-                    "Closed"
+                    stringResource(R.string.pr_state_closed)
                 )
                 pullRequest.draft -> Triple(
                     Color.Gray,
                     Icons.Default.Edit,
-                    "Draft"
+                    stringResource(R.string.pr_state_draft)
                 )
                 else -> Triple(
                     GitHubColors.OpenGreen,
                     Icons.Default.MergeType,
-                    "Open"
+                    stringResource(R.string.pr_state_open)
                 )
             }
             
@@ -286,7 +288,7 @@ private fun PullRequestHeader(
         ) {
             AsyncImage(
                 model = pullRequest.user.avatarUrl,
-                contentDescription = "Author avatar",
+                contentDescription = stringResource(R.string.cd_author_avatar),
                 modifier = Modifier
                     .size(24.dp)
                     .clip(MaterialTheme.shapes.small),
@@ -299,7 +301,7 @@ private fun PullRequestHeader(
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "opened on ${dateFormat.format(parseIsoDate(pullRequest.createdAt))}",
+                text = stringResource(R.string.pr_opened_on_date, dateFormat.format(parseIsoDate(pullRequest.createdAt))),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -319,14 +321,14 @@ private fun ConversationTab(pullRequest: GithubPullRequest) {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Description",
+                        text = stringResource(R.string.pr_description),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     SelectionContainer {
                         Text(
-                            text = pullRequest.body ?: "No description provided.",
+                            text = pullRequest.body ?: stringResource(R.string.pr_no_description),
                             style = MaterialTheme.typography.bodyMedium,
                             fontStyle = if (pullRequest.body.isNullOrBlank()) 
                                 androidx.compose.ui.text.font.FontStyle.Italic 
@@ -370,7 +372,7 @@ private fun FilesTab(files: List<GithubPullRequestFile>) {
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Files changed",
+                            text = stringResource(R.string.pr_files_changed),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -383,7 +385,7 @@ private fun FilesTab(files: List<GithubPullRequestFile>) {
                             color = GitHubColors.OpenGreen
                         )
                         Text(
-                            text = "Additions",
+                            text = stringResource(R.string.pr_additions),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -396,7 +398,7 @@ private fun FilesTab(files: List<GithubPullRequestFile>) {
                             color = GitHubColors.ClosedRed
                         )
                         Text(
-                            text = "Deletions",
+                            text = stringResource(R.string.pr_deletions),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -435,7 +437,7 @@ private fun FileChangeCard(file: GithubPullRequestFile) {
                     
                     Icon(
                         imageVector = statusIcon,
-                        contentDescription = file.status,
+                        contentDescription = stringResource(fileStatusLabelRes(file.status)),
                         tint = statusColor,
                         modifier = Modifier.size(20.dp)
                     )
@@ -509,7 +511,7 @@ private fun CommitsTab(commits: List<GithubCommit>) {
     ) {
         item {
             Text(
-                text = "${commits.size} commits",
+                text = stringResource(R.string.pr_commits_count, commits.size),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -553,7 +555,7 @@ private fun CommitsTab(commits: List<GithubCommit>) {
                         commit.author?.let { author ->
                             AsyncImage(
                                 model = author.avatarUrl,
-                                contentDescription = "Author avatar",
+                                contentDescription = stringResource(R.string.cd_author_avatar),
                                 modifier = Modifier
                                     .size(20.dp)
                                     .clip(MaterialTheme.shapes.small),
@@ -598,7 +600,7 @@ private fun ReviewsTab(reviews: List<GithubReview>) {
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "No reviews yet",
+                            text = stringResource(R.string.pr_no_reviews_yet),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -618,11 +620,11 @@ private fun ReviewCard(
     dateFormat: SimpleDateFormat
 ) {
     val (stateColor, stateIcon, stateText) = when (review.state) {
-        "APPROVED" -> Triple(GitHubColors.OpenGreen, Icons.Default.CheckCircle, "Approved")
-        "CHANGES_REQUESTED" -> Triple(GitHubColors.ClosedRed, Icons.Default.Cancel, "Changes requested")
-        "COMMENTED" -> Triple(MaterialTheme.colorScheme.onSurfaceVariant, Icons.Default.Comment, "Commented")
-        "PENDING" -> Triple(Color(0xFFF59E0B), Icons.Default.Schedule, "Pending")
-        "DISMISSED" -> Triple(Color.Gray, Icons.Default.RemoveCircle, "Dismissed")
+        "APPROVED" -> Triple(GitHubColors.OpenGreen, Icons.Default.CheckCircle, stringResource(R.string.pr_review_approved))
+        "CHANGES_REQUESTED" -> Triple(GitHubColors.ClosedRed, Icons.Default.Cancel, stringResource(R.string.pr_review_changes_requested))
+        "COMMENTED" -> Triple(MaterialTheme.colorScheme.onSurfaceVariant, Icons.Default.Comment, stringResource(R.string.pr_review_commented))
+        "PENDING" -> Triple(Color(0xFFF59E0B), Icons.Default.Schedule, stringResource(R.string.pr_review_pending))
+        "DISMISSED" -> Triple(Color.Gray, Icons.Default.RemoveCircle, stringResource(R.string.pr_review_dismissed))
         else -> Triple(MaterialTheme.colorScheme.onSurfaceVariant, Icons.Default.RateReview, review.state)
     }
     
@@ -639,7 +641,7 @@ private fun ReviewCard(
                 ) {
                     AsyncImage(
                         model = review.user.avatarUrl,
-                        contentDescription = "Reviewer avatar",
+                        contentDescription = stringResource(R.string.cd_reviewer_avatar),
                         modifier = Modifier
                             .size(32.dp)
                             .clip(MaterialTheme.shapes.small),
@@ -718,7 +720,7 @@ private fun ErrorContent(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Error Loading Pull Request",
+            text = stringResource(R.string.pr_error_loading_title),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.error
         )
@@ -730,7 +732,7 @@ private fun ErrorContent(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = onRetry) {
-            Text("Retry")
+            Text(stringResource(R.string.action_retry))
         }
     }
 }
@@ -747,9 +749,20 @@ private fun parseIsoDate(isoDate: String): Date {
 /**
  * Tab options for pull request detail
  */
-enum class PullRequestTab(val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    CONVERSATION("Conversation", Icons.Default.Chat),
-    FILES("Files", Icons.Default.InsertDriveFile),
-    COMMITS("Commits", Icons.Default.History),
-    REVIEWS("Reviews", Icons.Default.RateReview)
+enum class PullRequestTab(val titleRes: Int, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    CONVERSATION(R.string.pr_tab_conversation, Icons.Default.Chat),
+    FILES(R.string.pr_tab_files, Icons.Default.InsertDriveFile),
+    COMMITS(R.string.pr_tab_commits, Icons.Default.History),
+    REVIEWS(R.string.pr_tab_reviews, Icons.Default.RateReview)
+}
+
+private fun fileStatusLabelRes(status: String): Int = when (status.lowercase(Locale.ROOT)) {
+    "added" -> R.string.status_added
+    "modified" -> R.string.status_modified
+    "removed" -> R.string.status_deleted
+    "renamed" -> R.string.pr_status_renamed
+    "copied" -> R.string.pr_status_copied
+    "changed" -> R.string.pr_status_changed
+    "unchanged" -> R.string.pr_status_unchanged
+    else -> R.string.status_unknown
 }
