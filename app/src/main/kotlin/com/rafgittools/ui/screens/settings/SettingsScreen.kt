@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -38,7 +39,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.settings_title)) },
+                title = { Text(stringResource(R.string.action_settings)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
@@ -65,8 +66,8 @@ fun SettingsScreen(
             item {
                 SwitchSettingsItem(
                     icon = Icons.Default.DarkMode,
-                    title = stringResource(R.string.settings_dark_mode_title),
-                    subtitle = stringResource(R.string.settings_dark_mode_subtitle),
+                    title = stringResource(R.string.settings_dark_mode),
+                    subtitle = stringResource(R.string.settings_use_dark_theme),
                     checked = isDarkMode,
                     onCheckedChange = { viewModel.setDarkMode(it) }
                 )
@@ -75,7 +76,7 @@ fun SettingsScreen(
             item {
                 ClickableSettingsItem(
                     icon = Icons.Default.Language,
-                    title = stringResource(R.string.settings_language_title),
+                    title = stringResource(R.string.settings_language),
                     subtitle = currentLanguage.displayName,
                     onClick = { showLanguageDialog = true }
                 )
@@ -83,13 +84,13 @@ fun SettingsScreen(
             
             // Git Configuration Section
             item {
-                SettingsSectionHeader(title = stringResource(R.string.settings_section_git_config))
+                SettingsSectionHeader(title = stringResource(R.string.settings_git_configuration))
             }
             
             item {
                 ClickableSettingsItem(
                     icon = Icons.Default.Person,
-                    title = stringResource(R.string.settings_user_name_title),
+                    title = stringResource(R.string.settings_user_name),
                     subtitle = gitConfig.userName.ifBlank { stringResource(R.string.settings_not_set) },
                     onClick = { showGitConfigDialog = true }
                 )
@@ -98,7 +99,7 @@ fun SettingsScreen(
             item {
                 ClickableSettingsItem(
                     icon = Icons.Default.Email,
-                    title = stringResource(R.string.settings_user_email_title),
+                    title = stringResource(R.string.settings_user_email),
                     subtitle = gitConfig.userEmail.ifBlank { stringResource(R.string.settings_not_set) },
                     onClick = { showGitConfigDialog = true }
                 )
@@ -107,7 +108,7 @@ fun SettingsScreen(
             item {
                 SwitchSettingsItem(
                     icon = Icons.Default.Commit,
-                    title = stringResource(R.string.settings_sign_commits_title),
+                    title = stringResource(R.string.settings_sign_commits),
                     subtitle = stringResource(R.string.settings_sign_commits_subtitle),
                     checked = gitConfig.signCommits,
                     onCheckedChange = { viewModel.setSignCommits(it) }
@@ -122,7 +123,7 @@ fun SettingsScreen(
             item {
                 ClickableSettingsItem(
                     icon = Icons.Default.Storage,
-                    title = stringResource(R.string.settings_clear_cache_title),
+                    title = stringResource(R.string.settings_clear_cache),
                     subtitle = stringResource(R.string.settings_clear_cache_subtitle),
                     onClick = { showCacheDialog = true }
                 )
@@ -131,8 +132,8 @@ fun SettingsScreen(
             item {
                 ClickableSettingsItem(
                     icon = Icons.Default.Folder,
-                    title = stringResource(R.string.settings_repository_location_title),
-                    subtitle = stringResource(R.string.settings_repository_location_subtitle),
+                    title = stringResource(R.string.settings_repository_location),
+                    subtitle = stringResource(R.string.settings_repository_location_path),
                     onClick = { /* Could open folder picker */ }
                 )
             }
@@ -145,8 +146,8 @@ fun SettingsScreen(
             item {
                 ClickableSettingsItem(
                     icon = Icons.Default.Info,
-                    title = stringResource(R.string.settings_about_title),
-                    subtitle = stringResource(R.string.settings_version),
+                    title = stringResource(R.string.settings_about_rafgittools),
+                    subtitle = stringResource(R.string.settings_version_alpha),
                     onClick = { showAboutDialog = true }
                 )
             }
@@ -154,7 +155,7 @@ fun SettingsScreen(
             item {
                 ClickableSettingsItem(
                     icon = Icons.Default.Policy,
-                    title = stringResource(R.string.settings_privacy_policy_title),
+                    title = stringResource(R.string.settings_privacy_policy),
                     subtitle = stringResource(R.string.settings_privacy_policy_subtitle),
                     onClick = { viewModel.openPrivacyPolicy() }
                 )
@@ -163,7 +164,7 @@ fun SettingsScreen(
             item {
                 ClickableSettingsItem(
                     icon = Icons.Default.Code,
-                    title = stringResource(R.string.settings_open_source_licenses_title),
+                    title = stringResource(R.string.settings_open_source_licenses),
                     subtitle = stringResource(R.string.settings_open_source_licenses_subtitle),
                     onClick = { viewModel.openLicenses() }
                 )
@@ -200,8 +201,8 @@ fun SettingsScreen(
         if (showCacheDialog) {
             AlertDialog(
                 onDismissRequest = { showCacheDialog = false },
-                title = { Text(stringResource(R.string.settings_clear_cache_title)) },
-                text = { Text(stringResource(R.string.settings_clear_cache_dialog_message)) },
+                title = { Text(stringResource(R.string.settings_clear_cache)) },
+                text = { Text(stringResource(R.string.settings_clear_cache_warning)) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -212,7 +213,7 @@ fun SettingsScreen(
                             contentColor = MaterialTheme.colorScheme.error
                         )
                     ) {
-                        Text(stringResource(R.string.settings_clear_action))
+                        Text(stringResource(R.string.settings_clear_cache_action))
                     }
                 },
                 dismissButton = {
@@ -333,7 +334,7 @@ private fun GitConfigDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.settings_section_git_config)) },
+        title = { Text(stringResource(R.string.settings_git_configuration)) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -341,14 +342,14 @@ private fun GitConfigDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.settings_user_name_title)) },
+                    label = { Text(stringResource(R.string.settings_user_name)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text(stringResource(R.string.settings_user_email_title)) },
+                    label = { Text(stringResource(R.string.settings_user_email)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -371,7 +372,7 @@ private fun GitConfigDialog(
 private fun AboutDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.settings_about_title)) },
+        title = { Text(stringResource(R.string.settings_about_rafgittools)) },
         text = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -392,7 +393,7 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                 )
                 
                 Text(
-                    text = stringResource(R.string.settings_version),
+                    text = stringResource(R.string.settings_version_alpha),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -422,7 +423,7 @@ private fun AboutDialog(onDismiss: () -> Unit) {
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.settings_close_action))
+                Text(stringResource(R.string.action_close))
             }
         }
     )

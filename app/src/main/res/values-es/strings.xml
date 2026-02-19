@@ -70,99 +70,104 @@
     <string name="profile_empty_stars_body">Los repositorios con estrella aparecerán aquí.</string>
     <string name="profile_empty_activity_body">La actividad reciente aparecerá aquí.</string>
 
+    <!-- Navigation -->
     <string name="cd_back">Atrás</string>
 
+    <!-- Generic actions -->
+    <string name="action_retry">Reintentar</string>
+    <string name="action_create">Crear</string>
+    <string name="action_close">Cerrar</string>
+    <string name="action_see_all">Ver todo</string>
+    <string name="action_dismiss">Descartar</string>
+    <string name="action_fetch">Obtener</string>
+    <string name="action_stage">Preparar</string>
+    <string name="action_stage_all">Preparar todo</string>
+    <string name="action_unstage_all">Quitar preparación</string>
+
+    <!-- Repositorio detail -->
+    <string name="repository_fallback_title">Repositorio</string>
+    <string name="repository_branch_label">Branch: %1$s</string>
+    <string name="repository_status_title">Estado del Repositorio</string>
+    <string name="repository_uncommitted_changes">Cambios sin confirmar</string>
+    <string name="repository_loading_status">Cargando estado...</string>
+    <string name="repository_quick_actions">Acciones Rápidas</string>
+    <string name="repository_recent_commits">Commits Recientes</string>
+    <string name="repository_branch_action">Branch</string>
+    <string name="repository_remote">Remoto</string>
+    <string name="repository_current">Actual</string>
+    <string name="repository_create_commit">Crear Commit</string>
+    <string name="repository_commit_message">Mensaje del commit</string>
+    <string name="repository_create_branch">Crear Branch</string>
+    <string name="repository_branch_name">Nombre de la rama</string>
+    <string name="section_title_with_count">%1$s (%2$d)</string>
+
+    <!-- Status labels -->
+    <string name="status_added">Añadido</string>
+    <string name="status_modified">Modificado</string>
+    <string name="status_deleted">Eliminado</string>
+    <string name="status_untracked">Sin seguimiento</string>
+    <string name="status_unknown">Desconocido</string>
+
     <!-- Settings -->
-    <string name="settings_title">Configuración</string>
     <string name="settings_section_appearance">Apariencia</string>
-    <string name="settings_dark_mode_title">Modo oscuro</string>
-    <string name="settings_dark_mode_subtitle">Usar tema oscuro</string>
-    <string name="settings_language_title">Idioma</string>
-    <string name="settings_section_git_config">Configuración de Git</string>
-    <string name="settings_user_name_title">Nombre de usuario</string>
-    <string name="settings_user_email_title">Correo del usuario</string>
-    <string name="settings_not_set">No configurado</string>
-    <string name="settings_sign_commits_title">Firmar commits</string>
+    <string name="settings_dark_mode">Modo Oscuro</string>
+    <string name="settings_use_dark_theme">Usar tema oscuro</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_git_configuration">Configuración de Git</string>
+    <string name="settings_user_name">Nombre de Usuario</string>
+    <string name="settings_user_email">Correo del Usuario</string>
+    <string name="settings_not_set">No establecido</string>
+    <string name="settings_sign_commits">Firmar Commits</string>
     <string name="settings_sign_commits_subtitle">Firmar commits con clave GPG</string>
     <string name="settings_section_storage">Almacenamiento</string>
-    <string name="settings_clear_cache_title">Limpiar caché</string>
+    <string name="settings_clear_cache">Limpiar Caché</string>
     <string name="settings_clear_cache_subtitle">Liberar espacio de almacenamiento</string>
-    <string name="settings_repository_location_title">Ubicación de repositorios</string>
-    <string name="settings_repository_location_subtitle">/storage/emulated/0/RafGitTools/repositories</string>
+    <string name="settings_repository_location">Ubicación de Repositorios</string>
     <string name="settings_section_about">Acerca de</string>
-    <string name="settings_about_title">Acerca de RafGitTools</string>
-    <string name="settings_version">Versión 1.0.0-alpha</string>
-    <string name="settings_privacy_policy_title">Política de privacidad</string>
+    <string name="settings_about_rafgittools">Acerca de RafGitTools</string>
+    <string name="settings_version_alpha">Versión 1.0.0-alpha</string>
+    <string name="settings_privacy_policy">Política de Privacidad</string>
     <string name="settings_privacy_policy_subtitle">Lee nuestra política de privacidad</string>
-    <string name="settings_open_source_licenses_title">Licencias de código abierto</string>
+    <string name="settings_open_source_licenses">Licencias de Código Abierto</string>
     <string name="settings_open_source_licenses_subtitle">Ver licencias de terceros</string>
-    <string name="settings_clear_cache_dialog_message">Esto limpiará todos los datos en caché, incluidos los metadatos de repositorios. Esta acción no se puede deshacer.</string>
-    <string name="settings_clear_action">Limpiar</string>
+    <string name="settings_clear_cache_warning">Esto borrará todos los datos en caché, incluidos los metadatos de repositorios. No se puede deshacer.</string>
+    <string name="settings_clear_cache_action">Limpiar</string>
     <string name="settings_about_description">Un cliente Android unificado de Git/GitHub que combina las mejores funciones de FastHub, MGit, PuppyGit y Termux.</string>
-    <string name="settings_about_copyright">© 2024 Equipo RafGitTools</string>
+    <string name="settings_about_copyright">© 2024 RafGitTools Team</string>
     <string name="settings_about_license">Licenciado bajo GPL-3.0</string>
-    <string name="settings_close_action">Cerrar</string>
-
-    <!-- Repository detail -->
-    <string name="repository_default_title">Repositorio</string>
-    <string name="repository_branch_label">Rama: %1$s</string>
-    <string name="repository_recent_commits">Commits recientes</string>
-    <string name="repository_status_title">Estado del repositorio</string>
-    <string name="repository_uncommitted_changes">Cambios sin commit</string>
-    <string name="repository_status_added">Añadido</string>
-    <string name="repository_status_modified">Modificado</string>
-    <string name="repository_status_deleted">Eliminado</string>
-    <string name="repository_status_untracked">Sin seguimiento</string>
-    <string name="repository_status_unknown">Desconocido</string>
-    <string name="repository_stage_all">Preparar todo</string>
-    <string name="repository_unstage_all">Quitar todo del stage</string>
-    <string name="repository_loading_status">Cargando estado...</string>
-    <string name="repository_quick_actions">Acciones rápidas</string>
-    <string name="repository_branch_action">Rama</string>
-    <string name="repository_fetch">Obtener</string>
-    <string name="repository_see_all">Ver todo</string>
-    <string name="repository_remote">Remota</string>
-    <string name="repository_current">Actual</string>
-    <string name="repository_stage">Preparar</string>
-    <string name="repository_dismiss">Descartar</string>
-    <string name="repository_error_title">Error</string>
-    <string name="repository_retry">Reintentar</string>
-    <string name="repository_create_commit">Crear commit</string>
-    <string name="repository_commit_message">Mensaje del commit</string>
-    <string name="repository_create_branch">Crear rama</string>
-    <string name="repository_branch_name">Nombre de la rama</string>
-    <string name="repository_create">Crear</string>
 
     <!-- Pull request detail -->
-    <string name="pr_state_merged">Fusionado</string>
-    <string name="pr_state_closed">Cerrado</string>
-    <string name="pr_state_draft">Borrador</string>
-    <string name="pr_state_open">Abierto</string>
-    <string name="pr_author_avatar">Avatar del autor</string>
-    <string name="pr_opened_on">abierto el %1$s</string>
+    <string name="cd_author_avatar">Avatar del autor</string>
+    <string name="cd_reviewer_avatar">Avatar del revisor</string>
+    <string name="pr_opened_on_date">abierto el %1$s</string>
     <string name="pr_description">Descripción</string>
     <string name="pr_no_description">No se proporcionó descripción.</string>
     <string name="pr_files_changed">Archivos cambiados</string>
     <string name="pr_additions">Adiciones</string>
     <string name="pr_deletions">Eliminaciones</string>
     <string name="pr_commits_count">%1$d commits</string>
-    <string name="pr_no_reviews">Aún no hay revisiones</string>
+    <string name="pr_no_reviews_yet">Aún no hay revisiones</string>
     <string name="pr_review_approved">Aprobado</string>
     <string name="pr_review_changes_requested">Cambios solicitados</string>
     <string name="pr_review_commented">Comentado</string>
     <string name="pr_review_pending">Pendiente</string>
     <string name="pr_review_dismissed">Descartado</string>
-    <string name="pr_reviewer_avatar">Avatar del revisor</string>
-    <string name="pr_error_loading">Error al cargar Pull Request</string>
+    <string name="pr_error_loading_title">Error al cargar Pull Request</string>
+    <string name="pr_state_merged">Fusionado</string>
+    <string name="pr_state_closed">Cerrado</string>
+    <string name="pr_state_draft">Borrador</string>
+    <string name="pr_state_open">Abierto</string>
     <string name="pr_tab_conversation">Conversación</string>
     <string name="pr_tab_files">Archivos</string>
     <string name="pr_tab_commits">Commits</string>
     <string name="pr_tab_reviews">Revisiones</string>
+    <string name="pr_status_renamed">Renombrado</string>
+    <string name="pr_status_copied">Copiado</string>
+    <string name="pr_status_changed">Cambiado</string>
+    <string name="pr_status_unchanged">Sin cambios</string>
 
-    <!-- Date formats -->
-    <string name="date_format_short_datetime">dd MMM yyyy HH:mm</string>
-    <string name="date_format_short_date">dd MMM yyyy</string>
-    <string name="date_format_datetime_with_at">dd MMM yyyy 'a las' HH:mm</string>
+    <!-- Error labels -->
+    <string name="error_title">Error</string>
 
-    <string name="repository_section_with_count">%1$s (%2$d)</string>
+    <string name="settings_repository_location_path">/storage/emulated/0/RafGitTools/repositories</string>
 </resources>

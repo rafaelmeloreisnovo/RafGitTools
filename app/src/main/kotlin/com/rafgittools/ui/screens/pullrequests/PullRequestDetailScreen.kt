@@ -16,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -288,7 +289,7 @@ private fun PullRequestHeader(
         ) {
             AsyncImage(
                 model = pullRequest.user.avatarUrl,
-                contentDescription = stringResource(R.string.pr_author_avatar),
+                contentDescription = stringResource(R.string.cd_author_avatar),
                 modifier = Modifier
                     .size(24.dp)
                     .clip(MaterialTheme.shapes.small),
@@ -301,7 +302,7 @@ private fun PullRequestHeader(
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = stringResource(R.string.pr_opened_on, dateFormat.format(parseIsoDate(pullRequest.createdAt))),
+                text = stringResource(R.string.pr_opened_on_date, dateFormat.format(parseIsoDate(pullRequest.createdAt))),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -437,7 +438,7 @@ private fun FileChangeCard(file: GithubPullRequestFile) {
                     
                     Icon(
                         imageVector = statusIcon,
-                        contentDescription = file.status,
+                        contentDescription = stringResource(fileStatusLabelRes(file.status)),
                         tint = statusColor,
                         modifier = Modifier.size(20.dp)
                     )
@@ -555,7 +556,7 @@ private fun CommitsTab(commits: List<GithubCommit>) {
                         commit.author?.let { author ->
                             AsyncImage(
                                 model = author.avatarUrl,
-                                contentDescription = stringResource(R.string.pr_author_avatar),
+                                contentDescription = stringResource(R.string.cd_author_avatar),
                                 modifier = Modifier
                                     .size(20.dp)
                                     .clip(MaterialTheme.shapes.small),
@@ -600,7 +601,7 @@ private fun ReviewsTab(reviews: List<GithubReview>) {
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = stringResource(R.string.pr_no_reviews),
+                            text = stringResource(R.string.pr_no_reviews_yet),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -641,7 +642,7 @@ private fun ReviewCard(
                 ) {
                     AsyncImage(
                         model = review.user.avatarUrl,
-                        contentDescription = stringResource(R.string.pr_reviewer_avatar),
+                        contentDescription = stringResource(R.string.cd_reviewer_avatar),
                         modifier = Modifier
                             .size(32.dp)
                             .clip(MaterialTheme.shapes.small),
@@ -720,7 +721,7 @@ private fun ErrorContent(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = stringResource(R.string.pr_error_loading),
+            text = stringResource(R.string.pr_error_loading_title),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.error
         )
@@ -732,7 +733,7 @@ private fun ErrorContent(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = onRetry) {
-            Text(stringResource(R.string.repository_retry))
+            Text(stringResource(R.string.action_retry))
         }
     }
 }
@@ -749,9 +750,20 @@ private fun parseIsoDate(isoDate: String): Date {
 /**
  * Tab options for pull request detail
  */
-enum class PullRequestTab(@androidx.annotation.StringRes val titleRes: Int, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
+enum class PullRequestTab(val titleRes: Int, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
     CONVERSATION(R.string.pr_tab_conversation, Icons.Default.Chat),
     FILES(R.string.pr_tab_files, Icons.Default.InsertDriveFile),
     COMMITS(R.string.pr_tab_commits, Icons.Default.History),
     REVIEWS(R.string.pr_tab_reviews, Icons.Default.RateReview)
+}
+
+private fun fileStatusLabelRes(status: String): Int = when (status.lowercase(Locale.ROOT)) {
+    "added" -> R.string.status_added
+    "modified" -> R.string.status_modified
+    "removed" -> R.string.status_deleted
+    "renamed" -> R.string.pr_status_renamed
+    "copied" -> R.string.pr_status_copied
+    "changed" -> R.string.pr_status_changed
+    "unchanged" -> R.string.pr_status_unchanged
+    else -> R.string.status_unknown
 }

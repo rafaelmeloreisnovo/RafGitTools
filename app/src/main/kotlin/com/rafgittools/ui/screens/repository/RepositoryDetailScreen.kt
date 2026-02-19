@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -54,7 +55,7 @@ fun RepositoryDetailScreen(
                         Text(
                             text = uiState.let { 
                                 if (it is RepositoryDetailUiState.Success) it.repository.name
-                                else stringResource(R.string.repository_default_title)
+                                else stringResource(R.string.repository_fallback_title)
                             },
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -175,11 +176,11 @@ fun RepositoryDetailScreen(
                                     ChangedFileItem(
                                         file = file,
                                         status = when {
-                                            s.modified.contains(file) -> stringResource(R.string.repository_status_modified)
-                                            s.added.contains(file) -> stringResource(R.string.repository_status_added)
-                                            s.removed.contains(file) -> stringResource(R.string.repository_status_deleted)
-                                            s.untracked.contains(file) -> stringResource(R.string.repository_status_untracked)
-                                            else -> stringResource(R.string.repository_status_unknown)
+                                            s.modified.contains(file) -> FileChangeStatus.Modified
+                                            s.added.contains(file) -> FileChangeStatus.Added
+                                            s.removed.contains(file) -> FileChangeStatus.Deleted
+                                            s.untracked.contains(file) -> FileChangeStatus.Untracked
+                                            else -> FileChangeStatus.Unknown
                                         },
                                         onStage = { viewModel.stageFile(file) },
                                         onUnstage = { viewModel.unstageFile(file) }
@@ -197,7 +198,7 @@ fun RepositoryDetailScreen(
                                 .padding(16.dp),
                             action = {
                                 TextButton(onClick = { viewModel.clearOperationStatus() }) {
-                                    Text(stringResource(R.string.repository_dismiss))
+                                    Text(stringResource(R.string.action_dismiss))
                                 }
                             }
                         ) {
@@ -278,25 +279,25 @@ private fun StatusCard(
                     StatusCount(
                         icon = Icons.Default.Add,
                         count = s.added.size,
-                        label = stringResource(R.string.repository_status_added),
+                        label = stringResource(R.string.status_added),
                         color = MaterialTheme.colorScheme.primary
                     )
                     StatusCount(
                         icon = Icons.Default.Edit,
                         count = s.modified.size,
-                        label = stringResource(R.string.repository_status_modified),
+                        label = stringResource(R.string.status_modified),
                         color = MaterialTheme.colorScheme.tertiary
                     )
                     StatusCount(
                         icon = Icons.Default.Delete,
                         count = s.removed.size,
-                        label = stringResource(R.string.repository_status_deleted),
+                        label = stringResource(R.string.status_deleted),
                         color = MaterialTheme.colorScheme.error
                     )
                     StatusCount(
                         icon = Icons.Default.HelpOutline,
                         count = s.untracked.size,
-                        label = stringResource(R.string.repository_status_untracked),
+                        label = stringResource(R.string.status_untracked),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -311,13 +312,13 @@ private fun StatusCard(
                             onClick = onStageAll,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text(stringResource(R.string.repository_stage_all))
+                            Text(stringResource(R.string.action_stage_all))
                         }
                         OutlinedButton(
                             onClick = onUnstageAll,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text(stringResource(R.string.repository_unstage_all))
+                            Text(stringResource(R.string.action_unstage_all))
                         }
                     }
                 }
@@ -408,7 +409,7 @@ private fun QuickActionsCard(
                 )
                 ActionButton(
                     icon = Icons.Default.Sync,
-                    label = stringResource(R.string.repository_fetch),
+                    label = stringResource(R.string.action_fetch),
                     onClick = onFetch
                 )
             }
@@ -451,12 +452,12 @@ private fun SectionHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = stringResource(R.string.repository_section_with_count, title, count),
+            text = stringResource(R.string.section_title_with_count, title, count),
             style = MaterialTheme.typography.titleMedium
         )
         onSeeAll?.let {
             TextButton(onClick = it) {
-                Text(stringResource(R.string.repository_see_all))
+                Text(stringResource(R.string.action_see_all))
             }
         }
     }
@@ -561,7 +562,7 @@ private fun CommitItem(commit: GitCommit) {
 @Composable
 private fun ChangedFileItem(
     file: String,
-    status: String,
+    status: FileChangeStatus,
     onStage: () -> Unit,
     onUnstage: () -> Unit
 ) {
@@ -576,16 +577,16 @@ private fun ChangedFileItem(
         ) {
             Icon(
                 imageVector = when (status) {
-                    stringResource(R.string.repository_status_added) -> Icons.Default.Add
-                    stringResource(R.string.repository_status_modified) -> Icons.Default.Edit
-                    stringResource(R.string.repository_status_deleted) -> Icons.Default.Delete
+                    FileChangeStatus.Added -> Icons.Default.Add
+                    FileChangeStatus.Modified -> Icons.Default.Edit
+                    FileChangeStatus.Deleted -> Icons.Default.Delete
                     else -> Icons.Default.InsertDriveFile
                 },
                 contentDescription = null,
                 tint = when (status) {
-                    stringResource(R.string.repository_status_added) -> MaterialTheme.colorScheme.primary
-                    stringResource(R.string.repository_status_modified) -> MaterialTheme.colorScheme.tertiary
-                    stringResource(R.string.repository_status_deleted) -> MaterialTheme.colorScheme.error
+                    FileChangeStatus.Added -> MaterialTheme.colorScheme.primary
+                    FileChangeStatus.Modified -> MaterialTheme.colorScheme.tertiary
+                    FileChangeStatus.Deleted -> MaterialTheme.colorScheme.error
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                 },
                 modifier = Modifier.size(20.dp)
@@ -601,7 +602,7 @@ private fun ChangedFileItem(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = status,
+                    text = stringResource(status.labelRes),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -610,7 +611,7 @@ private fun ChangedFileItem(
             IconButton(onClick = onStage) {
                 Icon(
                     Icons.Default.Add,
-                    contentDescription = stringResource(R.string.repository_stage),
+                    contentDescription = stringResource(R.string.action_stage),
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -636,7 +637,7 @@ private fun ErrorContent(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = stringResource(R.string.repository_error_title),
+            text = stringResource(R.string.error_title),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.error
         )
@@ -648,7 +649,7 @@ private fun ErrorContent(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = onRetry) {
-            Text(stringResource(R.string.repository_retry))
+            Text(stringResource(R.string.action_retry))
         }
     }
 }
@@ -713,7 +714,7 @@ private fun CreateBranchDialog(
                 onClick = { onCreate(branchName) },
                 enabled = branchName.isNotBlank()
             ) {
-                Text(stringResource(R.string.repository_create))
+                Text(stringResource(R.string.action_create))
             }
         },
         dismissButton = {
@@ -722,4 +723,12 @@ private fun CreateBranchDialog(
             }
         }
     )
+}
+
+private enum class FileChangeStatus(val labelRes: Int) {
+    Added(R.string.status_added),
+    Modified(R.string.status_modified),
+    Deleted(R.string.status_deleted),
+    Untracked(R.string.status_untracked),
+    Unknown(R.string.status_unknown)
 }
