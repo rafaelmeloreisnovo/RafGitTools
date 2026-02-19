@@ -10,6 +10,8 @@ import com.rafgittools.presentation.auth.CredentialViewModel
 @Composable
 fun AppNavHost(vm: CredentialViewModel) {
     val navController = rememberNavController()
+    val isAuthenticated by vm.isAuthenticated.collectAsState()
+    val startDestination = if (isAuthenticated) "main" else "auth"
 
     NavHost(navController = navController, startDestination = "credentials") {
         composable("credentials") {
