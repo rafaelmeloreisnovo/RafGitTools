@@ -16,6 +16,7 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.transport.SshTransport
 import org.eclipse.jgit.transport.Transport
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
+import org.eclipse.jgit.transport.RefLeaseSpec
 import org.eclipse.jgit.transport.SshSessionFactory as JGitSshSessionFactory
 import java.io.File
 import javax.inject.Inject
@@ -516,6 +517,53 @@ class JGitService @Inject constructor(
                 }
             }
             
+            command.call()
+            Unit
+        }
+    }
+
+    /**
+     * Force push with lease (safe force-push)
+     * Feature #29 from roadmap (P33-06)
+     */
+    suspend fun forcePushWithLease(
+        repoPath: String,
+        remote: String,
+        branch: String,
+        expectedOldObjectId: String,
+        credentials: Credentials?
+    ): Result<Unit> = runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val refSpec = "refs/heads/$branch:refs/heads/$branch"
+            val command = git.push()
+                .setRemote(remote)
+                .setForce(true)
+                .setRefSpecs(org.eclipse.jgit.transport.RefSpec(refSpec))
+                .setRefLeaseSpecs(RefLeaseSpec(refSpec, expectedOldObjectId))
+
+            credentials?.let {
+                when (it) {
+                    is Credentials.UsernamePassword -> {
+                        command.setCredentialsProvider(
+                            UsernamePasswordCredentialsProvider(it.username, it.password)
+                        )
+                    }
+                    is Credentials.Token -> {
+                        command.setCredentialsProvider(
+                            UsernamePasswordCredentialsProvider(it.token, "")
+                        )
+                    }
+                    is Credentials.SshKey -> {
+                        val sshSessionFactory = if (it.passphrase != null) {
+                            SshSessionFactory.createWithPassphrase(it.privateKeyPath, it.passphrase)
+                        } else {
+                            SshSessionFactory.create(it.privateKeyPath)
+                        }
+                        command.setTransportConfigCallback(createSshTransportCallback(sshSessionFactory))
+                    }
+                }
+            }
+
             command.call()
             Unit
         }
