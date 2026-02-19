@@ -179,9 +179,7 @@ fun RafGitToolsApp(
                 route = Screen.RepositoryDetail.route,
                 arguments = listOf(navArgument("repoPath") { type = NavType.StringType })
             ) { backStackEntry ->
-                val repoPath = backStackEntry.arguments?.getString("repoPath")?.let {
-                    URLDecoder.decode(it, "UTF-8")
-                } ?: ""
+                val repoPath = decodeNavArg(backStackEntry.arguments?.getString("repoPath"))
                 RepositoryDetailScreen(
                     repoPath = repoPath,
                     onNavigateBack = { navController.popBackStack() },
@@ -198,9 +196,7 @@ fun RafGitToolsApp(
                 route = Screen.CommitList.route,
                 arguments = listOf(navArgument("repoPath") { type = NavType.StringType })
             ) { backStackEntry ->
-                val repoPath = backStackEntry.arguments?.getString("repoPath")?.let {
-                    URLDecoder.decode(it, "UTF-8")
-                } ?: ""
+                val repoPath = decodeNavArg(backStackEntry.arguments?.getString("repoPath"))
                 CommitListScreen(
                     repoPath = repoPath,
                     onNavigateBack = { navController.popBackStack() },
@@ -217,12 +213,8 @@ fun RafGitToolsApp(
                     navArgument("commitSha") { type = NavType.StringType }
                 )
             ) { backStackEntry ->
-                val repoPath = backStackEntry.arguments?.getString("repoPath")?.let {
-                    URLDecoder.decode(it, "UTF-8")
-                } ?: ""
-                val commitSha = backStackEntry.arguments?.getString("commitSha")?.let {
-                    URLDecoder.decode(it, "UTF-8")
-                } ?: ""
+                val repoPath = decodeNavArg(backStackEntry.arguments?.getString("repoPath"))
+                val commitSha = decodeNavArg(backStackEntry.arguments?.getString("commitSha"))
                 CommitDetailScreen(
                     repoPath = repoPath,
                     commitSha = commitSha,
@@ -234,9 +226,7 @@ fun RafGitToolsApp(
                 route = Screen.BranchList.route,
                 arguments = listOf(navArgument("repoPath") { type = NavType.StringType })
             ) { backStackEntry ->
-                val repoPath = backStackEntry.arguments?.getString("repoPath")?.let {
-                    URLDecoder.decode(it, "UTF-8")
-                } ?: ""
+                val repoPath = decodeNavArg(backStackEntry.arguments?.getString("repoPath"))
                 BranchListScreen(
                     repoPath = repoPath,
                     onNavigateBack = { navController.popBackStack() }
@@ -257,8 +247,8 @@ fun RafGitToolsApp(
                     navArgument("repo") { type = NavType.StringType }
                 )
             ) { backStackEntry ->
-                val owner = backStackEntry.arguments?.getString("owner") ?: ""
-                val repo = backStackEntry.arguments?.getString("repo") ?: ""
+                val owner = decodeNavArg(backStackEntry.arguments?.getString("owner"))
+                val repo = decodeNavArg(backStackEntry.arguments?.getString("repo"))
                 IssueListScreen(
                     owner = owner,
                     repo = repo,
@@ -280,8 +270,8 @@ fun RafGitToolsApp(
                     navArgument("number") { type = NavType.IntType }
                 )
             ) { backStackEntry ->
-                val owner = backStackEntry.arguments?.getString("owner") ?: ""
-                val repo = backStackEntry.arguments?.getString("repo") ?: ""
+                val owner = decodeNavArg(backStackEntry.arguments?.getString("owner"))
+                val repo = decodeNavArg(backStackEntry.arguments?.getString("repo"))
                 val number = backStackEntry.arguments?.getInt("number") ?: 0
                 IssueDetailScreen(
                     owner = owner,
@@ -298,8 +288,8 @@ fun RafGitToolsApp(
                     navArgument("repo") { type = NavType.StringType }
                 )
             ) { backStackEntry ->
-                val owner = backStackEntry.arguments?.getString("owner") ?: ""
-                val repo = backStackEntry.arguments?.getString("repo") ?: ""
+                val owner = decodeNavArg(backStackEntry.arguments?.getString("owner"))
+                val repo = decodeNavArg(backStackEntry.arguments?.getString("repo"))
                 PullRequestListScreen(
                     owner = owner,
                     repo = repo,
@@ -318,8 +308,8 @@ fun RafGitToolsApp(
                     navArgument("number") { type = NavType.IntType }
                 )
             ) { backStackEntry ->
-                val owner = backStackEntry.arguments?.getString("owner") ?: ""
-                val repo = backStackEntry.arguments?.getString("repo") ?: ""
+                val owner = decodeNavArg(backStackEntry.arguments?.getString("owner"))
+                val repo = decodeNavArg(backStackEntry.arguments?.getString("repo"))
                 val number = backStackEntry.arguments?.getInt("number") ?: 0
                 PullRequestDetailScreen(
                     owner = owner,
@@ -333,9 +323,7 @@ fun RafGitToolsApp(
                 route = Screen.FileBrowser.route,
                 arguments = listOf(navArgument("repoPath") { type = NavType.StringType })
             ) { backStackEntry ->
-                val repoPath = backStackEntry.arguments?.getString("repoPath")?.let {
-                    URLDecoder.decode(it, "UTF-8")
-                } ?: ""
+                val repoPath = decodeNavArg(backStackEntry.arguments?.getString("repoPath"))
                 FileBrowserScreen(
                     repoPath = repoPath,
                     onNavigateBack = { navController.popBackStack() }
@@ -346,9 +334,7 @@ fun RafGitToolsApp(
                 route = Screen.DiffViewer.route,
                 arguments = listOf(navArgument("repoPath") { type = NavType.StringType })
             ) { backStackEntry ->
-                val repoPath = backStackEntry.arguments?.getString("repoPath")?.let {
-                    URLDecoder.decode(it, "UTF-8")
-                } ?: ""
+                val repoPath = decodeNavArg(backStackEntry.arguments?.getString("repoPath"))
                 DiffViewerScreen(
                     repoPath = repoPath,
                     onNavigateBack = { navController.popBackStack() }
@@ -359,9 +345,7 @@ fun RafGitToolsApp(
                 route = Screen.StashList.route,
                 arguments = listOf(navArgument("repoPath") { type = NavType.StringType })
             ) { backStackEntry ->
-                val repoPath = backStackEntry.arguments?.getString("repoPath")?.let {
-                    URLDecoder.decode(it, "UTF-8")
-                } ?: ""
+                val repoPath = decodeNavArg(backStackEntry.arguments?.getString("repoPath"))
                 StashListScreen(
                     repoPath = repoPath,
                     onNavigateBack = { navController.popBackStack() }
@@ -372,9 +356,7 @@ fun RafGitToolsApp(
                 route = Screen.TagList.route,
                 arguments = listOf(navArgument("repoPath") { type = NavType.StringType })
             ) { backStackEntry ->
-                val repoPath = backStackEntry.arguments?.getString("repoPath")?.let {
-                    URLDecoder.decode(it, "UTF-8")
-                } ?: ""
+                val repoPath = decodeNavArg(backStackEntry.arguments?.getString("repoPath"))
                 TagListScreen(
                     repoPath = repoPath,
                     onNavigateBack = { navController.popBackStack() }
@@ -402,7 +384,7 @@ fun RafGitToolsApp(
                 route = Screen.Profile.route,
                 arguments = listOf(navArgument("username") { type = NavType.StringType })
             ) { backStackEntry ->
-                val username = backStackEntry.arguments?.getString("username") ?: ""
+                val username = decodeNavArg(backStackEntry.arguments?.getString("username"))
                 ProfileScreen(
                     username = username,
                     onNavigateBack = { navController.popBackStack() }
@@ -416,8 +398,8 @@ fun RafGitToolsApp(
                     navArgument("repo") { type = NavType.StringType }
                 )
             ) { backStackEntry ->
-                val owner = backStackEntry.arguments?.getString("owner") ?: ""
-                val repo = backStackEntry.arguments?.getString("repo") ?: ""
+                val owner = decodeNavArg(backStackEntry.arguments?.getString("owner"))
+                val repo = decodeNavArg(backStackEntry.arguments?.getString("repo"))
                 ReleasesScreen(
                     owner = owner,
                     repo = repo,
@@ -436,8 +418,8 @@ fun RafGitToolsApp(
                     navArgument("id") { type = NavType.LongType }
                 )
             ) { backStackEntry ->
-                val owner = backStackEntry.arguments?.getString("owner") ?: ""
-                val repo = backStackEntry.arguments?.getString("repo") ?: ""
+                val owner = decodeNavArg(backStackEntry.arguments?.getString("owner"))
+                val repo = decodeNavArg(backStackEntry.arguments?.getString("repo"))
                 val releaseId = backStackEntry.arguments?.getLong("id") ?: 0L
                 ReleaseDetailScreen(
                     owner = owner,
@@ -473,8 +455,8 @@ fun RafGitToolsApp(
                     navArgument("repo") { type = NavType.StringType }
                 )
             ) { backStackEntry ->
-                val owner = backStackEntry.arguments?.getString("owner") ?: ""
-                val repo = backStackEntry.arguments?.getString("repo") ?: ""
+                val owner = decodeNavArg(backStackEntry.arguments?.getString("owner"))
+                val repo = decodeNavArg(backStackEntry.arguments?.getString("repo"))
                 CreateIssueScreen(
                     owner = owner,
                     repo = repo,
@@ -490,8 +472,8 @@ fun RafGitToolsApp(
                     navArgument("repo") { type = NavType.StringType }
                 )
             ) { backStackEntry ->
-                val owner = backStackEntry.arguments?.getString("owner") ?: ""
-                val repo = backStackEntry.arguments?.getString("repo") ?: ""
+                val owner = decodeNavArg(backStackEntry.arguments?.getString("owner"))
+                val repo = decodeNavArg(backStackEntry.arguments?.getString("repo"))
                 CreatePullRequestScreen(
                     owner = owner,
                     repo = repo,
@@ -523,6 +505,11 @@ fun RafGitToolsApp(
             )
         }
     }
+}
+
+
+private fun decodeNavArg(value: String?): String {
+    return value?.let { URLDecoder.decode(it, "UTF-8") } ?: ""
 }
 
 /**
