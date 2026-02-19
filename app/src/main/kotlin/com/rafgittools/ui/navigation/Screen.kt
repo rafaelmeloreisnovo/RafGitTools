@@ -57,6 +57,9 @@ sealed class Screen(val route: String) {
         fun createRoute(owner: String, repo: String, id: Long) = "release_detail/$owner/$repo/$id"
     }
     object Notifications : Screen("notifications")
+    object Terminal : Screen("terminal/{repoPath}") {
+        fun createRoute(repoPath: String) = "terminal/${java.net.URLEncoder.encode(repoPath, "UTF-8")}"
+    }
     object CreateIssue : Screen("create_issue/{owner}/{repo}") {
         fun createRoute(owner: String, repo: String) = "create_issue/$owner/$repo"
     }

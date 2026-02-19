@@ -54,6 +54,7 @@ import com.rafgittools.ui.screens.search.SearchScreen
 import com.rafgittools.ui.screens.settings.SettingsScreen
 import com.rafgittools.ui.screens.stash.StashListScreen
 import com.rafgittools.ui.screens.tags.TagListScreen
+import com.rafgittools.ui.screens.terminal.TerminalScreen
 import com.rafgittools.ui.theme.RafGitToolsTheme
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.EntryPointAccessors
@@ -448,6 +449,19 @@ fun RafGitToolsApp(
             
             composable(Screen.Notifications.route) {
                 NotificationsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Screen.Terminal.route,
+                arguments = listOf(navArgument("repoPath") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val repoPath = backStackEntry.arguments?.getString("repoPath")?.let {
+                    URLDecoder.decode(it, "UTF-8")
+                } ?: ""
+                TerminalScreen(
+                    repoPath = repoPath,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
