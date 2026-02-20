@@ -158,20 +158,34 @@ fun RafGitToolsApp(
                 )
             }
             
-            composable(Screen.RepositoryList.route) {
+            composable(Screen.RepositoryList.route) { backStackEntry ->
+                val reloadSignal by backStackEntry.savedStateHandle
+                    .getStateFlow("reload_repositories", false)
+                    .collectAsState()
+
                 RepositoryListScreen(
                     onRepositoryClick = { repo ->
                         navController.navigate(Screen.RepositoryDetail.createRoute(repo.path))
                     },
                     onAddRepository = {
                         navController.navigate(Screen.AddRepository.route)
+                    },
+                    reloadSignal = reloadSignal,
+                    onReloadHandled = {
+                        backStackEntry.savedStateHandle["reload_repositories"] = false
                     }
                 )
             }
 
             composable(Screen.AddRepository.route) {
                 AddRepositoryScreen(
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onCloneSuccess = {
+                        navController.previousBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("reload_repositories", true)
+                        navController.popBackStack()
+                    }
                 )
             }
             
