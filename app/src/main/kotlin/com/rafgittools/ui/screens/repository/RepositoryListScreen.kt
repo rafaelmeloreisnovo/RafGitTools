@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,10 +26,19 @@ import com.rafgittools.domain.model.GitRepository
 fun RepositoryListScreen(
     viewModel: RepositoryListViewModel = hiltViewModel(),
     onRepositoryClick: (GitRepository) -> Unit = {},
-    onAddRepository: () -> Unit = {}
+    onAddRepository: () -> Unit = {},
+    reloadSignal: Boolean = false,
+    onReloadHandled: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    
+
+    LaunchedEffect(reloadSignal) {
+        if (reloadSignal) {
+            viewModel.loadRepositories()
+            onReloadHandled()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
