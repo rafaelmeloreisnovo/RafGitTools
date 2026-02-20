@@ -1,7 +1,5 @@
 package com.rafgittools.data.auth
 
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 import javax.inject.Inject
@@ -15,26 +13,13 @@ import javax.inject.Singleton
  */
 @Singleton
 class AuthInterceptor @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authTokenCache: AuthTokenCache
 ) : Interceptor {
     
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
         
-        // Only add auth header if user is authenticated
-        val isAuthenticated = runBlocking { authRepository.isAuthenticated() }
-        
-        if (!isAuthenticated) {
-            return chain.proceed(originalRequest)
-        }
-        
-        // Get the PAT
-        val patResult = runBlocking { authRepository.getPat() }
-        
-        val token = patResult.getOrNull()
-        if (token == null) {
-            return chain.proceed(originalRequest)
-        }
+        val token = authTokenCache.token ?: return chain.proceed(originalRequest)
         
         // Add authorization header
         val authenticatedRequest = originalRequest.newBuilder()
