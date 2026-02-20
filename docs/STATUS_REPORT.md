@@ -12,6 +12,12 @@ RafGitTools é um cliente Git/GitHub unificado para Android que combina as melho
 
 RafGitTools is a unified Git/GitHub Android client combining the best features from open-source projects like FastHub, MGit, PuppyGit, and Termux.
 
+### Estado Atual / Current State
+
+- ✅ Clone flow de **AddRepository** implementado.
+- ✅ Padrão de path de repositórios definido em **`externalFilesDir/repositories`**.
+- ✅ Remoção do pacote obsoleto **`presentation/*`** concluída.
+
 ### Estatísticas do Projeto / Project Statistics
 
 | Métrica / Metric | Valor / Value |
@@ -169,7 +175,7 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 | End-to-End Tests | 🔴 Pendente | - |
 
 **Pendências / Pending**:
-- [ ] Aumentar cobertura de testes unitários para >80%
+- [ ] Elevar a cobertura de testes (expansão inicial já concluída) para >80%
 - [ ] Implementar testes de integração para JGitService
 - [ ] Implementar testes UI com Espresso
 - [ ] Configurar CI/CD para testes automáticos
