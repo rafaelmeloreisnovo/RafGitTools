@@ -4,6 +4,7 @@ import com.rafgittools.data.git.JGitService
 import com.rafgittools.data.git.ResetMode as JGitResetMode
 import com.rafgittools.data.git.ReflogEntry as JGitReflogEntry
 import com.rafgittools.data.git.BlameLine as JGitBlameLine
+import com.rafgittools.data.storage.RepoStorage
 import com.rafgittools.domain.model.*
 import com.rafgittools.domain.repository.Credentials
 import com.rafgittools.domain.repository.GitRepository as IGitRepository
@@ -19,7 +20,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class GitRepositoryImpl @Inject constructor(
-    private val jGitService: JGitService
+    private val jGitService: JGitService,
+    private val repoStorage: RepoStorage
 ) : IGitRepository {
     
     override suspend fun cloneRepository(
@@ -27,7 +29,8 @@ class GitRepositoryImpl @Inject constructor(
         localPath: String,
         credentials: Credentials?
     ): Result<GitRepository> {
-        return jGitService.cloneRepository(url, localPath, credentials)
+        val resolvedLocalPath = buildLocalPath(url)
+        return jGitService.cloneRepository(url, resolvedLocalPath, credentials)
     }
     
     override suspend fun getLocalRepositories(): Result<List<GitRepository>> {
@@ -35,8 +38,8 @@ class GitRepositoryImpl @Inject constructor(
             // Scan common repository locations
             val repositories = mutableListOf<GitRepository>()
             
-            // Check the app's files directory for repositories
-            val appReposDir = File("/storage/emulated/0/RafGitTools/repositories")
+            // Check the app's repository storage directory
+            val appReposDir = repoStorage.baseDir
             if (appReposDir.exists() && appReposDir.isDirectory) {
                 appReposDir.listFiles()?.forEach { dir ->
                     if (dir.isDirectory) {
@@ -198,7 +201,8 @@ class GitRepositoryImpl @Inject constructor(
         depth: Int,
         credentials: Credentials?
     ): Result<GitRepository> {
-        return jGitService.cloneShallow(url, localPath, depth, credentials)
+        val resolvedLocalPath = buildLocalPath(url)
+        return jGitService.cloneShallow(url, resolvedLocalPath, depth, credentials)
     }
     
     override suspend fun cloneSingleBranch(
@@ -207,7 +211,8 @@ class GitRepositoryImpl @Inject constructor(
         branch: String,
         credentials: Credentials?
     ): Result<GitRepository> {
-        return jGitService.cloneSingleBranch(url, localPath, branch, credentials)
+        val resolvedLocalPath = buildLocalPath(url)
+        return jGitService.cloneSingleBranch(url, resolvedLocalPath, branch, credentials)
     }
     
     override suspend fun cloneWithSubmodules(
@@ -215,7 +220,23 @@ class GitRepositoryImpl @Inject constructor(
         localPath: String,
         credentials: Credentials?
     ): Result<GitRepository> {
-        return jGitService.cloneWithSubmodules(url, localPath, credentials)
+        val resolvedLocalPath = buildLocalPath(url)
+        return jGitService.cloneWithSubmodules(url, resolvedLocalPath, credentials)
+    }
+
+    private fun buildLocalPath(url: String): String {
+        val repoName = extractRepositoryName(url)
+        return File(repoStorage.baseDir, repoName).absolutePath
+    }
+
+    private fun extractRepositoryName(url: String): String {
+        val sanitizedUrl = url.trim().trimEnd('/')
+        val lastSegment = sanitizedUrl.substringAfterLast('/').substringAfterLast(':')
+        return if (lastSegment.endsWith(".git")) {
+            lastSegment.removeSuffix(".git")
+        } else {
+            lastSegment
+        }
     }
     
     // ============================================
