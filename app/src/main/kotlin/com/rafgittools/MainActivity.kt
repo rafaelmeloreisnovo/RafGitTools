@@ -63,6 +63,8 @@ import kotlinx.coroutines.runBlocking
 import java.net.URLDecoder
 import javax.inject.Inject
 
+private const val REPO_ADDED_FLAG = "repo_added"
+
 /**
  * Main Activity for RafGitTools
  * 
@@ -160,7 +162,7 @@ fun RafGitToolsApp(
             
             composable(Screen.RepositoryList.route) { backStackEntry ->
                 val reloadSignal by backStackEntry.savedStateHandle
-                    .getStateFlow("reload_repositories", false)
+                    .getStateFlow(REPO_ADDED_FLAG, false)
                     .collectAsState()
 
                 RepositoryListScreen(
@@ -172,7 +174,7 @@ fun RafGitToolsApp(
                     },
                     reloadSignal = reloadSignal,
                     onReloadHandled = {
-                        backStackEntry.savedStateHandle["reload_repositories"] = false
+                        backStackEntry.savedStateHandle[REPO_ADDED_FLAG] = false
                     }
                 )
             }
@@ -183,7 +185,7 @@ fun RafGitToolsApp(
                     onCloneSuccess = {
                         navController.previousBackStackEntry
                             ?.savedStateHandle
-                            ?.set("reload_repositories", true)
+                            ?.set(REPO_ADDED_FLAG, true)
                         navController.popBackStack()
                     }
                 )
