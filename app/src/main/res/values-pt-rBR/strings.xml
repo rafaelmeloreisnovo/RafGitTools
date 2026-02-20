@@ -169,5 +169,5 @@
     <!-- Erro labels -->
     <string name="error_title">Erro</string>
 
-    <string name="settings_repository_location_path">/storage/emulated/0/RafGitTools/repositories</string>
+    <string name="settings_repository_location_path">Android/data/com.rafgittools/files/repositories</string>
 </resources>
