@@ -7,6 +7,8 @@ import com.rafgittools.core.error.ErrorHandler
 import com.rafgittools.core.error.GlobalExceptionHandler
 import com.rafgittools.core.error.PersistentErrorLogger
 import com.rafgittools.core.localization.LocalizationManager
+import com.rafgittools.data.auth.AuthRepository
+import com.rafgittools.data.auth.AuthTokenCache
 import com.rafgittools.data.preferences.PreferencesRepository
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -29,6 +31,12 @@ class RafGitToolsApplication : Application() {
     
     @Inject
     lateinit var preferencesRepository: PreferencesRepository
+
+    @Inject
+    lateinit var authRepository: AuthRepository
+
+    @Inject
+    lateinit var authTokenCache: AuthTokenCache
 
     @Inject
     lateinit var errorLogger: PersistentErrorLogger
@@ -54,6 +62,7 @@ class RafGitToolsApplication : Application() {
         applicationScope.launch {
             val savedLanguage = preferencesRepository.getLanguage()
             localizationManager.applyLocale(this@RafGitToolsApplication, savedLanguage)
+            authTokenCache.token = authRepository.getPat().getOrNull()
         }
     }
     
@@ -64,6 +73,7 @@ class RafGitToolsApplication : Application() {
         applicationScope.launch {
             val savedLanguage = preferencesRepository.getLanguage()
             localizationManager.applyLocale(this@RafGitToolsApplication, savedLanguage)
+            authTokenCache.token = authRepository.getPat().getOrNull()
         }
     }
 }

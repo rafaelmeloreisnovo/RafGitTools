@@ -3,6 +3,7 @@ package com.rafgittools.ui.screens.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rafgittools.data.auth.AuthRepository
+import com.rafgittools.data.auth.AuthTokenCache
 import com.rafgittools.data.github.GithubDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val githubRepository: GithubDataRepository
+    private val githubRepository: GithubDataRepository,
+    private val authTokenCache: AuthTokenCache
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
@@ -38,6 +40,7 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _isAuthenticated.value = authRepository.isAuthenticated()
             _username.value = authRepository.getUsername()
+            authTokenCache.token = authRepository.getPat().getOrNull()
         }
     }
     
@@ -64,6 +67,7 @@ class AuthViewModel @Inject constructor(
                     // Save the token with the actual username
                     authRepository.savePat(token, user.login)
                         .onSuccess {
+                            authTokenCache.token = token
                             _isAuthenticated.value = true
                             _username.value = user.login
                             _uiState.value = AuthUiState.Success(user.login)
@@ -77,6 +81,7 @@ class AuthViewModel @Inject constructor(
                 .onFailure { error ->
                     // Clear the temporary token
                     authRepository.logout()
+                    authTokenCache.token = null
                     _uiState.value = AuthUiState.Error(
                         when {
                             error.message?.contains("401") == true -> 
@@ -97,6 +102,7 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             authRepository.logout()
                 .onSuccess {
+                    authTokenCache.token = null
                     _isAuthenticated.value = false
                     _username.value = null
                     _uiState.value = AuthUiState.Idle
