@@ -179,7 +179,7 @@ dependencies {
     }
     
     // JSch (SSH) - Using version compatible with Java 17
-    implementation('com.github.mwiede:jsch:2.27.7') {
+    implementation('com.github.mwiede:jsch:2.27.8') {
         // Exclude BouncyCastle to avoid Java 21 class file issues
         exclude group: 'org.bouncycastle'
     }
