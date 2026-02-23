@@ -6,9 +6,12 @@ on:
     paths:
       - "_incoming/*.zip"
 
+concurrency:
+  group: zipdrop-main
+  cancel-in-progress: true
+
 jobs:
   apply:
-    # evita loop quando o bot commita
     if: ${{ !contains(github.event.head_commit.message, '[zipdrop]') }}
     runs-on: ubuntu-latest
     permissions:
@@ -20,52 +23,68 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Apply incoming zip(s)
+      - name: Apply zip overlay safely
         shell: bash
         run: |
           set -euo pipefail
 
-          # encontra zips mesmo com espaço no nome
           find "_incoming" -maxdepth 1 -type f -name '*.zip' -print0 | while IFS= read -r -d '' z; do
-            echo ">> Applying $z"
+            echo ">> ZIP: $z"
 
             work="$(mktemp -d)"
-            unzip -q "$z" -d "$work"
+            unzip -q -o "$z" -d "$work"
 
-            # Se o zip tiver UMA pasta raiz e nenhum arquivo na raiz, achata:
-            top_dirs=$(find "$work" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
-            top_files=$(find "$work" -mindepth 1 -maxdepth 1 -type f | wc -l | tr -d ' ')
+            echo ">> Top-level raw:"
+            (cd "$work" && ls -la)
 
-            if [ "$top_dirs" -eq 1 ] && [ "$top_files" -eq 0 ]; then
-              rootdir="$(find "$work" -mindepth 1 -maxdepth 1 -type d -print -quit)"
-              echo "   - flatten root dir: $rootdir"
-              (cd "$rootdir" && tar -cf - .) | tar -xf - -C .
+            # pega apenas itens "válidos" no topo (ignora lixo do mac/windows)
+            mapfile -t top_dirs < <(find "$work" -mindepth 1 -maxdepth 1 -type d \
+              ! -name "__MACOSX" ! -name ".git" -print)
+            mapfile -t top_files < <(find "$work" -mindepth 1 -maxdepth 1 -type f \
+              ! -name ".DS_Store" ! -name "Thumbs.db" ! -name "desktop.ini" ! -name "._*" -print)
+
+            echo ">> top_dirs=${#top_dirs[@]} top_files=${#top_files[@]}"
+
+            # decide flatten só quando for ZIP "RepoName-branch" (zip do GitHub)
+            do_flatten="no"
+            if [ "${#top_dirs[@]}" -eq 1 ] && [ "${#top_files[@]}" -eq 0 ]; then
+              rootdir="${top_dirs[0]}"
+              rootname="$(basename "$rootdir")"
+
+              # flatten SOMENTE se parecer checkout do repo (contém marcadores de raiz)
+              if [ -f "$rootdir/gradlew" ] || [ -f "$rootdir/settings.gradle" ] || [ -f "$rootdir/settings.gradle.kts" ] || \
+                 [ -f "$rootdir/build.gradle" ] || [ -f "$rootdir/build.gradle.kts" ] || \
+                 [ -d "$rootdir/.github" ] || [ -d "$rootdir/gradle" ]; then
+                do_flatten="yes"
+              fi
+
+              # se o root for 'app'/'src'/'docs', NUNCA achata
+              case "$rootname" in
+                app|src|docs|gradle|.github|buildSrc)
+                  do_flatten="no"
+                  ;;
+              esac
+
+              echo ">> rootname=$rootname do_flatten=$do_flatten"
+
+              if [ "$do_flatten" = "yes" ]; then
+                echo ">> FLATTEN: $rootdir"
+                (cd "$rootdir" && tar -cf - .) | tar -xf - -C .
+              else
+                echo ">> NO FLATTEN (mantendo paths do zip)"
+                (cd "$work" && tar -cf - .) | tar -xf - -C .
+              fi
             else
+              echo ">> NO FLATTEN (zip já é overlay ou tem várias pastas)"
               (cd "$work" && tar -cf - .) | tar -xf - -C .
             fi
 
-            # Aplica deletes se o zip for do tipo __DELTA__
-            if [ -f "__DELTA__/DELETE_LIST.txt" ]; then
-              echo "   - applying deletes from __DELTA__/DELETE_LIST.txt"
-              while IFS= read -r line; do
-                # trim
-                line="${line#"${line%%[![:space:]]*}"}"
-                line="${line%"${line##*[![:space:]]}"}"
+            # limpeza lixo mac/windows se vier
+            rm -rf "__MACOSX" || true
+            find . -name ".DS_Store" -delete || true
+            find . -name "._*" -delete || true
 
-                [ -z "$line" ] && continue
-                case "$line" in \#*) continue;; esac
-
-                # segurança: nega path absoluto e traversal
-                case "$line" in
-                  /*|*..* ) echo "   - SKIP unsafe delete: $line"; continue;;
-                esac
-
-                rm -rf -- "$line"
-              done < "__DELTA__/DELETE_LIST.txt"
-            fi
-
-            # limpa metadados e o zip aplicado
-            rm -rf "__DELTA__" || true
+            # remove o zip e workspace tmp
             rm -f "$z"
             rm -rf "$work"
           done
@@ -80,7 +99,6 @@ jobs:
 
           git config user.name  "zipdrop-bot"
           git config user.email "zipdrop-bot@users.noreply.github.com"
-
           git add -A
           git commit -m "[zipdrop] apply zip overlay"
           git push
