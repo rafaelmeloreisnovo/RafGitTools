@@ -18,6 +18,8 @@ import org.eclipse.jgit.transport.Transport
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.eclipse.jgit.transport.RefLeaseSpec
 import org.eclipse.jgit.transport.SshSessionFactory as JGitSshSessionFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -46,7 +48,8 @@ class JGitService @Inject constructor(
         url: String,
         localPath: String,
         credentials: Credentials?
-    ): Result<GitRepository> = runCatching {
+    ): Result<GitRepository> = withContext(Dispatchers.IO) {
+        runCatching {
         val directory = File(localPath)
         validateCloneTarget(directory)
         
@@ -114,7 +117,8 @@ class JGitService @Inject constructor(
         localPath: String,
         depth: Int = 1,
         credentials: Credentials?
-    ): Result<GitRepository> = runCatching {
+    ): Result<GitRepository> = withContext(Dispatchers.IO) {
+        runCatching {
         val directory = File(localPath)
         validateCloneTarget(directory)
         
@@ -149,7 +153,8 @@ class JGitService @Inject constructor(
         localPath: String,
         branch: String,
         credentials: Credentials?
-    ): Result<GitRepository> = runCatching {
+    ): Result<GitRepository> = withContext(Dispatchers.IO) {
+        runCatching {
         val directory = File(localPath)
         validateCloneTarget(directory)
         
@@ -185,7 +190,8 @@ class JGitService @Inject constructor(
         url: String,
         localPath: String,
         credentials: Credentials?
-    ): Result<GitRepository> = runCatching {
+    ): Result<GitRepository> = withContext(Dispatchers.IO) {
+        runCatching {
         val directory = File(localPath)
         validateCloneTarget(directory)
         
@@ -263,7 +269,8 @@ class JGitService @Inject constructor(
     /**
      * Open existing repository
      */
-    fun openRepository(path: String): Result<Git> = runCatching {
+    fun openRepository(path: String): Result<Git> = withContext(Dispatchers.IO) {
+        runCatching {
         val directory = File(path)
         val builder = FileRepositoryBuilder()
         val repository = builder.setGitDir(File(directory, ".git"))
@@ -277,7 +284,8 @@ class JGitService @Inject constructor(
     /**
      * Get repository status
      */
-    suspend fun getStatus(repoPath: String): Result<GitStatus> = runCatching {
+    suspend fun getStatus(repoPath: String): Result<GitStatus> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val status = git.status().call()
             val branch = git.repository.branch ?: "Unknown"
@@ -302,7 +310,8 @@ class JGitService @Inject constructor(
         repoPath: String,
         branch: String?,
         limit: Int
-    ): Result<List<GitCommit>> = runCatching {
+    ): Result<List<GitCommit>> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val ref = branch?.let { git.repository.findRef(it) }
                 ?: git.repository.findRef(Constants.HEAD)
@@ -319,7 +328,8 @@ class JGitService @Inject constructor(
     /**
      * Get branches
      */
-    suspend fun getBranches(repoPath: String): Result<List<GitBranch>> = runCatching {
+    suspend fun getBranches(repoPath: String): Result<List<GitBranch>> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val currentBranch = git.repository.branch
             val branches = mutableListOf<GitBranch>()
@@ -356,7 +366,8 @@ class JGitService @Inject constructor(
         repoPath: String,
         branchName: String,
         startPoint: String?
-    ): Result<GitBranch> = runCatching {
+    ): Result<GitBranch> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val command = git.branchCreate()
                 .setName(branchName)
@@ -380,7 +391,8 @@ class JGitService @Inject constructor(
         repoPath: String,
         branchName: String,
         force: Boolean = false
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             git.branchDelete()
                 .setBranchNames(branchName)
@@ -398,7 +410,8 @@ class JGitService @Inject constructor(
         repoPath: String,
         oldName: String,
         newName: String
-    ): Result<GitBranch> = runCatching {
+    ): Result<GitBranch> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val ref = git.branchRename()
                 .setOldName(oldName)
@@ -418,7 +431,8 @@ class JGitService @Inject constructor(
     suspend fun checkoutBranch(
         repoPath: String,
         branchName: String
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             git.checkout()
                 .setName(branchName)
@@ -433,7 +447,8 @@ class JGitService @Inject constructor(
     suspend fun stageFiles(
         repoPath: String,
         files: List<String>
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val addCommand = git.add()
             files.forEach { addCommand.addFilepattern(it) }
@@ -448,7 +463,8 @@ class JGitService @Inject constructor(
     suspend fun unstageFiles(
         repoPath: String,
         files: List<String>
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val resetCommand = git.reset()
             files.forEach { resetCommand.addPath(it) }
@@ -464,7 +480,8 @@ class JGitService @Inject constructor(
         repoPath: String,
         message: String,
         author: GitAuthor?
-    ): Result<GitCommit> = runCatching {
+    ): Result<GitCommit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val command = git.commit()
                 .setMessage(message)
@@ -486,7 +503,8 @@ class JGitService @Inject constructor(
         remote: String,
         branch: String?,
         credentials: Credentials?
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val command = git.push()
                 .setRemote(remote)
@@ -532,7 +550,8 @@ class JGitService @Inject constructor(
         branch: String,
         expectedOldObjectId: String,
         credentials: Credentials?
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val refSpec = "refs/heads/$branch:refs/heads/$branch"
             val command = git.push()
@@ -577,7 +596,8 @@ class JGitService @Inject constructor(
         remote: String,
         branch: String?,
         credentials: Credentials?
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val command = git.pull()
                 .setRemote(remote)
@@ -620,7 +640,8 @@ class JGitService @Inject constructor(
         repoPath: String,
         remote: String,
         credentials: Credentials?
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val command = git.fetch()
                 .setRemote(remote)
@@ -660,7 +681,8 @@ class JGitService @Inject constructor(
     suspend fun merge(
         repoPath: String,
         branchName: String
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val ref = git.repository.findRef(branchName)
                 ?: throw IllegalArgumentException("Branch not found: $branchName")
@@ -675,7 +697,8 @@ class JGitService @Inject constructor(
     /**
      * Get remotes
      */
-    suspend fun getRemotes(repoPath: String): Result<List<GitRemote>> = runCatching {
+    suspend fun getRemotes(repoPath: String): Result<List<GitRemote>> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             git.remoteList().call().map { remote ->
                 val uris = remote.urIs
@@ -698,7 +721,8 @@ class JGitService @Inject constructor(
         repoPath: String,
         name: String,
         url: String
-    ): Result<GitRemote> = runCatching {
+    ): Result<GitRemote> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val config = git.repository.config
             config.setString("remote", name, "url", url)
@@ -750,7 +774,8 @@ class JGitService @Inject constructor(
     /**
      * List all stash entries
      */
-    suspend fun listStashes(repoPath: String): Result<List<GitStash>> = runCatching {
+    suspend fun listStashes(repoPath: String): Result<List<GitStash>> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val stashList = git.stashList().call()
             stashList.mapIndexed { index, revCommit ->
@@ -772,7 +797,8 @@ class JGitService @Inject constructor(
         repoPath: String,
         message: String?,
         includeUntracked: Boolean = false
-    ): Result<GitStash> = runCatching {
+    ): Result<GitStash> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val command = git.stashCreate()
             if (includeUntracked) {
@@ -798,7 +824,8 @@ class JGitService @Inject constructor(
     suspend fun stashApply(
         repoPath: String,
         stashRef: String? = null
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val command = git.stashApply()
             stashRef?.let { command.setStashRef(it) }
@@ -813,7 +840,8 @@ class JGitService @Inject constructor(
     suspend fun stashPop(
         repoPath: String,
         stashRef: String? = null
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             // First apply
             val applyCommand = git.stashApply()
@@ -832,7 +860,8 @@ class JGitService @Inject constructor(
     suspend fun stashDrop(
         repoPath: String,
         stashIndex: Int = 0
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             git.stashDrop()
                 .setStashRef(stashIndex)
@@ -844,7 +873,8 @@ class JGitService @Inject constructor(
     /**
      * Clear all stashes
      */
-    suspend fun stashClear(repoPath: String): Result<Unit> = runCatching {
+    suspend fun stashClear(repoPath: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             // Drop all stashes one by one
             while (git.stashList().call().isNotEmpty()) {
@@ -861,7 +891,8 @@ class JGitService @Inject constructor(
     /**
      * List all tags
      */
-    suspend fun listTags(repoPath: String): Result<List<GitTag>> = runCatching {
+    suspend fun listTags(repoPath: String): Result<List<GitTag>> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val tags = mutableListOf<GitTag>()
             
@@ -922,7 +953,8 @@ class JGitService @Inject constructor(
         repoPath: String,
         tagName: String,
         commitSha: String? = null
-    ): Result<GitTag> = runCatching {
+    ): Result<GitTag> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val command = git.tag()
                 .setName(tagName)
@@ -955,7 +987,8 @@ class JGitService @Inject constructor(
         message: String,
         tagger: GitAuthor? = null,
         commitSha: String? = null
-    ): Result<GitTag> = runCatching {
+    ): Result<GitTag> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val command = git.tag()
                 .setName(tagName)
@@ -990,7 +1023,8 @@ class JGitService @Inject constructor(
     suspend fun deleteTag(
         repoPath: String,
         tagName: String
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             git.tagDelete()
                 .setTags(tagName)
@@ -1009,7 +1043,8 @@ class JGitService @Inject constructor(
     suspend fun getDiff(
         repoPath: String,
         cached: Boolean = false
-    ): Result<List<GitDiff>> = runCatching {
+    ): Result<List<GitDiff>> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val diffFormatter = org.eclipse.jgit.diff.DiffFormatter(java.io.ByteArrayOutputStream())
             diffFormatter.setRepository(git.repository)
@@ -1089,7 +1124,8 @@ class JGitService @Inject constructor(
         repoPath: String,
         oldCommitSha: String,
         newCommitSha: String
-    ): Result<List<GitDiff>> = runCatching {
+    ): Result<List<GitDiff>> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val reader = git.repository.newObjectReader()
             
@@ -1247,7 +1283,8 @@ class JGitService @Inject constructor(
         repoPath: String,
         path: String = "",
         ref: String? = null
-    ): Result<List<GitFile>> = runCatching {
+    ): Result<List<GitFile>> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val files = mutableListOf<GitFile>()
             val resolvedRef = ref ?: Constants.HEAD
@@ -1314,7 +1351,8 @@ class JGitService @Inject constructor(
         repoPath: String,
         filePath: String,
         ref: String? = null
-    ): Result<FileContent> = runCatching {
+    ): Result<FileContent> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val resolvedRef = ref ?: Constants.HEAD
             
@@ -1409,7 +1447,8 @@ class JGitService @Inject constructor(
     suspend fun rebase(
         repoPath: String,
         upstream: String
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             git.rebase()
                 .setUpstream(upstream)
@@ -1421,7 +1460,8 @@ class JGitService @Inject constructor(
     /**
      * Continue rebase after resolving conflicts
      */
-    suspend fun rebaseContinue(repoPath: String): Result<Unit> = runCatching {
+    suspend fun rebaseContinue(repoPath: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             git.rebase()
                 .setOperation(org.eclipse.jgit.api.RebaseCommand.Operation.CONTINUE)
@@ -1433,7 +1473,8 @@ class JGitService @Inject constructor(
     /**
      * Abort rebase
      */
-    suspend fun rebaseAbort(repoPath: String): Result<Unit> = runCatching {
+    suspend fun rebaseAbort(repoPath: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             git.rebase()
                 .setOperation(org.eclipse.jgit.api.RebaseCommand.Operation.ABORT)
@@ -1445,7 +1486,8 @@ class JGitService @Inject constructor(
     /**
      * Skip current commit during rebase
      */
-    suspend fun rebaseSkip(repoPath: String): Result<Unit> = runCatching {
+    suspend fun rebaseSkip(repoPath: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             git.rebase()
                 .setOperation(org.eclipse.jgit.api.RebaseCommand.Operation.SKIP)
@@ -1464,7 +1506,8 @@ class JGitService @Inject constructor(
     suspend fun cherryPick(
         repoPath: String,
         commitSha: String
-    ): Result<GitCommit> = runCatching {
+    ): Result<GitCommit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val commitId = git.repository.resolve(commitSha)
             val revWalk = org.eclipse.jgit.revwalk.RevWalk(git.repository)
@@ -1484,7 +1527,8 @@ class JGitService @Inject constructor(
     /**
      * Continue cherry-pick after resolving conflicts
      */
-    suspend fun cherryPickContinue(repoPath: String): Result<Unit> = runCatching {
+    suspend fun cherryPickContinue(repoPath: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             // In JGit, continuing cherry-pick requires committing manually
             // if there were conflicts
@@ -1498,7 +1542,8 @@ class JGitService @Inject constructor(
     /**
      * Abort cherry-pick
      */
-    suspend fun cherryPickAbort(repoPath: String): Result<Unit> = runCatching {
+    suspend fun cherryPickAbort(repoPath: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             git.reset()
                 .setMode(org.eclipse.jgit.api.ResetCommand.ResetType.HARD)
@@ -1519,7 +1564,8 @@ class JGitService @Inject constructor(
         repoPath: String,
         commitSha: String,
         mode: ResetMode = ResetMode.MIXED
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val resetType = when (mode) {
                 ResetMode.SOFT -> org.eclipse.jgit.api.ResetCommand.ResetType.SOFT
@@ -1541,7 +1587,8 @@ class JGitService @Inject constructor(
     suspend fun revert(
         repoPath: String,
         commitSha: String
-    ): Result<GitCommit> = runCatching {
+    ): Result<GitCommit> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val commitId = git.repository.resolve(commitSha)
             val revWalk = org.eclipse.jgit.revwalk.RevWalk(git.repository)
@@ -1569,7 +1616,8 @@ class JGitService @Inject constructor(
         dryRun: Boolean = false,
         directories: Boolean = false,
         force: Boolean = true
-    ): Result<List<String>> = runCatching {
+    ): Result<List<String>> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             git.clean()
                 .setDryRun(dryRun)
@@ -1591,7 +1639,8 @@ class JGitService @Inject constructor(
         repoPath: String,
         ref: String = Constants.HEAD,
         limit: Int = 50
-    ): Result<List<ReflogEntry>> = runCatching {
+    ): Result<List<ReflogEntry>> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             git.reflog()
                 .setRef(ref)
@@ -1623,7 +1672,8 @@ class JGitService @Inject constructor(
     suspend fun blame(
         repoPath: String,
         filePath: String
-    ): Result<List<BlameLine>> = runCatching {
+    ): Result<List<BlameLine>> = withContext(Dispatchers.IO) {
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val result = git.blame()
                 .setFilePath(filePath)

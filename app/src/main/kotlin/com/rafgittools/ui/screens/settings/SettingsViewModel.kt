@@ -11,69 +11,73 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * ViewModel for settings screen
- */
+// ─── FIX L3 ──────────────────────────────────────────────────────────────────
+// Antes: dois viewModelScope.launch { flow.collect{} }
+//   → cada .collect{} bloqueia a coroutine para sempre (flows infinitos)
+//   → a 2ª coroutine nunca termina a coleta do 1º flow (cada launch fica stuck)
+// Agora: flow.onEach { }.launchIn(viewModelScope)
+//   → ambos os flows correm em paralelo, sem bloquear, cancelados com o VM
+// ─────────────────────────────────────────────────────────────────────────────
+
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val cacheManager: AsyncCacheManager
 ) : ViewModel() {
-    
+
     private val _isDarkMode = MutableStateFlow(false)
     val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
-    
+
     private val _currentLanguage = MutableStateFlow(Language.ENGLISH)
     val currentLanguage: StateFlow<Language> = _currentLanguage.asStateFlow()
-    
+
     private val _gitConfig = MutableStateFlow(GitConfig())
     val gitConfig: StateFlow<GitConfig> = _gitConfig.asStateFlow()
-    
+
     init {
-        loadSettings()
+        observePreferences()
+        loadGitConfig()
     }
-    
-    private fun loadSettings() {
+
+    private fun observePreferences() {
+        // FIX L3: onEach+launchIn → não bloqueia, cancela automaticamente com o VM
+        preferencesRepository.isDarkModeFlow
+            .onEach { _isDarkMode.value = it }
+            .launchIn(viewModelScope)
+
+        preferencesRepository.languageFlow
+            .onEach { _currentLanguage.value = it }
+            .launchIn(viewModelScope)
+    }
+
+    private fun loadGitConfig() {
         viewModelScope.launch {
-            // Load dark mode preference
-            preferencesRepository.isDarkModeFlow.collect { isDark ->
-                _isDarkMode.value = isDark
-            }
-        }
-        
-        viewModelScope.launch {
-            // Load language preference
-            preferencesRepository.languageFlow.collect { language ->
-                _currentLanguage.value = language
-            }
-        }
-        
-        viewModelScope.launch {
-            // Load git config
-            val userName = preferencesRepository.getString("git_user_name", "")
-            val userEmail = preferencesRepository.getString("git_user_email", "")
+            val userName    = preferencesRepository.getString("git_user_name", "")
+            val userEmail   = preferencesRepository.getString("git_user_email", "")
             val signCommits = preferencesRepository.getBoolean("git_sign_commits", false)
             _gitConfig.value = GitConfig(userName, userEmail, signCommits)
         }
     }
-    
+
     fun setDarkMode(enabled: Boolean) {
         viewModelScope.launch {
             preferencesRepository.setDarkMode(enabled)
             _isDarkMode.value = enabled
         }
     }
-    
+
     fun setLanguage(language: Language) {
         viewModelScope.launch {
             preferencesRepository.setLanguage(language)
             _currentLanguage.value = language
         }
     }
-    
+
     fun setGitConfig(userName: String, userEmail: String) {
         viewModelScope.launch {
             preferencesRepository.setString("git_user_name", userName)
@@ -81,34 +85,22 @@ class SettingsViewModel @Inject constructor(
             _gitConfig.value = _gitConfig.value.copy(userName = userName, userEmail = userEmail)
         }
     }
-    
+
     fun setSignCommits(enabled: Boolean) {
         viewModelScope.launch {
             preferencesRepository.setBoolean("git_sign_commits", enabled)
             _gitConfig.value = _gitConfig.value.copy(signCommits = enabled)
         }
     }
-    
+
     fun clearCache() {
-        viewModelScope.launch {
-            cacheManager.clearAllCache()
-        }
+        viewModelScope.launch { cacheManager.clearAllCache() }
     }
-    
-    fun openPrivacyPolicy() {
-        // The actual URL opening would be handled by an Activity callback
-        // This is intentionally a no-op as URL handling needs Activity context
-    }
-    
-    fun openLicenses() {
-        // The actual license viewing would be handled by navigation callback
-        // This is intentionally a no-op as it needs Activity context
-    }
+
+    fun openPrivacyPolicy() { /* handled by Activity/Navigation callback */ }
+    fun openLicenses()      { /* handled by Activity/Navigation callback */ }
 }
 
-/**
- * Git configuration data
- */
 data class GitConfig(
     val userName: String = "",
     val userEmail: String = "",

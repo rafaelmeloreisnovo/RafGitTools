@@ -1,5 +1,7 @@
 package com.rafgittools.data.auth
 
+import com.rafgittools.BuildConfig
+
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
@@ -28,7 +30,7 @@ class OAuthDeviceFlowManager @Inject constructor(
 ) {
     companion object {
         private const val GITHUB_OAUTH_URL = "https://github.com/"
-        private const val CLIENT_ID = "Iv1.your_github_client_id" // Replace in build.gradle via BuildConfig
+        private val CLIENT_ID get() = BuildConfig.GITHUB_CLIENT_ID // FIX L6: never hardcode OAuth client ID
         private const val SCOPE = "repo,read:user,notifications"
         private const val POLL_INTERVAL_MS = 5_000L
         private const val MAX_POLLS = 60 // 5 min total
