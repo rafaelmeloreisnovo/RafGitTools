@@ -1,40 +1,86 @@
-name: zipdrop-extract
+name: zipdrop-overlay
 
 on:
   push:
     branches: [ "main" ]
     paths:
-      - "_incoming/**.zip"
+      - "_incoming/*.zip"
 
 jobs:
-  unzip_and_commit:
-    if: "!contains(github.event.head_commit.message, '[zipdrop]')"
+  apply:
+    # evita loop quando o bot commita
+    if: ${{ !contains(github.event.head_commit.message, '[zipdrop]') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Run zipdrop
+      - name: Apply incoming zip(s)
+        shell: bash
         run: |
-          python tools/zipdrop.py
+          set -euo pipefail
 
-      - name: Commit extracted content
+          # encontra zips mesmo com espaço no nome
+          find "_incoming" -maxdepth 1 -type f -name '*.zip' -print0 | while IFS= read -r -d '' z; do
+            echo ">> Applying $z"
+
+            work="$(mktemp -d)"
+            unzip -q "$z" -d "$work"
+
+            # Se o zip tiver UMA pasta raiz e nenhum arquivo na raiz, achata:
+            top_dirs=$(find "$work" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+            top_files=$(find "$work" -mindepth 1 -maxdepth 1 -type f | wc -l | tr -d ' ')
+
+            if [ "$top_dirs" -eq 1 ] && [ "$top_files" -eq 0 ]; then
+              rootdir="$(find "$work" -mindepth 1 -maxdepth 1 -type d -print -quit)"
+              echo "   - flatten root dir: $rootdir"
+              (cd "$rootdir" && tar -cf - .) | tar -xf - -C .
+            else
+              (cd "$work" && tar -cf - .) | tar -xf - -C .
+            fi
+
+            # Aplica deletes se o zip for do tipo __DELTA__
+            if [ -f "__DELTA__/DELETE_LIST.txt" ]; then
+              echo "   - applying deletes from __DELTA__/DELETE_LIST.txt"
+              while IFS= read -r line; do
+                # trim
+                line="${line#"${line%%[![:space:]]*}"}"
+                line="${line%"${line##*[![:space:]]}"}"
+
+                [ -z "$line" ] && continue
+                case "$line" in \#*) continue;; esac
+
+                # segurança: nega path absoluto e traversal
+                case "$line" in
+                  /*|*..* ) echo "   - SKIP unsafe delete: $line"; continue;;
+                esac
+
+                rm -rf -- "$line"
+              done < "__DELTA__/DELETE_LIST.txt"
+            fi
+
+            # limpa metadados e o zip aplicado
+            rm -rf "__DELTA__" || true
+            rm -f "$z"
+            rm -rf "$work"
+          done
+
+      - name: Commit changes
+        shell: bash
         run: |
           if git diff --quiet; then
             echo "No changes after zipdrop."
             exit 0
           fi
+
           git config user.name  "zipdrop-bot"
           git config user.email "zipdrop-bot@users.noreply.github.com"
+
           git add -A
-          git commit -m "[zipdrop] extract incoming zip(s)"
+          git commit -m "[zipdrop] apply zip overlay"
           git push
