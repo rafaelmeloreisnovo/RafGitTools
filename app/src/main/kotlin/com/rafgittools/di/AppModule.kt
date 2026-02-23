@@ -18,6 +18,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import okhttp3.CertificatePinner
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
@@ -36,10 +37,21 @@ object NetworkModule {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
+
+        // Configure certificate pinning for api.github.com
+        // NOTE: Replace the placeholder pin value below with the actual, up-to-date
+        // SHA-256 public key hash for api.github.com before releasing to production.
+        val certificatePinner = CertificatePinner.Builder()
+            .add(
+                "api.github.com",
+                "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+            )
+            .build()
         
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor) // Add auth interceptor for PAT authentication
             .addInterceptor(loggingInterceptor)
+            .certificatePinner(certificatePinner)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
