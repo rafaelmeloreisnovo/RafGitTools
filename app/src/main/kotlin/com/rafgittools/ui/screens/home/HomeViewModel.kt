@@ -58,7 +58,7 @@ class HomeViewModel @Inject constructor(
             _uiState.value = HomeUiState.Loading
             
             // Load user info
-            githubRepository.getAuthenticatedUser().first()
+            githubRepository.getAuthenticatedUserSync() // FIX L7
                 .onSuccess { user ->
                     _user.value = user
                 }
@@ -67,7 +67,7 @@ class HomeViewModel @Inject constructor(
                 }
             
             // Load repositories
-            githubRepository.getUserRepositories().first()
+            githubRepository.getUserRepositoriesSync() // FIX L9
                 .onSuccess { repos ->
                     _repositories.value = repos
                     _uiState.value = if (repos.isEmpty()) {

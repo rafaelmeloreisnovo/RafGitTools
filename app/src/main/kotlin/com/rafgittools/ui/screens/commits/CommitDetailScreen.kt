@@ -17,8 +17,28 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.rafgittools.domain.model.DiffChangeType
+import com.rafgittools.domain.model.DiffLine
+import com.rafgittools.domain.model.DiffLineType
 import com.rafgittools.domain.model.GitCommit
 import com.rafgittools.domain.model.GitDiff
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
+// ─── FIXES aplicados ─────────────────────────────────────────────────────────
+// C1: commit.id        → commit.sha
+// C5: commit.authorName → commit.author.name
+// C6: commit.authorEmail → commit.author.email
+// C7: diff.filePath    → diff.newPath ?: diff.oldPath ?: "unknown"
+// C8: line.startsWith("+") em DiffLine → line.type == DiffLineType.ADD
+// C9: Text(line) em DiffLine          → Text(line.content)
+// Deprecated: SimpleDateFormat/Date    → java.time APIs
+// ─────────────────────────────────────────────────────────────────────────────
+
+private val DATE_FORMATTER = DateTimeFormatter
+    .ofPattern("yyyy-MM-dd HH:mm:ss")
+    .withZone(ZoneId.systemDefault())
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,9 +48,9 @@ fun CommitDetailScreen(
     viewModel: CommitDetailViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val commit by viewModel.commit.collectAsState()
-    val diffs by viewModel.diffs.collectAsState()
+    val uiState     by viewModel.uiState.collectAsState()
+    val commit      by viewModel.commit.collectAsState()
+    val diffs       by viewModel.diffs.collectAsState()
     val changedFiles by viewModel.changedFiles.collectAsState()
 
     LaunchedEffect(repoPath, commitSha) {
@@ -66,8 +86,12 @@ fun CommitDetailScreen(
             }
             is CommitDetailViewModel.UiState.Error -> {
                 Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Icon(Icons.Default.ErrorOutline, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(Icons.Default.ErrorOutline, null,
+                            tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
                         Text(state.message, color = MaterialTheme.colorScheme.error)
                         Button(onClick = { viewModel.refresh() }) { Text("Retry") }
                     }
@@ -100,10 +124,13 @@ private fun CommitDetailContent(
     Column(modifier = modifier.fillMaxSize()) {
         TabRow(selectedTabIndex = selectedTab) {
             tabs.forEachIndexed { index, title ->
-                Tab(selected = selectedTab == index, onClick = { selectedTab = index }, text = { Text(title) })
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index },
+                    text = { Text(title) }
+                )
             }
         }
-
         when (selectedTab) {
             0 -> CommitInfoTab(commit)
             1 -> CommitFilesTab(changedFiles)
@@ -121,45 +148,49 @@ private fun CommitInfoTab(commit: GitCommit) {
     ) {
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    // Commit SHA
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // SHA — FIX C1: commit.sha
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Tag, null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(8.dp))
                         Column {
-                            Text("Commit SHA", style = MaterialTheme.typography.labelSmall,
+                            Text("Commit SHA",
+                                style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.outline)
                             Text(
-                                commit.id,
+                                commit.sha,                                // FIX C1
                                 fontFamily = FontFamily.Monospace,
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
                     }
                     HorizontalDivider()
-                    // Author
+                    // Author — FIX C5+C6: commit.author.name / commit.author.email
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.secondary)
                         Spacer(Modifier.width(8.dp))
                         Column {
-                            Text("Author", style = MaterialTheme.typography.labelSmall,
+                            Text("Author",
+                                style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.outline)
-                            Text(commit.authorName, fontWeight = FontWeight.SemiBold)
-                            Text(commit.authorEmail, style = MaterialTheme.typography.bodySmall)
+                            Text(commit.author.name, fontWeight = FontWeight.SemiBold)  // FIX C5
+                            Text(commit.author.email,                                    // FIX C6
+                                style = MaterialTheme.typography.bodySmall)
                         }
                     }
                     HorizontalDivider()
-                    // Timestamp
+                    // Timestamp — FIX Deprecated: java.time ao invés de SimpleDateFormat/Date
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Schedule, null, tint = MaterialTheme.colorScheme.tertiary)
                         Spacer(Modifier.width(8.dp))
                         Column {
-                            Text("Date", style = MaterialTheme.typography.labelSmall,
+                            Text("Date",
+                                style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.outline)
-                            Text(
-                                java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
-                                    .format(java.util.Date(commit.timestamp))
-                            )
+                            Text(DATE_FORMATTER.format(Instant.ofEpochMilli(commit.timestamp)))
                         }
                     }
                     // Parents
@@ -169,10 +200,12 @@ private fun CommitInfoTab(commit: GitCommit) {
                             Icon(Icons.Default.AccountTree, null)
                             Spacer(Modifier.width(8.dp))
                             Column {
-                                Text("Parents", style = MaterialTheme.typography.labelSmall,
+                                Text("Parents",
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.outline)
                                 commit.parents.forEach { parent ->
-                                    Text(parent.take(12), fontFamily = FontFamily.Monospace,
+                                    Text(parent.take(12),
+                                        fontFamily = FontFamily.Monospace,
                                         style = MaterialTheme.typography.bodySmall)
                                 }
                             }
@@ -182,7 +215,9 @@ private fun CommitInfoTab(commit: GitCommit) {
             }
         }
         item {
-            Text("Message", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Message",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold)
         }
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
@@ -237,10 +272,12 @@ private fun CommitDiffTab(diffs: List<GitDiff>) {
     if (diffs.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Default.Code, null, modifier = Modifier.size(48.dp),
+                Icon(Icons.Default.Code, null,
+                    modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.outline)
                 Spacer(Modifier.height(8.dp))
-                Text("No diff available for this commit", color = MaterialTheme.colorScheme.outline)
+                Text("No diff available for this commit",
+                    color = MaterialTheme.colorScheme.outline)
             }
         }
         return
@@ -253,7 +290,7 @@ private fun CommitDiffTab(diffs: List<GitDiff>) {
         items(diffs) { diff ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column {
-                    // File header
+                    // File header — FIX C7: diff.filePath → diff.newPath ?: diff.oldPath
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -264,41 +301,44 @@ private fun CommitDiffTab(diffs: List<GitDiff>) {
                         Icon(Icons.Default.Code, null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            diff.filePath,
+                            diff.newPath ?: diff.oldPath ?: "unknown",     // FIX C7
                             fontFamily = FontFamily.Monospace,
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold
                         )
                     }
-                    // Hunks
+                    // Diff lines
                     diff.hunks.forEach { hunk ->
                         hunk.lines.forEach { line ->
-                            val (bg, prefix) = when {
-                                line.startsWith("+") -> Color(0xFF1B5E20).copy(alpha = 0.15f) to "+"
-                                line.startsWith("-") -> Color(0xFFB71C1C).copy(alpha = 0.15f) to "-"
-                                else -> Color.Transparent to " "
-                            }
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(bg)
-                                    .padding(horizontal = 8.dp, vertical = 1.dp)
-                            ) {
-                                Text(
-                                    line,
-                                    fontFamily = FontFamily.Monospace,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = when (prefix) {
-                                        "+" -> Color(0xFF2E7D32)
-                                        "-" -> Color(0xFFC62828)
-                                        else -> MaterialTheme.colorScheme.onSurface
-                                    }
-                                )
-                            }
+                            DiffLineRow(line)                               // FIX C8+C9
                         }
                     }
                 }
             }
         }
+    }
+}
+
+// FIX C8: usa line.type (DiffLineType enum) ao invés de line.startsWith()
+// FIX C9: usa line.content ao invés de passar DiffLine diretamente para Text()
+@Composable
+private fun DiffLineRow(line: DiffLine) {
+    val (bg, textColor) = when (line.type) {
+        DiffLineType.ADD    -> Color(0xFF1B5E20).copy(alpha = 0.15f) to Color(0xFF2E7D32)
+        DiffLineType.DELETE -> Color(0xFFB71C1C).copy(alpha = 0.15f) to Color(0xFFC62828)
+        DiffLineType.CONTEXT -> Color.Transparent to MaterialTheme.colorScheme.onSurface
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(bg)
+            .padding(horizontal = 8.dp, vertical = 1.dp)
+    ) {
+        Text(
+            line.content,                                            // FIX C9: .content
+            fontFamily = FontFamily.Monospace,
+            style = MaterialTheme.typography.bodySmall,
+            color = textColor
+        )
     }
 }

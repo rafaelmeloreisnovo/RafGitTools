@@ -1,57 +1,52 @@
 package com.rafgittools.domain.model.github
 
 import android.os.Parcelable
+import com.google.gson.annotations.SerializedName
 import kotlinx.parcelize.Parcelize
 
-/**
- * GitHub repository model
- */
+// ─── CAT-2 FIX: Todos os campos snake_case da API GitHub precisam @SerializedName ───
+// Sem isso o GSON não deserializa e TODOS os campos ficam null silenciosamente.
+
 @Parcelize
 data class GithubRepository(
     val id: Long,
     val name: String,
-    val fullName: String,
+    @SerializedName("full_name")         val fullName: String,
     val owner: GithubUser,
     val description: String?,
-    val htmlUrl: String,
-    val cloneUrl: String,
-    val sshUrl: String,
+    @SerializedName("html_url")          val htmlUrl: String,
+    @SerializedName("clone_url")         val cloneUrl: String,
+    @SerializedName("ssh_url")           val sshUrl: String,
     val language: String?,
-    val stargazersCount: Int,
-    val forksCount: Int,
-    val watchersCount: Int,
-    val openIssuesCount: Int,
-    val isPrivate: Boolean,
-    val isFork: Boolean,
-    val defaultBranch: String,
-    val createdAt: String,
-    val updatedAt: String,
-    val pushedAt: String?
+    @SerializedName("stargazers_count")  val stargazersCount: Int,
+    @SerializedName("forks_count")       val forksCount: Int,
+    @SerializedName("watchers_count")    val watchersCount: Int,
+    @SerializedName("open_issues_count") val openIssuesCount: Int,
+    @SerializedName("private")           val isPrivate: Boolean,
+    @SerializedName("fork")              val isFork: Boolean,
+    @SerializedName("default_branch")    val defaultBranch: String,
+    @SerializedName("created_at")        val createdAt: String,
+    @SerializedName("updated_at")        val updatedAt: String,
+    @SerializedName("pushed_at")         val pushedAt: String?
 ) : Parcelable
 
-/**
- * GitHub user model
- */
 @Parcelize
 data class GithubUser(
     val id: Long,
     val login: String,
-    val avatarUrl: String,
-    val htmlUrl: String,
+    @SerializedName("avatar_url")   val avatarUrl: String,
+    @SerializedName("html_url")     val htmlUrl: String,
     val type: String,
-    val name: String? = null,
-    val email: String? = null,
-    val bio: String? = null,
+    val name: String?     = null,
+    val email: String?    = null,
+    val bio: String?      = null,
     val location: String? = null,
-    val company: String? = null,
-    val publicRepos: Int = 0,
+    val company: String?  = null,
+    @SerializedName("public_repos") val publicRepos: Int = 0,
     val followers: Int = 0,
     val following: Int = 0
 ) : Parcelable
 
-/**
- * GitHub search user model
- */
 @Parcelize
 data class GithubSearchUser(
     val id: Long,
@@ -60,9 +55,6 @@ data class GithubSearchUser(
     val html_url: String?
 ) : Parcelable
 
-/**
- * GitHub search repository model (minimal)
- */
 @Parcelize
 data class GithubSearchRepository(
     val full_name: String,
@@ -70,9 +62,6 @@ data class GithubSearchRepository(
     val owner: GithubSearchUser
 ) : Parcelable
 
-/**
- * GitHub search issue model
- */
 @Parcelize
 data class GithubSearchIssue(
     val id: Long,
@@ -82,9 +71,6 @@ data class GithubSearchIssue(
     val html_url: String?
 ) : Parcelable
 
-/**
- * GitHub search code model
- */
 @Parcelize
 data class GithubSearchCode(
     val name: String,
@@ -93,9 +79,6 @@ data class GithubSearchCode(
     val repository: GithubSearchRepository
 ) : Parcelable
 
-/**
- * GitHub issue model
- */
 @Parcelize
 data class GithubIssue(
     val id: Long,
@@ -106,16 +89,13 @@ data class GithubIssue(
     val user: GithubUser,
     val labels: List<GithubLabel>,
     val assignees: List<GithubUser>,
-    val createdAt: String,
-    val updatedAt: String,
-    val closedAt: String?,
-    val htmlUrl: String,
-    val commentsCount: Int
+    @SerializedName("created_at") val createdAt: String,
+    @SerializedName("updated_at") val updatedAt: String,
+    @SerializedName("closed_at")  val closedAt: String?,
+    @SerializedName("html_url")   val htmlUrl: String,
+    @SerializedName("comments")   val commentsCount: Int
 ) : Parcelable
 
-/**
- * GitHub label model
- */
 @Parcelize
 data class GithubLabel(
     val id: Long,
@@ -124,9 +104,6 @@ data class GithubLabel(
     val description: String?
 ) : Parcelable
 
-/**
- * GitHub pull request model
- */
 @Parcelize
 data class GithubPullRequest(
     val id: Long,
@@ -137,17 +114,14 @@ data class GithubPullRequest(
     val user: GithubUser,
     val head: GithubBranch,
     val base: GithubBranch,
-    val createdAt: String,
-    val updatedAt: String,
-    val closedAt: String?,
-    val mergedAt: String?,
-    val htmlUrl: String,
+    @SerializedName("created_at") val createdAt: String,
+    @SerializedName("updated_at") val updatedAt: String,
+    @SerializedName("closed_at")  val closedAt: String?,
+    @SerializedName("merged_at")  val mergedAt: String?,
+    @SerializedName("html_url")   val htmlUrl: String,
     val draft: Boolean
 ) : Parcelable
 
-/**
- * GitHub branch info for PR head/base
- */
 @Parcelize
 data class GithubBranch(
     val label: String,
@@ -157,9 +131,6 @@ data class GithubBranch(
     val repo: GithubRepository
 ) : Parcelable
 
-/**
- * GitHub branch info
- */
 @Parcelize
 data class GithubBranchInfo(
     val name: String,
@@ -167,45 +138,33 @@ data class GithubBranchInfo(
     val protected: Boolean
 ) : Parcelable
 
-/**
- * GitHub commit reference (minimal)
- */
 @Parcelize
 data class GithubCommitRef(
     val sha: String,
     val url: String
 ) : Parcelable
 
-/**
- * GitHub comment model
- */
 @Parcelize
 data class GithubComment(
     val id: Long,
     val body: String,
     val user: GithubUser,
-    val createdAt: String,
-    val updatedAt: String,
-    val htmlUrl: String,
-    val authorAssociation: String?
+    @SerializedName("created_at")         val createdAt: String,
+    @SerializedName("updated_at")         val updatedAt: String,
+    @SerializedName("html_url")           val htmlUrl: String,
+    @SerializedName("author_association") val authorAssociation: String?
 ) : Parcelable
 
-/**
- * GitHub review model
- */
 @Parcelize
 data class GithubReview(
     val id: Long,
     val user: GithubUser,
     val body: String?,
-    val state: String, // APPROVED, CHANGES_REQUESTED, COMMENTED, PENDING, DISMISSED
-    val htmlUrl: String,
-    val submittedAt: String?
+    val state: String,                        // APPROVED, CHANGES_REQUESTED, COMMENTED, PENDING, DISMISSED
+    @SerializedName("html_url")      val htmlUrl: String,
+    @SerializedName("submitted_at")  val submittedAt: String?
 ) : Parcelable
 
-/**
- * GitHub review comment model
- */
 @Parcelize
 data class GithubReviewComment(
     val id: Long,
@@ -215,42 +174,33 @@ data class GithubReviewComment(
     val line: Int?,
     val side: String?,
     val user: GithubUser,
-    val createdAt: String,
-    val updatedAt: String,
-    val htmlUrl: String,
-    val diffHunk: String?
+    @SerializedName("created_at")         val createdAt: String,
+    @SerializedName("updated_at")         val updatedAt: String,
+    @SerializedName("html_url")           val htmlUrl: String,
+    @SerializedName("diff_hunk")          val diffHunk: String?
 ) : Parcelable
 
-/**
- * GitHub pull request file
- */
 @Parcelize
 data class GithubPullRequestFile(
     val sha: String,
     val filename: String,
-    val status: String, // added, removed, modified, renamed, copied, changed, unchanged
+    val status: String,              // added, removed, modified, renamed, copied, changed, unchanged
     val additions: Int,
     val deletions: Int,
     val changes: Int,
     val patch: String?,
-    val previousFilename: String?
+    @SerializedName("previous_filename") val previousFilename: String?
 ) : Parcelable
 
-/**
- * GitHub commit model
- */
 @Parcelize
 data class GithubCommit(
     val sha: String,
     val commit: GithubCommitData,
     val author: GithubUser?,
     val committer: GithubUser?,
-    val htmlUrl: String
+    @SerializedName("html_url") val htmlUrl: String
 ) : Parcelable
 
-/**
- * GitHub commit data (inner commit info)
- */
 @Parcelize
 data class GithubCommitData(
     val message: String,
@@ -259,9 +209,6 @@ data class GithubCommitData(
     val tree: GithubCommitRef?
 ) : Parcelable
 
-/**
- * GitHub commit author
- */
 @Parcelize
 data class GithubCommitAuthor(
     val name: String,
@@ -269,23 +216,17 @@ data class GithubCommitAuthor(
     val date: String
 ) : Parcelable
 
-/**
- * GitHub commit detail (full commit info)
- */
 @Parcelize
 data class GithubCommitDetail(
     val sha: String,
     val commit: GithubCommitData,
     val author: GithubUser?,
     val committer: GithubUser?,
-    val htmlUrl: String,
+    @SerializedName("html_url") val htmlUrl: String,
     val files: List<GithubPullRequestFile>?,
     val stats: GithubCommitStats?
 ) : Parcelable
 
-/**
- * GitHub commit stats
- */
 @Parcelize
 data class GithubCommitStats(
     val additions: Int,
@@ -293,107 +234,83 @@ data class GithubCommitStats(
     val total: Int
 ) : Parcelable
 
-/**
- * GitHub release model
- */
 @Parcelize
 data class GithubRelease(
     val id: Long,
-    val tagName: String,
-    val targetCommitish: String,
+    @SerializedName("tag_name")        val tagName: String,
+    @SerializedName("target_commitish") val targetCommitish: String,
     val name: String?,
     val body: String?,
     val draft: Boolean,
     val prerelease: Boolean,
-    val createdAt: String,
-    val publishedAt: String?,
-    val htmlUrl: String,
+    @SerializedName("created_at")      val createdAt: String,
+    @SerializedName("published_at")    val publishedAt: String?,
+    @SerializedName("html_url")        val htmlUrl: String,
     val author: GithubUser,
     val assets: List<GithubReleaseAsset>
 ) : Parcelable
 
-/**
- * GitHub release asset
- */
 @Parcelize
 data class GithubReleaseAsset(
     val id: Long,
     val name: String,
     val label: String?,
-    val contentType: String,
+    @SerializedName("content_type")       val contentType: String,
     val size: Long,
-    val downloadCount: Int,
-    val browserDownloadUrl: String,
-    val createdAt: String,
-    val updatedAt: String
+    @SerializedName("download_count")     val downloadCount: Int,
+    @SerializedName("browser_download_url") val browserDownloadUrl: String,
+    @SerializedName("created_at")         val createdAt: String,
+    @SerializedName("updated_at")         val updatedAt: String
 ) : Parcelable
 
-/**
- * GitHub content model (file/directory)
- */
 @Parcelize
 data class GithubContent(
     val name: String,
     val path: String,
     val sha: String,
     val size: Int,
-    val type: String, // file, dir, symlink, submodule
+    val type: String,                        // file, dir, symlink, submodule
     val content: String?,
     val encoding: String?,
-    val htmlUrl: String,
-    val downloadUrl: String?
+    @SerializedName("html_url")     val htmlUrl: String,
+    @SerializedName("download_url") val downloadUrl: String?
 ) : Parcelable
 
-/**
- * GitHub reaction model
- */
 @Parcelize
 data class GithubReaction(
     val id: Long,
     val user: GithubUser,
-    val content: String, // +1, -1, laugh, confused, heart, hooray, rocket, eyes
-    val createdAt: String
+    val content: String,                     // +1, -1, laugh, confused, heart, hooray, rocket, eyes
+    @SerializedName("created_at") val createdAt: String
 ) : Parcelable
 
-/**
- * GitHub notification model
- */
 @Parcelize
 data class GithubNotification(
     val id: String,
     val unread: Boolean,
     val reason: String,
-    val updatedAt: String,
-    val lastReadAt: String?,
+    @SerializedName("updated_at")   val updatedAt: String,
+    @SerializedName("last_read_at") val lastReadAt: String?,
     val subject: GithubNotificationSubject,
     val repository: GithubRepository
 ) : Parcelable
 
-/**
- * GitHub notification subject
- */
 @Parcelize
 data class GithubNotificationSubject(
     val title: String,
     val url: String?,
-    val latestCommentUrl: String?,
-    val type: String // Issue, PullRequest, Commit, Release, etc.
+    @SerializedName("latest_comment_url") val latestCommentUrl: String?,
+    val type: String                         // Issue, PullRequest, Commit, Release, etc.
 ) : Parcelable
 
-/**
- * GitHub subscription model
- */
 @Parcelize
 data class GithubSubscription(
     val subscribed: Boolean,
     val ignored: Boolean,
     val reason: String?,
-    val createdAt: String
+    @SerializedName("created_at") val createdAt: String
 ) : Parcelable
 
-/**
- * GitHub milestone model
- */
 @Parcelize
 data class GithubMilestone(
     val id: Long,
@@ -401,10 +318,10 @@ data class GithubMilestone(
     val title: String,
     val description: String?,
     val state: String,
-    val openIssues: Int,
-    val closedIssues: Int,
-    val createdAt: String,
-    val updatedAt: String,
-    val dueOn: String?,
-    val closedAt: String?
+    @SerializedName("open_issues")   val openIssues: Int,
+    @SerializedName("closed_issues") val closedIssues: Int,
+    @SerializedName("created_at")    val createdAt: String,
+    @SerializedName("updated_at")    val updatedAt: String,
+    @SerializedName("due_on")        val dueOn: String?,
+    @SerializedName("closed_at")     val closedAt: String?
 ) : Parcelable

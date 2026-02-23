@@ -62,7 +62,7 @@ class AuthViewModel @Inject constructor(
             authRepository.savePat(token, "temp")
             
             // Verify the token by making an API call
-            githubRepository.getAuthenticatedUser().first()
+            githubRepository.getAuthenticatedUserSync() // FIX L7: .first() returns stale cache; sync variant awaits fresh API
                 .onSuccess { user ->
                     // Save the token with the actual username
                     authRepository.savePat(token, user.login)

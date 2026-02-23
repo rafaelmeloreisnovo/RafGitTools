@@ -45,7 +45,7 @@ interface GithubApiService {
         @Query("per_page") perPage: Int = 30
     ): SearchResponse<GithubUser>
 
-    @Headers("Accept: application/vnd.github.v3.text-match+json")
+    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28") // FIX D1: deprecated v3 header
     @GET("search/code")
     suspend fun searchCode(
         @Query("q") query: String,
