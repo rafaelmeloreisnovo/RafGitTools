@@ -170,4 +170,9 @@
     <string name="error_title">Error</string>
 
     <string name="settings_repository_location_path">Android/data/com.rafgittools/files/repositories</string>
+
+    <!-- Date formats -->
+    <string name="date_format_short_date">MM/dd/yyyy</string>
+    <string name="date_format_datetime_with_at">MM/dd/yyyy \'at\' HH:mm</string>
+    <string name="date_format_short_datetime">MM/dd/yyyy HH:mm</string>
 </resources>
