@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RafGitTools</string>
+    
+    <!-- Feature descriptions -->
+    <string name="app_description">Unified Git/GitHub Android Client</string>
+    
+    <!-- Common actions -->
+    <string name="action_clone">Clone</string>
+    <string name="action_commit">Commit</string>
+    <string name="action_push">Push</string>
+    <string name="action_pull">Pull</string>
+    <string name="action_sync">Sync</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="action_search">Search</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_delete">Delete</string>
+    
+    <!-- Repository -->
+    <string name="repository_list">Repositories</string>
+    <string name="repository_detail">Repository Details</string>
+    <string name="repository_empty">No repositories found</string>
+    <string name="repository_clone_url">Clone URL</string>
+    <string name="repository_local_path">Local Path</string>
+    
+    <!-- Git operations -->
+    <string name="git_status">Git Status</string>
+    <string name="git_log">Commit History</string>
+    <string name="git_branch">Branches</string>
+    <string name="git_tag">Tags</string>
+    <string name="git_stash">Stash</string>
+    
+    <!-- GitHub -->
+    <string name="github_issues">Issues</string>
+    <string name="github_pull_requests">Pull Requests</string>
+    <string name="github_actions">Actions</string>
+    <string name="github_releases">Releases</string>
+    
+    <!-- Authentication -->
+    <string name="auth_login">Login</string>
+    <string name="auth_logout">Logout</string>
+    <string name="auth_token">Access Token</string>
+    
+    <!-- Errors -->
+    <string name="error_network">Network error</string>
+    <string name="error_auth">Authentication failed</string>
+    <string name="error_git">Git operation failed</string>
+    <string name="error_unknown">Unknown error occurred</string>
+    
+    <!-- Loading -->
+    <string name="loading">Loading…</string>
+    <string name="loading_repositories">Loading repositories…</string>
+    
+    <!-- Language settings -->
+    <string name="language_settings">Language Settings</string>
+    <string name="language_english">English</string>
+    <string name="language_portuguese">Portuguese</string>
+    <string name="language_spanish">Spanish</string>
+    <string name="language_select">Select Language</string>
+    <string name="language_selected">Selected</string>
+
+    <!-- Profile -->
+    <string name="profile_tab_repositories">Repositories</string>
+    <string name="profile_tab_stars">Stars</string>
+    <string name="profile_tab_activity">Activity</string>
+    <string name="profile_empty_title">Nothing here yet</string>
+    <string name="profile_empty_repositories_body">Repository list will appear here.</string>
+    <string name="profile_empty_stars_body">Starred repositories will appear here.</string>
+    <string name="profile_empty_activity_body">Recent activity will appear here.</string>
+
+    <!-- Navigation -->
+    <string name="cd_back">Back</string>
+
+    <!-- Generic actions -->
+    <string name="action_retry">Retry</string>
+    <string name="action_create">Create</string>
+    <string name="action_close">Close</string>
+    <string name="action_see_all">See All</string>
+    <string name="action_dismiss">Dismiss</string>
+    <string name="action_fetch">Fetch</string>
+    <string name="action_stage">Stage</string>
+    <string name="action_stage_all">Stage All</string>
+    <string name="action_unstage_all">Unstage All</string>
+
+    <!-- Repository detail -->
+    <string name="repository_fallback_title">Repository</string>
+    <string name="repository_branch_label">Branch: %1$s</string>
+    <string name="repository_status_title">Repository Status</string>
+    <string name="repository_uncommitted_changes">Uncommitted Changes</string>
+    <string name="repository_loading_status">Loading status...</string>
+    <string name="repository_quick_actions">Quick Actions</string>
+    <string name="repository_recent_commits">Recent Commits</string>
+    <string name="repository_branch_action">Branch</string>
+    <string name="repository_remote">Remote</string>
+    <string name="repository_current">Current</string>
+    <string name="repository_create_commit">Create Commit</string>
+    <string name="repository_commit_message">Commit message</string>
+    <string name="repository_create_branch">Create Branch</string>
+    <string name="repository_branch_name">Branch name</string>
+    <string name="section_title_with_count">%1$s (%2$d)</string>
+
+    <!-- Status labels -->
+    <string name="status_added">Added</string>
+    <string name="status_modified">Modified</string>
+    <string name="status_deleted">Deleted</string>
+    <string name="status_untracked">Untracked</string>
+    <string name="status_unknown">Unknown</string>
+
+    <!-- Settings -->
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_dark_mode">Dark Mode</string>
+    <string name="settings_use_dark_theme">Use dark theme</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_git_configuration">Git Configuration</string>
+    <string name="settings_user_name">User Name</string>
+    <string name="settings_user_email">User Email</string>
+    <string name="settings_not_set">Not set</string>
+    <string name="settings_sign_commits">Sign Commits</string>
+    <string name="settings_sign_commits_subtitle">Sign commits with GPG key</string>
+    <string name="settings_section_storage">Storage</string>
+    <string name="settings_clear_cache">Clear Cache</string>
+    <string name="settings_clear_cache_subtitle">Free up storage space</string>
+    <string name="settings_repository_location">Repository Location</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_about_rafgittools">About RafGitTools</string>
+    <string name="settings_version_alpha">Version 1.0.0-alpha</string>
+    <string name="settings_privacy_policy">Privacy Policy</string>
+    <string name="settings_privacy_policy_subtitle">Read our privacy policy</string>
+    <string name="settings_open_source_licenses">Open Source Licenses</string>
+    <string name="settings_open_source_licenses_subtitle">View third-party licenses</string>
+    <string name="settings_clear_cache_warning">This will clear all cached data including repository metadata. This cannot be undone.</string>
+    <string name="settings_clear_cache_action">Clear</string>
+    <string name="settings_about_description">A unified Git/GitHub Android client combining the best features from FastHub, MGit, PuppyGit, and Termux.</string>
+    <string name="settings_about_copyright">© 2024 RafGitTools Team</string>
+    <string name="settings_about_license">Licensed under GPL-3.0</string>
+
+    <!-- Pull request detail -->
+    <string name="cd_author_avatar">Author avatar</string>
+    <string name="cd_reviewer_avatar">Reviewer avatar</string>
+    <string name="pr_opened_on_date">opened on %1$s</string>
+    <string name="pr_description">Description</string>
+    <string name="pr_no_description">No description provided.</string>
+    <string name="pr_files_changed">Files changed</string>
+    <string name="pr_additions">Additions</string>
+    <string name="pr_deletions">Deletions</string>
+    <string name="pr_commits_count">%1$d commits</string>
+    <string name="pr_no_reviews_yet">No reviews yet</string>
+    <string name="pr_review_approved">Approved</string>
+    <string name="pr_review_changes_requested">Changes requested</string>
+    <string name="pr_review_commented">Commented</string>
+    <string name="pr_review_pending">Pending</string>
+    <string name="pr_review_dismissed">Dismissed</string>
+    <string name="pr_error_loading_title">Error Loading Pull Request</string>
+    <string name="pr_state_merged">Merged</string>
+    <string name="pr_state_closed">Closed</string>
+    <string name="pr_state_draft">Draft</string>
+    <string name="pr_state_open">Open</string>
+    <string name="pr_tab_conversation">Conversation</string>
+    <string name="pr_tab_files">Files</string>
+    <string name="pr_tab_commits">Commits</string>
+    <string name="pr_tab_reviews">Reviews</string>
+    <string name="pr_status_renamed">Renamed</string>
+    <string name="pr_status_copied">Copied</string>
+    <string name="pr_status_changed">Changed</string>
+    <string name="pr_status_unchanged">Unchanged</string>
+
+    <!-- Error labels -->
+    <string name="error_title">Error</string>
+
+    <string name="settings_repository_location_path">Android/data/com.rafgittools/files/repositories</string>
+    <!-- Date format strings (used in PullRequestDetailScreen, RepositoryDetailScreen) -->
+    <string name="date_format_short_date">MMM dd, yyyy</string>
+    <string name="date_format_short_datetime">MMM dd, yyyy HH:mm</string>
+    <string name="date_format_datetime_with_at">MMM dd, yyyy 'at' HH:mm</string>
+    <!-- FIX CAT-5: date format strings referenced by RepositoryDetailScreen and PullRequestDetailScreen -->
+</resources>
