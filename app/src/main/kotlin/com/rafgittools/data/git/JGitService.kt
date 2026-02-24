@@ -96,6 +96,7 @@ class JGitService @Inject constructor(
             git.close()
         }
     }
+    }
     
     /**
      * Create SSH transport callback for JGit commands
@@ -143,6 +144,7 @@ class JGitService @Inject constructor(
             git.close()
         }
     }
+    }
     
     /**
      * Clone single branch only
@@ -180,6 +182,7 @@ class JGitService @Inject constructor(
         ).also {
             git.close()
         }
+    }
     }
     
     /**
@@ -219,6 +222,7 @@ class JGitService @Inject constructor(
         ).also {
             git.close()
         }
+    }
     }
     
     /**
@@ -269,7 +273,7 @@ class JGitService @Inject constructor(
     /**
      * Open existing repository
      */
-    fun openRepository(path: String): Result<Git> = withContext(Dispatchers.IO) {
+    suspend fun openRepository(path: String): Result<Git> = withContext(Dispatchers.IO) {
         runCatching {
         val directory = File(path)
         val builder = FileRepositoryBuilder()
@@ -279,6 +283,7 @@ class JGitService @Inject constructor(
             .build()
         
         Git(repository)
+    }
     }
     
     /**
@@ -302,6 +307,7 @@ class JGitService @Inject constructor(
             )
         }
     }
+    }
     
     /**
      * Get commit history
@@ -323,6 +329,7 @@ class JGitService @Inject constructor(
             
             commits.map { it.toGitCommit() }
         }
+    }
     }
     
     /**
@@ -358,6 +365,7 @@ class JGitService @Inject constructor(
             branches
         }
     }
+    }
     
     /**
      * Create branch
@@ -382,6 +390,7 @@ class JGitService @Inject constructor(
             )
         }
     }
+    }
     
     /**
      * Delete branch
@@ -400,6 +409,7 @@ class JGitService @Inject constructor(
                 .call()
             Unit
         }
+    }
     }
     
     /**
@@ -424,6 +434,7 @@ class JGitService @Inject constructor(
             )
         }
     }
+    }
     
     /**
      * Checkout branch
@@ -439,6 +450,7 @@ class JGitService @Inject constructor(
                 .call()
             Unit
         }
+    }
     }
     
     /**
@@ -456,6 +468,7 @@ class JGitService @Inject constructor(
             Unit
         }
     }
+    }
     
     /**
      * Unstage files
@@ -471,6 +484,7 @@ class JGitService @Inject constructor(
             resetCommand.call()
             Unit
         }
+    }
     }
     
     /**
@@ -493,6 +507,7 @@ class JGitService @Inject constructor(
             val revCommit = command.call()
             revCommit.toGitCommit()
         }
+    }
     }
     
     /**
@@ -538,6 +553,7 @@ class JGitService @Inject constructor(
             command.call()
             Unit
         }
+    }
     }
 
     /**
@@ -587,6 +603,7 @@ class JGitService @Inject constructor(
             Unit
         }
     }
+    }
     
     /**
      * Pull from remote
@@ -632,6 +649,7 @@ class JGitService @Inject constructor(
             Unit
         }
     }
+    }
     
     /**
      * Fetch from remote
@@ -674,6 +692,7 @@ class JGitService @Inject constructor(
             Unit
         }
     }
+    }
     
     /**
      * Merge branch
@@ -692,6 +711,7 @@ class JGitService @Inject constructor(
                 .call()
             Unit
         }
+    }
     }
     
     /**
@@ -712,6 +732,7 @@ class JGitService @Inject constructor(
                 )
             }
         }
+    }
     }
     
     /**
@@ -738,6 +759,7 @@ class JGitService @Inject constructor(
         }
     }
     
+    }
     // Extension functions
     private fun RevCommit.toGitCommit() = GitCommit(
         sha = name,
@@ -789,6 +811,7 @@ class JGitService @Inject constructor(
             }
         }
     }
+    }
     
     /**
      * Create a new stash
@@ -817,6 +840,7 @@ class JGitService @Inject constructor(
             )
         }
     }
+    }
     
     /**
      * Apply a stash
@@ -832,6 +856,7 @@ class JGitService @Inject constructor(
             command.call()
             Unit
         }
+    }
     }
     
     /**
@@ -853,6 +878,7 @@ class JGitService @Inject constructor(
             Unit
         }
     }
+    }
     
     /**
      * Drop a stash entry
@@ -869,6 +895,7 @@ class JGitService @Inject constructor(
             Unit
         }
     }
+    }
     
     /**
      * Clear all stashes
@@ -882,6 +909,7 @@ class JGitService @Inject constructor(
             }
             Unit
         }
+    }
     }
     
     // ============================================
@@ -945,6 +973,7 @@ class JGitService @Inject constructor(
             tags
         }
     }
+    }
     
     /**
      * Create a lightweight tag
@@ -976,6 +1005,7 @@ class JGitService @Inject constructor(
                 isAnnotated = false
             )
         }
+    }
     }
     
     /**
@@ -1016,6 +1046,7 @@ class JGitService @Inject constructor(
             )
         }
     }
+    }
     
     /**
      * Delete a tag
@@ -1031,6 +1062,7 @@ class JGitService @Inject constructor(
                 .call()
             Unit
         }
+    }
     }
     
     // ============================================
@@ -1116,6 +1148,7 @@ class JGitService @Inject constructor(
             }
         }
     }
+    }
     
     /**
      * Get diff between two commits
@@ -1173,6 +1206,7 @@ class JGitService @Inject constructor(
                 )
             }
         }
+    }
     }
     
     /**
@@ -1343,6 +1377,7 @@ class JGitService @Inject constructor(
             files.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
         }
     }
+    }
     
     /**
      * Get file content from repository
@@ -1398,6 +1433,7 @@ class JGitService @Inject constructor(
                 isBinary = isBinary
             )
         }
+    }
     }
     
     /**
@@ -1456,6 +1492,7 @@ class JGitService @Inject constructor(
             Unit
         }
     }
+    }
     
     /**
      * Continue rebase after resolving conflicts
@@ -1468,6 +1505,7 @@ class JGitService @Inject constructor(
                 .call()
             Unit
         }
+    }
     }
     
     /**
@@ -1482,6 +1520,7 @@ class JGitService @Inject constructor(
             Unit
         }
     }
+    }
     
     /**
      * Skip current commit during rebase
@@ -1494,6 +1533,7 @@ class JGitService @Inject constructor(
                 .call()
             Unit
         }
+    }
     }
     
     // ============================================
@@ -1523,6 +1563,7 @@ class JGitService @Inject constructor(
                 ?: throw IllegalStateException("Cherry-pick failed")
         }
     }
+    }
     
     /**
      * Continue cherry-pick after resolving conflicts
@@ -1538,6 +1579,7 @@ class JGitService @Inject constructor(
             Unit
         }
     }
+    }
     
     /**
      * Abort cherry-pick
@@ -1551,6 +1593,7 @@ class JGitService @Inject constructor(
                 .call()
             Unit
         }
+    }
     }
     
     // ============================================
@@ -1580,6 +1623,7 @@ class JGitService @Inject constructor(
             Unit
         }
     }
+    }
     
     /**
      * Revert a commit
@@ -1602,6 +1646,7 @@ class JGitService @Inject constructor(
             
             result.toGitCommit()
         }
+    }
     }
     
     // ============================================
@@ -1626,6 +1671,7 @@ class JGitService @Inject constructor(
                 .call()
                 .toList()
         }
+    }
     }
     
     // ============================================
@@ -1660,6 +1706,7 @@ class JGitService @Inject constructor(
                     )
                 }
         }
+    }
     }
     
     // ============================================
@@ -1702,6 +1749,7 @@ class JGitService @Inject constructor(
             
             blameLines
         }
+    }
     }
 }
 
