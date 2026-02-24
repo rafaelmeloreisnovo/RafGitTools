@@ -31,11 +31,8 @@ class OAuthDeviceFlowManager @Inject constructor(
     companion object {
         private const val GITHUB_OAUTH_URL = "https://github.com/"
         private val CLIENT_ID get() = BuildConfig.GITHUB_CLIENT_ID // FIX L6: never hardcode OAuth client ID
-        private val INVALID_CLIENT_ID_VALUES = setOf(
-            "YOUR_GITHUB_CLIENT_ID",
-            "CHANGE_ME",
-            "placeholder"
-        )
+        private const val CLIENT_ID_ERROR_MESSAGE =
+            "GITHUB_CLIENT_ID não configurado no BuildConfig para esta variante"
         private const val SCOPE = "repo,read:user,notifications"
         private const val POLL_INTERVAL_MS = 5_000L
         private const val MAX_POLLS = 60 // 5 min total
@@ -54,17 +51,8 @@ class OAuthDeviceFlowManager @Inject constructor(
      * Collect this Flow in your ViewModel; cancel to abort polling.
      */
     fun startDeviceFlow(): Flow<DeviceFlowState> = flow {
+        val clientId = requireClientId()
         emit(DeviceFlowState.Requesting)
-
-        val clientId = CLIENT_ID
-        if (clientId.isBlank() || clientId in INVALID_CLIENT_ID_VALUES) {
-            emit(
-                DeviceFlowState.Error(
-                    "GitHub OAuth client ID is invalid. Configure BuildConfig.GITHUB_CLIENT_ID with a valid value before starting device flow."
-                )
-            )
-            return@flow
-        }
 
         // Step 1: Request device + user codes
         val codeResponse = try {
@@ -136,6 +124,12 @@ class OAuthDeviceFlowManager @Inject constructor(
             }
         }
         emit(DeviceFlowState.Error("Timed out waiting for authorization."))
+    }
+
+    private fun requireClientId(): String {
+        val clientId = CLIENT_ID
+        require(clientId.isNotBlank()) { CLIENT_ID_ERROR_MESSAGE }
+        return clientId
     }
 
     private suspend fun fetchUsername(token: String): String? {
