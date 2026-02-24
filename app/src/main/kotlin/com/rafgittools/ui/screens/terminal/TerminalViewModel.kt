@@ -3,26 +3,23 @@ package com.rafgittools.ui.screens.terminal
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import com.rafgittools.terminal.TerminalEmulator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.BufferedReader
 import java.io.File
-import java.io.InputStreamReader
 import javax.inject.Inject
 
 /**
  * TerminalViewModel — feature completamente ausente
  *
  * Provides a basic interactive terminal running in the app's process.
- * Uses ProcessBuilder to execute shell commands in the context of
+ * Delegates command execution to TerminalEmulator in the context of
  * the repository working directory.
  *
- * Security: only runs inside app sandbox (no root). Commands are
- * prefixed with sh -c to support pipes, redirects, etc.
+ * Security: only supported commands are allowed and executed without
+ * invoking an interactive shell.
  *
  * For a richer terminal (PTY + ANSI colors) consider integrating
  * the Termux terminal-view library as a future enhancement.
@@ -116,23 +113,28 @@ class TerminalViewModel @Inject constructor() : ViewModel() {
         viewModelScope.launch {
             _isRunning.value = true
             try {
-                val result = withContext(Dispatchers.IO) {
-                    executeProcess(command, _workingDir.value!!)
-                }
-                if (result.stdout.isNotBlank()) {
-                    result.stdout.lines().take(500).forEach { line ->
+                val result = TerminalEmulator.executeCommand(
+                    command = command,
+                    workingDir = _workingDir.value!!,
+                    timeoutMs = 15_000L
+                )
+
+                if (result.output.isNotBlank()) {
+                    result.output.lines().take(500).forEach { line ->
                         appendLine(TerminalLine.Output(line))
                     }
-                    if (result.stdout.lines().size > 500) {
+                    if (result.output.lines().size > 500) {
                         appendLine(TerminalLine.Info("... output truncated at 500 lines"))
                     }
                 }
-                if (result.stderr.isNotBlank()) {
-                    result.stderr.lines().take(100).forEach { line ->
-                        appendLine(TerminalLine.Error(line))
-                    }
+
+                if (result.error != null) {
+                    appendLine(TerminalLine.Error(result.error))
+                } else if (result.exitCode != 0) {
+                    appendLine(TerminalLine.Error("Command exited with code ${result.exitCode}"))
                 }
-                if (result.stdout.isBlank() && result.stderr.isBlank()) {
+
+                if (result.output.isBlank() && result.error == null) {
                     appendLine(TerminalLine.Output("(no output)"))
                 }
             } catch (e: Exception) {
@@ -141,25 +143,6 @@ class TerminalViewModel @Inject constructor() : ViewModel() {
                 _isRunning.value = false
             }
         }
-    }
-
-    private fun executeProcess(command: String, dir: File): ProcessResult {
-        val pb = ProcessBuilder("sh", "-c", command)
-            .directory(dir)
-            .redirectErrorStream(false)
-        val process = pb.start()
-
-        val stdoutReader = BufferedReader(InputStreamReader(process.inputStream))
-        val stderrReader = BufferedReader(InputStreamReader(process.errorStream))
-
-        val stdout = StringBuilder()
-        val stderr = StringBuilder()
-
-        stdoutReader.forEachLine { stdout.appendLine(it) }
-        stderrReader.forEachLine { stderr.appendLine(it) }
-
-        process.waitFor()
-        return ProcessResult(stdout.toString().trimEnd(), stderr.toString().trimEnd())
     }
 
     private fun showHelp() {
@@ -208,7 +191,6 @@ Available commands:
         if (commandHistory.size > HISTORY_LIMIT) commandHistory.removeLast()
     }
 
-    private data class ProcessResult(val stdout: String, val stderr: String)
 }
 
 sealed class TerminalLine {
