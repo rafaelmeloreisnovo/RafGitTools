@@ -30,7 +30,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class PreferencesRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private val dataStore = context.dataStore
+    private val dataStore by lazy { context.dataStore }
     private val syncPreferences = context.getSharedPreferences("settings_sync", Context.MODE_PRIVATE)
     private val languageMutex = Mutex()
     
@@ -123,26 +123,22 @@ class PreferencesRepository @Inject constructor(
     /**
      * Get the language synchronously for early startup.
      *
-     * This must remain fully synchronous and read from SharedPreferences only,
-     * because it is used from attachBaseContext.
+     * This must stay non-blocking and read from sync cache only.
      */
     fun getLanguageSync(): Language {
-        val cached = syncPreferences.getString(SYNC_LANGUAGE_KEY, null)
-        if (cached != null) {
-            return Language.fromCode(cached)
-        }
-
-        return Language.ENGLISH
+        val cached = syncPreferences.getString(SYNC_LANGUAGE_KEY, Language.ENGLISH.code)
+            ?: Language.ENGLISH.code
+        return Language.fromCode(cached)
     }
 
     /**
-     * Hydrate the synchronous language cache from DataStore in a background coroutine.
+     * Hydrate sync cache from DataStore in background startup flows.
      */
     suspend fun hydrateLanguageSyncCache() {
-        val languageFromDataStore = withContext(Dispatchers.IO) {
+        val language = languageMutex.withLock {
             languageFlow.first()
         }
-        setLanguageSync(languageFromDataStore)
+        setLanguageSync(language)
     }
 
     private fun setLanguageSync(language: Language) {
