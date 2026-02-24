@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -32,19 +34,21 @@ class DiffAuditLogger @Inject constructor(
         private const val MAX_LOGS = 1000
     }
 
+    private val gson = Gson()
+
     fun logDiff(entry: DiffAuditEntry) {
         scope.launch {
             try {
                 dataStore.edit { preferences ->
                     val existingLog = preferences[DIFF_LOG_KEY] ?: "[]"
-                    val entries = parseEntries(existingLog).toMutableList()
+                    val entries = DiffAuditLogCodec.deserialize(existingLog, gson).toMutableList()
                     entries.add(entry)
                     val trimmed = if (entries.size > MAX_LOGS) {
                         entries.takeLast(MAX_LOGS)
                     } else {
                         entries
                     }
-                    preferences[DIFF_LOG_KEY] = serializeEntries(trimmed)
+                    preferences[DIFF_LOG_KEY] = DiffAuditLogCodec.serialize(trimmed, gson)
                 }
             } catch (_: Exception) {
                 // Fail silently to avoid interrupting git operations.
@@ -56,7 +60,7 @@ class DiffAuditLogger @Inject constructor(
         return try {
             withContext(Dispatchers.IO) {
                 dataStore.data.first()[DIFF_LOG_KEY]?.let { log ->
-                    parseEntries(log).takeLast(limit)
+                    DiffAuditLogCodec.deserialize(log, gson).takeLast(limit)
                 } ?: emptyList()
             }
         } catch (_: Exception) {
@@ -79,63 +83,76 @@ class DiffAuditLogger @Inject constructor(
         }
     }
 
-    private fun serializeEntries(entries: List<DiffAuditEntry>): String {
-        val items = entries.map { entry ->
-            """{"oldPath":"${escapeJson(entry.oldPath.orEmpty())}","newPath":"${escapeJson(entry.newPath.orEmpty())}","changeType":"${entry.changeType}","timestamp":${entry.timestamp},"diffSizeBytes":${entry.diffSizeBytes},"fileSizeBytes":${entry.fileSizeBytes},"md5":"${escapeJson(entry.md5)}"}"""
-        }
-        return "[${items.joinToString(",")}]"
+}
+
+internal object DiffAuditLogCodec {
+    fun serialize(entries: List<DiffAuditEntry>, gson: Gson): String {
+        val dto = DiffAuditLogDto(entries = entries.map { DiffAuditEntryDto.fromDomain(it) })
+        return gson.toJson(dto)
     }
 
-    private fun parseEntries(json: String): List<DiffAuditEntry> {
-        if (json == "[]" || json.isBlank()) return emptyList()
+    fun deserialize(json: String, gson: Gson): List<DiffAuditEntry> {
+        if (json.isBlank() || json == "[]") return emptyList()
+
         return try {
-            json.trim('[', ']')
-                .split("},")
-                .mapNotNull { item ->
-                    parseEntry(item.trim('{', '}') + "}")
-                }
+            gson.fromJson(json, DiffAuditLogDto::class.java)
+                ?.entries
+                .orEmpty()
+                .map { it.toDomain() }
+        } catch (_: JsonSyntaxException) {
+            deserializeLegacyArray(json, gson)
         } catch (_: Exception) {
             emptyList()
         }
     }
 
-    private fun parseEntry(json: String): DiffAuditEntry? {
+    private fun deserializeLegacyArray(json: String, gson: Gson): List<DiffAuditEntry> {
         return try {
-            val parts = json.trim('{', '}').split("\",\"")
-            val oldPath = parts[0].substringAfter("\":\"").trim('"')
-            val newPath = parts[1].substringAfter("\":\"").trim('"')
-            val changeType = parts[2].substringAfter("\":\"").trim('"')
-            val timestamp = parts[3].substringAfter("\":").trim('"').toLong()
-            val diffSizeBytes = parts[4].substringAfter("\":").trim('"').toLong()
-            val fileSizeBytes = parts[5].substringAfter("\":").trim('"').toLong()
-            val md5 = parts[6].substringAfter("\":\"").trim('"', '}')
-
-            DiffAuditEntry(
-                oldPath = unescapeJson(oldPath),
-                newPath = unescapeJson(newPath),
-                changeType = changeType,
-                timestamp = timestamp,
-                diffSizeBytes = diffSizeBytes,
-                fileSizeBytes = fileSizeBytes,
-                md5 = unescapeJson(md5)
-            )
+            val legacyList = gson.fromJson(json, Array<DiffAuditEntryDto>::class.java)
+            legacyList?.map { it.toDomain() }.orEmpty()
         } catch (_: Exception) {
-            null
+            emptyList()
         }
     }
+}
 
-    private fun escapeJson(value: String): String {
-        return value.replace("\"", "\\\"")
-            .replace("\n", "\\n")
-            .replace("\r", "\\r")
-            .replace("\t", "\\t")
+internal data class DiffAuditLogDto(
+    val entries: List<DiffAuditEntryDto>
+)
+
+internal data class DiffAuditEntryDto(
+    val oldPath: String?,
+    val newPath: String?,
+    val changeType: String,
+    val timestamp: Long,
+    val diffSizeBytes: Long,
+    val fileSizeBytes: Long,
+    val md5: String
+) {
+    fun toDomain(): DiffAuditEntry {
+        return DiffAuditEntry(
+            oldPath = oldPath,
+            newPath = newPath,
+            changeType = changeType,
+            timestamp = timestamp,
+            diffSizeBytes = diffSizeBytes,
+            fileSizeBytes = fileSizeBytes,
+            md5 = md5
+        )
     }
 
-    private fun unescapeJson(value: String): String {
-        return value.replace("\\\"", "\"")
-            .replace("\\n", "\n")
-            .replace("\\r", "\r")
-            .replace("\\t", "\t")
+    companion object {
+        fun fromDomain(entry: DiffAuditEntry): DiffAuditEntryDto {
+            return DiffAuditEntryDto(
+                oldPath = entry.oldPath,
+                newPath = entry.newPath,
+                changeType = entry.changeType,
+                timestamp = entry.timestamp,
+                diffSizeBytes = entry.diffSizeBytes,
+                fileSizeBytes = entry.fileSizeBytes,
+                md5 = entry.md5
+            )
+        }
     }
 }
 

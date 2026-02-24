@@ -3,6 +3,7 @@ package com.rafgittools.data.git
 import com.rafgittools.CoroutineTestRule
 import com.rafgittools.core.logging.DiffAuditLogger
 import com.rafgittools.domain.model.GitAuthor
+import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -12,6 +13,7 @@ import org.eclipse.jgit.api.Git
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test

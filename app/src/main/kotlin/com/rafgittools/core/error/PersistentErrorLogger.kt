@@ -6,6 +6,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +39,8 @@ class PersistentErrorLogger @Inject constructor(
         private val ERROR_LOG_KEY = stringPreferencesKey("error_log")
         private const val MAX_ERRORS = 1000
     }
+
+    private val gson = Gson()
     
     /**
      * Log error to persistent storage
@@ -46,7 +50,7 @@ class PersistentErrorLogger @Inject constructor(
             try {
                 dataStore.edit { preferences ->
                     val existingLog = preferences[ERROR_LOG_KEY] ?: "[]"
-                    val errors = parseErrors(existingLog).toMutableList()
+                    val errors = PersistentErrorLogCodec.deserialize(existingLog, gson).toMutableList()
                     errors.add(error)
                     
                     // Keep only last MAX_ERRORS
@@ -56,7 +60,7 @@ class PersistentErrorLogger @Inject constructor(
                         errors
                     }
                     
-                    preferences[ERROR_LOG_KEY] = serializeErrors(trimmedErrors)
+                    preferences[ERROR_LOG_KEY] = PersistentErrorLogCodec.serialize(trimmedErrors, gson)
                 }
             } catch (e: Exception) {
                 // Fail silently - don't crash on error logging
@@ -72,7 +76,7 @@ class PersistentErrorLogger @Inject constructor(
         return try {
             withContext(Dispatchers.IO) {
                 dataStore.data.first()[ERROR_LOG_KEY]?.let { log ->
-                    parseErrors(log).takeLast(limit)
+                    PersistentErrorLogCodec.deserialize(log, gson).takeLast(limit)
                 } ?: emptyList()
             }
         } catch (e: Exception) {
@@ -110,57 +114,70 @@ class PersistentErrorLogger @Inject constructor(
         }
     }
     
-    private fun serializeErrors(errors: List<ErrorDetails>): String {
-        val errorStrings = errors.map { error ->
-            """{"type":"${error.type}","message":"${escapeJson(error.message)}","context":"${escapeJson(error.context)}","timestamp":${error.timestamp}}"""
-        }
-        return "[${errorStrings.joinToString(",")}]"
+}
+
+internal object PersistentErrorLogCodec {
+    fun serialize(errors: List<ErrorDetails>, gson: Gson): String {
+        val dto = PersistentErrorLogDto(entries = errors.map { ErrorDetailsDto.fromDomain(it) })
+        return gson.toJson(dto)
     }
-    
-    private fun parseErrors(json: String): List<ErrorDetails> {
-        if (json == "[]" || json.isBlank()) return emptyList()
-        
+
+    fun deserialize(json: String, gson: Gson): List<ErrorDetails> {
+        if (json.isBlank() || json == "[]") return emptyList()
+
         return try {
-            json.trim('[', ']')
-                .split("},")
-                .mapNotNull { errorJson ->
-                    parseError(errorJson.trim('{', '}') + "}")
-                }
-        } catch (e: Exception) {
+            gson.fromJson(json, PersistentErrorLogDto::class.java)
+                ?.entries
+                .orEmpty()
+                .mapNotNull { it.toDomainOrNull() }
+        } catch (_: JsonSyntaxException) {
+            deserializeLegacyArray(json, gson)
+        } catch (_: Exception) {
             emptyList()
         }
     }
-    
-    private fun parseError(json: String): ErrorDetails? {
+
+    private fun deserializeLegacyArray(json: String, gson: Gson): List<ErrorDetails> {
         return try {
-            val parts = json.trim('{', '}').split("\",\"")
-            val type = ErrorType.valueOf(parts[0].substringAfter("\":\"").trim('"'))
-            val message = parts[1].substringAfter("\":\"").trim('"')
-            val context = parts[2].substringAfter("\":\"").trim('"')
-            val timestamp = parts[3].substringAfter("\":").trim('}').toLong()
-            
+            val legacy = gson.fromJson(json, Array<ErrorDetailsDto>::class.java)
+            legacy?.mapNotNull { it.toDomainOrNull() }.orEmpty()
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+}
+
+internal data class PersistentErrorLogDto(
+    val entries: List<ErrorDetailsDto>
+)
+
+internal data class ErrorDetailsDto(
+    val type: String,
+    val message: String,
+    val context: String,
+    val timestamp: Long
+) {
+    fun toDomainOrNull(): ErrorDetails? {
+        return try {
             ErrorDetails(
-                type = type,
-                message = unescapeJson(message),
-                context = unescapeJson(context),
+                type = ErrorType.valueOf(type),
+                message = message,
+                context = context,
                 timestamp = timestamp
             )
-        } catch (e: Exception) {
+        } catch (_: IllegalArgumentException) {
             null
         }
     }
-    
-    private fun escapeJson(str: String): String {
-        return str.replace("\"", "\\\"")
-            .replace("\n", "\\n")
-            .replace("\r", "\\r")
-            .replace("\t", "\\t")
-    }
-    
-    private fun unescapeJson(str: String): String {
-        return str.replace("\\\"", "\"")
-            .replace("\\n", "\n")
-            .replace("\\r", "\r")
-            .replace("\\t", "\t")
+
+    companion object {
+        fun fromDomain(error: ErrorDetails): ErrorDetailsDto {
+            return ErrorDetailsDto(
+                type = error.type.name,
+                message = error.message,
+                context = error.context,
+                timestamp = error.timestamp
+            )
+        }
     }
 }

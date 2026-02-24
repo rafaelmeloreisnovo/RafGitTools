@@ -313,6 +313,10 @@ class JGitService @Inject constructor(
                 conflicting = status.conflicting.toList(),
                 hasUncommittedChanges = !status.isClean
             )
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (t: Throwable) {
+            Result.failure(t)
         }
             )
         } catch (ce: CancellationException) {
@@ -381,8 +385,11 @@ class JGitService @Inject constructor(
                         isRemote = true
                     ))
                 }
-            
-            branches
+            )
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (t: Throwable) {
+            Result.failure(t)
         }
             )
         } catch (ce: CancellationException) {
@@ -414,6 +421,10 @@ class JGitService @Inject constructor(
                 isLocal = true,
                 isRemote = false
             )
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (t: Throwable) {
+            Result.failure(t)
         }
             )
         } catch (ce: CancellationException) {
@@ -470,6 +481,10 @@ class JGitService @Inject constructor(
                 isLocal = true,
                 isRemote = false
             )
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (t: Throwable) {
+            Result.failure(t)
         }
             )
         } catch (ce: CancellationException) {
