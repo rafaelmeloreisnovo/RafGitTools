@@ -6,7 +6,11 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -14,14 +18,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
-import javax.inject.Singleton
 
 private val Context.errorDataStore: DataStore<Preferences> by preferencesDataStore(name = "error_logs")
 
 /**
  * Persistent Error Logger
- * 
+ *
  * Stores error logs for analysis and prevention.
  * Implements secure error storage with automatic cleanup.
  */
@@ -29,15 +31,15 @@ private val Context.errorDataStore: DataStore<Preferences> by preferencesDataSto
 class PersistentErrorLogger @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ErrorLogger {
-    
+
     private val dataStore = context.errorDataStore
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    
+
     companion object {
         private val ERROR_LOG_KEY = stringPreferencesKey("error_log")
         private const val MAX_ERRORS = 1000
     }
-    
+
     /**
      * Log error to persistent storage
      */
@@ -46,17 +48,17 @@ class PersistentErrorLogger @Inject constructor(
             try {
                 dataStore.edit { preferences ->
                     val existingLog = preferences[ERROR_LOG_KEY] ?: "[]"
-                    val errors = parseErrors(existingLog).toMutableList()
+                    val errors = ErrorDetailsCodec.deserialize(existingLog).toMutableList()
                     errors.add(error)
-                    
+
                     // Keep only last MAX_ERRORS
                     val trimmedErrors = if (errors.size > MAX_ERRORS) {
                         errors.takeLast(MAX_ERRORS)
                     } else {
                         errors
                     }
-                    
-                    preferences[ERROR_LOG_KEY] = serializeErrors(trimmedErrors)
+
+                    preferences[ERROR_LOG_KEY] = ErrorDetailsCodec.serialize(trimmedErrors)
                 }
             } catch (e: Exception) {
                 // Fail silently - don't crash on error logging
@@ -64,7 +66,7 @@ class PersistentErrorLogger @Inject constructor(
             }
         }
     }
-    
+
     /**
      * Get recent errors
      */
@@ -72,7 +74,7 @@ class PersistentErrorLogger @Inject constructor(
         return try {
             withContext(Dispatchers.IO) {
                 dataStore.data.first()[ERROR_LOG_KEY]?.let { log ->
-                    parseErrors(log).takeLast(limit)
+                    ErrorDetailsCodec.deserialize(log).takeLast(limit)
                 } ?: emptyList()
             }
         } catch (e: Exception) {
@@ -94,7 +96,7 @@ class PersistentErrorLogger @Inject constructor(
             getErrors(limit)
         }
     }
-    
+
     /**
      * Clear all error logs
      */
@@ -109,58 +111,54 @@ class PersistentErrorLogger @Inject constructor(
             }
         }
     }
-    
-    private fun serializeErrors(errors: List<ErrorDetails>): String {
-        val errorStrings = errors.map { error ->
-            """{"type":"${error.type}","message":"${escapeJson(error.message)}","context":"${escapeJson(error.context)}","timestamp":${error.timestamp}}"""
-        }
-        return "[${errorStrings.joinToString(",")}]"
+}
+
+internal object ErrorDetailsCodec {
+    private val gson = Gson()
+    private val listType = object : TypeToken<List<StoredErrorDetails>>() {}.type
+
+    fun serialize(errors: List<ErrorDetails>): String {
+        val storedErrors = errors.map { it.toStoredError() }
+        return gson.toJson(storedErrors, listType)
     }
-    
-    private fun parseErrors(json: String): List<ErrorDetails> {
+
+    fun deserialize(json: String): List<ErrorDetails> {
         if (json == "[]" || json.isBlank()) return emptyList()
-        
-        return try {
-            json.trim('[', ']')
-                .split("},")
-                .mapNotNull { errorJson ->
-                    parseError(errorJson.trim('{', '}') + "}")
-                }
-        } catch (e: Exception) {
-            emptyList()
-        }
+
+        val storedErrors = runCatching {
+            gson.fromJson<List<StoredErrorDetails>>(json, listType)
+        }.getOrNull() ?: return emptyList()
+
+        return storedErrors.mapNotNull { it.toDomainErrorOrNull() }
     }
-    
-    private fun parseError(json: String): ErrorDetails? {
-        return try {
-            val parts = json.trim('{', '}').split("\",\"")
-            val type = ErrorType.valueOf(parts[0].substringAfter("\":\"").trim('"'))
-            val message = parts[1].substringAfter("\":\"").trim('"')
-            val context = parts[2].substringAfter("\":\"").trim('"')
-            val timestamp = parts[3].substringAfter("\":").trim('}').toLong()
-            
-            ErrorDetails(
-                type = type,
-                message = unescapeJson(message),
-                context = unescapeJson(context),
-                timestamp = timestamp
-            )
-        } catch (e: Exception) {
-            null
-        }
-    }
-    
-    private fun escapeJson(str: String): String {
-        return str.replace("\"", "\\\"")
-            .replace("\n", "\\n")
-            .replace("\r", "\\r")
-            .replace("\t", "\\t")
-    }
-    
-    private fun unescapeJson(str: String): String {
-        return str.replace("\\\"", "\"")
-            .replace("\\n", "\n")
-            .replace("\\r", "\r")
-            .replace("\\t", "\t")
-    }
+}
+
+internal data class StoredErrorDetails(
+    val type: String,
+    val message: String,
+    val context: String,
+    val timestamp: Long,
+    val stackTrace: String? = null
+)
+
+private fun ErrorDetails.toStoredError(): StoredErrorDetails {
+    return StoredErrorDetails(
+        type = type.name,
+        message = message,
+        context = context,
+        timestamp = timestamp,
+        stackTrace = stackTrace
+    )
+}
+
+private fun StoredErrorDetails.toDomainErrorOrNull(): ErrorDetails? {
+    val parsedType = runCatching { ErrorType.valueOf(type) }.getOrNull() ?: return null
+
+    return ErrorDetails(
+        type = parsedType,
+        message = message,
+        context = context,
+        timestamp = timestamp,
+        stackTrace = stackTrace
+    )
 }
