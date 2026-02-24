@@ -3,17 +3,23 @@ package com.rafgittools.data.git
 import com.rafgittools.CoroutineTestRule
 import com.rafgittools.core.logging.DiffAuditLogger
 import com.rafgittools.domain.model.GitAuthor
+import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.runTest
 import org.eclipse.jgit.api.Git
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import java.io.File
 import java.nio.file.Files
+import kotlin.test.assertFailsWith
 
 /**
  * Testes de integração local para JGitService.
@@ -114,6 +120,30 @@ class JGitServiceTest {
         )
 
         assertTrue(result.isFailure)
+    }
+
+
+    @Test
+    fun `openRepository should propagate cancellation`() = runTest {
+        val cancelledJob = Job().apply { cancel() }
+
+        assertFailsWith<CancellationException> {
+            withContext(coroutineContext + cancelledJob) {
+                jgitService.openRepository("/tmp/non-existent-repo")
+            }
+        }
+    }
+
+    @Test
+    fun `getStatus should propagate cancellation`() = runTest {
+        val repoDir = createRepositoryWithInitialCommit("status-cancel")
+        val cancelledJob = Job().apply { cancel() }
+
+        assertFailsWith<CancellationException> {
+            withContext(coroutineContext + cancelledJob) {
+                jgitService.getStatus(repoDir.absolutePath)
+            }
+        }
     }
 
     private fun createRepositoryWithInitialCommit(prefix: String): File {
