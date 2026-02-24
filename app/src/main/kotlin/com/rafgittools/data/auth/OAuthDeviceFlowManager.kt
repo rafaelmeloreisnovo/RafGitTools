@@ -12,6 +12,22 @@ import retrofit2.http.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
+
+private val CLIENT_ID_PLACEHOLDERS = setOf(
+    "local-dev-client-id",
+    "local-production-client-id",
+    "your-client-id",
+    "your_github_client_id",
+    "changeme"
+)
+
+internal fun isConfiguredClientId(value: String): Boolean {
+    val normalized = value.trim()
+    if (normalized.isBlank()) return false
+    if (normalized.startsWith("local-", ignoreCase = true)) return false
+    return normalized.lowercase() !in CLIENT_ID_PLACEHOLDERS
+}
+
 /**
  * OAuth Device Flow Manager — P33-23
  *
@@ -32,7 +48,8 @@ class OAuthDeviceFlowManager @Inject constructor(
         private const val GITHUB_OAUTH_URL = "https://github.com/"
         private val CLIENT_ID get() = BuildConfig.GITHUB_CLIENT_ID // FIX L6: never hardcode OAuth client ID
         private const val CLIENT_ID_ERROR_MESSAGE =
-            "GitHub OAuth is not configured for this build. Set a valid GITHUB_CLIENT_ID in gradle.properties or CI secrets (GITHUB_CLIENT_ID_DEV / GITHUB_CLIENT_ID_PRODUCTION) and rebuild the app."
+            "GitHub OAuth is not configured for this build. Set GITHUB_CLIENT_ID_DEV or " +
+                "GITHUB_CLIENT_ID_PRODUCTION (local.properties or env vars), then rebuild the app."
         private const val SCOPE = "repo,read:user,notifications"
         private const val POLL_INTERVAL_MS = 5_000L
         private const val MAX_POLLS = 60 // 5 min total
@@ -51,8 +68,9 @@ class OAuthDeviceFlowManager @Inject constructor(
      * Collect this Flow in your ViewModel; cancel to abort polling.
      */
     fun startDeviceFlow(): Flow<DeviceFlowState> = flow {
-        val clientId = requireClientId()
-        if (clientId == null) {
+        val clientId = try {
+            requireClientId()
+        } catch (_: IllegalStateException) {
             emit(DeviceFlowState.Error(CLIENT_ID_ERROR_MESSAGE))
             return@flow
         }
@@ -133,10 +151,11 @@ class OAuthDeviceFlowManager @Inject constructor(
     private fun requireClientId(): String? {
         val clientId = CLIENT_ID
         if (!isConfiguredClientId(clientId)) {
-            return null
+            throw IllegalStateException(CLIENT_ID_ERROR_MESSAGE)
         }
         return clientId
     }
+
 
     private suspend fun fetchUsername(token: String): String? {
         return try {
