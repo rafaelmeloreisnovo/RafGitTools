@@ -31,6 +31,11 @@ class OAuthDeviceFlowManager @Inject constructor(
     companion object {
         private const val GITHUB_OAUTH_URL = "https://github.com/"
         private val CLIENT_ID get() = BuildConfig.GITHUB_CLIENT_ID // FIX L6: never hardcode OAuth client ID
+        private val INVALID_CLIENT_ID_VALUES = setOf(
+            "YOUR_GITHUB_CLIENT_ID",
+            "CHANGE_ME",
+            "placeholder"
+        )
         private const val SCOPE = "repo,read:user,notifications"
         private const val POLL_INTERVAL_MS = 5_000L
         private const val MAX_POLLS = 60 // 5 min total
@@ -51,9 +56,19 @@ class OAuthDeviceFlowManager @Inject constructor(
     fun startDeviceFlow(): Flow<DeviceFlowState> = flow {
         emit(DeviceFlowState.Requesting)
 
+        val clientId = CLIENT_ID
+        if (clientId.isBlank() || clientId in INVALID_CLIENT_ID_VALUES) {
+            emit(
+                DeviceFlowState.Error(
+                    "GitHub OAuth client ID is invalid. Configure BuildConfig.GITHUB_CLIENT_ID with a valid value before starting device flow."
+                )
+            )
+            return@flow
+        }
+
         // Step 1: Request device + user codes
         val codeResponse = try {
-            oauthApi.requestDeviceCode(clientId = CLIENT_ID, scope = SCOPE)
+            oauthApi.requestDeviceCode(clientId = clientId, scope = SCOPE)
         } catch (e: Exception) {
             emit(DeviceFlowState.Error("Failed to start OAuth flow: ${e.message}"))
             return@flow
@@ -75,7 +90,7 @@ class OAuthDeviceFlowManager @Inject constructor(
 
             val tokenResponse = try {
                 oauthApi.pollForToken(
-                    clientId = CLIENT_ID,
+                    clientId = clientId,
                     deviceCode = codeResponse.device_code,
                     grantType = "urn:ietf:params:oauth:grant-type:device_code"
                 )
