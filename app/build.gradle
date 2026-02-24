@@ -7,6 +7,47 @@ plugins {
     id 'kotlin-parcelize'
 }
 
+def readSecret = { String key ->
+    def envValue = System.getenv(key)
+    if (envValue != null && !envValue.trim().isEmpty()) {
+        return envValue.trim()
+    }
+
+    if (project.hasProperty(key)) {
+        def propValue = project.property(key)?.toString()?.trim()
+        if (propValue != null && !propValue.isEmpty()) {
+            return propValue
+        }
+    }
+
+    return ""
+}
+
+def requireSecret = { String key, String context ->
+    def value = readSecret(key)
+    if (value.isEmpty()) {
+        throw new GradleException("Missing required secret '%s' for %s. Configure it in gradle.properties or CI environment.".formatted(key, context))
+    }
+    return value
+}
+
+def githubClientIdDev = requireSecret('GITHUB_CLIENT_ID_DEV', 'dev OAuth configuration')
+def githubClientIdProduction = requireSecret('GITHUB_CLIENT_ID_PRODUCTION', 'production OAuth configuration')
+
+def releaseStoreFilePath = readSecret('RELEASE_STORE_FILE')
+def releaseStorePassword = readSecret('RELEASE_STORE_PASSWORD')
+def releaseKeyAlias = readSecret('RELEASE_KEY_ALIAS')
+def releaseKeyPassword = readSecret('RELEASE_KEY_PASSWORD')
+
+def isReleaseTaskRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.toLowerCase().contains('release')
+}
+
+def hasReleaseSigning = !releaseStoreFilePath.isEmpty() && !releaseStorePassword.isEmpty() && !releaseKeyAlias.isEmpty() && !releaseKeyPassword.isEmpty()
+if (isReleaseTaskRequested && !hasReleaseSigning) {
+    throw new GradleException('Release signing is required. Set RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS and RELEASE_KEY_PASSWORD in gradle.properties or CI environment.')
+}
+
 android {
     // Use a modern namespace that matches the package name
     namespace 'com.rafgittools'
@@ -22,7 +63,6 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0.0-alpha"
-        buildConfigField "String", "GITHUB_CLIENT_ID", '"fallback_non_empty_client_id"'
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -34,10 +74,18 @@ android {
         }
     }
 
-    // Signing configuration for debug builds uses the default debug keystore.
+    // Signing configuration for debug and release builds.
     signingConfigs {
         debug {
             // Default debug keystore is used automatically.
+        }
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(releaseStoreFilePath)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
         }
     }
 
@@ -54,8 +102,7 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            // Use the debug signing config to allow installation on local devices.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
     }
 
@@ -68,13 +115,13 @@ android {
             versionNameSuffix "-dev"
             buildConfigField "String", "API_BASE_URL", '"https://api.github.com"'
             buildConfigField "String", "OAUTH_REDIRECT", '"rafgittools://oauth"'
-            buildConfigField "String", "GITHUB_CLIENT_ID", '"<valor_dev>"'
+            buildConfigField "String", "GITHUB_CLIENT_ID", "\"${githubClientIdDev}\""
         }
         production {
             dimension "environment"
             buildConfigField "String", "API_BASE_URL", '"https://api.github.com"'
             buildConfigField "String", "OAUTH_REDIRECT", '"rafgittools://oauth"'
-            buildConfigField "String", "GITHUB_CLIENT_ID", '"<valor_production>"'
+            buildConfigField "String", "GITHUB_CLIENT_ID", "\"${githubClientIdProduction}\""
         }
     }
 
