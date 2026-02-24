@@ -14,9 +14,31 @@ Welcome to the RafGitTools documentation! | Bem-vindo à documentação do RafGi
 | UI/UX | 80% | 🟢 Advanced |
 | Security | 100% | ✅ Complete |
 | Testing | 20% | 🔴 In Progress |
-| **Overall** | **38%** | **108/288 features** |
+| **Overall** | **40%** | **115/288 features** |
 
 👉 **[Full Status Report](STATUS_REPORT.md)** - Detailed implementation status
+
+## 📏 Métricas Oficiais (fonte única)
+
+**Fonte única de verdade**: [STATUS_REPORT.md](STATUS_REPORT.md)  
+**Última atualização**: 2026-02-24
+
+| Métrica | Valor |
+|---|---:|
+| Total de features | 288 |
+| Concluídas | 115 |
+| Em progresso | 26 |
+| Pendentes | 147 |
+| Arquivos Kotlin | 168 |
+| Arquivos de teste (.kt em `test`/`androidTest`) | 11 |
+| Arquivos de documentação (`docs/**/*.md`) | 36 |
+
+### Como atualizar métricas
+
+1. Atualize **primeiro** `docs/STATUS_REPORT.md` com os novos números e a data.
+2. Replique exatamente os mesmos valores em `README.md`, `docs/README.md` e `docs/INDEX.md`.
+3. Revalide contagens com comandos locais (`rg --files -g '*.kt'`, `rg --files -g '*.kt' | rg '/(test|androidTest)/'`, `rg --files docs -g '*.md'`).
+4. Faça commit único com mensagem clara de atualização de métricas para evitar drift.
 
 ---
 
@@ -95,8 +117,8 @@ Welcome to the RafGitTools documentation! | Bem-vindo à documentação do RafGi
 
 ---
 
-**Last Updated**: January 2026  
-**Progress**: 38% Complete (108/288 features)  
+**Last Updated**: 2026-02-24  
+**Progress**: 40% Complete (115/288 features)  
 **Maintained by**: RafGitTools Team
 
 **Happy Contributing! 🚀 | Boa Contribuição! 🚀**

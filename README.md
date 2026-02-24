@@ -186,6 +186,21 @@ Contributions are welcome! This project respects the GPL-3.0 license.
 
 See the complete [Status Report](docs/STATUS_REPORT.md) for detailed progress information.
 
+## 📏 Unified Status Metrics
+
+**Source of truth**: [`docs/STATUS_REPORT.md`](docs/STATUS_REPORT.md)  
+**Last updated**: 2026-02-24
+
+| Métrica | Valor |
+|---|---:|
+| Total de features | 288 |
+| Concluídas | 115 |
+| Em progresso | 26 |
+| Pendentes | 147 |
+| Arquivos Kotlin | 168 |
+| Arquivos de teste (.kt em `test`/`androidTest`) | 11 |
+| Arquivos de documentação (`docs/**/*.md`) | 36 |
+
 #### What's Ready (✅)
 
 - [x] Project structure and Clean Architecture (100%)
@@ -195,7 +210,7 @@ See the complete [Status Report](docs/STATUS_REPORT.md) for detailed progress in
 - [x] UI implementation with Jetpack Compose (80% - 15+ screens)
 - [x] Security & Privacy framework (100% - GDPR/CCPA compliant)
 - [x] Localization (3 languages: EN, PT-BR, ES)
-- [x] Documentation (28+ files)
+- [x] Documentation (36 files)
 
 #### In Progress (🟡)
 
@@ -211,7 +226,7 @@ See the complete [Status Report](docs/STATUS_REPORT.md) for detailed progress in
 - [ ] Git LFS support
 - [ ] Release preparation for Play Store
 
-**Progress**: 108/288 features complete (38%), 30 in progress (10%), 150 pending (52%)
+**Progress**: 115/288 features complete (40%), 26 in progress (9%), 147 pending (51%)
 
 ### How to Contribute
 
@@ -727,11 +742,11 @@ This project would not be possible without the amazing work of the open-source c
 
 | Phase | Features | Complete | In Progress | Planned | Standards Count |
 |-------|----------|----------|-------------|---------|-----------------|
-| Phase 1: Foundation | 72 | 18 | 30 | 24 | 25+ |
-| Phase 2: GitHub Integration | 72 | 0 | 0 | 72 | 20+ |
-| Phase 3: Advanced Features | 72 | 0 | 0 | 72 | 30+ |
-| Phase 4: Polish & Release | 72 | 1 | 3 | 68 | 25+ |
-| **Total** | **288** | **19** | **33** | **236** | **100+** |
+| Phase 1: Foundation | 72 | 52 | 8 | 12 | 25+ |
+| Phase 2: GitHub Integration | 72 | 45 | 10 | 17 | 20+ |
+| Phase 3: Advanced Features | 72 | 10 | 5 | 57 | 30+ |
+| Phase 4: Polish & Release | 72 | 8 | 3 | 61 | 25+ |
+| **Total** | **288** | **115** | **26** | **147** | **100+** |
 
 ### 🏛️ Standards & Normatives Reference
 
