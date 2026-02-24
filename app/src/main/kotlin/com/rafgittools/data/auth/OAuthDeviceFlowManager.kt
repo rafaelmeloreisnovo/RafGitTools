@@ -148,7 +148,7 @@ class OAuthDeviceFlowManager @Inject constructor(
         emit(DeviceFlowState.Error("Timed out waiting for authorization."))
     }
 
-    private fun requireClientId(): String {
+    private fun requireClientId(): String? {
         val clientId = CLIENT_ID
         if (!isConfiguredClientId(clientId)) {
             throw IllegalStateException(CLIENT_ID_ERROR_MESSAGE)
@@ -180,6 +180,31 @@ class OAuthDeviceFlowManager @Inject constructor(
             null
         }
     }
+}
+
+
+private val INVALID_CLIENT_ID_PLACEHOLDERS = setOf(
+    "your-client-id",
+    "your_github_client_id",
+    "placeholder",
+    "changeme",
+    "replace-me",
+    "local-dev-client-id",
+    "local-production-client-id"
+)
+
+internal fun isConfiguredClientId(value: String): Boolean {
+    val normalized = value.trim()
+    if (normalized.isEmpty()) {
+        return false
+    }
+
+    val lower = normalized.lowercase()
+    if (lower.startsWith("local-")) {
+        return false
+    }
+
+    return lower !in INVALID_CLIENT_ID_PLACEHOLDERS
 }
 
 /** Retrofit interface for GitHub OAuth endpoints (no auth required) */
