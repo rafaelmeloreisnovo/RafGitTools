@@ -9,9 +9,9 @@ package com.rafgittools.webhook
  * this simply logs the receipt of a webhook event.
  */
 object WebhookHandler {
-    fun handle(eventType: String, payload: String): Boolean {
+    fun handle(eventType: String, payload: String): Result<Unit> {
         // TODO: verify signature and route event to the correct handler
         println("Received webhook event: ${'$'}eventType, payload size=${'$'}{payload.length}")
-        return true
+        return Result.failure(NotImplementedError("Webhook handling is not implemented yet"))
     }
 }

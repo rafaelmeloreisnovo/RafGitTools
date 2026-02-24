@@ -11,10 +11,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rafgittools.R
+import com.rafgittools.core.feature.FeatureFlags
 import com.rafgittools.core.localization.Language
 
 /**
@@ -105,14 +105,16 @@ fun SettingsScreen(
                 )
             }
             
-            item {
-                SwitchSettingsItem(
-                    icon = Icons.Default.Commit,
-                    title = stringResource(R.string.settings_sign_commits),
-                    subtitle = stringResource(R.string.settings_sign_commits_subtitle),
-                    checked = gitConfig.signCommits,
-                    onCheckedChange = { viewModel.setSignCommits(it) }
-                )
+            if (FeatureFlags.ENABLE_GPG) {
+                item {
+                    SwitchSettingsItem(
+                        icon = Icons.Default.Commit,
+                        title = stringResource(R.string.settings_sign_commits),
+                        subtitle = stringResource(R.string.settings_sign_commits_subtitle),
+                        checked = gitConfig.signCommits,
+                        onCheckedChange = { viewModel.setSignCommits(it) }
+                    )
+                }
             }
             
             // Storage Section
