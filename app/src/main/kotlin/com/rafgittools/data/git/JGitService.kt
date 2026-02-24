@@ -277,16 +277,14 @@ class JGitService @Inject constructor(
     suspend fun openRepository(path: String): Result<Git> = withContext(Dispatchers.IO) {
         try {
             Result.success(
-                run {
-                    val directory = File(path)
-                    val builder = FileRepositoryBuilder()
-                    val repository = builder.setGitDir(File(directory, ".git"))
-                        .readEnvironment()
-                        .findGitDir()
-                        .build()
-
-                    Git(repository)
-                }
+        val directory = File(path)
+        val builder = FileRepositoryBuilder()
+        val repository = builder.setGitDir(File(directory, ".git"))
+            .readEnvironment()
+            .findGitDir()
+            .build()
+        
+        Git(repository)
             )
         } catch (ce: CancellationException) {
             throw ce
@@ -301,21 +299,25 @@ class JGitService @Inject constructor(
     suspend fun getStatus(repoPath: String): Result<GitStatus> = withContext(Dispatchers.IO) {
         try {
             Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    val status = git.status().call()
-                    val branch = git.repository.branch ?: "Unknown"
-
-                    GitStatus(
-                        branch = branch,
-                        added = status.added.toList(),
-                        changed = status.changed.toList(),
-                        removed = status.removed.toList(),
-                        modified = status.modified.toList(),
-                        untracked = status.untracked.toList(),
-                        conflicting = status.conflicting.toList(),
-                        hasUncommittedChanges = !status.isClean
-                    )
-                }
+        openRepository(repoPath).getOrThrow().use { git ->
+            val status = git.status().call()
+            val branch = git.repository.branch ?: "Unknown"
+            
+            GitStatus(
+                branch = branch,
+                added = status.added.toList(),
+                changed = status.changed.toList(),
+                removed = status.removed.toList(),
+                modified = status.modified.toList(),
+                untracked = status.untracked.toList(),
+                conflicting = status.conflicting.toList(),
+                hasUncommittedChanges = !status.isClean
+            )
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (t: Throwable) {
+            Result.failure(t)
+        }
             )
         } catch (ce: CancellationException) {
             throw ce
@@ -334,17 +336,17 @@ class JGitService @Inject constructor(
     ): Result<List<GitCommit>> = withContext(Dispatchers.IO) {
         try {
             Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    val ref = branch?.let { git.repository.findRef(it) }
-                        ?: git.repository.findRef(Constants.HEAD)
-
-                    val commits = git.log()
-                        .add(ref?.objectId ?: throw IllegalStateException("No HEAD found"))
-                        .setMaxCount(limit)
-                        .call()
-
-                    commits.map { it.toGitCommit() }
-                }
+        openRepository(repoPath).getOrThrow().use { git ->
+            val ref = branch?.let { git.repository.findRef(it) }
+                ?: git.repository.findRef(Constants.HEAD)
+            
+            val commits = git.log()
+                .add(ref?.objectId ?: throw IllegalStateException("No HEAD found"))
+                .setMaxCount(limit)
+                .call()
+            
+            commits.map { it.toGitCommit() }
+        }
             )
         } catch (ce: CancellationException) {
             throw ce
@@ -359,33 +361,36 @@ class JGitService @Inject constructor(
     suspend fun getBranches(repoPath: String): Result<List<GitBranch>> = withContext(Dispatchers.IO) {
         try {
             Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    val currentBranch = git.repository.branch
-                    val branches = mutableListOf<GitBranch>()
-
-                    // Local branches
-                    git.branchList().call().forEach { ref ->
-                        branches.add(ref.toGitBranch(
-                            currentBranch = currentBranch,
-                            isLocal = true,
-                            isRemote = false
-                        ))
-                    }
-
-                    // Remote branches
-                    git.branchList()
-                        .setListMode(org.eclipse.jgit.api.ListBranchCommand.ListMode.REMOTE)
-                        .call()
-                        .forEach { ref ->
-                            branches.add(ref.toGitBranch(
-                                currentBranch = currentBranch,
-                                isLocal = false,
-                                isRemote = true
-                            ))
-                        }
-
-                    branches
+        openRepository(repoPath).getOrThrow().use { git ->
+            val currentBranch = git.repository.branch
+            val branches = mutableListOf<GitBranch>()
+            
+            // Local branches
+            git.branchList().call().forEach { ref ->
+                branches.add(ref.toGitBranch(
+                    currentBranch = currentBranch,
+                    isLocal = true,
+                    isRemote = false
+                ))
+            }
+            
+            // Remote branches
+            git.branchList()
+                .setListMode(org.eclipse.jgit.api.ListBranchCommand.ListMode.REMOTE)
+                .call()
+                .forEach { ref ->
+                    branches.add(ref.toGitBranch(
+                        currentBranch = currentBranch,
+                        isLocal = false,
+                        isRemote = true
+                    ))
                 }
+            )
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (t: Throwable) {
+            Result.failure(t)
+        }
             )
         } catch (ce: CancellationException) {
             throw ce
@@ -404,19 +409,23 @@ class JGitService @Inject constructor(
     ): Result<GitBranch> = withContext(Dispatchers.IO) {
         try {
             Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    val command = git.branchCreate()
-                        .setName(branchName)
-
-                    startPoint?.let { command.setStartPoint(it) }
-
-                    val ref = command.call()
-                    ref.toGitBranch(
-                        currentBranch = git.repository.branch,
-                        isLocal = true,
-                        isRemote = false
-                    )
-                }
+        openRepository(repoPath).getOrThrow().use { git ->
+            val command = git.branchCreate()
+                .setName(branchName)
+            
+            startPoint?.let { command.setStartPoint(it) }
+            
+            val ref = command.call()
+            ref.toGitBranch(
+                currentBranch = git.repository.branch,
+                isLocal = true,
+                isRemote = false
+            )
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (t: Throwable) {
+            Result.failure(t)
+        }
             )
         } catch (ce: CancellationException) {
             throw ce
@@ -436,13 +445,13 @@ class JGitService @Inject constructor(
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    git.branchDelete()
-                        .setBranchNames(branchName)
-                        .setForce(force)
-                        .call()
-                    Unit
-                }
+        openRepository(repoPath).getOrThrow().use { git ->
+            git.branchDelete()
+                .setBranchNames(branchName)
+                .setForce(force)
+                .call()
+            Unit
+        }
             )
         } catch (ce: CancellationException) {
             throw ce
@@ -462,17 +471,21 @@ class JGitService @Inject constructor(
     ): Result<GitBranch> = withContext(Dispatchers.IO) {
         try {
             Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    val ref = git.branchRename()
-                        .setOldName(oldName)
-                        .setNewName(newName)
-                        .call()
-                    ref.toGitBranch(
-                        currentBranch = git.repository.branch,
-                        isLocal = true,
-                        isRemote = false
-                    )
-                }
+        openRepository(repoPath).getOrThrow().use { git ->
+            val ref = git.branchRename()
+                .setOldName(oldName)
+                .setNewName(newName)
+                .call()
+            ref.toGitBranch(
+                currentBranch = git.repository.branch,
+                isLocal = true,
+                isRemote = false
+            )
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (t: Throwable) {
+            Result.failure(t)
+        }
             )
         } catch (ce: CancellationException) {
             throw ce
