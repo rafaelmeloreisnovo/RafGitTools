@@ -10,23 +10,15 @@ package com.rafgittools.security
  * no operations and simply return success values.
  */
 object GpgKeyManager {
-    fun generateKey(name: String, email: String, passphrase: String): Boolean {
-        // TODO: integrate with a real OpenPGP implementation
-        return true
-    }
+    fun generateKey(name: String, email: String, passphrase: String): Result<Unit> =
+        Result.failure(NotImplementedError("GPG key generation is not implemented yet"))
 
-    fun importKey(armored: String): Boolean {
-        // TODO: parse and import GPG keys
-        return true
-    }
+    fun importKey(armored: String): Result<Unit> =
+        Result.failure(NotImplementedError("GPG key import is not implemented yet"))
 
-    fun exportKey(fingerprint: String): String {
-        // TODO: export GPG key by fingerprint
-        return ""
-    }
+    fun exportKey(fingerprint: String): Result<String> =
+        Result.failure(NotImplementedError("GPG key export is not implemented yet"))
 
-    fun signData(data: ByteArray, fingerprint: String, passphrase: String): ByteArray {
-        // TODO: produce a detached signature for the provided data
-        return ByteArray(0)
-    }
+    fun signData(data: ByteArray, fingerprint: String, passphrase: String): Result<ByteArray> =
+        Result.failure(NotImplementedError("GPG data signing is not implemented yet"))
 }

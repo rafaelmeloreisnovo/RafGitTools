@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rafgittools.core.feature.FeatureFlags
 import com.rafgittools.core.localization.Language
 import com.rafgittools.data.cache.AsyncCacheManager
 import com.rafgittools.data.preferences.PreferencesRepository
@@ -87,6 +88,9 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun setSignCommits(enabled: Boolean) {
+        if (!FeatureFlags.ENABLE_GPG) {
+            return
+        }
         viewModelScope.launch {
             preferencesRepository.setBoolean("git_sign_commits", enabled)
             _gitConfig.value = _gitConfig.value.copy(signCommits = enabled)

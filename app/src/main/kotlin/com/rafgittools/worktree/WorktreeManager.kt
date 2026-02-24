@@ -6,18 +6,12 @@ package com.rafgittools.worktree
  * Provides placeholder functions for managing Git worktrees.
  */
 object WorktreeManager {
-    fun add(path: String, branch: String): Boolean {
-        // TODO: add new worktree at path for branch
-        return true
-    }
+    fun add(path: String, branch: String): Result<Unit> =
+        Result.failure(NotImplementedError("Git worktree add is not implemented yet"))
 
-    fun list(): List<String> {
-        // TODO: return list of existing worktrees
-        return emptyList()
-    }
+    fun list(): Result<List<String>> =
+        Result.failure(NotImplementedError("Git worktree list is not implemented yet"))
 
-    fun remove(path: String): Boolean {
-        // TODO: remove the specified worktree
-        return true
-    }
+    fun remove(path: String): Result<Unit> =
+        Result.failure(NotImplementedError("Git worktree remove is not implemented yet"))
 }

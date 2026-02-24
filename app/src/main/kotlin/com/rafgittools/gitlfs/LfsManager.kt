@@ -8,18 +8,12 @@ package com.rafgittools.gitlfs
  * track large files, pull/push LFS objects, and manage pointer files.
  */
 object LfsManager {
-    fun install(): Boolean {
-        // TODO: install Git LFS and configure repository
-        return true
-    }
+    fun install(): Result<Unit> =
+        Result.failure(NotImplementedError("Git LFS install is not implemented yet"))
 
-    fun track(pattern: String): Boolean {
-        // TODO: track files matching the provided pattern
-        return true
-    }
+    fun track(pattern: String): Result<Unit> =
+        Result.failure(NotImplementedError("Git LFS track is not implemented yet"))
 
-    fun fetch(): Boolean {
-        // TODO: fetch LFS objects from remote
-        return true
-    }
+    fun fetch(): Result<Unit> =
+        Result.failure(NotImplementedError("Git LFS fetch is not implemented yet"))
 }
