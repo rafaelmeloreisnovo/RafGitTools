@@ -111,7 +111,7 @@ class TokenRefreshManager @Inject constructor(
      * that implement the device flow or web flow get refresh tokens.
      * This method is a stub for when the app evolves to use OAuth App flow.
      *
-     * Caller behavior: when this returns [Result.failure], trigger the
+     * Caller behavior: when this returns a failed [Result], trigger the
      * re-authentication flow via [OAuthDeviceFlowManager.startDeviceFlow].
      */
     @Suppress("unused")
@@ -127,7 +127,7 @@ class TokenRefreshManager @Inject constructor(
         return Result.failure(
             IllegalStateException(
                 "OAuth token refresh not yet supported. GitHub PATs don't use refresh tokens. " +
-                "Use OAuthDeviceFlowManager.startDeviceFlow() to re-authenticate."
+                    "Use OAuthDeviceFlowManager.startDeviceFlow() to re-authenticate."
             )
         )
     }

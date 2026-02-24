@@ -14,7 +14,7 @@ class TokenRefreshManagerTest {
     private val tokenRefreshManager = TokenRefreshManager(context, authRepository)
 
     @Test
-    fun `refreshOAuthToken returns failure result and does not throw`() = runTest {
+    fun `refreshOAuthToken returns failed result without throwing`() = runTest {
         val result = tokenRefreshManager.refreshOAuthToken(
             clientId = "client-id",
             clientSecret = "client-secret",
