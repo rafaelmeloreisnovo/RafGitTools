@@ -1,7 +1,6 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
-    id 'org.jetbrains.kotlin.plugin.compose'
     id 'com.google.dagger.hilt.android'
     id 'com.google.devtools.ksp'
     id 'kotlin-parcelize'
@@ -44,6 +43,7 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix ".debug"
+            buildConfigField "String", "API_BASE_URL", '"https://api.github.com/"'
             versionNameSuffix "-debug"
             debuggable true
             minifyEnabled false
@@ -51,6 +51,7 @@ android {
         }
         release {
             // Enable code shrinking and resource shrinking for release builds.
+            buildConfigField "String", "API_BASE_URL", '"https://api.github.com/"'
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -66,13 +67,13 @@ android {
             dimension "environment"
             applicationIdSuffix ".dev"
             versionNameSuffix "-dev"
-            buildConfigField "String", "API_BASE_URL", '"https://api.github.com"'
+            buildConfigField "String", "API_BASE_URL", '"https://api.github.com/"'
             buildConfigField "String", "OAUTH_REDIRECT", '"rafgittools://oauth"'
             buildConfigField "String", "GITHUB_CLIENT_ID", '"<valor_dev>"'
         }
         production {
             dimension "environment"
-            buildConfigField "String", "API_BASE_URL", '"https://api.github.com"'
+            buildConfigField "String", "API_BASE_URL", '"https://api.github.com/"'
             buildConfigField "String", "OAUTH_REDIRECT", '"rafgittools://oauth"'
             buildConfigField "String", "GITHUB_CLIENT_ID", '"<valor_production>"'
         }
@@ -83,6 +84,10 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+    composeOptions {
+        kotlinCompilerExtensionVersion "1.5.8"
+    }
+
     kotlinOptions {
         jvmTarget = '17'
         freeCompilerArgs += [
