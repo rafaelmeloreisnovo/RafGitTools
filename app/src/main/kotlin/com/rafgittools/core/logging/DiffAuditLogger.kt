@@ -9,6 +9,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -34,6 +36,8 @@ class DiffAuditLogger @Inject constructor(
         private const val MAX_LOGS = 1000
     }
 
+    private val gson = Gson()
+
     fun logDiff(entry: DiffAuditEntry) {
         scope.launch {
             try {
@@ -58,7 +62,11 @@ class DiffAuditLogger @Inject constructor(
         return try {
             withContext(Dispatchers.IO) {
                 dataStore.data.first()[DIFF_LOG_KEY]?.let { log ->
+<<<<<<< codex/refactor-logging-and-error-logger-classes
                     DiffAuditEntryCodec.deserialize(log).takeLast(limit)
+=======
+                    DiffAuditLogCodec.deserialize(log, gson).takeLast(limit)
+>>>>>>> main
                 } ?: emptyList()
             }
         } catch (_: Exception) {
@@ -82,6 +90,7 @@ class DiffAuditLogger @Inject constructor(
     }
 }
 
+<<<<<<< codex/refactor-logging-and-error-logger-classes
 internal object DiffAuditEntryCodec {
     private val gson = Gson()
     private val listType = object : TypeToken<List<StoredDiffAuditEntry>>() {}.type
@@ -99,9 +108,68 @@ internal object DiffAuditEntryCodec {
         }.getOrNull() ?: return emptyList()
 
         return storedEntries.map { it.toDomainEntry() }
+=======
+}
+
+internal object DiffAuditLogCodec {
+    fun serialize(entries: List<DiffAuditEntry>, gson: Gson): String {
+        val dto = DiffAuditLogDto(entries = entries.map { DiffAuditEntryDto.fromDomain(it) })
+        return gson.toJson(dto)
+    }
+
+    fun deserialize(json: String, gson: Gson): List<DiffAuditEntry> {
+        if (json.isBlank() || json == "[]") return emptyList()
+
+        return try {
+            gson.fromJson(json, DiffAuditLogDto::class.java)
+                ?.entries
+                .orEmpty()
+                .map { it.toDomain() }
+        } catch (_: JsonSyntaxException) {
+            deserializeLegacyArray(json, gson)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun deserializeLegacyArray(json: String, gson: Gson): List<DiffAuditEntry> {
+        return try {
+            val legacyList = gson.fromJson(json, Array<DiffAuditEntryDto>::class.java)
+            legacyList?.map { it.toDomain() }.orEmpty()
+        } catch (_: Exception) {
+            emptyList()
+        }
     }
 }
 
+internal data class DiffAuditLogDto(
+    val entries: List<DiffAuditEntryDto>
+)
+
+internal data class DiffAuditEntryDto(
+    val oldPath: String?,
+    val newPath: String?,
+    val changeType: String,
+    val timestamp: Long,
+    val diffSizeBytes: Long,
+    val fileSizeBytes: Long,
+    val md5: String
+) {
+    fun toDomain(): DiffAuditEntry {
+        return DiffAuditEntry(
+            oldPath = oldPath,
+            newPath = newPath,
+            changeType = changeType,
+            timestamp = timestamp,
+            diffSizeBytes = diffSizeBytes,
+            fileSizeBytes = fileSizeBytes,
+            md5 = md5
+        )
+>>>>>>> main
+    }
+}
+
+<<<<<<< codex/refactor-logging-and-error-logger-classes
 internal data class StoredDiffAuditEntry(
     val oldPath: String?,
     val newPath: String?,
@@ -134,6 +202,21 @@ private fun StoredDiffAuditEntry.toDomainEntry(): DiffAuditEntry {
         fileSizeBytes = fileSizeBytes,
         md5 = md5
     )
+=======
+    companion object {
+        fun fromDomain(entry: DiffAuditEntry): DiffAuditEntryDto {
+            return DiffAuditEntryDto(
+                oldPath = entry.oldPath,
+                newPath = entry.newPath,
+                changeType = entry.changeType,
+                timestamp = entry.timestamp,
+                diffSizeBytes = entry.diffSizeBytes,
+                fileSizeBytes = entry.fileSizeBytes,
+                md5 = entry.md5
+            )
+        }
+    }
+>>>>>>> main
 }
 
 data class DiffAuditEntry(
