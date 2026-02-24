@@ -16,8 +16,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -121,16 +121,28 @@ class PreferencesRepository @Inject constructor(
     }
 
     /**
-     * Get the language synchronously for early startup (fallbacks to DataStore once if needed).
+     * Get the language synchronously for early startup.
+     *
+     * This must remain fully synchronous and read from SharedPreferences only,
+     * because it is used from attachBaseContext.
      */
     fun getLanguageSync(): Language {
         val cached = syncPreferences.getString(SYNC_LANGUAGE_KEY, null)
         if (cached != null) {
             return Language.fromCode(cached)
         }
-        val fallback = runBlocking(Dispatchers.IO) { languageFlow.first() }
-        setLanguageSync(fallback)
-        return fallback
+
+        return Language.ENGLISH
+    }
+
+    /**
+     * Hydrate the synchronous language cache from DataStore in a background coroutine.
+     */
+    suspend fun hydrateLanguageSyncCache() {
+        val languageFromDataStore = withContext(Dispatchers.IO) {
+            languageFlow.first()
+        }
+        setLanguageSync(languageFromDataStore)
     }
 
     private fun setLanguageSync(language: Language) {
