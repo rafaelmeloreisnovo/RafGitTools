@@ -61,7 +61,7 @@ jobs:
       
       - name: Comment PR with results
         if: always()
-        uses: actions/github-script@v8
+        uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
@@ -107,6 +107,6 @@ jobs:
       pull-requests: write
     
     steps:
-      - uses: actions/labeler@v6
+      - uses: actions/labeler@v5
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}

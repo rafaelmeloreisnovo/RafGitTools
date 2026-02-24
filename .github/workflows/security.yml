@@ -130,7 +130,7 @@ jobs:
         run: ./gradlew dependencies | tee dependencies.txt
       
       - name: Upload dependency list
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: dependencies
           path: dependencies.txt
