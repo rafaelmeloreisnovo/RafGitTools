@@ -11,8 +11,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -67,15 +68,30 @@ class PersistentErrorLogger @Inject constructor(
     /**
      * Get recent errors
      */
-    override fun getErrors(limit: Int): List<ErrorDetails> {
+    override suspend fun getErrors(limit: Int): List<ErrorDetails> {
         return try {
-            kotlinx.coroutines.runBlocking {
+            withContext(Dispatchers.IO) {
                 dataStore.data.first()[ERROR_LOG_KEY]?.let { log ->
                     parseErrors(log).takeLast(limit)
                 } ?: emptyList()
             }
         } catch (e: Exception) {
             emptyList()
+        }
+    }
+
+    /**
+     * Legacy synchronous adapter.
+     *
+     * Contract: this method must never be called from the main thread.
+     */
+    fun getErrorsBlocking(limit: Int): List<ErrorDetails> {
+        check(android.os.Looper.myLooper() != android.os.Looper.getMainLooper()) {
+            "getErrorsBlocking must not be called from the main thread"
+        }
+
+        return runBlocking(Dispatchers.IO) {
+            getErrors(limit)
         }
     }
     

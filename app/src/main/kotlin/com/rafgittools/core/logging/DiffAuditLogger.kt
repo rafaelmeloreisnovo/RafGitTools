@@ -15,6 +15,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 
 private val Context.diffAuditDataStore: DataStore<Preferences> by preferencesDataStore(name = "diff_audit_logs")
 
@@ -50,15 +52,30 @@ class DiffAuditLogger @Inject constructor(
         }
     }
 
-    fun getEntries(limit: Int = 100): List<DiffAuditEntry> {
+    suspend fun getEntries(limit: Int = 100): List<DiffAuditEntry> {
         return try {
-            kotlinx.coroutines.runBlocking {
+            withContext(Dispatchers.IO) {
                 dataStore.data.first()[DIFF_LOG_KEY]?.let { log ->
                     parseEntries(log).takeLast(limit)
                 } ?: emptyList()
             }
         } catch (_: Exception) {
             emptyList()
+        }
+    }
+
+    /**
+     * Legacy synchronous adapter.
+     *
+     * Contract: this method must never be called from the main thread.
+     */
+    fun getEntriesBlocking(limit: Int = 100): List<DiffAuditEntry> {
+        check(android.os.Looper.myLooper() != android.os.Looper.getMainLooper()) {
+            "getEntriesBlocking must not be called from the main thread"
+        }
+
+        return runBlocking(Dispatchers.IO) {
+            getEntries(limit)
         }
     }
 

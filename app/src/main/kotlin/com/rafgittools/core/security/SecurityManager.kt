@@ -15,8 +15,9 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import java.util.Base64
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 
 /**
  * Security Manager
@@ -237,7 +238,7 @@ class SecurityManager(private val context: Context) {
      *
      * @return True if signature is valid or in debug mode.
      */
-    fun verifyAppSignature(): Boolean {
+    suspend fun verifyAppSignature(): Boolean {
         try {
             if (BuildConfig.DEBUG) {
                 return true
@@ -278,8 +279,8 @@ class SecurityManager(private val context: Context) {
         }
     }
 
-    private fun verifyTrustedSignature(signatureHash: String): Boolean {
-        return runBlocking {
+    private suspend fun verifyTrustedSignature(signatureHash: String): Boolean {
+        return withContext(Dispatchers.IO) {
             val trustedHash = securityDataStore.data.first()[TRUSTED_SIGNATURE_HASH]
             if (trustedHash.isNullOrBlank()) {
                 securityDataStore.edit { preferences ->
