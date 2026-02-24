@@ -59,7 +59,6 @@ import com.rafgittools.ui.theme.RafGitToolsTheme
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.net.URLDecoder
 import javax.inject.Inject
 

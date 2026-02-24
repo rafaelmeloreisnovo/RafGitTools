@@ -12,6 +12,22 @@ import retrofit2.http.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
+
+private val CLIENT_ID_PLACEHOLDERS = setOf(
+    "local-dev-client-id",
+    "local-production-client-id",
+    "your-client-id",
+    "your_github_client_id",
+    "changeme"
+)
+
+internal fun isConfiguredClientId(value: String): Boolean {
+    val normalized = value.trim()
+    if (normalized.isBlank()) return false
+    if (normalized.startsWith("local-", ignoreCase = true)) return false
+    return normalized.lowercase() !in CLIENT_ID_PLACEHOLDERS
+}
+
 /**
  * OAuth Device Flow Manager — P33-23
  *
@@ -32,7 +48,8 @@ class OAuthDeviceFlowManager @Inject constructor(
         private const val GITHUB_OAUTH_URL = "https://github.com/"
         private val CLIENT_ID get() = BuildConfig.GITHUB_CLIENT_ID // FIX L6: never hardcode OAuth client ID
         private const val CLIENT_ID_ERROR_MESSAGE =
-            "GITHUB_CLIENT_ID não configurado no BuildConfig para esta variante"
+            "GitHub OAuth is not configured for this build. Set GITHUB_CLIENT_ID_DEV or " +
+                "GITHUB_CLIENT_ID_PRODUCTION (local.properties or env vars), then rebuild the app."
         private const val SCOPE = "repo,read:user,notifications"
         private const val POLL_INTERVAL_MS = 5_000L
         private const val MAX_POLLS = 60 // 5 min total
@@ -51,7 +68,12 @@ class OAuthDeviceFlowManager @Inject constructor(
      * Collect this Flow in your ViewModel; cancel to abort polling.
      */
     fun startDeviceFlow(): Flow<DeviceFlowState> = flow {
-        val clientId = requireClientId()
+        val clientId = try {
+            requireClientId()
+        } catch (_: IllegalStateException) {
+            emit(DeviceFlowState.Error(CLIENT_ID_ERROR_MESSAGE))
+            return@flow
+        }
         emit(DeviceFlowState.Requesting)
 
         // Step 1: Request device + user codes
@@ -126,11 +148,14 @@ class OAuthDeviceFlowManager @Inject constructor(
         emit(DeviceFlowState.Error("Timed out waiting for authorization."))
     }
 
-    private fun requireClientId(): String {
+    private fun requireClientId(): String? {
         val clientId = CLIENT_ID
-        require(clientId.isNotBlank()) { CLIENT_ID_ERROR_MESSAGE }
+        if (!isConfiguredClientId(clientId)) {
+            throw IllegalStateException(CLIENT_ID_ERROR_MESSAGE)
+        }
         return clientId
     }
+
 
     private suspend fun fetchUsername(token: String): String? {
         return try {
@@ -155,6 +180,31 @@ class OAuthDeviceFlowManager @Inject constructor(
             null
         }
     }
+}
+
+
+private val INVALID_CLIENT_ID_PLACEHOLDERS = setOf(
+    "your-client-id",
+    "your_github_client_id",
+    "placeholder",
+    "changeme",
+    "replace-me",
+    "local-dev-client-id",
+    "local-production-client-id"
+)
+
+internal fun isConfiguredClientId(value: String): Boolean {
+    val normalized = value.trim()
+    if (normalized.isEmpty()) {
+        return false
+    }
+
+    val lower = normalized.lowercase()
+    if (lower.startsWith("local-")) {
+        return false
+    }
+
+    return lower !in INVALID_CLIENT_ID_PLACEHOLDERS
 }
 
 /** Retrofit interface for GitHub OAuth endpoints (no auth required) */
