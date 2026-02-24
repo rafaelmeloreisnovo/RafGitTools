@@ -26,11 +26,8 @@ buildscript {
 
 plugins {
     // KSP (Kotlin Symbol Processing) version aligned with Kotlin 1.9.22.
-    id 'com.google.devtools.ksp' version '1.9.22-1.0.14' apply false
+    id 'com.google.devtools.ksp' version '1.9.22-1.0.17' apply false
 
-    // Compose plugin aligned with Kotlin version.  This enables Jetpack
-    // Compose and ensures that compose compiler matches Kotlin 1.9.22.
-    id 'org.jetbrains.kotlin.plugin.compose' version '1.9.22' apply false
 }
 
 // Keep the clean task definition
