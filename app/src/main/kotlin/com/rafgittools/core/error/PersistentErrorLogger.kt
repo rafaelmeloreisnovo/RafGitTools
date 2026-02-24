@@ -7,8 +7,14 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.google.gson.Gson
+<<<<<<< codex/refactor-logging-and-error-logger-classes
+import com.google.gson.reflect.TypeToken
+=======
 import com.google.gson.JsonSyntaxException
+>>>>>>> main
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -16,14 +22,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
-import javax.inject.Singleton
 
 private val Context.errorDataStore: DataStore<Preferences> by preferencesDataStore(name = "error_logs")
 
 /**
  * Persistent Error Logger
- * 
+ *
  * Stores error logs for analysis and prevention.
  * Implements secure error storage with automatic cleanup.
  */
@@ -31,17 +35,20 @@ private val Context.errorDataStore: DataStore<Preferences> by preferencesDataSto
 class PersistentErrorLogger @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ErrorLogger {
-    
+
     private val dataStore = context.errorDataStore
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    
+
     companion object {
         private val ERROR_LOG_KEY = stringPreferencesKey("error_log")
         private const val MAX_ERRORS = 1000
     }
 
+<<<<<<< codex/refactor-logging-and-error-logger-classes
+=======
     private val gson = Gson()
     
+>>>>>>> main
     /**
      * Log error to persistent storage
      */
@@ -50,17 +57,26 @@ class PersistentErrorLogger @Inject constructor(
             try {
                 dataStore.edit { preferences ->
                     val existingLog = preferences[ERROR_LOG_KEY] ?: "[]"
+<<<<<<< codex/refactor-logging-and-error-logger-classes
+                    val errors = ErrorDetailsCodec.deserialize(existingLog).toMutableList()
+=======
                     val errors = PersistentErrorLogCodec.deserialize(existingLog, gson).toMutableList()
+>>>>>>> main
                     errors.add(error)
-                    
+
                     // Keep only last MAX_ERRORS
                     val trimmedErrors = if (errors.size > MAX_ERRORS) {
                         errors.takeLast(MAX_ERRORS)
                     } else {
                         errors
                     }
+<<<<<<< codex/refactor-logging-and-error-logger-classes
+
+                    preferences[ERROR_LOG_KEY] = ErrorDetailsCodec.serialize(trimmedErrors)
+=======
                     
                     preferences[ERROR_LOG_KEY] = PersistentErrorLogCodec.serialize(trimmedErrors, gson)
+>>>>>>> main
                 }
             } catch (e: Exception) {
                 // Fail silently - don't crash on error logging
@@ -68,7 +84,7 @@ class PersistentErrorLogger @Inject constructor(
             }
         }
     }
-    
+
     /**
      * Get recent errors
      */
@@ -76,7 +92,11 @@ class PersistentErrorLogger @Inject constructor(
         return try {
             withContext(Dispatchers.IO) {
                 dataStore.data.first()[ERROR_LOG_KEY]?.let { log ->
+<<<<<<< codex/refactor-logging-and-error-logger-classes
+                    ErrorDetailsCodec.deserialize(log).takeLast(limit)
+=======
                     PersistentErrorLogCodec.deserialize(log, gson).takeLast(limit)
+>>>>>>> main
                 } ?: emptyList()
             }
         } catch (e: Exception) {
@@ -98,7 +118,7 @@ class PersistentErrorLogger @Inject constructor(
             getErrors(limit)
         }
     }
-    
+
     /**
      * Clear all error logs
      */
@@ -113,6 +133,27 @@ class PersistentErrorLogger @Inject constructor(
             }
         }
     }
+<<<<<<< codex/refactor-logging-and-error-logger-classes
+}
+
+internal object ErrorDetailsCodec {
+    private val gson = Gson()
+    private val listType = object : TypeToken<List<StoredErrorDetails>>() {}.type
+
+    fun serialize(errors: List<ErrorDetails>): String {
+        val storedErrors = errors.map { it.toStoredError() }
+        return gson.toJson(storedErrors, listType)
+    }
+
+    fun deserialize(json: String): List<ErrorDetails> {
+        if (json == "[]" || json.isBlank()) return emptyList()
+
+        val storedErrors = runCatching {
+            gson.fromJson<List<StoredErrorDetails>>(json, listType)
+        }.getOrNull() ?: return emptyList()
+
+        return storedErrors.mapNotNull { it.toDomainErrorOrNull() }
+=======
     
 }
 
@@ -179,5 +220,36 @@ internal data class ErrorDetailsDto(
                 timestamp = error.timestamp
             )
         }
+>>>>>>> main
     }
+}
+
+internal data class StoredErrorDetails(
+    val type: String,
+    val message: String,
+    val context: String,
+    val timestamp: Long,
+    val stackTrace: String? = null
+)
+
+private fun ErrorDetails.toStoredError(): StoredErrorDetails {
+    return StoredErrorDetails(
+        type = type.name,
+        message = message,
+        context = context,
+        timestamp = timestamp,
+        stackTrace = stackTrace
+    )
+}
+
+private fun StoredErrorDetails.toDomainErrorOrNull(): ErrorDetails? {
+    val parsedType = runCatching { ErrorType.valueOf(type) }.getOrNull() ?: return null
+
+    return ErrorDetails(
+        type = parsedType,
+        message = message,
+        context = context,
+        timestamp = timestamp,
+        stackTrace = stackTrace
+    )
 }
