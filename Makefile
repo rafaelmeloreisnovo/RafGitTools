@@ -17,5 +17,6 @@ clean: local.properties
 all: local.properties
 	./gradlew :app:assembleDebug --no-daemon
 
+
 audit-validate:
 	python3 scripts/validate_bug_report.py --input BUG_REPORT.md --output BUG_REPORT_VALIDATED.md --threshold 0.05

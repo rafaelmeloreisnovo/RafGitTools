@@ -1,152 +1,146 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 import argparse
+import pathlib
 import re
 import subprocess
-from pathlib import Path
+import sys
+from collections import defaultdict
 
-FINDING_ID_RE = re.compile(r"^[A-Z]\d+$")
+FILE_REF_RE = re.compile(r"(?<![\w/.-])([A-Za-z0-9_./-]+\.(?:kt|kts|xml|md|gradle|json|java|groovy|properties))(?::\d+)?")
 
 
-def run_rg_files(repo_root: Path) -> set[str]:
+def rg_files(repo_root: pathlib.Path) -> list[str]:
     result = subprocess.run(
         ["rg", "--files"],
         cwd=repo_root,
-        check=True,
-        capture_output=True,
         text=True,
+        capture_output=True,
+        check=True,
     )
-    return {line.strip() for line in result.stdout.splitlines() if line.strip()}
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
-def parse_table_row(line: str) -> list[str] | None:
-    stripped = line.strip()
-    if not (stripped.startswith("|") and stripped.endswith("|")):
-        return None
-    return [part.strip() for part in stripped.strip("|").split("|")]
+def resolve_ref(ref: str, file_set: set[str], basename_index: dict[str, list[str]]) -> tuple[bool, str]:
+    if ref in file_set:
+        return True, ref
 
+    matches = basename_index.get(pathlib.PurePosixPath(ref).name, [])
+    if len(matches) == 1:
+        return True, matches[0]
 
-def resolve_path(raw_path: str, repo_files: set[str]) -> tuple[str | None, str | None]:
-    cleaned = raw_path.strip().strip("`")
-    cleaned = cleaned.split()[0]
-    if ":" in cleaned:
-        cleaned = cleaned.split(":", 1)[0]
+    if len(matches) > 1:
+        return False, f"ambiguous basename ({len(matches)} matches)"
 
-    if not cleaned:
-        return None, "empty-path"
-
-    if "/" in cleaned:
-        if cleaned in repo_files:
-            return cleaned, None
-        return None, "missing"
-
-    basename_matches = [path for path in repo_files if Path(path).name == cleaned]
-    if len(basename_matches) == 1:
-        return basename_matches[0], None
-    if len(basename_matches) > 1:
-        return None, "ambiguous"
-    return None, "missing"
+    return False, "missing from current snapshot"
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Validate BUG_REPORT findings against current tree")
+    parser = argparse.ArgumentParser(description="Validate BUG_REPORT findings against current repository snapshot")
     parser.add_argument("--input", default="BUG_REPORT.md")
     parser.add_argument("--output", default="BUG_REPORT_VALIDATED.md")
-    parser.add_argument("--threshold", type=float, default=0.05)
+    parser.add_argument("--threshold", type=float, default=0.05, help="Max tolerated mismatch ratio")
     args = parser.parse_args()
 
-    repo_root = Path.cwd()
+    repo_root = pathlib.Path.cwd()
     input_path = repo_root / args.input
     output_path = repo_root / args.output
 
     if not input_path.exists():
-        raise SystemExit(f"Input report not found: {input_path}")
+        print(f"Input report not found: {input_path}", file=sys.stderr)
+        return 1
 
-    repo_files = run_rg_files(repo_root)
+    tracked_files = rg_files(repo_root)
+    tracked_set = set(tracked_files)
+    basename_index: dict[str, list[str]] = defaultdict(list)
+    for file_path in tracked_files:
+        basename_index[pathlib.PurePosixPath(file_path).name].append(file_path)
 
-    total = 0
-    actionable: list[dict] = []
-    mismatches: list[dict] = []
+    source_lines = input_path.read_text(encoding="utf-8").splitlines()
 
-    for line in input_path.read_text(encoding="utf-8").splitlines():
-        cols = parse_table_row(line)
-        if not cols or len(cols) < 4:
+    findings: list[dict[str, str | int]] = []
+    mismatches: list[dict[str, str | int]] = []
+
+    for line_number, line in enumerate(source_lines, start=1):
+        refs = sorted(set(FILE_REF_RE.findall(line)))
+        if not refs:
             continue
 
-        finding_id = cols[0]
-        if not FINDING_ID_RE.match(finding_id):
-            continue
+        for ref in refs:
+            ok, resolved = resolve_ref(ref, tracked_set, basename_index)
+            if ok:
+                findings.append(
+                    {
+                        "line": line_number,
+                        "original": ref,
+                        "resolved": resolved,
+                        "context": line.strip(),
+                    }
+                )
+            else:
+                mismatches.append(
+                    {
+                        "line": line_number,
+                        "original": ref,
+                        "reason": resolved,
+                        "status": "out-of-scope snapshot mismatch",
+                    }
+                )
 
-        raw_path = cols[1]
-        bug = cols[2]
-        fix = cols[3]
-
-        total += 1
-        resolved, reason = resolve_path(raw_path, repo_files)
-        if resolved:
-            actionable.append(
-                {
-                    "id": finding_id,
-                    "input_path": raw_path,
-                    "resolved_path": resolved,
-                    "bug": bug,
-                    "fix": fix,
-                }
-            )
-        else:
-            mismatches.append(
-                {
-                    "id": finding_id,
-                    "input_path": raw_path,
-                    "reason": reason or "missing",
-                    "bug": bug,
-                    "fix": fix,
-                    "status": "out-of-scope snapshot mismatch",
-                }
-            )
-
-    missing = len(mismatches)
-    ratio = (missing / total) if total else 0.0
-    failed = ratio > args.threshold
+    total_refs = len(findings) + len(mismatches)
+    mismatch_ratio = (len(mismatches) / total_refs) if total_refs else 0.0
+    status = "PASS" if mismatch_ratio <= args.threshold else "FAIL"
 
     lines: list[str] = []
-    lines.append("# BUG Report (Validated Against Current Snapshot)")
+    lines.append("# Bug Report — Validated Findings")
     lines.append("")
     lines.append(f"- Source report: `{args.input}`")
-    lines.append("- Source file list: `rg --files` from current repository root")
-    lines.append(f"- Total findings parsed: **{total}**")
-    lines.append(f"- Actionable findings: **{len(actionable)}**")
-    lines.append(f"- Non-resolvable findings: **{missing}**")
-    lines.append(f"- Missing ratio: **{ratio:.2%}** (threshold: {args.threshold:.2%})")
-    lines.append(f"- Audit status: **{'FAIL' if failed else 'PASS'}**")
+    lines.append("- Source file inventory command: `rg --files`")
+    lines.append(f"- Total file references scanned: **{total_refs}**")
+    lines.append(f"- Actionable (resolvable) references: **{len(findings)}**")
+    lines.append(f"- Non-resolvable references: **{len(mismatches)}**")
+    lines.append(f"- Mismatch ratio: **{mismatch_ratio:.2%}**")
+    lines.append(f"- Threshold: **{args.threshold:.2%}**")
+    lines.append(f"- Pre-check status: **{status}**")
     lines.append("")
 
-    lines.append("## Actionable findings (resolved to current tree)")
-    lines.append("")
-    lines.append("| # | Report Path | Resolved Path | Bug | Fix |")
-    lines.append("|---|---|---|---|---|")
-    for item in actionable:
-        lines.append(
-            f"| {item['id']} | {item['input_path']} | `{item['resolved_path']}` | {item['bug']} | {item['fix']} |"
-        )
-    if not actionable:
-        lines.append("| - | - | - | - | - |")
+    if findings:
+        lines.append("## Actionable Findings (resolved against current tree)")
+        lines.append("")
+        lines.append("| Source Line | Original Reference | Resolved Path | Context |")
+        lines.append("|---:|---|---|---|")
+        for item in findings:
+            context = str(item["context"]).replace("|", "\\|")
+            lines.append(
+                f"| {item['line']} | `{item['original']}` | `{item['resolved']}` | {context} |"
+            )
+        lines.append("")
 
-    lines.append("")
-    lines.append("## Out-of-scope snapshot mismatch")
-    lines.append("")
-    lines.append("| # | Report Path | Status | Reason |")
-    lines.append("|---|---|---|---|")
-    for item in mismatches:
-        lines.append(
-            f"| {item['id']} | {item['input_path']} | {item['status']} | {item['reason']} |"
-        )
-    if not mismatches:
-        lines.append("| - | - | - | - |")
+    if mismatches:
+        lines.append("## Out-of-Scope Snapshot Mismatches")
+        lines.append("")
+        lines.append("| Source Line | Original Reference | Status | Reason |")
+        lines.append("|---:|---|---|---|")
+        for item in mismatches:
+            lines.append(
+                f"| {item['line']} | `{item['original']}` | {item['status']} | {item['reason']} |"
+            )
+        lines.append("")
 
     output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-    if failed:
+    if status == "FAIL":
+        print(
+            f"Audit pre-check failed: {len(mismatches)}/{total_refs} references are missing or ambiguous "
+            f"({mismatch_ratio:.2%} > {args.threshold:.2%})."
+        )
         return 2
+
+    print(
+        f"Audit pre-check passed: {len(findings)}/{total_refs} references resolved "
+        f"({mismatch_ratio:.2%} mismatches)."
+    )
     return 0
 
 
