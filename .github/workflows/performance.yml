@@ -66,7 +66,7 @@ jobs:
           cat apk-report.md
       
       - name: Upload APK size report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: apk-size-report
           path: apk-report.md
@@ -74,7 +74,7 @@ jobs:
       
       - name: Comment on PR
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
@@ -140,14 +140,14 @@ jobs:
           cat build-time-report.md
       
       - name: Upload build profile
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: build-profile
           path: build/reports/profile/
           retention-days: 30
       
       - name: Upload build time report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: build-time-report
           path: build-time-report.md
@@ -186,7 +186,7 @@ jobs:
           cat method-count-report.md
       
       - name: Upload method count report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: method-count-report
           path: method-count-report.md

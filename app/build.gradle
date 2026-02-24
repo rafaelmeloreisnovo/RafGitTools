@@ -30,8 +30,13 @@ def requireSecret = { String key, String context ->
     return value
 }
 
-def githubClientIdDev = requireSecret('GITHUB_CLIENT_ID_DEV', 'dev OAuth configuration')
-def githubClientIdProduction = requireSecret('GITHUB_CLIENT_ID_PRODUCTION', 'production OAuth configuration')
+def readSecretOrDefault = { String key, String defaultValue ->
+    def value = readSecret(key)
+    return value.isEmpty() ? defaultValue : value
+}
+
+def githubClientIdDev = readSecretOrDefault('GITHUB_CLIENT_ID_DEV', 'local-dev-client-id')
+def githubClientIdProduction = readSecretOrDefault('GITHUB_CLIENT_ID_PRODUCTION', 'local-production-client-id')
 
 def releaseStoreFilePath = readSecret('RELEASE_STORE_FILE')
 def releaseStorePassword = readSecret('RELEASE_STORE_PASSWORD')
@@ -41,10 +46,11 @@ def releaseKeyPassword = readSecret('RELEASE_KEY_PASSWORD')
 def isReleaseTaskRequested = gradle.startParameter.taskNames.any { taskName ->
     taskName.toLowerCase().contains('release')
 }
+def allowUnsignedRelease = readSecretOrDefault('ALLOW_UNSIGNED_RELEASE', 'false').toBoolean() || System.getenv('CI') == 'true'
 
 def hasReleaseSigning = !releaseStoreFilePath.isEmpty() && !releaseStorePassword.isEmpty() && !releaseKeyAlias.isEmpty() && !releaseKeyPassword.isEmpty()
-if (isReleaseTaskRequested && !hasReleaseSigning) {
-    throw new GradleException('Release signing is required. Set RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS and RELEASE_KEY_PASSWORD in gradle.properties or CI environment.')
+if (isReleaseTaskRequested && !hasReleaseSigning && !allowUnsignedRelease) {
+    throw new GradleException('Release signing is required. Set RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS and RELEASE_KEY_PASSWORD or ALLOW_UNSIGNED_RELEASE=true in gradle.properties or CI environment.')
 }
 
 android {
@@ -84,6 +90,8 @@ android {
                 storePassword releaseStorePassword
                 keyAlias releaseKeyAlias
                 keyPassword releaseKeyPassword
+            } else if (allowUnsignedRelease) {
+                initWith(signingConfigs.debug)
             }
         }
     }
