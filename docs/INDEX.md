@@ -67,6 +67,7 @@
 ### Development Resources
 - [Contributing Guide](../CONTRIBUTING.md) - Contribution guidelines
 - [Implementation Notes](IMPLEMENTATION_NOTES.md) - Technical implementation details
+- [Mapa código → documentação](CODE_TO_DOC_MAP.md) - Relação entre módulos de código e documentos
 
 ---
 
