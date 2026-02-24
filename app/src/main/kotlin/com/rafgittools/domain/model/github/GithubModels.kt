@@ -51,13 +51,13 @@ data class GithubUser(
 data class GithubSearchUser(
     val id: Long,
     val login: String,
-    val avatar_url: String?,
-    val html_url: String?
+    @SerializedName("avatar_url") val avatarUrl: String?,
+    @SerializedName("html_url") val htmlUrl: String?
 ) : Parcelable
 
 @Parcelize
 data class GithubSearchRepository(
-    val full_name: String,
+    @SerializedName("full_name") val fullName: String,
     val name: String,
     val owner: GithubSearchUser
 ) : Parcelable
@@ -67,15 +67,15 @@ data class GithubSearchIssue(
     val id: Long,
     val number: Int,
     val title: String,
-    val repository_url: String,
-    val html_url: String?
+    @SerializedName("repository_url") val repositoryUrl: String,
+    @SerializedName("html_url") val htmlUrl: String?
 ) : Parcelable
 
 @Parcelize
 data class GithubSearchCode(
     val name: String,
     val path: String,
-    val html_url: String?,
+    @SerializedName("html_url") val htmlUrl: String?,
     val repository: GithubSearchRepository
 ) : Parcelable
 

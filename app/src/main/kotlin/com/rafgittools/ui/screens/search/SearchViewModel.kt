@@ -157,7 +157,7 @@ class SearchViewModel @Inject constructor(
                     SearchResult.Issue(
                         title = issue.title,
                         number = issue.number,
-                        repo = repositoryNameFromUrl(issue.repository_url)
+                        repo = repositoryNameFromUrl(issue.repositoryUrl)
                     )
                 }
             }
