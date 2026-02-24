@@ -60,6 +60,7 @@ class RafGitToolsApplication : Application() {
         // when it's created. A future enhancement could make this synchronous or add
         // proper synchronization to ensure language is always applied before UI is shown.
         applicationScope.launch {
+            preferencesRepository.hydrateLanguageSyncCache()
             val savedLanguage = preferencesRepository.getLanguage()
             localizationManager.applyLocale(this@RafGitToolsApplication, savedLanguage)
             authTokenCache.token = authRepository.getPat().getOrNull()
@@ -71,6 +72,7 @@ class RafGitToolsApplication : Application() {
         
         // Re-apply language settings when configuration changes
         applicationScope.launch {
+            preferencesRepository.hydrateLanguageSyncCache()
             val savedLanguage = preferencesRepository.getLanguage()
             localizationManager.applyLocale(this@RafGitToolsApplication, savedLanguage)
             authTokenCache.token = authRepository.getPat().getOrNull()
