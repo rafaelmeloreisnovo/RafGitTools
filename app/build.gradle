@@ -22,6 +22,7 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0.0-alpha"
+        buildConfigField "String", "GITHUB_CLIENT_ID", '"fallback_non_empty_client_id"'
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -67,11 +68,13 @@ android {
             versionNameSuffix "-dev"
             buildConfigField "String", "API_BASE_URL", '"https://api.github.com"'
             buildConfigField "String", "OAUTH_REDIRECT", '"rafgittools://oauth"'
+            buildConfigField "String", "GITHUB_CLIENT_ID", '"<valor_dev>"'
         }
         production {
             dimension "environment"
             buildConfigField "String", "API_BASE_URL", '"https://api.github.com"'
             buildConfigField "String", "OAUTH_REDIRECT", '"rafgittools://oauth"'
+            buildConfigField "String", "GITHUB_CLIENT_ID", '"<valor_production>"'
         }
     }
 
