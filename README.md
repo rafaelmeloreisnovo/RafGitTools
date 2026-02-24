@@ -161,6 +161,7 @@ The project includes multiple build variants:
 - [Architecture Guide](docs/ARCHITECTURE.md) - Detailed architecture documentation
 - [Build Instructions](docs/BUILD.md) - How to build the project
 - [Feature Matrix](docs/FEATURE_MATRIX.md) - Feature comparison with source projects
+- [Mapa código → documentação](docs/CODE_TO_DOC_MAP.md) - Relação entre módulos e documentação
 
 ### 🔐 Security & Compliance
 
