@@ -287,6 +287,6 @@ class ValidationException(message: String) : Exception(message)
  */
 interface ErrorLogger {
     fun log(error: ErrorDetails)
-    fun getErrors(limit: Int = 100): List<ErrorDetails>
+    suspend fun getErrors(limit: Int = 100): List<ErrorDetails>
     fun clearErrors()
 }
