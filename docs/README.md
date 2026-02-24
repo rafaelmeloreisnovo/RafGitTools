@@ -4,17 +4,19 @@ Welcome to the RafGitTools documentation! | Bem-vindo à documentação do RafGi
 
 ---
 
+> **Escopo atual / Current scope:** **GitHub + JGit**. Recursos fora desse escopo devem ser tratados como roadmap, estrutura ou stub até implementação funcional.
+
 ## 📊 Project Status / Status do Projeto
 
-| Category | Progress | Status |
+| Category | Maturity | Status |
 |----------|----------|--------|
-| Architecture | 100% | ✅ Complete |
-| Git Operations | 80% | 🟢 Advanced |
-| GitHub API | 80% | 🟢 Advanced |
-| UI/UX | 80% | 🟢 Advanced |
-| Security | 100% | ✅ Complete |
-| Testing | 20% | 🔴 In Progress |
-| **Overall** | **40%** | **115/288 features** |
+| Architecture | Funcional em produção | ✅ Stable baseline |
+| Git Operations | Funcional parcial | 🟡 Expanding coverage |
+| GitHub API | Funcional parcial | 🟡 Expanding endpoints |
+| UI/UX | Funcional parcial | 🟡 Incremental delivery |
+| Security | Funcional parcial | 🟡 Mixed: implemented + pending |
+| Testing | Funcional parcial | 🔴 Coverage still limited |
+| Terminal/Multi-platform | Somente estrutura/stub | ⚪ Planned/Stub |
 
 👉 **[Full Status Report](STATUS_REPORT.md)** - Detailed implementation status
 
@@ -118,7 +120,7 @@ Welcome to the RafGitTools documentation! | Bem-vindo à documentação do RafGi
 ---
 
 **Last Updated**: 2026-02-24  
-**Progress**: 40% Complete (115/288 features)  
+**Progress**: Qualitative maturity view; numeric totals remain in `STATUS_REPORT.md`.  
 **Maintained by**: RafGitTools Team
 
 **Happy Contributing! 🚀 | Boa Contribuição! 🚀**
