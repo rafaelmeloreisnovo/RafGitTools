@@ -2,7 +2,7 @@
 
 ## 📚 Documentation Overview
 
-**Status**: RafGitTools is currently in active development with ~38% of planned features complete.
+**Status**: RafGitTools is currently in active development with 40% of planned features complete (source: `docs/STATUS_REPORT.md`).
 
 | Category | Progress |
 |----------|----------|
@@ -14,6 +14,23 @@
 | Testing | 🔴 20% Complete |
 | Terminal Emulation | 🔴 0% |
 | Multi-platform | 🔴 0% |
+
+---
+
+## 📏 Unified Metrics Snapshot
+
+**Source of truth**: [STATUS_REPORT.md](STATUS_REPORT.md)  
+**Last updated**: 2026-02-24
+
+| Metric | Value |
+|---|---:|
+| Total features | 288 |
+| Completed | 115 |
+| In progress | 26 |
+| Pending | 147 |
+| Kotlin files | 168 |
+| Test files (.kt under `test`/`androidTest`) | 11 |
+| Documentation files (`docs/**/*.md`) | 36 |
 
 ---
 
@@ -122,5 +139,5 @@ See [Status Report](STATUS_REPORT.md) for complete list.
 ---
 
 **Documentation Version**: 2.1  
-**Last Updated**: January 2026  
-**Overall Progress**: 38% Complete (108/288 features)
+**Last Updated**: 2026-02-24  
+**Overall Progress**: 40% Complete (115/288 features)

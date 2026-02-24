@@ -1,6 +1,6 @@
 # RafGitTools - Relatório de Status / Status Report
 
-**Data / Date**: Janeiro 2026  
+**Data / Date**: 2026-02-24  
 **Versão / Version**: 1.0.0-dev  
 **Status Geral / Overall Status**: 🟡 Em Desenvolvimento / In Development
 
@@ -22,10 +22,13 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 
 | Métrica / Metric | Valor / Value |
 |-----------------|---------------|
-| Arquivos Kotlin / Kotlin Files | 104 |
-| Linhas de Código / Lines of Code | ~20,500 |
-| Arquivos de Documentação / Documentation Files | 28 |
-| Arquivos de Testes Unitários / Unit Test Files | 7 |
+| Total de features / Total features | 288 |
+| Concluídas / Completed | 115 |
+| Em progresso / In progress | 26 |
+| Pendentes / Pending | 147 |
+| Arquivos Kotlin / Kotlin files | 168 |
+| Arquivos de teste / Test files (.kt em `test`/`androidTest`) | 11 |
+| Arquivos de documentação / Documentation files (`docs/**/*.md`) | 36 |
 
 ---
 
@@ -383,5 +386,5 @@ Release:         ████░░░░░░░░░░░░░░░░  2
 
 ---
 
-**Última Atualização / Last Updated**: Janeiro 2026  
+**Última Atualização / Last Updated**: 2026-02-24  
 **Mantenedor / Maintainer**: RafGitTools Team
