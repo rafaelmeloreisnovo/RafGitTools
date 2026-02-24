@@ -78,7 +78,10 @@ object CacheModule {
     @Provides
     @Singleton
     fun provideCacheDatabase(@ApplicationContext context: Context): CacheDatabase =
-        Room.databaseBuilder(context, CacheDatabase::class.java, "rafgittools_cache.db").build()
+        Room.databaseBuilder(context, CacheDatabase::class.java, "rafgittools_cache.db")
+            .fallbackToDestructiveMigration()
+            .addMigrations(CacheDatabase.MIGRATION_1_2)
+            .build()
 
     @Provides @Singleton
     fun provideCacheDao(db: CacheDatabase): CacheDao = db.cacheDao()

@@ -15,6 +15,7 @@ data class CacheEntry(
     val content: String,
     val contentType: String,
     val createdAt: Long = System.currentTimeMillis(),
+    val lastAccessedAt: Long = System.currentTimeMillis(),
     val expiresAt: Long,
     val etag: String? = null
 )
