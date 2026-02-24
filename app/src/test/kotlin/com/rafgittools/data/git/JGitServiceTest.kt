@@ -3,12 +3,16 @@ package com.rafgittools.data.git
 import com.rafgittools.CoroutineTestRule
 import com.rafgittools.core.logging.DiffAuditLogger
 import com.rafgittools.domain.model.GitAuthor
+import io.mockk.coEvery
 import io.mockk.mockk
+import io.mockk.spyk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.eclipse.jgit.api.Git
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -114,6 +118,58 @@ class JGitServiceTest {
         )
 
         assertTrue(result.isFailure)
+    }
+
+    @Test
+    fun `getStatus should propagate cancellation from openRepository`() = runTest {
+        val service = spyk(jgitService)
+        coEvery { service.openRepository(any()) } throws CancellationException("cancelled")
+
+        try {
+            service.getStatus("/tmp/repo")
+            fail("Expected CancellationException")
+        } catch (_: CancellationException) {
+            // expected
+        }
+    }
+
+    @Test
+    fun `getBranches should propagate cancellation from openRepository`() = runTest {
+        val service = spyk(jgitService)
+        coEvery { service.openRepository(any()) } throws CancellationException("cancelled")
+
+        try {
+            service.getBranches("/tmp/repo")
+            fail("Expected CancellationException")
+        } catch (_: CancellationException) {
+            // expected
+        }
+    }
+
+    @Test
+    fun `listStashes should propagate cancellation from openRepository`() = runTest {
+        val service = spyk(jgitService)
+        coEvery { service.openRepository(any()) } throws CancellationException("cancelled")
+
+        try {
+            service.listStashes("/tmp/repo")
+            fail("Expected CancellationException")
+        } catch (_: CancellationException) {
+            // expected
+        }
+    }
+
+    @Test
+    fun `listTags should propagate cancellation from openRepository`() = runTest {
+        val service = spyk(jgitService)
+        coEvery { service.openRepository(any()) } throws CancellationException("cancelled")
+
+        try {
+            service.listTags("/tmp/repo")
+            fail("Expected CancellationException")
+        } catch (_: CancellationException) {
+            // expected
+        }
     }
 
     private fun createRepositoryWithInitialCommit(prefix: String): File {
