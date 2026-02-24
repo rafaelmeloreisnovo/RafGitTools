@@ -2,18 +2,20 @@
 
 ## 📚 Documentation Overview
 
-**Status**: RafGitTools is currently in active development with 40% of planned features complete (source: `docs/STATUS_REPORT.md`).
+> **Current scope:** **GitHub + JGit**. Items outside this scope are tracked as roadmap or stub/structure until functional implementation lands.
 
-| Category | Progress |
+**Status**: RafGitTools is currently in active development with implementation maturity tracked module-by-module in `docs/STATUS_REPORT.md`.
+
+| Category | Maturity |
 |----------|----------|
-| Architecture & Infrastructure | ✅ 100% Complete |
-| Git Operations | 🟡 80% Complete |
-| GitHub API | 🟡 80% Complete |
-| UI/UX | 🟡 80% Complete |
-| Security & Privacy | ✅ 100% Complete |
-| Testing | 🔴 20% Complete |
-| Terminal Emulation | 🔴 0% |
-| Multi-platform | 🔴 0% |
+| Architecture & Infrastructure | ✅ Functional in production |
+| Git Operations | 🟡 Functional partial |
+| GitHub API | 🟡 Functional partial |
+| UI/UX | 🟡 Functional partial |
+| Security & Privacy | 🟡 Functional partial |
+| Testing | 🟡 Functional partial |
+| Terminal Emulation | ⚪ Stub/Structure only |
+| Multi-platform | ⚪ Stub/Structure only |
 
 ---
 
@@ -140,4 +142,4 @@ See [Status Report](STATUS_REPORT.md) for complete list.
 
 **Documentation Version**: 2.1  
 **Last Updated**: 2026-02-24  
-**Overall Progress**: 40% Complete (115/288 features)
+**Overall Progress**: tracked by implementation maturity and validated scope (GitHub + JGit)

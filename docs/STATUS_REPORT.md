@@ -30,6 +30,25 @@ RafGitTools is a unified Git/GitHub Android client combining the best features f
 | Arquivos de teste / Test files (.kt em `test`/`androidTest`) | 11 |
 | Arquivos de documentação / Documentation files (`docs/**/*.md`) | 36 |
 
+## 🧭 Tabela de Maturidade Técnica / Technical Maturity Table
+
+| Módulo | Arquivo principal | Status real | Riscos | Próximos passos |
+|---|---|---|---|---|
+| Git local (JGit) | [`app/src/main/kotlin/com/rafgittools/data/git/JGitService.kt`](../app/src/main/kotlin/com/rafgittools/data/git/JGitService.kt) | Funcional parcial | Cobertura de testes e fluxos de erro ainda incompletos | Expandir testes de integração e cenários de autenticação |
+| GitHub API | [`app/src/main/kotlin/com/rafgittools/data/api/GithubApiService.kt`](../app/src/main/kotlin/com/rafgittools/data/api/GithubApiService.kt) | Funcional parcial | Diferença entre endpoints implementados e UX completa | Consolidar contratos de API e testes de regressão |
+| UI/UX Compose | [`app/src/main/kotlin/com/rafgittools/MainActivity.kt`](../app/src/main/kotlin/com/rafgittools/MainActivity.kt) | Funcional parcial | Fluxos avançados ainda não padronizados ponta-a-ponta | Fechar fluxos críticos (auth/repo/issues/PR) com testes UI |
+| Segurança (GPG) | [`app/src/main/kotlin/com/rafgittools/security/GpgKeyManager.kt`](../app/src/main/kotlin/com/rafgittools/security/GpgKeyManager.kt) | **Stub** (NotImplementedError) | Assinatura/gestão GPG indisponível para produção | Implementar geração/import/export/assinatura e testes |
+| Git Worktree | [`app/src/main/kotlin/com/rafgittools/worktree/WorktreeManager.kt`](../app/src/main/kotlin/com/rafgittools/worktree/WorktreeManager.kt) | **Stub** (NotImplementedError) | Operações worktree não disponíveis | Implementar add/list/remove com validação de path |
+| Git LFS | [`app/src/main/kotlin/com/rafgittools/gitlfs/LfsManager.kt`](../app/src/main/kotlin/com/rafgittools/gitlfs/LfsManager.kt) | **Stub** (NotImplementedError) | Repositórios com arquivos grandes não suportados | Implementar install/track/fetch e fallback de erro |
+| Webhooks | [`app/src/main/kotlin/com/rafgittools/webhook/WebhookHandler.kt`](../app/src/main/kotlin/com/rafgittools/webhook/WebhookHandler.kt) | **Stub** (NotImplementedError) | Sem automação por eventos externos | Implementar processamento e retries idempotentes |
+
+## ⚪ Stubs explícitos (NotImplementedError)
+
+- **Stub**: GPG key management/signing → [`app/src/main/kotlin/com/rafgittools/security/GpgKeyManager.kt`](../app/src/main/kotlin/com/rafgittools/security/GpgKeyManager.kt)
+- **Stub**: Git worktree operations → [`app/src/main/kotlin/com/rafgittools/worktree/WorktreeManager.kt`](../app/src/main/kotlin/com/rafgittools/worktree/WorktreeManager.kt)
+- **Stub**: Git LFS operations → [`app/src/main/kotlin/com/rafgittools/gitlfs/LfsManager.kt`](../app/src/main/kotlin/com/rafgittools/gitlfs/LfsManager.kt)
+- **Stub**: Webhook handling → [`app/src/main/kotlin/com/rafgittools/webhook/WebhookHandler.kt`](../app/src/main/kotlin/com/rafgittools/webhook/WebhookHandler.kt)
+
 ---
 
 ## ✅ O Que Está Pronto / What Is Ready

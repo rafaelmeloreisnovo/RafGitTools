@@ -19,6 +19,8 @@ Combining the best features from FastHub, MGit, PuppyGit, and Termux
 
 ## 📋 Overview
 
+> **Escopo atual / Current scope:** **GitHub + JGit**. Recursos fora desse escopo permanecem em roadmap e podem existir apenas como estrutura inicial.
+
 RafGitTools is an ambitious Android application that aims to provide the most comprehensive mobile Git experience by combining:
 
 - 🌐 **GitHub Integration** (inspired by FastHub)
@@ -30,21 +32,18 @@ All while respecting the licenses of these amazing open-source projects and addi
 
 ## ✨ Features
 
-### ✅ Funcional hoje (MVP real)
+### ✅ Funcional em produção
 - **Integração com GitHub API (Retrofit/OkHttp)**: base das telas e fluxos de autenticação, repos, issues e PRs em evolução.  
 - **Operações Git locais via JGit**: base para clone/commit/branch/push/pull em desenvolvimento contínuo.  
 - **Arquitetura e base do app**: Clean Architecture + MVVM + Hilt com Jetpack Compose e Room.  
 
-> **Importante:** o escopo atual é **GitHub + JGit**. Todo o resto da lista histórica de “features” foi movido para o roadmap para deixar claro o que já funciona vs. o que ainda está planejado.
-
-### 🚧 Em construção agora
+### 🚧 Funcional parcial
 - **Cobertura de testes** (meta > 80%) e automação de CI/CD.  
 - **Autenticação SSH** (chaves/agent) e base de GPG.  
 - **UI/UX incremental** com Compose (telas principais e fluxos críticos).  
 
-### 🧭 Planejado / Roadmap
-Os blocos abaixo **ainda não estão implementados** e fazem parte do plano de entrega.  
-Para manter a promessa, estamos listando as tarefas que precisam ser abertas e o plano de execução.
+### 🧩 Somente estrutura/stub
+Os blocos abaixo estão em **estrutura inicial/stub** ou ainda sem implementação funcional completa.
 
 **Blocos planejados (alto nível):**
 - Terminal embutido (shell/CLI Git).
