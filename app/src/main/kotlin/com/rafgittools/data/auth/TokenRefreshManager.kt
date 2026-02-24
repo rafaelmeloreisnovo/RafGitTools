@@ -110,20 +110,25 @@ class TokenRefreshManager @Inject constructor(
      * Note: GitHub PATs do NOT support this — only GitHub Apps / OAuth Apps
      * that implement the device flow or web flow get refresh tokens.
      * This method is a stub for when the app evolves to use OAuth App flow.
+     *
+     * Caller behavior: when this returns a failed [Result], trigger the
+     * re-authentication flow via [OAuthDeviceFlowManager.startDeviceFlow].
      */
     @Suppress("unused")
     suspend fun refreshOAuthToken(
         clientId: String,
         clientSecret: String,
         refreshToken: String
-    ): Result<String> = runCatching {
+    ): Result<String> {
         // Future implementation when OAuthDeviceFlowManager returns refresh_token
         // val response = oauthApi.refreshToken(clientId, clientSecret, refreshToken)
         // authRepository.savePat(response.access_token, authRepository.getUsername() ?: "")
-        // return@runCatching response.access_token
-        throw UnsupportedOperationException(
-            "OAuth token refresh not yet supported. GitHub PATs don't use refresh tokens. " +
-            "Use OAuthDeviceFlowManager.startDeviceFlow() to re-authenticate."
+        // return Result.success(response.access_token)
+        return Result.failure(
+            IllegalStateException(
+                "OAuth token refresh not yet supported. GitHub PATs don't use refresh tokens. " +
+                    "Use OAuthDeviceFlowManager.startDeviceFlow() to re-authenticate."
+            )
         )
     }
 
