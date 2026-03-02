@@ -20,7 +20,7 @@ buildscript {
 
         // Hilt for dependency injection.  Version 2.48 is stable and supports
         // AGP 8+.
-        classpath 'com.google.dagger:hilt-android-gradle-plugin:2.48'
+        classpath 'com.google.dagger:hilt-android-gradle-plugin:2.59.2'
     }
 }
 
