@@ -76,7 +76,7 @@ jobs:
         run: ./gradlew dependencies
       
       - name: Check for known vulnerabilities
-        uses: aquasecurity/trivy-action@0.34.0
+        uses: aquasecurity/trivy-action@0.34.1
         with:
           scan-type: 'fs'
           scan-ref: '.'
