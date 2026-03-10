@@ -57,7 +57,7 @@ jobs:
       - name: Build ${{ matrix.variant }}
         if: inputs.run_release_variant != false || !contains(matrix.variant, 'Release')
         run: ./gradlew assemble${{ matrix.variant }} ${{ inputs.gradle_args || '--stacktrace' }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: apk-${{ matrix.variant }}
@@ -78,7 +78,7 @@ jobs:
       - uses: android-actions/setup-android@v3
       - run: chmod +x gradlew
       - run: ./gradlew testDevDebugUnitTest testProductionDebugUnitTest ${{ inputs.gradle_args || '--stacktrace' }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results
@@ -100,7 +100,7 @@ jobs:
       - uses: android-actions/setup-android@v3
       - run: chmod +x gradlew
       - run: ./gradlew lintDevDebug check ${{ inputs.gradle_args || '--stacktrace' }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: quality-reports
