@@ -264,8 +264,8 @@ dependencies {
     implementation "com.google.accompanist:accompanist-swiperefresh:$accompanistVersion"
 
     // Markdown parser
-    implementation 'org.commonmark:commonmark:0.21.0'
-    implementation 'org.commonmark:commonmark-ext-gfm-tables:0.21.0'
+    implementation 'org.commonmark:commonmark:0.27.1'
+    implementation 'org.commonmark:commonmark-ext-gfm-tables:0.27.1'
 
     // WorkManager for background tasks
     implementation 'androidx.work:work-runtime-ktx:2.8.1'
