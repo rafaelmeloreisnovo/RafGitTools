@@ -24,7 +24,7 @@ on:
 env:
   GITHUB_CLIENT_ID_DEV: ${{ vars.GITHUB_CLIENT_ID_DEV || 'local-dev-client-id' }}
   GITHUB_CLIENT_ID_PRODUCTION: ${{ vars.GITHUB_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
-  ALLOW_UNSIGNED_RELEASE: "true"
+  ALLOW_UNSIGNED_RELEASE: "false"
 
 jobs:
   build-release:
@@ -45,6 +45,43 @@ jobs:
       - run: chmod +x gradlew
       - name: Generate local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+      - name: Validate signing secrets
+        run: |
+          required=(RELEASE_STORE_FILE_BASE64 RELEASE_STORE_PASSWORD RELEASE_KEY_ALIAS RELEASE_KEY_PASSWORD)
+          missing=()
+          for key in "${required[@]}"; do
+            if [ -z "${!key}" ]; then
+              missing+=("$key")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Missing required release signing secrets: ${missing[*]}"
+            echo "Official release build requires full signing configuration; unsigned release is blocked in release.yml."
+            exit 1
+          fi
+        env:
+          RELEASE_STORE_FILE_BASE64: ${{ secrets.RELEASE_STORE_FILE_BASE64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+      - name: Prepare release keystore
+        run: |
+          store_file="$RUNNER_TEMP/release.keystore"
+          echo "$RELEASE_STORE_FILE_BASE64" | base64 --decode > "$store_file"
+          if [ ! -s "$store_file" ]; then
+            echo "::error::Decoded keystore file is empty"
+            exit 1
+          fi
+          echo "RELEASE_STORE_FILE=$store_file" >> "$GITHUB_ENV"
+          echo "RELEASE_STORE_PASSWORD=$RELEASE_STORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "RELEASE_KEY_ALIAS=$RELEASE_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "RELEASE_KEY_PASSWORD=$RELEASE_KEY_PASSWORD" >> "$GITHUB_ENV"
+        env:
+          RELEASE_STORE_FILE_BASE64: ${{ secrets.RELEASE_STORE_FILE_BASE64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
       - id: version
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -83,6 +120,7 @@ jobs:
     steps:
       - run: |
           echo "## Release Wizard / Help" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Build sem assinatura obrigatória: habilitado via ALLOW_UNSIGNED_RELEASE=true" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Para assinatura real, configure secrets de keystore." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Build oficial exige assinatura obrigatória (ALLOW_UNSIGNED_RELEASE=false)." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Segredos obrigatórios: RELEASE_STORE_FILE_BASE64, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Para validação unsigned, use o workflow interno internal-validation.yml." >> "$GITHUB_STEP_SUMMARY"
           echo "- Variáveis recomendadas: vars.GITHUB_CLIENT_ID_DEV e vars.GITHUB_CLIENT_ID_PRODUCTION." >> "$GITHUB_STEP_SUMMARY"

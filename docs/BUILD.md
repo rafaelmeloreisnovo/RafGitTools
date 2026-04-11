@@ -11,7 +11,7 @@ This document provides detailed instructions for building RafGitTools from sourc
    - Download: https://developer.android.com/studio
 
 2. **Java Development Kit (JDK)**
-   - Version: JDK 17 or newer
+   - Version: JDK 17 to JDK 21 (recommended: JDK 17)
    - Android Studio includes JDK, or download from: https://adoptium.net/
 
 3. **Android SDK**
@@ -21,6 +21,32 @@ This document provides detailed instructions for building RafGitTools from sourc
 
 4. **Git** (optional, for cloning)
    - Download: https://git-scm.com/
+
+
+> ⚠️ Important: with the current Gradle/AGP baseline (`Gradle 8.4` + `AGP 8.3.0`), running with JDK 22+ can break Groovy script compilation (`Unsupported class file major version`).
+> If your machine has multiple JDKs, force JDK 17 before calling `./gradlew`.
+> You can use the helper script, which now auto-detects common JDK 17 installs
+> (including `mise`) and exports `JAVA_HOME` automatically:
+>
+> ```bash
+> ./scripts/gradlew_with_java17.sh help
+> ```
+>
+> Or set it manually:
+>
+> ```bash
+> export JAVA_HOME=/path/to/jdk-17
+> export PATH="$JAVA_HOME/bin:$PATH"
+> ./gradlew help
+> ```
+
+### Gradle / AGP Compatibility Baseline
+
+- **Android Gradle Plugin (AGP)**: `8.3.0` (defined in `build.gradle`)
+- **Gradle Wrapper**: `8.4` (defined in `gradle/wrapper/gradle-wrapper.properties`)
+
+> Keep AGP/Kotlin/KSP aligned as one compatibility set. Do **not** partially mix
+> AGP 8.3.0 with Gradle 9.x without a coordinated plugin/toolchain upgrade.
 
 ### System Requirements
 
@@ -63,6 +89,13 @@ If Gradle doesn't sync automatically:
 2. Wait for the sync to complete
 3. Check the **Build** panel for any errors
 
+Before running full builds, validate the wrapper bootstrap:
+
+```bash
+./scripts/gradlew_with_java17.sh --version
+./scripts/gradlew_with_java17.sh help
+```
+
 ### 4. Build Variants
 
 RafGitTools has multiple build variants:
@@ -104,22 +137,22 @@ To select a build variant:
 
 **Build Debug APK:**
 ```bash
-./gradlew assembleDevDebug
+./scripts/gradlew_with_java17.sh assembleDevDebug
 ```
 
 **Build Release APK:**
 ```bash
-./gradlew assembleProductionRelease
+./scripts/gradlew_with_java17.sh assembleProductionRelease
 ```
 
 **Build App Bundle:**
 ```bash
-./gradlew bundleProductionRelease
+./scripts/gradlew_with_java17.sh bundleProductionRelease
 ```
 
 **Build All Variants:**
 ```bash
-./gradlew assemble
+./scripts/gradlew_with_java17.sh assemble
 ```
 
 ### 6. Run on Device/Emulator
@@ -135,12 +168,12 @@ To select a build variant:
 
 **Install Debug APK:**
 ```bash
-./gradlew installDevDebug
+./scripts/gradlew_with_java17.sh installDevDebug
 ```
 
 **Install and Run:**
 ```bash
-./gradlew installDevDebug
+./scripts/gradlew_with_java17.sh installDevDebug
 adb shell am start -n com.rafgittools.dev/com.rafgittools.MainActivity
 ```
 
@@ -176,57 +209,85 @@ app/build/outputs/bundle/
 
 ## Signing the Release Build
 
-For distribution, you need to sign the release build.
+RafGitTools **não usa mais `keystore.properties`** como fonte oficial de assinatura.
+O fluxo atual lê secrets por:
+- Variáveis de ambiente, ou
+- Propriedades do Gradle (`~/.gradle/gradle.properties` ou `-P...`).
 
-### Generate Keystore
+### Trilho 1 — Validação interna (opcional unsigned)
 
+Use este trilho para validação técnica interna (ex.: smoke test de pipeline), **não para distribuição oficial**.
+
+#### Opção A: build de debug (sempre assinado com debug keystore)
 ```bash
-keytool -genkey -v -keystore rafgittools.keystore \
-  -alias rafgittools -keyalg RSA -keysize 2048 -validity 10000
+./scripts/gradlew_with_java17.sh assembleDevDebug
 ```
 
-### Configure Signing
+#### Opção B: release sem chave oficial (somente validação interna)
+```bash
+./scripts/gradlew_with_java17.sh assembleProductionRelease -PALLOW_UNSIGNED_RELEASE=true
+```
 
-1. Create `keystore.properties` in project root:
+> `ALLOW_UNSIGNED_RELEASE=true` permite fallback para assinatura de debug em tarefas `*Release*`.
+> Isso existe somente para validação interna e não deve ser usado para release oficial.
+
+### Trilho 2 — Release oficial (assinatura obrigatória)
+
+Para `productionRelease` oficial, configure os 4 secrets:
+- `RELEASE_STORE_FILE`
+- `RELEASE_STORE_PASSWORD`
+- `RELEASE_KEY_ALIAS`
+- `RELEASE_KEY_PASSWORD`
+
+Sem esses secrets, o build de release falha (a menos que `ALLOW_UNSIGNED_RELEASE=true` seja ativado explicitamente para validação interna).
+
+### Exemplo mínimo local (`~/.gradle/gradle.properties`)
+
 ```properties
-storePassword=YOUR_STORE_PASSWORD
-keyPassword=YOUR_KEY_PASSWORD
-keyAlias=rafgittools
-storeFile=../rafgittools.keystore
+# Caminho absoluto recomendado
+RELEASE_STORE_FILE=/Users/you/keys/rafgittools-upload.jks
+RELEASE_STORE_PASSWORD=change-me
+RELEASE_KEY_ALIAS=rafgittools
+RELEASE_KEY_PASSWORD=change-me
 ```
 
-2. Add to `.gitignore`:
-```
-keystore.properties
-*.keystore
-```
-
-3. Update `app/build.gradle` signing config:
-```gradle
-android {
-    signingConfigs {
-        release {
-            storeFile file(keystoreProperties['storeFile'])
-            storePassword keystoreProperties['storePassword']
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-        }
-    }
-    buildTypes {
-        release {
-            signingConfig signingConfigs.release
-            // ... other config
-        }
-    }
-}
+Build oficial local:
+```bash
+./scripts/gradlew_with_java17.sh bundleProductionRelease
 ```
 
-### Build Signed Release
+### Exemplo mínimo CI (GitHub Actions)
+
+Armazene no GitHub:
+- **Secrets**: `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD`, `RELEASE_STORE_FILE_B64`
+- **Vars (opcional)**: `ALLOW_UNSIGNED_RELEASE=false`
+
+Exemplo de job:
+
+```yaml
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+      RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+      RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+      ALLOW_UNSIGNED_RELEASE: ${{ vars.ALLOW_UNSIGNED_RELEASE }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.RELEASE_STORE_FILE_B64 }}" | base64 -d > $RUNNER_TEMP/release.jks
+          echo "RELEASE_STORE_FILE=$RUNNER_TEMP/release.jks" >> $GITHUB_ENV
+      - name: Build signed bundle
+        run: ./scripts/gradlew_with_java17.sh bundleProductionRelease
+```
+
+### Gerar keystore (se necessário)
 
 ```bash
-./gradlew assembleProductionRelease
-# or
-./gradlew bundleProductionRelease
+keytool -genkey -v -keystore rafgittools-upload.jks \
+  -alias rafgittools -keyalg RSA -keysize 2048 -validity 10000
 ```
 
 ## Testing
@@ -377,10 +438,10 @@ For continuous integration, use these commands:
 ./gradlew test
 
 # Build all variants
-./gradlew assemble
+./scripts/gradlew_with_java17.sh assemble
 
 # Generate release bundle
-./gradlew bundleProductionRelease
+./scripts/gradlew_with_java17.sh bundleProductionRelease
 ```
 
 ## Additional Resources

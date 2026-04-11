@@ -46,7 +46,7 @@ def releaseKeyPassword = readSecret('RELEASE_KEY_PASSWORD')
 def isReleaseTaskRequested = gradle.startParameter.taskNames.any { taskName ->
     taskName.toLowerCase().contains('release')
 }
-def allowUnsignedRelease = readSecretOrDefault('ALLOW_UNSIGNED_RELEASE', 'false').toBoolean() || System.getenv('CI') == 'true'
+def allowUnsignedRelease = readSecretOrDefault('ALLOW_UNSIGNED_RELEASE', 'false').toBoolean()
 
 def hasReleaseSigning = !releaseStoreFilePath.isEmpty() && !releaseStorePassword.isEmpty() && !releaseKeyAlias.isEmpty() && !releaseKeyPassword.isEmpty()
 if (isReleaseTaskRequested && !hasReleaseSigning && !allowUnsignedRelease) {

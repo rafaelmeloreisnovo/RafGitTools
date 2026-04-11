@@ -12,10 +12,10 @@ local.properties:
 	fi
 
 clean: local.properties
-	./gradlew clean --no-daemon
+	./scripts/gradlew_with_java17.sh clean --no-daemon
 
 all: local.properties
-	./gradlew :app:assembleDebug --no-daemon
+	./scripts/gradlew_with_java17.sh :app:assembleDebug --no-daemon
 
 
 audit-validate:
