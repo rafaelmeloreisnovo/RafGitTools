@@ -148,6 +148,41 @@ The project includes multiple build variants:
 - **productionDebug**: Production build for testing
 - **productionRelease**: Final production build
 
+### 🔐 Fluxo atual de assinatura de release
+
+O projeto usa secrets de assinatura via variáveis/propriedades Gradle:
+- `RELEASE_STORE_FILE`
+- `RELEASE_STORE_PASSWORD`
+- `RELEASE_KEY_ALIAS`
+- `RELEASE_KEY_PASSWORD`
+
+`keystore.properties` **não é mais o fluxo oficial**.
+
+Dois trilhos suportados:
+
+1. **Validação interna (opcional unsigned)**  
+   Permitido somente para validação interna com `ALLOW_UNSIGNED_RELEASE=true`.
+2. **Release oficial (assinatura obrigatória)**  
+   Exige os 4 secrets acima para gerar `productionRelease` oficial.
+
+Exemplo local mínimo (`~/.gradle/gradle.properties`):
+```properties
+RELEASE_STORE_FILE=/absolute/path/to/release.jks
+RELEASE_STORE_PASSWORD=change-me
+RELEASE_KEY_ALIAS=rafgittools
+RELEASE_KEY_PASSWORD=change-me
+```
+
+Exemplo mínimo CI (GitHub Actions):
+```yaml
+env:
+  RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+  RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+  RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+```
+
+Consulte [docs/BUILD.md](docs/BUILD.md) para o fluxo completo (local + CI, incluindo decode de keystore em Base64).
+
 ## 📚 Documentation
 
 ### 📊 Status & Progress

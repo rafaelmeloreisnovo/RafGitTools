@@ -176,57 +176,85 @@ app/build/outputs/bundle/
 
 ## Signing the Release Build
 
-For distribution, you need to sign the release build.
+RafGitTools **não usa mais `keystore.properties`** como fonte oficial de assinatura.
+O fluxo atual lê secrets por:
+- Variáveis de ambiente, ou
+- Propriedades do Gradle (`~/.gradle/gradle.properties` ou `-P...`).
 
-### Generate Keystore
+### Trilho 1 — Validação interna (opcional unsigned)
 
+Use este trilho para validação técnica interna (ex.: smoke test de pipeline), **não para distribuição oficial**.
+
+#### Opção A: build de debug (sempre assinado com debug keystore)
 ```bash
-keytool -genkey -v -keystore rafgittools.keystore \
-  -alias rafgittools -keyalg RSA -keysize 2048 -validity 10000
+./gradlew assembleDevDebug
 ```
 
-### Configure Signing
+#### Opção B: release sem chave oficial (somente validação interna)
+```bash
+./gradlew assembleProductionRelease -PALLOW_UNSIGNED_RELEASE=true
+```
 
-1. Create `keystore.properties` in project root:
+> `ALLOW_UNSIGNED_RELEASE=true` permite fallback para assinatura de debug em tarefas `*Release*`.
+> Isso existe somente para validação interna e não deve ser usado para release oficial.
+
+### Trilho 2 — Release oficial (assinatura obrigatória)
+
+Para `productionRelease` oficial, configure os 4 secrets:
+- `RELEASE_STORE_FILE`
+- `RELEASE_STORE_PASSWORD`
+- `RELEASE_KEY_ALIAS`
+- `RELEASE_KEY_PASSWORD`
+
+Sem esses secrets, o build de release falha (a menos que `ALLOW_UNSIGNED_RELEASE=true` seja ativado explicitamente para validação interna).
+
+### Exemplo mínimo local (`~/.gradle/gradle.properties`)
+
 ```properties
-storePassword=YOUR_STORE_PASSWORD
-keyPassword=YOUR_KEY_PASSWORD
-keyAlias=rafgittools
-storeFile=../rafgittools.keystore
+# Caminho absoluto recomendado
+RELEASE_STORE_FILE=/Users/you/keys/rafgittools-upload.jks
+RELEASE_STORE_PASSWORD=change-me
+RELEASE_KEY_ALIAS=rafgittools
+RELEASE_KEY_PASSWORD=change-me
 ```
 
-2. Add to `.gitignore`:
-```
-keystore.properties
-*.keystore
-```
-
-3. Update `app/build.gradle` signing config:
-```gradle
-android {
-    signingConfigs {
-        release {
-            storeFile file(keystoreProperties['storeFile'])
-            storePassword keystoreProperties['storePassword']
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-        }
-    }
-    buildTypes {
-        release {
-            signingConfig signingConfigs.release
-            // ... other config
-        }
-    }
-}
+Build oficial local:
+```bash
+./gradlew bundleProductionRelease
 ```
 
-### Build Signed Release
+### Exemplo mínimo CI (GitHub Actions)
+
+Armazene no GitHub:
+- **Secrets**: `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD`, `RELEASE_STORE_FILE_B64`
+- **Vars (opcional)**: `ALLOW_UNSIGNED_RELEASE=false`
+
+Exemplo de job:
+
+```yaml
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+      RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+      RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+      ALLOW_UNSIGNED_RELEASE: ${{ vars.ALLOW_UNSIGNED_RELEASE }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.RELEASE_STORE_FILE_B64 }}" | base64 -d > $RUNNER_TEMP/release.jks
+          echo "RELEASE_STORE_FILE=$RUNNER_TEMP/release.jks" >> $GITHUB_ENV
+      - name: Build signed bundle
+        run: ./gradlew bundleProductionRelease
+```
+
+### Gerar keystore (se necessário)
 
 ```bash
-./gradlew assembleProductionRelease
-# or
-./gradlew bundleProductionRelease
+keytool -genkey -v -keystore rafgittools-upload.jks \
+  -alias rafgittools -keyalg RSA -keysize 2048 -validity 10000
 ```
 
 ## Testing
