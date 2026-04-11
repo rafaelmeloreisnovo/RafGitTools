@@ -9,19 +9,33 @@ This directory contains comprehensive GitHub Actions workflows for the RafGitToo
 #### 1. **CI** (`ci.yml`)
 **Trigger**: Push/PR to main/develop branches, manual dispatch
 
-**Purpose**: Main continuous integration pipeline
+**Purpose**: Canonical continuous integration entrypoint for PR/push
 
 **Jobs**:
-- **Build**: Builds all variants (devDebug, devRelease, productionDebug, productionRelease)
-- **Test**: Runs unit tests and generates reports
-- **Lint**: Performs code linting checks
-- **Code Quality**: Runs code quality checks
+- **Android CI Pipeline**: Calls reusable workflow (`android-ci.yml`)
 
-**Artifacts**: APKs, test results, lint reports, code quality reports
+**Artifacts**: Produced by reusable jobs (APKs, test reports, lint reports)
 
 ---
 
-#### 2. **PR Validation** (`pr-validation.yml`)
+#### 2. **Android CI (Reusable)** (`android-ci.yml`)
+**Trigger**: `workflow_call`, manual dispatch
+
+**Purpose**: Reusable Android stages with standardized setup and artifacts
+
+**Jobs**:
+- **Build**: `assemble...` per variant
+- **Test**: `test...UnitTest`
+- **Lint**: `lint...`
+
+**Artifacts**:
+- `apks-*` for build outputs
+- `test-reports` for unit tests
+- `lint-reports` for lint output
+
+---
+
+#### 3. **PR Validation** (`pr-validation.yml`)
 **Trigger**: Pull request events (opened, synchronized, reopened)
 
 **Purpose**: Validates pull requests before merge
