@@ -24,7 +24,15 @@ This document provides detailed instructions for building RafGitTools from sourc
 
 
 > ⚠️ Important: with the current Gradle/AGP baseline (`Gradle 8.4` + `AGP 8.3.0`), running with JDK 22+ can break Groovy script compilation (`Unsupported class file major version`).
-> If your machine has multiple JDKs, force JDK 17 before calling `./gradlew`:
+> If your machine has multiple JDKs, force JDK 17 before calling `./gradlew`.
+> You can use the helper script, which now auto-detects common JDK 17 installs
+> (including `mise`) and exports `JAVA_HOME` automatically:
+>
+> ```bash
+> ./scripts/gradlew_with_java17.sh help
+> ```
+>
+> Or set it manually:
 >
 > ```bash
 > export JAVA_HOME=/path/to/jdk-17

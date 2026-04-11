@@ -134,6 +134,10 @@ RafGitTools/
 3. **Sync Gradle**
    - Android Studio will automatically sync Gradle files
    - Wait for dependencies to download
+   - If your environment has multiple JDKs (or defaults to JDK 22+), run Gradle via:
+     ```bash
+     ./scripts/gradlew_with_java17.sh help
+     ```
 
 4. **Run the app**
    - Select a device/emulator
