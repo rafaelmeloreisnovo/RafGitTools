@@ -84,8 +84,8 @@ If Gradle doesn't sync automatically:
 Before running full builds, validate the wrapper bootstrap:
 
 ```bash
-./gradlew --version
-./gradlew help
+./scripts/gradlew_with_java17.sh --version
+./scripts/gradlew_with_java17.sh help
 ```
 
 ### 4. Build Variants
@@ -129,22 +129,22 @@ To select a build variant:
 
 **Build Debug APK:**
 ```bash
-./gradlew assembleDevDebug
+./scripts/gradlew_with_java17.sh assembleDevDebug
 ```
 
 **Build Release APK:**
 ```bash
-./gradlew assembleProductionRelease
+./scripts/gradlew_with_java17.sh assembleProductionRelease
 ```
 
 **Build App Bundle:**
 ```bash
-./gradlew bundleProductionRelease
+./scripts/gradlew_with_java17.sh bundleProductionRelease
 ```
 
 **Build All Variants:**
 ```bash
-./gradlew assemble
+./scripts/gradlew_with_java17.sh assemble
 ```
 
 ### 6. Run on Device/Emulator
@@ -160,12 +160,12 @@ To select a build variant:
 
 **Install Debug APK:**
 ```bash
-./gradlew installDevDebug
+./scripts/gradlew_with_java17.sh installDevDebug
 ```
 
 **Install and Run:**
 ```bash
-./gradlew installDevDebug
+./scripts/gradlew_with_java17.sh installDevDebug
 adb shell am start -n com.rafgittools.dev/com.rafgittools.MainActivity
 ```
 
@@ -212,12 +212,12 @@ Use este trilho para validação técnica interna (ex.: smoke test de pipeline),
 
 #### Opção A: build de debug (sempre assinado com debug keystore)
 ```bash
-./gradlew assembleDevDebug
+./scripts/gradlew_with_java17.sh assembleDevDebug
 ```
 
 #### Opção B: release sem chave oficial (somente validação interna)
 ```bash
-./gradlew assembleProductionRelease -PALLOW_UNSIGNED_RELEASE=true
+./scripts/gradlew_with_java17.sh assembleProductionRelease -PALLOW_UNSIGNED_RELEASE=true
 ```
 
 > `ALLOW_UNSIGNED_RELEASE=true` permite fallback para assinatura de debug em tarefas `*Release*`.
@@ -245,7 +245,7 @@ RELEASE_KEY_PASSWORD=change-me
 
 Build oficial local:
 ```bash
-./gradlew bundleProductionRelease
+./scripts/gradlew_with_java17.sh bundleProductionRelease
 ```
 
 ### Exemplo mínimo CI (GitHub Actions)
@@ -272,7 +272,7 @@ jobs:
           echo "${{ secrets.RELEASE_STORE_FILE_B64 }}" | base64 -d > $RUNNER_TEMP/release.jks
           echo "RELEASE_STORE_FILE=$RUNNER_TEMP/release.jks" >> $GITHUB_ENV
       - name: Build signed bundle
-        run: ./gradlew bundleProductionRelease
+        run: ./scripts/gradlew_with_java17.sh bundleProductionRelease
 ```
 
 ### Gerar keystore (se necessário)
@@ -430,10 +430,10 @@ For continuous integration, use these commands:
 ./gradlew test
 
 # Build all variants
-./gradlew assemble
+./scripts/gradlew_with_java17.sh assemble
 
 # Generate release bundle
-./gradlew bundleProductionRelease
+./scripts/gradlew_with_java17.sh bundleProductionRelease
 ```
 
 ## Additional Resources
