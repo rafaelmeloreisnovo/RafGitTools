@@ -11,7 +11,12 @@ on:
       run_release_variant:
         description: "Include release variants"
         required: false
-        default: true
+        default: false
+        type: boolean
+      allow_unsigned_release:
+        description: "Allow unsigned release variant (internal validation only)"
+        required: false
+        default: false
         type: boolean
       gradle_args:
         description: "Additional Gradle args"
@@ -29,7 +34,12 @@ on:
       run_release_variant:
         description: "Include release variants"
         required: false
-        default: true
+        default: false
+        type: boolean
+      allow_unsigned_release:
+        description: "Allow unsigned release variant (internal validation only)"
+        required: false
+        default: false
         type: boolean
       gradle_args:
         description: "Additional Gradle args"
@@ -40,7 +50,7 @@ on:
 env:
   GITHUB_CLIENT_ID_DEV: ${{ vars.GITHUB_CLIENT_ID_DEV || 'local-dev-client-id' }}
   GITHUB_CLIENT_ID_PRODUCTION: ${{ vars.GITHUB_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
-  ALLOW_UNSIGNED_RELEASE: "true"
+  ALLOW_UNSIGNED_RELEASE: ${{ inputs.allow_unsigned_release && 'true' || 'false' }}
 
 jobs:
   build:
@@ -68,6 +78,27 @@ jobs:
           fi
           printf 'sdk.dir=%s\n' "$sdk_path" > local.properties
       - run: chmod +x gradlew
+      - name: Validate release-signing policy
+        if: inputs.run_release_variant && !inputs.allow_unsigned_release
+        run: |
+          required=(RELEASE_STORE_FILE_BASE64 RELEASE_STORE_PASSWORD RELEASE_KEY_ALIAS RELEASE_KEY_PASSWORD)
+          missing=()
+          for key in "${required[@]}"; do
+            if [ -z "${!key}" ]; then
+              missing+=("$key")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::run_release_variant=true requires signed release configuration in Android CI."
+            echo "::error::Missing secrets: ${missing[*]}"
+            echo "::error::For unsigned pipeline validation, set allow_unsigned_release=true explicitly."
+            exit 1
+          fi
+        env:
+          RELEASE_STORE_FILE_BASE64: ${{ secrets.RELEASE_STORE_FILE_BASE64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
       - name: Assemble ${{ matrix.variant }}
         if: inputs.run_release_variant || !contains(matrix.variant, 'Release')
         run: ./gradlew assemble${{ matrix.variant }} ${{ inputs.gradle_args }}
