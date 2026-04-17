@@ -14,9 +14,9 @@ on:
         type: choice
         options: [all, build_only, tests_only, lint_only]
       run_release_variant:
-        description: "Include release variants even without signing"
+        description: "Include release variants (requires signing secrets)"
         required: false
-        default: true
+        default: false
         type: boolean
       gradle_args:
         description: "Extra Gradle args (example: --stacktrace --info)"
@@ -28,7 +28,9 @@ jobs:
   android-ci:
     name: Android CI Pipeline
     uses: ./.github/workflows/android-ci.yml
+    secrets: inherit
     with:
       build_mode: ${{ inputs.build_mode || 'all' }}
-      run_release_variant: ${{ inputs.run_release_variant != false }}
+      run_release_variant: ${{ inputs.run_release_variant || false }}
+      allow_unsigned_release: false
       gradle_args: ${{ inputs.gradle_args || '--stacktrace' }}

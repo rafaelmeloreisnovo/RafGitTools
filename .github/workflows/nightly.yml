@@ -6,6 +6,11 @@ on:
     - cron: '0 3 * * *'
   workflow_dispatch:
 
+env:
+  GITHUB_CLIENT_ID_DEV: ${{ vars.GITHUB_CLIENT_ID_DEV || 'local-dev-client-id' }}
+  GITHUB_CLIENT_ID_PRODUCTION: ${{ vars.GITHUB_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
+  ALLOW_UNSIGNED_RELEASE: "true"
+
 jobs:
   nightly-build:
     name: Nightly Build and Test
@@ -36,6 +41,7 @@ jobs:
           ./gradlew assembleDevRelease
           ./gradlew assembleProductionDebug
           ./gradlew assembleProductionRelease
+          ./gradlew bundleProductionRelease
       
       - name: Run all tests
         run: |
@@ -74,6 +80,7 @@ jobs:
           name: nightly-builds-${{ steps.version.outputs.version }}
           path: |
             app/build/outputs/apk/**/*.apk
+            app/build/outputs/bundle/**/*.aab
           retention-days: 7
       
       - name: Upload test results

@@ -33,7 +33,14 @@ detect_java17_home() {
   return 1
 }
 
-if [[ -z "${JAVA_HOME:-}" ]] || ! "$JAVA_HOME/bin/java" -version >/dev/null 2>&1; then
+if [[ -n "${JAVA_HOME:-}" ]] && "$JAVA_HOME/bin/java" -version >/dev/null 2>&1; then
+  java_version_raw="$("$JAVA_HOME/bin/java" -version 2>&1 | head -n 1)"
+  if [[ "$java_version_raw" =~ \"17\.|\"17\" ]]; then
+    exec ./gradlew "$@"
+  fi
+fi
+
+if [[ -z "${JAVA_HOME:-}" ]] || ! "$JAVA_HOME/bin/java" -version >/dev/null 2>&1 || [[ ! "$("$JAVA_HOME/bin/java" -version 2>&1 | head -n 1)" =~ \"17\.|\"17\" ]]; then
   if detected_java_home="$(detect_java17_home)"; then
     export JAVA_HOME="$detected_java_home"
     export PATH="$JAVA_HOME/bin:$PATH"
@@ -50,6 +57,7 @@ java_version_raw="$("$JAVA_HOME/bin/java" -version 2>&1 | head -n 1)"
 if [[ ! "$java_version_raw" =~ \"17\.|\"17\" ]]; then
   echo "Gradle scripts in this repository require JDK 17 for stable execution." >&2
   echo "Detected: $java_version_raw" >&2
+  echo "Install JDK 17 and retry (or configure mise/sdkman so auto-detection can switch to Java 17)." >&2
   exit 1
 fi
 

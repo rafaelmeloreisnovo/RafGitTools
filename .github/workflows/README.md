@@ -28,6 +28,11 @@ This directory contains comprehensive GitHub Actions workflows for the RafGitToo
 - **Test**: `test...UnitTest`
 - **Lint**: `lint...`
 
+**Release policy**:
+- Default CI path builds debug variants only (`run_release_variant=false`)
+- Release variants require explicit opt-in and signing secrets
+- Unsigned release builds are restricted to internal validation lanes
+
 **Artifacts**:
 - `apks-*` for build outputs
 - `test-reports` for unit tests
@@ -161,7 +166,7 @@ This directory contains comprehensive GitHub Actions workflows for the RafGitToo
 - **Statistics**: Generates repository statistics
 
 **Features**:
-- Builds all variants
+- Builds all variants, including `bundleProductionRelease` (AAB)
 - Creates issue on failure
 - Generates nightly version
 - Repository statistics
