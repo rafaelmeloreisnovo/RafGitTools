@@ -70,14 +70,8 @@ jobs:
           cache: gradle
       - uses: android-actions/setup-android@v3
       - name: Prepare local.properties
-        run: |
-          sdk_path="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          if [ -z "$sdk_path" ]; then
-            echo "ANDROID_SDK_ROOT/ANDROID_HOME is not set" >&2
-            exit 1
-          fi
-          printf 'sdk.dir=%s\n' "$sdk_path" > local.properties
-      - run: chmod +x gradlew
+        run: ./scripts/prepare_local_properties.sh
+      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh
       - name: Validate release-signing policy
         if: inputs.run_release_variant && !inputs.allow_unsigned_release
         run: |
@@ -101,7 +95,7 @@ jobs:
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
       - name: Assemble ${{ matrix.variant }}
         if: inputs.run_release_variant || !contains(matrix.variant, 'Release')
-        run: ./gradlew assemble${{ matrix.variant }} ${{ inputs.gradle_args }}
+        run: ./scripts/gradlew_with_java17.sh assemble${{ matrix.variant }} ${{ inputs.gradle_args }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -122,16 +116,10 @@ jobs:
           cache: gradle
       - uses: android-actions/setup-android@v3
       - name: Prepare local.properties
-        run: |
-          sdk_path="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          if [ -z "$sdk_path" ]; then
-            echo "ANDROID_SDK_ROOT/ANDROID_HOME is not set" >&2
-            exit 1
-          fi
-          printf 'sdk.dir=%s\n' "$sdk_path" > local.properties
-      - run: chmod +x gradlew
+        run: ./scripts/prepare_local_properties.sh
+      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh
       - name: Run Unit Tests
-        run: ./gradlew testDevDebugUnitTest testProductionDebugUnitTest ${{ inputs.gradle_args }}
+        run: ./scripts/gradlew_with_java17.sh testDevDebugUnitTest testProductionDebugUnitTest ${{ inputs.gradle_args }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -153,16 +141,10 @@ jobs:
           cache: gradle
       - uses: android-actions/setup-android@v3
       - name: Prepare local.properties
-        run: |
-          sdk_path="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          if [ -z "$sdk_path" ]; then
-            echo "ANDROID_SDK_ROOT/ANDROID_HOME is not set" >&2
-            exit 1
-          fi
-          printf 'sdk.dir=%s\n' "$sdk_path" > local.properties
-      - run: chmod +x gradlew
+        run: ./scripts/prepare_local_properties.sh
+      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh
       - name: Run Lint
-        run: ./gradlew lintDevDebug lintProductionDebug ${{ inputs.gradle_args }}
+        run: ./scripts/gradlew_with_java17.sh lintDevDebug lintProductionDebug ${{ inputs.gradle_args }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

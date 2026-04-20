@@ -32,11 +32,11 @@ jobs:
           java-version: '17'
           cache: gradle
       - uses: android-actions/setup-android@v3
-      - run: chmod +x gradlew
+      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh
       - name: Generate local.properties
-        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+        run: ./scripts/prepare_local_properties.sh
       - name: Build production release (unsigned validation)
-        run: ./gradlew assembleProductionRelease ${{ inputs.gradle_args || '--stacktrace --info' }}
+        run: ./scripts/gradlew_with_java17.sh assembleProductionRelease ${{ inputs.gradle_args || '--stacktrace --info' }}
       - name: Upload unsigned validation artifacts
         uses: actions/upload-artifact@v4
         with:
