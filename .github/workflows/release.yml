@@ -42,7 +42,9 @@ jobs:
           java-version: '17'
           cache: gradle
       - uses: android-actions/setup-android@v3
-      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh
+      - name: Apply CI runtime overlay zip
+        run: ./scripts/apply_formula_ci_zip.sh formula_ci.zip
+      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh scripts/apply_formula_ci_zip.sh
       - name: Generate local.properties
         run: ./scripts/prepare_local_properties.sh
       - name: Validate signing secrets
