@@ -69,9 +69,11 @@ jobs:
           java-version: '17'
           cache: gradle
       - uses: android-actions/setup-android@v3
+      - name: Apply CI runtime overlay zip
+        run: ./scripts/apply_formula_ci_zip.sh formula_ci.zip
       - name: Prepare local.properties
         run: ./scripts/prepare_local_properties.sh
-      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh
+      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh scripts/apply_formula_ci_zip.sh
       - name: Validate release-signing policy
         if: inputs.run_release_variant && !inputs.allow_unsigned_release
         run: |
@@ -115,9 +117,11 @@ jobs:
           java-version: '17'
           cache: gradle
       - uses: android-actions/setup-android@v3
+      - name: Apply CI runtime overlay zip
+        run: ./scripts/apply_formula_ci_zip.sh formula_ci.zip
       - name: Prepare local.properties
         run: ./scripts/prepare_local_properties.sh
-      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh
+      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh scripts/apply_formula_ci_zip.sh
       - name: Run Unit Tests
         run: ./scripts/gradlew_with_java17.sh testDevDebugUnitTest testProductionDebugUnitTest ${{ inputs.gradle_args }}
       - uses: actions/upload-artifact@v4
@@ -140,9 +144,11 @@ jobs:
           java-version: '17'
           cache: gradle
       - uses: android-actions/setup-android@v3
+      - name: Apply CI runtime overlay zip
+        run: ./scripts/apply_formula_ci_zip.sh formula_ci.zip
       - name: Prepare local.properties
         run: ./scripts/prepare_local_properties.sh
-      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh
+      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh scripts/apply_formula_ci_zip.sh
       - name: Run Lint
         run: ./scripts/gradlew_with_java17.sh lintDevDebug lintProductionDebug ${{ inputs.gradle_args }}
       - uses: actions/upload-artifact@v4
