@@ -10,6 +10,12 @@ package com.rafgittools.platform
  * callers can use without crashing the application.
  */
 object MultiPlatformManager {
+    init {
+        runCatching { System.loadLibrary("rafcore") }
+    }
+
+    external fun nativeAsmHealth(): Int
+
     fun getGitLabProjects(): List<String> {
         // In a future release this would call GitLab's API
         return emptyList()
@@ -30,3 +36,5 @@ object MultiPlatformManager {
         return emptyList()
     }
 }
+
+fun isNativeAssemblerCoreReady(): Boolean = runCatching { nativeAsmHealth() >= 8 }.getOrDefault(false)
