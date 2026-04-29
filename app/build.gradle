@@ -73,6 +73,15 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
 
+        externalNativeBuild {
+            cmake {
+                cppFlags "-O2"
+            }
+        }
+        ndk {
+            abiFilters "armeabi-v7a", "arm64-v8a"
+        }
+
         // Configure Room schema export directory for KSP.  KSP arguments are
         // specified in the `ksp` block of defaultConfig.
         ksp {
@@ -180,6 +189,12 @@ android {
         abortOnError false
         checkReleaseBuilds true
         warningsAsErrors false
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+        }
     }
 
     sourceSets {
