@@ -59,6 +59,7 @@
 - [Architecture Guide](ARCHITECTURE.md) - Detailed architecture documentation
 - [Feature Matrix](FEATURE_MATRIX.md) - Feature comparison with source projects
 - [Build Instructions](BUILD.md) - How to build the project
+- [Assembler/Orquestração HW-SW](ASSEMBLER_ORQUESTRACAO_HARDWARE_SOFTWARE.md) - Material técnico de baixo nível e validação por fórmulas/grafos em CI
 
 ### Security & Compliance
 - [Privacy Policy](PRIVACY.md) - Privacy practices and data protection (GDPR/CCPA compliant)

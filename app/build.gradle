@@ -49,9 +49,15 @@ def isReleaseTaskRequested = gradle.startParameter.taskNames.any { taskName ->
 }
 def allowUnsignedRelease = readSecretOrDefault('ALLOW_UNSIGNED_RELEASE', 'false').toBoolean()
 
-def hasReleaseSigning = !releaseStoreFilePath.isEmpty() && !releaseStorePassword.isEmpty() && !releaseKeyAlias.isEmpty() && !releaseKeyPassword.isEmpty()
-if (isReleaseTaskRequested && !hasReleaseSigning && !allowUnsignedRelease) {
+def hasSigningEnv = !releaseStoreFilePath.isEmpty() && !releaseStorePassword.isEmpty() && !releaseKeyAlias.isEmpty() && !releaseKeyPassword.isEmpty()
+def hasValidKeystoreFile = hasSigningEnv && file(releaseStoreFilePath).exists()
+
+if (isReleaseTaskRequested && !hasSigningEnv && !allowUnsignedRelease) {
     throw new GradleException('Release signing is required. Set RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS and RELEASE_KEY_PASSWORD or ALLOW_UNSIGNED_RELEASE=true in gradle.properties or CI environment.')
+}
+
+if (isReleaseTaskRequested && hasSigningEnv && !hasValidKeystoreFile) {
+    throw new GradleException("RELEASE_STORE_FILE not found at '${releaseStoreFilePath}'. Check the path or enable ALLOW_UNSIGNED_RELEASE=true only for internal validation.")
 }
 
 android {
@@ -73,6 +79,15 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
 
+        externalNativeBuild {
+            cmake {
+                cppFlags "-O2"
+            }
+        }
+        ndk {
+            abiFilters "armeabi-v7a", "arm64-v8a"
+        }
+
         // Configure Room schema export directory for KSP.  KSP arguments are
         // specified in the `ksp` block of defaultConfig.
         ksp {
@@ -86,7 +101,7 @@ android {
             // Default debug keystore is used automatically.
         }
         release {
-            if (hasReleaseSigning) {
+            if (hasValidKeystoreFile) {
                 storeFile file(releaseStoreFilePath)
                 storePassword releaseStorePassword
                 keyAlias releaseKeyAlias
@@ -180,6 +195,12 @@ android {
         abortOnError false
         checkReleaseBuilds true
         warningsAsErrors false
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+        }
     }
 
     sourceSets {

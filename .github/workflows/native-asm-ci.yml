@@ -1,0 +1,26 @@
+name: Native ASM CI
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'app/src/main/cpp/**'
+      - 'app/build.gradle'
+      - '.github/workflows/native-asm-ci.yml'
+      - 'scripts/native/**'
+
+jobs:
+  build-native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh scripts/native/build_apks_signed_unsigned.sh
+      - run: ./scripts/native/build_apks_signed_unsigned.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-asm-apks
+          path: app/build/outputs/apk/**/*.apk
