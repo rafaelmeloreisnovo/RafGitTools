@@ -1,0 +1,44 @@
+name: rafaelia-block1
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+  schedule:
+    - cron: "*/5 * * * *"
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, armv7, aarch64, riscv64]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cross toolchains
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu gcc-riscv64-linux-gnu
+      - name: Build by target
+        run: |
+          set -eux
+          case "${{ matrix.arch }}" in
+            x86_64)
+              gcc -O2 -std=c11 -Wall -Wextra -pedantic rafaelia/block1/raf_geom.c rafaelia/block1/raf_geom_demo.c -o raf_geom_demo_x86_64
+              ;;
+            armv7)
+              arm-linux-gnueabihf-gcc -O2 -std=c11 -Wall -Wextra -pedantic rafaelia/block1/raf_geom.c rafaelia/block1/raf_geom_demo.c -o raf_geom_demo_armv7
+              ;;
+            aarch64)
+              aarch64-linux-gnu-gcc -O2 -std=c11 -Wall -Wextra -pedantic rafaelia/block1/raf_geom.c rafaelia/block1/raf_geom_demo.c -o raf_geom_demo_aarch64
+              ;;
+            riscv64)
+              riscv64-linux-gnu-gcc -O2 -std=c11 -Wall -Wextra -pedantic rafaelia/block1/raf_geom.c rafaelia/block1/raf_geom_demo.c -o raf_geom_demo_riscv64
+              ;;
+          esac
+      - name: Run native demo
+        if: matrix.arch == 'x86_64'
+        run: ./raf_geom_demo_x86_64
