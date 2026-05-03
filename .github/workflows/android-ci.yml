@@ -98,6 +98,9 @@ jobs:
       - name: Assemble ${{ matrix.variant }}
         if: inputs.run_release_variant || !contains(matrix.variant, 'Release')
         run: ./scripts/gradlew_with_java17.sh assemble${{ matrix.variant }} ${{ inputs.gradle_args }}
+      - name: Verify release APK ABI/signature state
+        if: inputs.run_release_variant
+        run: ./scripts/native/verify_apks.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
