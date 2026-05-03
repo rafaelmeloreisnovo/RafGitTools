@@ -157,6 +157,16 @@ To select a build variant:
 ./scripts/gradlew_with_java17.sh assemble
 ```
 
+**Validar APKs arm32/arm64 + assinatura + tamanho/diff:**
+```bash
+./scripts/native/build_apks_signed_unsigned.sh
+# relatórios TSV gerados em app/build/reports/apk/
+# opcional: limite de tamanho máximo por APK
+MAX_APK_SIZE_BYTES=80000000 ./scripts/native/verify_apks.sh
+# opcional: limite de diferença signed vs unsigned
+MAX_SIZE_DIFF_BYTES=200000 ./scripts/native/verify_apks.sh
+```
+
 ### 6. Run on Device/Emulator
 
 #### Using Android Studio

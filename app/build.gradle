@@ -260,7 +260,7 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.10.1'
 
     // JGit for Git operations
-    def jgitVersion = '6.8.0.202311271450-r'
+    def jgitVersion = '6.8.0.202311291450-r'
     implementation "org.eclipse.jgit:org.eclipse.jgit:$jgitVersion"
     implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:$jgitVersion") {
         exclude group: 'com.jcraft', module: 'jsch'
@@ -293,7 +293,7 @@ dependencies {
     implementation 'androidx.work:work-runtime-ktx:2.8.1'
 
     // Splashscreen API
-    implementation 'androidx.core:core-splashscreen:1.1.0-alpha01'
+    implementation 'androidx.core:core-splashscreen:1.0.1'
 
     // Testing libraries
     testImplementation 'junit:junit:4.13.2'
