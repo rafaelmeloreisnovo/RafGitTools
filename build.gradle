@@ -9,6 +9,7 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri('https://repo.eclipse.org/content/groups/releases/') }
     }
     dependencies {
         // Use the latest stable Android Gradle plugin (AGP).  Version 8.3.0
