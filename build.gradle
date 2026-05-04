@@ -13,7 +13,7 @@ buildscript {
     dependencies {
         // Use the latest stable Android Gradle plugin (AGP).  Version 8.3.0
         // pairs with Gradle 8.3 and supports Java 17.
-        classpath 'com.android.tools.build:gradle:8.3.0'
+        classpath 'com.android.tools.build:gradle:8.13.2'
 
         // Kotlin plugin 1.9.22 is compatible with Jetpack Compose and KSP.
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22'
