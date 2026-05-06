@@ -19,7 +19,6 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.eclipse.jgit.transport.RefLeaseSpec
 import org.eclipse.jgit.transport.SshSessionFactory as JGitSshSessionFactory
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
@@ -275,8 +274,7 @@ class JGitService @Inject constructor(
      * Open existing repository
      */
     suspend fun openRepository(path: String): Result<Git> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
+        runCatching {
         val directory = File(path)
         val builder = FileRepositoryBuilder()
         val repository = builder.setGitDir(File(directory, ".git"))
@@ -285,20 +283,14 @@ class JGitService @Inject constructor(
             .build()
         
         Git(repository)
-            )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
-        }
+    }
     }
     
     /**
      * Get repository status
      */
     suspend fun getStatus(repoPath: String): Result<GitStatus> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val status = git.status().call()
             val branch = git.repository.branch ?: "Unknown"
@@ -313,17 +305,8 @@ class JGitService @Inject constructor(
                 conflicting = status.conflicting.toList(),
                 hasUncommittedChanges = !status.isClean
             )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
         }
-            )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
-        }
+    }
     }
     
     /**
@@ -334,8 +317,7 @@ class JGitService @Inject constructor(
         branch: String?,
         limit: Int
     ): Result<List<GitCommit>> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val ref = branch?.let { git.repository.findRef(it) }
                 ?: git.repository.findRef(Constants.HEAD)
@@ -347,20 +329,14 @@ class JGitService @Inject constructor(
             
             commits.map { it.toGitCommit() }
         }
-            )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
-        }
+    }
     }
     
     /**
      * Get branches
      */
     suspend fun getBranches(repoPath: String): Result<List<GitBranch>> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val currentBranch = git.repository.branch
             val branches = mutableListOf<GitBranch>()
@@ -385,18 +361,10 @@ class JGitService @Inject constructor(
                         isRemote = true
                     ))
                 }
-            )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
+            
+            branches
         }
-            )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
-        }
+    }
     }
     
     /**
@@ -407,8 +375,7 @@ class JGitService @Inject constructor(
         branchName: String,
         startPoint: String?
     ): Result<GitBranch> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val command = git.branchCreate()
                 .setName(branchName)
@@ -421,17 +388,8 @@ class JGitService @Inject constructor(
                 isLocal = true,
                 isRemote = false
             )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
         }
-            )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
-        }
+    }
     }
     
     /**
@@ -443,8 +401,7 @@ class JGitService @Inject constructor(
         branchName: String,
         force: Boolean = false
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             git.branchDelete()
                 .setBranchNames(branchName)
@@ -452,12 +409,7 @@ class JGitService @Inject constructor(
                 .call()
             Unit
         }
-            )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
-        }
+    }
     }
     
     /**
@@ -469,8 +421,7 @@ class JGitService @Inject constructor(
         oldName: String,
         newName: String
     ): Result<GitBranch> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
+        runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val ref = git.branchRename()
                 .setOldName(oldName)
@@ -481,17 +432,8 @@ class JGitService @Inject constructor(
                 isLocal = true,
                 isRemote = false
             )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
         }
-            )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
-        }
+    }
     }
     
     /**
@@ -501,20 +443,14 @@ class JGitService @Inject constructor(
         repoPath: String,
         branchName: String
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    git.checkout()
-                        .setName(branchName)
-                        .call()
-                    Unit
-                }
-            )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            git.checkout()
+                .setName(branchName)
+                .call()
+            Unit
         }
+    }
     }
     
     /**
@@ -861,26 +797,20 @@ class JGitService @Inject constructor(
      * List all stash entries
      */
     suspend fun listStashes(repoPath: String): Result<List<GitStash>> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    val stashList = git.stashList().call()
-                    stashList.mapIndexed { index, revCommit ->
-                        GitStash(
-                            index = index,
-                            message = revCommit.shortMessage,
-                            sha = revCommit.name,
-                            branch = revCommit.fullMessage.substringAfter("WIP on ").substringBefore(":"),
-                            timestamp = revCommit.commitTime.toLong() * 1000
-                        )
-                    }
-                }
-            )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val stashList = git.stashList().call()
+            stashList.mapIndexed { index, revCommit ->
+                GitStash(
+                    index = index,
+                    message = revCommit.shortMessage,
+                    sha = revCommit.name,
+                    branch = revCommit.fullMessage.substringAfter("WIP on ").substringBefore(":"),
+                    timestamp = revCommit.commitTime.toLong() * 1000
+                )
+            }
         }
+    }
     }
     
     /**
@@ -891,31 +821,25 @@ class JGitService @Inject constructor(
         message: String?,
         includeUntracked: Boolean = false
     ): Result<GitStash> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    val command = git.stashCreate()
-                    if (includeUntracked) {
-                        command.setIncludeUntracked(true)
-                    }
-
-                    val revCommit = command.call()
-                        ?: throw IllegalStateException("No local changes to stash")
-
-                    GitStash(
-                        index = 0,
-                        message = message ?: revCommit.shortMessage,
-                        sha = revCommit.name,
-                        branch = git.repository.branch,
-                        timestamp = System.currentTimeMillis()
-                    )
-                }
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val command = git.stashCreate()
+            if (includeUntracked) {
+                command.setIncludeUntracked(true)
+            }
+            
+            val revCommit = command.call()
+                ?: throw IllegalStateException("No local changes to stash")
+            
+            GitStash(
+                index = 0,
+                message = message ?: revCommit.shortMessage,
+                sha = revCommit.name,
+                branch = git.repository.branch,
+                timestamp = System.currentTimeMillis()
             )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
         }
+    }
     }
     
     /**
@@ -925,20 +849,14 @@ class JGitService @Inject constructor(
         repoPath: String,
         stashRef: String? = null
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    val command = git.stashApply()
-                    stashRef?.let { command.setStashRef(it) }
-                    command.call()
-                    Unit
-                }
-            )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val command = git.stashApply()
+            stashRef?.let { command.setStashRef(it) }
+            command.call()
+            Unit
         }
+    }
     }
     
     /**
@@ -948,24 +866,18 @@ class JGitService @Inject constructor(
         repoPath: String,
         stashRef: String? = null
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    // First apply
-                    val applyCommand = git.stashApply()
-                    stashRef?.let { applyCommand.setStashRef(it) }
-                    applyCommand.call()
-
-                    // Then drop
-                    git.stashDrop().call()
-                    Unit
-                }
-            )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            // First apply
+            val applyCommand = git.stashApply()
+            stashRef?.let { applyCommand.setStashRef(it) }
+            applyCommand.call()
+            
+            // Then drop
+            git.stashDrop().call()
+            Unit
         }
+    }
     }
     
     /**
@@ -975,42 +887,29 @@ class JGitService @Inject constructor(
         repoPath: String,
         stashIndex: Int = 0
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    git.stashDrop()
-                        .setStashRef(stashIndex)
-                        .call()
-                    Unit
-                }
-            )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            git.stashDrop()
+                .setStashRef(stashIndex)
+                .call()
+            Unit
         }
+    }
     }
     
     /**
      * Clear all stashes
      */
     suspend fun stashClear(repoPath: String): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    // Drop all stashes one by one from index 0 (stack top)
-                    val stashCount = git.stashList().call().size
-                    repeat(stashCount) {
-                        git.stashDrop().setStashRef(0).call()
-                    }
-                    Unit
-                }
-            )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            // Drop all stashes one by one
+            while (git.stashList().call().isNotEmpty()) {
+                git.stashDrop().setStashRef(0).call()
+            }
+            Unit
         }
+    }
     }
     
     // ============================================
@@ -1021,10 +920,9 @@ class JGitService @Inject constructor(
      * List all tags
      */
     suspend fun listTags(repoPath: String): Result<List<GitTag>> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    val tags = mutableListOf<GitTag>()
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val tags = mutableListOf<GitTag>()
             
             git.tagList().call().forEach { ref ->
                 val tagName = org.eclipse.jgit.lib.Repository.shortenRefName(ref.name)
@@ -1032,33 +930,33 @@ class JGitService @Inject constructor(
                 
                 // Try to get tag object for annotated tags
                 try {
-                    org.eclipse.jgit.revwalk.RevWalk(git.repository).use { revWalk ->
-                        val obj = revWalk.parseAny(ref.objectId)
-
-                        if (obj is org.eclipse.jgit.revwalk.RevTag) {
-                            // Annotated tag
-                            tags.add(GitTag(
-                                name = tagName,
-                                sha = objectId?.name ?: "",
-                                message = obj.fullMessage,
-                                tagger = obj.taggerIdent?.let {
-                                    GitAuthor(it.name, it.emailAddress)
-                                },
-                                timestamp = obj.taggerIdent?.whenAsInstant?.toEpochMilli(),
-                                isAnnotated = true
-                            ))
-                        } else {
-                            // Lightweight tag
-                            tags.add(GitTag(
-                                name = tagName,
-                                sha = objectId?.name ?: "",
-                                message = null,
-                                tagger = null,
-                                timestamp = null,
-                                isAnnotated = false
-                            ))
-                        }
+                    val revWalk = org.eclipse.jgit.revwalk.RevWalk(git.repository)
+                    val obj = revWalk.parseAny(ref.objectId)
+                    
+                    if (obj is org.eclipse.jgit.revwalk.RevTag) {
+                        // Annotated tag
+                        tags.add(GitTag(
+                            name = tagName,
+                            sha = objectId?.name ?: "",
+                            message = obj.fullMessage,
+                            tagger = obj.taggerIdent?.let { 
+                                GitAuthor(it.name, it.emailAddress) 
+                            },
+                            timestamp = obj.taggerIdent?.whenAsInstant?.toEpochMilli(),
+                            isAnnotated = true
+                        ))
+                    } else {
+                        // Lightweight tag
+                        tags.add(GitTag(
+                            name = tagName,
+                            sha = objectId?.name ?: "",
+                            message = null,
+                            tagger = null,
+                            timestamp = null,
+                            isAnnotated = false
+                        ))
                     }
+                    revWalk.close()
                 } catch (e: Exception) {
                     // Fallback for lightweight tags
                     tags.add(GitTag(
@@ -1072,14 +970,9 @@ class JGitService @Inject constructor(
                 }
             }
             
-                    tags
-                }
-            )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
+            tags
         }
+    }
     }
     
     /**
@@ -1090,37 +983,29 @@ class JGitService @Inject constructor(
         tagName: String,
         commitSha: String? = null
     ): Result<GitTag> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    val command = git.tag()
-                        .setName(tagName)
-                        .setAnnotated(false)
-
-                    commitSha?.let {
-                        val objectId = git.repository.resolve(it)
-                        org.eclipse.jgit.revwalk.RevWalk(git.repository).use { revWalk ->
-                            command.setObjectId(revWalk.parseCommit(objectId))
-                        }
-                    }
-
-                    val ref = command.call()
-
-                    GitTag(
-                        name = tagName,
-                        sha = ref.objectId?.name ?: "",
-                        message = null,
-                        tagger = null,
-                        timestamp = null,
-                        isAnnotated = false
-                    )
-                }
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val command = git.tag()
+                .setName(tagName)
+                .setAnnotated(false)
+            
+            commitSha?.let { 
+                val objectId = git.repository.resolve(it)
+                command.setObjectId(org.eclipse.jgit.revwalk.RevWalk(git.repository).parseCommit(objectId))
+            }
+            
+            val ref = command.call()
+            
+            GitTag(
+                name = tagName,
+                sha = ref.objectId?.name ?: "",
+                message = null,
+                tagger = null,
+                timestamp = null,
+                isAnnotated = false
             )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
         }
+    }
     }
     
     /**
@@ -1133,42 +1018,34 @@ class JGitService @Inject constructor(
         tagger: GitAuthor? = null,
         commitSha: String? = null
     ): Result<GitTag> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    val command = git.tag()
-                        .setName(tagName)
-                        .setMessage(message)
-                        .setAnnotated(true)
-
-                    tagger?.let {
-                        command.setTagger(PersonIdent(it.name, it.email))
-                    }
-
-                    commitSha?.let {
-                        val objectId = git.repository.resolve(it)
-                        org.eclipse.jgit.revwalk.RevWalk(git.repository).use { revWalk ->
-                            command.setObjectId(revWalk.parseCommit(objectId))
-                        }
-                    }
-
-                    val ref = command.call()
-
-                    GitTag(
-                        name = tagName,
-                        sha = ref.objectId?.name ?: "",
-                        message = message,
-                        tagger = tagger,
-                        timestamp = System.currentTimeMillis(),
-                        isAnnotated = true
-                    )
-                }
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val command = git.tag()
+                .setName(tagName)
+                .setMessage(message)
+                .setAnnotated(true)
+            
+            tagger?.let {
+                command.setTagger(PersonIdent(it.name, it.email))
+            }
+            
+            commitSha?.let { 
+                val objectId = git.repository.resolve(it)
+                command.setObjectId(org.eclipse.jgit.revwalk.RevWalk(git.repository).parseCommit(objectId))
+            }
+            
+            val ref = command.call()
+            
+            GitTag(
+                name = tagName,
+                sha = ref.objectId?.name ?: "",
+                message = message,
+                tagger = tagger,
+                timestamp = System.currentTimeMillis(),
+                isAnnotated = true
             )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
         }
+    }
     }
     
     /**
@@ -1178,20 +1055,14 @@ class JGitService @Inject constructor(
         repoPath: String,
         tagName: String
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            Result.success(
-                openRepository(repoPath).getOrThrow().use { git ->
-                    git.tagDelete()
-                        .setTags(tagName)
-                        .call()
-                    Unit
-                }
-            )
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            Result.failure(t)
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            git.tagDelete()
+                .setTags(tagName)
+                .call()
+            Unit
         }
+    }
     }
     
     // ============================================
@@ -1207,6 +1078,35 @@ class JGitService @Inject constructor(
     ): Result<List<GitDiff>> = withContext(Dispatchers.IO) {
         runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
+            val diffFormatter = org.eclipse.jgit.diff.DiffFormatter(java.io.ByteArrayOutputStream())
+            diffFormatter.setRepository(git.repository)
+            diffFormatter.setDetectRenames(true)
+            
+            val reader = git.repository.newObjectReader()
+            val newTree = if (cached) {
+                // Compare HEAD to index
+                org.eclipse.jgit.treewalk.CanonicalTreeParser().apply {
+                    val headId = git.repository.resolve(Constants.HEAD + "^{tree}")
+                    if (headId != null) {
+                        reset(reader, headId)
+                    }
+                }
+            } else {
+                // Compare index to working tree
+                org.eclipse.jgit.treewalk.FileTreeIterator(git.repository)
+            }
+            
+            val oldTree = if (cached) {
+                org.eclipse.jgit.dircache.DirCacheIterator(git.repository.readDirCache())
+            } else {
+                org.eclipse.jgit.treewalk.CanonicalTreeParser().apply {
+                    val headId = git.repository.resolve(Constants.HEAD + "^{tree}")
+                    if (headId != null) {
+                        reset(reader, headId)
+                    }
+                }
+            }
+            
             val diffs = if (cached) {
                 git.diff()
                     .setCached(true)
@@ -1227,14 +1127,13 @@ class JGitService @Inject constructor(
                 }
                 
                 // Get the raw diff content
-                val diffContent = java.io.ByteArrayOutputStream().use { outputStream ->
-                    org.eclipse.jgit.diff.DiffFormatter(outputStream).use { formatter ->
-                        formatter.setRepository(git.repository)
-                        formatter.format(diffEntry)
-                        formatter.flush()
-                    }
-                    outputStream.toString("UTF-8")
-                }
+                val outputStream = java.io.ByteArrayOutputStream()
+                val formatter = org.eclipse.jgit.diff.DiffFormatter(outputStream)
+                formatter.setRepository(git.repository)
+                formatter.format(diffEntry)
+                formatter.flush()
+                
+                val diffContent = outputStream.toString("UTF-8")
                 val hunks = parseDiffHunks(diffContent)
                 logDiffAudit(repoPath, diffEntry, diffContent)
                 
@@ -1261,22 +1160,22 @@ class JGitService @Inject constructor(
     ): Result<List<GitDiff>> = withContext(Dispatchers.IO) {
         runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
-            val diffs = git.repository.newObjectReader().use { reader ->
-                val oldTree = org.eclipse.jgit.treewalk.CanonicalTreeParser().apply {
-                    val treeId = git.repository.resolve("$oldCommitSha^{tree}")
-                    reset(reader, treeId)
-                }
-
-                val newTree = org.eclipse.jgit.treewalk.CanonicalTreeParser().apply {
-                    val treeId = git.repository.resolve("$newCommitSha^{tree}")
-                    reset(reader, treeId)
-                }
-
-                git.diff()
-                    .setOldTree(oldTree)
-                    .setNewTree(newTree)
-                    .call()
+            val reader = git.repository.newObjectReader()
+            
+            val oldTree = org.eclipse.jgit.treewalk.CanonicalTreeParser().apply {
+                val treeId = git.repository.resolve("$oldCommitSha^{tree}")
+                reset(reader, treeId)
             }
+            
+            val newTree = org.eclipse.jgit.treewalk.CanonicalTreeParser().apply {
+                val treeId = git.repository.resolve("$newCommitSha^{tree}")
+                reset(reader, treeId)
+            }
+            
+            val diffs = git.diff()
+                .setOldTree(oldTree)
+                .setNewTree(newTree)
+                .call()
             
             diffs.map { diffEntry ->
                 val changeType = when (diffEntry.changeType) {
@@ -1287,14 +1186,13 @@ class JGitService @Inject constructor(
                     org.eclipse.jgit.diff.DiffEntry.ChangeType.COPY -> DiffChangeType.COPY
                 }
                 
-                val diffContent = java.io.ByteArrayOutputStream().use { outputStream ->
-                    org.eclipse.jgit.diff.DiffFormatter(outputStream).use { formatter ->
-                        formatter.setRepository(git.repository)
-                        formatter.format(diffEntry)
-                        formatter.flush()
-                    }
-                    outputStream.toString("UTF-8")
-                }
+                val outputStream = java.io.ByteArrayOutputStream()
+                val formatter = org.eclipse.jgit.diff.DiffFormatter(outputStream)
+                formatter.setRepository(git.repository)
+                formatter.format(diffEntry)
+                formatter.flush()
+                
+                val diffContent = outputStream.toString("UTF-8")
                 val hunks = parseDiffHunks(diffContent)
                 logDiffAudit(repoPath, diffEntry, diffContent)
                 
@@ -1425,55 +1323,56 @@ class JGitService @Inject constructor(
             val files = mutableListOf<GitFile>()
             val resolvedRef = ref ?: Constants.HEAD
             
-            org.eclipse.jgit.revwalk.RevWalk(git.repository).use { revWalk ->
-                val commitId = git.repository.resolve(resolvedRef)
-                val commit = revWalk.parseCommit(commitId)
-                val tree = commit.tree
-
-                org.eclipse.jgit.treewalk.TreeWalk(git.repository).use { treeWalk ->
-                    treeWalk.addTree(tree)
-                    treeWalk.isRecursive = false
-
-                    if (path.isNotEmpty()) {
-                        treeWalk.filter = org.eclipse.jgit.treewalk.filter.PathFilter.create(path)
-                        // Need to enter the directory
-                        while (treeWalk.next()) {
-                            if (treeWalk.pathString == path && treeWalk.isSubtree) {
-                                treeWalk.enterSubtree()
-                                break
-                            }
-                        }
-                    }
-
-                    while (treeWalk.next()) {
-                        val filePath = treeWalk.pathString
-                        val fileName = filePath.substringAfterLast("/")
-
-                        // Only include direct children, not nested
-                        if (path.isEmpty() && filePath.contains("/")) continue
-                        if (path.isNotEmpty() && filePath.removePrefix("$path/").contains("/")) continue
-
-                        val mode = treeWalk.fileMode
-                        val isDirectory = treeWalk.isSubtree
-
-                        files.add(GitFile(
-                            name = fileName,
-                            path = filePath,
-                            isDirectory = isDirectory,
-                            size = if (!isDirectory) {
-                                try {
-                                    val loader = git.repository.open(treeWalk.getObjectId(0))
-                                    loader.size
-                                } catch (e: Exception) {
-                                    0L
-                                }
-                            } else 0L,
-                            mode = mode.toString(),
-                            sha = treeWalk.getObjectId(0)?.name
-                        ))
+            val revWalk = org.eclipse.jgit.revwalk.RevWalk(git.repository)
+            val commitId = git.repository.resolve(resolvedRef)
+            val commit = revWalk.parseCommit(commitId)
+            val tree = commit.tree
+            
+            val treeWalk = org.eclipse.jgit.treewalk.TreeWalk(git.repository)
+            treeWalk.addTree(tree)
+            treeWalk.isRecursive = false
+            
+            if (path.isNotEmpty()) {
+                treeWalk.filter = org.eclipse.jgit.treewalk.filter.PathFilter.create(path)
+                // Need to enter the directory
+                while (treeWalk.next()) {
+                    if (treeWalk.pathString == path && treeWalk.isSubtree) {
+                        treeWalk.enterSubtree()
+                        break
                     }
                 }
             }
+            
+            while (treeWalk.next()) {
+                val filePath = treeWalk.pathString
+                val fileName = filePath.substringAfterLast("/")
+                
+                // Only include direct children, not nested
+                if (path.isEmpty() && filePath.contains("/")) continue
+                if (path.isNotEmpty() && filePath.removePrefix("$path/").contains("/")) continue
+                
+                val mode = treeWalk.fileMode
+                val isDirectory = treeWalk.isSubtree
+                
+                files.add(GitFile(
+                    name = fileName,
+                    path = filePath,
+                    isDirectory = isDirectory,
+                    size = if (!isDirectory) {
+                        try {
+                            val loader = git.repository.open(treeWalk.getObjectId(0))
+                            loader.size
+                        } catch (e: Exception) {
+                            0L
+                        }
+                    } else 0L,
+                    mode = mode.toString(),
+                    sha = treeWalk.getObjectId(0)?.name
+                ))
+            }
+            
+            treeWalk.close()
+            revWalk.close()
             
             files.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
         }
@@ -1492,21 +1391,20 @@ class JGitService @Inject constructor(
         openRepository(repoPath).getOrThrow().use { git ->
             val resolvedRef = ref ?: Constants.HEAD
             
-            val bytes = org.eclipse.jgit.revwalk.RevWalk(git.repository).use { revWalk ->
-                val commitId = git.repository.resolve(resolvedRef)
-                val commit = revWalk.parseCommit(commitId)
-                val tree = commit.tree
-
-                val objectId = org.eclipse.jgit.treewalk.TreeWalk.forPath(
-                    git.repository,
-                    filePath,
-                    tree
-                )?.use { treeWalk ->
-                    treeWalk.getObjectId(0)
-                } ?: throw IllegalArgumentException("File not found: $filePath")
-
-                git.repository.open(objectId).bytes
-            }
+            val revWalk = org.eclipse.jgit.revwalk.RevWalk(git.repository)
+            val commitId = git.repository.resolve(resolvedRef)
+            val commit = revWalk.parseCommit(commitId)
+            val tree = commit.tree
+            
+            val treeWalk = org.eclipse.jgit.treewalk.TreeWalk.forPath(
+                git.repository, 
+                filePath, 
+                tree
+            ) ?: throw IllegalArgumentException("File not found: $filePath")
+            
+            val objectId = treeWalk.getObjectId(0)
+            val loader = git.repository.open(objectId)
+            val bytes = loader.bytes
             
             // Detect if file is binary by checking first 512 bytes for null bytes
             // This is more efficient than checking 8000 bytes
@@ -1521,6 +1419,9 @@ class JGitService @Inject constructor(
             val fileName = filePath.substringAfterLast("/")
             val extension = fileName.substringAfterLast(".", "")
             val language = detectLanguage(extension)
+            
+            treeWalk.close()
+            revWalk.close()
             
             FileContent(
                 path = filePath,
@@ -1649,13 +1550,14 @@ class JGitService @Inject constructor(
         runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val commitId = git.repository.resolve(commitSha)
-            val commit = org.eclipse.jgit.revwalk.RevWalk(git.repository).use { revWalk ->
-                revWalk.parseCommit(commitId)
-            }
+            val revWalk = org.eclipse.jgit.revwalk.RevWalk(git.repository)
+            val commit = revWalk.parseCommit(commitId)
             
             val result = git.cherryPick()
                 .include(commit)
                 .call()
+            
+            revWalk.close()
             
             result.newHead?.toGitCommit() 
                 ?: throw IllegalStateException("Cherry-pick failed")
@@ -1733,13 +1635,14 @@ class JGitService @Inject constructor(
         runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
             val commitId = git.repository.resolve(commitSha)
-            val commit = org.eclipse.jgit.revwalk.RevWalk(git.repository).use { revWalk ->
-                revWalk.parseCommit(commitId)
-            }
+            val revWalk = org.eclipse.jgit.revwalk.RevWalk(git.repository)
+            val commit = revWalk.parseCommit(commitId)
             
             val result = git.revert()
                 .include(commit)
                 .call()
+            
+            revWalk.close()
             
             result.toGitCommit()
         }
