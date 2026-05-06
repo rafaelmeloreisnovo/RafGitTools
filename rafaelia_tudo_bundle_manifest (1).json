@@ -1,0 +1,108 @@
+{
+  "bundle": "rafaelia_tudo_bundle.zip",
+  "bundle_sha256": "8e0c193f4e8e2d99ba307eea31f3d2f718acbec43b00ff54a398bb64ce2374cc",
+  "bundle_size_bytes": 167955,
+  "created_at_utc": "2026-05-06T20:38:52.606657+00:00",
+  "description": "Pacote único com todos os arquivos RAFAELIA/C→ASM/APK audit gerados nesta sequência.",
+  "directories": [
+    {
+      "files_count": 18,
+      "path": "estruturas/rafaelia_multilang_root_optimizer",
+      "source": "/mnt/data/rafaelia_multilang_root_optimizer",
+      "total_bytes": 31608
+    },
+    {
+      "files_count": 17,
+      "path": "estruturas/rafaelia_factory_output",
+      "source": "/mnt/data/rafaelia_factory_output",
+      "total_bytes": 30338
+    },
+    {
+      "files_count": 28,
+      "path": "estruturas/rafaelia_advanced_preview",
+      "source": "/mnt/data/rafaelia_advanced_preview",
+      "total_bytes": 38191
+    }
+  ],
+  "files": [
+    {
+      "path": "arquivos/c_to_asm_optimizer.py",
+      "sha256": "2d3bb4786007ee444bab0c29963f3827a8a1c33e4f7214ae53feb94e1391665e",
+      "size_bytes": 22676,
+      "source": "/mnt/data/c_to_asm_optimizer.py"
+    },
+    {
+      "path": "arquivos/raf_c_to_asm_root_optimizer.py",
+      "sha256": "51198814ad0ffd0eaa95e269223d673359dd755da9fea0c466ab22243d05b02f",
+      "size_bytes": 33428,
+      "source": "/mnt/data/raf_c_to_asm_root_optimizer.py"
+    },
+    {
+      "path": "arquivos/rafaelia_root_optimizer_package.zip",
+      "sha256": "08ea22aa538639932e80208e45a3c4b7319b55c125085fe2d1967fca1986c298",
+      "size_bytes": 12714,
+      "source": "/mnt/data/rafaelia_root_optimizer_package.zip"
+    },
+    {
+      "path": "arquivos/raiz_output_arm64.s",
+      "sha256": "b29dbd8036cc462fa2eb6ca153b7d125a00a9dadf648d576bd858c371bb71067",
+      "size_bytes": 793,
+      "source": "/mnt/data/raiz_output_arm64.s"
+    },
+    {
+      "path": "arquivos/raiz_output_x86_64.asm",
+      "sha256": "22ff576537243fc38c5aebee56835d9370b75181a5813f570f33bb9f084cfb01",
+      "size_bytes": 763,
+      "source": "/mnt/data/raiz_output_x86_64.asm"
+    },
+    {
+      "path": "arquivos/rafaelia_multilang_root_optimizer.zip",
+      "sha256": "f936af2be438bfd6c77ccd2a3ec59470a55563ae8b7b83a72c43c190565ec8a8",
+      "size_bytes": 17092,
+      "source": "/mnt/data/rafaelia_multilang_root_optimizer.zip"
+    },
+    {
+      "path": "arquivos/rafaelia_multilang_root_optimizer.sha256.txt",
+      "sha256": "fc08a262dfd1064b770fa3a7d713a88522165a0fbdf97d5397d35c64357fa1e0",
+      "size_bytes": 104,
+      "source": "/mnt/data/rafaelia_multilang_root_optimizer.sha256.txt"
+    },
+    {
+      "path": "arquivos/rafaelia_factory.sh",
+      "sha256": "8a1e60ed55b5750ac1f7c83f81064ce787b592bc3626b41806a662cbf7b92b16",
+      "size_bytes": 33304,
+      "source": "/mnt/data/rafaelia_factory.sh"
+    },
+    {
+      "path": "arquivos/rafaelia_factory_with_project.zip",
+      "sha256": "571985d650a38a1a6158e15f171ed0ab2a855a3c0f9db3c542b056684e4b706b",
+      "size_bytes": 25148,
+      "source": "/mnt/data/rafaelia_factory_with_project.zip"
+    },
+    {
+      "path": "arquivos/rafaelia_factory.sha256.txt",
+      "sha256": "b93a5f7d6e10e473ecbb15d10d62d82adc7aab9cebd7460223ed3fe1e2c8954a",
+      "size_bytes": 186,
+      "source": "/mnt/data/rafaelia_factory.sha256.txt"
+    },
+    {
+      "path": "arquivos/rafaelia_factory_advanced.sh",
+      "sha256": "2a0a781e65c3f639b5ef7c81d101f679d4b107f2b1f61dde133ffb01d0f35bb3",
+      "size_bytes": 41804,
+      "source": "/mnt/data/rafaelia_factory_advanced.sh"
+    },
+    {
+      "path": "arquivos/rafaelia_factory_advanced_with_preview.zip",
+      "sha256": "515463e2f109a0a34fb1cbb07619c4fd337c8d252933863e3a79c5e2fc3902ae",
+      "size_bytes": 32956,
+      "source": "/mnt/data/rafaelia_factory_advanced_with_preview.zip"
+    },
+    {
+      "path": "arquivos/rafaelia_factory_advanced.sha256.txt",
+      "sha256": "13c62b5e2b69c94eff78db7091591a727f359217a26448a098fe55bc101b2d16",
+      "size_bytes": 204,
+      "source": "/mnt/data/rafaelia_factory_advanced.sha256.txt"
+    }
+  ],
+  "missing": []
+}

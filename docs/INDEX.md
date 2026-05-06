@@ -59,6 +59,7 @@
 - [Architecture Guide](ARCHITECTURE.md) - Detailed architecture documentation
 - [Feature Matrix](FEATURE_MATRIX.md) - Feature comparison with source projects
 - [Build Instructions](BUILD.md) - How to build the project
+- [Build/Release/CI Audit 2026-05-05](AUDIT_BUILD_RELEASE_2026-05-05.md) - Auditoria de Android, Gradle, CMake, NDK, JNI, SDK, JDK e GitHub Actions
 - [Assembler/Orquestração HW-SW](ASSEMBLER_ORQUESTRACAO_HARDWARE_SOFTWARE.md) - Material técnico de baixo nível e validação por fórmulas/grafos em CI
 
 ### Security & Compliance

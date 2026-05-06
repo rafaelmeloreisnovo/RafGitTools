@@ -1,0 +1,175 @@
+{
+  "target": "x86_64",
+  "original_hash": "83582105eb531d7e9f04b50c372b2c661bdd4c304801b12f4e42d8ab6b3b36c2",
+  "ast_nodes": 4,
+  "ir_before_schedule": 11,
+  "ir_after_schedule": 11,
+  "scheduled_moves": 2,
+  "branchless_enabled": true,
+  "branchless_selects": 1,
+  "register_map": {
+    "x": "rax",
+    "y": "rcx",
+    "__then_z_1": "rdx",
+    "__else_z_1": "rsi",
+    "z": "rdi",
+    "w": "r8"
+  },
+  "instruction_trace": [
+    {
+      "uid": 1,
+      "op": "MOV",
+      "mnemonic": "mov",
+      "defines": [
+        "x"
+      ],
+      "uses": [],
+      "source_line": 2,
+      "source_text": "x = 10",
+      "origin_hash": "5282148ee7815e18"
+    },
+    {
+      "uid": 2,
+      "op": "MOV",
+      "mnemonic": "mov",
+      "defines": [
+        "y"
+      ],
+      "uses": [
+        "x"
+      ],
+      "source_line": 3,
+      "source_text": "y = x + 5",
+      "origin_hash": "39ebe1359dca0dce"
+    },
+    {
+      "uid": 3,
+      "op": "BIN",
+      "mnemonic": "add",
+      "defines": [
+        "y"
+      ],
+      "uses": [
+        "y"
+      ],
+      "source_line": 3,
+      "source_text": "y = x + 5",
+      "origin_hash": "9e203e32266acef2"
+    },
+    {
+      "uid": 4,
+      "op": "MOV",
+      "mnemonic": "mov",
+      "defines": [
+        "__then_z_1"
+      ],
+      "uses": [
+        "y"
+      ],
+      "source_line": 5,
+      "source_text": "z = y + 10",
+      "origin_hash": "a81724331894d0da"
+    },
+    {
+      "uid": 6,
+      "op": "MOV",
+      "mnemonic": "mov",
+      "defines": [
+        "__else_z_1"
+      ],
+      "uses": [
+        "y"
+      ],
+      "source_line": 7,
+      "source_text": "z = y - 5",
+      "origin_hash": "d4885251d3c932da"
+    },
+    {
+      "uid": 5,
+      "op": "BIN",
+      "mnemonic": "add",
+      "defines": [
+        "__then_z_1"
+      ],
+      "uses": [
+        "__then_z_1"
+      ],
+      "source_line": 5,
+      "source_text": "z = y + 10",
+      "origin_hash": "e22d715116eb05a2"
+    },
+    {
+      "uid": 7,
+      "op": "BIN",
+      "mnemonic": "sub",
+      "defines": [
+        "__else_z_1"
+      ],
+      "uses": [
+        "__else_z_1"
+      ],
+      "source_line": 7,
+      "source_text": "z = y - 5",
+      "origin_hash": "a2e308d10292d46e"
+    },
+    {
+      "uid": 8,
+      "op": "CMP",
+      "mnemonic": "cmp",
+      "defines": [],
+      "uses": [
+        "y"
+      ],
+      "source_line": 4,
+      "source_text": "if (y < 20)",
+      "origin_hash": "115f5f4ee8963e9c"
+    },
+    {
+      "uid": 9,
+      "op": "CSEL",
+      "mnemonic": "csel",
+      "defines": [
+        "z"
+      ],
+      "uses": [
+        "__else_z_1",
+        "__then_z_1",
+        "y"
+      ],
+      "source_line": 4,
+      "source_text": "if (y < 20)",
+      "origin_hash": "b71f7dd607afbbc1"
+    },
+    {
+      "uid": 10,
+      "op": "MOV",
+      "mnemonic": "mov",
+      "defines": [
+        "w"
+      ],
+      "uses": [
+        "z"
+      ],
+      "source_line": 9,
+      "source_text": "w = z + x",
+      "origin_hash": "a07a8ee2dcac9140"
+    },
+    {
+      "uid": 11,
+      "op": "BIN",
+      "mnemonic": "add",
+      "defines": [
+        "w"
+      ],
+      "uses": [
+        "w",
+        "x"
+      ],
+      "source_line": 9,
+      "source_text": "w = z + x",
+      "origin_hash": "6a5cfaae4f075919"
+    }
+  ],
+  "result_hash": "eb16c58ceb97717a75d66d6cd29f91a97fb05379af069ce2d595536333af1368",
+  "audit_hash": "3f09c5f64c45461bc98ec8195f4c6d689181315a5bdfa86e6e2f5ab55e73e0a8"
+}
