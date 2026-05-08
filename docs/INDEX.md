@@ -61,6 +61,7 @@
 - [Build Instructions](BUILD.md) - How to build the project
 - [Build/Release/CI Audit 2026-05-05](AUDIT_BUILD_RELEASE_2026-05-05.md) - Auditoria de Android, Gradle, CMake, NDK, JNI, SDK, JDK e GitHub Actions
 - [Assembler/Orquestração HW-SW](ASSEMBLER_ORQUESTRACAO_HARDWARE_SOFTWARE.md) - Material técnico de baixo nível e validação por fórmulas/grafos em CI
+- [Toro7D Knowledge Carrier](maths/TORO7D_KNOWLEDGE_CARRIER.md) - Ponte auditável entre a especificação Toro7D, linguagem, entropia, hash, i18n e validação compilável
 
 ### Security & Compliance
 - [Privacy Policy](PRIVACY.md) - Privacy practices and data protection (GDPR/CCPA compliant)
