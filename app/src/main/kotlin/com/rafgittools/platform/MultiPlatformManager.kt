@@ -37,4 +37,4 @@ object MultiPlatformManager {
     }
 }
 
-fun isNativeAssemblerCoreReady(): Boolean = runCatching { nativeAsmHealth() >= 8 }.getOrDefault(false)
+fun isNativeAssemblerCoreReady(): Boolean = runCatching { MultiPlatformManager.nativeAsmHealth() >= 8 }.getOrDefault(false)
