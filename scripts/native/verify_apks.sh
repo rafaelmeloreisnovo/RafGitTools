@@ -15,8 +15,7 @@ MAX_SIZE_DIFF_BYTES="${MAX_SIZE_DIFF_BYTES:-0}"
 MAX_APK_SIZE_BYTES="${MAX_APK_SIZE_BYTES:-0}"
 
 if [[ ${#UNSIGNED_APKS[@]} -eq 0 ]]; then
-  echo "No unsigned APKs found under $APK_DIR"
-  exit 1
+  echo "No unsigned APKs found under $APK_DIR (signed-only lane)"
 fi
 
 : > "$SIZES_REPORT"
@@ -101,6 +100,9 @@ for apk in "${ALL_APKS[@]}"; do
 done
 
 echo "== Signed vs unsigned size diff =="
+if [[ ${#UNSIGNED_APKS[@]} -eq 0 ]]; then
+  echo "Skipping size diff: no unsigned APKs present."
+fi
 for unsigned_apk in "${UNSIGNED_APKS[@]}"; do
   base="$(basename "$unsigned_apk" | sed 's/-unsigned\.apk$//')"
   signed_apk="$(dirname "$unsigned_apk")/${base}.apk"

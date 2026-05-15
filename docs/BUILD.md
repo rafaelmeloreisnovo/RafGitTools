@@ -157,6 +157,12 @@ To select a build variant:
 ./scripts/gradlew_with_java17.sh assemble
 ```
 
+**Pipeline canônico local (alinhado com AGENTS.md):**
+```bash
+./build.sh
+./run_tests.sh
+```
+
 **Validar APKs arm32/arm64 + assinatura + tamanho/diff:**
 ```bash
 ./scripts/native/build_apks_signed_unsigned.sh
