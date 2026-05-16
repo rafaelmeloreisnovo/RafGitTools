@@ -217,10 +217,21 @@ static s32 DO_FETCH(BCtx*ctx){
         }
         _NB[total]=0;
     }
+    if(total==0u){
+        FF_SET(ctx->flags,FL_ERROR);
+        if(ctx->fd>=0){
+            CLOSE(ctx->fd);
+            ctx->fd=-1;
+        }
+        FF_CLR(ctx->flags,FL_HTTP_RX);
+        GRS();
+        return-1;
+    }
     ctx->rx_bytes=total;
     FF_CLR(ctx->flags,FL_HTTP_RX);
 
     CLOSE(ctx->fd);
+    ctx->fd=-1;
 
     /* Parse status */
     ctx->status=HTTP_PARSE_STATUS(_NB,total);
