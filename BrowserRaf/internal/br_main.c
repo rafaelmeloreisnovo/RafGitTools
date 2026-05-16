@@ -49,7 +49,7 @@ static s32 SEND_ALL(s32 fd,const void*buf,u32 n){
 }
 
 static void WR_SAFE(u32 fd,const void*b,u32 n){
-    if(n)WR(fd,b,n);
+    if(n)(void)WR(fd,b,n);
 }
 
 /* ── FETCH HTTP ─────────────────────────────────────────────────────────── */
@@ -138,8 +138,11 @@ static s32 DO_FETCH(BCtx*ctx){
         s32 sent=SEND(ctx->fd,_NB,chlen);
         ctx->tx_bytes+=(sent>0?(u32)sent:0u);
 
-        if(sent<(s32)chlen){
-            PS("  [TLS] ClientHello parcial\n");
+        if(sent<=0||sent<(s32)chlen){
+            FF_SET(ctx->flags,FL_ERROR);
+            FF_CLR(ctx->flags,FL_TLS_HS);
+            PS("  [TLS] ClientHello parcial/erro\n");
+            goto done;
         } else {
             PS("  [TLS] ClientHello enviado (");PN(chlen);PS("B)\n");
         }
@@ -224,8 +227,7 @@ static s32 DO_FETCH(BCtx*ctx){
     if(ctx->status==0){
         FF_SET(ctx->flags,FL_ERROR);
         PS("  Status HTTP invalido: ");PN(ctx->status);
-        GRS();
-        return-1;
+        goto done;
     }
     PS("  Status HTTP: ");PN(ctx->status);
 
