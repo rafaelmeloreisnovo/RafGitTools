@@ -175,7 +175,8 @@ private fun PullRequestHeader(
     pullRequest: GithubPullRequest,
     modifier: Modifier = Modifier
 ) {
-    val dateFormat = remember { SimpleDateFormat(stringResource(R.string.date_format_short_date), Locale.getDefault()) }
+    val datePattern = stringResource(R.string.date_format_short_date)
+    val dateFormat = remember(datePattern) { SimpleDateFormat(datePattern, Locale.getDefault()) }
     
     Column(modifier = modifier) {
         // State badge and PR info
@@ -503,7 +504,8 @@ private fun FileChangeCard(file: GithubPullRequestFile) {
 
 @Composable
 private fun CommitsTab(commits: List<GithubCommit>) {
-    val dateFormat = remember { SimpleDateFormat(stringResource(R.string.date_format_datetime_with_at), Locale.getDefault()) }
+    val datePattern = stringResource(R.string.date_format_datetime_with_at)
+    val dateFormat = remember(datePattern) { SimpleDateFormat(datePattern, Locale.getDefault()) }
     
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -577,7 +579,8 @@ private fun CommitsTab(commits: List<GithubCommit>) {
 
 @Composable
 private fun ReviewsTab(reviews: List<GithubReview>) {
-    val dateFormat = remember { SimpleDateFormat(stringResource(R.string.date_format_datetime_with_at), Locale.getDefault()) }
+    val datePattern = stringResource(R.string.date_format_datetime_with_at)
+    val dateFormat = remember(datePattern) { SimpleDateFormat(datePattern, Locale.getDefault()) }
     
     LazyColumn(
         modifier = Modifier.fillMaxSize(),

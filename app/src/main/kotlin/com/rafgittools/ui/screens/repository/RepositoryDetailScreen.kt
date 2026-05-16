@@ -515,7 +515,8 @@ private fun BranchItem(
 
 @Composable
 private fun CommitItem(commit: GitCommit) {
-    val dateFormat = remember { SimpleDateFormat(stringResource(R.string.date_format_short_datetime), Locale.getDefault()) }
+    val datePattern = stringResource(R.string.date_format_short_datetime)
+    val dateFormat = remember(datePattern) { SimpleDateFormat(datePattern, Locale.getDefault()) }
     
     Card(
         modifier = Modifier.fillMaxWidth()

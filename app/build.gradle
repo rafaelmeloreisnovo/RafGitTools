@@ -156,7 +156,7 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     composeOptions {
-        kotlinCompilerExtensionVersion "1.5.8"
+        kotlinCompilerExtensionVersion "1.5.14"
     }
 
     kotlinOptions {
@@ -230,7 +230,7 @@ dependencies {
     // Compose BOM defines versions for all Compose artifacts.  Using a
     // timestamped BOM (e.g. 2023.10.01) ensures that all compose
     // dependencies are aligned to a compatible set.
-    def composeBom = platform('androidx.compose:compose-bom:2023.10.01')
+    def composeBom = platform('androidx.compose:compose-bom:2024.05.00')
     implementation composeBom
     implementation 'androidx.compose.ui:ui'
     implementation 'androidx.compose.ui:ui-graphics'

@@ -9,7 +9,13 @@ object RetrofitProvider {
 
     fun create(baseUrl: String, credentialManager: CredentialManager): Retrofit {
         val client = OkHttpClient.Builder()
-            .addInterceptor(AuthInterceptor(credentialManager))
+            .addInterceptor { chain ->
+                val requestBuilder = chain.request().newBuilder()
+                credentialManager.loadToken()?.takeIf { it.isNotBlank() }?.let { token ->
+                    requestBuilder.header("Authorization", "Bearer $token")
+                }
+                chain.proceed(requestBuilder.build())
+            }
             .build()
 
         return Retrofit.Builder()
