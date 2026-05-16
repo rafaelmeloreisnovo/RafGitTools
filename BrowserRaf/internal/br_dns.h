@@ -19,7 +19,8 @@ static s32 URL_PARSE(const char*url,BCtx*ctx){
     /* Copia host até '/' ou ':' ou '\0' */
     u32 hi=0;
     while(*p&&*p!='/'&&*p!=':'){
-        if(hi<255u)ctx->host[hi++]=(char)*p;p++;
+        if(hi<255u)ctx->host[hi++]=(char)*p;
+        p++;
     }
     ctx->host[hi]=0;
     /* Porta customizada? */
@@ -79,6 +80,11 @@ static s32 DNS_RESOLVE(const char*host,u8 ip[4]){
     s32 fd=(s32)_sc3(41u,AF_INET,SOCK_DGRAM,0);
 #endif
     if(fd<0)return -1;
+
+    BRTimeVal tv;
+    tv.tv_sec=(usize)1u;
+    tv.tv_usec=(usize)0u;
+    (void)SETSOCKOPT(fd,SOL_SOCKET,SO_RCVTIMEO,&tv,(u32)sizeof(tv));
 
     /* Envia para 8.8.8.8:53 */
     SA4 dns_sa;MC0(&dns_sa,sizeof(dns_sa));

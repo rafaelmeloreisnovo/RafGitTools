@@ -12,6 +12,9 @@
 #define SOCK_STREAM 1
 #define IPPROTO_TCP 6
 #define CLOCK_MONO  1
+#define SOL_SOCKET  1
+#define SO_RCVTIMEO 20
+typedef struct PK { usize tv_sec; usize tv_usec; } BRTimeVal;
 typedef struct PK { u16 fam; u16 port_be; u8 ip[4]; u8 _z[8]; } SA4; /* sockaddr_in */
 
 #if defined(__arm__)
@@ -32,6 +35,7 @@ AI s32 CONNECT(s32 fd,const SA4*a){return _sc3(283u,(u32)fd,(u32)(usize)a,(u32)s
 AI s32 SEND(s32 fd,const void*b,u32 n){return _sc6(290u,(u32)fd,(u32)(usize)b,(u32)n,0,0,0);}
 AI s32 RECV(s32 fd,void*b,u32 n){return _sc6(292u,(u32)fd,(u32)(usize)b,(u32)n,0,0,0);}
 AI s32 CLOSE(s32 fd){return _sc1(6u,(u32)fd);}
+AI s32 SETSOCKOPT(s32 fd,s32 lvl,s32 opt,const void*v,u32 n){return _sc6(294u,(u32)fd,(u32)lvl,(u32)opt,(u32)(usize)v,n,0);}
 AI u64 NS(void){TS32 t={0,0};_sc2(263u,CLOCK_MONO,(u32)(usize)&t);return(u64)(u32)t.s*1000000000ULL+(u64)(u32)t.n;}
 AI s32 WR(u32 f,const void*b,u32 n){return _sc3(4u,f,(u32)(usize)b,n);}
 NR void EX(void){_sc1(248u,0u);__builtin_unreachable();}
@@ -54,6 +58,7 @@ AI s32 CONNECT(s32 fd,const SA4*a){return(s32)_sc3(203u,(u64)fd,(u64)(usize)a,(u
 AI s32 SEND(s32 fd,const void*b,u32 n){return(s32)_sc6(206u,(u64)fd,(u64)(usize)b,(u64)n,0,0,0);}
 AI s32 RECV(s32 fd,void*b,u32 n){return(s32)_sc6(207u,(u64)fd,(u64)(usize)b,(u64)n,0,0,0);}
 AI s32 CLOSE(s32 fd){return(s32)_sc1(57u,(u64)fd);}
+AI s32 SETSOCKOPT(s32 fd,s32 lvl,s32 opt,const void*v,u32 n){return(s32)_sc6(208u,(u64)fd,(u64)lvl,(u64)opt,(u64)(usize)v,(u64)n,0);}
 AI u64 NS(void){TS64 t={0,0};_sc2(113u,CLOCK_MONO,(u64)(usize)&t);return(u64)t.s*1000000000ULL+(u64)t.n;}
 AI s32 WR(u32 f,const void*b,u32 n){return(s32)_sc3(64u,(u64)f,(u64)(usize)b,(u64)n);}
 NR void EX(void){_sc1(94u,0u);__builtin_unreachable();}
@@ -73,6 +78,7 @@ AI s32 CONNECT(s32 fd,const SA4*a){return(s32)_sc3(42u,(u64)fd,(u64)(usize)a,(u6
 AI s32 SEND(s32 fd,const void*b,u32 n){return(s32)_sc6(44u,(u64)fd,(u64)(usize)b,(u64)n,0,0,0);}
 AI s32 RECV(s32 fd,void*b,u32 n){return(s32)_sc6(45u,(u64)fd,(u64)(usize)b,(u64)n,0,0,0);}
 AI s32 CLOSE(s32 fd){return(s32)_sc1(3u,(u64)fd);}
+AI s32 SETSOCKOPT(s32 fd,s32 lvl,s32 opt,const void*v,u32 n){return(s32)_sc6(54u,(u64)fd,(u64)lvl,(u64)opt,(u64)(usize)v,(u64)n,0);}
 AI u64 NS(void){TS64 t={0,0};_sc2(228u,CLOCK_MONO,(u64)(usize)&t);return(u64)t.s*1000000000ULL+(u64)t.n;}
 AI s32 WR(u32 f,const void*b,u32 n){return(s32)_sc3(1u,(u64)f,(u64)(usize)b,(u64)n);}
 NR void EX(void){_sc1(231u,0u);__builtin_unreachable();}
@@ -113,5 +119,7 @@ AI s32 PARSE_IP(const char*s,u8*ip){
         else return-1;
         i++;
     }
-    if(oc!=3u)return-1;ip[oc]=(u8)acc;return 0;
+    if(oc!=3u)return-1;
+    ip[oc]=(u8)acc;
+    return 0;
 }
