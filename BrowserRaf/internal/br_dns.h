@@ -13,9 +13,9 @@ static s32 URL_PARSE(const char*url,BCtx*ctx){
     ctx->port=80u;ctx->use_tls=0;
     const char*p=url;
     /* Detecta scheme */
-    if(__builtin_memcmp(p,"https://",8u)==0){ctx->use_tls=1;ctx->port=443u;p+=8;}
-    else if(__builtin_memcmp(p,"http://",7u)==0){p+=7;}
-    else if(__builtin_memcmp(p,"//",2u)==0){p+=2;}
+    if(BR_MEMCMP(p,"https://",8u)==0){ctx->use_tls=1;ctx->port=443u;p+=8;}
+    else if(BR_MEMCMP(p,"http://",7u)==0){p+=7;}
+    else if(BR_MEMCMP(p,"//",2u)==0){p+=2;}
     /* Copia host até '/' ou ':' ou '\0' */
     u32 hi=0;
     while(*p&&*p!='/'&&*p!=':'){

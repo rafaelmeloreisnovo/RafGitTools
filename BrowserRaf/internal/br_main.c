@@ -11,6 +11,10 @@
 #include "br_http.h"
 #include "br_html.h"
 #include "br_dns.h"
+#ifndef AT_FDCWD
+#define AT_FDCWD (-100)
+#endif
+
 
 /* ── UI DE STATUS ──────────────────────────────────────────────────────── */
 static void STATUS(u8 flags,const char*msg){
@@ -126,6 +130,7 @@ static s32 DO_FETCH(BCtx*ctx){
         /* Fallback: fecha e reconecta em HTTP para demonstração */
         CLOSE(ctx->fd);
         ctx->port=80u;ctx->use_tls=0;
+        sa.port_be=HTON16((u16)ctx->port);
         ctx->fd=SOCKET();
         if(ctx->fd<0){FF_SET(ctx->flags,FL_ERROR);GRS();return-1;}
         if(CONNECT(ctx->fd,&sa)!=0){FF_SET(ctx->flags,FL_ERROR);CLOSE(ctx->fd);GRS();return-1;}
@@ -198,7 +203,7 @@ static s32 DO_FETCH(BCtx*ctx){
 /* Em Termux sem argc/argv: URL hardcoded ou lido de /proc/self/cmdline     */
 static const char DEFAULT_URL[]="http://example.com/";
 
-void _start(void){
+void browser_main(void){
     GR(); /* reset arena */
 
     /* ASCII art logo */

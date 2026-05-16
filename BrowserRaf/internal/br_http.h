@@ -55,7 +55,7 @@ static u32 HTTP_PARSE_STATUS(const u8*buf,u32 n){
 static const u8* HTTP_FIND_HEADER(const u8*buf,u32 n,const char*key){
     u32 kl=SL(key);
     for(u32 i=0;i+kl+2u<n;i++){
-        if(__builtin_memcmp(buf+i,key,kl)==0&&buf[i+kl]==':'){
+        if(BR_MEMCMP(buf+i,key,kl)==0&&buf[i+kl]==':'){
             u32 j=i+kl+1u;
             while(j<n&&(buf[j]==' '||buf[j]=='\t'))j++;
             return buf+j;
