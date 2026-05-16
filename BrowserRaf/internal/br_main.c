@@ -235,6 +235,12 @@ static s32 DO_FETCH(BCtx*ctx){
 
     /* Parse status */
     ctx->status=HTTP_PARSE_STATUS(_NB,total);
+    if(ctx->status==0){
+        FF_SET(ctx->flags,FL_ERROR);
+        PS("  Status HTTP invalido: ");PN(ctx->status);
+        GRS();
+        return-1;
+    }
     PS("  Status HTTP: ");PN(ctx->status);
 
     /* Content-Length */
@@ -249,7 +255,8 @@ static s32 DO_FETCH(BCtx*ctx){
     STATUS(ctx->flags,"Renderizando HTML...");
     PS("  Body: ");PN(body_len);PS("B\n");
 
-    u32 rlen=HTML_RENDER(_NB+body_off,body_len,_RB,NET_BUF);
+    u32 rlen=0u;
+    if(ctx->status!=0)rlen=HTML_RENDER(_NB+body_off,body_len,_RB,NET_BUF);
     FF_CLR(ctx->flags,FL_HTML_RND);
 
     /* ── OUTPUT RENDERIZADO ───────────────────────────────────────────── */
