@@ -88,23 +88,41 @@ static s32 DO_FETCH(BCtx*ctx){
     STATUS(ctx->flags,"Conectando TCP...");
     GM(); /* checkpoint arena antes de alocar recursos de rede */
 
-    ctx->fd=SOCKET();
-    if(ctx->fd<0){FF_SET(ctx->flags,FL_ERROR);GRS();return-1;}
-
     SA4 sa;MC0(&sa,sizeof(sa));
     sa.fam=(u16)AF_INET;
     sa.port_be=HTON16((u16)ctx->port);
     MC(sa.ip,ctx->ip,4u);
 
+    s32 conn_ok=-1;
     ttl=3;
     while(ttl--){
-        if(CONNECT(ctx->fd,&sa)==0)break;
+        BRTimeVal tv;
+        tv.tv_sec=(usize)3u;
+        tv.tv_usec=(usize)0u;
+
+        ctx->fd=SOCKET();
+        if(ctx->fd<0){
+            PS("  [RETRY CONNECT socket fail]\n");
+            continue;
+        }
+
+        (void)SETSOCKOPT(ctx->fd,SOL_SOCKET,SO_RCVTIMEO,&tv,(u32)sizeof(tv));
+        if(CONNECT(ctx->fd,&sa)==0){
+            conn_ok=0;
+            break;
+        }
+
+        CLOSE(ctx->fd);
+        ctx->fd=-1;
         PS("  [RETRY CONNECT]\n");
     }
-    if(!ttl&&CONNECT(ctx->fd,&sa)!=0){
+    if(conn_ok!=0){
         FF_SET(ctx->flags,FL_ERROR);
+        FF_CLR(ctx->flags,FL_CONNECT);
+        STATUS(ctx->flags,"TCP falhou");
         PS("  Falha TCP\n");
-        CLOSE(ctx->fd);GRS();return-1;
+        GRS();
+        return-1;
     }
     FF_CLR(ctx->flags,FL_CONNECT);
 
