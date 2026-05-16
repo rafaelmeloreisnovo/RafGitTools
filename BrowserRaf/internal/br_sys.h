@@ -111,6 +111,12 @@ AI u32 UTOA(u32 v,char*out){
 }
 /* Big-endian port */
 AI u16 HTON16(u16 v){return(u16)((v>>8u)|(v<<8u));}
+AI s32 SET_RECV_TIMEOUT(s32 fd,usize sec){
+    BRTimeVal tv;
+    tv.tv_sec=sec;
+    tv.tv_usec=(usize)0u;
+    return SETSOCKOPT(fd,SOL_SOCKET,SO_RCVTIMEO,&tv,(u32)sizeof(tv));
+}
 /* IP parse "a.b.c.d" → u8[4] */
 AI s32 PARSE_IP(const char*s,u8*ip){
     u32 i=0,oc=0,acc=0;

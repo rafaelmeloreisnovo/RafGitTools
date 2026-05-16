@@ -96,17 +96,20 @@ static s32 DO_FETCH(BCtx*ctx){
     s32 conn_ok=-1;
     ttl=3;
     while(ttl--){
-        BRTimeVal tv;
-        tv.tv_sec=(usize)3u;
-        tv.tv_usec=(usize)0u;
-
         ctx->fd=SOCKET();
         if(ctx->fd<0){
             PS("  [RETRY CONNECT socket fail]\n");
             continue;
         }
-
-        (void)SETSOCKOPT(ctx->fd,SOL_SOCKET,SO_RCVTIMEO,&tv,(u32)sizeof(tv));
+        if(SET_RECV_TIMEOUT(ctx->fd,(usize)3u)!=0){
+            FF_SET(ctx->flags,FL_ERROR);
+            STATUS(ctx->flags,"TCP falhou (SO_RCVTIMEO)");
+            CLOSE(ctx->fd);
+            ctx->fd=-1;
+            FF_CLR(ctx->flags,FL_CONNECT);
+            GRS();
+            return-1;
+        }
         if(CONNECT(ctx->fd,&sa)==0){
             conn_ok=0;
             break;
@@ -171,6 +174,13 @@ static s32 DO_FETCH(BCtx*ctx){
         sa.port_be=HTON16((u16)ctx->port);
         ctx->fd=SOCKET();
         if(ctx->fd<0){FF_SET(ctx->flags,FL_ERROR);GRS();return-1;}
+        if(SET_RECV_TIMEOUT(ctx->fd,(usize)3u)!=0){
+            FF_SET(ctx->flags,FL_ERROR);
+            CLOSE(ctx->fd);
+            ctx->fd=-1;
+            GRS();
+            return-1;
+        }
         if(CONNECT(ctx->fd,&sa)!=0){FF_SET(ctx->flags,FL_ERROR);CLOSE(ctx->fd);GRS();return-1;}
         FF_CLR(ctx->flags,FL_TLS_HS);
         PS("  [FALLBACK] Usando HTTP para demo\n");
