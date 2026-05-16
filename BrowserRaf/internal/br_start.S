@@ -5,11 +5,12 @@
 .text
 .align 2
 .global _start
+.global browser_main
 .thumb_func
 _start:
     mov  r11,#0
     mov  lr,#0
-    bl   _start
+    bl   browser_main
     mov  r7,#248
     mov  r0,#0
     svc  #0
@@ -22,7 +23,7 @@ _start:
     mov  x29,xzr
     mov  x30,xzr
     and  sp,sp,#-16
-    bl   _start
+    bl   browser_main
     mov  x0,xzr
     mov  x8,#94
     svc  #0
@@ -30,9 +31,10 @@ _start:
 #elif defined(__x86_64__)
 .text
 .globl _start
+.globl browser_main
 _start:
     xor  %rbp,%rbp
-    call _start
+    call browser_main
     mov  $231,%rax
     xor  %rdi,%rdi
     syscall
