@@ -111,6 +111,8 @@ AI u32 UTOA(u32 v,char*out){
 }
 /* Big-endian port */
 AI u16 HTON16(u16 v){return(u16)((v>>8u)|(v<<8u));}
+/* SO_RCVTIMEO protege recv/recvfrom; connect pode bloquear em socket blocking. */
+/* TODO: CONNECT com timeout real via NONBLOCK + POLL. */
 AI s32 SET_RECV_TIMEOUT(s32 fd,usize sec){
     BRTimeVal tv;
     tv.tv_sec=sec;
