@@ -2,7 +2,7 @@
 ARCH=$(shell uname -m)
 CC?=clang
 CF=-O2 -fPIE -fno-stack-protector -fno-asynchronous-unwind-tables \
-   -fomit-frame-pointer -fno-builtin -fno-plt \
+   -fomit-frame-pointer -fno-builtin -fno-builtin-memcmp -fno-plt \
    -ffunction-sections -fdata-sections \
    -Wall -Wno-unused-function -Wno-unused-variable \
    -Wno-unused-but-set-variable -I.
@@ -12,9 +12,9 @@ LF=-pie -nostdlib -Wl,--gc-sections -Wl,--build-id=none -e _start
 
 all:
 ifeq ($(ARCH),aarch64)
-	$(CC) $(CF) -march=armv8.2-a+crc+crypto br_main.c $(LF) -o browser
+	$(CC) $(CF) -march=armv8.2-a+crc+crypto br_start.S br_main.c $(LF) -o browser
 else ifeq ($(ARCH),x86_64)
-	$(CC) $(CF) -march=native -static br_main.c $(LF) -o browser
+	$(CC) $(CF) -march=native -static br_start.S br_main.c $(LF) -o browser
 endif
 	@for CC32 in arm-linux-gnueabihf-gcc arm-linux-gnueabi-gcc; do \
 	  command -v $$CC32 &>/dev/null && \

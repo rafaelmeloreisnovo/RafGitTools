@@ -12,7 +12,11 @@ typedef unsigned int       u32;
 typedef unsigned long long u64;
 typedef signed   int       s32;
 typedef signed   long long s64;
+#if defined(__aarch64__) || defined(__x86_64__)
+typedef unsigned long long usize;
+#else
 typedef unsigned int       usize;
+#endif
 #define AI   __attribute__((always_inline)) static inline
 #define NI   __attribute__((noinline))
 #define NR   __attribute__((noreturn))

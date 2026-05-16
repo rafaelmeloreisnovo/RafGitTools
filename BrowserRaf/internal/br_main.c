@@ -11,6 +11,10 @@
 #include "br_http.h"
 #include "br_html.h"
 #include "br_dns.h"
+#ifndef AT_FDCWD
+#define AT_FDCWD (-100)
+#endif
+
 
 /* ── UI DE STATUS ──────────────────────────────────────────────────────── */
 static void STATUS(u8 flags,const char*msg){
@@ -41,11 +45,13 @@ static s32 DO_FETCH(BCtx*ctx){
     FF_SET(ctx->flags,FL_DNS);
     STATUS(ctx->flags,"Resolvendo DNS...");
     u8 ttl=3;
+    s32 dns_ok=-1;
     while(ttl--){
-        if(DNS_RESOLVE(ctx->host,ctx->ip)==0)break;
+        dns_ok=DNS_RESOLVE(ctx->host,ctx->ip);
+        if(dns_ok==0)break;
         PS("  [RETRY DNS]\n");
     }
-    if(!ttl&&DNS_RESOLVE(ctx->host,ctx->ip)!=0){
+    if(dns_ok!=0){
         FF_SET(ctx->flags,FL_ERROR);
         STATUS(ctx->flags,"DNS falhou");
         return-1;
@@ -109,9 +115,11 @@ static s32 DO_FETCH(BCtx*ctx){
         s32 rx=RECV(ctx->fd,_NB,NET_BUF);
         if(rx>4){
             TLSRec rec;
-            TLS_PARSE_RECORD(_NB,(u32)rx,&rec);
-            PS("  [TLS] Record type=");PH(rec.type);
-            PS("  [TLS] version=");PH(rec.version);
+            MC0(&rec,(u32)sizeof(rec));
+            if(TLS_PARSE_RECORD(_NB,(u32)rx,&rec)==0){
+                PS("  [TLS] Record type=");PH(rec.type);
+                PS("  [TLS] version=");PH(rec.version);
+            }
             _TLS.state=TLS_TRANSITION(_TLS.state,TLS_HT_SERVER_HELLO);
             PS("  [TLS] Estado=");
             /* Exibe estado TLS */
@@ -126,6 +134,7 @@ static s32 DO_FETCH(BCtx*ctx){
         /* Fallback: fecha e reconecta em HTTP para demonstração */
         CLOSE(ctx->fd);
         ctx->port=80u;ctx->use_tls=0;
+        sa.port_be=HTON16((u16)ctx->port);
         ctx->fd=SOCKET();
         if(ctx->fd<0){FF_SET(ctx->flags,FL_ERROR);GRS();return-1;}
         if(CONNECT(ctx->fd,&sa)!=0){FF_SET(ctx->flags,FL_ERROR);CLOSE(ctx->fd);GRS();return-1;}
@@ -198,7 +207,7 @@ static s32 DO_FETCH(BCtx*ctx){
 /* Em Termux sem argc/argv: URL hardcoded ou lido de /proc/self/cmdline     */
 static const char DEFAULT_URL[]="http://example.com/";
 
-void _start(void){
+void browser_main(void){
     GR(); /* reset arena */
 
     /* ASCII art logo */

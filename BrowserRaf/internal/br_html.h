@@ -59,24 +59,24 @@ static u32 HTML_RENDER(const u8*html,u32 n,u8*out,u32 cap){
                     } else {
                         EMS("\033[0m\n\n");ci=0;col_h=0;
                     }
-                } else if(__builtin_memcmp(tt,"p",2u)==0){
+                } else if(BR_MEMCMP(tt,"p",2u)==0){
                     if(t[0]!='/'){if(ci>0){EM('\n');ci=0;}EM('\n');}
-                } else if(__builtin_memcmp(tt,"br",3u)==0||__builtin_memcmp(tt,"br/",4u)==0){
+                } else if(BR_MEMCMP(tt,"br",3u)==0||BR_MEMCMP(tt,"br/",4u)==0){
                     EM('\n');ci=0;
-                } else if(__builtin_memcmp(tt,"li",3u)==0){
+                } else if(BR_MEMCMP(tt,"li",3u)==0){
                     if(ci>0){EM('\n');ci=0;}EMS("  \xe2\x80\xa2 ");ci=4;
-                } else if(__builtin_memcmp(tt,"a",2u)==0&&t[0]!='/'){
+                } else if(BR_MEMCMP(tt,"a",2u)==0&&t[0]!='/'){
                     EMS("\033[0;36m"); /* cyan for links */
-                } else if(__builtin_memcmp(tt,"/a",3u)==0){
+                } else if(BR_MEMCMP(tt,"/a",3u)==0){
                     EMS("\033[0m");
-                } else if(__builtin_memcmp(tt,"title",6u)==0){
+                } else if(BR_MEMCMP(tt,"title",6u)==0){
                     if(t[0]!='/'){EMS("\n\033[1;32m[TÍTULO] ");} else {EMS("\033[0m\n");}
-                } else if(__builtin_memcmp(tt,"head",5u)==0){
+                } else if(BR_MEMCMP(tt,"head",5u)==0){
                     in_head=(t[0]!='/');
-                } else if(__builtin_memcmp(tt,"body",5u)==0){
+                } else if(BR_MEMCMP(tt,"body",5u)==0){
                     in_head=0;
-                } else if(__builtin_memcmp(tt,"script",7u)==0||
-                          __builtin_memcmp(tt,"style",6u)==0){
+                } else if(BR_MEMCMP(tt,"script",7u)==0||
+                          BR_MEMCMP(tt,"style",6u)==0){
                     /* Pula conteúdo: simples skip */
                 }
                 ti=0;
@@ -95,12 +95,12 @@ static u32 HTML_RENDER(const u8*html,u32 n,u8*out,u32 cap){
         case HS_ENT:
             if(c==';'){
                 st=HS_TEXT;ec[ei<7u?ei:7u]=0;
-                if(__builtin_memcmp(ec,"amp",4u)==0)EM('&');
-                else if(__builtin_memcmp(ec,"lt",3u)==0)EM('<');
-                else if(__builtin_memcmp(ec,"gt",3u)==0)EM('>');
-                else if(__builtin_memcmp(ec,"quot",5u)==0)EM('"');
-                else if(__builtin_memcmp(ec,"apos",5u)==0)EM('\'');
-                else if(__builtin_memcmp(ec,"nbsp",5u)==0)EM(' ');
+                if(BR_MEMCMP(ec,"amp",4u)==0)EM('&');
+                else if(BR_MEMCMP(ec,"lt",3u)==0)EM('<');
+                else if(BR_MEMCMP(ec,"gt",3u)==0)EM('>');
+                else if(BR_MEMCMP(ec,"quot",5u)==0)EM('"');
+                else if(BR_MEMCMP(ec,"apos",5u)==0)EM('\'');
+                else if(BR_MEMCMP(ec,"nbsp",5u)==0)EM(' ');
                 else if(ec[0]=='#'){
                     u32 code=STR2U32(ec+1,ei-1u);
                     if(code<128u)EM((u8)code);
