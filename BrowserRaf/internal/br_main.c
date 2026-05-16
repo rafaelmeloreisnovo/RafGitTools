@@ -15,14 +15,6 @@
 #define AT_FDCWD (-100)
 #endif
 
-int memcmp(const void*a,const void*b,usize n){
-    const u8*x=(const u8*)a,*y=(const u8*)b;
-    for(usize i=0;i<n;i++){
-        if(x[i]!=y[i])return (int)x[i]-(int)y[i];
-    }
-    return 0;
-}
-
 
 /* ── UI DE STATUS ──────────────────────────────────────────────────────── */
 static void STATUS(u8 flags,const char*msg){

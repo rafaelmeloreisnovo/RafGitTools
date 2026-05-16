@@ -91,6 +91,11 @@ static void PH(u32 v){static const char h[]="0123456789abcdef";
 AI u32 SL(const char*s){u32 n=0;while(s[n])n++;return n;}
 AI void MC(void*d,const void*s,u32 n){u8*dd=(u8*)d;const u8*ss=(const u8*)s;while(n--)dd[n]=ss[n];}
 AI s32 MC0(void*d,u32 n){u8*dd=(u8*)d;while(n--)dd[n]=0;return 0;}
+AI s32 BR_MEMCMP(const void*a,const void*b,u32 n){
+    const u8*x=(const u8*)a;const u8*y=(const u8*)b;
+    for(u32 i=0;i<n;i++){if(x[i]!=y[i])return (s32)x[i]-(s32)y[i];}
+    return 0;
+}
 /* u32 → string decimal na stack */
 AI u32 UTOA(u32 v,char*out){
     char t[10];s32 i=0;if(!v){out[0]='0';out[1]=0;return 1;}
