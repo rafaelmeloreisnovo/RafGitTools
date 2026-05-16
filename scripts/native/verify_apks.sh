@@ -70,6 +70,15 @@ for apk in "${ALL_APKS[@]}"; do
 done
 
 echo "== Signature validation =="
+
+if [[ -z "${ANDROID_SDK_ROOT:-}" && -f local.properties ]]; then
+  sdk_from_props="$(awk -F= '/^sdk.dir=/{print $2}' local.properties | tail -n1)"
+  if [[ -n "$sdk_from_props" ]]; then
+    export ANDROID_SDK_ROOT="$sdk_from_props"
+    export ANDROID_HOME="$sdk_from_props"
+  fi
+fi
+
 APKSIGNER_BIN=""
 if [[ -n "${ANDROID_SDK_ROOT:-}" && -x "${ANDROID_SDK_ROOT}/build-tools/34.0.0/apksigner" ]]; then
   APKSIGNER_BIN="${ANDROID_SDK_ROOT}/build-tools/34.0.0/apksigner"
