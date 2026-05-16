@@ -56,6 +56,7 @@ static void WR_SAFE(u32 fd,const void*b,u32 n){
 static s32 DO_FETCH(BCtx*ctx){
     ctx->flags=FL_IDLE;
     u64 t0=NS();
+    s32 rc=-1;
 
     /* ── FASE 1: DNS resolve ─────────────────────────────────────────── */
     FF_SET(ctx->flags,FL_DNS);
@@ -70,7 +71,7 @@ static s32 DO_FETCH(BCtx*ctx){
     if(dns_ok!=0){
         FF_SET(ctx->flags,FL_ERROR);
         STATUS(ctx->flags,"DNS falhou");
-        return-1;
+        goto done;
     }
     PS("  IP: ");PN(ctx->ip[0]);
     /* Exibe IP */
@@ -104,11 +105,7 @@ static s32 DO_FETCH(BCtx*ctx){
         if(SET_RECV_TIMEOUT(ctx->fd,(usize)3u)!=0){
             FF_SET(ctx->flags,FL_ERROR);
             STATUS(ctx->flags,"TCP falhou (SO_RCVTIMEO)");
-            CLOSE(ctx->fd);
-            ctx->fd=-1;
-            FF_CLR(ctx->flags,FL_CONNECT);
-            GRS();
-            return-1;
+            goto done;
         }
         if(CONNECT(ctx->fd,&sa)==0){
             conn_ok=0;
@@ -124,8 +121,7 @@ static s32 DO_FETCH(BCtx*ctx){
         FF_CLR(ctx->flags,FL_CONNECT);
         STATUS(ctx->flags,"TCP falhou");
         PS("  Falha TCP\n");
-        GRS();
-        return-1;
+        goto done;
     }
     FF_CLR(ctx->flags,FL_CONNECT);
 
@@ -173,15 +169,12 @@ static s32 DO_FETCH(BCtx*ctx){
         ctx->port=80u;ctx->use_tls=0;
         sa.port_be=HTON16((u16)ctx->port);
         ctx->fd=SOCKET();
-        if(ctx->fd<0){FF_SET(ctx->flags,FL_ERROR);GRS();return-1;}
+        if(ctx->fd<0){FF_SET(ctx->flags,FL_ERROR);goto done;}
         if(SET_RECV_TIMEOUT(ctx->fd,(usize)3u)!=0){
             FF_SET(ctx->flags,FL_ERROR);
-            CLOSE(ctx->fd);
-            ctx->fd=-1;
-            GRS();
-            return-1;
+            goto done;
         }
-        if(CONNECT(ctx->fd,&sa)!=0){FF_SET(ctx->flags,FL_ERROR);CLOSE(ctx->fd);GRS();return-1;}
+        if(CONNECT(ctx->fd,&sa)!=0){FF_SET(ctx->flags,FL_ERROR);goto done;}
         FF_CLR(ctx->flags,FL_TLS_HS);
         PS("  [FALLBACK] Usando HTTP para demo\n");
     }
@@ -195,10 +188,8 @@ static s32 DO_FETCH(BCtx*ctx){
     s32 sent=SEND_ALL(ctx->fd,_NB,reqlen);
     if(sent<0||(u32)sent!=reqlen){
         FF_SET(ctx->flags,FL_ERROR);
-        if(ctx->fd>=0){CLOSE(ctx->fd);ctx->fd=-1;}
         FF_CLR(ctx->flags,FL_HTTP_TX);
-        GRS();
-        return-1;
+        goto done;
     }
     ctx->tx_bytes+=(u32)sent;
     FF_CLR(ctx->flags,FL_HTTP_TX);
@@ -219,13 +210,8 @@ static s32 DO_FETCH(BCtx*ctx){
     }
     if(total==0u){
         FF_SET(ctx->flags,FL_ERROR);
-        if(ctx->fd>=0){
-            CLOSE(ctx->fd);
-            ctx->fd=-1;
-        }
         FF_CLR(ctx->flags,FL_HTTP_RX);
-        GRS();
-        return-1;
+        goto done;
     }
     ctx->rx_bytes=total;
     FF_CLR(ctx->flags,FL_HTTP_RX);
@@ -259,9 +245,23 @@ static s32 DO_FETCH(BCtx*ctx){
     WR(1,_RB,rlen);
     HEADER_LINE();
 
+    rc=0;
+done:
+    if(ctx->fd>=0){
+        CLOSE(ctx->fd);
+        ctx->fd=-1;
+    }
+    FF_CLR(ctx->flags,FL_DNS|FL_CONNECT|FL_TLS_HS|FL_HTTP_TX|FL_HTTP_RX|FL_HTML_RND);
+    if(rc==0){
+        FF_CLR(ctx->flags,FL_ERROR);
+        FF_SET(ctx->flags,FL_DONE);
+    }else{
+        FF_CLR(ctx->flags,FL_DONE);
+        FF_SET(ctx->flags,FL_ERROR);
+        GRS();
+    }
     ctx->t_ns=NS()-t0;
-    FF_SET(ctx->flags,FL_DONE);
-    return 0;
+    return rc;
 }
 
 /* ── ENTRY POINT ─────────────────────────────────────────────────────────── */
@@ -330,7 +330,15 @@ void browser_main(void){
     HEADER_LINE();
 
     if(res==0){PS("\033[1;32m[OK] Fetch completo\033[0m\n");}
-    else{PS("\033[1;31m[ERRO] Fetch falhou\033[0m\n");}
+    else{
+        PS("\033[1;31m[ERRO] Fetch falhou\033[0m\n");
+        PS("  Métricas disponíveis:\n");
+        PS("    status=");PN(_BC.status);
+        PS("    tx=");PN(_BC.tx_bytes);
+        PS("    rx=");PN(_BC.rx_bytes);
+        PS("    t_ms=");PN(_BC.t_ns/1000000u);PS("\n");
+        PS("    flags finais=");PH(_BC.flags);
+    }
 
     EX();
 }
