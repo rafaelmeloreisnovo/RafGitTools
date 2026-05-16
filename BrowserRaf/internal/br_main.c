@@ -193,9 +193,10 @@ static s32 DO_FETCH(BCtx*ctx){
     PS("  Request (");PN(reqlen);PS("B):\n");
     WR_SAFE(2,_NB,reqlen); /* debug: imprime request no stderr */
     s32 sent=SEND_ALL(ctx->fd,_NB,reqlen);
-    if(sent<0){
+    if(sent<0||(u32)sent!=reqlen){
         FF_SET(ctx->flags,FL_ERROR);
-        CLOSE(ctx->fd);
+        if(ctx->fd>=0){CLOSE(ctx->fd);ctx->fd=-1;}
+        FF_CLR(ctx->flags,FL_HTTP_TX);
         GRS();
         return-1;
     }
