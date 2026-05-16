@@ -1,11 +1,18 @@
 # BrowserRaf
 
-- `Browser.sh`: arquivo bruto extraído do repositório `termux-app-rafacodephi` (`master/Browser.sh`).
-- `Browser_hotfix.sh`: versão corrigida para execução direta (remove envelope `cat > /tmp/browser.txt << 'OUTER_SCRIPT'`, marcador `OUTER_SCRIPT` e lixo final).
+Diretório para **extrair e testar** o `Browser.sh` de origem.
 
-## Teste rápido
+## Arquivos
+- `Browser.sh`: arquivo bruto baixado de `termux-app-rafacodephi/master/Browser.sh`.
+- `extract_browser.sh`: extrai o script interno executável para um arquivo `.sh` limpo.
+- `Browser_extracted.sh`: resultado da extração (gerado localmente e versionado para uso direto).
+
+## Como extrair
 ```bash
-bash BrowserRaf/Browser_hotfix.sh
+./BrowserRaf/extract_browser.sh
 ```
 
-Saída esperada: geração dos arquivos em `~/.rafaelia/BROWSER` e etapa de compilação (pode falhar em toolchain local, com log em `~/.rafaelia/BROWSER/build.log`).
+## Como testar
+```bash
+bash BrowserRaf/Browser_extracted.sh
+```
