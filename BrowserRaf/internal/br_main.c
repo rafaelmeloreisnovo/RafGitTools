@@ -36,6 +36,22 @@ static void HEADER_LINE(void){
     PS("\033[0m");
 }
 
+
+static s32 SEND_ALL(s32 fd,const void*buf,u32 n){
+    const u8*p=(const u8*)buf;
+    u32 off=0;
+    while(off<n){
+        s32 w=SEND(fd,p+off,n-off);
+        if(w<=0)return-1;
+        off+=(u32)w;
+    }
+    return(s32)off;
+}
+
+static void WR_SAFE(u32 fd,const void*b,u32 n){
+    if(n)WR(fd,b,n);
+}
+
 /* ── FETCH HTTP ─────────────────────────────────────────────────────────── */
 static s32 DO_FETCH(BCtx*ctx){
     ctx->flags=FL_IDLE;
@@ -147,9 +163,15 @@ static s32 DO_FETCH(BCtx*ctx){
     STATUS(ctx->flags,"Enviando request HTTP...");
     u32 reqlen=HTTP_BUILD_REQ(ctx->host,ctx->path,_NB,NET_BUF);
     PS("  Request (");PN(reqlen);PS("B):\n");
-    WR(2,_NB,reqlen); /* debug: imprime request no stderr */
-    s32 sent=SEND(ctx->fd,_NB,reqlen);
-    ctx->tx_bytes+=(sent>0?(u32)sent:0u);
+    WR_SAFE(2,_NB,reqlen); /* debug: imprime request no stderr */
+    s32 sent=SEND_ALL(ctx->fd,_NB,reqlen);
+    if(sent<0){
+        FF_SET(ctx->flags,FL_ERROR);
+        CLOSE(ctx->fd);
+        GRS();
+        return-1;
+    }
+    ctx->tx_bytes+=(u32)sent;
     FF_CLR(ctx->flags,FL_HTTP_TX);
 
     /* ── FASE 5: HTTP response ───────────────────────────────────────── */

@@ -14,6 +14,7 @@
 #define CLOCK_MONO  1
 #define SOL_SOCKET  1
 #define SO_RCVTIMEO 20
+#define MSG_NOSIGNAL 0x4000
 typedef struct PK { usize tv_sec; usize tv_usec; } BRTimeVal;
 typedef struct PK { u16 fam; u16 port_be; u8 ip[4]; u8 _z[8]; } SA4; /* sockaddr_in */
 
@@ -32,7 +33,7 @@ AI s32 _sc2(u32 r,u32 a,u32 b){return _sc6(r,a,b,0,0,0,0);}
 AI s32 _sc1(u32 r,u32 a){return _sc6(r,a,0,0,0,0,0);}
 AI s32 SOCKET(void){return _sc3(281u,AF_INET,SOCK_STREAM,IPPROTO_TCP);}
 AI s32 CONNECT(s32 fd,const SA4*a){return _sc3(283u,(u32)fd,(u32)(usize)a,(u32)sizeof(SA4));}
-AI s32 SEND(s32 fd,const void*b,u32 n){return _sc6(290u,(u32)fd,(u32)(usize)b,(u32)n,0,0,0);}
+AI s32 SEND(s32 fd,const void*b,u32 n){return _sc6(290u,(u32)fd,(u32)(usize)b,(u32)n,MSG_NOSIGNAL,0,0);}
 AI s32 RECV(s32 fd,void*b,u32 n){return _sc6(292u,(u32)fd,(u32)(usize)b,(u32)n,0,0,0);}
 AI s32 CLOSE(s32 fd){return _sc1(6u,(u32)fd);}
 AI s32 SETSOCKOPT(s32 fd,s32 lvl,s32 opt,const void*v,u32 n){return _sc6(294u,(u32)fd,(u32)lvl,(u32)opt,(u32)(usize)v,n,0);}
@@ -55,7 +56,7 @@ AI s64 _sc2(u64 r,u64 a,u64 b){return _sc6(r,a,b,0,0,0,0);}
 AI s64 _sc1(u64 r,u64 a){return _sc6(r,a,0,0,0,0,0);}
 AI s32 SOCKET(void){return(s32)_sc3(198u,AF_INET,SOCK_STREAM,IPPROTO_TCP);}
 AI s32 CONNECT(s32 fd,const SA4*a){return(s32)_sc3(203u,(u64)fd,(u64)(usize)a,(u64)sizeof(SA4));}
-AI s32 SEND(s32 fd,const void*b,u32 n){return(s32)_sc6(206u,(u64)fd,(u64)(usize)b,(u64)n,0,0,0);}
+AI s32 SEND(s32 fd,const void*b,u32 n){return(s32)_sc6(206u,(u64)fd,(u64)(usize)b,(u64)n,MSG_NOSIGNAL,0,0);}
 AI s32 RECV(s32 fd,void*b,u32 n){return(s32)_sc6(207u,(u64)fd,(u64)(usize)b,(u64)n,0,0,0);}
 AI s32 CLOSE(s32 fd){return(s32)_sc1(57u,(u64)fd);}
 AI s32 SETSOCKOPT(s32 fd,s32 lvl,s32 opt,const void*v,u32 n){return(s32)_sc6(208u,(u64)fd,(u64)lvl,(u64)opt,(u64)(usize)v,(u64)n,0);}
@@ -75,7 +76,7 @@ AI s64 _sc2(u64 r,u64 a,u64 b){return _sc6(r,a,b,0,0,0,0);}
 AI s64 _sc1(u64 r,u64 a){s64 x;__asm__ volatile("syscall":"=a"(x):"a"(r),"D"(a):"rcx","r11","memory");return x;}
 AI s32 SOCKET(void){return(s32)_sc3(41u,AF_INET,SOCK_STREAM,IPPROTO_TCP);}
 AI s32 CONNECT(s32 fd,const SA4*a){return(s32)_sc3(42u,(u64)fd,(u64)(usize)a,(u64)sizeof(SA4));}
-AI s32 SEND(s32 fd,const void*b,u32 n){return(s32)_sc6(44u,(u64)fd,(u64)(usize)b,(u64)n,0,0,0);}
+AI s32 SEND(s32 fd,const void*b,u32 n){return(s32)_sc6(44u,(u64)fd,(u64)(usize)b,(u64)n,MSG_NOSIGNAL,0,0);}
 AI s32 RECV(s32 fd,void*b,u32 n){return(s32)_sc6(45u,(u64)fd,(u64)(usize)b,(u64)n,0,0,0);}
 AI s32 CLOSE(s32 fd){return(s32)_sc1(3u,(u64)fd);}
 AI s32 SETSOCKOPT(s32 fd,s32 lvl,s32 opt,const void*v,u32 n){return(s32)_sc6(54u,(u64)fd,(u64)lvl,(u64)opt,(u64)(usize)v,(u64)n,0);}
