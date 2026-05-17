@@ -81,11 +81,13 @@ static s32 DO_FETCH(BCtx*ctx){
     MC(sa.ip,ctx->ip,4u);
 
     ttl=3;
+    s32 conn_ok=-1;
     while(ttl--){
-        if(CONNECT(ctx->fd,&sa)==0)break;
+        conn_ok=CONNECT(ctx->fd,&sa);
+        if(conn_ok==0)break;
         PS("  [RETRY CONNECT]\n");
     }
-    if(!ttl&&CONNECT(ctx->fd,&sa)!=0){
+    if(conn_ok!=0){
         FF_SET(ctx->flags,FL_ERROR);
         PS("  Falha TCP\n");
         CLOSE(ctx->fd);GRS();return-1;
@@ -137,7 +139,8 @@ static s32 DO_FETCH(BCtx*ctx){
         sa.port_be=HTON16((u16)ctx->port);
         ctx->fd=SOCKET();
         if(ctx->fd<0){FF_SET(ctx->flags,FL_ERROR);GRS();return-1;}
-        if(CONNECT(ctx->fd,&sa)!=0){FF_SET(ctx->flags,FL_ERROR);CLOSE(ctx->fd);GRS();return-1;}
+        conn_ok=CONNECT(ctx->fd,&sa);
+        if(conn_ok!=0){FF_SET(ctx->flags,FL_ERROR);CLOSE(ctx->fd);GRS();return-1;}
         FF_CLR(ctx->flags,FL_TLS_HS);
         PS("  [FALLBACK] Usando HTTP para demo\n");
     }
