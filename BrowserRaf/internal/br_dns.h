@@ -32,7 +32,7 @@ static s32 URL_PARSE(const char*url,BCtx*ctx){
 }
 
 /* DNS query record A via UDP (porta 53)
- * [R33] Usa syscalls diretos: socket(AF_INET,SOCK_DGRAM) + sendto + recvfrom
+ * [R33] Usa syscalls diretos: ARM32 socket=281, connect=283, sendto=290, recvfrom=292
  * [R34] Sem resolv.h: DNS server hardcoded 8.8.8.8 */
 #define SOCK_DGRAM 2
 #define AF_INET    2
@@ -71,9 +71,7 @@ static s32 DNS_RESOLVE(const char*host,u8 ip[4]){
 
     /* Cria socket UDP */
 #if defined(__arm__)
-    s32 fd=(s32)_sc3(283u,AF_INET,SOCK_DGRAM,0); /* ARM32: socket=281 → usa 281 */
-    /* Recria com syscall correto */
-    fd=(s32)_sc3(281u,AF_INET,SOCK_DGRAM,0);
+    s32 fd=(s32)_sc3(281u,AF_INET,SOCK_DGRAM,0);
 #elif defined(__aarch64__)
     s32 fd=(s32)_sc3(198u,AF_INET,SOCK_DGRAM,0);
 #elif defined(__x86_64__)
