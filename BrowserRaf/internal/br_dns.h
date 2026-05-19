@@ -56,14 +56,22 @@ static s32 DNS_RESOLVE(const char*host,u8 ip[4]){
 
     /* Encode hostname como labels DNS */
     u8*q=_DNS_BUF+12;
+    u8*qend=_DNS_BUF+sizeof(_DNS_BUF);
     const char*h=host;
     while(*h){
         const char*dot=h;while(*dot&&*dot!='.')dot++;
         u32 llen=(u32)(dot-h);
+        if(llen==0u||llen>63u)return-1;
+        if(q+1u+(usize)llen+5u>qend)return-1;
         *q++=(u8)llen;
         MC(q,(const u8*)h,llen);q+=llen;
-        h=dot;if(*h=='.')h++;
+        h=dot;
+        if(*h=='.'){
+            h++;
+            if(*h==0)return-1;
+        }
     }
+    if(q+5u>qend)return-1;
     *q++=0x00; /* root label */
     *q++=0x00;*q++=0x01; /* QTYPE = A */
     *q++=0x00;*q++=0x01; /* QCLASS = IN */
