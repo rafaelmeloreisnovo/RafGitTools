@@ -51,13 +51,29 @@ static u32 HTTP_PARSE_STATUS(const u8*buf,u32 n){
 }
 
 /* ── PARSE DE HEADER VALUE ───────────────────────────────────────────────── */
+static u32 HTTP_HEADERS_END(const u8*buf,u32 n);
+
+/* Compara memória ASCII sem libc, normalizando apenas A-Z -> a-z. */
+static int BR_MEMCASECMP_ASCII(const u8*a,const char*b,u32 n){
+    for(u32 i=0;i<n;i++){
+        u8 ca=a[i];
+        u8 cb=(u8)b[i];
+        if(ca>='A'&&ca<='Z')ca=(u8)(ca+('a'-'A'));
+        if(cb>='A'&&cb<='Z')cb=(u8)(cb+('a'-'A'));
+        if(ca!=cb)return(int)ca-(int)cb;
+    }
+    return 0;
+}
+
 /* Procura "Key: value\r\n" em buf[0..n], retorna ponteiro para value */
 static const u8* HTTP_FIND_HEADER(const u8*buf,u32 n,const char*key){
     u32 kl=SL(key);
-    for(u32 i=0;i+kl+2u<n;i++){
-        if(BR_MEMCMP(buf+i,key,kl)==0&&buf[i+kl]==':'){
+    u32 hdr_end=HTTP_HEADERS_END(buf,n);
+    for(u32 i=0;i+kl+2u<hdr_end;i++){
+        u32 bol=(i==0u)||((i>=2u)&&buf[i-2u]=='\r'&&buf[i-1u]=='\n');
+        if(bol&&BR_MEMCASECMP_ASCII(buf+i,key,kl)==0&&buf[i+kl]==':'){
             u32 j=i+kl+1u;
-            while(j<n&&(buf[j]==' '||buf[j]=='\t'))j++;
+            while(j<hdr_end&&(buf[j]==' '||buf[j]=='\t'))j++;
             return buf+j;
         }
     }
