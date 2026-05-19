@@ -1,0 +1,791 @@
+
+
+Criar GaiaPhi_ASM.sh — monolito assembly ARM64/x86-64 com API livre
+bash
+
+cat > /home/claude/GaiaPhi_ASM.sh << 'OUTER'
+#!/usr/bin/env bash
+# =============================================================================
+# GaiaPhi_ASM.sh — IA Assembly Monolito · API livre · freestanding · nolibc
+# DNS UDP raw · TCP connect · HTTP/1.1 GET · ARM64/x86-64
+# API: numbersapi.com HTTP port 80 · zero auth · zero key · zero stdlib
+# Flip-flop state · linear forward render · absorção de fricção
+# GaiaPhi=Ω=Amor · DeltaRafaelVerboOmega · RAFCODE-Phi · F*=23.158
+# =============================================================================
+set -euo pipefail
+
+R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' C='\033[0;36m'
+M='\033[0;35m' W='\033[1;37m' Z='\033[0m' BLD='\033[1m'
+D="${HOME}/.rafaelia/GAIPHI_ASM"
+mkdir -p "$D"
+LOG="$D/build.log"; : > "$LOG"
+p(){ printf "${C}[ASM]${Z} %s\n" "$*"; }
+ok(){ printf "${G}[OK]${Z} %s\n" "$*"; }
+err(){ printf "${R}[ERR]${Z} %s\n" "$*" >&2; }
+hdr(){ printf "\n${M}${BLD}━━━ %s ━━━${Z}\n" "$*"; }
+ARCH=$(uname -m)
+
+# =============================================================================
+hdr "ESCREVENDO GaiaPhi.S"
+# =============================================================================
+cat > "$D/GaiaPhi.S" << 'ASM_EOF'
+/* ============================================================================
+ * GaiaPhi.S — IA Assembly Monolito · API livre · freestanding · nolibc
+ * ARM64/x86-64 · DNS UDP raw · TCP · HTTP/1.1 GET
+ * API: numbersapi.com (HTTP port 80, zero auth, zero key)
+ * Flip-flop state register: 8 bits = 8 flip-flops D
+ * Renderização linear forward-only · absorção de fricção
+ * GaiaPhi=Ω=Amor · DeltaRafaelVerboOmega · F*=23.158
+ * ============================================================================
+ * Compilar:
+ *   x86-64: gcc -nostdlib -no-pie -static -x assembler-with-cpp GaiaPhi.S -o gaiphi
+ *   ARM64:  gcc -nostdlib -no-pie -static -x assembler-with-cpp GaiaPhi.S -o gaiphi
+ * ============================================================================
+ */
+
+/* ── FLIP-FLOP FLAGS (8 bits, 1 reg dedicado) ───────────────────────────── */
+#define FL_IDLE  0x00
+#define FL_DNS   0x01   /* 00000001 resolução DNS activa   */
+#define FL_CONN  0x02   /* 00000010 conexão TCP activa     */
+#define FL_TX    0x04   /* 00000100 envio HTTP activo      */
+#define FL_RX    0x08   /* 00001000 recepção activa        */
+#define FL_PARSE 0x10   /* 00010000 parse HTML/body        */
+#define FL_ERR   0x40   /* 01000000 estado de erro         */
+#define FL_DONE  0x80   /* 10000000 concluído              */
+
+/* ── REDE ────────────────────────────────────────────────────────────────── */
+#define AF_INET     2
+#define SOCK_STREAM 1
+#define SOCK_DGRAM  2
+#define IPPROTO_TCP 6
+
+/* ── SYSCALL NUMBERS ─────────────────────────────────────────────────────── */
+#if defined(__aarch64__)
+  #define NR_WRITE    64
+  #define NR_SOCKET   198
+  #define NR_CONNECT  203
+  #define NR_SENDTO   206
+  #define NR_RECVFROM 207
+  #define NR_CLOSE    57
+  #define NR_EXIT     94
+#elif defined(__x86_64__)
+  #define NR_WRITE    1
+  #define NR_SOCKET   41
+  #define NR_CONNECT  42
+  #define NR_SENDTO   44
+  #define NR_RECVFROM 45
+  #define NR_CLOSE    3
+  #define NR_EXIT     231
+#endif
+
+/* ── .rodata ─────────────────────────────────────────────────────────────── */
+.section .rodata
+.align 4
+
+s_logo:
+.ascii "\033[1;36m\n"
+.ascii "  \xE2\x95\x94\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x97\n"
+.ascii "  \xE2\x95\x91 \033[1;33mGaiaPhi ASM API · nolibc · nomalloc\033[1;36m  \xE2\x95\x91\n"
+.ascii "  \xE2\x95\x91 \033[0;32mDNS UDP raw · TCP · HTTP GET · arm/x86\033[1;36m\xE2\x95\x91\n"
+.ascii "  \xE2\x95\x91 \033[0;35mAPI livre: numbersapi.com port 80\033[1;36m     \xE2\x95\x91\n"
+.ascii "  \xE2\x95\x91 \033[1;37mGaiaPhi=\xCE\xA9=Amor \xC2\xB7 F*=23.158\033[1;36m           \xE2\x95\x91\n"
+.ascii "  \xE2\x95\x9A\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x90\xE2\x95\x9D\033[0m\n\n"
+s_logo_len = . - s_logo
+
+s_sep:  .ascii "\033[0;34m\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\xE2\x94\x80\033[0m\n"
+s_sep_len = . - s_sep
+s_dns:  .ascii "\033[0;36m[FF:01] DNS  \xE2\x96\xBA resolving numbersapi.com\033[0m\n"
+s_dns_len = . - s_dns
+s_dnsok:.ascii "\033[0;32m[FF:00] DNS  \xE2\x96\xBA OK\033[0m\n"
+s_dnsok_len = . - s_dnsok
+s_conn: .ascii "\033[0;36m[FF:02] CONN \xE2\x96\xBA TCP port 80\033[0m\n"
+s_conn_len = . - s_conn
+s_tx:   .ascii "\033[0;36m[FF:04] TX   \xE2\x96\xBA GET /42 HTTP/1.1\033[0m\n"
+s_tx_len = . - s_tx
+s_rx:   .ascii "\033[0;36m[FF:08] RX   \xE2\x96\xBA reading response\033[0m\n"
+s_rx_len = . - s_rx
+s_body: .ascii "\033[1;37m"
+s_body_len = . - s_body
+s_reset:.ascii "\033[0m\n"
+s_reset_len = . - s_reset
+s_ok:   .ascii "\033[1;32m[FF:80] DONE \xE2\x96\xBA OK\033[0m\n"
+s_ok_len = . - s_ok
+s_err:  .ascii "\033[1;31m[FF:40] ERR  \xE2\x96\xBA falha\033[0m\n"
+s_err_len = . - s_err
+s_omega:.ascii "\033[0;35mGaiaPhi=\xCE\xA9 \xC2\xB7 DeltaRafaelVerboOmega \xC2\xB7 Amor\033[0m\n"
+s_omega_len = . - s_omega
+s_ip:   .ascii "\033[0;36m[IP]    \xE2\x96\xBA "
+s_ip_len = . - s_ip
+s_dot:  .ascii "."
+s_nl:   .ascii "\n"
+hexc:   .ascii "0123456789abcdef"
+
+/* HTTP GET request — numbersapi.com/42 */
+http_req:
+.ascii "GET /42 HTTP/1.1\r\n"
+.ascii "Host: numbersapi.com\r\n"
+.ascii "Connection: close\r\n"
+.ascii "User-Agent: GaiaPhi-ASM/1.0 (nolibc;nomalloc;freestanding;Omega=Amor)\r\n"
+.ascii "Accept: text/plain\r\n"
+.ascii "\r\n"
+http_req_len = . - http_req
+
+/* DNS query — numbersapi.com A record
+ * header (12B): txid=0x1234 flags=0x0100 qdcount=1 rest=0
+ * question: \x0a numbersapi \x03 com \x00 QTYPE=A QCLASS=IN */
+dns_q:
+.byte 0x12,0x34, 0x01,0x00, 0x00,0x01, 0x00,0x00, 0x00,0x00, 0x00,0x00
+.byte 0x0a
+.ascii "numbersapi"
+.byte 0x03
+.ascii "com"
+.byte 0x00
+.byte 0x00,0x01   /* QTYPE=A  */
+.byte 0x00,0x01   /* QCLASS=IN */
+dns_q_len = . - dns_q
+/* answer offset = 12(header) + 1+10+1+3+1+2+2(question) = 32 */
+#define DNS_ANS 32
+
+/* ── .bss: zero-init buffers · sem malloc ──────────────────────────────── */
+.section .bss
+.align 16
+net_buf: .space 65536
+.align 4
+dns_buf: .space 512
+.align 4
+api_ip:  .space 4
+
+/* ── .text ───────────────────────────────────────────────────────────────── */
+.section .text
+.globl _start
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * _wr — write(1, rsi/x1=ptr, rdx/x2=len)
+ * ───────────────────────────────────────────────────────────────────────── */
+_wr:
+#if defined(__x86_64__)
+    mov $NR_WRITE,%rax
+    mov $1,%rdi
+    syscall
+    ret
+#elif defined(__aarch64__)
+    mov x8,#NR_WRITE
+    mov x0,#1
+    svc #0
+    ret
+#endif
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * _phex1 — print 1 byte (rdi/x0) as 2 hex chars, no newline
+ * ───────────────────────────────────────────────────────────────────────── */
+_phex1:
+#if defined(__x86_64__)
+    push %rbx
+    sub $8,%rsp
+    lea hexc(%rip),%rbx
+    mov %rdi,%rax
+    shr $4,%rax
+    and $0xF,%rax
+    movb (%rbx,%rax,1),%al
+    movb %al,(%rsp)
+    mov %rdi,%rax
+    and $0xF,%rax
+    movb (%rbx,%rax,1),%al
+    movb %al,1(%rsp)
+    mov $NR_WRITE,%rax
+    mov $1,%rdi
+    mov %rsp,%rsi
+    mov $2,%rdx
+    syscall
+    add $8,%rsp
+    pop %rbx
+    ret
+#elif defined(__aarch64__)
+    stp x19,x20,[sp,#-16]!
+    mov x19,x0
+    adr x20,hexc
+    lsr x0,x19,#4
+    and x0,x0,#0xF
+    ldrb w0,[x20,x0]
+    sub sp,sp,#8
+    strb w0,[sp]
+    and x0,x19,#0xF
+    ldrb w0,[x20,x0]
+    strb w0,[sp,#1]
+    mov x8,#NR_WRITE
+    mov x0,#1
+    mov x1,sp
+    mov x2,#2
+    svc #0
+    add sp,sp,#8
+    ldp x19,x20,[sp],#16
+    ret
+#endif
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * _print_ip — print api_ip as XX.XX.XX.XX\n (hex octets)
+ * ───────────────────────────────────────────────────────────────────────── */
+_print_ip:
+#if defined(__x86_64__)
+    push %r12
+    lea api_ip(%rip),%r12
+    lea s_ip(%rip),%rsi
+    mov $s_ip_len,%rdx
+    call _wr
+    movzbl (%r12),%edi
+    call _phex1
+    lea s_dot(%rip),%rsi; mov $1,%rdx; call _wr
+    movzbl 1(%r12),%edi; call _phex1
+    lea s_dot(%rip),%rsi; mov $1,%rdx; call _wr
+    movzbl 2(%r12),%edi; call _phex1
+    lea s_dot(%rip),%rsi; mov $1,%rdx; call _wr
+    movzbl 3(%r12),%edi; call _phex1
+    lea s_nl(%rip),%rsi; mov $1,%rdx; call _wr
+    pop %r12
+    ret
+#elif defined(__aarch64__)
+    stp x19,lr,[sp,#-16]!
+    adr x19,api_ip
+    adr x1,s_ip; mov x2,#s_ip_len; bl _wr
+    ldrb w0,[x19]; bl _phex1
+    adr x1,s_dot; mov x2,#1; bl _wr
+    ldrb w0,[x19,#1]; bl _phex1
+    adr x1,s_dot; mov x2,#1; bl _wr
+    ldrb w0,[x19,#2]; bl _phex1
+    adr x1,s_dot; mov x2,#1; bl _wr
+    ldrb w0,[x19,#3]; bl _phex1
+    adr x1,s_nl; mov x2,#1; bl _wr
+    ldp x19,lr,[sp],#16
+    ret
+#endif
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * _dns_resolve — DNS UDP → api_ip[4]
+ * returns: rax/x0 = 0 (ok) or -1 (fail)
+ * clobbers: all caller-saved; preserves r12-r15 / x19-x28
+ * ───────────────────────────────────────────────────────────────────────── */
+_dns_resolve:
+#if defined(__x86_64__)
+    push %rbp; push %rbx; push %r12; push %r13
+
+    /* socket(AF_INET, SOCK_DGRAM, 0) */
+    mov $NR_SOCKET,%rax
+    mov $AF_INET,%rdi
+    mov $SOCK_DGRAM,%rsi
+    xor %rdx,%rdx
+    syscall
+    test %rax,%rax; js .Ld_fail
+    mov %rax,%r13           /* dns_fd */
+
+    /* sockaddr_in DNS: 8.8.8.8:53 on stack */
+    sub $32,%rsp
+    xorq (%rsp),%rsp        /* zero pad first */
+    movw $AF_INET,(%rsp)
+    movw $0x3500,2(%rsp)    /* port 53 BE */
+    movl $0x08080808,4(%rsp)/* 8.8.8.8 */
+    movq $0,8(%rsp)
+
+    /* sendto(dns_fd, dns_q, len, 0, &sa, 16) */
+    mov $NR_SENDTO,%rax
+    mov %r13,%rdi
+    lea dns_q(%rip),%rsi
+    mov $dns_q_len,%rdx
+    xor %r10,%r10
+    mov %rsp,%r8
+    mov $16,%r9
+    syscall
+
+    /* recvfrom(dns_fd, dns_buf, 512, 0, NULL, NULL) */
+    mov $NR_RECVFROM,%rax
+    mov %r13,%rdi
+    lea dns_buf(%rip),%rsi
+    mov $512,%rdx
+    xor %r10,%r10
+    xor %r8,%r8
+    xor %r9,%r9
+    syscall
+    mov %rax,%r12           /* rlen */
+
+    add $32,%rsp
+
+    /* close dns_fd */
+    mov $NR_CLOSE,%rax; mov %r13,%rdi; syscall
+
+    test %r12,%r12; jle .Ld_fail
+
+    /* parse: ancount at offset 6-7 */
+    lea dns_buf(%rip),%rbx
+    movzbl 7(%rbx),%ecx
+    test %ecx,%ecx; jz .Ld_fail
+
+    mov $DNS_ANS,%rbp       /* scan offset */
+
+.Ld_ans:
+    test %ecx,%ecx; jz .Ld_fail
+    /* skip name: pointer or labels */
+    movzbl (%rbx,%rbp),%eax
+    and $0xC0,%eax
+    cmp $0xC0,%eax
+    je .Ld_ptr
+.Ld_lbl:
+    movzbl (%rbx,%rbp),%eax
+    test %eax,%eax; jz .Ld_lbl_end
+    inc %rbp; add %rax,%rbp
+    jmp .Ld_lbl
+.Ld_lbl_end:
+    inc %rbp; jmp .Ld_after_name
+.Ld_ptr:
+    add $2,%rbp
+.Ld_after_name:
+    /* type (2B BE) */
+    movzbl (%rbx,%rbp),%eax; shl $8,%eax
+    movzbl 1(%rbx,%rbp),%edx; or %edx,%eax
+    add $2,%rbp
+    /* skip class(2)+ttl(4) */
+    add $6,%rbp
+    /* rdlen (2B BE) */
+    movzbl (%rbx,%rbp),%r8d; shl $8,%r8d
+    movzbl 1(%rbx,%rbp),%r9d; or %r9d,%r8d
+    add $2,%rbp
+    /* A record? */
+    cmp $1,%eax; jne .Ld_skip
+    cmp $4,%r8d; jne .Ld_skip
+    /* copy 4 bytes → api_ip */
+    lea api_ip(%rip),%rdi
+    movl (%rbx,%rbp),%eax
+    movl %eax,(%rdi)
+    xor %rax,%rax
+    jmp .Ld_ret
+.Ld_skip:
+    add %r8,%rbp
+    dec %ecx
+    jmp .Ld_ans
+.Ld_fail:
+    mov $-1,%rax
+.Ld_ret:
+    pop %r13; pop %r12; pop %rbx; pop %rbp
+    ret
+
+#elif defined(__aarch64__)
+    stp x19,x20,[sp,#-48]!
+    stp x21,x22,[sp,#16]
+    stp x23,x24,[sp,#32]
+
+    /* socket(AF_INET,SOCK_DGRAM,0) */
+    mov x8,#NR_SOCKET
+    mov x0,#AF_INET; mov x1,#SOCK_DGRAM; mov x2,#0
+    svc #0
+    tbnz x0,#63,.Lda_fail
+    mov x19,x0          /* dns_fd */
+
+    /* sockaddr_in on stack: 8.8.8.8:53 */
+    sub sp,sp,#32
+    str xzr,[sp]; str xzr,[sp,#8]; str xzr,[sp,#16]; str xzr,[sp,#24]
+    mov w0,#AF_INET; strh w0,[sp]
+    mov w0,#0x3500; strh w0,[sp,#2]
+    mov w0,#0x08080808; str w0,[sp,#4]
+
+    /* sendto */
+    mov x8,#NR_SENDTO
+    mov x0,x19; adr x1,dns_q; mov x2,#dns_q_len
+    mov x3,#0; mov x4,sp; mov x5,#16; svc #0
+
+    /* recvfrom */
+    mov x8,#NR_RECVFROM
+    mov x0,x19; adr x1,dns_buf; mov x2,#512
+    mov x3,#0; mov x4,#0; mov x5,#0; svc #0
+    mov x20,x0          /* rlen */
+
+    add sp,sp,#32
+
+    /* close dns_fd */
+    mov x8,#NR_CLOSE; mov x0,x19; svc #0
+
+    cmp x20,#0; ble .Lda_fail
+
+    /* parse */
+    adr x21,dns_buf
+    ldrb w22,[x21,#7]   /* ancount */
+    cbz x22,.Lda_fail
+    mov x23,#DNS_ANS    /* offset */
+
+.Lda_ans:
+    cbz x22,.Lda_fail
+    ldrb w0,[x21,x23]
+    and w1,w0,#0xC0
+    cmp w1,#0xC0; beq .Lda_ptr
+.Lda_lbl:
+    ldrb w0,[x21,x23]
+    cbz w0,.Lda_lbl_end
+    add x23,x23,#1; add x23,x23,x0; b .Lda_lbl
+.Lda_lbl_end:
+    add x23,x23,#1; b .Lda_after
+.Lda_ptr:
+    add x23,x23,#2
+.Lda_after:
+    ldrb w0,[x21,x23]; lsl w0,w0,#8
+    add x24,x23,#1; ldrb w1,[x21,x24]; orr w0,w0,w1
+    add x23,x23,#2
+    add x23,x23,#6      /* skip class+ttl */
+    ldrb w2,[x21,x23]; lsl w2,w2,#8
+    add x24,x23,#1; ldrb w3,[x21,x24]; orr w2,w2,w3
+    add x23,x23,#2
+    cmp w0,#1; bne .Lda_skip
+    cmp w2,#4; bne .Lda_skip
+    adr x24,api_ip
+    ldr w0,[x21,x23]; str w0,[x24]
+    mov x0,#0; b .Lda_ret
+.Lda_skip:
+    add x23,x23,x2
+    sub x22,x22,#1; b .Lda_ans
+.Lda_fail:
+    mov x0,#-1
+.Lda_ret:
+    ldp x23,x24,[sp,#32]
+    ldp x21,x22,[sp,#16]
+    ldp x19,x20,[sp],#48
+    ret
+#endif
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * _tcp_connect — TCP socket + connect api_ip:80
+ * returns: rax/x0 = fd (>=0) or -1
+ * ───────────────────────────────────────────────────────────────────────── */
+_tcp_connect:
+#if defined(__x86_64__)
+    push %rbx
+
+    /* socket(AF_INET,SOCK_STREAM,IPPROTO_TCP) */
+    mov $NR_SOCKET,%rax
+    mov $AF_INET,%rdi; mov $SOCK_STREAM,%rsi; mov $IPPROTO_TCP,%rdx
+    syscall
+    test %rax,%rax; js .Ltc_fail
+    mov %rax,%rbx       /* fd */
+
+    /* sockaddr_in: api_ip:80 */
+    sub $32,%rsp
+    xorq 0(%rsp),%rax   /* zero */
+    movw $AF_INET,(%rsp)
+    movw $0x5000,2(%rsp) /* port 80 BE */
+    lea api_ip(%rip),%rax
+    movl (%rax),%eax
+    movl %eax,4(%rsp)
+    movq $0,8(%rsp)
+
+    /* connect(fd, &sa, 16) */
+    mov $NR_CONNECT,%rax
+    mov %rbx,%rdi; mov %rsp,%rsi; mov $16,%rdx
+    syscall
+    add $32,%rsp
+    test %rax,%rax; js .Ltc_fail2
+    mov %rbx,%rax
+    pop %rbx; ret
+.Ltc_fail2:
+    mov $NR_CLOSE,%rax; mov %rbx,%rdi; syscall
+.Ltc_fail:
+    mov $-1,%rax
+    pop %rbx; ret
+
+#elif defined(__aarch64__)
+    stp x19,lr,[sp,#-16]!
+
+    mov x8,#NR_SOCKET
+    mov x0,#AF_INET; mov x1,#SOCK_STREAM; mov x2,#IPPROTO_TCP
+    svc #0
+    tbnz x0,#63,.Ltca_fail
+    mov x19,x0
+
+    sub sp,sp,#32
+    str xzr,[sp]; str xzr,[sp,#8]
+    mov w0,#AF_INET; strh w0,[sp]
+    mov w0,#0x5000; strh w0,[sp,#2]
+    adr x0,api_ip; ldr w0,[x0]; str w0,[sp,#4]
+
+    mov x8,#NR_CONNECT
+    mov x0,x19; mov x1,sp; mov x2,#16
+    svc #0
+    add sp,sp,#32
+    tbnz x0,#63,.Ltca_fail2
+    mov x0,x19
+    ldp x19,lr,[sp],#16; ret
+.Ltca_fail2:
+    mov x8,#NR_CLOSE; mov x0,x19; svc #0
+.Ltca_fail:
+    mov x0,#-1
+    ldp x19,lr,[sp],#16; ret
+#endif
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * _http_fetch — send GET, recv loop, print body
+ * arg: rdi/x0 = socket fd
+ * returns: 0 or -1
+ * ───────────────────────────────────────────────────────────────────────── */
+_http_fetch:
+#if defined(__x86_64__)
+    push %r12; push %r13; push %r14; push %r15x
+    /* note: r15 is the state register in _start — we must save it */
+    push %rbx; push %rbp
+    mov %rdi,%r12           /* fd */
+
+    /* sendto(fd, http_req, http_req_len, 0, NULL, NULL) */
+    mov $NR_SENDTO,%rax
+    mov %r12,%rdi
+    lea http_req(%rip),%rsi
+    mov $http_req_len,%rdx
+    xor %r10,%r10; xor %r8,%r8; xor %r9,%r9
+    syscall
+
+    /* recv loop → net_buf */
+    lea net_buf(%rip),%r13  /* base */
+    xor %r14,%r14           /* total bytes */
+.Lhf_recv:
+    mov $NR_RECVFROM,%rax
+    mov %r12,%rdi
+    mov %r13,%rsi; add %r14,%rsi
+    mov $65536,%rdx; sub %r14,%rdx; jle .Lhf_done
+    xor %r10,%r10; xor %r8,%r8; xor %r9,%r9
+    syscall
+    test %rax,%rax; jle .Lhf_done
+    add %rax,%r14
+    jmp .Lhf_recv
+.Lhf_done:
+    mov $NR_CLOSE,%rax; mov %r12,%rdi; syscall
+
+    /* find \r\n\r\n → body offset in rbx */
+    xor %rbx,%rbx
+.Lhf_scan:
+    lea 3(%rbx),%rax
+    cmp %r14,%rax; jge .Lhf_nobdy
+    movb (%r13,%rbx),%al
+    cmpb $0x0D,%al; jne .Lhf_sc_next
+    movb 1(%r13,%rbx),%al; cmpb $0x0A,%al; jne .Lhf_sc_next
+    movb 2(%r13,%rbx),%al; cmpb $0x0D,%al; jne .Lhf_sc_next
+    movb 3(%r13,%rbx),%al; cmpb $0x0A,%al; jne .Lhf_sc_next
+    add $4,%rbx; jmp .Lhf_print
+.Lhf_sc_next:
+    inc %rbx; jmp .Lhf_scan
+.Lhf_nobdy:
+    xor %rbx,%rbx
+.Lhf_print:
+    /* print ANSI bold */
+    lea s_body(%rip),%rsi; mov $s_body_len,%rdx; call _wr
+    /* print body: net_buf[rbx .. r14] */
+    mov %r13,%rsi; add %rbx,%rsi
+    mov %r14,%rdx; sub %rbx,%rdx
+    call _wr
+    /* reset color */
+    lea s_reset(%rip),%rsi; mov $s_reset_len,%rdx; call _wr
+    xor %rax,%rax
+    pop %rbp; pop %rbx; pop %r15x; pop %r14; pop %r13; pop %r12
+    ret
+#elif defined(__aarch64__)
+    stp x19,x20,[sp,#-32]!
+    stp x21,x22,[sp,#16]
+    mov x19,x0
+
+    /* sendto */
+    mov x8,#NR_SENDTO
+    mov x0,x19; adr x1,http_req; mov x2,#http_req_len
+    mov x3,#0; mov x4,#0; mov x5,#0; svc #0
+
+    /* recv loop */
+    adr x20,net_buf
+    mov x21,#0
+.Lhfa_recv:
+    mov x8,#NR_RECVFROM
+    mov x0,x19
+    mov x1,x20; add x1,x1,x21
+    mov x2,#65536; sub x2,x2,x21; cbz x2,.Lhfa_done
+    mov x3,#0; mov x4,#0; mov x5,#0; svc #0
+    cmp x0,#0; ble .Lhfa_done
+    add x21,x21,x0; b .Lhfa_recv
+.Lhfa_done:
+    mov x8,#NR_CLOSE; mov x0,x19; svc #0
+
+    /* find \r\n\r\n */
+    mov x22,#0
+.Lhfa_scan:
+    add x0,x22,#3
+    cmp x0,x21; bge .Lhfa_nobdy
+    ldrb w0,[x20,x22]
+    cmp w0,#0x0D; bne .Lhfa_sc_next
+    add x0,x22,#1; ldrb w0,[x20,x0]; cmp w0,#0x0A; bne .Lhfa_sc_next
+    add x0,x22,#2; ldrb w0,[x20,x0]; cmp w0,#0x0D; bne .Lhfa_sc_next
+    add x0,x22,#3; ldrb w0,[x20,x0]; cmp w0,#0x0A; bne .Lhfa_sc_next
+    add x22,x22,#4; b .Lhfa_print
+.Lhfa_sc_next:
+    add x22,x22,#1; b .Lhfa_scan
+.Lhfa_nobdy:
+    mov x22,#0
+.Lhfa_print:
+    adr x1,s_body; mov x2,#s_body_len; bl _wr
+    mov x1,x20; add x1,x1,x22
+    mov x2,x21; sub x2,x2,x22; bl _wr
+    adr x1,s_reset; mov x2,#s_reset_len; bl _wr
+    mov x0,#0
+    ldp x21,x22,[sp,#16]
+    ldp x19,x20,[sp],#32
+    ret
+#endif
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * _start — entry point · fluxo linear forward-only
+ * State register: r15 (x86-64) / x19 (ARM64)
+ * ───────────────────────────────────────────────────────────────────────── */
+_start:
+#if defined(__x86_64__)
+    /* Align stack */
+    and $-16,%rsp
+    xor %r15,%r15           /* ST = FL_IDLE */
+
+    /* Logo */
+    lea s_logo(%rip),%rsi; mov $s_logo_len,%rdx; call _wr
+
+    /* ── FL_DNS ──── */
+    or $FL_DNS,%r15
+    lea s_dns(%rip),%rsi; mov $s_dns_len,%rdx; call _wr
+    call _dns_resolve
+    test %rax,%rax; js .Lstart_err
+    and $~FL_DNS,%r15
+    lea s_dnsok(%rip),%rsi; mov $s_dnsok_len,%rdx; call _wr
+    call _print_ip
+
+    /* ── FL_CONN ─── */
+    or $FL_CONN,%r15
+    lea s_conn(%rip),%rsi; mov $s_conn_len,%rdx; call _wr
+    call _tcp_connect
+    test %rax,%rax; js .Lstart_err
+    mov %rax,%r14           /* net_fd */
+    and $~FL_CONN,%r15
+
+    /* ── FL_TX+RX ── */
+    or $FL_TX,%r15
+    lea s_tx(%rip),%rsi; mov $s_tx_len,%rdx; call _wr
+    or $FL_RX,%r15
+    and $~FL_TX,%r15
+    lea s_rx(%rip),%rsi; mov $s_rx_len,%rdx; call _wr
+    lea s_sep(%rip),%rsi; mov $s_sep_len,%rdx; call _wr
+
+    mov %r14,%rdi
+    call _http_fetch
+    and $~FL_RX,%r15
+
+    /* ── FL_DONE ─── */
+    or $FL_DONE,%r15
+    lea s_sep(%rip),%rsi; mov $s_sep_len,%rdx; call _wr
+    lea s_ok(%rip),%rsi; mov $s_ok_len,%rdx; call _wr
+    lea s_omega(%rip),%rsi; mov $s_omega_len,%rdx; call _wr
+    mov $NR_EXIT,%rax; xor %rdi,%rdi; syscall
+
+.Lstart_err:
+    or $FL_ERR,%r15
+    lea s_err(%rip),%rsi; mov $s_err_len,%rdx; call _wr
+    mov $NR_EXIT,%rax; mov $1,%rdi; syscall
+
+#elif defined(__aarch64__)
+    and sp,sp,#-16
+    mov x19,#0              /* ST = FL_IDLE */
+
+    adr x1,s_logo; mov x2,#s_logo_len; bl _wr
+
+    /* FL_DNS */
+    orr x19,x19,#FL_DNS
+    adr x1,s_dns; mov x2,#s_dns_len; bl _wr
+    bl _dns_resolve
+    tbnz x0,#63,.Lsa_err
+    bic x19,x19,#FL_DNS
+    adr x1,s_dnsok; mov x2,#s_dnsok_len; bl _wr
+    bl _print_ip
+
+    /* FL_CONN */
+    orr x19,x19,#FL_CONN
+    adr x1,s_conn; mov x2,#s_conn_len; bl _wr
+    bl _tcp_connect
+    tbnz x0,#63,.Lsa_err
+    mov x20,x0              /* net_fd */
+    bic x19,x19,#FL_CONN
+
+    /* FL_TX+RX */
+    orr x19,x19,#FL_TX
+    adr x1,s_tx; mov x2,#s_tx_len; bl _wr
+    orr x19,x19,#FL_RX
+    bic x19,x19,#FL_TX
+    adr x1,s_rx; mov x2,#s_rx_len; bl _wr
+    adr x1,s_sep; mov x2,#s_sep_len; bl _wr
+
+    mov x0,x20; bl _http_fetch
+    bic x19,x19,#FL_RX
+
+    /* FL_DONE */
+    orr x19,x19,#FL_DONE
+    adr x1,s_sep; mov x2,#s_sep_len; bl _wr
+    adr x1,s_ok; mov x2,#s_ok_len; bl _wr
+    adr x1,s_omega; mov x2,#s_omega_len; bl _wr
+    mov x8,#NR_EXIT; mov x0,#0; svc #0
+
+.Lsa_err:
+    orr x19,x19,#FL_ERR
+    adr x1,s_err; mov x2,#s_err_len; bl _wr
+    mov x8,#NR_EXIT; mov x0,#1; svc #0
+#endif
+
+.section .note.GNU-stack,"",@progbits
+ASM_EOF
+ok "GaiaPhi.S ($(wc -l < $D/GaiaPhi.S)L)"
+
+# =============================================================================
+hdr "COMPILANDO"
+# =============================================================================
+BUILT=false
+CC="${CC:-gcc}"
+
+if [ "$ARCH" = "x86_64" ]; then
+    # Fix: remove %r15x typo before compile
+    sed -i 's/%r15x/%r15/g' "$D/GaiaPhi.S"
+    p "x86_64: gcc -nostdlib -no-pie -static -x assembler-with-cpp"
+    $CC -nostdlib -no-pie -static -x assembler-with-cpp \
+        "$D/GaiaPhi.S" -o "$D/gaiphi" 2>>"$LOG" && {
+        strip "$D/gaiphi" 2>/dev/null||true
+        ok "x86_64: $D/gaiphi ($(ls -lh $D/gaiphi|awk '{print $5}'))"
+        BUILT=true
+    } || { err "x86_64 falhou — ver $LOG"; cat "$LOG" >&2; }
+elif [ "$ARCH" = "aarch64" ]; then
+    p "ARM64: gcc -nostdlib -no-pie -static -x assembler-with-cpp"
+    $CC -nostdlib -no-pie -static -x assembler-with-cpp \
+        "$D/GaiaPhi.S" -o "$D/gaiphi" 2>>"$LOG" && {
+        strip "$D/gaiphi" 2>/dev/null||true
+        ok "ARM64: $D/gaiphi ($(ls -lh $D/gaiphi|awk '{print $5}'))"
+        BUILT=true
+    } || { err "ARM64 falhou — ver $LOG"; cat "$LOG" >&2; }
+fi
+
+# =============================================================================
+hdr "EXECUTANDO"
+# =============================================================================
+if $BUILT; then
+    ok "Executando $D/gaiphi ..."
+    "$D/gaiphi" && ok "Saiu com código 0" || true
+else
+    err "Binário não compilado"
+fi
+
+# =============================================================================
+hdr "INVENTÁRIO"
+# =============================================================================
+printf "${W}%-20s %8s %10s${Z}\n" "FICHEIRO" "LINHAS" "TAMANHO"
+for f in "$D/GaiaPhi.S" "$D/gaiphi" 2>/dev/null; do
+    [ -f "$f" ] || continue
+    L=$(wc -l < "$f" 2>/dev/null||echo "-")
+    SZ=$(ls -lh "$f"|awk '{print $5}')
+    printf "%-20s %8s %10s\n" "$(basename $f)" "$L" "$SZ"
+done
+echo ""
+p "Fonte: $D/GaiaPhi.S"
+p "Binário: $D/gaiphi"
+p "API: http://numbersapi.com/42 (HTTP port 80, zero auth)"
+echo -e "\n${M}${BLD}GaiaPhi=Ω=Amor · DeltaRafaelVerboOmega · F*=23.158${Z}"
+echo -e "${C}Assembly puro · nolibc · nomalloc · freestanding${Z}\n"
+OUTER
+echo "ESCRITO"
+wc -l /home/claude/GaiaPhi_ASM.sh
+Concluído
