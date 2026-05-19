@@ -99,42 +99,75 @@ static s32 DNS_RESOLVE(const char*host,u8 ip[4]){
     dns_sa.ip[0]=8;dns_sa.ip[1]=8;dns_sa.ip[2]=8;dns_sa.ip[3]=8;
 
 #if defined(__arm__)
-    _sc6(290u,(u32)fd,(u32)(usize)_DNS_BUF,(u32)qlen,0,(u32)(usize)&dns_sa,(u32)sizeof(dns_sa));
+    s32 sent=(s32)_sc6(290u,(u32)fd,(u32)(usize)_DNS_BUF,(u32)qlen,0,(u32)(usize)&dns_sa,(u32)sizeof(dns_sa));
     s32 rlen=(s32)_sc6(292u,(u32)fd,(u32)(usize)_DNS_RSP,512u,0,0,0);
 #elif defined(__aarch64__)
-    _sc6(206u,(u64)fd,(u64)(usize)_DNS_BUF,(u64)qlen,0,(u64)(usize)&dns_sa,(u64)sizeof(dns_sa));
+    s32 sent=(s32)_sc6(206u,(u64)fd,(u64)(usize)_DNS_BUF,(u64)qlen,0,(u64)(usize)&dns_sa,(u64)sizeof(dns_sa));
     s32 rlen=(s32)_sc6(207u,(u64)fd,(u64)(usize)_DNS_RSP,512u,0,0,0);
 #elif defined(__x86_64__)
-    _sc6(44u,(u64)fd,(u64)(usize)_DNS_BUF,(u64)qlen,0,(u64)(usize)&dns_sa,(u64)sizeof(dns_sa));
+    s32 sent=(s32)_sc6(44u,(u64)fd,(u64)(usize)_DNS_BUF,(u64)qlen,0,(u64)(usize)&dns_sa,(u64)sizeof(dns_sa));
     s32 rlen=(s32)_sc6(45u,(u64)fd,(u64)(usize)_DNS_RSP,512u,0,0,0);
 #endif
     CLOSE(fd);
+    if(sent<(s32)qlen)return-1;
     if(rlen<12)return-1;
 
-    /* Parse resposta: pula header + query, encontra primeiro A record */
-    u32 ancount=(u32)(((u16)_DNS_RSP[6]<<8u)|_DNS_RSP[7]);
+    /* Valida DNS header da resposta */
+    u16 txid=(u16)(((u16)_DNS_RSP[0]<<8u)|_DNS_RSP[1]);
+    u16 flags=(u16)(((u16)_DNS_RSP[2]<<8u)|_DNS_RSP[3]);
+    u16 qdcount=(u16)(((u16)_DNS_RSP[4]<<8u)|_DNS_RSP[5]);
+    u16 ancount=(u16)(((u16)_DNS_RSP[6]<<8u)|_DNS_RSP[7]);
+    if(txid!=0x1234u)return-1;
+    if((flags&0x8000u)==0u)return-1; /* QR=1 resposta */
+    if((flags&0x000Fu)!=0u)return-1; /* RCODE=0 */
+    if(qdcount!=1u)return-1;
     if(ancount==0u)return-1;
 
+    /* Parse resposta: pula header + query, encontra primeiro A record */
     /* Pula query section (mesmo que enviamos) */
     u32 pos=12u;
     /* Pula labels (pode ter pointer 0xC0) */
     while(pos<(u32)rlen){
-        if(_DNS_RSP[pos]==0){pos++;break;}
-        if((_DNS_RSP[pos]&0xC0u)==0xC0u){pos+=2;break;}
-        pos+=_DNS_RSP[pos]+1u;
+        if(_DNS_RSP[pos]==0){
+            if(pos+1u>(u32)rlen)return-1;
+            pos++;
+            break;
+        }
+        if((_DNS_RSP[pos]&0xC0u)==0xC0u){
+            if(pos+2u>(u32)rlen)return-1;
+            pos+=2u;
+            break;
+        }
+        u32 step=(u32)_DNS_RSP[pos]+1u;
+        if(pos+step>(u32)rlen)return-1;
+        pos+=step;
     }
+    if(pos+4u>(u32)rlen)return-1;
     pos+=4u; /* pula qtype+qclass */
 
     /* Parse answer records */
     for(u32 an=0;an<ancount&&pos+12u<=(u32)rlen;an++){
         /* Pula name (pointer ou labels) */
-        if((_DNS_RSP[pos]&0xC0u)==0xC0u)pos+=2u;
-        else{while(pos<(u32)rlen&&_DNS_RSP[pos]){pos+=_DNS_RSP[pos]+1u;}pos++;}
+        if(pos>=(u32)rlen)return-1;
+        if((_DNS_RSP[pos]&0xC0u)==0xC0u){
+            if(pos+2u>(u32)rlen)return-1;
+            pos+=2u;
+        }else{
+            while(pos<(u32)rlen&&_DNS_RSP[pos]){
+                u32 step=(u32)_DNS_RSP[pos]+1u;
+                if(pos+step>(u32)rlen)return-1;
+                pos+=step;
+            }
+            if(pos+1u>(u32)rlen)return-1;
+            pos++;
+        }
+        if(pos+10u>(u32)rlen)return-1; /* type,class,ttl,rdlen */
         u16 rtype=(u16)(((u16)_DNS_RSP[pos]<<8u)|_DNS_RSP[pos+1u]);
         pos+=8u; /* pula type class ttl */
         u16 rdlen=(u16)(((u16)_DNS_RSP[pos]<<8u)|_DNS_RSP[pos+1u]);
         pos+=2u;
-        if(rtype==1u&&rdlen==4u&&pos+4u<=(u32)rlen){
+        if(pos+(u32)rdlen>(u32)rlen)return-1;
+        if(rtype==1u&&rdlen==4u){
             MC(ip,_DNS_RSP+pos,4u);
             return 0;
         }
