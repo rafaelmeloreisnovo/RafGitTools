@@ -159,6 +159,21 @@ AI s32 TLS_PARSE_RECORD(const u8*buf,u32 n,TLSRec*r){
  * Entrada: estado atual + tipo de mensagem recebida
  * Saída: novo estado (via flip-flop geométrico)
  * BRANCHLESS: usa máscaras e XOR em vez de if/else */
+
+/* ── MÓDULO PRÉ-CODED PARA UPGRADE TLS 1.3 ───────────────────────────── */
+#define TLS_UP_X25519        0x01u
+#define TLS_UP_HKDF          0x02u
+#define TLS_UP_TRANSCRIPT    0x04u
+#define TLS_UP_AEAD          0x08u
+#define TLS_UP_FINISHED      0x10u
+#define TLS_UP_RECORD_CRYPT  0x20u
+#define TLS_UP_ALL (TLS_UP_X25519|TLS_UP_HKDF|TLS_UP_TRANSCRIPT|TLS_UP_AEAD|TLS_UP_FINISHED|TLS_UP_RECORD_CRYPT)
+
+AI u8 TLS_UPGRADE_MASK(void){
+    /* Máscara de roadmap para implementação futura sem fallback inseguro */
+    return (u8)TLS_UP_ALL;
+}
+
 AI u8 TLS_TRANSITION(u8 cur,u8 msg_type){
     /* Tabela de transição codificada em bits:
      * IDLE     + CH_SENT  → CLI_HELLO (bit0 flip)

@@ -129,58 +129,14 @@ static s32 DO_FETCH(BCtx*ctx){
     /* ── FASE 3: TLS (se HTTPS) ─────────────────────────────────────── */
     if(ctx->use_tls){
         FF_SET(ctx->flags,FL_TLS_HS);
-        STATUS(ctx->flags,"TLS 1.3 ClientHello...");
-        TLS_INIT(&_TLS);
-
-        /* Constrói e envia ClientHello */
-        u32 chlen=TLS_BUILD_CLIENT_HELLO(&_TLS,ctx->host,_NB,NET_BUF);
-        _TLS.state=TLS_TRANSITION(_TLS.state,TLS_HT_CLIENT_HELLO);
-
-        s32 sent=SEND(ctx->fd,_NB,chlen);
-        ctx->tx_bytes+=(sent>0?(u32)sent:0u);
-
-        if(sent<=0||sent<(s32)chlen){
-            FF_SET(ctx->flags,FL_ERROR);
-            FF_CLR(ctx->flags,FL_TLS_HS);
-            PS("  [TLS] ClientHello parcial/erro\n");
-            goto done;
-        } else {
-            PS("  [TLS] ClientHello enviado (");PN(chlen);PS("B)\n");
-        }
-
-        /* Recebe ServerHello */
-        s32 rx=RECV(ctx->fd,_NB,NET_BUF);
-        if(rx>4){
-            TLSRec rec;
-            MC0(&rec,(u32)sizeof(rec));
-            if(TLS_PARSE_RECORD(_NB,(u32)rx,&rec)==0){
-                PS("  [TLS] Record type=");PH(rec.type);
-                PS("  [TLS] version=");PH(rec.version);
-            }
-            _TLS.state=TLS_TRANSITION(_TLS.state,TLS_HT_SERVER_HELLO);
-            PS("  [TLS] Estado=");
-            /* Exibe estado TLS */
-            if(_TLS.state==TLS_CLI_HELLO)PS("CLI_HELLO\n");
-            else if(_TLS.state==TLS_SRV_HELLO)PS("SRV_HELLO\n");
-            else if(_TLS.state==TLS_ENCRYPTED)PS("ENCRYPTED\n");
-            else PS("UNKNOWN\n");
-            /* NOTA: sem crypto completo, handshake não avança além daqui */
-            /* Em produção: implementar X25519 + AES-GCM + HKDF */
-            PS("  [TLS] NOTA: crypto não implementado — usando HTTP para demo\n");
-        }
-        /* Fallback: fecha e reconecta em HTTP para demonstração */
-        CLOSE(ctx->fd);
-        ctx->port=80u;ctx->use_tls=0;
-        sa.port_be=HTON16((u16)ctx->port);
-        ctx->fd=SOCKET();
-        if(ctx->fd<0){FF_SET(ctx->flags,FL_ERROR);goto done;}
-        if(SET_RECV_TIMEOUT(ctx->fd,(usize)3u)!=0){
-            FF_SET(ctx->flags,FL_ERROR);
-            goto done;
-        }
-        if(CONNECT(ctx->fd,&sa)!=0){FF_SET(ctx->flags,FL_ERROR);goto done;}
-        FF_CLR(ctx->flags,FL_TLS_HS);
-        PS("  [FALLBACK] Usando HTTP para demo\n");
+        ctx->tls=TLS_UPGRADE_MASK(); /* módulo pré-coded para upgrade futuro */
+        FF_SET(ctx->flags,FL_ERROR);
+        FF_CLR(ctx->flags,FL_CONNECT|FL_TLS_HS);
+        STATUS(ctx->flags,"HTTPS não suportado neste build");
+        PS("  [TLS] HTTPS não suportado neste build\n");
+        PS("  [TLS-UPGRADE] roadmap mask=");PH(ctx->tls);
+        PS("  [TLS-UPGRADE] etapas: x25519 hkdf transcript aead finished records\n");
+        goto done;
     }
 
     /* ── FASE 4: HTTP request ────────────────────────────────────────── */
