@@ -96,6 +96,7 @@ static s32 DO_FETCH(BCtx*ctx){
 
     s32 conn_ok=-1;
     ttl=3;
+    s32 conn_ok=-1;
     while(ttl--){
         ctx->fd=SOCKET();
         if(ctx->fd<0){
