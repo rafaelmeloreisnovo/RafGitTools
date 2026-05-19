@@ -59,7 +59,10 @@ static s32 DO_FETCH(BCtx*ctx){
     s32 rc=-1;
 
     /* ── FASE 1: DNS resolve ─────────────────────────────────────────── */
-    FF_SET(ctx->flags,FL_DNS);
+    if(!BR_PHASE_NEXT(&ctx->flags,0u,FL_DNS,0u)){
+        STATUS(ctx->flags,"Estado invalido: entrada DNS");
+        goto done;
+    }
     STATUS(ctx->flags,"Resolvendo DNS...");
     u8 ttl=3;
     s32 dns_ok=-1;
@@ -82,10 +85,12 @@ static s32 DO_FETCH(BCtx*ctx){
          i+=SL(ipstr+i);
      }
      ipstr[i]=0;PS("  ");PS(ipstr);PS("\n");}
-    FF_CLR(ctx->flags,FL_DNS);
+    if(!BR_PHASE_NEXT(&ctx->flags,FL_DNS,FL_CONNECT,FL_DNS)){
+        STATUS(ctx->flags,"Estado invalido: DNS->CONNECT");
+        goto done;
+    }
 
     /* ── FASE 2: TCP connect ─────────────────────────────────────────── */
-    FF_SET(ctx->flags,FL_CONNECT);
     STATUS(ctx->flags,"Conectando TCP...");
     GM(); /* checkpoint arena antes de alocar recursos de rede */
 
@@ -96,7 +101,6 @@ static s32 DO_FETCH(BCtx*ctx){
 
     s32 conn_ok=-1;
     ttl=3;
-    s32 conn_ok=-1;
     while(ttl--){
         ctx->fd=SOCKET();
         if(ctx->fd<0){
@@ -119,16 +123,17 @@ static s32 DO_FETCH(BCtx*ctx){
     }
     if(conn_ok!=0){
         FF_SET(ctx->flags,FL_ERROR);
-        FF_CLR(ctx->flags,FL_CONNECT);
         STATUS(ctx->flags,"TCP falhou");
         PS("  Falha TCP\n");
         goto done;
     }
-    FF_CLR(ctx->flags,FL_CONNECT);
 
     /* ── FASE 3: TLS (se HTTPS) ─────────────────────────────────────── */
     if(ctx->use_tls){
-        FF_SET(ctx->flags,FL_TLS_HS);
+        if(!BR_PHASE_NEXT(&ctx->flags,FL_CONNECT,FL_TLS_HS,FL_CONNECT)){
+            STATUS(ctx->flags,"Estado invalido: CONNECT->TLS");
+            goto done;
+        }
         STATUS(ctx->flags,"TLS 1.3 ClientHello...");
         TLS_INIT(&_TLS);
 
@@ -141,7 +146,6 @@ static s32 DO_FETCH(BCtx*ctx){
 
         if(sent<=0||sent<(s32)chlen){
             FF_SET(ctx->flags,FL_ERROR);
-            FF_CLR(ctx->flags,FL_TLS_HS);
             PS("  [TLS] ClientHello parcial/erro\n");
             goto done;
         } else {
@@ -179,12 +183,19 @@ static s32 DO_FETCH(BCtx*ctx){
             goto done;
         }
         if(CONNECT(ctx->fd,&sa)!=0){FF_SET(ctx->flags,FL_ERROR);goto done;}
-        FF_CLR(ctx->flags,FL_TLS_HS);
+        if(!BR_PHASE_NEXT(&ctx->flags,FL_TLS_HS,FL_HTTP_TX,FL_TLS_HS)){
+            STATUS(ctx->flags,"Estado invalido: TLS->HTTP_TX");
+            goto done;
+        }
         PS("  [FALLBACK] Usando HTTP para demo\n");
+    }else{
+        if(!BR_PHASE_NEXT(&ctx->flags,FL_CONNECT,FL_HTTP_TX,FL_CONNECT)){
+            STATUS(ctx->flags,"Estado invalido: CONNECT->HTTP_TX");
+            goto done;
+        }
     }
 
     /* ── FASE 4: HTTP request ────────────────────────────────────────── */
-    FF_SET(ctx->flags,FL_HTTP_TX);
     STATUS(ctx->flags,"Enviando request HTTP...");
     u32 reqlen=HTTP_BUILD_REQ(ctx->host,ctx->path,_NB,NET_BUF);
     PS("  Request (");PN(reqlen);PS("B):\n");
@@ -192,14 +203,15 @@ static s32 DO_FETCH(BCtx*ctx){
     s32 sent=SEND_ALL(ctx->fd,_NB,reqlen);
     if(sent<0||(u32)sent!=reqlen){
         FF_SET(ctx->flags,FL_ERROR);
-        FF_CLR(ctx->flags,FL_HTTP_TX);
         goto done;
     }
     ctx->tx_bytes+=(u32)sent;
-    FF_CLR(ctx->flags,FL_HTTP_TX);
+    if(!BR_PHASE_NEXT(&ctx->flags,FL_HTTP_TX,FL_HTTP_RX,FL_HTTP_TX)){
+        STATUS(ctx->flags,"Estado invalido: HTTP_TX->HTTP_RX");
+        goto done;
+    }
 
     /* ── FASE 5: HTTP response ───────────────────────────────────────── */
-    FF_SET(ctx->flags,FL_HTTP_RX);
     STATUS(ctx->flags,"Recebendo response...");
     u32 total=0;
     /* Acumula response em _NB */
@@ -214,11 +226,9 @@ static s32 DO_FETCH(BCtx*ctx){
     }
     if(total==0u){
         FF_SET(ctx->flags,FL_ERROR);
-        FF_CLR(ctx->flags,FL_HTTP_RX);
         goto done;
     }
     ctx->rx_bytes=total;
-    FF_CLR(ctx->flags,FL_HTTP_RX);
 
     CLOSE(ctx->fd);
     ctx->fd=-1;
@@ -238,7 +248,10 @@ static s32 DO_FETCH(BCtx*ctx){
     PS("  Content-Length: ");PN(ctx->content_len);
 
     /* ── FASE 6: Render HTML ─────────────────────────────────────────── */
-    FF_SET(ctx->flags,FL_HTML_RND);
+    if(!BR_PHASE_NEXT(&ctx->flags,FL_HTTP_RX,FL_HTML_RND,FL_HTTP_RX)){
+        STATUS(ctx->flags,"Estado invalido: HTTP_RX->HTML_RND");
+        goto done;
+    }
     u32 body_off=HTTP_HEADERS_END(_NB,total);
     u32 body_len=total>body_off?total-body_off:0u;
     STATUS(ctx->flags,"Renderizando HTML...");
@@ -246,7 +259,10 @@ static s32 DO_FETCH(BCtx*ctx){
 
     u32 rlen=0u;
     if(ctx->status!=0)rlen=HTML_RENDER(_NB+body_off,body_len,_RB,NET_BUF);
-    FF_CLR(ctx->flags,FL_HTML_RND);
+    if(!BR_PHASE_NEXT(&ctx->flags,FL_HTML_RND,FL_DONE,FL_HTML_RND)){
+        STATUS(ctx->flags,"Estado invalido: HTML_RND->DONE");
+        goto done;
+    }
 
     /* ── OUTPUT RENDERIZADO ───────────────────────────────────────────── */
     HEADER_LINE();
@@ -264,7 +280,6 @@ done:
     FF_CLR(ctx->flags,FL_DNS|FL_CONNECT|FL_TLS_HS|FL_HTTP_TX|FL_HTTP_RX|FL_HTML_RND);
     if(rc==0){
         FF_CLR(ctx->flags,FL_ERROR);
-        FF_SET(ctx->flags,FL_DONE);
     }else{
         FF_CLR(ctx->flags,FL_DONE);
         FF_SET(ctx->flags,FL_ERROR);
