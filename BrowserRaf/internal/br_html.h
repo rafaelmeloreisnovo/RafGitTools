@@ -65,10 +65,9 @@ static u32 HTML_RENDER(const u8*html,u32 n,u8*out,u32 cap){
                     EM('\n');ci=0;
                 } else if(BR_MEMCMP(tt,"li",3u)==0){
                     if(ci>0){EM('\n');ci=0;}EMS("  \xe2\x80\xa2 ");ci=4;
-                } else if(BR_MEMCMP(tt,"a",2u)==0&&t[0]!='/'){
-                    EMS("\033[0;36m"); /* cyan for links */
-                } else if(BR_MEMCMP(tt,"/a",3u)==0){
-                    EMS("\033[0m");
+                } else if(BR_MEMCMP(tt,"a",2u)==0){
+                    if(t[0]!='/') EMS("\033[0;36m"); /* cyan for links */
+                    else EMS("\033[0m");
                 } else if(BR_MEMCMP(tt,"title",6u)==0){
                     if(t[0]!='/'){EMS("\n\033[1;32m[TÍTULO] ");} else {EMS("\033[0m\n");}
                 } else if(BR_MEMCMP(tt,"head",5u)==0){
