@@ -39,6 +39,16 @@ typedef unsigned int       usize;
 #define FF_TOG(r,f)    ((r)^=(f))           /* TOGGLE bit            */
 #define FF_GET(r,f)    (!!((r)&(f)))        /* GET bit               */
 #define FF_NEXT(r,c,n) ((r)=(u8)(((r)&~(u8)(c))|(n))) /* transição  */
+/* Transição validada de fase: só avança se máscara requerida estiver ativa */
+AI u8 BR_PHASE_NEXT(u8*flags,u8 clear_mask,u8 set_mask,u8 required_mask){
+    u8 f=*flags;
+    if((f&required_mask)!=required_mask){
+        *flags=(u8)((f&~(u8)clear_mask)|FL_ERROR);
+        return 0u;
+    }
+    *flags=(u8)((f&~(u8)clear_mask)|set_mask);
+    return 1u;
+}
 /* ── ESTADOS TLS 1.3 (máquina de Turing geométrica) ───────────────────── */
 /* Hipercubo de estados: cada transição muda exatamente 1 bit            */
 #define TLS_IDLE       0x00u  /* 000: inicial                          */

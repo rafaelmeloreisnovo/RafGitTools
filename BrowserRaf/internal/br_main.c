@@ -52,6 +52,44 @@ static void WR_SAFE(u32 fd,const void*b,u32 n){
     if(n)(void)WR(fd,b,n);
 }
 
+
+static u8 HTTP_IS_CHUNKED(const u8*buf,u32 n){
+    const char key[]="Transfer-Encoding";
+    u32 kl=(u32)(sizeof(key)-1u);
+    for(u32 i=0;i+kl+1u<n;i++){
+        u32 k=0u;
+        while(k<kl){
+            u8 a=buf[i+k],b=(u8)key[k];
+            if(a>='A'&&a<='Z')a=(u8)(a+('a'-'A'));
+            if(b>='A'&&b<='Z')b=(u8)(b+('a'-'A'));
+            if(a!=b)break;
+            k++;
+        }
+        if(k!=kl||buf[i+kl]!=':')continue;
+        u32 j=i+kl+1u;
+        while(j<n&&(buf[j]==' '||buf[j]=='	'))j++;
+        while(j<n&&buf[j]!='\r'&&buf[j]!='\n'){
+            while(j<n&&(buf[j]==' '||buf[j]=='	'||buf[j]==','))j++;
+            const char tok[]="chunked";
+            u32 t=0u;
+            while(t<7u&&j+t<n){
+                u8 c=buf[j+t],d=(u8)tok[t];
+                if(c>='A'&&c<='Z')c=(u8)(c+('a'-'A'));
+                if(c!=d)break;
+                t++;
+            }
+            if(t==7u){
+                u32 end=j+7u;
+                if(end>=n||buf[end]=='\r'||buf[end]=='\n'||buf[end]==' '||buf[end]=='\t'||buf[end]==',')
+                    return 1u;
+            }
+            while(j<n&&buf[j]!=','&&buf[j]!='\r'&&buf[j]!='\n')j++;
+            if(j<n&&buf[j]==',')j++;
+        }
+    }
+    return 0u;
+}
+
 /* ── FETCH HTTP ─────────────────────────────────────────────────────────── */
 static s32 DO_FETCH(BCtx*ctx){
     ctx->flags=FL_IDLE;
@@ -59,7 +97,10 @@ static s32 DO_FETCH(BCtx*ctx){
     s32 rc=-1;
 
     /* ── FASE 1: DNS resolve ─────────────────────────────────────────── */
-    FF_SET(ctx->flags,FL_DNS);
+    if(!BR_PHASE_NEXT(&ctx->flags,0u,FL_DNS,0u)){
+        STATUS(ctx->flags,"Estado invalido: entrada DNS");
+        goto done;
+    }
     STATUS(ctx->flags,"Resolvendo DNS...");
     u8 ttl=3;
     s32 dns_ok=-1;
@@ -82,10 +123,12 @@ static s32 DO_FETCH(BCtx*ctx){
          i+=SL(ipstr+i);
      }
      ipstr[i]=0;PS("  ");PS(ipstr);PS("\n");}
-    FF_CLR(ctx->flags,FL_DNS);
+    if(!BR_PHASE_NEXT(&ctx->flags,FL_DNS,FL_CONNECT,FL_DNS)){
+        STATUS(ctx->flags,"Estado invalido: DNS->CONNECT");
+        goto done;
+    }
 
     /* ── FASE 2: TCP connect ─────────────────────────────────────────── */
-    FF_SET(ctx->flags,FL_CONNECT);
     STATUS(ctx->flags,"Conectando TCP...");
     GM(); /* checkpoint arena antes de alocar recursos de rede */
 
@@ -96,7 +139,6 @@ static s32 DO_FETCH(BCtx*ctx){
 
     s32 conn_ok=-1;
     ttl=3;
-    s32 conn_ok=-1;
     while(ttl--){
         ctx->fd=SOCKET();
         if(ctx->fd<0){
@@ -119,12 +161,10 @@ static s32 DO_FETCH(BCtx*ctx){
     }
     if(conn_ok!=0){
         FF_SET(ctx->flags,FL_ERROR);
-        FF_CLR(ctx->flags,FL_CONNECT);
         STATUS(ctx->flags,"TCP falhou");
         PS("  Falha TCP\n");
         goto done;
     }
-    FF_CLR(ctx->flags,FL_CONNECT);
 
     /* ── FASE 3: TLS (se HTTPS) ─────────────────────────────────────── */
     if(ctx->use_tls){
@@ -140,7 +180,6 @@ static s32 DO_FETCH(BCtx*ctx){
     }
 
     /* ── FASE 4: HTTP request ────────────────────────────────────────── */
-    FF_SET(ctx->flags,FL_HTTP_TX);
     STATUS(ctx->flags,"Enviando request HTTP...");
     u32 reqlen=HTTP_BUILD_REQ(ctx->host,ctx->path,_NB,NET_BUF);
     PS("  Request (");PN(reqlen);PS("B):\n");
@@ -148,14 +187,15 @@ static s32 DO_FETCH(BCtx*ctx){
     s32 sent=SEND_ALL(ctx->fd,_NB,reqlen);
     if(sent<0||(u32)sent!=reqlen){
         FF_SET(ctx->flags,FL_ERROR);
-        FF_CLR(ctx->flags,FL_HTTP_TX);
         goto done;
     }
     ctx->tx_bytes+=(u32)sent;
-    FF_CLR(ctx->flags,FL_HTTP_TX);
+    if(!BR_PHASE_NEXT(&ctx->flags,FL_HTTP_TX,FL_HTTP_RX,FL_HTTP_TX)){
+        STATUS(ctx->flags,"Estado invalido: HTTP_TX->HTTP_RX");
+        goto done;
+    }
 
     /* ── FASE 5: HTTP response ───────────────────────────────────────── */
-    FF_SET(ctx->flags,FL_HTTP_RX);
     STATUS(ctx->flags,"Recebendo response...");
     u32 total=0;
     /* Acumula response em _NB */
@@ -170,11 +210,9 @@ static s32 DO_FETCH(BCtx*ctx){
     }
     if(total==0u){
         FF_SET(ctx->flags,FL_ERROR);
-        FF_CLR(ctx->flags,FL_HTTP_RX);
         goto done;
     }
     ctx->rx_bytes=total;
-    FF_CLR(ctx->flags,FL_HTTP_RX);
 
     CLOSE(ctx->fd);
     ctx->fd=-1;
@@ -194,15 +232,30 @@ static s32 DO_FETCH(BCtx*ctx){
     PS("  Content-Length: ");PN(ctx->content_len);
 
     /* ── FASE 6: Render HTML ─────────────────────────────────────────── */
-    FF_SET(ctx->flags,FL_HTML_RND);
+    if(!BR_PHASE_NEXT(&ctx->flags,FL_HTTP_RX,FL_HTML_RND,FL_HTTP_RX)){
+        STATUS(ctx->flags,"Estado invalido: HTTP_RX->HTML_RND");
+        goto done;
+    }
     u32 body_off=HTTP_HEADERS_END(_NB,total);
     u32 body_len=total>body_off?total-body_off:0u;
+    if(body_len&&HTTP_IS_CHUNKED(_NB,body_off)){
+        u32 dec=HTTP_DECHUNK(_NB+body_off,body_len);
+        if(dec==0xFFFFFFFFu){
+            FF_SET(ctx->flags,FL_ERROR);
+            PS("  Chunked decode falhou\n");
+            goto done;
+        }
+        body_len=dec;
+    }
     STATUS(ctx->flags,"Renderizando HTML...");
     PS("  Body: ");PN(body_len);PS("B\n");
 
     u32 rlen=0u;
     if(ctx->status!=0)rlen=HTML_RENDER(_NB+body_off,body_len,_RB,NET_BUF);
-    FF_CLR(ctx->flags,FL_HTML_RND);
+    if(!BR_PHASE_NEXT(&ctx->flags,FL_HTML_RND,FL_DONE,FL_HTML_RND)){
+        STATUS(ctx->flags,"Estado invalido: HTML_RND->DONE");
+        goto done;
+    }
 
     /* ── OUTPUT RENDERIZADO ───────────────────────────────────────────── */
     HEADER_LINE();
@@ -220,7 +273,6 @@ done:
     FF_CLR(ctx->flags,FL_DNS|FL_CONNECT|FL_TLS_HS|FL_HTTP_TX|FL_HTTP_RX|FL_HTML_RND);
     if(rc==0){
         FF_CLR(ctx->flags,FL_ERROR);
-        FF_SET(ctx->flags,FL_DONE);
     }else{
         FF_CLR(ctx->flags,FL_DONE);
         FF_SET(ctx->flags,FL_ERROR);

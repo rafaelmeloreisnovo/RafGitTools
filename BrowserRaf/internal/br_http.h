@@ -51,13 +51,29 @@ static u32 HTTP_PARSE_STATUS(const u8*buf,u32 n){
 }
 
 /* ── PARSE DE HEADER VALUE ───────────────────────────────────────────────── */
+static u32 HTTP_HEADERS_END(const u8*buf,u32 n);
+
+/* Compara memória ASCII sem libc, normalizando apenas A-Z -> a-z. */
+static int BR_MEMCASECMP_ASCII(const u8*a,const char*b,u32 n){
+    for(u32 i=0;i<n;i++){
+        u8 ca=a[i];
+        u8 cb=(u8)b[i];
+        if(ca>='A'&&ca<='Z')ca=(u8)(ca+('a'-'A'));
+        if(cb>='A'&&cb<='Z')cb=(u8)(cb+('a'-'A'));
+        if(ca!=cb)return(int)ca-(int)cb;
+    }
+    return 0;
+}
+
 /* Procura "Key: value\r\n" em buf[0..n], retorna ponteiro para value */
 static const u8* HTTP_FIND_HEADER(const u8*buf,u32 n,const char*key){
     u32 kl=SL(key);
-    for(u32 i=0;i+kl+2u<n;i++){
-        if(BR_MEMCMP(buf+i,key,kl)==0&&buf[i+kl]==':'){
+    u32 hdr_end=HTTP_HEADERS_END(buf,n);
+    for(u32 i=0;i+kl+2u<hdr_end;i++){
+        u32 bol=(i==0u)||((i>=2u)&&buf[i-2u]=='\r'&&buf[i-1u]=='\n');
+        if(bol&&BR_MEMCASECMP_ASCII(buf+i,key,kl)==0&&buf[i+kl]==':'){
             u32 j=i+kl+1u;
-            while(j<n&&(buf[j]==' '||buf[j]=='\t'))j++;
+            while(j<hdr_end&&(buf[j]==' '||buf[j]=='\t'))j++;
             return buf+j;
         }
     }
@@ -73,6 +89,50 @@ static u32 STR2U32(const u8*s,u32 n){
 
 /* ── FIND END OF HEADERS ──────────────────────────────────────────────────── */
 /* Retorna offset do início do body (após \r\n\r\n) */
+
+
+/* ── DECHUNK IN-PLACE ───────────────────────────────────────────────────── */
+/* Retorna tamanho do body dechunkado, ou 0xFFFFFFFF em erro */
+static u32 HTTP_DECHUNK(u8*buf,u32 n){
+    u32 r=0u,w=0u;
+    while(r<n){
+        u32 sz=0u;
+        u32 got_digit=0u;
+        while(r<n){
+            u8 c=buf[r++];
+            if(c=='\r')break;
+            if(c==';'){
+                while(r<n&&buf[r]!='\r')r++;
+                break;
+            }
+            u32 v;
+            if(c>='0'&&c<='9')v=(u32)(c-'0');
+            else if(c>='a'&&c<='f')v=10u+(u32)(c-'a');
+            else if(c>='A'&&c<='F')v=10u+(u32)(c-'A');
+            else return 0xFFFFFFFFu;
+            got_digit=1u;
+            if(sz>0x0FFFFFFFu)return 0xFFFFFFFFu;
+            sz=(sz<<4u)|v;
+        }
+        if(!got_digit)return 0xFFFFFFFFu;
+        if(r>=n||buf[r]!='\n')return 0xFFFFFFFFu;
+        r++;
+
+        if(sz==0u){
+            if(r+1u<n&&buf[r]=='\r'&&buf[r+1u]=='\n')r+=2u;
+            return w;
+        }
+
+        if(r+sz>n)return 0xFFFFFFFFu;
+        MC(buf+w,buf+r,sz);
+        w+=sz;
+        r+=sz;
+
+        if(r+1u>=n||buf[r]!='\r'||buf[r+1u]!='\n')return 0xFFFFFFFFu;
+        r+=2u;
+    }
+    return 0xFFFFFFFFu;
+}
 static u32 HTTP_HEADERS_END(const u8*buf,u32 n){
     for(u32 i=0;i+3u<n;i++){
         if(buf[i]=='\r'&&buf[i+1]=='\n'&&buf[i+2]=='\r'&&buf[i+3]=='\n')
