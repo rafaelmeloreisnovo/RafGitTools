@@ -14,6 +14,14 @@ ALL_APKS=("$APK_DIR"/*/*/*.apk)
 MAX_SIZE_DIFF_BYTES="${MAX_SIZE_DIFF_BYTES:-0}"
 MAX_APK_SIZE_BYTES="${MAX_APK_SIZE_BYTES:-0}"
 
+file_size_bytes() {
+  if stat -c "%s" "$1" >/dev/null 2>&1; then
+    stat -c "%s" "$1"
+  else
+    wc -c < "$1" | tr -d " "
+  fi
+}
+
 if [[ ${#UNSIGNED_APKS[@]} -eq 0 ]]; then
   echo "No unsigned APKs found under $APK_DIR (signed-only lane)"
 fi
@@ -30,7 +38,7 @@ for apk in "${ALL_APKS[@]}"; do
   build_type="$(echo "$apk" | awk -F/ '{print $(NF-1)}')"
   signed_state="signed"
   [[ "$apk" == *"-unsigned.apk" ]] && signed_state="unsigned"
-  size=$(stat -c '%s' "$apk")
+  size=$(file_size_bytes "$apk")
   printf '%s\t%s\t%s\t%s\t%s\n' "$apk" "$variant" "$build_type" "$signed_state" "$size" >> "$SIZES_REPORT"
   echo "$apk | ${size} bytes | ${signed_state}"
 
@@ -43,7 +51,7 @@ done
 
 check_apk_abis() {
   local apk="$1"
-  unzip -l "$apk" | awk '{print $4}' | rg '^lib/(armeabi-v7a|arm64-v8a)/.+\.so$' | cut -d/ -f2 | sort -u
+  unzip -l "$apk" | awk '{print $4}' | grep -E '^lib/(armeabi-v7a|arm64-v8a)/.+\.so$' | cut -d/ -f2 | sort -u
 }
 
 echo "== ABI validation =="
@@ -51,11 +59,11 @@ for apk in "${ALL_APKS[@]}"; do
   [[ -f "$apk" ]] || continue
   abis="$(check_apk_abis "$apk" | xargs)"
   echo "$apk -> $abis"
-  if ! check_apk_abis "$apk" | rg -q '^armeabi-v7a$'; then
+  if ! check_apk_abis "$apk" | grep -q '^armeabi-v7a$'; then
     echo "Missing armeabi-v7a in $apk" >&2
     exit 1
   fi
-  if ! check_apk_abis "$apk" | rg -q '^arm64-v8a$'; then
+  if ! check_apk_abis "$apk" | grep -q '^arm64-v8a$'; then
     echo "Missing arm64-v8a in $apk" >&2
     exit 1
   fi
@@ -66,7 +74,7 @@ for apk in "${ALL_APKS[@]}"; do
     lib="$(basename "$libpath")"
     lib_size="$(unzip -l "$apk" "$libpath" | awk 'NR==4 {print $1}')"
     printf '%s\t%s\t%s\t%s\n' "$apk" "$abi" "$lib" "$lib_size" >> "$NATIVE_REPORT"
-  done < <(unzip -l "$apk" | awk '{print $4}' | rg '^lib/(armeabi-v7a|arm64-v8a)/.+\.so$')
+  done < <(unzip -l "$apk" | awk '{print $4}' | grep -E '^lib/(armeabi-v7a|arm64-v8a)/.+\.so$')
 done
 
 echo "== Signature validation =="
@@ -116,8 +124,8 @@ for unsigned_apk in "${UNSIGNED_APKS[@]}"; do
   base="$(basename "$unsigned_apk" | sed 's/-unsigned\.apk$//')"
   signed_apk="$(dirname "$unsigned_apk")/${base}.apk"
   if [[ -f "$signed_apk" ]]; then
-    u_size=$(stat -c '%s' "$unsigned_apk")
-    s_size=$(stat -c '%s' "$signed_apk")
+    u_size=$(file_size_bytes "$unsigned_apk")
+    s_size=$(file_size_bytes "$signed_apk")
     diff=$((s_size - u_size))
     echo "$base | unsigned=$u_size signed=$s_size diff=$diff"
     if [[ "$MAX_SIZE_DIFF_BYTES" -gt 0 && "$diff" -gt "$MAX_SIZE_DIFF_BYTES" ]]; then
