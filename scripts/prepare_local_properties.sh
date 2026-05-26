@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+is_termux_android_host() {
+  [[ -n "${PREFIX:-}" && "$PREFIX" == /data/data/com.termux/files/usr* ]] || [[ -d /data/data/com.termux/files/usr ]]
+}
+
 resolve_sdk_path() {
   local candidates=(
     "${ANDROID_SDK_ROOT:-}"
@@ -49,6 +53,14 @@ install_sdk_if_missing() {
 }
 
 if ! sdk_path="$(resolve_sdk_path)"; then
+  if is_termux_android_host; then
+    echo "Termux/Android host detected without a valid Android SDK path." >&2
+    echo "Refusing to bootstrap Linux desktop command-line tools in Termux." >&2
+    echo "Use a preconfigured ANDROID_SDK_ROOT/ANDROID_HOME, run builds on desktop/CI," >&2
+    echo "or run ./scripts/termux_arm32_runtime_check.sh for runtime/toolchain diagnostics." >&2
+    exit 2
+  fi
+
   install_sdk_if_missing
   sdk_path="$ANDROID_SDK_ROOT"
 fi

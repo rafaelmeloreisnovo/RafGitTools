@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+is_termux_android_host() {
+  [[ -n "${PREFIX:-}" && "$PREFIX" == /data/data/com.termux/files/usr* ]] || [[ -d /data/data/com.termux/files/usr ]]
+}
+
+
 detect_java17_home() {
   if command -v mise >/dev/null 2>&1; then
     local mise_path
@@ -13,6 +18,10 @@ detect_java17_home() {
 
   local candidate
   for candidate in \
+    "${PREFIX:-}/lib/jvm/java-17-openjdk" \
+    "${PREFIX:-}/opt/openjdk-17" \
+    "${PREFIX:-}/lib/jvm/default" \
+    /data/data/com.termux/files/usr/lib/jvm/java-17-openjdk \
     /usr/lib/jvm/java-17-openjdk-amd64 \
     /usr/lib/jvm/temurin-17-jdk-amd64 \
     /usr/lib/jvm/zulu-17-amd64 \
