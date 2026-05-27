@@ -3,20 +3,18 @@
 - Status: ATIVO
 - Última atualização: 2026-05-27
 
-## A) Pronto e acessível
-- PAT login
-- Navegação principal com múltiplas rotas
-- Operações git básicas e telas principais
+## Entregue
+- PAT login funcional.
+- Device Code integrado ao ViewModel/UI com estado pending/polling.
+- Importação via gh CLI integrada.
+- Modo offline habilitado no Auth e respeitado na Home.
 
-## B) Pronto mas oculto/parcialmente exposto
-- Device Flow existia no código e agora está ligado ao ViewModel; UX ainda evolutiva.
-- Muitas operações avançadas de JGit existem no backend, mas não totalmente guiadas em UI.
+## Parcial / Roadmap
+- SSH auth: **PARCIAL/ROADMAP** (placeholder explícito).
+- OAUTH_WEB: **PARCIAL/ROADMAP** (não implementado).
+- UX completa para operações git destrutivas com confirmação e trilha.
 
-## C) Parcial
-- SSH auth
-- Hardening de terminal por classe de risco
-- Matriz completa de evidências por linha
-
-## D) Planejado
-- Cobertura total de testes auth/git/api/terminal
-- Fluxos UX de segurança para operações destrutivas
+## Próximos incrementos
+1. Testes unitários dedicados para offline na Home.
+2. Hardening de terminal (SAFE/DANGEROUS/BLOCKED).
+3. Cobertura de integração para auth + repository cache.

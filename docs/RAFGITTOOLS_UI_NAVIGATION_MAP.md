@@ -1,43 +1,27 @@
 # RAFGITTOOLS_UI_NAVIGATION_MAP
 
-- Status: ATIVO (mapeamento principal)
+- Status: ATIVO
 - Última atualização: 2026-05-27
-- Fonte: `ui/navigation/Screen.kt` + `MainActivity.kt`.
 
-## Rotas declaradas
+## Mapa de navegação real (preenchido)
 
-Home, Auth, RepositoryList, RepositoryDetail, CommitList, CommitDetail, BranchList, Settings, AddRepository, IssueList, IssueDetail, PullRequestList, PullRequestDetail, Search, Profile, FileBrowser, DiffViewer, StashList, TagList, Releases, ReleaseDetail, Notifications, Terminal, CreateIssue, CreatePullRequest.
+| Rota | Tela | Origem principal | Dependência auth | Estado |
+|---|---|---|---|---|
+| `auth` | AuthScreen | boot quando não autenticado | não | REAL_ATIVO |
+| `home` | HomeScreen | pós-auth/splash | sim (ou offline) | REAL_ATIVO |
+| `repository_list` | RepositoryListScreen | home | sim | REAL_ATIVO |
+| `repository_detail/{repoPath}` | RepositoryDetailScreen | repository_list | sim | REAL_ATIVO |
+| `commit_list/{repoPath}` | CommitListScreen | repository_detail | sim | REAL_ATIVO |
+| `commit_detail/{repoPath}/{commitSha}` | CommitDetailScreen | commit_list | sim | REAL_ATIVO |
+| `branch_list/{repoPath}` | BranchListScreen | repository_detail | sim | REAL_ATIVO |
+| `settings` | SettingsScreen | home/menu | não obrigatório | REAL_ATIVO |
+| `notifications` | NotificationsScreen | home/menu | sim | REAL_ATIVO |
+| `terminal/{repoPath}` | TerminalScreen | repository_detail | não obrigatório | PARCIAL (hardening pendente) |
+| `create_issue/{owner}/{repo}` | CreateIssueScreen | issue_list | sim | REAL_ATIVO |
+| `create_pr/{owner}/{repo}` | CreatePullRequestScreen | pr_list | sim | REAL_ATIVO |
 
-## Mapa real (resumo)
+## Fluxos críticos
 
-| Screen | route | Montada em MainActivity | Status real |
-|---|---|---|---|
-| Home | `home` | Sim | REAL_ATIVO |
-| Auth | `auth` | Sim | REAL_ATIVO (com chooser) |
-| RepositoryList | `repository_list` | Sim | REAL_ATIVO |
-| RepositoryDetail | `repository_detail/{repoPath}` | Sim | REAL_ATIVO |
-| CommitList | `commit_list/{repoPath}` | Sim | REAL_ATIVO |
-| CommitDetail | `commit_detail/{repoPath}/{commitSha}` | Sim | REAL_ATIVO |
-| BranchList | `branch_list/{repoPath}` | Sim | REAL_ATIVO |
-| Settings | `settings` | Sim | REAL_ATIVO |
-| AddRepository | `add_repository` | Sim | REAL_ATIVO |
-| IssueList | `issue_list/{owner}/{repo}` | Sim | REAL_ATIVO |
-| IssueDetail | `issue_detail/{owner}/{repo}/{number}` | Sim | REAL_ATIVO |
-| PullRequestList | `pr_list/{owner}/{repo}` | Sim | REAL_ATIVO |
-| PullRequestDetail | `pr_detail/{owner}/{repo}/{number}` | Sim | REAL_ATIVO |
-| Search | `search` | Sim | REAL_ATIVO |
-| Profile | `profile/{username}` | Sim | REAL_ATIVO |
-| FileBrowser | `file_browser/{repoPath}` | Sim | REAL_ATIVO |
-| DiffViewer | `diff_viewer/{repoPath}` | Sim | REAL_ATIVO |
-| StashList | `stash_list/{repoPath}` | Sim | REAL_ATIVO |
-| TagList | `tag_list/{repoPath}` | Sim | REAL_ATIVO |
-| Releases | `releases/{owner}/{repo}` | Sim | REAL_ATIVO |
-| ReleaseDetail | `release_detail/{owner}/{repo}/{id}` | Sim | REAL_ATIVO |
-| Notifications | `notifications` | Sim | REAL_ATIVO |
-| Terminal | `terminal/{repoPath}` | Sim | REAL_ATIVO |
-| CreateIssue | `create_issue/{owner}/{repo}` | Sim | REAL_ATIVO |
-| CreatePullRequest | `create_pr/{owner}/{repo}` | Sim | REAL_ATIVO |
-
-## Gap crítico atual
-
-- A existência da rota/tela não implica paridade funcional total com todas as operações de domínio (ex.: operações avançadas de rebase/cherry-pick/reset ainda requerem UX de confirmação dedicada).
+- Auth -> Home: liberado por `AuthUiState.Success` ou `AuthUiState.Offline`.
+- Offline -> Home: permitido, carregando estado local sem chamada obrigatória à API.
+- Logout -> Auth: limpa cache/token e retorna para fluxo de autenticação.
