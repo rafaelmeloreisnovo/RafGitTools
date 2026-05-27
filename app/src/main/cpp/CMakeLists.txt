@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(rafgittools_native_core LANGUAGES C ASM)
 
+# C/ASM native layer builds for Android ABIs configured in Gradle.
+# armeabi-v7a compiles __arm__ paths; arm64-v8a compiles __aarch64__ paths.
+
 set(CMAKE_C_STANDARD 11)
 
 add_library(rafcore SHARED
@@ -16,5 +19,6 @@ add_library(rafcore SHARED
 )
 
 target_include_directories(rafcore PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_options(rafcore PRIVATE -Wall -Wextra)
 find_library(log-lib log)
 target_link_libraries(rafcore ${log-lib})

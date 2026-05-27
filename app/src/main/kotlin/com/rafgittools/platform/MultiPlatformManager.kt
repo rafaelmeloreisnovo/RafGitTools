@@ -15,6 +15,7 @@ object MultiPlatformManager {
     }
 
     external fun nativeAsmHealth(): Int
+    external fun nativeAbiMask(): Int
 
     fun getGitLabProjects(): List<String> {
         // In a future release this would call GitLab's API
