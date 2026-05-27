@@ -8,5 +8,6 @@ enum class AuthMethod {
     DEVICE_CODE,
     OAUTH_WEB,
     GH_CLI_IMPORT,
+    SSH_KEY,
     OFFLINE
 }

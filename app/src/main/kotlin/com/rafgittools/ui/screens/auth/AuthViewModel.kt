@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.rafgittools.data.auth.AuthMethod
 import com.rafgittools.data.auth.AuthRepository
 import com.rafgittools.data.auth.AuthTokenCache
+import com.rafgittools.data.auth.DeviceFlowState
+import com.rafgittools.data.auth.GhCliAuthImporter
+import com.rafgittools.data.auth.OAuthDeviceFlowManager
 import com.rafgittools.data.github.GithubDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,161 +20,75 @@ import javax.inject.Inject
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val githubRepository: GithubDataRepository,
-    private val authTokenCache: AuthTokenCache
+    private val authTokenCache: AuthTokenCache,
+    private val deviceFlowManager: OAuthDeviceFlowManager,
+    private val ghCliAuthImporter: GhCliAuthImporter
 ) : ViewModel() {
-
-    private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
+    private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.ChoosingMethod)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
-
     private val _isAuthenticated = MutableStateFlow(false)
     val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
-
     private val _username = MutableStateFlow<String?>(null)
     val username: StateFlow<String?> = _username.asStateFlow()
-
     private val _selectedMethod = MutableStateFlow<AuthMethod?>(null)
     val selectedMethod: StateFlow<AuthMethod?> = _selectedMethod.asStateFlow()
 
-    init {
-        checkAuthenticationStatus()
-    }
+    init { checkAuthenticationStatus() }
 
-    private fun checkAuthenticationStatus() {
-        viewModelScope.launch {
-            _isAuthenticated.value = authRepository.isAuthenticated()
-            _username.value = authRepository.getUsername()
-            authTokenCache.token = authRepository.getPat().getOrNull()
-            _selectedMethod.value = authRepository.getAuthMethod().getOrNull()
-        }
-    }
+    private fun checkAuthenticationStatus() { viewModelScope.launch {
+        _isAuthenticated.value = authRepository.isAuthenticated()
+        _username.value = authRepository.getUsername()
+        authTokenCache.token = authRepository.getPat().getOrNull()
+        _selectedMethod.value = authRepository.getAuthMethod().getOrNull()
+        if (!_isAuthenticated.value && !authRepository.isOfflineMode()) _uiState.value = AuthUiState.ChoosingMethod
+    } }
 
-    fun selectMethod(method: AuthMethod) {
-        _selectedMethod.value = method
-        if (_uiState.value is AuthUiState.Error) {
-            _uiState.value = AuthUiState.Idle
-        }
-    }
+    fun selectMethod(method: AuthMethod) { _selectedMethod.value = method; _uiState.value = AuthUiState.MethodSelected(method) }
+    fun clearSelectedMethod() { _selectedMethod.value = null; _uiState.value = AuthUiState.ChoosingMethod }
 
-    fun clearSelectedMethod() {
-        _selectedMethod.value = null
-        _uiState.value = AuthUiState.Idle
-    }
-
-    fun startDeviceCodeLogin() {
-        selectMethod(AuthMethod.DEVICE_CODE)
-        _uiState.value = AuthUiState.Error("Fluxo Device Code em preparação. Você pode usar PAT agora.")
-    }
-
-    fun completeDeviceCodeLogin() {
-        _uiState.value = AuthUiState.Error("Nenhum device code ativo para concluir.")
-    }
-
-    fun authenticateWithOAuthCallback(code: String) {
-        selectMethod(AuthMethod.OAUTH_WEB)
-        if (code.isBlank()) {
-            _uiState.value = AuthUiState.Error("Código OAuth inválido")
-            return
-        }
-        _uiState.value = AuthUiState.Error("Fluxo OAuth Web em preparação. Você pode usar PAT agora.")
-    }
-
-    fun importFromGhCli() {
-        selectMethod(AuthMethod.GH_CLI_IMPORT)
-        viewModelScope.launch {
-            _uiState.value = AuthUiState.Loading
-            val hasGhCli = runCatching {
-                val process = ProcessBuilder("gh", "--version").start()
-                process.waitFor() == 0
-            }.getOrDefault(false)
-
-            _uiState.value = if (!hasGhCli) {
-                AuthUiState.Error("gh CLI não encontrado. Use PAT ou Device Code.")
-            } else {
-                AuthUiState.Error("Importação via gh CLI em preparação. Você pode usar PAT agora.")
+    fun startDeviceCodeLogin() { selectMethod(AuthMethod.DEVICE_CODE); viewModelScope.launch {
+        deviceFlowManager.startDeviceFlow().collect { state ->
+            _uiState.value = when (state) {
+                is DeviceFlowState.Requesting -> AuthUiState.Loading
+                is DeviceFlowState.PendingUserAction -> AuthUiState.DeviceCodePending(state.userCode, state.verificationUri)
+                is DeviceFlowState.Polling -> AuthUiState.DeviceCodePolling(state.attempt, state.max)
+                is DeviceFlowState.Authorized -> { authTokenCache.token = state.token; _isAuthenticated.value = true; _username.value = state.username; AuthUiState.Success(state.username, AuthMethod.DEVICE_CODE) }
+                is DeviceFlowState.Error -> AuthUiState.Error(state.message)
             }
         }
-    }
+    } }
 
-    fun continueOffline() {
-        selectMethod(AuthMethod.OFFLINE)
+    fun importGhCliToken() { selectMethod(AuthMethod.GH_CLI_IMPORT); viewModelScope.launch {
+        _uiState.value = AuthUiState.Loading
+        ghCliAuthImporter.importToken().onSuccess { token -> authenticateWithPat(token) }
+            .onFailure { _uiState.value = AuthUiState.Error(it.message ?: "Falha ao importar token do gh CLI") }
+    } }
+
+    fun authenticateWithSshKey() { selectMethod(AuthMethod.SSH_KEY); _uiState.value = AuthUiState.Error("Fluxo SSH ainda parcial nesta fase.") }
+    fun continueOffline() { selectMethod(AuthMethod.OFFLINE); viewModelScope.launch { authRepository.setOfflineMode(true); authRepository.saveAuthMethod(AuthMethod.OFFLINE); authTokenCache.token = null; _uiState.value = AuthUiState.Offline } }
+
+    fun authenticateWithPat(token: String) { if (token.isBlank()) { _uiState.value = AuthUiState.Error("Token cannot be empty"); return }
         viewModelScope.launch {
-            authRepository.saveAuthMethod(AuthMethod.OFFLINE)
-            _isAuthenticated.value = false
-            _username.value = null
-            authTokenCache.token = null
-            _uiState.value = AuthUiState.SuccessOffline
+            selectMethod(AuthMethod.PAT); _uiState.value = AuthUiState.Loading; authRepository.setOfflineMode(false)
+            authRepository.savePat(token, "temp").onFailure { _uiState.value = AuthUiState.Error(it.message ?: "Failed to validate token format"); return@launch }
+            githubRepository.getAuthenticatedUserSync().onSuccess { user ->
+                authRepository.savePat(token, user.login); authRepository.saveAuthMethod(AuthMethod.PAT); authTokenCache.token = token; _isAuthenticated.value = true; _username.value = user.login; _uiState.value = AuthUiState.Success(user.login, AuthMethod.PAT)
+            }.onFailure { error -> authRepository.logout(); authTokenCache.token = null; _uiState.value = AuthUiState.Error(error.message ?: "Authentication failed") }
         }
     }
 
-    fun authenticateWithPat(token: String) {
-        if (token.isBlank()) {
-            _uiState.value = AuthUiState.Error("Token cannot be empty")
-            return
-        }
-
-        viewModelScope.launch {
-            selectMethod(AuthMethod.PAT)
-            _uiState.value = AuthUiState.Loading
-
-            authRepository.savePat(token, "temp")
-                .onFailure {
-                    _uiState.value = AuthUiState.Error(it.message ?: "Failed to validate token format")
-                    return@launch
-                }
-
-            githubRepository.getAuthenticatedUserSync()
-                .onSuccess { user ->
-                    authRepository.savePat(token, user.login)
-                        .onSuccess {
-                            authRepository.saveAuthMethod(AuthMethod.PAT)
-                            authTokenCache.token = token
-                            _isAuthenticated.value = true
-                            _username.value = user.login
-                            _uiState.value = AuthUiState.Success(user.login)
-                        }
-                        .onFailure { error ->
-                            _uiState.value = AuthUiState.Error(error.message ?: "Failed to save credentials")
-                        }
-                }
-                .onFailure { error ->
-                    authRepository.logout()
-                    authTokenCache.token = null
-                    _uiState.value = AuthUiState.Error(
-                        when {
-                            error.message?.contains("401") == true -> "Invalid token. Please check your PAT and try again."
-                            error.message?.contains("403") == true -> "Token doesn't have required permissions."
-                            else -> error.message ?: "Authentication failed"
-                        }
-                    )
-                }
-        }
-    }
-
-    fun logout() {
-        viewModelScope.launch {
-            authRepository.logout()
-                .onSuccess {
-                    authTokenCache.token = null
-                    _isAuthenticated.value = false
-                    _username.value = null
-                    _selectedMethod.value = null
-                    _uiState.value = AuthUiState.Idle
-                }
-                .onFailure { error ->
-                    _uiState.value = AuthUiState.Error(error.message ?: "Failed to logout")
-                }
-        }
-    }
-
-    fun resetState() {
-        _uiState.value = AuthUiState.Idle
-    }
+    fun logout() { viewModelScope.launch { authRepository.clearAuthState(); authTokenCache.token = null; _isAuthenticated.value = false; _username.value = null; _selectedMethod.value = null; _uiState.value = AuthUiState.ChoosingMethod } }
+    fun resetState() { _uiState.value = AuthUiState.ChoosingMethod }
 }
 
 sealed class AuthUiState {
     object Idle : AuthUiState()
+    object ChoosingMethod : AuthUiState()
+    data class MethodSelected(val method: AuthMethod) : AuthUiState()
     object Loading : AuthUiState()
-    data class Success(val username: String) : AuthUiState()
-    object SuccessOffline : AuthUiState()
+    data class DeviceCodePending(val userCode: String, val verificationUri: String) : AuthUiState()
+    data class DeviceCodePolling(val attempt: Int, val max: Int) : AuthUiState()
+    data class Success(val username: String, val method: AuthMethod) : AuthUiState()
+    object Offline : AuthUiState()
     data class Error(val message: String) : AuthUiState()
 }
