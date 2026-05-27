@@ -34,3 +34,6 @@ Build not executed in this environment because Android SDK/Gradle environment is
 - implementar Worktree;
 - implementar Webhooks;
 - consolidar trilha de release final.
+
+## Follow-up refinement (2026-05-27)
+- README terminology adjusted to avoid production-complete wording and align with evidence-based labels.

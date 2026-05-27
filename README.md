@@ -120,12 +120,14 @@ All while respecting the licenses of these amazing open-source projects and addi
 
 ## ✨ Features
 
-### ✅ Funcional em produção
+> **Status semantics used in this README**: `implemented` = código existente e uso direto no app; `partial` = código existente sem cobertura/fechamento total; `planned` = roadmap; `experimental` = material ainda não integrado oficialmente.
+
+### ✅ Implementado no código (evidência atual)
 - **Integração com GitHub API (Retrofit/OkHttp)**: base das telas e fluxos de autenticação, repos, issues e PRs em evolução.  
 - **Operações Git locais via JGit**: base para clone/commit/branch/push/pull em desenvolvimento contínuo.  
 - **Arquitetura e base do app**: Clean Architecture + MVVM + Hilt com Jetpack Compose e Room.  
 
-### 🚧 Funcional parcial
+### 🚧 Parcial / cobertura incompleta
 - **Cobertura de testes** (meta > 80%) e automação de CI/CD.  
 - **Autenticação SSH** (chaves/agent) e base de GPG.  
 - **UI/UX incremental** com Compose (telas principais e fluxos críticos).  
