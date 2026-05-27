@@ -1,26 +1,19 @@
 # RAFGITTOOLS_GIT_OPERATIONS_MATRIX
 
-- Status: ATIVO (auditoria de operações)
+- Status: ATIVO
 - Última atualização: 2026-05-27
-- Fonte: `domain/repository/GitRepository.kt`, `data/repository/GitRepositoryImpl.kt`, `data/git/JGitService.kt`.
 
-## Cobertura principal
+| Operação | Backend (JGitService/GitRepositoryImpl) | UI atual | Risco | Situação |
+|---|---|---|---|---|
+| clone/fetch/pull/push | implementado | parcial (fluxo principal) | médio | REAL_ATIVO |
+| status/log/diff | implementado | exposto | baixo | REAL_ATIVO |
+| branches (create/delete/checkout) | implementado | parcial (delete com cuidado) | médio | REAL_ATIVO |
+| tags (create/delete/list) | implementado | parcial | médio | REAL_ATIVO |
+| stash (save/pop/apply/clear) | implementado | parcial | alto (clear) | REAL_ATIVO |
+| reset/revert/clean | implementado | pouco exposto | alto | PARCIAL_UI |
+| rebase/cherry-pick | implementado | parcial | alto | PARCIAL_UI |
+| reflog/blame | implementado | parcial | baixo | PARCIAL_UI |
 
-As operações listadas no plano (clone/status/commits/branches/stash/tags/diff/rebase/cherry-pick/reset/revert/clean/reflog/blame etc.) estão implementadas em `GitRepositoryImpl` e encaminhadas para `JGitService`.
+## Diretriz
 
-## Operações destrutivas (exigir confirmação UX)
-
-- `forcePushWithLease`
-- `deleteBranch`
-- `stashClear`
-- `deleteTag`
-- `reset`
-- `clean`
-- `rebaseAbort`
-- `cherryPickAbort`
-
-## Status
-
-- **CODE_REAL**: alto.
-- **UI_EXPOSTA**: parcial para operações avançadas/destrutivas.
-- **Ação**: criar diálogos de confirmação para operações de risco e trilha de auditoria por ação.
+Operações destrutivas devem manter confirmação explícita na UI antes de execução.

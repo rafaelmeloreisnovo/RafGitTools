@@ -44,7 +44,14 @@ class HomeViewModel @Inject constructor(
     
     private fun checkAuthAndLoadData() {
         viewModelScope.launch {
-            _isAuthenticated.value = authRepository.isAuthenticated()
+            val offlineMode = authRepository.isOfflineMode()
+            _isAuthenticated.value = authRepository.isAuthenticated() || offlineMode
+            if (offlineMode) {
+                _user.value = null
+                _repositories.value = emptyList()
+                _uiState.value = HomeUiState.Empty
+                return@launch
+            }
             if (_isAuthenticated.value) {
                 loadUserData()
             } else {

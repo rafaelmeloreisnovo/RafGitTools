@@ -2,32 +2,22 @@
 
 - Status: ATIVO (auditoria técnica em andamento)
 - Última atualização: 2026-05-27
-- Escopo: estado executável real do app Android + gaps de exposição em UI.
-- Fonte de verdade: `app/src/main/kotlin`, `scripts/`, `docs/`.
+- Escopo: auth/home/docs + validação de build/teste neste ambiente.
 
-## Resumo executivo
+## Atualizações desta execução
 
-1. **Auth**: PAT está funcional e exposto; Device Code existe e agora tem ligação no `AuthViewModel`; SSH é parcial/placeholder; modo offline existe de forma mínima.
-2. **Git local (JGit)**: camada operacional ampla existe no domínio/repositório/serviço, mas nem toda operação está exposta em tela.
-3. **GitHub API**: serviço e repositório possuem cobertura extensa de endpoints (repos/issues/PR/releases/notificações/stars), com lacunas de UX para acesso completo.
-4. **Terminal interno**: é controlado por allowlist (não é PTY completo/Termux real).
-5. **Segurança**: interceptor oficial é `data.auth.AuthInterceptor`; interceptor deprecated de `data.network` foi removido nesta iteração.
+1. `AuthViewModelTest` atualizado para novo construtor com `SshKeyManager` (além de `OAuthDeviceFlowManager` e `GhCliAuthImporter`).
+2. Implementação real de `OAUTH_WEB`: novo `startOAuthWebLogin()` usando fluxo OAuth Device existente, com persistência de método `AuthMethod.OAUTH_WEB` quando autorizado.
+3. Implementação real de `SSH` local: `authenticateWithSshKey()` valida presença de chaves via `SshKeyManager`; se houver chave, ativa modo offline/local e persiste `AuthMethod.SSH_KEY`.
+4. `AuthScreen` ganhou botão de `OAuth Web (browser)` e ação para abrir `verificationUri` no navegador durante `DeviceCodePending`.
+5. `HomeViewModel` permanece com suporte a modo offline via `authRepository.isOfflineMode()`.
+6. Matrizes de documentação ajustadas para refletir SSH/OAUTH_WEB em estado real atual.
 
-## Classificação por dimensão
+## Resultado de validação (solicitado)
 
-| Dimensão | Situação atual |
-|---|---|
-| CODE_REAL | Alto: app com base robusta em Kotlin/Compose/Hilt/JGit/Retrofit. |
-| UI_EXPOSTA | Médio: várias capacidades reais estão ocultas/parciais na UI. |
-| DOC_DECLARA | Médio/alto: havia sobreposição entre visão e realidade; docs novas separam isso. |
-| TESTADO_COM_PROVA | Médio/baixo no ambiente local atual: execução de testes Android bloqueada por ausência de SDK local. |
+- `./scripts/gradlew_with_java17.sh testDevDebugUnitTest` => **FALHOU** por ausência de SDK Android (`local.properties`/`ANDROID_HOME`).
+- `./scripts/gradlew_with_java17.sh assembleDevDebug` => **FALHOU** pelo mesmo motivo de SDK não configurado.
 
-## Falhas conhecidas (ambiente desta execução)
+## Risco aberto
 
-- `./scripts/gradlew_with_java17.sh testDevDebugUnitTest` falha sem `local.properties`/`ANDROID_HOME`.
-
-## Próximos passos imediatos
-
-1. Completar matrizes com evidências linha-a-linha.
-2. Cobrir testes de autenticação/offline/interceptor.
-3. Endurecer terminal com classificação de risco em runtime (SAFE/DANGEROUS/BLOCKED).
+Sem SDK Android configurado no ambiente atual, não há comprovação de compilação/testes locais para esta rodada.

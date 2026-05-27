@@ -3,19 +3,26 @@
 - Status: ATIVO
 - Última atualização: 2026-05-27
 
-## Fluxo oficial de token
+## Mapa de autenticação e segurança
 
-1. Entrada: `AuthViewModel.authenticateWithPat` / `startDeviceCodeLogin`.
-2. Persistência: `AuthRepository.savePat` (criptografia via `SecurityManager`).
-3. Cache em memória: `AuthTokenCache`.
-4. Injeção HTTP: `data.auth.AuthInterceptor` adiciona `Authorization` quando token presente.
-5. Limpeza: `AuthRepository.clearAuthState` + limpeza de cache no `AuthViewModel.logout`.
+| Método | Entrada UI | Persistência | Cache memória | Risco atual | Maturidade |
+|---|---|---|---|---|---|
+| PAT | AuthScreen > PatLoginForm | AuthRepository.savePat (SecurityManager) | AuthTokenCache.token | vazamento em logs/acidentes de UX | ATIVO |
+| OAUTH_DEVICE | AuthScreen > startDeviceCodeLogin | token final via authenticateWithPat | AuthTokenCache.token | polling/retry e UX de timeout | ATIVO |
+| GH_CLI_IMPORT | AuthScreen > importGhCliToken | token importado passa por authenticateWithPat | AuthTokenCache.token | dependência de gh instalado | ATIVO |
+| OFFLINE | AuthScreen > continueOffline | AuthRepository.setOfflineMode(true) | token nulo | acesso a features indevidas online | ATIVO |
+| SSH | AuthScreen > authenticateWithSshKey | AuthMethod.SSH_KEY + offline local + validação de chave | token nulo | sem chave cadastrada impede login | REAL_ATIVO_LOCAL |
+| OAUTH_WEB | AuthScreen > startOAuthWebLogin | Device flow com método OAUTH_WEB persistido | AuthTokenCache.token | depende de GITHUB_CLIENT_ID | REAL_ATIVO |
 
-## Duplicidade/dead code
+## Controles ativos
 
-- `data/network/AuthInterceptor.kt` (deprecated) removido nesta iteração para evitar caminho paralelo e confusão.
+1. Token armazenado criptografado por `SecurityManager`.
+2. Cache em memória isolado por `AuthTokenCache`.
+3. Logout limpa estado persistido e memória (`clearAuthState` + cache).
+4. Modo offline não injeta token e permite fluxo local da Home.
 
-## Riscos
+## Lacunas prioritárias
 
-- Garantir testes para “sem token não injeta header” e “com token injeta corretamente”.
-- Garantir que logs não exponham Authorization/token.
+- Testes de interceptação sem token/com token.
+- Política de mascaramento de erro para evitar leak de credenciais.
+- Implementar SSH real (agent/chave) e OAuth Web completo.

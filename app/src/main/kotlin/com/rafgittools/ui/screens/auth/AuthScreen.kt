@@ -81,7 +81,7 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel(), onAuthSuccess: () -> 
         Box(Modifier.fillMaxSize().padding(padding)) {
             when {
                 isAuthenticated && username != null -> AuthenticatedContent(username!!, onLogout = viewModel::logout)
-                selectedMethod == null -> AuthMethodSelection(onSelect = viewModel::selectMethod, onStartDeviceCode = viewModel::startDeviceCodeLogin, onImportGh = viewModel::importGhCliToken, onSsh = viewModel::authenticateWithSshKey, onOffline = viewModel::continueOffline)
+                selectedMethod == null -> AuthMethodSelection(onSelect = viewModel::selectMethod, onStartDeviceCode = viewModel::startDeviceCodeLogin, onStartOauthWeb = viewModel::startOAuthWebLogin, onImportGh = viewModel::importGhCliToken, onSsh = viewModel::authenticateWithSshKey, onOffline = viewModel::continueOffline)
                 selectedMethod == AuthMethod.PAT -> PatLoginForm(viewModel, uiState)
                 else -> MethodPlaceholder(selectedMethod = selectedMethod, uiState = uiState, onBack = viewModel::clearSelectedMethod)
             }
@@ -93,6 +93,7 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel(), onAuthSuccess: () -> 
 private fun AuthMethodSelection(
     onSelect: (AuthMethod) -> Unit,
     onStartDeviceCode: () -> Unit,
+    onStartOauthWeb: () -> Unit,
     onImportGh: () -> Unit,
     onSsh: () -> Unit,
     onOffline: () -> Unit
@@ -101,6 +102,8 @@ private fun AuthMethodSelection(
         Text("Escolha o método de login", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
         Spacer(Modifier.height(24.dp))
         Button(onClick = onStartDeviceCode, modifier = Modifier.fillMaxWidth()) { Text("Login com GitHub pelo navegador / código") }
+        Spacer(Modifier.height(12.dp))
+        Button(onClick = onStartOauthWeb, modifier = Modifier.fillMaxWidth()) { Text("OAuth Web (browser)") }
         Spacer(Modifier.height(12.dp))
         Button(onClick = { onSelect(AuthMethod.PAT) }, modifier = Modifier.fillMaxWidth()) { Text("Usar Personal Access Token") }
         Spacer(Modifier.height(12.dp))
@@ -117,6 +120,30 @@ private fun MethodPlaceholder(selectedMethod: AuthMethod?, uiState: AuthUiState,
     Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Text("Método: ${selectedMethod?.name}")
         if (uiState is AuthUiState.Loading) CircularProgressIndicator()
+        if (uiState is AuthUiState.DeviceCodePending) {
+            Text("Abra o navegador e confirme o login:", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            OutlinedCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("User code", style = MaterialTheme.typography.labelMedium)
+                    Text(uiState.userCode, style = MaterialTheme.typography.headlineSmall)
+                    Spacer(Modifier.height(12.dp))
+                    Text("Verification URL", style = MaterialTheme.typography.labelMedium)
+                    Text(uiState.verificationUri, style = MaterialTheme.typography.bodyMedium)
+                    if (selectedMethod == AuthMethod.OAUTH_WEB) {
+                        Spacer(Modifier.height(12.dp))
+                        TextButton(onClick = { LocalUriHandler.current.openUri(uiState.verificationUri) }) {
+                            Icon(Icons.Default.OpenInNew, contentDescription = null)
+                            Spacer(Modifier.width(4.dp))
+                            Text("Abrir navegador")
+                        }
+                    }
+                }
+            }
+        }
+        if (uiState is AuthUiState.DeviceCodePolling) {
+            Text("Aguardando autorização no GitHub (${uiState.attempt}/${uiState.max})")
+        }
         if (uiState is AuthUiState.Error) Text(uiState.message, color = MaterialTheme.colorScheme.error)
         if (uiState is AuthUiState.Offline) Text("Modo offline ativo. Recursos locais liberados.")
         Spacer(Modifier.height(16.dp))

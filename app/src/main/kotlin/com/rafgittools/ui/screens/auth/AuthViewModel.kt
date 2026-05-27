@@ -9,6 +9,7 @@ import com.rafgittools.data.auth.DeviceFlowState
 import com.rafgittools.data.auth.GhCliAuthImporter
 import com.rafgittools.data.auth.OAuthDeviceFlowManager
 import com.rafgittools.data.github.GithubDataRepository
+import com.rafgittools.core.security.SshKeyManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +23,8 @@ class AuthViewModel @Inject constructor(
     private val githubRepository: GithubDataRepository,
     private val authTokenCache: AuthTokenCache,
     private val deviceFlowManager: OAuthDeviceFlowManager,
-    private val ghCliAuthImporter: GhCliAuthImporter
+    private val ghCliAuthImporter: GhCliAuthImporter,
+    private val sshKeyManager: SshKeyManager
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.ChoosingMethod)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
@@ -46,13 +48,20 @@ class AuthViewModel @Inject constructor(
     fun selectMethod(method: AuthMethod) { _selectedMethod.value = method; _uiState.value = AuthUiState.MethodSelected(method) }
     fun clearSelectedMethod() { _selectedMethod.value = null; _uiState.value = AuthUiState.ChoosingMethod }
 
-    fun startDeviceCodeLogin() { selectMethod(AuthMethod.DEVICE_CODE); viewModelScope.launch {
+    fun startDeviceCodeLogin() { selectMethod(AuthMethod.DEVICE_CODE); startDeviceFlow(AuthMethod.DEVICE_CODE) }
+
+    fun startOAuthWebLogin() {
+        selectMethod(AuthMethod.OAUTH_WEB)
+        startDeviceFlow(AuthMethod.OAUTH_WEB)
+    }
+
+    private fun startDeviceFlow(method: AuthMethod) { viewModelScope.launch {
         deviceFlowManager.startDeviceFlow().collect { state ->
             _uiState.value = when (state) {
                 is DeviceFlowState.Requesting -> AuthUiState.Loading
                 is DeviceFlowState.PendingUserAction -> AuthUiState.DeviceCodePending(state.userCode, state.verificationUri)
                 is DeviceFlowState.Polling -> AuthUiState.DeviceCodePolling(state.attempt, state.max)
-                is DeviceFlowState.Authorized -> { authTokenCache.token = state.token; _isAuthenticated.value = true; _username.value = state.username; AuthUiState.Success(state.username, AuthMethod.DEVICE_CODE) }
+                is DeviceFlowState.Authorized -> { authTokenCache.token = state.token; _isAuthenticated.value = true; _username.value = state.username; authRepository.setOfflineMode(false); authRepository.saveAuthMethod(method); AuthUiState.Success(state.username, method) }
                 is DeviceFlowState.Error -> AuthUiState.Error(state.message)
             }
         }
@@ -64,7 +73,23 @@ class AuthViewModel @Inject constructor(
             .onFailure { _uiState.value = AuthUiState.Error(it.message ?: "Falha ao importar token do gh CLI") }
     } }
 
-    fun authenticateWithSshKey() { selectMethod(AuthMethod.SSH_KEY); _uiState.value = AuthUiState.Error("Fluxo SSH ainda parcial nesta fase.") }
+    fun authenticateWithSshKey() { selectMethod(AuthMethod.SSH_KEY); viewModelScope.launch {
+        _uiState.value = AuthUiState.Loading
+        val sshKeys = sshKeyManager.listKeys().getOrElse {
+            _uiState.value = AuthUiState.Error("Falha ao verificar chaves SSH: ${it.message}")
+            return@launch
+        }
+        if (sshKeys.isEmpty()) {
+            _uiState.value = AuthUiState.Error("Nenhuma chave SSH encontrada. Gere ou importe uma chave para autenticar via SSH.")
+            return@launch
+        }
+        authRepository.setOfflineMode(true)
+        authRepository.saveAuthMethod(AuthMethod.SSH_KEY)
+        authTokenCache.token = null
+        _isAuthenticated.value = true
+        _username.value = sshKeys.first().comment.ifBlank { "ssh-user" }
+        _uiState.value = AuthUiState.Success(_username.value ?: "ssh-user", AuthMethod.SSH_KEY)
+    } }
     fun continueOffline() { selectMethod(AuthMethod.OFFLINE); viewModelScope.launch { authRepository.setOfflineMode(true); authRepository.saveAuthMethod(AuthMethod.OFFLINE); authTokenCache.token = null; _uiState.value = AuthUiState.Offline } }
 
     fun authenticateWithPat(token: String) { if (token.isBlank()) { _uiState.value = AuthUiState.Error("Token cannot be empty"); return }
