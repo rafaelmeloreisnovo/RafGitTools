@@ -37,6 +37,7 @@ class AuthRepository @Inject constructor(
         private val USERNAME_KEY = stringPreferencesKey("username")
         private val IS_AUTHENTICATED_KEY = stringPreferencesKey("is_authenticated")
         private val AUTH_METHOD_KEY = stringPreferencesKey("auth_method")
+        private val OFFLINE_MODE_KEY = stringPreferencesKey("offline_mode")
         private const val PAT_KEY_ALIAS = "github_pat"
     }
     
@@ -161,6 +162,36 @@ class AuthRepository @Inject constructor(
         }
     }
 
+
+    suspend fun setOfflineMode(enabled: Boolean): Result<Unit> {
+        return try {
+            dataStore.edit { preferences ->
+                preferences[OFFLINE_MODE_KEY] = enabled.toString()
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun isOfflineMode(): Boolean {
+        return dataStore.data.first()[OFFLINE_MODE_KEY] == "true"
+    }
+
+    suspend fun clearAuthState(): Result<Unit> {
+        return try {
+            dataStore.edit { preferences ->
+                preferences.remove(ENCRYPTED_PAT_KEY)
+                preferences.remove(USERNAME_KEY)
+                preferences[IS_AUTHENTICATED_KEY] = "false"
+                preferences.remove(AUTH_METHOD_KEY)
+                preferences.remove(OFFLINE_MODE_KEY)
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
     /**
      * Clear all authentication data
      * 
@@ -168,13 +199,7 @@ class AuthRepository @Inject constructor(
      */
     suspend fun logout(): Result<Unit> {
         return try {
-            dataStore.edit { preferences ->
-                preferences.remove(ENCRYPTED_PAT_KEY)
-                preferences.remove(USERNAME_KEY)
-                preferences[IS_AUTHENTICATED_KEY] = "false"
-                preferences.remove(AUTH_METHOD_KEY)
-            }
-            Result.success(Unit)
+            clearAuthState()
         } catch (e: Exception) {
             Result.failure(e)
         }

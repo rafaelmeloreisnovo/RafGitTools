@@ -1020,3 +1020,13 @@ This project would not be possible without the amazing work of the open-source c
 ⭐ Star this repo if you find it useful!
 
 </div>
+
+
+## Estado do projeto (honesto)
+
+RafGitTools está em evolução contínua. A fundação Android/Kotlin está estruturada, com Git local via JGit e camada ampla de GitHub API em código. Nem toda a feature matrix está exposta na UI atual.
+
+Referências de verdade:
+- `docs/RAFGITTOOLS_CURRENT_STATE.md`
+- `docs/RAFGITTOOLS_CODE_REALITY_MATRIX.md`
+- `docs/RAFGITTOOLS_ROADMAP_TRUE.md`
