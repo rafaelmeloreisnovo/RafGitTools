@@ -66,7 +66,7 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel(), onAuthSuccess: () -> 
     val selectedMethod by viewModel.selectedMethod.collectAsState()
 
     LaunchedEffect(uiState) {
-        if (uiState is AuthUiState.Success || uiState is AuthUiState.SuccessOffline) onAuthSuccess()
+        if (uiState is AuthUiState.Success || uiState is AuthUiState.Offline) onAuthSuccess()
     }
 
     Scaffold(topBar = {
@@ -81,7 +81,7 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel(), onAuthSuccess: () -> 
         Box(Modifier.fillMaxSize().padding(padding)) {
             when {
                 isAuthenticated && username != null -> AuthenticatedContent(username!!, onLogout = viewModel::logout)
-                selectedMethod == null -> AuthMethodSelection(onSelect = viewModel::selectMethod, onStartDeviceCode = viewModel::startDeviceCodeLogin, onImportGh = viewModel::importFromGhCli, onOffline = viewModel::continueOffline)
+                selectedMethod == null -> AuthMethodSelection(onSelect = viewModel::selectMethod, onStartDeviceCode = viewModel::startDeviceCodeLogin, onImportGh = viewModel::importGhCliToken, onSsh = viewModel::authenticateWithSshKey, onOffline = viewModel::continueOffline)
                 selectedMethod == AuthMethod.PAT -> PatLoginForm(viewModel, uiState)
                 else -> MethodPlaceholder(selectedMethod = selectedMethod, uiState = uiState, onBack = viewModel::clearSelectedMethod)
             }
@@ -94,10 +94,11 @@ private fun AuthMethodSelection(
     onSelect: (AuthMethod) -> Unit,
     onStartDeviceCode: () -> Unit,
     onImportGh: () -> Unit,
+    onSsh: () -> Unit,
     onOffline: () -> Unit
 ) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Text("Escolha como deseja entrar", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+        Text("Escolha o método de login", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
         Spacer(Modifier.height(24.dp))
         Button(onClick = onStartDeviceCode, modifier = Modifier.fillMaxWidth()) { Text("Login com GitHub pelo navegador / código") }
         Spacer(Modifier.height(12.dp))
@@ -105,7 +106,9 @@ private fun AuthMethodSelection(
         Spacer(Modifier.height(12.dp))
         Button(onClick = onImportGh, modifier = Modifier.fillMaxWidth()) { Text("Importar sessão do gh CLI / Termux") }
         Spacer(Modifier.height(12.dp))
-        OutlinedButton(onClick = onOffline, modifier = Modifier.fillMaxWidth()) { Text("Continuar offline") }
+        OutlinedButton(onClick = onSsh, modifier = Modifier.fillMaxWidth()) { Text("Usar chave SSH") }
+        Spacer(Modifier.height(12.dp))
+        OutlinedButton(onClick = onOffline, modifier = Modifier.fillMaxWidth()) { Text("Continuar offline/local") }
     }
 }
 
@@ -115,7 +118,7 @@ private fun MethodPlaceholder(selectedMethod: AuthMethod?, uiState: AuthUiState,
         Text("Método: ${selectedMethod?.name}")
         if (uiState is AuthUiState.Loading) CircularProgressIndicator()
         if (uiState is AuthUiState.Error) Text(uiState.message, color = MaterialTheme.colorScheme.error)
-        if (uiState is AuthUiState.SuccessOffline) Text("Modo offline ativo. Recursos locais liberados.")
+        if (uiState is AuthUiState.Offline) Text("Modo offline ativo. Recursos locais liberados.")
         Spacer(Modifier.height(16.dp))
         OutlinedButton(onClick = onBack) { Text("Voltar") }
     }
