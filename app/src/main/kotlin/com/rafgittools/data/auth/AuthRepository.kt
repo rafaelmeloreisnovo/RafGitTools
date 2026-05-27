@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
+import com.rafgittools.data.auth.AuthMethod
 import javax.inject.Singleton
 
 private val Context.authDataStore: DataStore<Preferences> by preferencesDataStore(name = "auth")
@@ -35,6 +36,7 @@ class AuthRepository @Inject constructor(
         private val ENCRYPTED_PAT_KEY = stringPreferencesKey("encrypted_pat")
         private val USERNAME_KEY = stringPreferencesKey("username")
         private val IS_AUTHENTICATED_KEY = stringPreferencesKey("is_authenticated")
+        private val AUTH_METHOD_KEY = stringPreferencesKey("auth_method")
         private const val PAT_KEY_ALIAS = "github_pat"
     }
     
@@ -94,6 +96,7 @@ class AuthRepository @Inject constructor(
                 preferences[ENCRYPTED_PAT_KEY] = encryptedToken
                 preferences[USERNAME_KEY] = username
                 preferences[IS_AUTHENTICATED_KEY] = "true"
+                preferences[AUTH_METHOD_KEY] = AuthMethod.PAT.name
             }
             
             Result.success(Unit)
@@ -124,6 +127,40 @@ class AuthRepository @Inject constructor(
         }
     }
     
+
+    suspend fun saveAuthMethod(method: AuthMethod): Result<Unit> {
+        return try {
+            dataStore.edit { preferences ->
+                preferences[AUTH_METHOD_KEY] = method.name
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getAuthMethod(): Result<AuthMethod> {
+        return try {
+            val preferences = dataStore.data.first()
+            val methodValue = preferences[AUTH_METHOD_KEY]
+                ?: return Result.failure(Exception("No auth method stored"))
+            Result.success(AuthMethod.valueOf(methodValue))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun clearAuthMethod(): Result<Unit> {
+        return try {
+            dataStore.edit { preferences ->
+                preferences.remove(AUTH_METHOD_KEY)
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     /**
      * Clear all authentication data
      * 
@@ -135,6 +172,7 @@ class AuthRepository @Inject constructor(
                 preferences.remove(ENCRYPTED_PAT_KEY)
                 preferences.remove(USERNAME_KEY)
                 preferences[IS_AUTHENTICATED_KEY] = "false"
+                preferences.remove(AUTH_METHOD_KEY)
             }
             Result.success(Unit)
         } catch (e: Exception) {
