@@ -106,7 +106,6 @@ private fun AuthMethodSelection(
         Spacer(Modifier.height(12.dp))
         Button(onClick = onImportGh, modifier = Modifier.fillMaxWidth()) { Text("Importar sessão do gh CLI / Termux") }
         Spacer(Modifier.height(12.dp))
-        Spacer(Modifier.height(12.dp))
         OutlinedButton(onClick = onSsh, modifier = Modifier.fillMaxWidth()) { Text("Usar chave SSH") }
         Spacer(Modifier.height(12.dp))
         OutlinedButton(onClick = onOffline, modifier = Modifier.fillMaxWidth()) { Text("Continuar offline/local") }
