@@ -47,6 +47,13 @@ class AuthViewModel @Inject constructor(
 
     fun selectMethod(method: AuthMethod) {
         _selectedMethod.value = method
+        if (_uiState.value is AuthUiState.Error) {
+            _uiState.value = AuthUiState.Idle
+        }
+    }
+
+    fun clearSelectedMethod() {
+        _selectedMethod.value = null
         _uiState.value = AuthUiState.Idle
     }
 
@@ -85,10 +92,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun clearSelectedMethod() {
-        _selectedMethod.value = null
-    }
-
     fun continueOffline() {
         selectMethod(AuthMethod.OFFLINE)
         viewModelScope.launch {
@@ -107,10 +110,14 @@ class AuthViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _uiState.value = AuthUiState.Loading
             selectMethod(AuthMethod.PAT)
+            _uiState.value = AuthUiState.Loading
 
             authRepository.savePat(token, "temp")
+                .onFailure {
+                    _uiState.value = AuthUiState.Error(it.message ?: "Failed to validate token format")
+                    return@launch
+                }
 
             githubRepository.getAuthenticatedUserSync()
                 .onSuccess { user ->

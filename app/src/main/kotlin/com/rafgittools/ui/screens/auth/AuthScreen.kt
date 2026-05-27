@@ -66,7 +66,7 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel(), onAuthSuccess: () -> 
     val selectedMethod by viewModel.selectedMethod.collectAsState()
 
     LaunchedEffect(uiState) {
-        if (uiState is AuthUiState.Success) onAuthSuccess()
+        if (uiState is AuthUiState.Success || uiState is AuthUiState.SuccessOffline) onAuthSuccess()
     }
 
     Scaffold(topBar = {
@@ -83,7 +83,7 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel(), onAuthSuccess: () -> 
                 isAuthenticated && username != null -> AuthenticatedContent(username!!, onLogout = viewModel::logout)
                 selectedMethod == null -> AuthMethodSelection(onSelect = viewModel::selectMethod, onStartDeviceCode = viewModel::startDeviceCodeLogin, onImportGh = viewModel::importFromGhCli, onOffline = viewModel::continueOffline)
                 selectedMethod == AuthMethod.PAT -> PatLoginForm(viewModel, uiState)
-                else -> MethodPlaceholder(selectedMethod = selectedMethod, uiState = uiState, onBack = { viewModel.resetState(); viewModel.clearSelectedMethod() })
+                else -> MethodPlaceholder(selectedMethod = selectedMethod, uiState = uiState, onBack = viewModel::clearSelectedMethod)
             }
         }
     }
