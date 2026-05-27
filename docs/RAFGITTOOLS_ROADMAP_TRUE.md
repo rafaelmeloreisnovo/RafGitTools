@@ -10,8 +10,8 @@
 - Modo offline habilitado no Auth e respeitado na Home.
 
 ## Parcial / Roadmap
-- SSH auth: **PARCIAL/ROADMAP** (placeholder explícito).
-- OAUTH_WEB: **PARCIAL/ROADMAP** (não implementado).
+- SSH auth local: **REAL_ATIVO_LOCAL** (requer chave SSH existente; ativa modo offline).
+- OAUTH_WEB: **REAL_ATIVO** (inicia device flow com UX de abrir navegador e persistência de método).
 - UX completa para operações git destrutivas com confirmação e trilha.
 
 ## Próximos incrementos

@@ -11,8 +11,8 @@
 | OAUTH_DEVICE | AuthScreen > startDeviceCodeLogin | token final via authenticateWithPat | AuthTokenCache.token | polling/retry e UX de timeout | ATIVO |
 | GH_CLI_IMPORT | AuthScreen > importGhCliToken | token importado passa por authenticateWithPat | AuthTokenCache.token | dependência de gh instalado | ATIVO |
 | OFFLINE | AuthScreen > continueOffline | AuthRepository.setOfflineMode(true) | token nulo | acesso a features indevidas online | ATIVO |
-| SSH | AuthScreen > authenticateWithSshKey | sem persistência real | n/a | fluxo incompleto | PARCIAL/ROADMAP |
-| OAUTH_WEB | não exposto | não implementado | n/a | não iniciado | PARCIAL/ROADMAP |
+| SSH | AuthScreen > authenticateWithSshKey | AuthMethod.SSH_KEY + offline local + validação de chave | token nulo | sem chave cadastrada impede login | REAL_ATIVO_LOCAL |
+| OAUTH_WEB | AuthScreen > startOAuthWebLogin | Device flow com método OAUTH_WEB persistido | AuthTokenCache.token | depende de GITHUB_CLIENT_ID | REAL_ATIVO |
 
 ## Controles ativos
 
