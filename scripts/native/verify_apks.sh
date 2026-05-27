@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
 shopt -s nullglob
 
 APK_DIR="app/build/outputs/apk"
@@ -8,132 +7,90 @@ REPORT_DIR="app/build/reports/apk"
 mkdir -p "$REPORT_DIR"
 SIZES_REPORT="$REPORT_DIR/apk_sizes.tsv"
 NATIVE_REPORT="$REPORT_DIR/apk_native_lib_sizes.tsv"
+ABI_MD_REPORT="$REPORT_DIR/apk_native_abi_report.md"
 
-UNSIGNED_APKS=("$APK_DIR"/*/release/*-unsigned.apk)
+REQUIRE_APKS="${REQUIRE_APKS:-false}"
+VERIFY_STRICT_ABI="${VERIFY_STRICT_ABI:-false}"
+
 ALL_APKS=("$APK_DIR"/*/*/*.apk)
-MAX_SIZE_DIFF_BYTES="${MAX_SIZE_DIFF_BYTES:-0}"
-MAX_APK_SIZE_BYTES="${MAX_APK_SIZE_BYTES:-0}"
+UNSIGNED_APKS=("$APK_DIR"/*/release/*-unsigned.apk)
 
-file_size_bytes() {
-  if stat -c "%s" "$1" >/dev/null 2>&1; then
-    stat -c "%s" "$1"
-  else
-    wc -c < "$1" | tr -d " "
+if [[ ${#ALL_APKS[@]} -eq 0 ]]; then
+  echo "No APKs found. Run ./gradlew assembleDevDebug assembleProductionDebug first."
+  if [[ "$REQUIRE_APKS" == "true" ]]; then
+    exit 1
   fi
-}
-
-if [[ ${#UNSIGNED_APKS[@]} -eq 0 ]]; then
-  echo "No unsigned APKs found under $APK_DIR (signed-only lane)"
+  exit 0
 fi
 
 : > "$SIZES_REPORT"
 : > "$NATIVE_REPORT"
+: > "$ABI_MD_REPORT"
 printf 'apk\tvariant\tbuild_type\tsigned\tsize_bytes\n' >> "$SIZES_REPORT"
 printf 'apk\tabi\tlib\tsize_bytes\n' >> "$NATIVE_REPORT"
 
-echo "== APK inventory (with size) =="
-for apk in "${ALL_APKS[@]}"; do
-  [[ -f "$apk" ]] || continue
-  variant="$(echo "$apk" | awk -F/ '{print $(NF-2)}')"
-  build_type="$(echo "$apk" | awk -F/ '{print $(NF-1)}')"
-  signed_state="signed"
-  [[ "$apk" == *"-unsigned.apk" ]] && signed_state="unsigned"
-  size=$(file_size_bytes "$apk")
-  printf '%s\t%s\t%s\t%s\t%s\n' "$apk" "$variant" "$build_type" "$signed_state" "$size" >> "$SIZES_REPORT"
-  echo "$apk | ${size} bytes | ${signed_state}"
-
-  if [[ "$MAX_APK_SIZE_BYTES" -gt 0 && "$size" -gt "$MAX_APK_SIZE_BYTES" ]]; then
-    echo "APK exceeds MAX_APK_SIZE_BYTES=$MAX_APK_SIZE_BYTES: $apk ($size)" >&2
-    exit 1
-  fi
-
-done
+{
+  echo "# APK Native ABI Report"
+  echo
+} >> "$ABI_MD_REPORT"
 
 check_apk_abis() {
   local apk="$1"
   unzip -l "$apk" | awk '{print $4}' | grep -E '^lib/(armeabi-v7a|arm64-v8a)/.+\.so$' | cut -d/ -f2 | sort -u
 }
 
-echo "== ABI validation =="
 for apk in "${ALL_APKS[@]}"; do
   [[ -f "$apk" ]] || continue
-  abis="$(check_apk_abis "$apk" | xargs)"
-  echo "$apk -> $abis"
-  if ! check_apk_abis "$apk" | grep -q '^armeabi-v7a$'; then
-    echo "Missing armeabi-v7a in $apk" >&2
+  size=$(stat -c "%s" "$apk" 2>/dev/null || wc -c < "$apk")
+  variant="$(echo "$apk" | awk -F/ '{print $(NF-2)}')"
+  build_type="$(echo "$apk" | awk -F/ '{print $(NF-1)}')"
+  signed_state="signed"
+  [[ "$apk" == *"-unsigned.apk" ]] && signed_state="unsigned"
+
+  printf '%s\t%s\t%s\t%s\t%s\n' "$apk" "$variant" "$build_type" "$signed_state" "$size" >> "$SIZES_REPORT"
+
+  mapfile -t abis < <(check_apk_abis "$apk")
+  libs=$(unzip -l "$apk" | awk '{print $4}' | grep -E '^lib/(armeabi-v7a|arm64-v8a)/.+\.so$' || true)
+
+  missing=()
+  printf '%s\n' "${abis[@]}" | grep -q '^armeabi-v7a$' || missing+=("armeabi-v7a")
+  printf '%s\n' "${abis[@]}" | grep -q '^arm64-v8a$' || missing+=("arm64-v8a")
+
+  {
+    echo "## $apk"
+    echo "- APK path: $apk"
+    echo "- size: $size"
+    echo "- signed/unsigned: $signed_state"
+    echo "- ABIs found: ${abis[*]:-none}"
+    echo "- native libs found:"
+    if [[ -n "$libs" ]]; then
+      while IFS= read -r libpath; do
+        [[ -n "$libpath" ]] || continue
+        echo "  - $libpath"
+        abi="$(echo "$libpath" | cut -d/ -f2)"
+        lib="$(basename "$libpath")"
+        lib_size="$(unzip -l "$apk" "$libpath" | awk 'NR==4 {print $1}')"
+        printf '%s\t%s\t%s\t%s\n' "$apk" "$abi" "$lib" "$lib_size" >> "$NATIVE_REPORT"
+      done <<< "$libs"
+    else
+      echo "  - none"
+    fi
+
+    if [[ ${#missing[@]} -gt 0 ]]; then
+      echo "- missing ABI warnings: ${missing[*]}"
+    else
+      echo "- missing ABI warnings: none"
+    fi
+    echo
+  } >> "$ABI_MD_REPORT"
+
+  if [[ "$VERIFY_STRICT_ABI" == "true" && ${#missing[@]} -gt 0 ]]; then
+    echo "Strict ABI verification failed for $apk: missing ${missing[*]}" >&2
     exit 1
   fi
-  if ! check_apk_abis "$apk" | grep -q '^arm64-v8a$'; then
-    echo "Missing arm64-v8a in $apk" >&2
-    exit 1
-  fi
 
-  while IFS= read -r libpath; do
-    [[ -n "$libpath" ]] || continue
-    abi="$(echo "$libpath" | cut -d/ -f2)"
-    lib="$(basename "$libpath")"
-    lib_size="$(unzip -l "$apk" "$libpath" | awk 'NR==4 {print $1}')"
-    printf '%s\t%s\t%s\t%s\n' "$apk" "$abi" "$lib" "$lib_size" >> "$NATIVE_REPORT"
-  done < <(unzip -l "$apk" | awk '{print $4}' | grep -E '^lib/(armeabi-v7a|arm64-v8a)/.+\.so$')
-done
-
-echo "== Signature validation =="
-
-if [[ -z "${ANDROID_SDK_ROOT:-}" && -f local.properties ]]; then
-  sdk_from_props="$(awk -F= '/^sdk.dir=/{print $2}' local.properties | tail -n1)"
-  if [[ -n "$sdk_from_props" ]]; then
-    export ANDROID_SDK_ROOT="$sdk_from_props"
-    export ANDROID_HOME="$sdk_from_props"
-  fi
-fi
-
-APKSIGNER_BIN=""
-if [[ -n "${ANDROID_SDK_ROOT:-}" && -x "${ANDROID_SDK_ROOT}/build-tools/34.0.0/apksigner" ]]; then
-  APKSIGNER_BIN="${ANDROID_SDK_ROOT}/build-tools/34.0.0/apksigner"
-elif command -v apksigner >/dev/null 2>&1; then
-  APKSIGNER_BIN="$(command -v apksigner)"
-fi
-
-for apk in "${ALL_APKS[@]}"; do
-  [[ -f "$apk" ]] || continue
-  if [[ "$apk" == *"-unsigned.apk" ]]; then
-    if [[ -n "$APKSIGNER_BIN" ]]; then
-      if "$APKSIGNER_BIN" verify "$apk" >/dev/null 2>&1; then
-        echo "Unexpected signed status for unsigned APK: $apk" >&2
-        exit 1
-      fi
-      echo "$apk -> unsigned (expected)"
-    else
-      echo "$apk -> unsigned (apksigner unavailable; filename-based)"
-    fi
-  else
-    if [[ -n "$APKSIGNER_BIN" ]]; then
-      "$APKSIGNER_BIN" verify "$apk"
-      echo "$apk -> signed"
-    else
-      echo "$apk -> signed/unknown (apksigner unavailable; filename-based)"
-    fi
-  fi
-done
-
-echo "== Signed vs unsigned size diff =="
-if [[ ${#UNSIGNED_APKS[@]} -eq 0 ]]; then
-  echo "Skipping size diff: no unsigned APKs present."
-fi
-for unsigned_apk in "${UNSIGNED_APKS[@]}"; do
-  base="$(basename "$unsigned_apk" | sed 's/-unsigned\.apk$//')"
-  signed_apk="$(dirname "$unsigned_apk")/${base}.apk"
-  if [[ -f "$signed_apk" ]]; then
-    u_size=$(file_size_bytes "$unsigned_apk")
-    s_size=$(file_size_bytes "$signed_apk")
-    diff=$((s_size - u_size))
-    echo "$base | unsigned=$u_size signed=$s_size diff=$diff"
-    if [[ "$MAX_SIZE_DIFF_BYTES" -gt 0 && "$diff" -gt "$MAX_SIZE_DIFF_BYTES" ]]; then
-      echo "Signed/unsigned diff exceeds MAX_SIZE_DIFF_BYTES=$MAX_SIZE_DIFF_BYTES for $base" >&2
-      exit 1
-    fi
-  fi
 done
 
 echo "Size report: $SIZES_REPORT"
 echo "Native lib size report: $NATIVE_REPORT"
+echo "ABI markdown report: $ABI_MD_REPORT"

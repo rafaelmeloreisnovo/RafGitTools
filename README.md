@@ -1,5 +1,19 @@
 # RafGitTools 🚀
+
+## Current Source Truth / Fonte de Verdade Atual
+
+Este README contém visão, contexto e roadmap. O estado técnico verificável do projeto está documentado em:
+- `docs/CURRENT_SOURCE_STATE_2026-05-26.md`
+- `docs/STATUS_REPORT.md`
+- `app/build.gradle`
+- `app/src/main/cpp/CMakeLists.txt`
+- `scripts/native/verify_apks.sh`
+
+## Project Philosophy
+
 📜 Parábola do Relojoeiro Transfinito
+
+> A parábola abaixo descreve filosofia e invariantes do projeto; não é declaração de status de implementação técnica.
 
 I. A Oficina e o Núcleo Determinístico
 
@@ -92,9 +106,17 @@ RafGitTools is an ambitious Android application that aims to provide the most co
 - 🌐 **GitHub Integration** (inspired by FastHub)
 - 📁 **Local Git Operations** (inspired by MGit)
 - 🎨 **Modern UI/UX** (inspired by PuppyGit)
-- 💻 **Terminal Capabilities** (inspired by Termux)
+- 💻 **Terminal Capabilities** (roadmap/experimental until wired with tests and production validation)
 
 All while respecting the licenses of these amazing open-source projects and adding unique innovations.
+
+
+## ARM32 / Termux / Native Layer Status
+
+- O Gradle gera (ou pretende gerar, conforme variante) bibliotecas para `armeabi-v7a` e `arm64-v8a`.
+- O CMake compila `rafcore` com JNI bridge para o app Android.
+- O ASM ARM32/ARM64 atual deve ser tratado como camada de health/sanity, não como kernel final RAFAELIA.
+- O script `_incoming/termux_arm32_build.sh` contém material experimental avançado e deve ser promovido gradualmente.
 
 ## ✨ Features
 
