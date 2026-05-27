@@ -117,6 +117,22 @@ private fun MethodPlaceholder(selectedMethod: AuthMethod?, uiState: AuthUiState,
     Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Text("Método: ${selectedMethod?.name}")
         if (uiState is AuthUiState.Loading) CircularProgressIndicator()
+        if (uiState is AuthUiState.DeviceCodePending) {
+            Text("Abra o navegador e confirme o login:", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            OutlinedCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("User code", style = MaterialTheme.typography.labelMedium)
+                    Text(uiState.userCode, style = MaterialTheme.typography.headlineSmall)
+                    Spacer(Modifier.height(12.dp))
+                    Text("Verification URL", style = MaterialTheme.typography.labelMedium)
+                    Text(uiState.verificationUri, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
+        if (uiState is AuthUiState.DeviceCodePolling) {
+            Text("Aguardando autorização no GitHub (${uiState.attempt}/${uiState.max})")
+        }
         if (uiState is AuthUiState.Error) Text(uiState.message, color = MaterialTheme.colorScheme.error)
         if (uiState is AuthUiState.Offline) Text("Modo offline ativo. Recursos locais liberados.")
         Spacer(Modifier.height(16.dp))
