@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   workflow_dispatch:
     inputs:
       build_mode:
@@ -14,20 +14,15 @@ on:
         type: choice
         options: [all, build_only, tests_only, lint_only]
       run_release_variant:
-        description: "Include release variants even without signing"
+        description: "Include release variants (requires signing secrets)"
         required: false
-        default: true
+        default: false
         type: boolean
       gradle_args:
         description: "Extra Gradle args (example: --stacktrace --info)"
         required: false
         default: "--stacktrace"
         type: string
-
-env:
-  GITHUB_CLIENT_ID_DEV: ${{ vars.GITHUB_CLIENT_ID_DEV || 'local-dev-client-id' }}
-  GITHUB_CLIENT_ID_PRODUCTION: ${{ vars.GITHUB_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
-  ALLOW_UNSIGNED_RELEASE: "true"
 
 jobs:
   build:

@@ -1,18 +1,179 @@
 name: Android CI
 
-on: [push, pull_request]
+on:
+  workflow_call:
+    inputs:
+      build_mode:
+        description: "Stages to run"
+        required: false
+        default: all
+        type: string
+      run_release_variant:
+        description: "Include release variants"
+        required: false
+        default: false
+        type: boolean
+      allow_unsigned_release:
+        description: "Allow unsigned release variant (internal validation only)"
+        required: false
+        default: false
+        type: boolean
+      gradle_args:
+        description: "Additional Gradle args"
+        required: false
+        default: "--stacktrace"
+        type: string
+  workflow_dispatch:
+    inputs:
+      build_mode:
+        description: "Stages to run"
+        required: true
+        default: all
+        type: choice
+        options: [all, build_only, tests_only, lint_only]
+      run_release_variant:
+        description: "Include release variants"
+        required: false
+        default: false
+        type: boolean
+      allow_unsigned_release:
+        description: "Allow unsigned release variant (internal validation only)"
+        required: false
+        default: false
+        type: boolean
+      gradle_args:
+        description: "Additional Gradle args"
+        required: false
+        default: "--stacktrace"
+        type: string
+
+env:
+  GITHUB_CLIENT_ID_DEV: ${{ vars.GITHUB_CLIENT_ID_DEV || 'local-dev-client-id' }}
+  GITHUB_CLIENT_ID_PRODUCTION: ${{ vars.GITHUB_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
+  ALLOW_UNSIGNED_RELEASE: ${{ inputs.allow_unsigned_release && 'true' || 'false' }}
 
 jobs:
   build:
+    name: Build Variants
+    if: inputs.build_mode == 'all' || inputs.build_mode == 'build_only'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        variant: [devDebug, productionDebug, devRelease, productionRelease]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+      - name: Apply CI runtime overlay zip
+        run: ./scripts/apply_formula_ci_zip.sh formula_ci.zip
+      - name: Prepare local.properties
+        run: ./scripts/prepare_local_properties.sh
+      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh scripts/apply_formula_ci_zip.sh scripts/native/verify_apks.sh
+      - name: Validate release-signing policy
+        if: inputs.run_release_variant && !inputs.allow_unsigned_release
+        run: |
+          required=(RELEASE_STORE_FILE_BASE64 RELEASE_STORE_PASSWORD RELEASE_KEY_ALIAS RELEASE_KEY_PASSWORD)
+          missing=()
+          for key in "${required[@]}"; do
+            if [ -z "${!key}" ]; then
+              missing+=("$key")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::run_release_variant=true requires signed release configuration in Android CI."
+            echo "::error::Missing secrets: ${missing[*]}"
+            echo "::error::For unsigned pipeline validation, set allow_unsigned_release=true explicitly."
+            exit 1
+          fi
+        env:
+          RELEASE_STORE_FILE_BASE64: ${{ secrets.RELEASE_STORE_FILE_BASE64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+      - name: Assemble ${{ matrix.variant }}
+        if: inputs.run_release_variant || !contains(matrix.variant, 'Release')
+        run: ./scripts/gradlew_with_java17.sh assemble${{ matrix.variant }} ${{ inputs.gradle_args }}
+      - name: Verify release APK ABI/signature state
+        if: inputs.run_release_variant
+        run: ./scripts/native/verify_apks.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apks-${{ matrix.variant }}
+          path: |
+            app/build/outputs/apk/**/*.apk
+            app/build/reports/apk/*.tsv
+          retention-days: 14
+
+  test:
+    name: Unit Tests
+    if: inputs.build_mode == 'all' || inputs.build_mode == 'tests_only'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v5
         with:
-          distribution: 'temurin'
-          java-version: 17
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
       - uses: android-actions/setup-android@v3
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-      - name: Build
-        run: ./gradlew build
+      - name: Apply CI runtime overlay zip
+        run: ./scripts/apply_formula_ci_zip.sh formula_ci.zip
+      - name: Prepare local.properties
+        run: ./scripts/prepare_local_properties.sh
+      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh scripts/apply_formula_ci_zip.sh scripts/native/verify_apks.sh
+      - name: Run Unit Tests
+        run: ./scripts/gradlew_with_java17.sh testDevDebugUnitTest testProductionDebugUnitTest ${{ inputs.gradle_args }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports
+          path: |
+            app/build/test-results/
+            app/build/reports/tests/
+
+  lint:
+    name: Lint
+    if: inputs.build_mode == 'all' || inputs.build_mode == 'lint_only'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+      - name: Apply CI runtime overlay zip
+        run: ./scripts/apply_formula_ci_zip.sh formula_ci.zip
+      - name: Prepare local.properties
+        run: ./scripts/prepare_local_properties.sh
+      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh scripts/apply_formula_ci_zip.sh scripts/native/verify_apks.sh
+      - name: Run Lint
+        run: ./scripts/gradlew_with_java17.sh lintDevDebug lintProductionDebug ${{ inputs.gradle_args }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lint-reports
+          path: |
+            app/build/reports/lint-results*.html
+            app/build/reports/lint-results*.xml
+            app/build/reports/lint-results*.txt
+
+  summary:
+    name: CI Summary
+    if: always()
+    runs-on: ubuntu-latest
+    needs: [build, test, lint]
+    steps:
+      - name: Explain configuration and variables
+        run: |
+          echo "## Android CI Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "- build_mode: ${{ inputs.build_mode }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- run_release_variant: ${{ inputs.run_release_variant }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- gradle_args: ${{ inputs.gradle_args }}" >> "$GITHUB_STEP_SUMMARY"

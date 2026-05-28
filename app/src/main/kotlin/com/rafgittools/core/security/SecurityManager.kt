@@ -3,6 +3,7 @@ package com.rafgittools.core.security
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.util.Base64
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -14,7 +15,6 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
-import java.util.Base64
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -72,7 +72,7 @@ class SecurityManager(private val context: Context) {
             
             // Prepend IV to encrypted data
             val combined = iv + encryptedBytes
-            val encoded = Base64.getEncoder().encodeToString(combined)
+            val encoded = Base64.encodeToString(combined, Base64.NO_WRAP)
             
             Result.success(encoded)
         } catch (e: Exception) {
@@ -90,7 +90,7 @@ class SecurityManager(private val context: Context) {
     fun decryptData(ciphertext: String, keyAlias: String = "default"): Result<String> {
         return try {
             val secretKey = getOrCreateKey(keyAlias)
-            val combined = Base64.getDecoder().decode(ciphertext)
+            val combined = Base64.decode(ciphertext, Base64.NO_WRAP)
             
             // Extract IV and encrypted data
             val iv = combined.sliceArray(0 until GCM_IV_LENGTH)
@@ -118,7 +118,7 @@ class SecurityManager(private val context: Context) {
     fun hashString(input: String): String {
         val messageDigest = java.security.MessageDigest.getInstance("SHA-256")
         val hashBytes = messageDigest.digest(input.toByteArray(Charsets.UTF_8))
-        return Base64.getEncoder().encodeToString(hashBytes)
+        return Base64.encodeToString(hashBytes, Base64.NO_WRAP)
     }
     
     /**
@@ -131,7 +131,7 @@ class SecurityManager(private val context: Context) {
         val secureRandom = java.security.SecureRandom()
         val bytes = ByteArray(length)
         secureRandom.nextBytes(bytes)
-        return Base64.getEncoder().encodeToString(bytes).substring(0, length)
+        return Base64.encodeToString(bytes, Base64.NO_WRAP).substring(0, length)
     }
     
     /**
