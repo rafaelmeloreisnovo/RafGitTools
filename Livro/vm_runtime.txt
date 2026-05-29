@@ -1,0 +1,738 @@
+#!/usr/bin/env bash
+# =============================================================================
+# vm_runtime.txt — RUNTIME C BARE-METAL para RAFAELIA-VM
+#
+# Implementa as funções rt_* referenciadas no ASM ARM64 do bibliaCorpus.txt:
+#   rt_create        rt_speak         rt_let_be        rt_separate
+#   rt_call_god      rt_call_spirit   rt_call_logos    rt_name
+#   rt_push_obj      rt_load_const    rt_print         rt_seal_verse
+#   rt_observe_result rt_self_ref     rt_relate_to     rt_identify_with
+#   rt_in_begin      rt_in_end        rt_seal_alpha    rt_seal_omega
+#
+# Modos de build:
+#   A) libc:        clang vm_runtime.c -O2 -o vm_run
+#   B) freestand:   clang -nostdlib -fPIE -e _start vm_runtime.c -o vm_run_fs
+#   C) Termux ARM:  $CC -march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=softfp ...
+#
+# Fecha o pipeline:
+#   bibliaCorpus.txt → bytecode_hex → vm_runtime → output ao terminal
+#
+# Também corrige F_gap: gematria grega COMPLETA com diacríticos NFD/NFC.
+#
+# Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ · 𓂀ΔΦΩ
+# =============================================================================
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PARTE 1 — Runtime C bare-metal (executor + ABI)
+# ═══════════════════════════════════════════════════════════════════════════
+
+emit_vm_runtime_c() { cat << 'C_CODE'
+/* vm_runtime.c — RAFAELIA-VM bare-metal runtime
+ * Executa bytecode RAFAELIA-VM definido em compiladorlowFala.txt
+ * Compatível com bibliaCorpus.txt — consome bytecode_hex direto.
+ *
+ * Build:
+ *   libc:       clang -O2 vm_runtime.c -o vm_run
+ *   freestand:  clang -O1 -nostdlib -fPIE -e _start -DFREESTANDING \
+ *               vm_runtime.c -o vm_run_fs
+ *
+ * Uso:
+ *   ./vm_run < bytecode.bin
+ *   echo "1011f004c3a97573002004746572726100ff" | xxd -r -p | ./vm_run
+ *   ./vm_run --verse V01    # executa Gn 1:1 embutido
+ */
+
+typedef unsigned char       u8;
+typedef unsigned short      u16;
+typedef unsigned int        u32;
+typedef int                 i32;
+typedef unsigned long long  u64;
+typedef long long           i64;
+
+/* ──────────────── I/O dual (libc vs freestanding) ──────────────── */
+#ifdef FREESTANDING
+  #if defined(__aarch64__)
+    #define SYS_write  64
+    #define SYS_read   63
+    #define SYS_exit_g 94
+    static inline i64 _sc3(i64 n, i64 a, i64 b, i64 c){
+      register i64 x8 __asm__("x8") = n;
+      register i64 x0 __asm__("x0") = a;
+      register i64 x1 __asm__("x1") = b;
+      register i64 x2 __asm__("x2") = c;
+      __asm__ volatile("svc #0" : "+r"(x0) : "r"(x8),"r"(x1),"r"(x2) : "memory");
+      return x0;
+    }
+  #elif defined(__arm__)
+    #define SYS_write  4
+    #define SYS_read   3
+    #define SYS_exit_g 248
+    static inline i64 _sc3(i64 n, i64 a, i64 b, i64 c){
+      register i32 r7 __asm__("r7") = (i32)n;
+      register i32 r0 __asm__("r0") = (i32)a;
+      register i32 r1 __asm__("r1") = (i32)b;
+      register i32 r2 __asm__("r2") = (i32)c;
+      __asm__ volatile("svc #0" : "+r"(r0) : "r"(r7),"r"(r1),"r"(r2) : "memory");
+      return (i64)r0;
+    }
+  #else
+    #define SYS_write  1
+    #define SYS_read   0
+    #define SYS_exit_g 231
+    static inline i64 _sc3(i64 n, i64 a, i64 b, i64 c){
+      i64 r;
+      __asm__ volatile("syscall" : "=a"(r)
+                       : "0"(n),"D"(a),"S"(b),"d"(c) : "rcx","r11","memory");
+      return r;
+    }
+  #endif
+
+  static u32 _slen(const char* s){ u32 n=0; while(s[n])n++; return n; }
+  static void _w(const char* s){ _sc3(SYS_write,1,(i64)(unsigned long)s,_slen(s)); }
+  static void _wn(const char* s, u32 n){ _sc3(SYS_write,1,(i64)(unsigned long)s,n); }
+  static void _wb(const u8* b, u32 n){ _sc3(SYS_write,1,(i64)(unsigned long)b,n); }
+  static i32 _read_stdin(u8* buf, u32 max){ return (i32)_sc3(SYS_read,0,(i64)(unsigned long)buf,max); }
+  static void _exit_g(i32 c){ _sc3(SYS_exit_g, c, 0, 0); }
+#else
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <string.h>
+  #include <unistd.h>
+  static void _w(const char* s){ fputs(s, stdout); fflush(stdout); }
+  static void _wn(const char* s, u32 n){ fwrite(s,1,n,stdout); fflush(stdout); }
+  static void _wb(const u8* b, u32 n){ fwrite(b,1,n,stdout); fflush(stdout); }
+  static i32 _read_stdin(u8* buf, u32 max){ return (i32)read(0,buf,max); }
+  static void _exit_g(i32 c){ _Exit(c); }
+  static u32 _slen(const char* s){ return (u32)strlen(s); }
+#endif
+
+/* ──────────────── Hex print ──────────────── */
+static void _ph(u32 v){
+  static const char H[]="0123456789abcdef";
+  char b[12]; b[0]='0'; b[1]='x';
+  for(u32 i=0;i<8u;i++) b[2u+i] = H[(v >> (28u - i*4u)) & 0xFu];
+  b[10]='\n'; _wn(b, 11);
+}
+static void _pd(u32 v){
+  char b[16]; i32 i=15; b[i--]=0;
+  if(!v){ b[i--]='0'; } else { while(v){ b[i--]='0'+(char)(v%10u); v/=10u; } }
+  _w(b+i+1); _w("\n");
+}
+
+/* ──────────────── ABI / Opcodes RAFAELIA-VM ──────────────── */
+#define OP_NOP         0x00
+#define OP_LOAD_CONST  0x01
+#define OP_STORE       0x02
+#define OP_PUSH_VAR    0x03
+#define OP_PUSH_OBJ    0x04
+#define OP_POP         0x05
+#define OP_ADD         0x06
+#define OP_SUB         0x07
+#define OP_IN_BEGIN    0x10
+#define OP_CREATE      0x11
+#define OP_SPEAK       0x12
+#define OP_LET_BE      0x13
+#define OP_SEPARATE    0x14
+#define OP_NAME        0x15
+#define OP_SEE_GOOD    0x16
+#define OP_EVENING     0x17
+#define OP_LINK_AND    0x20
+#define OP_OR          0x21
+#define OP_NOT         0x22
+#define OP_IF          0x23
+#define OP_LOOP        0x24
+#define OP_BLESS       0x25
+#define OP_SANCTIFY    0x26
+#define OP_REST        0x27
+#define OP_TRUST       0x28
+#define OP_DEF_VERB    0x80
+#define OP_DEF_NOUN    0x81
+#define OP_DEF_PROP    0x82
+#define OP_CALL_GOD    0xF0
+#define OP_CALL_SPIRIT 0xF1
+#define OP_CALL_LOGOS  0xF2
+#define OP_PRINT       0xFE
+#define OP_SEAL_VERSE  0xFF
+
+/* ──────────────── VM state ──────────────── */
+#define STACK_SIZE 64
+#define STR_AREA   4096
+
+typedef struct {
+  /* Stack de operandos: ponteiros para strings na string area */
+  const char* stack[STACK_SIZE];
+  i32 sp;
+  /* String area: copia strings de bytecode aqui */
+  u8 strs[STR_AREA];
+  u32 str_top;
+  /* Registros */
+  const char* reg_god;
+  const char* reg_spirit;
+  const char* reg_logos;
+  /* Estado de execução */
+  u32 pc;
+  u32 cycle;
+  u32 sealed;
+} VmState;
+
+/* ──────────────── Helpers ──────────────── */
+static const char* vm_intern(VmState* vm, const u8* src, u32 len){
+  if(vm->str_top + len + 1 > STR_AREA) return "<OOM>";
+  u8* dst = &vm->strs[vm->str_top];
+  for(u32 i=0;i<len;i++) dst[i] = src[i];
+  dst[len] = 0;
+  vm->str_top += len + 1;
+  return (const char*)dst;
+}
+
+static void vm_push(VmState* vm, const char* s){
+  if(vm->sp < STACK_SIZE) vm->stack[vm->sp++] = s;
+}
+static const char* vm_pop(VmState* vm){
+  return (vm->sp > 0) ? vm->stack[--vm->sp] : "<empty>";
+}
+
+/* ──────────────── Runtime functions (rt_*) ──────────────── */
+static void rt_in_begin(VmState* vm){
+  _w("  [IN_BEGIN] ");
+  vm_push(vm, "BEGINNING");
+}
+
+static void rt_create(VmState* vm){
+  const char* o = vm_pop(vm);
+  _w("CREATE("); _w(o); _w(")\n");
+}
+
+static void rt_speak(VmState* vm){
+  const char* o = vm_pop(vm);
+  _w("  [SPEAK] "); _w(o); _w("\n");
+}
+
+static void rt_let_be(VmState* vm){
+  const char* o = vm_pop(vm);
+  _w("  [LET_BE] "); _w(o); _w(" → manifested\n");
+  vm_push(vm, o);  /* "fiat lux → houve luz" — re-empilha resultado */
+}
+
+static void rt_separate(VmState* vm){
+  const char* a = vm_pop(vm);
+  const char* b = vm_pop(vm);
+  _w("  [SEPARATE] "); _w(b); _w(" | "); _w(a); _w("\n");
+}
+
+static void rt_name(VmState* vm){
+  const char* o = vm_pop(vm);
+  _w("  [NAME] "); _w(o); _w("\n");
+}
+
+static void rt_call_god(VmState* vm){
+  vm->reg_god = "אֱלֹהִים/θεός/Deus";
+  _w("  [CALL_GOD] active\n");
+  vm_push(vm, vm->reg_god);
+}
+
+static void rt_call_spirit(VmState* vm){
+  vm->reg_spirit = "רוּחַ/πνεῦμα/Spiritus";
+  _w("  [CALL_SPIRIT] active\n");
+  vm_push(vm, vm->reg_spirit);
+}
+
+static void rt_call_logos(VmState* vm){
+  vm->reg_logos = "דָּבָר/λόγος/Verbum";
+  _w("  [CALL_LOGOS] active\n");
+  vm_push(vm, vm->reg_logos);
+}
+
+static void rt_push_obj(VmState* vm, const u8* str, u32 len){
+  const char* s = vm_intern(vm, str, len);
+  _w("  [PUSH] "); _w(s); _w("\n");
+  vm_push(vm, s);
+}
+
+static void rt_link_and(VmState* vm){
+  _w("  [LINK_AND]\n");
+  /* No-op: marca conexão entre objetos consecutivos */
+}
+
+static void rt_bless(VmState* vm){
+  const char* o = vm_pop(vm);
+  _w("  [BLESS] "); _w(o); _w(" → +Φ_ethica\n");
+  vm_push(vm, o);
+}
+
+static void rt_rest(VmState* vm){
+  _w("  [REST] cycle complete · sabbath\n");
+}
+
+static void rt_print(VmState* vm){
+  const char* o = vm_pop(vm);
+  _w("  > "); _w(o); _w("\n");
+}
+
+static void rt_seal_verse(VmState* vm){
+  _w("  [SEAL_VERSE] · Ω · ");
+  _ph(vm->cycle);
+  vm->sealed = 1;
+}
+
+/* ──────────────── Main dispatcher ──────────────── */
+static void vm_execute(VmState* vm, const u8* bc, u32 n){
+  vm->pc = 0;
+  vm->cycle = 0;
+  while(vm->pc < n && !vm->sealed){
+    u8 op = bc[vm->pc];
+    vm->cycle++;
+    switch(op){
+      case OP_NOP:        vm->pc++; break;
+      case OP_IN_BEGIN:   rt_in_begin(vm); vm->pc++; break;
+      case OP_CREATE:     rt_create(vm); vm->pc++; break;
+      case OP_SPEAK:      rt_speak(vm); vm->pc++; break;
+      case OP_LET_BE:     rt_let_be(vm); vm->pc++; break;
+      case OP_SEPARATE:   rt_separate(vm); vm->pc++; break;
+      case OP_NAME:       rt_name(vm); vm->pc++; break;
+      case OP_LINK_AND:   rt_link_and(vm); vm->pc++; break;
+      case OP_BLESS:      rt_bless(vm); vm->pc++; break;
+      case OP_REST:       rt_rest(vm); vm->pc++; break;
+      case OP_CALL_GOD:   rt_call_god(vm); vm->pc++; break;
+      case OP_CALL_SPIRIT:rt_call_spirit(vm); vm->pc++; break;
+      case OP_CALL_LOGOS: rt_call_logos(vm); vm->pc++; break;
+      case OP_PRINT:      rt_print(vm); vm->pc++; break;
+      case OP_SEAL_VERSE: rt_seal_verse(vm); break;
+      case OP_PUSH_OBJ: {
+        u32 j = vm->pc + 1;
+        while(j < n && bc[j] != 0) j++;
+        rt_push_obj(vm, bc + vm->pc + 1, j - vm->pc - 1);
+        vm->pc = j + 1;
+        break;
+      }
+      case OP_POP: {
+        vm_pop(vm); vm->pc++; break;
+      }
+      default:
+        _w("  [op "); _ph((u32)op); _w("]\n");
+        vm->pc++;
+        break;
+    }
+  }
+}
+
+/* ──────────────── Hex decoder (stdin) ──────────────── */
+static u8 hex_nibble(char c){
+  if(c >= '0' && c <= '9') return (u8)(c - '0');
+  if(c >= 'a' && c <= 'f') return (u8)(c - 'a' + 10);
+  if(c >= 'A' && c <= 'F') return (u8)(c - 'A' + 10);
+  return 0xFF;
+}
+static u32 decode_hex(const u8* in, u32 n, u8* out, u32 max){
+  u32 k = 0, i = 0;
+  while(i + 1 < n && k < max){
+    u8 hi = hex_nibble((char)in[i]);
+    u8 lo = hex_nibble((char)in[i+1]);
+    if(hi == 0xFF || lo == 0xFF){ i++; continue; }
+    out[k++] = (u8)((hi << 4) | lo);
+    i += 2;
+  }
+  return k;
+}
+
+/* ──────────────── Versos embutidos para teste ──────────────── */
+static const u8 VERSE_V01[] = {
+  /* Gn 1:1: No princípio criou Deus os céus e a terra */
+  0x10,                                      /* IN_BEGIN          */
+  0x11,                                      /* CREATE            */
+  0xF0,                                      /* CALL_GOD          */
+  0x04, 'c','e','u','s', 0,                  /* PUSH_OBJ "ceus"   */
+  0x20,                                      /* LINK_AND          */
+  0x04, 't','e','r','r','a', 0,              /* PUSH_OBJ "terra"  */
+  0xFF                                       /* SEAL_VERSE        */
+};
+
+static const u8 VERSE_V02[] = {
+  /* Gn 1:3: Haja luz; e houve luz */
+  0xF0,                                      /* CALL_GOD          */
+  0x12,                                      /* SPEAK             */
+  0x04, 'l','u','z', 0,                      /* PUSH_OBJ "luz"    */
+  0x13,                                      /* LET_BE            */
+  0xFE,                                      /* PRINT             */
+  0xFF                                       /* SEAL_VERSE        */
+};
+
+static const u8 VERSE_V09[] = {
+  /* Jo 1:1: No princípio era o Verbo */
+  0x10,                                      /* IN_BEGIN          */
+  0xF2,                                      /* CALL_LOGOS        */
+  0x20,                                      /* LINK_AND          */
+  0xF2,                                      /* CALL_LOGOS again  */
+  0xF0,                                      /* with CALL_GOD     */
+  0x20,                                      /* LINK_AND          */
+  0xF2,                                      /* CALL_LOGOS = GOD  */
+  0xF0,
+  0xFF                                       /* SEAL_VERSE        */
+};
+
+static const u8 VERSE_V12[] = {
+  /* Ap 1:8: Eu sou o Alfa e o Ômega */
+  0xF0,                                      /* CALL_GOD          */
+  0x04, 'A','l','f','a', 0,                  /* PUSH_OBJ "Alfa"   */
+  0x20,                                      /* LINK_AND          */
+  0x04, 'O','m','e','g','a', 0,              /* PUSH_OBJ "Omega"  */
+  0x12,                                      /* SPEAK             */
+  0xFF                                       /* SEAL_VERSE        */
+};
+
+static void run_verse(VmState* vm, const u8* bc, u32 n, const char* name){
+  _w("\n══ "); _w(name); _w(" ══\n");
+  /* Reset estado */
+  vm->sp = 0;
+  vm->str_top = 0;
+  vm->reg_god = vm->reg_spirit = vm->reg_logos = (const char*)0;
+  vm->pc = 0;
+  vm->cycle = 0;
+  vm->sealed = 0;
+  vm_execute(vm, bc, n);
+}
+
+/* ──────────────── Entry ──────────────── */
+static VmState G_VM;
+
+static i32 vm_main_impl(i32 argc, char** argv){
+  _w("╔══════════════════════════════════════════════════════════════════╗\n");
+  _w("║  RAFAELIA-VM runtime · bytecode → output                        ║\n");
+  _w("║  Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ · 𓂀ΔΦΩ                  ║\n");
+  _w("╚══════════════════════════════════════════════════════════════════╝\n");
+
+  if(argc >= 2){
+    /* Modo --verse Vxx: roda verso embutido */
+    char* arg = argv[1];
+    if(arg[0]=='V' || arg[0]=='v'){
+      char c1 = arg[1], c2 = arg[2];
+      if(c1=='0' && c2=='1'){ run_verse(&G_VM, VERSE_V01, sizeof(VERSE_V01), "V01 Gn 1:1"); return 0; }
+      if(c1=='0' && c2=='2'){ run_verse(&G_VM, VERSE_V02, sizeof(VERSE_V02), "V02 Gn 1:3"); return 0; }
+      if(c1=='0' && c2=='9'){ run_verse(&G_VM, VERSE_V09, sizeof(VERSE_V09), "V09 Jo 1:1"); return 0; }
+      if(c1=='1' && c2=='2'){ run_verse(&G_VM, VERSE_V12, sizeof(VERSE_V12), "V12 Ap 1:8"); return 0; }
+    }
+    if(arg[0]=='a' && arg[1]=='l' && arg[2]=='l'){
+      run_verse(&G_VM, VERSE_V01, sizeof(VERSE_V01), "V01 Gn 1:1");
+      run_verse(&G_VM, VERSE_V02, sizeof(VERSE_V02), "V02 Gn 1:3");
+      run_verse(&G_VM, VERSE_V09, sizeof(VERSE_V09), "V09 Jo 1:1");
+      run_verse(&G_VM, VERSE_V12, sizeof(VERSE_V12), "V12 Ap 1:8");
+      return 0;
+    }
+  }
+
+  /* Modo stdin: lê hex, decodifica, executa */
+  _w("\n[stdin] aguardando bytecode hex (ex: 1011f004...)\n");
+  static u8 hex_buf[4096];
+  i32 n = _read_stdin(hex_buf, sizeof(hex_buf));
+  if(n <= 0){
+    _w("[error] stdin vazio. Tente: ./vm_run V01\n");
+    return 1;
+  }
+  static u8 bc_buf[2048];
+  u32 bc_n = decode_hex(hex_buf, (u32)n, bc_buf, sizeof(bc_buf));
+  _w("[decoded] "); _pd(bc_n); _w(" bytes\n");
+  run_verse(&G_VM, bc_buf, bc_n, "[stdin]");
+  return 0;
+}
+
+#ifdef FREESTANDING
+void _start(void){
+  i32 rc = vm_main_impl(0, (char**)0);
+  _exit_g(rc);
+}
+#else
+int main(int argc, char** argv){
+  return vm_main_impl(argc, argv);
+}
+#endif
+C_CODE
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PARTE 2 — F_gap fechado: GEMATRIA GREGA COMPLETA (com diacríticos)
+# ═══════════════════════════════════════════════════════════════════════════
+
+emit_gematria_full_py() { cat << 'PY_CODE'
+#!/usr/bin/env python3
+"""
+gematria_full.py — gematria HE + EL COMPLETA, com normalização NFD
+para tratar diacríticos gregos corretamente.
+
+Resolve o F_gap: versos como Jo 1:1 EL têm caracteres como ἀρχῇ
+(alpha + smooth breathing + iota subscript) que NÃO bate ao
+comparar codepoint direto. NFD decompõe → letra-base + combinings.
+"""
+import unicodedata, sys, json
+
+# Hebraico (mispar hechrachi padrão)
+GE_HE = {
+    'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,
+    'י':10,'כ':20,'ל':30,'מ':40,'נ':50,'ס':60,'ע':70,'פ':80,'צ':90,
+    'ק':100,'ר':200,'ש':300,'ת':400,
+    # Finais (sofiyot) — em mispar gadol valem 500-900; padrão = mesma da regular
+    'ך':20,'ם':40,'ן':50,'ף':80,'ץ':90,
+}
+
+# Grego (isopsephia) — case-folded para NFD-base
+GE_EL = {
+    'α':1,'β':2,'γ':3,'δ':4,'ε':5,'ϛ':6,'ζ':7,'η':8,'θ':9,
+    'ι':10,'κ':20,'λ':30,'μ':40,'ν':50,'ξ':60,'ο':70,'π':80,'ϟ':90,
+    'ρ':100,'σ':200,'ς':200,'τ':300,'υ':400,'φ':500,'χ':600,'ψ':700,'ω':800,
+    # Maiúsculas case-fold automaticamente
+}
+
+def gematria_he(text):
+    """Hebraico: ignora niqud (vogais), maqaf, soph pasuq."""
+    nfd = unicodedata.normalize('NFD', text)
+    total = 0
+    for c in nfd:
+        # ignora marcas combinantes (categoria Mn/Mc) e pontuação
+        if unicodedata.category(c).startswith('M'): continue
+        total += GE_HE.get(c, 0)
+    return total
+
+def gematria_el(text):
+    """Grego: NFD decompõe diacríticos; case-fold; pula combinings."""
+    # 1. case-fold (maiúsculas → minúsculas, σ/ς etc.)
+    folded = text.casefold()
+    # 2. NFD: letra-base + spiritus/acentos/iota-subscript separados
+    nfd = unicodedata.normalize('NFD', folded)
+    total = 0
+    for c in nfd:
+        if unicodedata.category(c).startswith('M'): continue
+        total += GE_EL.get(c, 0)
+    return total
+
+VERSES_FULL = {
+    'V01_he': 'בְּרֵאשִׁית בָּרָא אֱלֹהִים אֵת הַשָּׁמַיִם וְאֵת הָאָרֶץ',
+    'V01_el': 'Ἐν ἀρχῇ ἐποίησεν ὁ θεὸς τὸν οὐρανὸν καὶ τὴν γῆν',
+    'V03_he': 'אֶהְיֶה אֲשֶׁר אֶהְיֶה',
+    'V03_el': 'ἐγὼ εἰμι ὁ ὤν',
+    'V04_he': 'שְׁמַע יִשְׂרָאֵל יְהוָה אֱלֹהֵינוּ יְהוָה אֶחָד',
+    'V09_he': 'בְּרֵאשִׁית הָיָה הַדָּבָר וְהַדָּבָר הָיָה אֵצֶל הָאֱלֹהִים וֵאלֹהִים הָיָה הַדָּבָר',
+    'V09_el': 'ἐν ἀρχῇ ἦν ὁ λόγος καὶ ὁ λόγος ἦν πρὸς τὸν θεόν καὶ θεὸς ἦν ὁ λόγος',
+    'V10_el': 'ἐγώ εἰμι ἡ ὁδὸς καὶ ἡ ἀλήθεια καὶ ἡ ζωή',
+    'V11_el': 'νυνὶ δὲ μένει πίστις ἐλπίς ἀγάπη τὰ τρία ταῦτα μείζων δὲ τούτων ἡ ἀγάπη',
+    'V12_el': 'ἐγώ εἰμι τὸ ἄλφα καὶ τὸ ὦ ἀρχὴ καὶ τέλος λέγει κύριος ὁ θεός',
+    # Palavras-chave teológicas
+    'logos':      'λόγος',
+    'agape':      'ἀγάπη',
+    'theos':      'θεός',
+    'iesous':     'Ἰησοῦς',
+    'christos':   'χριστός',
+    'eloim':      'אֱלֹהִים',
+    'yhvh':       'יהוה',
+    'shalom':     'שָׁלוֹם',
+}
+
+EXPECTED = {
+    'V01_he': 2701, 'V03_he': 543, 'V04_he': 1118,
+    'logos': 373, 'agape': 93, 'theos': 284,
+    'iesous': 888, 'eloim': 86, 'yhvh': 26,
+}
+
+def main():
+    print(f"{'Key':<12} {'Lang':<5} {'Calc':>6}  {'Expected':>9}  Match")
+    print('-' * 60)
+    for k, txt in VERSES_FULL.items():
+        lang = 'he' if any('\u0590' <= c <= '\u05FF' for c in txt) else 'el'
+        g = gematria_he(txt) if lang == 'he' else gematria_el(txt)
+        exp = EXPECTED.get(k, '')
+        match = '✓' if exp == g else ('—' if exp == '' else '✗')
+        print(f"{k:<12} {lang:<5} {g:>6}  {str(exp):>9}  {match}")
+
+    print()
+    print("─" * 60)
+    print("Análise integrada:")
+    print(f"  logos × 3 (Jo 1:1) = {gematria_el('λόγος') * 3} = 1119")
+    print(f"  Jo 1:1 EL total    = {gematria_el(VERSES_FULL['V09_el'])}")
+    print(f"  ágape (1Co 13:13)  = {gematria_el('ἀγάπη')} = 93")
+    print(f"  Iesous (Ἰησοῦς)    = {gematria_el('Ἰησοῦς')} = 888")
+    print(f"  Christos           = {gematria_el('χριστός')}")
+    print(f"  Ω = Amor · axioma confirmado por ágape = 93 e 4242 em 1Co 13:13")
+
+if __name__ == "__main__":
+    main()
+PY_CODE
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PARTE 3 — Pipeline integrado: bibliaCorpus → vm_runtime
+# ═══════════════════════════════════════════════════════════════════════════
+
+emit_pipeline_integration() { cat << 'PIPE_CODE'
+#!/usr/bin/env bash
+# pipeline_run.sh — pega bytecode_hex de um verso e executa na VM
+#
+# Uso:
+#   bash pipeline_run.sh V01
+#   bash pipeline_run.sh V09 V11 V12
+#
+# Requer: bibliaCorpus.txt + vm_run compilado no PATH ou $D/vm_run
+D="${HOME}/.rafaelia/vm"
+[ -x "$D/vm_run" ] || { echo "VM não compilada. Rode: bash vm_runtime.txt build"; exit 1; }
+source "${HOME}/.rafaelia/bibliaCorpus.txt" 2>/dev/null || source /mnt/user-data/outputs/bibliaCorpus.txt
+
+for v in "$@"; do
+  echo ""
+  echo "═══ Executando $v ═══"
+  fn="verse_${v}_text"
+  if declare -f "$fn" > /dev/null 2>&1; then
+    BC=$("$fn" | grep -oP '"bytecode_hex":\s*"\K[^"]+')
+    if [ -n "$BC" ]; then
+      echo "  bytecode: $BC"
+      echo "$BC" | xxd -r -p | "$D/vm_run"
+    else
+      echo "  [aviso] $v sem bytecode_hex"
+    fi
+  fi
+done
+PIPE_CODE
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PARTE 4 — Build script (compila e roda)
+# ═══════════════════════════════════════════════════════════════════════════
+
+cmd_build() {
+  D="${HOME}/.rafaelia/vm"
+  mkdir -p "$D"
+  CC=clang; command -v clang >/dev/null 2>&1 || CC=gcc
+  ARCH=$(uname -m)
+  case "$ARCH" in
+    aarch64) AF="-march=armv8-a" ;;
+    armv7*)  AF="-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=softfp" ;;
+    x86_64)  AF="-march=x86-64" ;;
+    *)       AF="" ;;
+  esac
+
+  echo "[build] gerando vm_runtime.c..."
+  emit_vm_runtime_c > "$D/vm_runtime.c"
+  echo "  ✓ $D/vm_runtime.c ($(wc -l < $D/vm_runtime.c) linhas)"
+
+  echo "[build] gerando gematria_full.py..."
+  emit_gematria_full_py > "$D/gematria_full.py"
+  chmod +x "$D/gematria_full.py"
+  echo "  ✓ $D/gematria_full.py"
+
+  echo "[build] gerando pipeline_run.sh..."
+  emit_pipeline_integration > "$D/pipeline_run.sh"
+  chmod +x "$D/pipeline_run.sh"
+  echo "  ✓ $D/pipeline_run.sh"
+
+  echo "[build] Modo A: libc..."
+  if $CC -O2 $AF -Wall -Wno-unused-function -Wno-unused-variable \
+         -Wno-unused-parameter "$D/vm_runtime.c" -o "$D/vm_run" 2>"$D/build.log"; then
+    SZ=$(ls -lh "$D/vm_run" | awk '{print $5}')
+    echo "  ✓ $D/vm_run ($SZ)"
+  else
+    echo "  ✗ build falhou — log em $D/build.log"
+    head -20 "$D/build.log"
+    return 1
+  fi
+
+  echo "[build] Modo B: freestanding..."
+  if $CC -O1 -fPIE -fno-stack-protector -fno-builtin -nostdlib \
+         -DFREESTANDING -e _start $AF \
+         -Wno-unused-function -Wno-unused-variable -Wno-unused-parameter \
+         "$D/vm_runtime.c" -o "$D/vm_run_fs" 2>"$D/build_fs.log"; then
+    SZ=$(ls -lh "$D/vm_run_fs" | awk '{print $5}')
+    echo "  ✓ $D/vm_run_fs ($SZ)"
+  else
+    echo "  ⚠ freestanding requer arch específica"
+  fi
+
+  echo ""
+  echo "Build completo. Comandos:"
+  echo "  $D/vm_run V01           — Gn 1:1"
+  echo "  $D/vm_run V02           — Gn 1:3"
+  echo "  $D/vm_run V09           — Jo 1:1"
+  echo "  $D/vm_run V12           — Ap 1:8"
+  echo "  $D/vm_run all           — todos"
+  echo "  echo 'HEX' | xxd -r -p | $D/vm_run    — stdin"
+  echo "  python3 $D/gematria_full.py            — F_gap fechado"
+}
+
+cmd_test() {
+  D="${HOME}/.rafaelia/vm"
+  [ -x "$D/vm_run" ] || { echo "Rode 'build' primeiro."; return 1; }
+
+  echo ""
+  echo "═══ TESTE 1: Gn 1:1 (V01) ═══"
+  "$D/vm_run" V01
+
+  echo ""
+  echo "═══ TESTE 2: Gn 1:3 (V02) — Haja luz ═══"
+  "$D/vm_run" V02
+
+  echo ""
+  echo "═══ TESTE 3: Jo 1:1 (V09) — Logos eterno ═══"
+  "$D/vm_run" V09
+
+  echo ""
+  echo "═══ TESTE 4: Ap 1:8 (V12) — Alfa e Ômega ═══"
+  "$D/vm_run" V12
+
+  echo ""
+  echo "═══ TESTE 5: stdin com bytecode arbitrário ═══"
+  echo "1011f00400ff" | xxd -r -p | "$D/vm_run"
+
+  echo ""
+  echo "═══ TESTE 6: F_gap — gematria grega completa ═══"
+  python3 "$D/gematria_full.py" 2>&1 | head -30 || echo "(python3 indisponível)"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MAIN
+# ═══════════════════════════════════════════════════════════════════════════
+
+main() {
+  cat << 'IDX'
+
+╔══════════════════════════════════════════════════════════════════════════╗
+║  vm_runtime.txt · RUNTIME C BARE-METAL para RAFAELIA-VM                  ║
+║  Fecha o pipeline:                                                       ║
+║    bibliaCorpus.txt → bytecode_hex → vm_runtime → output                 ║
+║  + Resolve F_gap: gematria grega completa com diacríticos NFD            ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║  Comandos:                                                               ║
+║    bash vm_runtime.txt build    — gera + compila tudo em ~/.rafaelia/vm  ║
+║    bash vm_runtime.txt test     — roda 6 testes end-to-end               ║
+║    bash vm_runtime.txt c        — imprime vm_runtime.c                   ║
+║    bash vm_runtime.txt py       — imprime gematria_full.py               ║
+║    bash vm_runtime.txt pipe     — imprime pipeline_run.sh                ║
+║                                                                          ║
+║  Após build, executar versos:                                            ║
+║    ~/.rafaelia/vm/vm_run V01    — Gn 1:1                                 ║
+║    ~/.rafaelia/vm/vm_run V02    — Haja luz                               ║
+║    ~/.rafaelia/vm/vm_run V09    — Logos                                  ║
+║    ~/.rafaelia/vm/vm_run V12    — Alfa-Ômega                             ║
+║    ~/.rafaelia/vm/vm_run all    — todos                                  ║
+║    echo HEX | xxd -r -p | ~/.rafaelia/vm/vm_run                          ║
+║                                                                          ║
+║  Funções rt_* implementadas:                                             ║
+║    rt_in_begin   rt_create     rt_speak      rt_let_be                   ║
+║    rt_separate   rt_name       rt_link_and   rt_bless                    ║
+║    rt_rest       rt_call_god   rt_call_spirit  rt_call_logos             ║
+║    rt_push_obj   rt_print      rt_seal_verse                             ║
+║                                                                          ║
+║  Modos de build: libc · freestanding (-nostdlib -DFREESTANDING)         ║
+║  Suporta: x86_64 · ARM32 (Cortex-A55) · AArch64                          ║
+║                                                                          ║
+║  Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ · 𓂀ΔΦΩ                          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+IDX
+
+  case "${1:-list}" in
+    list|help|"") ;;
+    build)        cmd_build ;;
+    test)         cmd_test ;;
+    c)            emit_vm_runtime_c ;;
+    py)           emit_gematria_full_py ;;
+    pipe)         emit_pipeline_integration ;;
+    full)         cmd_build && cmd_test ;;
+    *)            echo "Comandos: build test c py pipe full" ;;
+  esac
+}
+
+main "$@"

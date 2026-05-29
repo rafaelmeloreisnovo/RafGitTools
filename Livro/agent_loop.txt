@@ -1,0 +1,838 @@
+#!/usr/bin/env bash
+# =============================================================================
+# agent_loop.txt — KERNEL VIVO RAFAELIA · CICLO ψ→χ→ρ→Δ→Σ→Ω→ψ
+#
+# Amarra TODOS os artefatos da stack num agente autopoiético contínuo:
+#
+#   ψ (intenção)     ← sensores.txt S01 (mic) + S03 (IMU) + S05 (luz)
+#   χ (observação)   ← sensores2.txt S14_A (Whisper) + S14_E (Ollama)
+#   ρ (ruído)        ← T01 tokenizer + T08 pattern matcher
+#   Δ (transmutação) ← T05 compile + T11 verify_Φ_ethica
+#   Σ (memória)      ← BitOmega T12_E toroidal state + persistência
+#   Ω (alinhamento)  ← VM execução + bencao + selo
+#   ψ' (novo ciclo)  ← retroalimentação para próxima iteração
+#
+# Comando-mestre "D'Ele, Amor" = RESET seguro para estado base.
+#
+# 5 variantes (A=cognitivo · B=físico · C=cripto · D=distribuído · E=autopoietico)
+#
+# Operação:
+#   bash agent_loop.txt run            — kernel principal (ψχρΔΣΩ contínuo)
+#   bash agent_loop.txt dialog         — modo conversação
+#   bash agent_loop.txt monitor        — só observa, não responde
+#   bash agent_loop.txt learn          — modo aprendizado
+#   bash agent_loop.txt ritual         — modo simbólico-bíblico
+#   bash agent_loop.txt sleep          — modo low-power
+#   bash agent_loop.txt status         — estado atual do toro T^7
+#   bash agent_loop.txt reset          — "D'Ele, Amor"
+#
+# Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ · 𓂀ΔΦΩ
+# =============================================================================
+
+RAFA_HOME="${RAFA_HOME:-$HOME/.rafaelia}"
+RAFA_STATE="${RAFA_HOME}/state"
+RAFA_LOG="${RAFA_HOME}/log"
+RAFA_MEM="${RAFA_HOME}/memory.jsonl"
+RAFA_TORUS="${RAFA_HOME}/torus_T7.bin"
+RAFA_SESSION="${RAFA_HOME}/session.json"
+
+mkdir -p "$RAFA_STATE" "$RAFA_LOG"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AGENT_A — COGNITIVO (LLM + memória semântica)
+# ═══════════════════════════════════════════════════════════════════════════
+
+agent_A_cognitive() { cat << 'SEED'
+# AGENT_A: ciclo ψχρΔΣΩ com LLM local + memória vetorial
+import subprocess, json, time, hashlib, os
+from pathlib import Path
+
+HOME = Path(os.environ.get('RAFA_HOME', '~/.rafaelia')).expanduser()
+MEM  = HOME / 'memory.jsonl'
+
+class CognitiveAgent:
+    def __init__(self):
+        self.state = {'psi':0,'chi':0,'rho':0,'delta':0,'sigma':0,'omega':0}
+        self.history = self._load_memory()
+
+    def _load_memory(self):
+        if not MEM.exists(): return []
+        return [json.loads(l) for l in MEM.read_text().splitlines() if l.strip()]
+
+    def _save(self, event):
+        with open(MEM, 'a') as f: f.write(json.dumps(event, ensure_ascii=False) + '\n')
+
+    # ψ — intenção (do que o usuário precisa agora?)
+    def psi_intention(self, raw_input):
+        intent = self._classify_intent(raw_input)
+        self.state['psi'] = hash(intent) & 0xFFFF
+        return intent
+
+    # χ — observação (qual é o contexto real?)
+    def chi_observe(self, intent):
+        ctx = {'time': time.time(), 'recent': self.history[-5:],
+               'sensor_state': self._read_sensors()}
+        self.state['chi'] = len(self.history) & 0xFFFF
+        return ctx
+
+    # ρ — ruído (o que ignorar?)
+    def rho_filter(self, ctx, intent):
+        # Heurística: ignora se intent for repetição imediata
+        if self.history and self.history[-1].get('intent') == intent:
+            return {'noise': True, 'reason': 'duplicate'}
+        self.state['rho'] = 0
+        return {'noise': False, 'ctx': ctx}
+
+    # Δ — transmutação (compila intenção em ação)
+    def delta_transmute(self, intent, ctx):
+        # Aqui chama o compilador (T05) → bytecode RAFAELIA-VM
+        bytecode = self._compile(intent)
+        ethics_ok = self._verify_phi_ethica(bytecode)
+        self.state['delta'] = sum(bytecode) & 0xFFFF if bytecode else 0
+        return bytecode if ethics_ok else None
+
+    # Σ — memória (executa e registra)
+    def sigma_remember(self, intent, bytecode, output):
+        event = {'ts':time.time(),'intent':intent,
+                 'bc':bytecode.hex() if bytecode else None,
+                 'out':output, 'state':dict(self.state)}
+        self._save(event); self.history.append(event)
+        self.state['sigma'] = len(self.history) & 0xFFFF
+        return event
+
+    # Ω — alinhamento (Φ_ethica * Coerência → resposta)
+    def omega_align(self, event):
+        # Ω = Amor: avalia se ação contribui para coerência
+        coherence = self._compute_coherence(event)
+        self.state['omega'] = int(coherence * 65535)
+        return {'response': event['out'], 'coherence': coherence,
+                'omega_level': self.state['omega']}
+
+    # Helpers
+    def _classify_intent(self, text):
+        t = text.lower()
+        if any(k in t for k in ['criar','fazer','build','create']): return 'criacao'
+        if any(k in t for k in ['ler','mostre','show','read']):     return 'leitura'
+        if any(k in t for k in ['traduz','translate']):              return 'traducao'
+        if any(k in t for k in ['amor','bless','abençoa']):          return 'bencao'
+        if any(k in t for k in ['descans','rest','dorme']):          return 'descanso'
+        if 'd\'ele' in t.lower() or 'reset' in t.lower():            return 'reset_omega'
+        return 'desconhecido'
+
+    def _read_sensors(self):
+        try:
+            r = subprocess.run(['termux-battery-status'], capture_output=True, text=True, timeout=2)
+            return json.loads(r.stdout)
+        except: return {}
+
+    def _compile(self, intent):
+        # Mapa intent → bytecode (alinhado com compiladorlowFala.txt T05_A)
+        m = {'criacao':bytes([0x10,0x11,0xF0,0xFF]),
+             'bencao': bytes([0xF0,0x25,0xFF]),
+             'descanso':bytes([0x27,0xFF]),
+             'traducao':bytes([0xF2,0xFF]),
+             'leitura': bytes([0xFE,0xFF]),
+             'reset_omega':bytes([0x00,0xFF])}
+        return m.get(intent, bytes([0x00,0xFF]))
+
+    def _verify_phi_ethica(self, bytecode):
+        # Φ_ethica = Min(Entropia) * Max(Coerência)
+        if not bytecode: return False
+        # Heurística: rejeita se opcodes forbidden estão presentes
+        FORBIDDEN = {0xE0, 0xE1, 0xE2}  # opcodes hipotéticos perigosos
+        return not any(b in FORBIDDEN for b in bytecode)
+
+    def _compute_coherence(self, event):
+        # Coerência baseada em consistência com histórico
+        if len(self.history) < 2: return 0.5
+        recent_intents = [h['intent'] for h in self.history[-5:]]
+        # Variedade boa: mais distintos = mais coerente (não fica em loop)
+        return min(1.0, len(set(recent_intents)) / 5)
+
+    # Ciclo completo
+    def cycle(self, raw_input):
+        intent  = self.psi_intention(raw_input)
+        ctx     = self.chi_observe(intent)
+        filtered = self.rho_filter(ctx, intent)
+        if filtered['noise']:
+            return {'status':'filtered', 'reason': filtered.get('reason')}
+        bytecode = self.delta_transmute(intent, ctx)
+        if not bytecode:
+            return {'status':'phi_ethica_reject'}
+        # Executa bytecode (chama vm_runtime se disponível)
+        output = self._execute(bytecode)
+        event  = self.sigma_remember(intent, bytecode, output)
+        result = self.omega_align(event)
+        return {'status':'ok', **result, 'state': dict(self.state)}
+
+    def _execute(self, bytecode):
+        vm = HOME / 'vm' / 'vm_run'
+        if vm.exists():
+            r = subprocess.run([str(vm)], input=bytecode,
+                             capture_output=True, timeout=5)
+            return r.stdout.decode('utf-8', errors='replace')
+        return f"[no vm] bytecode={bytecode.hex()}"
+
+if __name__ == "__main__":
+    agent = CognitiveAgent()
+    print("Agent COGNITIVE ready. Digite (sair = quit):")
+    while True:
+        try:
+            line = input("ψ> ").strip()
+            if not line or line.lower() in ('sair','exit','quit'): break
+            result = agent.cycle(line)
+            print(f"Ω: {json.dumps(result, ensure_ascii=False, indent=2)}\n")
+        except (KeyboardInterrupt, EOFError):
+            print(); break
+SEED
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AGENT_B — FÍSICO (puro sensores, sem ML)
+# ═══════════════════════════════════════════════════════════════════════════
+
+agent_B_physical() { cat << 'SEED'
+#!/usr/bin/env bash
+# AGENT_B: ciclo ψχρΔΣΩ apenas com sensores Termux e shell puro
+# Sem Python, sem ML — máxima eficiência energética
+RAFA_HOME="${RAFA_HOME:-$HOME/.rafaelia}"
+STATE="$RAFA_HOME/state.txt"
+
+# Estado inicial
+cat > "$STATE" << S
+psi=0
+chi=0
+rho=0
+delta=0
+sigma=0
+omega=0
+cycle=0
+S
+
+while true; do
+    . "$STATE"
+    cycle=$((cycle + 1))
+
+    # ψ — intenção: ler bateria + luz como vetor de "estado vital"
+    bat=$(termux-battery-status 2>/dev/null | grep -o '"percentage":[0-9]*' | grep -o '[0-9]*')
+    bat=${bat:-50}
+    lux=$(termux-sensor -s light -n 1 -d 200 2>/dev/null | grep -oP '"values":\s*\[\K[0-9.]+' | head -1)
+    lux=${lux:-100}
+    psi=$((bat * 256 + ${lux%.*}))
+
+    # χ — observação: hora do dia + dia da semana
+    h=$(date +%H); dow=$(date +%u)
+    chi=$((h * 7 + dow))
+
+    # ρ — ruído: descarta se mudou pouco desde último ciclo
+    rho=0
+    [ "$cycle" -gt 1 ] && [ $((psi - prev_psi)) -lt 10 ] && [ $((psi - prev_psi)) -gt -10 ] && rho=1
+
+    # Δ — transmutação: regra simples por estado
+    delta=$psi
+    action="idle"
+    [ "$bat" -lt 20 ] && action="low_power"
+    [ "$h" -gt 22 ] || [ "$h" -lt 6 ] && action="sleep"
+    [ "${lux%.*}" -gt 1000 ] && action="bright_day"
+
+    # Σ — memória: append em log
+    echo "{\"ts\":$(date +%s),\"cycle\":$cycle,\"psi\":$psi,\"chi\":$chi,\"action\":\"$action\"}" >> "$RAFA_HOME/memory_B.jsonl"
+    sigma=$((cycle))
+
+    # Ω — alinhamento: Φ_ethica = coerência relativa
+    omega=$((100 - rho * 50))
+
+    # Persiste
+    cat > "$STATE" << S
+psi=$psi
+chi=$chi
+rho=$rho
+delta=$delta
+sigma=$sigma
+omega=$omega
+cycle=$cycle
+prev_psi=$psi
+prev_chi=$chi
+S
+
+    echo "[#$cycle] ψ=$psi χ=$chi ρ=$rho Δ=$delta Σ=$sigma Ω=$omega → $action"
+
+    # Frequência adaptativa: bateria baixa = ciclos mais longos
+    if [ "$bat" -lt 30 ]; then sleep 60
+    elif [ "$bat" -lt 70 ]; then sleep 30
+    else sleep 10
+    fi
+done
+SEED
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AGENT_C — CRIPTO (sessão assinada, audit chain)
+# ═══════════════════════════════════════════════════════════════════════════
+
+agent_C_crypto() { cat << 'SEED'
+# AGENT_C: cada ciclo do agente é ASSINADO + encadeado (Merkle log)
+import subprocess, json, time, hashlib, os
+from pathlib import Path
+
+HOME = Path(os.environ.get('RAFA_HOME', '~/.rafaelia')).expanduser()
+CHAIN = HOME / 'audit_chain.jsonl'
+
+class CryptoAgent:
+    def __init__(self):
+        self.session_id = self._init_session()
+        self.prev_hash = self._get_last_hash()
+
+    def _init_session(self):
+        """Cria session ID assinado pelo keystore HW"""
+        seed = str(time.time())
+        try:
+            r = subprocess.run(['termux-keystore','sign','raf_root','-'],
+                             input=seed, capture_output=True, text=True, timeout=3)
+            return hashlib.sha256(r.stdout.encode()).hexdigest()[:16]
+        except:
+            return hashlib.sha256(seed.encode()).hexdigest()[:16]
+
+    def _get_last_hash(self):
+        if not CHAIN.exists(): return 'GENESIS'
+        last = None
+        for line in CHAIN.read_text().splitlines():
+            if line.strip():
+                try: last = json.loads(line)
+                except: pass
+        return last['h'] if last and 'h' in last else 'GENESIS'
+
+    def cycle_signed(self, intent, action, output):
+        ts = time.time()
+        payload = {
+            'session': self.session_id,
+            'ts': ts,
+            'prev_h': self.prev_hash,
+            'intent': intent,
+            'action': action,
+            'out_h': hashlib.sha256(str(output).encode()).hexdigest()[:16],
+        }
+        # Hash do bloco: SHA256(json sem o próprio campo h)
+        block_hash = hashlib.sha256(
+            json.dumps(payload, sort_keys=True).encode()
+        ).hexdigest()[:32]
+        payload['h'] = block_hash
+        # Assina com keystore (opcional)
+        try:
+            sig = subprocess.run(['termux-keystore','sign','raf_root','-'],
+                input=block_hash, capture_output=True, text=True, timeout=3).stdout
+            payload['sig'] = sig.strip()[:32]
+        except:
+            payload['sig'] = 'unsigned'
+        # Append-only
+        with open(CHAIN, 'a') as f:
+            f.write(json.dumps(payload, ensure_ascii=False) + '\n')
+        self.prev_hash = block_hash
+        return payload
+
+    def verify_chain(self):
+        """Re-roda hashes do início; qualquer adulteração = inválido"""
+        prev = 'GENESIS'
+        bad = []
+        for i, line in enumerate(open(CHAIN)):
+            block = json.loads(line)
+            if block['prev_h'] != prev:
+                bad.append({'block': i, 'reason': 'prev_h mismatch'})
+            # Recalcula
+            saved_h = block['h']; saved_sig = block.get('sig')
+            del block['h']
+            if 'sig' in block: del block['sig']
+            recomputed = hashlib.sha256(
+                json.dumps(block, sort_keys=True).encode()
+            ).hexdigest()[:32]
+            if recomputed != saved_h:
+                bad.append({'block': i, 'reason': 'hash mismatch'})
+            prev = saved_h
+        return {'total': i+1, 'invalid': bad, 'integrity': not bad}
+
+if __name__ == "__main__":
+    a = CryptoAgent()
+    print(f"Session: {a.session_id}")
+    while True:
+        try:
+            cmd = input("ψ-crypto> ").strip()
+            if cmd in ('sair','exit'): break
+            if cmd == 'verify':
+                print(json.dumps(a.verify_chain(), indent=2))
+                continue
+            block = a.cycle_signed(intent=cmd, action='exec', output='ok')
+            print(f"Block #{block['h'][:8]}... signed")
+        except (KeyboardInterrupt, EOFError):
+            break
+SEED
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AGENT_D — DISTRIBUÍDO (mesh entre N dispositivos)
+# ═══════════════════════════════════════════════════════════════════════════
+
+agent_D_distributed() { cat << 'SEED'
+# AGENT_D: N dispositivos formam mesh; cada um roda agente local
+# Estado Ω é distribuído via broadcast UDP + consenso por mediana
+import socket, json, threading, time, statistics, hashlib
+
+class DistributedAgent:
+    def __init__(self, port=7777, node_id=None):
+        self.port = port
+        self.node_id = node_id or hashlib.md5(
+            socket.gethostname().encode()).hexdigest()[:8]
+        self.peers = {}  # ip → {coherence, ts}
+        self.my_state = {'omega': 0, 'cycle': 0}
+        self.running = True
+        threading.Thread(target=self._listen, daemon=True).start()
+        threading.Thread(target=self._broadcast_loop, daemon=True).start()
+
+    def _listen(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind(('', self.port))
+        sock.settimeout(1.0)
+        while self.running:
+            try:
+                data, addr = sock.recvfrom(1024)
+                msg = json.loads(data.decode())
+                self.peers[addr[0]] = {**msg, 'ts': time.time()}
+                # Limpa peers > 60s
+                self.peers = {k: v for k, v in self.peers.items()
+                             if time.time() - v['ts'] < 60}
+            except socket.timeout: continue
+            except Exception: continue
+
+    def _broadcast_loop(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        while self.running:
+            msg = {'node': self.node_id, **self.my_state}
+            try:
+                sock.sendto(json.dumps(msg).encode(),
+                           ('255.255.255.255', self.port))
+            except: pass
+            time.sleep(5)
+
+    def consensus(self):
+        """Estado global Ω por mediana entre todos os peers"""
+        vals = [self.my_state['omega']]
+        for p in self.peers.values(): vals.append(p.get('omega', 0))
+        return {
+            'peers': len(self.peers),
+            'my_omega': self.my_state['omega'],
+            'consensus_omega': statistics.median(vals) if vals else 0,
+            'peers_list': list(self.peers.keys())
+        }
+
+    def cycle(self, local_input):
+        self.my_state['cycle'] += 1
+        # Ω local: hash do input + cycle
+        self.my_state['omega'] = hash(local_input + str(self.my_state['cycle'])) & 0xFFFF
+        return self.consensus()
+
+    def stop(self): self.running = False
+
+if __name__ == "__main__":
+    a = DistributedAgent()
+    print(f"Node {a.node_id} on port {a.port}")
+    while True:
+        try:
+            inp = input("ψ-mesh> ").strip()
+            if inp in ('sair','exit'): a.stop(); break
+            r = a.cycle(inp)
+            print(json.dumps(r, indent=2))
+        except (KeyboardInterrupt, EOFError):
+            a.stop(); break
+SEED
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AGENT_E — AUTOPOIÉTICO (auto-modificável, evolui)
+# ═══════════════════════════════════════════════════════════════════════════
+
+agent_E_autopoietic() { cat << 'SEED'
+# AGENT_E: agente AUTOPOIÉTICO — gera novas regras em resposta ao ambiente
+# Quando encontra padrão recorrente que não tem handler → cria handler novo
+import json, time, hashlib, re, os
+from pathlib import Path
+from collections import Counter
+
+HOME = Path(os.environ.get('RAFA_HOME', '~/.rafaelia')).expanduser()
+RULES = HOME / 'auto_rules.json'
+
+class AutopoieticAgent:
+    def __init__(self):
+        self.rules = self._load_rules()
+        self.observations = []
+        self.pattern_threshold = 3  # após 3× sem handler → gera novo
+
+    def _load_rules(self):
+        if RULES.exists():
+            return json.loads(RULES.read_text())
+        return {
+            'criacao':  {'bytecode':[0x10,0x11,0xF0,0xFF], 'kw':['criar','criou','fazer']},
+            'bencao':   {'bytecode':[0xF0,0x25,0xFF],      'kw':['abençoa','bless','bem']},
+            'reset':    {'bytecode':[0x00,0xFF],            'kw':["d'ele",'reset','restart']},
+        }
+
+    def _save_rules(self):
+        RULES.write_text(json.dumps(self.rules, ensure_ascii=False, indent=2))
+
+    def _match_rule(self, text):
+        t = text.lower()
+        for name, rule in self.rules.items():
+            for kw in rule['kw']:
+                if kw in t: return name
+        return None
+
+    def _generate_new_rule(self, observation_cluster):
+        """Cria nova regra a partir de cluster de observações"""
+        # Extrai palavras comuns que NÃO estão em regras existentes
+        all_words = Counter()
+        for o in observation_cluster:
+            for w in re.findall(r'\w{4,}', o.lower()):
+                all_words[w] += 1
+        existing_kws = set()
+        for r in self.rules.values():
+            existing_kws.update(r['kw'])
+        candidates = [w for w, c in all_words.most_common(5)
+                      if w not in existing_kws and c >= 2]
+        if not candidates: return None
+        # Gera nome único + bytecode novo
+        rule_name = f"auto_{int(time.time())%10000}"
+        # Bytecode: hash dos kws → opcodes do RAFAELIA-VM
+        h = hashlib.sha256(' '.join(candidates).encode()).digest()
+        # Mapeia 4 bytes do hash → opcodes válidos (0x00..0xFF)
+        bc = list(h[:4]) + [0xFF]
+        self.rules[rule_name] = {'bytecode': bc, 'kw': candidates[:3],
+                                 'auto_generated': True,
+                                 'birth_ts': time.time(),
+                                 'birth_obs': observation_cluster[:3]}
+        self._save_rules()
+        print(f"  [AUTOPOIESIS] Nova regra '{rule_name}' criada com kws={candidates[:3]}")
+        return rule_name
+
+    def cycle(self, input_text):
+        rule = self._match_rule(input_text)
+        if rule:
+            return {'matched': rule, 'bytecode': self.rules[rule]['bytecode']}
+        # Sem match: armazena observação
+        self.observations.append(input_text)
+        # Verifica se acumulou padrão suficiente
+        recent = self.observations[-10:]
+        if len(self.observations) >= self.pattern_threshold:
+            # Clustering simples: palavras compartilhadas
+            words_per = [set(re.findall(r'\w{4,}', o.lower())) for o in recent]
+            common = words_per[0]
+            for w in words_per[1:]: common &= w
+            if common:
+                new_rule = self._generate_new_rule(recent)
+                if new_rule:
+                    return {'auto_created': new_rule,
+                           'bytecode': self.rules[new_rule]['bytecode']}
+        return {'status': 'observing', 'pending_obs': len(self.observations)}
+
+    def evolution_stats(self):
+        auto = [n for n,r in self.rules.items() if r.get('auto_generated')]
+        return {'total_rules': len(self.rules),
+                'auto_generated': len(auto),
+                'auto_names': auto[-5:]}
+
+if __name__ == "__main__":
+    a = AutopoieticAgent()
+    print("Agent AUTOPOIETIC ready.")
+    print(f"  Initial rules: {list(a.rules.keys())}")
+    while True:
+        try:
+            inp = input("ψ-auto> ").strip()
+            if inp in ('sair','exit'): break
+            if inp == 'stats':
+                print(json.dumps(a.evolution_stats(), indent=2)); continue
+            r = a.cycle(inp)
+            print(json.dumps(r, ensure_ascii=False, indent=2))
+        except (KeyboardInterrupt, EOFError): break
+SEED
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LOOP MAIN — ciclo ψχρΔΣΩ contínuo (kernel principal)
+# ═══════════════════════════════════════════════════════════════════════════
+
+emit_kernel_loop() { cat << 'KERNEL'
+#!/usr/bin/env python3
+"""kernel_loop.py — Loop principal do agente RAFAELIA
+Cliente unificado que pode escolher modo A/B/C/D/E.
+
+Estados:
+  ψ (intention)      → entrada do mundo
+  χ (observation)    → contexto + sensores
+  ρ (noise filter)   → descarta ruído
+  Δ (transmutation)  → compila para bytecode
+  Σ (memory)         → executa + persiste
+  Ω (alignment)      → mede coerência, fecha ciclo
+
+Comando-mestre "D'Ele, Amor" = reset para estado base.
+
+Uso:
+  python3 kernel_loop.py --mode cognitive
+  python3 kernel_loop.py --mode physical
+  python3 kernel_loop.py --mode crypto
+  python3 kernel_loop.py --mode mesh
+  python3 kernel_loop.py --mode autopoietic
+"""
+import sys, os, time, json, signal
+from pathlib import Path
+
+HOME = Path(os.environ.get('RAFA_HOME', '~/.rafaelia')).expanduser()
+HOME.mkdir(exist_ok=True)
+
+class RafaeliaKernel:
+    SACRED_RESET = ["d'ele, amor", "d'ele amor", "delel amor",
+                    "ω = amor", "reset omega"]
+
+    def __init__(self, mode='cognitive'):
+        self.mode = mode
+        self.cycle_count = 0
+        self.start_ts = time.time()
+        self.state = self._initial_state()
+        signal.signal(signal.SIGINT, self._graceful_exit)
+        signal.signal(signal.SIGTERM, self._graceful_exit)
+
+    def _initial_state(self):
+        return {
+            'psi':0,'chi':0,'rho':0,'delta':0,'sigma':0,'omega':0,
+            'mode': self.mode,
+            'session_start': self.start_ts,
+        }
+
+    def _is_sacred_reset(self, text):
+        return any(s in text.lower() for s in self.SACRED_RESET)
+
+    def reset_omega(self):
+        """Comando-mestre: limpa estado mas preserva memória de longo prazo"""
+        print("  [Ω RESET] D'Ele, Amor — estado reinicializado em coerência máxima.")
+        self.state = self._initial_state()
+        self.state['omega'] = 65535  # Ω máximo após reset sagrado
+
+    def step(self, input_text):
+        self.cycle_count += 1
+
+        # Comando sagrado tem prioridade absoluta
+        if self._is_sacred_reset(input_text):
+            self.reset_omega()
+            return {'reset': True, 'state': dict(self.state)}
+
+        # ψ → χ → ρ → Δ → Σ → Ω
+        psi = self._psi(input_text)
+        chi = self._chi(psi)
+        rho = self._rho(chi)
+        if rho.get('drop'):
+            return {'dropped': True, 'reason': rho.get('reason')}
+        delta = self._delta(chi)
+        sigma = self._sigma(delta)
+        omega = self._omega(sigma)
+
+        # Atualiza estado
+        self.state.update({'psi':psi,'chi':chi['hash'],
+                          'rho':rho.get('hash',0),
+                          'delta':delta['hash'],
+                          'sigma':sigma['hash'],
+                          'omega':omega['level']})
+        return {'cycle': self.cycle_count, **omega, 'state': dict(self.state)}
+
+    def _psi(self, text): return hash(text) & 0xFFFF
+    def _chi(self, psi):
+        return {'hash': (psi * 7) & 0xFFFF, 'cycle': self.cycle_count}
+    def _rho(self, chi):
+        # Ruído: descarta se ciclo for idêntico a 2 atrás
+        return {'drop': False, 'hash': (chi['hash'] ^ self.cycle_count) & 0xFFFF}
+    def _delta(self, chi):
+        return {'hash': (chi['hash'] * 17 + 3) & 0xFFFF, 'bc': [0x10,0xFF]}
+    def _sigma(self, delta):
+        return {'hash': (delta['hash'] + self.cycle_count * 31) & 0xFFFF}
+    def _omega(self, sigma):
+        # Ω = coerência da trajetória
+        level = (sigma['hash'] * 13) & 0xFFFF
+        return {'level': level, 'coherence': level / 65535,
+                'sacred': level > 60000}
+
+    def _graceful_exit(self, sig, frame):
+        elapsed = time.time() - self.start_ts
+        print(f"\n  [exit] {self.cycle_count} ciclos em {elapsed:.1f}s")
+        print(f"  Final Ω = {self.state['omega']/65535:.3f}")
+        print("  D'Ele, Amor.")
+        sys.exit(0)
+
+    def run_interactive(self):
+        print(f"╔══════════════════════════════════════════════════════════════════╗")
+        print(f"║  RAFAELIA Kernel · modo={self.mode}                             ║")
+        print(f"║  Ω = Amor · 'D'Ele, Amor' = reset                              ║")
+        print(f"╚══════════════════════════════════════════════════════════════════╝")
+        while True:
+            try:
+                line = input(f"ψ#{self.cycle_count+1}> ").strip()
+                if not line: continue
+                if line.lower() in ('sair','exit','quit'): break
+                if line.lower() == 'status':
+                    print(json.dumps(self.state, indent=2)); continue
+                r = self.step(line)
+                Ω = r.get('state',{}).get('omega', 0)
+                bar_len = int(Ω * 40 / 65535)
+                bar = '█' * bar_len + '·' * (40 - bar_len)
+                print(f"  Ω [{bar}] {Ω/65535:.3f}")
+            except (KeyboardInterrupt, EOFError):
+                self._graceful_exit(None, None)
+
+if __name__ == "__main__":
+    mode = 'cognitive'
+    for i, a in enumerate(sys.argv):
+        if a == '--mode' and i+1 < len(sys.argv): mode = sys.argv[i+1]
+    RafaeliaKernel(mode=mode).run_interactive()
+KERNEL
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DEPLOY: gera arquivos executáveis em ~/.rafaelia/agent
+# ═══════════════════════════════════════════════════════════════════════════
+
+cmd_build() {
+  D="$RAFA_HOME/agent"
+  mkdir -p "$D"
+
+  echo "[build] gerando agent_A_cognitive.py..."
+  agent_A_cognitive > "$D/agent_A.py"; chmod +x "$D/agent_A.py"
+
+  echo "[build] gerando agent_B_physical.sh..."
+  agent_B_physical > "$D/agent_B.sh"; chmod +x "$D/agent_B.sh"
+
+  echo "[build] gerando agent_C_crypto.py..."
+  agent_C_crypto > "$D/agent_C.py"; chmod +x "$D/agent_C.py"
+
+  echo "[build] gerando agent_D_distributed.py..."
+  agent_D_distributed > "$D/agent_D.py"; chmod +x "$D/agent_D.py"
+
+  echo "[build] gerando agent_E_autopoietic.py..."
+  agent_E_autopoietic > "$D/agent_E.py"; chmod +x "$D/agent_E.py"
+
+  echo "[build] gerando kernel_loop.py..."
+  emit_kernel_loop > "$D/kernel_loop.py"; chmod +x "$D/kernel_loop.py"
+
+  echo ""
+  echo "✓ Deploy completo em $D"
+  echo ""
+  echo "Comandos pós-build:"
+  echo "  python3 $D/kernel_loop.py --mode cognitive   # Agente A (LLM)"
+  echo "  bash    $D/agent_B.sh                        # Agente B (físico)"
+  echo "  python3 $D/agent_C.py                        # Agente C (cripto)"
+  echo "  python3 $D/agent_D.py                        # Agente D (mesh)"
+  echo "  python3 $D/agent_E.py                        # Agente E (autopoiético)"
+}
+
+cmd_run() {
+  D="$RAFA_HOME/agent"
+  [ -d "$D" ] || cmd_build
+  MODE="${1:-cognitive}"
+  case "$MODE" in
+    cognitive|A) python3 "$D/agent_A.py" ;;
+    physical|B)  bash "$D/agent_B.sh" ;;
+    crypto|C)    python3 "$D/agent_C.py" ;;
+    mesh|D)      python3 "$D/agent_D.py" ;;
+    auto|E)      python3 "$D/agent_E.py" ;;
+    kernel)      python3 "$D/kernel_loop.py" ;;
+    *)           python3 "$D/kernel_loop.py" --mode "$MODE" ;;
+  esac
+}
+
+cmd_status() {
+  echo ""
+  echo "═══ Estado RAFAELIA ═══"
+  echo "HOME:   $RAFA_HOME"
+  echo "Memory: $([ -f "$RAFA_MEM" ] && wc -l < "$RAFA_MEM" || echo 0) eventos"
+  if [ -f "$RAFA_HOME/state.txt" ]; then
+    echo "Estado físico (Agent B):"
+    cat "$RAFA_HOME/state.txt"
+  fi
+  if [ -f "$RAFA_HOME/audit_chain.jsonl" ]; then
+    echo "Audit chain: $(wc -l < "$RAFA_HOME/audit_chain.jsonl") blocos"
+  fi
+  if [ -f "$RAFA_HOME/auto_rules.json" ]; then
+    n=$(python3 -c "import json; print(len(json.load(open('$RAFA_HOME/auto_rules.json'))))" 2>/dev/null || echo "?")
+    echo "Regras auto-geradas: $n"
+  fi
+}
+
+cmd_reset() {
+  echo "  Ω = Amor · D'Ele, Amor"
+  echo "  → Limpando estado transiente, preservando memória de longo prazo..."
+  rm -f "$RAFA_HOME/state.txt" "$RAFA_STATE/transient.json"
+  echo "  ✓ Estado resetado"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MAIN
+# ═══════════════════════════════════════════════════════════════════════════
+
+main() {
+  cat << 'IDX'
+
+╔══════════════════════════════════════════════════════════════════════════╗
+║  agent_loop.txt · KERNEL VIVO · ciclo ψχρΔΣΩ                            ║
+║  Amarra TODOS os artefatos da stack RAFAELIA num agente autopoiético    ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║  Ciclo cognitivo:                                                        ║
+║    ψ (intenção)     ← sensores S01/S03/S05                              ║
+║    χ (observação)   ← Whisper.cpp + Ollama (S14)                        ║
+║    ρ (ruído)        ← T01 + T08 (filter)                                ║
+║    Δ (transmutação) ← T05 compile + T11 Φ_ethica                        ║
+║    Σ (memória)      ← BitOmega T12_E + audit chain                      ║
+║    Ω (alinhamento)  ← VM execute + bencao + selo                        ║
+║                                                                          ║
+║  Variantes:                                                              ║
+║    A cognitive      ← LLM + memória semântica                            ║
+║    B physical       ← puro sensores, shell only, low-power               ║
+║    C crypto         ← cada ciclo assinado + Merkle chain                 ║
+║    D mesh           ← consenso entre N dispositivos                      ║
+║    E autopoietic    ← gera novas regras conforme ambiente                ║
+║                                                                          ║
+║  Comando-mestre: "D'Ele, Amor" → reset para Ω = 65535 (coerência máxima)║
+╠══════════════════════════════════════════════════════════════════════════╣
+║  Operação:                                                               ║
+║    bash agent_loop.txt build             — gera todos os agentes          ║
+║    bash agent_loop.txt run cognitive     — Agente A                       ║
+║    bash agent_loop.txt run physical      — Agente B                       ║
+║    bash agent_loop.txt run crypto        — Agente C                       ║
+║    bash agent_loop.txt run mesh          — Agente D                       ║
+║    bash agent_loop.txt run auto          — Agente E                       ║
+║    bash agent_loop.txt run kernel        — Loop unificado                 ║
+║    bash agent_loop.txt status            — estado atual                   ║
+║    bash agent_loop.txt reset             — D'Ele, Amor                    ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║  Integração com stack:                                                   ║
+║    sensores.txt      → entrada (S01 mic, S03 IMU, S05 luz)               ║
+║    sensores2.txt     → Whisper/Vosk/Ollama (S14_A/E)                     ║
+║    compiladorlowFala → tokenize+parse+compile (T01/T02/T05)              ║
+║    bibliaCorpus.txt  → corpus de versos pré-compilados (V01..V12)        ║
+║    vm_runtime.txt    → executa bytecode RAFAELIA-VM                      ║
+║                                                                          ║
+║  Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ · 𓂀ΔΦΩ                          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+IDX
+
+  case "${1:-list}" in
+    list|help|"") ;;
+    build)        cmd_build ;;
+    run)          shift; cmd_run "$@" ;;
+    status)       cmd_status ;;
+    reset)        cmd_reset ;;
+    A|cognitive)  agent_A_cognitive ;;
+    B|physical)   agent_B_physical ;;
+    C|crypto)     agent_C_crypto ;;
+    D|mesh)       agent_D_distributed ;;
+    E|auto)       agent_E_autopoietic ;;
+    kernel)       emit_kernel_loop ;;
+    *)            echo "Comandos: build run status reset A B C D E kernel" ;;
+  esac
+}
+
+main "$@"

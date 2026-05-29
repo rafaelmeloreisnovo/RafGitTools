@@ -1,0 +1,20 @@
+RAFAELIA Stack v6.0.0
+─────────────────────────────────
+Bundle:        rafaelia_bundle_v6.tar.gz
+Size:          124K
+SHA256 full:   b47988211f4b6651b2b911bbfede66ed9727251e71151d509fbb8590832dd4ed
+Install code:  b47988211f4b6651
+Merkle root:   438042afb9ea4723
+Build date:    2026-05-29T10:59:09Z
+Artifacts:     22 arquivos
+Total lines:   7850
+
+Instalação:
+  tar -xzf rafaelia_bundle_v6.tar.gz
+  bash rafaelia_bundle_v6/install.sh
+
+Verificação remota:
+  sha256sum rafaelia_bundle_v6.tar.gz
+  # esperado: b47988211f4b6651b2b911bbfede66ed9727251e71151d509fbb8590832dd4ed
+
+Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ · 𓂀ΔΦΩ
