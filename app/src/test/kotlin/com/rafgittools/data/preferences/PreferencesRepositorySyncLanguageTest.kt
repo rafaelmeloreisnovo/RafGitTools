@@ -18,6 +18,7 @@ class PreferencesRepositorySyncLanguageTest {
         val context = mockk<Context>()
         val sharedPreferences = mockk<SharedPreferences>()
 
+        every { context.applicationContext } returns context
         every {
             context.getSharedPreferences("settings_sync", Context.MODE_PRIVATE)
         } returns sharedPreferences

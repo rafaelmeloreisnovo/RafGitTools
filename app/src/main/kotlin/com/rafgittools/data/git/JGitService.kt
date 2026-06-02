@@ -17,6 +17,7 @@ import org.eclipse.jgit.transport.SshTransport
 import org.eclipse.jgit.transport.Transport
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.eclipse.jgit.transport.RefLeaseSpec
+import org.eclipse.jgit.transport.RemoteRefUpdate
 import org.eclipse.jgit.transport.SshSessionFactory as JGitSshSessionFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -569,7 +570,23 @@ class JGitService @Inject constructor(
     ): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
-            val refSpec = "refs/heads/$branch:refs/heads/$branch"
+            val branchRef = "refs/heads/$branch"
+            val refSpec = "$branchRef:$branchRef"
+            val absentObjectId = "0000000000000000000000000000000000000000"
+            val actualOldObjectId = git.lsRemote()
+                .setRemote(remote)
+                .setHeads(true)
+                .call()
+                .firstOrNull { it.name == branchRef }
+                ?.objectId
+                ?.name
+                ?: absentObjectId
+            if (actualOldObjectId != expectedOldObjectId) {
+                throw IllegalStateException(
+                    "Force push with lease rejected for $branchRef: expected $expectedOldObjectId but remote is $actualOldObjectId"
+                )
+            }
+
             val command = git.push()
                 .setRemote(remote)
                 .setForce(true)
@@ -599,7 +616,18 @@ class JGitService @Inject constructor(
                 }
             }
 
-            command.call()
+            val results = command.call()
+            val rejected = results
+                .flatMap { it.remoteUpdates }
+                .firstOrNull { update ->
+                    update.status != RemoteRefUpdate.Status.OK &&
+                        update.status != RemoteRefUpdate.Status.UP_TO_DATE
+                }
+            if (rejected != null) {
+                throw IllegalStateException(
+                    "Force push with lease rejected for ${rejected.remoteName}: ${rejected.status}"
+                )
+            }
             Unit
         }
     }

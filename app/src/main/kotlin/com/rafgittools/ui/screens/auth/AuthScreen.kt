@@ -117,6 +117,8 @@ private fun AuthMethodSelection(
 
 @Composable
 private fun MethodPlaceholder(selectedMethod: AuthMethod?, uiState: AuthUiState, onBack: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
+
     Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Text("Método: ${selectedMethod?.name}")
         if (uiState is AuthUiState.Loading) CircularProgressIndicator()
@@ -132,7 +134,7 @@ private fun MethodPlaceholder(selectedMethod: AuthMethod?, uiState: AuthUiState,
                     Text(uiState.verificationUri, style = MaterialTheme.typography.bodyMedium)
                     if (selectedMethod == AuthMethod.OAUTH_WEB) {
                         Spacer(Modifier.height(12.dp))
-                        TextButton(onClick = { LocalUriHandler.current.openUri(uiState.verificationUri) }) {
+                        TextButton(onClick = { uriHandler.openUri(uiState.verificationUri) }) {
                             Icon(Icons.Default.OpenInNew, contentDescription = null)
                             Spacer(Modifier.width(4.dp))
                             Text("Abrir navegador")

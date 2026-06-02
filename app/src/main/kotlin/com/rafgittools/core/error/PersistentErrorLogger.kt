@@ -133,6 +133,31 @@ internal object ErrorDetailsCodec {
     }
 }
 
+internal object PersistentErrorLogCodec {
+    fun serialize(errors: List<ErrorDetails>, gson: Gson = Gson()): String {
+        val listType = object : TypeToken<List<StoredErrorDetails>>() {}.type
+        val storedErrors = errors.map { it.toStoredError() }
+        return gson.toJson(storedErrors, listType)
+    }
+
+    fun deserialize(json: String, gson: Gson = Gson()): List<ErrorDetails> {
+        if (json == "[]" || json.isBlank()) return emptyList()
+
+        val listType = object : TypeToken<List<StoredErrorDetails>>() {}.type
+        val storedErrors = runCatching {
+            gson.fromJson<List<StoredErrorDetails>>(json, listType)
+        }.getOrNull() ?: return emptyList()
+
+        return storedErrors.mapNotNull { stored ->
+            stored.toDomainErrorOrNull()?.copy(
+                message = stored.message.decodeLegacyEscapes(),
+                context = stored.context.decodeLegacyEscapes(),
+                stackTrace = stored.stackTrace?.decodeLegacyEscapes()
+            )
+        }
+    }
+}
+
 internal data class StoredErrorDetails(
     val type: String,
     val message: String,
@@ -161,4 +186,9 @@ private fun StoredErrorDetails.toDomainErrorOrNull(): ErrorDetails? {
         timestamp = timestamp,
         stackTrace = stackTrace
     )
+}
+
+private fun String.decodeLegacyEscapes(): String {
+    return replace("\\n", "\n")
+        .replace("\\\\", "\\")
 }

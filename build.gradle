@@ -13,7 +13,7 @@ buildscript {
         // Android Gradle Plugin 8.13.2 requires Gradle 8.13+ and supports Java 17.
         classpath 'com.android.tools.build:gradle:8.13.2'
 
-        // Kotlin plugin 1.9.22 is compatible with Jetpack Compose and KSP.
+        // Kotlin plugin 1.9.24 is compatible with Compose Compiler 1.5.14 and KSP 1.9.24-1.0.20.
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24'
 
         // Hilt for dependency injection.  Version 2.48 is stable and supports

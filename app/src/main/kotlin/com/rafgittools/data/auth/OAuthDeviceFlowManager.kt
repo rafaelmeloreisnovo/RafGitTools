@@ -18,7 +18,9 @@ private val CLIENT_ID_PLACEHOLDERS = setOf(
     "local-production-client-id",
     "your-client-id",
     "your_github_client_id",
-    "changeme"
+    "placeholder",
+    "changeme",
+    "replace-me"
 )
 
 internal fun isConfiguredClientId(value: String): Boolean {
