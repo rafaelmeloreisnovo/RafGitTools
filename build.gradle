@@ -18,7 +18,13 @@ buildscript {
 
         // Hilt for dependency injection.  Version 2.48 is stable and supports
         // AGP 8+.
-        classpath 'com.google.dagger:hilt-android-gradle-plugin:2.48'
+        classpath 'com.google.dagger:hilt-android-gradle-plugin:2.59.2'
+    }
+}
+
+plugins {
+    // KSP (Kotlin Symbol Processing) version aligned with Kotlin 1.9.22.
+    id 'com.google.devtools.ksp' version '1.9.22-1.0.17' apply false
 
         // KSP loaded from buildscript classpath to avoid marker-resolution
         // issues in restricted/offline environments.
