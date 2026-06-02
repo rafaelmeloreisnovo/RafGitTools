@@ -1,9 +1,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
-// This version has been updated to use stable, compatible versions of the Android
-// Gradle Plugin, Kotlin, Hilt, KSP and the Compose plugin.  The original
-// repository referenced future versions (e.g. 8.13.2, Kotlin 2.3.10, etc.)
-// which do not exist at the time of writing.  Using realistic versions
-// ensures that the project can be built with current toolchains.
+// This version pins the Android Gradle Plugin, Kotlin, Hilt, KSP and Compose
+// compiler versions used by the app. Keep the Gradle wrapper aligned with
+// the minimum Gradle version required by the selected AGP.
 
 buildscript {
     repositories {
@@ -12,8 +10,7 @@ buildscript {
         maven { url = uri('https://repo.eclipse.org/content/groups/releases/') }
     }
     dependencies {
-        // Use the latest stable Android Gradle plugin (AGP).  Version 8.3.0
-        // pairs with Gradle 8.3 and supports Java 17.
+        // Android Gradle Plugin 8.13.2 requires Gradle 8.13+ and supports Java 17.
         classpath 'com.android.tools.build:gradle:8.13.2'
 
         // Kotlin plugin 1.9.22 is compatible with Jetpack Compose and KSP.

@@ -16,5 +16,6 @@
 13. RAFGITTOOLS_MANUAL_USER.md
 14. RAFGITTOOLS_MANUAL_DEVELOPER.md
 15. TERMUX_AUTH.md
+16. RAFGITTOOLS_POSSIBILITIES_CATALOG.md
 
 > Documentos históricos permanecem no repositório e devem ser tratados como contexto.
