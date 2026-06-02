@@ -83,6 +83,7 @@ class AuthViewModelTest {
 
     @Test
     fun `import gh cli without gh returns clear message`() = runTest(dispatcher) {
+        coEvery { ghCliAuthImporter.importToken() } returns Result.failure(Exception("gh CLI não encontrado. Use PAT ou Device Code."))
         val vm = AuthViewModel(authRepository, githubRepository, authTokenCache, deviceFlowManager, ghCliAuthImporter, sshKeyManager)
         vm.importGhCliToken()
         dispatcher.scheduler.advanceUntilIdle()

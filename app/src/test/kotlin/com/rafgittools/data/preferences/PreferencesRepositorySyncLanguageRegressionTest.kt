@@ -11,7 +11,7 @@ class PreferencesRepositorySyncLanguageRegressionTest {
     @Test
     fun getLanguageSync_doesNotUseCoroutineBlockingApis() {
         val sourcePath = resolveRepositorySourcePath()
-        val source: String = Files.readString(sourcePath)
+        val source = String(Files.readAllBytes(sourcePath))
 
         val methodStart = source.indexOf("fun getLanguageSync(): Language")
         assertThat(methodStart).isAtLeast(0)

@@ -102,6 +102,31 @@ internal object DiffAuditEntryCodec {
     }
 }
 
+internal object DiffAuditLogCodec {
+    fun serialize(entries: List<DiffAuditEntry>, gson: Gson = Gson()): String {
+        val listType = object : TypeToken<List<StoredDiffAuditEntry>>() {}.type
+        val storedEntries = entries.map { it.toStoredEntry() }
+        return gson.toJson(storedEntries, listType)
+    }
+
+    fun deserialize(json: String, gson: Gson = Gson()): List<DiffAuditEntry> {
+        if (json == "[]" || json.isBlank()) return emptyList()
+
+        val listType = object : TypeToken<List<StoredDiffAuditEntry>>() {}.type
+        val storedEntries = runCatching {
+            gson.fromJson<List<StoredDiffAuditEntry>>(json, listType)
+        }.getOrNull() ?: return emptyList()
+
+        return storedEntries.map { stored ->
+            stored.toDomainEntry().copy(
+                oldPath = stored.oldPath?.decodeLegacyEscapes(),
+                newPath = stored.newPath?.decodeLegacyEscapes(),
+                md5 = stored.md5.decodeLegacyEscapes()
+            )
+        }
+    }
+}
+
 internal data class StoredDiffAuditEntry(
     val oldPath: String?,
     val newPath: String?,
@@ -149,4 +174,9 @@ data class DiffAuditEntry(
 fun md5Hex(bytes: ByteArray): String {
     val digest = MessageDigest.getInstance("MD5").digest(bytes)
     return digest.joinToString("") { "%02x".format(it) }
+}
+
+private fun String.decodeLegacyEscapes(): String {
+    return replace("\\n", "\n")
+        .replace("\\\\", "\\")
 }

@@ -34,15 +34,17 @@ object WebhookHandler {
 
         val jsonObject = parsePayload(payload).getOrElse { return Result.failure(it) }
 
-        return when (normalizedEvent) {
-            "ping" -> handlePing(jsonObject)
-            "push" -> handlePush(jsonObject)
-            "pull_request" -> handlePullRequest(jsonObject)
-            "issues" -> handleIssues(jsonObject)
-            "issue_comment" -> handleIssueComment(jsonObject)
-            "release" -> handleRelease(jsonObject)
-            else -> Result.failure(IllegalStateException("Unexpected webhook event routing state"))
-        }
+        return runCatching {
+            when (normalizedEvent) {
+                "ping" -> handlePing(jsonObject)
+                "push" -> handlePush(jsonObject)
+                "pull_request" -> handlePullRequest(jsonObject)
+                "issues" -> handleIssues(jsonObject)
+                "issue_comment" -> handleIssueComment(jsonObject)
+                "release" -> handleRelease(jsonObject)
+                else -> Result.failure(IllegalStateException("Unexpected webhook event routing state"))
+            }
+        }.getOrElse { Result.failure(it) }
     }
 
     private fun parsePayload(payload: String): Result<com.google.gson.JsonObject> {
