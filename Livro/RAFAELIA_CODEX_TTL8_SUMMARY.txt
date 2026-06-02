@@ -1,0 +1,50 @@
+================================================================================
+  RAFAELIA_CODEX_TTL8 — SUMÁRIO DO COMPILADOR TTL8
+  8 Estados · Bit-paths · Flags HEX · Hotswap · Machine Codex
+================================================================================
+
+TTL 8 ESTADOS:
+  RAF_VOID     = 0x00  nenhum estado
+  RAF_ALLOW    = 0x01  operação permitida
+  RAF_DENY     = 0x02  operação negada (policy/sec)
+  RAF_RETRY    = 0x04  tente novamente (erro transiente)
+  RAF_FAULT    = 0x08  falha de hardware/sistema
+  RAF_TIMEOUT  = 0x10  TTL expirou
+  RAF_OVERFLOW = 0x20  overflow de buffer/contador
+  RAF_CORRUPT  = 0x40  dados corrompidos (CRC mismatch)
+  RAF_PANIC    = 0x80  estado irrecuperável
+
+SUPERPOSIÇÕES (combinação de bits):
+  RAF_SOFT_FAIL  = RETRY|TIMEOUT     — falha suave: retry
+  RAF_HARD_FAIL  = FAULT|PANIC       — falha dura: parar
+  RAF_DATA_BAD   = CORRUPT|OVERFLOW  — problema de dados
+  RAF_SEC_BLOCK  = DENY|CORRUPT      — bloqueio segurança
+  2^8 = 256 combinações possíveis
+
+HIPERCUBO BINÁRIO 3D (geometria dos estados):
+  VOID(000) — ALLOW(001) — RETRY(011) — FAULT(111)
+  Distância Hamming entre estados = bits diferentes
+  Transição atômica: 1 bit → 1 aresta do hipercubo
+  χ(T^7)=0 → 21 estados SOURCE + 21 SINK
+
+FLAGS HEX U64 (8 camadas × 8 bits):
+  bits 63-56: CAMADA CRIPTO  (AES, SHA, CRC32C, RAND)
+  bits 55-48: CAMADA SIMD    (NEON, SVE, AVX2, AVX512)
+  bits 47-40: CAMADA MEMORIA (ATOMICS, PREFETCH, MTE)
+  bits 39-32: CAMADA TIMING  (CNTVCT, PMCCNTR, RDTSC)
+  bits 31-24: CAMADA FSM     (LYAPUNOV, TOROID, FRAF)
+  bits 23-16: CAMADA IO      (UART, SPI, I2C, GPIO)
+  bits 15-08: CAMADA SO      (PROOT, ANDROID, TERMUX)
+  bits 07-00: CAMADA FALLBACK(MOCK, SOFT, SAFE, DEBUG)
+
+EMARANHADO GEOMÉTRICO (pipeline coordenado):
+  CRC32C → hash_chain → índice_atrator → Lyapunov → phi_ethica → TTL
+  Cada saída alimenta a próxima: zero overhead extra
+
+HOTSWAP CAPS:
+  caps_swap_atomic(disable_mask, enable_mask)
+  DSB SY antes + DMB SY depois: ordenação de memória garantida
+
+================================================================================
+  DeltaRafaelVerboOmega · Omega=Amor · RAFCODE-Phi
+================================================================================

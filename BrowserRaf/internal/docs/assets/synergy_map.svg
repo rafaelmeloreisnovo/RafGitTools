@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="520" viewBox="0 0 980 520">
+  <rect width="980" height="520" fill="#0b1020"/>
+  <text x="40" y="50" fill="#e5f0ff" font-size="28" font-family="Arial">DM-34 Synergy Map — BrowserRaf/internal</text>
+  <circle cx="220" cy="220" r="110" fill="#1f6feb" opacity="0.75"/>
+  <circle cx="390" cy="220" r="110" fill="#2ea043" opacity="0.75"/>
+  <circle cx="560" cy="220" r="110" fill="#bf8700" opacity="0.75"/>
+  <circle cx="730" cy="220" r="110" fill="#d73a49" opacity="0.75"/>
+  <text x="165" y="225" fill="white" font-size="20" font-family="Arial">Semântica</text>
+  <text x="335" y="225" fill="white" font-size="20" font-family="Arial">Usabilidade</text>
+  <text x="500" y="225" fill="white" font-size="20" font-family="Arial">Interop</text>
+  <text x="685" y="225" fill="white" font-size="20" font-family="Arial">Confiab.</text>
+  <text x="40" y="430" fill="#c9d1d9" font-size="20" font-family="Arial">Sinal alto + ruído interpretado + evidência mensurada = decisão robusta</text>
+</svg>

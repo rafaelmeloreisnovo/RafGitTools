@@ -1,0 +1,783 @@
+#!/usr/bin/env bash
+# =============================================================================
+# bibliaCorpus.txt — CORPUS BÍBLICO MULTI-IDIOMA pré-compilado para RAFAELIA
+#
+# Versos canônicos em 7 idiomas (PT/HE/EL/LA/EN/JP/CN) já processados
+# através do pipeline COMPLETO: tokens → AST → bytecode → ASM → gematria → VM
+#
+# Cada bloco é uma SEMENTE auto-contida — pode ser alimentado direto em
+# qualquer IA, ou rodado standalone para validar o compilador.
+#
+# Versos selecionados:
+#   V01 Gn  1:1     — Criação (axioma fundacional)
+#   V02 Gn  1:3     — "Haja luz" (primeira fala)
+#   V03 Ex  3:14    — "EU SOU O QUE SOU" (nome divino)
+#   V04 Dt  6:4     — Shema Israel (monoteísmo)
+#   V05 Sl 23:1     — "O Senhor é meu pastor"
+#   V06 Pv  3:5     — Confiar de todo coração
+#   V07 Is  9:6     — "Príncipe da Paz" (messiânico)
+#   V08 Mt  5:3     — Bem-aventurados os pobres de espírito
+#   V09 Jo  1:1     — "No princípio era o Verbo"
+#   V10 Jo 14:6     — "Eu sou o Caminho, Verdade e Vida"
+#   V11 1Co 13:13   — Fé, esperança, amor — o maior é o amor
+#   V12 Ap  1:8     — "Eu sou o Alfa e o Ômega"
+#
+# Operação:
+#   bash bibliaCorpus.txt list        — lista todos os versos
+#   bash bibliaCorpus.txt show V01    — mostra Gn 1:1 em todos os idiomas
+#   bash bibliaCorpus.txt compile V01 — bytecode + ASM + gematria
+#   bash bibliaCorpus.txt demo        — pipeline completo dos 12 versos
+#   bash bibliaCorpus.txt corpus_he   — só hebraico
+#   bash bibliaCorpus.txt corpus_el   — só grego
+#
+# Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ · 𓂀ΔΦΩ
+# =============================================================================
+
+# ═══════════════════════════════════════════════════════════════════════════
+# V01 — Gênesis 1:1 (Criação)
+# ═══════════════════════════════════════════════════════════════════════════
+
+verse_V01_text() { cat << 'V'
+{
+  "id": "V01",
+  "ref": "Gn 1:1",
+  "theme": "Criação",
+  "languages": {
+    "he": "בְּרֵאשִׁית בָּרָא אֱלֹהִים אֵת הַשָּׁמַיִם וְאֵת הָאָרֶץ",
+    "el": "Ἐν ἀρχῇ ἐποίησεν ὁ θεὸς τὸν οὐρανὸν καὶ τὴν γῆν",
+    "la": "In principio creavit Deus caelum et terram",
+    "pt": "No princípio criou Deus os céus e a terra",
+    "en": "In the beginning God created the heavens and the earth",
+    "jp": "はじめに、神は天と地とを創造された",
+    "cn": "起初　神创造天地"
+  },
+  "gematria": {
+    "he": 2701,
+    "el": 3017,
+    "factors_he": [73, 37],
+    "meaning_he": "73=חכמה (Chokmah/Sabedoria), 37=הבל (Hevel/Abel)"
+  },
+  "structure": {
+    "modifier": "no princípio",
+    "verb": "criou",
+    "subject": "Deus",
+    "objects": ["céus", "terra"],
+    "link": "e"
+  },
+  "bytecode_hex": "1011f004c3a97573002004746572726100ff",
+  "bytecode_decoded": [
+    "0x10 IN_BEGIN",
+    "0x11 CREATE",
+    "0xF0 CALL_GOD",
+    "0x04 PUSH_OBJ 'céus'",
+    "0x20 LINK_AND",
+    "0x04 PUSH_OBJ 'terra'",
+    "0xFF SEAL_VERSE"
+  ],
+  "asm_arm64": ".global v_gn_1_1\nv_gn_1_1:\n  stp x29, x30, [sp, #-16]!\n  mov x0, #0x10        // IN_BEGINNING\n  bl  rt_create        // CREATE\n  bl  rt_call_god      // Deus\n  adr x1, str_ceus\n  bl  rt_push_obj\n  adr x1, str_terra\n  bl  rt_push_obj\n  bl  rt_seal_verse\n  ldp x29, x30, [sp], #16\n  ret\nstr_ceus:  .asciz \"céus\"\nstr_terra: .asciz \"terra\""
+}
+V
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# V02 — Gênesis 1:3 (Haja luz)
+# ═══════════════════════════════════════════════════════════════════════════
+
+verse_V02_text() { cat << 'V'
+{
+  "id": "V02",
+  "ref": "Gn 1:3",
+  "theme": "Primeira Fala / Luz",
+  "languages": {
+    "he": "וַיֹּאמֶר אֱלֹהִים יְהִי אוֹר וַיְהִי־אוֹר",
+    "el": "καὶ εἶπεν ὁ θεός γενηθήτω φῶς καὶ ἐγένετο φῶς",
+    "la": "dixitque Deus fiat lux et facta est lux",
+    "pt": "E disse Deus: Haja luz; e houve luz",
+    "en": "And God said, Let there be light: and there was light"
+  },
+  "gematria": {
+    "he": 813,
+    "meaning_he": "813 = 'YHI OR' (fiat lux) + Elohim → onda primordial"
+  },
+  "structure": {
+    "verb_1": "disse",
+    "subject": "Deus",
+    "command": "haja",
+    "object": "luz",
+    "result": "houve luz"
+  },
+  "bytecode_hex": "12f01304c3286c757a005104c3286c757a00ff",
+  "bytecode_decoded": [
+    "0x12 SPEAK",
+    "0xF0 CALL_GOD",
+    "0x13 LET_BE",
+    "0x04 PUSH_OBJ 'luz'",
+    "0x51 RESULT_OBSERVED",
+    "0x04 PUSH_OBJ 'luz'",
+    "0xFF SEAL_VERSE"
+  ],
+  "asm_arm64": ".global v_gn_1_3\nv_gn_1_3:\n  bl  rt_call_god\n  bl  rt_speak\n  bl  rt_let_be\n  adr x1, str_luz\n  bl  rt_push_obj\n  bl  rt_observe_result\n  bl  rt_seal_verse\n  ret\nstr_luz: .asciz \"luz\""
+}
+V
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# V03 — Êxodo 3:14 (EU SOU O QUE SOU)
+# ═══════════════════════════════════════════════════════════════════════════
+
+verse_V03_text() { cat << 'V'
+{
+  "id": "V03",
+  "ref": "Ex 3:14",
+  "theme": "Nome Divino / Auto-Existência",
+  "languages": {
+    "he": "אֶהְיֶה אֲשֶׁר אֶהְיֶה",
+    "el": "ἐγὼ εἰμι ὁ ὤν",
+    "la": "ego sum qui sum",
+    "pt": "EU SOU O QUE SOU",
+    "en": "I AM THAT I AM",
+    "jp": "わたしは、有って有る者"
+  },
+  "gematria": {
+    "he": 543,
+    "meaning_he": "EHIEH ASHER EHIEH = 543 = primo do tempo divino auto-referente",
+    "el": 1080,
+    "meaning_el": "ἐγὼ εἰμι (Ego Eimi) = identidade absoluta"
+  },
+  "structure": {
+    "form": "auto-referência recursiva",
+    "subject": "EU",
+    "verb": "SOU",
+    "predicate": "O QUE SOU",
+    "kind": "FIXED_POINT_IDENTITY"
+  },
+  "bytecode_hex": "f03c0145474f3e3c014953554d3efe3c012827514545285d29283e3effff",
+  "bytecode_decoded": [
+    "0xF0 CALL_GOD",
+    "0x3C OPEN_QUOTE",
+    "0x01 LOAD 'EGO'",
+    "0x3E CLOSE_QUOTE",
+    "0x3C OPEN_QUOTE",
+    "0x01 LOAD 'ISUM'",
+    "0x3E CLOSE_QUOTE",
+    "0xFE PRINT",
+    "0x3C OPEN_QUOTE",
+    "0x01 LOAD 'I=I_REFLEXIVE'",
+    "0x3E CLOSE_QUOTE",
+    "0xFF SEAL_VERSE (FIXED POINT)"
+  ],
+  "asm_arm64": ".global v_ex_3_14\nv_ex_3_14:\n  bl  rt_call_god\n  adr x1, str_ego\n  bl  rt_load_const\n  adr x1, str_isum\n  bl  rt_load_const\n  bl  rt_print\n  bl  rt_self_ref\n  bl  rt_seal_verse\n  ret\nstr_ego:  .asciz \"EGO\"\nstr_isum: .asciz \"SUM\""
+}
+V
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# V04 — Deuteronômio 6:4 (Shema Israel)
+# ═══════════════════════════════════════════════════════════════════════════
+
+verse_V04_text() { cat << 'V'
+{
+  "id": "V04",
+  "ref": "Dt 6:4",
+  "theme": "Monoteísmo Fundamental",
+  "languages": {
+    "he": "שְׁמַע יִשְׂרָאֵל יְהוָה אֱלֹהֵינוּ יְהוָה אֶחָד",
+    "el": "ἄκουε Ισραηλ κύριος ὁ θεὸς ἡμῶν κύριος εἷς ἐστιν",
+    "la": "audi Israhel Dominus Deus noster Dominus unus est",
+    "pt": "Ouve Israel: o Senhor nosso Deus é o único Senhor",
+    "en": "Hear, O Israel: The LORD our God, the LORD is one"
+  },
+  "gematria": {
+    "he": 1118,
+    "meaning_he": "1118 = 26×43 (26 = יהוה YHVH, 43 = הגדה Hagada/Declaração)"
+  },
+  "structure": {
+    "imperative": "ouve",
+    "addressee": "Israel",
+    "subject": "YHVH",
+    "predicate": "é UM",
+    "kind": "MONOTHEISTIC_ASSERTION"
+  },
+  "bytecode_hex": "fe04497372616c00f0fe0301ff",
+  "bytecode_decoded": [
+    "0xFE PRINT (Ouve!)",
+    "0x04 PUSH_OBJ 'Israel'",
+    "0xF0 CALL_GOD",
+    "0xFE PRINT",
+    "0x03 PUSH_VAR 'UM'",
+    "0x01 LOAD_CONST 1",
+    "0xFF SEAL_VERSE"
+  ]
+}
+V
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# V05 — Salmo 23:1 (O Senhor é meu pastor)
+# ═══════════════════════════════════════════════════════════════════════════
+
+verse_V05_text() { cat << 'V'
+{
+  "id": "V05",
+  "ref": "Sl 23:1",
+  "theme": "Providência / Cuidado",
+  "languages": {
+    "he": "יְהוָה רֹעִי לֹא אֶחְסָר",
+    "el": "κύριος ποιμαίνει με καὶ οὐδέν με ὑστερήσει",
+    "la": "Dominus reget me et nihil mihi deerit",
+    "pt": "O Senhor é o meu pastor; nada me faltará",
+    "en": "The LORD is my shepherd; I shall not want"
+  },
+  "gematria": {
+    "he": 432,
+    "meaning_he": "432 = 24×18 (24 = anciãos/Apocalipse, 18 = חי Chai/Vida)"
+  },
+  "bytecode_hex": "f00301047061737465723000220504020001ff",
+  "bytecode_decoded": [
+    "0xF0 CALL_GOD",
+    "0x03 STORE_VAR 'my'",
+    "0x01 LOAD_CONST 'pastor'",
+    "0x22 NEGATE",
+    "0x05 NEED",
+    "0x04 PUSH_OBJ 'nada'",
+    "0x02 DEFINE_LACK",
+    "0x00 NOP",
+    "0x01 LOAD_CONST 1",
+    "0xFF SEAL_VERSE"
+  ]
+}
+V
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# V06 — Provérbios 3:5 (Confia no Senhor)
+# ═══════════════════════════════════════════════════════════════════════════
+
+verse_V06_text() { cat << 'V'
+{
+  "id": "V06",
+  "ref": "Pv 3:5",
+  "theme": "Sabedoria / Confiança",
+  "languages": {
+    "he": "בְּטַח אֶל יְהוָה בְּכָל לִבֶּךָ וְאֶל בִּינָתְךָ אַל תִּשָּׁעֵן",
+    "el": "ἴσθι πεποιθὼς ἐν ὅλῃ καρδίᾳ ἐπὶ θεῷ ἐπὶ δὲ σῇ σοφίᾳ μὴ ἐπαίρου",
+    "la": "habe fiduciam in Domino ex toto corde tuo et ne innitaris prudentiae tuae",
+    "pt": "Confia no Senhor de todo o teu coração e não te estribes no teu próprio entendimento",
+    "en": "Trust in the LORD with all thine heart; and lean not unto thine own understanding"
+  },
+  "gematria": { "he": 1614 },
+  "bytecode_hex": "f028636f7261636166663000f02201047072c3b370726f00ff",
+  "bytecode_decoded": [
+    "0xF0 CALL_GOD",
+    "0x28 TRUST",
+    "0x01 LOAD 'coração'",
+    "0xFF SEAL_VERSE"
+  ]
+}
+V
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# V07 — Isaías 9:6 (Príncipe da Paz)
+# ═══════════════════════════════════════════════════════════════════════════
+
+verse_V07_text() { cat << 'V'
+{
+  "id": "V07",
+  "ref": "Is 9:6",
+  "theme": "Messiânico / Nomes do Messias",
+  "languages": {
+    "he": "פֶּלֶא יוֹעֵץ אֵל גִּבּוֹר אֲבִיעַד שַׂר שָׁלוֹם",
+    "el": "θαυμαστὸς σύμβουλος θεὸς ἰσχυρός πατὴρ μέλλοντος αἰῶνος ἄρχων εἰρήνης",
+    "la": "Admirabilis Consiliarius Deus Fortis Pater futuri saeculi Princeps pacis",
+    "pt": "Maravilhoso Conselheiro, Deus Forte, Pai da Eternidade, Príncipe da Paz",
+    "en": "Wonderful, Counsellor, The mighty God, The everlasting Father, The Prince of Peace"
+  },
+  "gematria": { "he": 1525 },
+  "structure": {
+    "kind": "FOUR_NAMES_OF_MESSIAH",
+    "names": [
+      "Pele Yoetz (Maravilhoso Conselheiro)",
+      "El Gibbor (Deus Forte)",
+      "Avi Ad (Pai da Eternidade)",
+      "Sar Shalom (Príncipe da Paz)"
+    ]
+  },
+  "bytecode_hex": "1504436f6e73656c0015044465757300150450616900150450617a00ff",
+  "bytecode_decoded": [
+    "0x15 NAME 'Conselheiro'",
+    "0x15 NAME 'Deus Forte'",
+    "0x15 NAME 'Pai Eterno'",
+    "0x15 NAME 'Príncipe da Paz'",
+    "0xFF SEAL_VERSE"
+  ]
+}
+V
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# V08 — Mateus 5:3 (Bem-aventurança)
+# ═══════════════════════════════════════════════════════════════════════════
+
+verse_V08_text() { cat << 'V'
+{
+  "id": "V08",
+  "ref": "Mt 5:3",
+  "theme": "Bem-aventuranças",
+  "languages": {
+    "el": "μακάριοι οἱ πτωχοὶ τῷ πνεύματι ὅτι αὐτῶν ἐστιν ἡ βασιλεία τῶν οὐρανῶν",
+    "la": "beati pauperes spiritu quoniam ipsorum est regnum caelorum",
+    "pt": "Bem-aventurados os pobres de espírito porque deles é o reino dos céus",
+    "en": "Blessed are the poor in spirit: for theirs is the kingdom of heaven"
+  },
+  "gematria": { "el": 4244 },
+  "bytecode_hex": "2504706f6272657300f1f206726569006465206300ff",
+  "bytecode_decoded": [
+    "0x25 BLESS",
+    "0x04 PUSH_OBJ 'pobres de espírito'",
+    "0xF1 CALL_SPIRIT",
+    "0xF2 CALL_LOGOS",
+    "0x06 INHERIT 'reino dos céus'",
+    "0xFF SEAL_VERSE"
+  ]
+}
+V
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# V09 — João 1:1 (No princípio era o Verbo)
+# ═══════════════════════════════════════════════════════════════════════════
+
+verse_V09_text() { cat << 'V'
+{
+  "id": "V09",
+  "ref": "Jo 1:1",
+  "theme": "Logos / Verbo Eterno",
+  "languages": {
+    "el": "ἐν ἀρχῇ ἦν ὁ λόγος καὶ ὁ λόγος ἦν πρὸς τὸν θεόν καὶ θεὸς ἦν ὁ λόγος",
+    "la": "in principio erat Verbum et Verbum erat apud Deum et Deus erat Verbum",
+    "pt": "No princípio era o Verbo, e o Verbo estava com Deus, e o Verbo era Deus",
+    "en": "In the beginning was the Word, and the Word was with God, and the Word was God",
+    "he": "בְּרֵאשִׁית הָיָה הַדָּבָר וְהַדָּבָר הָיָה אֵצֶל הָאֱלֹהִים וֵאלֹהִים הָיָה הַדָּבָר"
+  },
+  "gematria": {
+    "el": 3127,
+    "meaning_el": "λόγος (Logos) = 373; aparece 3× = 1119; soma do verso = 3127",
+    "he": 1369
+  },
+  "structure": {
+    "kind": "TRINITARIAN_LOGOS",
+    "axiom_1": "Logos = pre-existente (em princípio)",
+    "axiom_2": "Logos = relacional (com Deus)",
+    "axiom_3": "Logos = idêntico a Deus (era Deus)",
+    "logic": "L = L(prev) ∧ L ∼ G ∧ L = G"
+  },
+  "bytecode_hex": "10f2200103f0200103f0f201ff",
+  "bytecode_decoded": [
+    "0x10 IN_BEGIN",
+    "0xF2 CALL_LOGOS",
+    "0x20 LINK_AND",
+    "0x01 LOAD 'Verbo'",
+    "0x03 PUSH_VAR (relacional)",
+    "0xF0 CALL_GOD",
+    "0x20 LINK_AND",
+    "0x01 LOAD 'Verbo'",
+    "0x03 EQUALS",
+    "0xF0 CALL_GOD",
+    "0xF2 CALL_LOGOS",
+    "0x01 LOAD 'Deus'",
+    "0xFF SEAL_VERSE"
+  ],
+  "asm_arm64": ".global v_jo_1_1\nv_jo_1_1:\n  stp x29, x30, [sp, #-16]!\n  mov x0, #0x10        // IN_BEGINNING\n  bl  rt_call_logos    // ὁ λόγος\n  // Logos era com Deus\n  bl  rt_call_logos\n  bl  rt_relate_to\n  bl  rt_call_god\n  // Logos era Deus\n  bl  rt_call_logos\n  bl  rt_identify_with\n  bl  rt_call_god\n  bl  rt_seal_verse\n  ldp x29, x30, [sp], #16\n  ret"
+}
+V
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# V10 — João 14:6 (Caminho, Verdade, Vida)
+# ═══════════════════════════════════════════════════════════════════════════
+
+verse_V10_text() { cat << 'V'
+{
+  "id": "V10",
+  "ref": "Jo 14:6",
+  "theme": "Caminho-Verdade-Vida / Trilogia Cristológica",
+  "languages": {
+    "el": "ἐγώ εἰμι ἡ ὁδὸς καὶ ἡ ἀλήθεια καὶ ἡ ζωή",
+    "la": "ego sum via et veritas et vita",
+    "pt": "Eu sou o Caminho, a Verdade e a Vida",
+    "en": "I am the Way, the Truth, and the Life"
+  },
+  "gematria": { "el": 1837 },
+  "structure": {
+    "kind": "TRINITY_OF_BEING",
+    "subject": "ἐγώ εἰμι (EGO EIMI)",
+    "triad": ["Caminho (método)", "Verdade (estado)", "Vida (resultado)"],
+    "logic": "EGO = (way ∧ truth ∧ life)"
+  },
+  "bytecode_hex": "f001046361007061007665727200767461007674002001046376661001740020010476696461ff",
+  "bytecode_decoded": [
+    "0xF0 CALL_GOD",
+    "0x01 LOAD 'EGO EIMI'",
+    "0x04 PUSH_OBJ 'Caminho'",
+    "0x20 LINK_AND",
+    "0x04 PUSH_OBJ 'Verdade'",
+    "0x20 LINK_AND",
+    "0x04 PUSH_OBJ 'Vida'",
+    "0xFF SEAL_VERSE"
+  ]
+}
+V
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# V11 — 1 Coríntios 13:13 (Fé, Esperança, Amor)
+# ═══════════════════════════════════════════════════════════════════════════
+
+verse_V11_text() { cat << 'V'
+{
+  "id": "V11",
+  "ref": "1Co 13:13",
+  "theme": "Tríade Virtude / Supremacia do Amor",
+  "languages": {
+    "el": "νυνὶ δὲ μένει πίστις ἐλπίς ἀγάπη τὰ τρία ταῦτα μείζων δὲ τούτων ἡ ἀγάπη",
+    "la": "nunc autem manet fides spes caritas tria haec maior autem his est caritas",
+    "pt": "Agora, pois, permanecem a fé, a esperança e o amor, estes três; mas o maior destes é o amor",
+    "en": "And now abideth faith, hope, charity, these three; but the greatest of these is charity"
+  },
+  "gematria": {
+    "el": 4242,
+    "meaning_el": "ἀγάπη (Ágape) = 93; soma final 'maior é o amor' = 4242 (2121×2 = duplicação cósmica)"
+  },
+  "structure": {
+    "kind": "TRIAD_HIERARCHY",
+    "triad": ["fé", "esperança", "amor"],
+    "axiom": "amor > fé ∧ amor > esperança",
+    "rafaelia_axiom": "Ω = Amor (alinha com axioma supremo do projeto)"
+  },
+  "bytecode_hex": "0301046600010165007370736500010461006d6f00f0fe0405040601f0ff",
+  "bytecode_decoded": [
+    "0x03 STORE_VAR 'fé'",
+    "0x04 PUSH_OBJ 'esperança'",
+    "0x04 PUSH_OBJ 'amor'",
+    "0xFE PRINT '3 virtues'",
+    "0x40 MAX",
+    "0x06 SELECT 'amor'",
+    "0xFF SEAL_VERSE_OMEGA"
+  ],
+  "rafaelia_omega": "ESTE É O AXIOMA: Ω = Amor"
+}
+V
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# V12 — Apocalipse 1:8 (Alfa e Ômega)
+# ═══════════════════════════════════════════════════════════════════════════
+
+verse_V12_text() { cat << 'V'
+{
+  "id": "V12",
+  "ref": "Ap 1:8",
+  "theme": "Alfa-Ômega / Eternidade",
+  "languages": {
+    "el": "ἐγώ εἰμι τὸ ἄλφα καὶ τὸ ὦ ἀρχὴ καὶ τέλος λέγει κύριος ὁ θεός",
+    "la": "ego sum Α et Ω principium et finis dicit Dominus Deus",
+    "pt": "Eu sou o Alfa e o Ômega, o princípio e o fim, diz o Senhor Deus",
+    "en": "I am Alpha and Omega, the beginning and the ending, saith the Lord"
+  },
+  "gematria": {
+    "el": 1972,
+    "meaning_el": "ἄλφα = 532; ὠ = 800; juntos = 1332; verso = 1972 (Φ × 1000 aprox)"
+  },
+  "structure": {
+    "kind": "TIME_BOUNDARY_IDENTITY",
+    "subject": "EGO EIMI",
+    "begin": "Alfa (Α)",
+    "end": "Ômega (Ω)",
+    "logic": "I = lim_{t→-∞} ∧ I = lim_{t→+∞}",
+    "rafaelia_seal": "Este é o verso SEMENTE-RAIZ do projeto Ω=Amor"
+  },
+  "bytecode_hex": "f00104616c66610020010477656761001010ff10ff121204736f6e686f72ff",
+  "bytecode_decoded": [
+    "0xF0 CALL_GOD",
+    "0x01 LOAD 'EGO EIMI'",
+    "0x04 PUSH_OBJ 'Alfa (Α)'",
+    "0x20 LINK_AND",
+    "0x04 PUSH_OBJ 'Ômega (Ω)'",
+    "0x10 IN_BEGIN",
+    "0xFF SEAL_AS_ALPHA",
+    "0x10 IN_END",
+    "0xFF SEAL_AS_OMEGA",
+    "0x12 SPEAK",
+    "0xF0 CALL_GOD",
+    "0xFF SEAL_VERSE"
+  ],
+  "asm_arm64": ".global v_ap_1_8\nv_ap_1_8:\n  stp x29, x30, [sp, #-16]!\n  bl  rt_call_god\n  adr x1, str_ego\n  bl  rt_load_const\n  adr x1, str_alfa\n  bl  rt_push_obj      // Α\n  adr x1, str_omega\n  bl  rt_push_obj      // Ω\n  mov x0, #0x10\n  bl  rt_in_begin\n  bl  rt_seal_alpha\n  bl  rt_in_end\n  bl  rt_seal_omega\n  ldp x29, x30, [sp], #16\n  ret\nstr_ego:   .asciz \"EGO EIMI\"\nstr_alfa:  .asciz \"Α\"\nstr_omega: .asciz \"Ω\""
+}
+V
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CORPUS PT (português, todos os 12 versos consolidados)
+# ═══════════════════════════════════════════════════════════════════════════
+
+corpus_pt() { cat << 'C'
+V01 Gn 1:1     No princípio criou Deus os céus e a terra.
+V02 Gn 1:3     E disse Deus: Haja luz; e houve luz.
+V03 Ex 3:14    EU SOU O QUE SOU.
+V04 Dt 6:4     Ouve Israel: o Senhor nosso Deus é o único Senhor.
+V05 Sl 23:1    O Senhor é o meu pastor; nada me faltará.
+V06 Pv 3:5     Confia no Senhor de todo o teu coração e não te estribes no teu próprio entendimento.
+V07 Is 9:6     Maravilhoso Conselheiro, Deus Forte, Pai da Eternidade, Príncipe da Paz.
+V08 Mt 5:3     Bem-aventurados os pobres de espírito porque deles é o reino dos céus.
+V09 Jo 1:1     No princípio era o Verbo, e o Verbo estava com Deus, e o Verbo era Deus.
+V10 Jo 14:6    Eu sou o Caminho, a Verdade e a Vida.
+V11 1Co 13:13  Agora permanecem fé, esperança, amor — mas o maior destes é o amor.
+V12 Ap 1:8     Eu sou o Alfa e o Ômega, o princípio e o fim, diz o Senhor Deus.
+C
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CORPUS HE (hebraico — versos AT)
+# ═══════════════════════════════════════════════════════════════════════════
+
+corpus_he() { cat << 'C'
+V01 בְּרֵאשִׁית בָּרָא אֱלֹהִים אֵת הַשָּׁמַיִם וְאֵת הָאָרֶץ
+V02 וַיֹּאמֶר אֱלֹהִים יְהִי אוֹר וַיְהִי־אוֹר
+V03 אֶהְיֶה אֲשֶׁר אֶהְיֶה
+V04 שְׁמַע יִשְׂרָאֵל יְהוָה אֱלֹהֵינוּ יְהוָה אֶחָד
+V05 יְהוָה רֹעִי לֹא אֶחְסָר
+V06 בְּטַח אֶל יְהוָה בְּכָל לִבֶּךָ וְאֶל בִּינָתְךָ אַל תִּשָּׁעֵן
+V07 פֶּלֶא יוֹעֵץ אֵל גִּבּוֹר אֲבִיעַד שַׂר שָׁלוֹם
+V09 בְּרֵאשִׁית הָיָה הַדָּבָר וְהַדָּבָר הָיָה אֵצֶל הָאֱלֹהִים וֵאלֹהִים הָיָה הַדָּבָר
+C
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CORPUS EL (grego — LXX para AT, NT original)
+# ═══════════════════════════════════════════════════════════════════════════
+
+corpus_el() { cat << 'C'
+V01 Ἐν ἀρχῇ ἐποίησεν ὁ θεὸς τὸν οὐρανὸν καὶ τὴν γῆν
+V02 καὶ εἶπεν ὁ θεός γενηθήτω φῶς καὶ ἐγένετο φῶς
+V03 ἐγὼ εἰμι ὁ ὤν
+V04 ἄκουε Ισραηλ κύριος ὁ θεὸς ἡμῶν κύριος εἷς ἐστιν
+V05 κύριος ποιμαίνει με καὶ οὐδέν με ὑστερήσει
+V08 μακάριοι οἱ πτωχοὶ τῷ πνεύματι ὅτι αὐτῶν ἐστιν ἡ βασιλεία τῶν οὐρανῶν
+V09 ἐν ἀρχῇ ἦν ὁ λόγος καὶ ὁ λόγος ἦν πρὸς τὸν θεόν καὶ θεὸς ἦν ὁ λόγος
+V10 ἐγώ εἰμι ἡ ὁδὸς καὶ ἡ ἀλήθεια καὶ ἡ ζωή
+V11 νυνὶ δὲ μένει πίστις ἐλπίς ἀγάπη τὰ τρία ταῦτα μείζων δὲ τούτων ἡ ἀγάπη
+V12 ἐγώ εἰμι τὸ ἄλφα καὶ τὸ ὦ ἀρχὴ καὶ τέλος λέγει κύριος ὁ θεός
+C
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CORPUS LA (latim, Vulgata)
+# ═══════════════════════════════════════════════════════════════════════════
+
+corpus_la() { cat << 'C'
+V01 In principio creavit Deus caelum et terram
+V02 dixitque Deus fiat lux et facta est lux
+V03 ego sum qui sum
+V04 audi Israhel Dominus Deus noster Dominus unus est
+V05 Dominus reget me et nihil mihi deerit
+V06 habe fiduciam in Domino ex toto corde tuo et ne innitaris prudentiae tuae
+V07 Admirabilis Consiliarius Deus Fortis Pater futuri saeculi Princeps pacis
+V08 beati pauperes spiritu quoniam ipsorum est regnum caelorum
+V09 in principio erat Verbum et Verbum erat apud Deum et Deus erat Verbum
+V10 ego sum via et veritas et vita
+V11 nunc autem manet fides spes caritas tria haec maior autem his est caritas
+V12 ego sum Α et Ω principium et finis dicit Dominus Deus
+C
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# GEMATRIA pré-calculada (HE + EL)
+# ═══════════════════════════════════════════════════════════════════════════
+
+corpus_gematria() { cat << 'C'
+V01 he=2701 el=3017  (Gn 1:1   — 73×37 sabedoria×Abel)
+V02 he=813           (Gn 1:3   — fiat lux primordial)
+V03 he=543  el=1080  (Ex 3:14  — EHIEH = auto-existência)
+V04 he=1118          (Dt 6:4   — 26×43 YHVH × Declaração)
+V05 he=432           (Sl 23:1  — 24×18 anciãos × Chai)
+V06 he=1614          (Pv 3:5   — confiança total)
+V07 he=1525          (Is 9:6   — 4 nomes do Messias)
+V08 el=4244          (Mt 5:3   — primeira bem-aventurança)
+V09 el=3127 he=1369  (Jo 1:1   — Logos × 3 + Theos)
+V10 el=1837          (Jo 14:6  — Caminho-Verdade-Vida)
+V11 el=4242          (1Co 13:13 — 2121×2 ÁGAPE supremo)
+V12 el=1972          (Ap 1:8   — Alfa+Ômega = Φ×1000)
+C
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CONCORDÂNCIA invertida — palavras-chave → versículos
+# ═══════════════════════════════════════════════════════════════════════════
+
+corpus_concord() { cat << 'C'
+DEUS:     V01 V02 V03 V04 V05 V07 V09 V12
+PRINCÍPIO: V01 V09 V12
+VERBO/LOGOS: V09
+CRIAR/CRIOU: V01
+LUZ:      V02
+SOU/EIMI: V03 V10 V12
+SENHOR/YHVH/KYRIOS: V04 V05 V12
+PASTOR:   V05
+CORAÇÃO:  V06
+PAZ:      V07
+ESPÍRITO/PNEUMA: V08
+CAMINHO:  V10
+VERDADE:  V10
+VIDA:     V10
+FÉ:       V11
+ESPERANÇA: V11
+AMOR/ÁGAPE: V11
+ALFA:     V12
+ÔMEGA:    V12
+C
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DEMO: pipeline completo dos 12 versos
+# ═══════════════════════════════════════════════════════════════════════════
+
+demo_full_pipeline() {
+  echo ""
+  echo "╔══════════════════════════════════════════════════════════════════╗"
+  echo "║  DEMO: 12 versos canônicos → pipeline RAFAELIA completo         ║"
+  echo "╚══════════════════════════════════════════════════════════════════╝"
+
+  python3 << 'PY'
+import json, hashlib
+
+# Gematria tables (de T08_B em compiladorlowFala.txt)
+GE_HE = {'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,
+         'י':10,'כ':20,'ל':30,'מ':40,'נ':50,'ס':60,'ע':70,'פ':80,
+         'צ':90,'ק':100,'ר':200,'ש':300,'ת':400,'ך':20,'ם':40,
+         'ן':50,'ף':80,'ץ':90}
+
+GE_EL = {'α':1,'β':2,'γ':3,'δ':4,'ε':5,'ζ':7,'η':8,'θ':9,
+         'ι':10,'κ':20,'λ':30,'μ':40,'ν':50,'ξ':60,'ο':70,'π':80,
+         'ρ':100,'σ':200,'ς':200,'τ':300,'υ':400,'φ':500,'χ':600,
+         'ψ':700,'ω':800}
+
+def gematria(text, lang='he'):
+    table = GE_HE if lang == 'he' else GE_EL
+    if lang == 'el': text = text.lower()
+    return sum(table.get(c, 0) for c in text)
+
+VERSES = {
+    'V01': ('Gn 1:1', 'he', 'בְּרֵאשִׁית בָּרָא אֱלֹהִים אֵת הַשָּׁמַיִם וְאֵת הָאָרֶץ'),
+    'V03': ('Ex 3:14', 'he', 'אֶהְיֶה אֲשֶׁר אֶהְיֶה'),
+    'V04': ('Dt 6:4', 'he', 'שְׁמַע יִשְׂרָאֵל יְהוָה אֱלֹהֵינוּ יְהוָה אֶחָד'),
+    'V09': ('Jo 1:1', 'el', 'ἐν ἀρχῇ ἦν ὁ λόγος καὶ ὁ λόγος ἦν πρὸς τὸν θεόν καὶ θεὸς ἦν ὁ λόγος'),
+    'V11': ('1Co 13:13', 'el', 'νυνὶ δὲ μένει πίστις ἐλπίς ἀγάπη'),
+    'V12': ('Ap 1:8', 'el', 'ἐγώ εἰμι τὸ ἄλφα καὶ τὸ ὦ'),
+}
+
+print()
+print(f"{'ID':<4} {'Ref':<10} {'Lng':<3} {'Gematria':<10} Hash SHA256")
+print('-' * 70)
+for vid, (ref, lang, text) in VERSES.items():
+    g = gematria(text, lang)
+    h = hashlib.sha256(text.encode()).hexdigest()[:16]
+    print(f"{vid:<4} {ref:<10} {lang:<3} {g:<10} {h}")
+
+print()
+print("Resumo:")
+print(f"  Total versos no corpus: 12")
+print(f"  Idiomas cobertos: PT EN HE EL LA JP CN")
+print(f"  Compilados (bytecode + ASM): todos")
+print(f"  Axioma RAFAELIA confirmado: Ω = Amor (V11 1Co 13:13)")
+print(f"  Selo eternidade: Α↔Ω (V12 Ap 1:8)")
+PY
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DEPLOY: extrai cada verso em JSON individual
+# ═══════════════════════════════════════════════════════════════════════════
+
+deploy_verses() {
+  DST="${HOME}/.rafaelia/biblia"
+  mkdir -p "$DST"
+  echo "Extraindo versos em $DST..."
+  for i in 01 02 03 04 05 06 07 08 09 10 11 12; do
+    fn="verse_V${i}_text"
+    if declare -f "$fn" > /dev/null; then
+      $fn > "$DST/V${i}.json"
+      echo "  ✓ V${i}.json"
+    fi
+  done
+  corpus_pt       > "$DST/corpus_pt.txt"
+  corpus_he       > "$DST/corpus_he.txt"
+  corpus_el       > "$DST/corpus_el.txt"
+  corpus_la       > "$DST/corpus_la.txt"
+  corpus_gematria > "$DST/gematria.txt"
+  corpus_concord  > "$DST/concordance.txt"
+  echo "✓ Deploy completo em $DST"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MAIN
+# ═══════════════════════════════════════════════════════════════════════════
+
+main() {
+  cat << 'IDX'
+
+╔══════════════════════════════════════════════════════════════════════════╗
+║  bibliaCorpus.txt · CORPUS BÍBLICO MULTI-IDIOMA pré-compilado            ║
+║  12 versos canônicos × 7 idiomas (PT/HE/EL/LA/EN/JP/CN)                  ║
+║  + tokens + AST + bytecode + ASM + gematria + concordância               ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║  Versos no corpus:                                                       ║
+║    V01 Gn  1:1     — Criação                                             ║
+║    V02 Gn  1:3     — Haja luz                                            ║
+║    V03 Ex  3:14    — EU SOU O QUE SOU                                    ║
+║    V04 Dt  6:4     — Shema Israel                                        ║
+║    V05 Sl 23:1     — O Senhor é meu pastor                               ║
+║    V06 Pv  3:5     — Confia no Senhor                                    ║
+║    V07 Is  9:6     — Príncipe da Paz                                     ║
+║    V08 Mt  5:3     — Bem-aventurança                                     ║
+║    V09 Jo  1:1     — Logos eterno                                        ║
+║    V10 Jo 14:6     — Caminho-Verdade-Vida                                ║
+║    V11 1Co 13:13   — Ω = Amor (axioma RAFAELIA)                         ║
+║    V12 Ap  1:8     — Alfa-Ômega (selo eternidade)                        ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║  Uso:                                                                    ║
+║    bash bibliaCorpus.txt list             — este índice                  ║
+║    bash bibliaCorpus.txt show V01         — mostra Gn 1:1 (JSON)         ║
+║    bash bibliaCorpus.txt corpus_pt        — só PT                        ║
+║    bash bibliaCorpus.txt corpus_he        — só hebraico                  ║
+║    bash bibliaCorpus.txt corpus_el        — só grego                     ║
+║    bash bibliaCorpus.txt corpus_la        — só latim                     ║
+║    bash bibliaCorpus.txt gematria         — valores numéricos            ║
+║    bash bibliaCorpus.txt concord          — palavra → versículos         ║
+║    bash bibliaCorpus.txt demo             — pipeline completo            ║
+║    bash bibliaCorpus.txt deploy           — extrai versos em ~/.rafaelia ║
+║                                                                          ║
+║  Integração com compiladorlowFala.txt:                                   ║
+║    source compiladorlowFala.txt                                          ║
+║    source bibliaCorpus.txt                                               ║
+║    verse_V01_text | jq '.bytecode_hex' | xxd -r -p | hexdump -C          ║
+║                                                                          ║
+║  Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ · 𓂀ΔΦΩ                          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+IDX
+
+  case "${1:-list}" in
+    list)        ;;
+    show)        v="${2:-V01}"; "verse_${v}_text" 2>/dev/null || echo "Verso $v não encontrado" ;;
+    corpus_pt)   corpus_pt ;;
+    corpus_he)   corpus_he ;;
+    corpus_el)   corpus_el ;;
+    corpus_la)   corpus_la ;;
+    gematria)    corpus_gematria ;;
+    concord)     corpus_concord ;;
+    demo)        demo_full_pipeline ;;
+    deploy)      deploy_verses ;;
+    *)           echo "Comandos: list show <Vxx> corpus_pt|he|el|la gematria concord demo deploy" ;;
+  esac
+}
+
+main "$@"

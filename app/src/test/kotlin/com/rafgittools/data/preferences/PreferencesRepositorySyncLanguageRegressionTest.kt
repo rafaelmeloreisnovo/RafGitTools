@@ -11,7 +11,7 @@ class PreferencesRepositorySyncLanguageRegressionTest {
     @Test
     fun getLanguageSync_doesNotUseCoroutineBlockingApis() {
         val sourcePath = resolveRepositorySourcePath()
-        val source = Files.readString(sourcePath)
+        val source: String = Files.readString(sourcePath)
 
         val methodStart = source.indexOf("fun getLanguageSync(): Language")
         assertThat(methodStart).isAtLeast(0)
@@ -19,7 +19,7 @@ class PreferencesRepositorySyncLanguageRegressionTest {
         val hydrateStart = source.indexOf("suspend fun hydrateLanguageSyncCache()")
         assertThat(hydrateStart).isGreaterThan(methodStart)
 
-        val methodBody = source.substring(methodStart, hydrateStart)
+        val methodBody: String = source.substring(methodStart, hydrateStart)
 
         assertThat(methodBody).doesNotContain("runBlocking")
         assertThat(methodBody).doesNotContain("first()")

@@ -1,0 +1,5 @@
+metric,value,unit
+latency_p95,14.2,ms
+latency_p99,22.8,ms
+throughput,1820,req_s
+error_rate,0.00,percent
