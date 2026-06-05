@@ -473,4 +473,56 @@ class GitRepositoryImpl @Inject constructor(
     ): Result<GitBranch> {
         return jGitService.renameBranch(repoPath, oldName, newName)
     }
+
+    override suspend fun commitAmend(
+        repoPath: String,
+        message: String?,
+        author: GitAuthor?
+    ): Result<GitCommit> = jGitService.commitAmend(repoPath, message, author)
+
+    override suspend fun pullWithRebase(
+        repoPath: String,
+        remote: String,
+        branch: String?,
+        credentials: Credentials?
+    ): Result<Unit> = jGitService.pullWithRebase(repoPath, remote, branch, credentials)
+
+    override suspend fun mergeWithStrategy(
+        repoPath: String,
+        branchName: String,
+        strategy: String,
+        commitMessage: String?,
+        noFastForward: Boolean
+    ): Result<Unit> = jGitService.mergeWithStrategy(repoPath, branchName, strategy, commitMessage, noFastForward)
+
+    override suspend fun getGitConfig(
+        repoPath: String,
+        section: String,
+        subsection: String?,
+        name: String
+    ): Result<String?> = jGitService.getGitConfig(repoPath, section, subsection, name)
+
+    override suspend fun setGitConfig(
+        repoPath: String,
+        section: String,
+        subsection: String?,
+        name: String,
+        value: String
+    ): Result<Unit> = jGitService.setGitConfig(repoPath, section, subsection, name, value)
+
+    override suspend fun listGitConfig(repoPath: String): Result<Map<String, String>> =
+        jGitService.listGitConfig(repoPath)
+
+    override suspend fun searchFiles(
+        repoPath: String,
+        namePattern: String,
+        contentQuery: String,
+        ref: String?
+    ): Result<List<GitFile>> = jGitService.searchFiles(repoPath, namePattern, contentQuery, ref)
+
+    override suspend fun getFileLastModified(
+        repoPath: String,
+        filePath: String,
+        ref: String?
+    ): Result<Long?> = jGitService.getFileLastModified(repoPath, filePath, ref)
 }

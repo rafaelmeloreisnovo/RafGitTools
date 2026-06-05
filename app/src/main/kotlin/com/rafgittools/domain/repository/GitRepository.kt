@@ -437,6 +437,81 @@ interface GitRepository {
         oldName: String,
         newName: String
     ): Result<GitBranch>
+
+    // ============================================
+    // Amend Commit — P33-04
+    // ============================================
+
+    suspend fun commitAmend(
+        repoPath: String,
+        message: String? = null,
+        author: GitAuthor? = null
+    ): Result<GitCommit>
+
+    // ============================================
+    // Pull with Rebase — P33-07
+    // ============================================
+
+    suspend fun pullWithRebase(
+        repoPath: String,
+        remote: String = "origin",
+        branch: String? = null,
+        credentials: Credentials? = null
+    ): Result<Unit>
+
+    // ============================================
+    // Merge with Strategy — P33-09
+    // ============================================
+
+    suspend fun mergeWithStrategy(
+        repoPath: String,
+        branchName: String,
+        strategy: String = "recursive",
+        commitMessage: String? = null,
+        noFastForward: Boolean = false
+    ): Result<Unit>
+
+    // ============================================
+    // Git Config Management — P33-11
+    // ============================================
+
+    suspend fun getGitConfig(
+        repoPath: String,
+        section: String,
+        subsection: String? = null,
+        name: String
+    ): Result<String?>
+
+    suspend fun setGitConfig(
+        repoPath: String,
+        section: String,
+        subsection: String? = null,
+        name: String,
+        value: String
+    ): Result<Unit>
+
+    suspend fun listGitConfig(repoPath: String): Result<Map<String, String>>
+
+    // ============================================
+    // File Search — P33-14
+    // ============================================
+
+    suspend fun searchFiles(
+        repoPath: String,
+        namePattern: String = "",
+        contentQuery: String = "",
+        ref: String? = null
+    ): Result<List<GitFile>>
+
+    // ============================================
+    // File Last-Modified — P33-18
+    // ============================================
+
+    suspend fun getFileLastModified(
+        repoPath: String,
+        filePath: String,
+        ref: String? = null
+    ): Result<Long?>
 }
 
 /**

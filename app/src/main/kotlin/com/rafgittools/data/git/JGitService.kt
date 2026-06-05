@@ -510,7 +510,28 @@ class JGitService @Inject constructor(
         }
     }
     }
-    
+
+    /**
+     * Amend the last commit — P33-04.
+     *
+     * Rewrites HEAD with an updated message and/or author. Pass null to
+     * keep the existing value for that field.
+     */
+    suspend fun commitAmend(
+        repoPath: String,
+        message: String?,
+        author: GitAuthor?
+    ): Result<GitCommit> = withContext(Dispatchers.IO) {
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val command = git.commit().setAmend(true)
+            message?.let { command.setMessage(it) }
+            author?.let { command.setAuthor(PersonIdent(it.name, it.email)) }
+            command.call().toGitCommit()
+        }
+        }
+    }
+
     /**
      * Push to remote
      */
@@ -678,7 +699,60 @@ class JGitService @Inject constructor(
         }
     }
     }
-    
+
+    /**
+     * Pull from remote with rebase — P33-07.
+     *
+     * Equivalent to `git pull --rebase [remote] [branch]`. Replays local
+     * commits on top of the fetched upstream, producing a linear history.
+     */
+    suspend fun pullWithRebase(
+        repoPath: String,
+        remote: String,
+        branch: String?,
+        credentials: Credentials?
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val command = git.pull()
+                .setRemote(remote)
+                .setRebase(org.eclipse.jgit.lib.BranchConfig.BranchRebaseMode.REBASE)
+            branch?.let { command.setRemoteBranchName(it) }
+            credentials?.let {
+                when (it) {
+                    is Credentials.UsernamePassword ->
+                        command.setCredentialsProvider(
+                            UsernamePasswordCredentialsProvider(it.username, it.password))
+                    is Credentials.Token ->
+                        command.setCredentialsProvider(
+                            UsernamePasswordCredentialsProvider(it.token, ""))
+                    is Credentials.SshKey -> {
+                        val factory = if (it.passphrase != null)
+                            SshSessionFactory.createWithPassphrase(it.privateKeyPath, it.passphrase)
+                        else SshSessionFactory.create(it.privateKeyPath)
+                        command.setTransportConfigCallback(createSshTransportCallback(factory))
+                    }
+                }
+            }
+            val result = command.call()
+            val rebaseResult = result.rebaseResult
+            if (rebaseResult != null) {
+                val okStatuses = setOf(
+                    org.eclipse.jgit.api.RebaseResult.Status.OK,
+                    org.eclipse.jgit.api.RebaseResult.Status.UP_TO_DATE,
+                    org.eclipse.jgit.api.RebaseResult.Status.FAST_FORWARD,
+                    org.eclipse.jgit.api.RebaseResult.Status.NOTHING_TO_COMMIT
+                )
+                if (rebaseResult.status !in okStatuses) {
+                    throw IllegalStateException(
+                        "Pull with rebase ended with status: ${rebaseResult.status}")
+                }
+            }
+            Unit
+        }
+        }
+    }
+
     /**
      * Fetch from remote
      */
@@ -741,7 +815,47 @@ class JGitService @Inject constructor(
         }
     }
     }
-    
+
+    /**
+     * Merge branch with an explicit merge strategy — P33-09.
+     *
+     * [strategy] values: "recursive" (default), "ours", "theirs", "resolve".
+     * Set [noFastForward] to always create a merge commit even if fast-forward
+     * is possible. [commitMessage] overrides the auto-generated merge message.
+     */
+    suspend fun mergeWithStrategy(
+        repoPath: String,
+        branchName: String,
+        strategy: String = "recursive",
+        commitMessage: String? = null,
+        noFastForward: Boolean = false
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val ref = git.repository.findRef(branchName)
+                ?: throw IllegalArgumentException("Branch not found: $branchName")
+            val mergeStrategy = when (strategy.lowercase()) {
+                "ours" -> org.eclipse.jgit.merge.MergeStrategy.OURS
+                "theirs" -> org.eclipse.jgit.merge.MergeStrategy.THEIRS
+                else -> org.eclipse.jgit.merge.MergeStrategy.RECURSIVE
+            }
+            val command = git.merge()
+                .include(ref)
+                .setStrategy(mergeStrategy)
+            commitMessage?.let { command.setMessage(it) }
+            if (noFastForward) {
+                command.setFastForward(org.eclipse.jgit.api.MergeCommand.FastForwardMode.NO_FF)
+            }
+            val result = command.call()
+            if (!result.mergeStatus.isSuccessful) {
+                throw IllegalStateException(
+                    "Merge with strategy '$strategy' failed: ${result.mergeStatus}")
+            }
+            Unit
+        }
+        }
+    }
+
     /**
      * Get remotes
      */
@@ -786,8 +900,197 @@ class JGitService @Inject constructor(
             )
         }
     }
-    
+
     }
+
+    // ============================================
+    // Git Config Management — P33-11
+    // ============================================
+
+    /**
+     * Read a single Git configuration value.
+     *
+     * @param section    config section name (e.g. "user", "remote")
+     * @param subsection optional subsection (e.g. remote name "origin")
+     * @param name       key name (e.g. "email", "url")
+     * @return the value string, or null if the key is not set
+     */
+    suspend fun getGitConfig(
+        repoPath: String,
+        section: String,
+        subsection: String?,
+        name: String
+    ): Result<String?> = withContext(Dispatchers.IO) {
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            git.repository.config.getString(section, subsection, name)
+        }
+        }
+    }
+
+    /**
+     * Write a single Git configuration value and persist it to .git/config.
+     *
+     * @param section    config section name
+     * @param subsection optional subsection
+     * @param name       key name
+     * @param value      new value string
+     */
+    suspend fun setGitConfig(
+        repoPath: String,
+        section: String,
+        subsection: String?,
+        name: String,
+        value: String
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val config = git.repository.config
+            config.setString(section, subsection, name, value)
+            config.save()
+        }
+        }
+    }
+
+    /**
+     * List all entries in the repository's .git/config file as a flat map.
+     *
+     * Keys follow the format "section.name" or "section.subsection.name".
+     */
+    suspend fun listGitConfig(repoPath: String): Result<Map<String, String>> = withContext(Dispatchers.IO) {
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val config = git.repository.config
+            val result = mutableMapOf<String, String>()
+            for (section in config.sections) {
+                val subsections = config.getSubsections(section)
+                if (subsections.isEmpty()) {
+                    for (key in config.getNames(section)) {
+                        result["$section.$key"] = config.getString(section, null, key) ?: ""
+                    }
+                } else {
+                    for (sub in subsections) {
+                        for (key in config.getNames(section, sub)) {
+                            result["$section.$sub.$key"] =
+                                config.getString(section, sub, key) ?: ""
+                        }
+                    }
+                }
+            }
+            result
+        }
+        }
+    }
+
+    // ============================================
+    // File Search — P33-14
+    // ============================================
+
+    /**
+     * Search for files inside the repository tree.
+     *
+     * Both filters are optional and can be combined:
+     * - [namePattern]   case-insensitive substring match against the file name
+     * - [contentQuery]  text to search within UTF-8 file contents (binary
+     *                   files and files > 1 MB are skipped)
+     *
+     * @param repoPath      local repository path
+     * @param namePattern   filename substring filter (empty = no name filter)
+     * @param contentQuery  content search string (empty = no content filter)
+     * @param ref           git ref to search at (defaults to HEAD)
+     * @return sorted list of matching [GitFile] entries (files only)
+     */
+    suspend fun searchFiles(
+        repoPath: String,
+        namePattern: String = "",
+        contentQuery: String = "",
+        ref: String? = null
+    ): Result<List<GitFile>> = withContext(Dispatchers.IO) {
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val resolvedRef = ref ?: Constants.HEAD
+            val revWalk = org.eclipse.jgit.revwalk.RevWalk(git.repository)
+            val commitId = git.repository.resolve(resolvedRef)
+            val commit = revWalk.parseCommit(commitId)
+            val tree = commit.tree
+
+            val treeWalk = org.eclipse.jgit.treewalk.TreeWalk(git.repository)
+            treeWalk.addTree(tree)
+            treeWalk.isRecursive = true
+
+            val lowerPattern = namePattern.lowercase()
+            val matches = mutableListOf<GitFile>()
+
+            while (treeWalk.next()) {
+                val filePath = treeWalk.pathString
+                val fileName = filePath.substringAfterLast("/")
+                val isDirectory = treeWalk.isSubtree
+                if (isDirectory) continue // search files only
+
+                // Name filter
+                if (lowerPattern.isNotEmpty() && !fileName.lowercase().contains(lowerPattern)) continue
+
+                // Content filter
+                if (contentQuery.isNotEmpty()) {
+                    try {
+                        val loader = git.repository.open(treeWalk.getObjectId(0))
+                        if (loader.size > 1_000_000L) continue // skip large files
+                        val bytes = loader.bytes
+                        if (bytes.take(512).any { it.toInt() == 0 }) continue // skip binary
+                        if (!String(bytes, Charsets.UTF_8).contains(contentQuery, ignoreCase = true)) continue
+                    } catch (_: Exception) { continue }
+                }
+
+                val size = try { git.repository.open(treeWalk.getObjectId(0)).size } catch (_: Exception) { 0L }
+                matches.add(GitFile(
+                    name = fileName,
+                    path = filePath,
+                    isDirectory = false,
+                    size = size,
+                    mode = treeWalk.fileMode.toString(),
+                    sha = treeWalk.getObjectId(0)?.name
+                ))
+            }
+            treeWalk.close()
+            revWalk.close()
+            matches.sortedBy { it.path.lowercase() }
+        }
+        }
+    }
+
+    // ============================================
+    // File Last-Modified — P33-18
+    // ============================================
+
+    /**
+     * Return the Unix-epoch timestamp (ms) of the most recent commit that
+     * touched [filePath] at the given [ref].
+     *
+     * Uses a filtered log walk — O(history length for that file).
+     *
+     * @param repoPath  local repository path
+     * @param filePath  repository-relative file path
+     * @param ref       git ref (defaults to HEAD)
+     */
+    suspend fun getFileLastModified(
+        repoPath: String,
+        filePath: String,
+        ref: String? = null
+    ): Result<Long?> = withContext(Dispatchers.IO) {
+        runCatching {
+        openRepository(repoPath).getOrThrow().use { git ->
+            val resolvedRef = ref ?: Constants.HEAD
+            val commitId = git.repository.resolve(resolvedRef)
+            val log = git.log()
+                .add(commitId)
+                .addPath(filePath)
+                .setMaxCount(1)
+                .call()
+            log.firstOrNull()?.commitTime?.toLong()?.let { it * 1000L }
+        }
+        }
+    }
+
     // Extension functions
     private fun RevCommit.toGitCommit() = GitCommit(
         sha = name,
