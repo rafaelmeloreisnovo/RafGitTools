@@ -48,7 +48,17 @@ install_sdk_if_missing() {
   export ANDROID_HOME="$sdk_root"
   export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
 
+  # `yes` exits with SIGPIPE after sdkmanager finishes reading answers.
+  # Preserve pipefail for the script while checking sdkmanager's status, not the
+  # expected SIGPIPE from yes.
+  set +o pipefail
   yes | sdkmanager --licenses >/dev/null
+  local license_status=${PIPESTATUS[1]}
+  set -o pipefail
+  if [[ "$license_status" -ne 0 ]]; then
+    return "$license_status"
+  fi
+
   sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;26.3.11579264" "cmake;3.22.1"
 }
 

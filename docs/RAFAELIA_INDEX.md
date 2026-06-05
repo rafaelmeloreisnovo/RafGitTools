@@ -37,6 +37,14 @@ Comando-base usado para inventário: `find <item> -maxdepth 5 -type f`. Contagem
 | pacotes compactados | 15 | `zip`/`tar.gz`/artefatos tratados como arquivo histórico. |
 | arquivos raiz `.md`/`.txt`/`.MD` | 27 | Materiais conceituais e documentação de raiz. |
 
+
+## Índice complementar de arquivos de conhecimento
+
+| Item | Status | Função | Validação |
+| --- | --- | --- | --- |
+| `docs/knowledge/README.md` | `documentação` | Navegação dos arquivos de conhecimento RAFAELIA/Toro7D/Vectras-VM-Android e regra anti-alucinação para sessões longas. | Revisão documental e checagem de links internos. |
+| `docs/knowledge/VECTRAS_VM_ANDROID_ARCHIVE.md` | `documentação` | Arquivo expandido das sementes E20, E13 e S11, com invariantes low-level, mini-módulos, direções qualitativas/quantitativas, riscos e protocolo de expansão. | Revisão documental; não promove código experimental para produção. |
+
 ## Legenda de status
 
 | Status | Significado operacional |
