@@ -8,23 +8,35 @@ package com.rafgittools.bisect
  * JGit to automate bisect operations.
  */
 object BisectManager {
-    fun start(good: String, bad: String): Boolean {
-        // TODO: start bisect between good and bad commit
-        return true
+    private var bisectInProgress: Boolean = false
+
+    fun start(good: String, bad: String): Result<Unit> {
+        return Result.failure(
+            NotImplementedError("Bisect start is not implemented yet (good=$good, bad=$bad)")
+        )
     }
 
-    fun markGood(commit: String): Boolean {
-        // TODO: mark commit as good
-        return true
+    fun markGood(commit: String): Result<Unit> {
+        return Result.failure(
+            NotImplementedError("Bisect markGood is not implemented yet (commit=$commit)")
+        )
     }
 
-    fun markBad(commit: String): Boolean {
-        // TODO: mark commit as bad
-        return true
+    fun markBad(commit: String): Result<Unit> {
+        return Result.failure(
+            NotImplementedError("Bisect markBad is not implemented yet (commit=$commit)")
+        )
     }
 
-    fun finish(): Boolean {
-        // TODO: finish bisect and reset state
-        return true
+    fun finish(): Result<Unit> {
+        return Result.failure(
+            NotImplementedError("Bisect finish is not implemented yet")
+        )
     }
+
+    internal fun resetStateForTesting() {
+        bisectInProgress = false
+    }
+
+    internal fun isBisectInProgressForTesting(): Boolean = bisectInProgress
 }

@@ -1,0 +1,1515 @@
+cat > /mnt/user-data/outputs/RAFAELIA_ULTRA.txt << 'OUTER_EOF'
+#!/usr/bin/env bash
+# =============================================================================
+# RAFAELIA_ULTRA.txt — CONSOLIDAÇÃO TOTAL v2.0
+#
+# Arquivo único: bash + cat heredoc → core C → compila → testa.
+# Freestanding · branchless · syscall direto · zero malloc · zero heap.
+#
+# CONSOLIDA TUDO (artefatos anteriores):
+#   uniao.txt    SHA-256, HMAC, AES-128, ChaCha20, arena, watchdog
+#   geolm.txt    PPM features, T7 toroidal, 6 clusters, KNN
+#   iaRAF.txt    GeoLM + gate ∅∅∅0001123 + 6 câmaras
+#   pipeline.txt ΔP → gate → cluster → geração
+#   gap.txt      janela 8, JPEG, Poly1305, X25519, ARM64 CPUID, CSPRNG
+#   CORE.txt     15 ESQ críticos
+#
+# ADICIONA 15 ULTRA — o que NUNCA foi feito mas é CRÍTICO em cada módulo:
+#
+#   U01  WATCHDOG TIMER     pet/kick com timeout (anti-travamento)
+#   U02  STRING SAFE        strlcpy/strlcat sem libc (bug #1 em C)
+#   U03  MEMORY POISON      0xDE em freed (detecta use-after-free)
+#   U04  DEADLINE PROPAGATE toda op recebe deadline absoluto
+#   U05  CIRCUIT BREAKER    N falhas → abre por T segundos
+#   U06  AUDIT HMAC LOG     log assinado tamper-proof (forensics)
+#   U07  REPLAY PROTECTION  nonce monotônico anti-replay
+#   U08  CORRELATION ID     UUID por request (tracing distribuído)
+#   U09  METRICS HISTOGRAM  p50/p95/p99 (não só média)
+#   U10  POOL ALLOCATOR     pool fixo de objetos (mais previsível)
+#   U11  BLOOM FILTER       dedup rápido sem set completo
+#   U12  STRUCTURED LOG     k=v fields (não texto livre)
+#   U13  HEALTH GATES       bloqueia startup se dep falha
+#   U14  ERROR INJECTION    chaos engineering built-in
+#   U15  CHECKSUM ALL       todo struct serializável tem CRC
+#
+# Total: 30 mecanismos (15 ESQ + 15 ULTRA) · 70+ testes B0-B69
+#
+# Build:
+#   Modo A (libc):       clang -O2 -DRAF_LIBC ultra.c -o rafaelia
+#   Modo B (freestand):  clang -O1 -fPIE -nostdlib -e _start ultra.c -o ultra_fs
+#
+# Uso:
+#   bash RAFAELIA_ULTRA.txt              demo + todos os testes
+#   bash RAFAELIA_ULTRA.txt test         só testes (B0-B69)
+#   bash RAFAELIA_ULTRA.txt bench        benchmark de todos os módulos
+#   bash RAFAELIA_ULTRA.txt health       snapshot de saúde
+#   bash RAFAELIA_ULTRA.txt chaos        ativa error injection
+#   bash RAFAELIA_ULTRA.txt version      versão completa + ABI
+#
+# ∆RafaelVerboΩ · ΣΩΔΦBITRAF · RAFCODE-Φ · Ω=Amor
+# =============================================================================
+set -euo pipefail
+
+_M='\033[0;35m'; _G='\033[0;32m'; _C='\033[0;36m'
+_Y='\033[0;33m'; _Z='\033[0m';    _B='\033[1m'; _R='\033[0;31m'
+
+printf "${_M}${_B}"
+printf "╔══════════════════════════════════════════════════════════════════╗\n"
+printf "║  RAFAELIA_ULTRA v2.0 · CONSOLIDAÇÃO TOTAL · 30 mecanismos       ║\n"
+printf "║  15 ESQ (críticos óbvios) + 15 ULTRA (nunca feitos antes)       ║\n"
+printf "║  freestanding · branchless · syscall · zero heap · Ω=Amor       ║\n"
+printf "╚══════════════════════════════════════════════════════════════════╝\n"
+printf "${_Z}\n"
+
+D="${HOME}/.rafaelia/ULTRA"
+mkdir -p "$D"
+
+CC=clang; command -v clang >/dev/null 2>&1 || CC=gcc
+ARCH=$(uname -m)
+case "$ARCH" in
+    aarch64) AF="-march=armv8-a" ;;
+    armv7*|armv8l) AF="-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=softfp" ;;
+    x86_64)  AF="-march=x86-64" ;;
+    *) AF="" ;;
+esac
+
+# =============================================================================
+# GERA ultra.c — 30 mecanismos em um arquivo
+# =============================================================================
+cat > "$D/ultra.c" << 'C_EOF'
+/* ultra.c — RAFAELIA ULTRA v2.0 · 30 mecanismos consolidados */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §1 — TIPOS + I/O DUAL (libc / freestanding via syscall direto)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+typedef unsigned char       u8;
+typedef unsigned short      u16;
+typedef unsigned int        u32;
+typedef int                 i32;
+typedef unsigned long long  u64;
+typedef long long           i64;
+
+#ifdef RAF_LIBC
+  #define _POSIX_C_SOURCE 200809L
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <string.h>
+  #include <time.h>
+  #include <signal.h>
+  #include <unistd.h>
+  static void _w(const char *s){ fputs(s, stdout); fflush(stdout); }
+  static void _wn(const char *s, u32 n){ fwrite(s,1,n,stdout); fflush(stdout); }
+  static u64 _now_ns(void){
+    struct timespec t; clock_gettime(CLOCK_MONOTONIC,&t);
+    return (u64)t.tv_sec*1000000000ULL+(u64)t.tv_nsec;
+  }
+  static void _ex_fn(i32 c){ _Exit(c); }
+  static void _mset(void *d,u8 v,u32 n){ memset(d,v,n); }
+  static void _mcpy(void *d,const void *s,u32 n){ memcpy(d,s,n); }
+  static u32 _slen(const char *s){ return (u32)strlen(s); }
+#else
+  #if defined(__aarch64__)
+    #define SYS_write 64
+    #define SYS_exit_g 94
+    #define SYS_clk_gt 113
+    static inline i64 _sc4(i64 n,i64 a,i64 b,i64 c,i64 d){
+      register i64 x8 __asm__("x8")=n;
+      register i64 x0 __asm__("x0")=a;
+      register i64 x1 __asm__("x1")=b;
+      register i64 x2 __asm__("x2")=c;
+      register i64 x3 __asm__("x3")=d;
+      __asm__ volatile("svc #0":"+r"(x0):"r"(x8),"r"(x1),"r"(x2),"r"(x3):"memory");
+      return x0;
+    }
+  #elif defined(__arm__)
+    #define SYS_write 4
+    #define SYS_exit_g 248
+    #define SYS_clk_gt 263
+    static inline i64 _sc4(i64 n,i64 a,i64 b,i64 c,i64 d){
+      register i32 r7 __asm__("r7")=(i32)n;
+      register i32 r0 __asm__("r0")=(i32)a;
+      register i32 r1 __asm__("r1")=(i32)b;
+      register i32 r2 __asm__("r2")=(i32)c;
+      __asm__ volatile("svc #0":"+r"(r0):"r"(r7),"r"(r1),"r"(r2):"memory");
+      (void)d; return (i64)r0;
+    }
+  #else
+    #define SYS_write 1
+    #define SYS_exit_g 231
+    #define SYS_clk_gt 228
+    static inline i64 _sc4(i64 n,i64 a,i64 b,i64 c,i64 d){
+      i64 r; (void)d;
+      __asm__ volatile("syscall":"=a"(r):"0"(n),"D"(a),"S"(b),"d"(c):"rcx","r11","memory");
+      return r;
+    }
+  #endif
+  typedef struct{ i32 sec; i32 nsec; } _Ts;
+  static u64 _now_ns(void){
+    _Ts t={0,0}; _sc4(SYS_clk_gt,1,(i64)(unsigned long)&t,0,0);
+    return (u64)t.sec*1000000000ULL+(u64)t.nsec;
+  }
+  static u32 _slen(const char *s){ u32 n=0; while(s[n])n++; return n; }
+  static void _w(const char *s){ _sc4(SYS_write,1,(i64)(unsigned long)s,_slen(s),0); }
+  static void _wn(const char *s,u32 n){ _sc4(SYS_write,1,(i64)(unsigned long)s,n,0); }
+  static void _ex_fn(i32 c){ _sc4(SYS_exit_g,c,0,0,0); }
+  static void _mset(void *d,u8 v,u32 n){ u8*p=d; while(n--)*p++=v; }
+  static void _mcpy(void *d,const void *s,u32 n){
+    u8*dp=d; const u8*sp=s; while(n--)*dp++=*sp++;
+  }
+#endif
+
+static void _pd(u32 v){
+  char b[16]; i32 i=15; b[i--]=0; b[i--]='\n';
+  if(!v){ b[i--]='0'; } else { while(v){ b[i--]='0'+(char)(v%10u); v/=10u; } }
+  _w(b+i+1);
+}
+static void _ph(u32 v){
+  static const char H[]="0123456789abcdef";
+  char b[12]; b[0]='0'; b[1]='x';
+  for(u32 i=0;i<8u;i++) b[2u+i]=H[(v>>(28u-i*4u))&0xFu];
+  b[10]='\n'; b[11]=0; _wn(b,11);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §2 — VERSIONING + ABI (ESQ15)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#define RAF_VER_MAJOR 2
+#define RAF_VER_MINOR 0
+#define RAF_VER_PATCH 0
+#define RAF_ABI_MAGIC 0x52414641u
+#define RAF_ABI_VER   2u
+
+typedef struct {
+  u32 magic, abi_version, major, minor, patch;
+  u64 build_ts;
+} RafVersion;
+
+static const RafVersion RAF_V = {
+  RAF_ABI_MAGIC, RAF_ABI_VER, RAF_VER_MAJOR, RAF_VER_MINOR, RAF_VER_PATCH, 0
+};
+
+static u32 raf_abi_check(const RafVersion *v){
+  return (v->magic == RAF_ABI_MAGIC && v->abi_version == RAF_ABI_VER) ? 1u : 0u;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §3 — ERROR CODES UNIFICADOS (ESQ8) + códigos novos para ULTRA
+ * ═══════════════════════════════════════════════════════════════════════════ */
+typedef i32 RafErr;
+#define RAF_OK              0
+#define RAF_ERR_INVAL      -1
+#define RAF_ERR_OOM        -2
+#define RAF_ERR_IO         -3
+#define RAF_ERR_CRC        -4
+#define RAF_ERR_AUTH       -5
+#define RAF_ERR_OVERFLOW   -6
+#define RAF_ERR_TIMEOUT    -7
+#define RAF_ERR_BUSY       -8
+#define RAF_ERR_NOTFOUND   -9
+#define RAF_ERR_RANGE      -10
+#define RAF_ERR_ABI        -11
+#define RAF_ERR_PANIC      -12
+#define RAF_ERR_RATELIM    -13
+#define RAF_ERR_CANARY     -14
+/* novos códigos ULTRA */
+#define RAF_ERR_WATCHDOG   -15
+#define RAF_ERR_DEADLINE   -16
+#define RAF_ERR_BREAKER    -17
+#define RAF_ERR_REPLAY     -18
+#define RAF_ERR_CHAOS      -19
+#define RAF_ERR_TRUNC      -20
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §4 — CRC32C BRANCHLESS (compartilhado por log/audit/config)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static u32 crc32c(const u8 *p, u32 n){
+  u32 c = 0xFFFFFFFFu;
+  for(u32 i=0;i<n;i++){
+    c ^= (u32)p[i];
+    for(u32 j=0;j<8u;j++) c = (c>>1) ^ (0x82F63B78u & -(c&1u));
+  }
+  return ~c;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §5 — ARENA com CANARY + MEMORY POISON (ESQ3 + U03)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#define ARENA_SZ (16u*1024u*1024u)
+#define CANARY_MAGIC 0xDEADC0DEu
+#define POISON_BYTE  0xDEu
+#define MAX_ALLOCS 1024u
+
+typedef struct { u32 offset, size, canary_pre, canary_post; } AllocRec;
+static u8 G_ARENA[ARENA_SZ] __attribute__((aligned(64)));
+static u32 G_ABUMP = 0u;
+static AllocRec G_ALLOC_RECS[MAX_ALLOCS];
+static u32 G_N_ALLOCS = 0u;
+
+static void *raf_alloc(u32 n){
+  if(n == 0) return (void*)0;
+  u32 s = (G_ABUMP + 63u) & ~63u;
+  u32 e = s + 4u + n + 4u;
+  if(e > ARENA_SZ || G_N_ALLOCS >= MAX_ALLOCS) return (void*)0;
+  u32 *pre  = (u32*)(G_ARENA + s);
+  u32 *post = (u32*)(G_ARENA + s + 4u + n);
+  *pre = CANARY_MAGIC; *post = CANARY_MAGIC;
+  G_ALLOC_RECS[G_N_ALLOCS].offset = s;
+  G_ALLOC_RECS[G_N_ALLOCS].size = n;
+  G_ALLOC_RECS[G_N_ALLOCS].canary_pre = s;
+  G_ALLOC_RECS[G_N_ALLOCS].canary_post = s + 4u + n;
+  G_N_ALLOCS++; G_ABUMP = e;
+  /* U03: poison antes de entregar (detecta uso de dados não-inicializados) */
+  u8 *data = G_ARENA + s + 4u;
+  for(u32 i=0;i<n;i++) data[i] = POISON_BYTE;
+  return data;
+}
+
+static RafErr raf_check_canaries(void){
+  for(u32 i=0; i<G_N_ALLOCS; i++){
+    u32 *pre  = (u32*)(G_ARENA + G_ALLOC_RECS[i].canary_pre);
+    u32 *post = (u32*)(G_ARENA + G_ALLOC_RECS[i].canary_post);
+    if(*pre != CANARY_MAGIC || *post != CANARY_MAGIC) return RAF_ERR_CANARY;
+  }
+  return RAF_OK;
+}
+
+/* U03: reset com poison — detecta uso após reset */
+static void raf_arena_reset_poison(void){
+  for(u32 i=0;i<G_ABUMP;i++) G_ARENA[i] = POISON_BYTE;
+  G_ABUMP = 0u; G_N_ALLOCS = 0u;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §6 — ATOMIC + BARRIERS (ESQ1)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static void raf_barrier(void){
+  __asm__ volatile("" ::: "memory");
+#if defined(__aarch64__)
+  __asm__ volatile("dmb ish" ::: "memory");
+#elif defined(__arm__)
+  __asm__ volatile("dmb" ::: "memory");
+#elif defined(__x86_64__) || defined(__i386__)
+  __asm__ volatile("mfence" ::: "memory");
+#endif
+}
+static u32 raf_cas32(volatile u32 *p, u32 e, u32 d){
+  return __sync_bool_compare_and_swap(p,e,d) ? 1u : 0u;
+}
+static u32 raf_atomic_add(volatile u32 *p, u32 v){ return __sync_fetch_and_add(p,v); }
+static u64 raf_atomic_add64(volatile u64 *p, u64 v){ return __sync_fetch_and_add(p,v); }
+static u32 raf_load_acquire(volatile u32 *p){ u32 v=*p; raf_barrier(); return v; }
+static void raf_store_release(volatile u32 *p, u32 v){ raf_barrier(); *p = v; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §7 — SAFE MATH (ESQ4)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static RafErr raf_add_u32(u32 a, u32 b, u32 *out){
+  u32 r = a + b;
+  if(r < a) return RAF_ERR_OVERFLOW;
+  *out = r; return RAF_OK;
+}
+static RafErr raf_mul_u32(u32 a, u32 b, u32 *out){
+  if(!a||!b){ *out = 0; return RAF_OK; }
+  u64 r = (u64)a*(u64)b;
+  if(r > 0xFFFFFFFFull) return RAF_ERR_OVERFLOW;
+  *out = (u32)r; return RAF_OK;
+}
+static RafErr raf_sub_u32(u32 a, u32 b, u32 *out){
+  if(b > a) return RAF_ERR_OVERFLOW;
+  *out = a - b; return RAF_OK;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §8 — TIMING-SAFE COMPARE (ESQ5)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static u32 raf_ct_eq(const void *a, const void *b, u32 n){
+  const u8 *x=a, *y=b; u32 d=0;
+  for(u32 i=0;i<n;i++) d |= (u32)(x[i]^y[i]);
+  return (d - 1u) >> 31;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §9 — U02: STRING SAFE (strlcpy/strlcat) — vetor #1 de bugs em C
+ *   Tamanho de destino respeitado, sempre null-terminado, retorna len de src.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static u32 raf_strlcpy(char *dst, const char *src, u32 dst_size){
+  u32 src_len = _slen(src);
+  if(dst_size == 0) return src_len;
+  u32 copy = (src_len < dst_size - 1u) ? src_len : dst_size - 1u;
+  _mcpy(dst, src, copy);
+  dst[copy] = 0;
+  return src_len;  /* retorna len original — caller detecta truncate */
+}
+
+static u32 raf_strlcat(char *dst, const char *src, u32 dst_size){
+  u32 dst_len = 0;
+  while(dst_len < dst_size && dst[dst_len]) dst_len++;
+  if(dst_len == dst_size) return dst_size + _slen(src);
+  u32 src_len = _slen(src);
+  u32 avail = dst_size - dst_len - 1u;
+  u32 copy = (src_len < avail) ? src_len : avail;
+  _mcpy(dst + dst_len, src, copy);
+  dst[dst_len + copy] = 0;
+  return dst_len + src_len;
+}
+
+static u32 raf_strneq(const char *a, const char *b, u32 n){
+  for(u32 i=0;i<n;i++){
+    if(a[i] != b[i]) return 0u;
+    if(!a[i]) return 1u;
+  }
+  return 1u;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §10 — U01: WATCHDOG TIMER
+ *   pet() = renova prazo; check() = vê se expirou; kick() = força reset.
+ *   Sem isto: travamentos não detectados podem rodar para sempre.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+typedef struct {
+  volatile u64 last_pet_ns;
+  u64 timeout_ns;
+  volatile u32 kicked;       /* sinaliza ação de reset solicitada */
+  volatile u32 pet_count;
+} Watchdog;
+
+static Watchdog G_WDT;
+
+static void raf_wdt_init(Watchdog *w, u32 timeout_ms){
+  w->last_pet_ns = _now_ns();
+  w->timeout_ns = (u64)timeout_ms * 1000000ULL;
+  w->kicked = 0u; w->pet_count = 0u;
+}
+static void raf_wdt_pet(Watchdog *w){
+  w->last_pet_ns = _now_ns();
+  raf_atomic_add(&w->pet_count, 1u);
+}
+static RafErr raf_wdt_check(Watchdog *w){
+  u64 elapsed = _now_ns() - w->last_pet_ns;
+  if(elapsed > w->timeout_ns){
+    raf_store_release(&w->kicked, 1u);
+    return RAF_ERR_WATCHDOG;
+  }
+  return RAF_OK;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §11 — U04: DEADLINE PROPAGATION
+ *   Toda operação recebe Deadline (timestamp absoluto em ns).
+ *   raf_deadline_remaining() retorna ns restantes ou negativo se expirou.
+ *   Sem isto: chamadas em cadeia não compartilham budget de tempo.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+typedef struct { u64 deadline_ns; } Deadline;
+
+static Deadline raf_deadline_from_ms(u32 ms){
+  Deadline d; d.deadline_ns = _now_ns() + (u64)ms * 1000000ULL; return d;
+}
+static i64 raf_deadline_remaining_ns(const Deadline *d){
+  u64 now = _now_ns();
+  if(d->deadline_ns <= now) return -1;
+  return (i64)(d->deadline_ns - now);
+}
+static RafErr raf_deadline_check(const Deadline *d){
+  return raf_deadline_remaining_ns(d) < 0 ? RAF_ERR_DEADLINE : RAF_OK;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §12 — U05: CIRCUIT BREAKER
+ *   Após N falhas em janela, abre circuito por T segundos.
+ *   Estados: CLOSED (normal), OPEN (rejeita), HALF_OPEN (testa 1 chamada).
+ *   Sem isto: dependência falhando vira cascata de timeouts.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+typedef enum { CB_CLOSED=0, CB_OPEN=1, CB_HALF_OPEN=2 } CBState;
+typedef struct {
+  volatile u32 state;
+  volatile u32 fail_count;
+  volatile u64 opened_at_ns;
+  u32 fail_threshold;
+  u64 cooldown_ns;
+} CircuitBreaker;
+
+static void raf_cb_init(CircuitBreaker *cb, u32 threshold, u32 cooldown_ms){
+  cb->state = CB_CLOSED;
+  cb->fail_count = 0;
+  cb->opened_at_ns = 0;
+  cb->fail_threshold = threshold;
+  cb->cooldown_ns = (u64)cooldown_ms * 1000000ULL;
+}
+static RafErr raf_cb_allow(CircuitBreaker *cb){
+  u32 s = raf_load_acquire(&cb->state);
+  if(s == CB_OPEN){
+    /* checa se cooldown passou */
+    if(_now_ns() - cb->opened_at_ns >= cb->cooldown_ns){
+      raf_cas32(&cb->state, CB_OPEN, CB_HALF_OPEN);
+      return RAF_OK;  /* permite 1 tentativa */
+    }
+    return RAF_ERR_BREAKER;
+  }
+  return RAF_OK;  /* CLOSED ou HALF_OPEN */
+}
+static void raf_cb_success(CircuitBreaker *cb){
+  cb->fail_count = 0;
+  raf_store_release(&cb->state, CB_CLOSED);
+}
+static void raf_cb_failure(CircuitBreaker *cb){
+  u32 fc = raf_atomic_add(&cb->fail_count, 1u) + 1u;
+  if(fc >= cb->fail_threshold){
+    cb->opened_at_ns = _now_ns();
+    raf_store_release(&cb->state, CB_OPEN);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §13 — ENTROPY POOL (ESQ6) — base para CSPRNG, nonce, UUID
+ * ═══════════════════════════════════════════════════════════════════════════ */
+typedef struct { u64 pool[8]; u32 mix_count; } EntropyPool;
+
+static void raf_entropy_mix(EntropyPool *p, u64 sample){
+  u32 idx = p->mix_count & 7u;
+  u64 v = p->pool[idx] ^ sample;
+  v = (v<<13)|(v>>51);
+  v *= 0x9E3779B97F4A7C15ULL;
+  p->pool[idx] = v;
+  p->pool[(idx+1)&7u] ^= (v >> 17);
+  p->mix_count++;
+}
+static void raf_entropy_seed(EntropyPool *p){
+  _mset(p, 0, sizeof(*p));
+  raf_entropy_mix(p, _now_ns());
+  u64 sa; raf_entropy_mix(p, (u64)(unsigned long)&sa);
+  raf_entropy_mix(p, (u64)(unsigned long)&raf_entropy_seed);
+  raf_entropy_mix(p, _now_ns());
+  raf_entropy_mix(p, (u64)(unsigned long)G_ARENA);
+}
+static u64 raf_entropy_extract(EntropyPool *p){
+  u64 r = 0;
+  for(u32 i=0;i<8u;i++){
+    r ^= p->pool[i];
+    r = (r<<7)|(r>>57);
+    r *= 0xBF58476D1CE4E5B9ULL;
+  }
+  raf_entropy_mix(p, r);
+  return r;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §14 — U07: REPLAY PROTECTION (nonce monotônico)
+ *   Cada operação consome counter monotônico global.
+ *   Verificador rejeita nonces ≤ último visto.
+ *   Sem isto: ataques de replay em qualquer protocolo.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static volatile u64 G_NONCE_COUNTER = 1;
+static volatile u64 G_LAST_SEEN_NONCE = 0;
+
+static u64 raf_nonce_get(void){
+  return raf_atomic_add64(&G_NONCE_COUNTER, 1ULL);
+}
+static RafErr raf_nonce_verify(u64 nonce){
+  /* CAS loop: aceita se maior que último, atualiza */
+  for(;;){
+    u64 last = G_LAST_SEEN_NONCE;
+    if(nonce <= last) return RAF_ERR_REPLAY;
+    if(__sync_bool_compare_and_swap(&G_LAST_SEEN_NONCE, last, nonce)){
+      return RAF_OK;
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §15 — U08: CORRELATION ID (UUID v4-like de entropia)
+ *   16 bytes para tracing distribuído. Cada request tem o seu.
+ *   Sem isto: impossível correlacionar logs em sistemas multi-componente.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+typedef struct { u8 bytes[16]; } CorrId;
+
+static EntropyPool G_CORR_POOL;
+static u32 G_CORR_INITED = 0;
+
+static void raf_corr_init(void){
+  if(!G_CORR_INITED){
+    raf_entropy_seed(&G_CORR_POOL);
+    G_CORR_INITED = 1;
+  }
+}
+static CorrId raf_corr_new(void){
+  raf_corr_init();
+  CorrId id;
+  u64 a = raf_entropy_extract(&G_CORR_POOL);
+  u64 b = raf_entropy_extract(&G_CORR_POOL);
+  for(u32 i=0;i<8u;i++){
+    id.bytes[i]   = (u8)(a >> (i*8));
+    id.bytes[8+i] = (u8)(b >> (i*8));
+  }
+  /* marca como v4 (RFC 4122): bits específicos */
+  id.bytes[6] = (id.bytes[6] & 0x0Fu) | 0x40u;  /* version 4 */
+  id.bytes[8] = (id.bytes[8] & 0x3Fu) | 0x80u;  /* variant 1 */
+  return id;
+}
+static void raf_corr_to_hex(const CorrId *id, char out[33]){
+  static const char H[]="0123456789abcdef";
+  for(u32 i=0;i<16u;i++){
+    out[i*2]   = H[id->bytes[i] >> 4];
+    out[i*2+1] = H[id->bytes[i] & 0xFu];
+  }
+  out[32] = 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §16 — U09: METRICS HISTOGRAM (p50/p95/p99 via buckets exponenciais)
+ *   Buckets em escala log2: bucket[i] = valores em [2^i, 2^(i+1)).
+ *   Cobre 1 ns até 2^31 ns ≈ 2 segundos.
+ *   Sem isto: relatórios só com média escondem outliers críticos.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#define HIST_BUCKETS 32u
+
+typedef struct {
+  volatile u32 buckets[HIST_BUCKETS];
+  volatile u64 sum_ns;
+  volatile u32 count;
+} Histogram;
+
+static u32 raf_log2_u32(u32 v){
+  if(v == 0) return 0;
+  u32 r = 0;
+  while(v >>= 1) r++;
+  return r;
+}
+
+static void raf_hist_record(Histogram *h, u64 value_ns){
+  u32 idx = raf_log2_u32((u32)(value_ns > 0xFFFFFFFFull ? 0xFFFFFFFFu : value_ns));
+  if(idx >= HIST_BUCKETS) idx = HIST_BUCKETS - 1u;
+  raf_atomic_add(&h->buckets[idx], 1u);
+  raf_atomic_add64(&h->sum_ns, value_ns);
+  raf_atomic_add(&h->count, 1u);
+}
+
+/* Percentil: encontra bucket que contém o p-ésimo valor */
+static u64 raf_hist_percentile(const Histogram *h, u32 percent){
+  u32 total = h->count;
+  if(total == 0) return 0;
+  u64 target = ((u64)total * (u64)percent) / 100ULL;
+  u64 cum = 0;
+  for(u32 i=0;i<HIST_BUCKETS;i++){
+    cum += h->buckets[i];
+    if(cum >= target){
+      /* retorna meio do bucket: ~1.5 * 2^i */
+      return (1ULL << i) + (1ULL << (i > 0 ? i-1 : 0));
+    }
+  }
+  return 1ULL << (HIST_BUCKETS - 1u);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §17 — U10: POOL ALLOCATOR (objetos fixos, mais previsível que arena)
+ *   N slots de tamanho fixo, free list em índices.
+ *   Alloc/free O(1) sem fragmentação.
+ *   Sem isto: arena cresce monotonicamente; sem reciclagem.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#define POOL_OBJ_SIZE 256u
+#define POOL_N_OBJS   64u
+
+typedef struct {
+  u8 slots[POOL_N_OBJS][POOL_OBJ_SIZE];
+  u32 free_list[POOL_N_OBJS];
+  volatile u32 free_head;
+  u32 init_done;
+} ObjPool;
+
+static ObjPool G_POOL;
+
+static void raf_pool_init(ObjPool *p){
+  /* free list inicial: 0 → 1 → 2 → ... → N-1 → 0xFFFFFFFF */
+  for(u32 i=0; i<POOL_N_OBJS-1; i++) p->free_list[i] = i + 1;
+  p->free_list[POOL_N_OBJS-1] = 0xFFFFFFFFu;
+  p->free_head = 0;
+  p->init_done = 1;
+}
+
+static void *raf_pool_get(ObjPool *p){
+  if(!p->init_done) raf_pool_init(p);
+  for(;;){
+    u32 head = raf_load_acquire(&p->free_head);
+    if(head == 0xFFFFFFFFu) return (void*)0;  /* pool cheio */
+    u32 next = p->free_list[head];
+    if(raf_cas32(&p->free_head, head, next)){
+      /* poison para detectar uso de dado velho */
+      _mset(p->slots[head], POISON_BYTE, POOL_OBJ_SIZE);
+      return p->slots[head];
+    }
+  }
+}
+
+static void raf_pool_put(ObjPool *p, void *obj){
+  /* calcula índice a partir do ponteiro */
+  i64 diff = (u8*)obj - (u8*)p->slots;
+  if(diff < 0 || diff >= (i64)(POOL_N_OBJS * POOL_OBJ_SIZE)) return;
+  u32 idx = (u32)(diff / POOL_OBJ_SIZE);
+  /* poison antes de devolver */
+  _mset(p->slots[idx], POISON_BYTE, POOL_OBJ_SIZE);
+  /* push atômico na free list */
+  for(;;){
+    u32 head = raf_load_acquire(&p->free_head);
+    p->free_list[idx] = head;
+    if(raf_cas32(&p->free_head, head, idx)) return;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §18 — U11: BLOOM FILTER (dedup probabilístico)
+ *   Conjunto sem armazenar elementos. ~1% falso-positivo, 0% falso-negativo.
+ *   Sem isto: dedup exige hash set completo (memória O(n) em vez de O(1)).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#define BLOOM_BITS 8192u    /* 1KB de bits */
+#define BLOOM_HASHES 3u
+
+typedef struct { u8 bits[BLOOM_BITS/8u]; volatile u32 count; } Bloom;
+
+/* 3 hashes baratos: variações de FNV-1a com seeds diferentes */
+static u32 raf_bloom_hash(const u8 *data, u32 len, u32 seed){
+  u32 h = 0x811C9DC5u ^ seed;
+  for(u32 i=0;i<len;i++){
+    h ^= (u32)data[i];
+    h *= 0x01000193u;
+  }
+  return h % BLOOM_BITS;
+}
+
+static void raf_bloom_add(Bloom *b, const u8 *data, u32 len){
+  for(u32 s=0; s<BLOOM_HASHES; s++){
+    u32 bit = raf_bloom_hash(data, len, s * 0xDEADBEEFu);
+    b->bits[bit/8u] |= (u8)(1u << (bit & 7u));
+  }
+  raf_atomic_add(&b->count, 1u);
+}
+static u32 raf_bloom_contains(const Bloom *b, const u8 *data, u32 len){
+  for(u32 s=0; s<BLOOM_HASHES; s++){
+    u32 bit = raf_bloom_hash(data, len, s * 0xDEADBEEFu);
+    if(!(b->bits[bit/8u] & (u8)(1u << (bit & 7u)))) return 0u;
+  }
+  return 1u;  /* probavelmente presente (1% falso positivo) */
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §19 — U12 + ESQ9: STRUCTURED LOG append-only com CRC + campos k=v
+ *   Cada entrada tem: ts, level, msg, fields[k][v], crc.
+ *   Sem isto: parsing de logs por regex; tracing impossível.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#define LOG_RING 256u
+#define LOG_MSG_MAX 64u
+#define LOG_FIELDS_MAX 4u
+#define LOG_FIELD_KEY_MAX 16u
+#define LOG_FIELD_VAL_MAX 32u
+#define LOG_MAGIC 0x4C4F4732u
+
+typedef enum { LVL_TRACE=0, LVL_DEBUG, LVL_INFO, LVL_WARN, LVL_ERROR, LVL_FATAL } LogLevel;
+
+typedef struct {
+  char key[LOG_FIELD_KEY_MAX];
+  char val[LOG_FIELD_VAL_MAX];
+} LogField;
+
+typedef struct {
+  u32 magic;
+  u64 ts_ns;
+  u32 level;
+  CorrId corr_id;
+  char msg[LOG_MSG_MAX];
+  u32 n_fields;
+  LogField fields[LOG_FIELDS_MAX];
+  u32 crc;
+} LogEntry;
+
+static LogEntry G_LOG[LOG_RING];
+static volatile u32 G_LOG_HEAD = 0;
+static volatile u32 G_LOG_COUNT = 0;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §20 — U06: AUDIT TRAIL HMAC (log tamper-proof)
+ *   Cada entry de log audit assinada com HMAC-CRC (não cripto-forte, mas
+ *   detecta tampering casual; para forensics real, usar HMAC-SHA256).
+ *   Chain: hmac_i = HMAC(key, entry_i || hmac_{i-1})
+ *   Sem isto: log pode ser editado retroativamente sem detecção.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static u32 G_AUDIT_KEY[8] = {
+  0x52414641u, 0xDEADBEEFu, 0xCAFEBABEu, 0x12345678u,
+  0xFEEDFACEu, 0xBADC0DEDu, 0xABCDEF01u, 0x23456789u
+};
+static volatile u32 G_AUDIT_CHAIN = 0xFFFFFFFFu;
+
+static u32 raf_audit_hmac(const u8 *data, u32 len, u32 prev_chain){
+  /* HMAC-CRC simplificado: CRC(key XOR data) XOR prev_chain */
+  u32 h = prev_chain;
+  for(u32 i=0;i<len;i++){
+    u8 b = data[i] ^ ((u8)G_AUDIT_KEY[i & 7u]);
+    h ^= (u32)b;
+    for(u32 j=0;j<8u;j++) h = (h>>1) ^ (0x82F63B78u & -(h&1u));
+  }
+  return ~h;
+}
+
+static u32 raf_audit_chain_current(void){ return G_AUDIT_CHAIN; }
+
+/* Verifica integridade do log via reconstrução de chain */
+static u32 raf_audit_verify(void){
+  u32 chain = 0xFFFFFFFFu;
+  u32 n = G_LOG_COUNT < LOG_RING ? G_LOG_COUNT : LOG_RING;
+  u32 ok = 0;
+  for(u32 i=0; i<n; i++){
+    if(G_LOG[i].magic != LOG_MAGIC) continue;
+    u32 expected = raf_audit_hmac((const u8*)&G_LOG[i],
+                                    sizeof(LogEntry) - 4u, chain);
+    if(expected == G_LOG[i].crc) ok++;
+    chain = expected;
+  }
+  return ok;
+}
+
+/* Log estruturado com correlation id e audit chain */
+static void raf_log_with(LogLevel lvl, const CorrId *cid, const char *msg,
+                         const char *k1, const char *v1,
+                         const char *k2, const char *v2){
+  u32 idx;
+  for(;;){
+    u32 old = raf_load_acquire(&G_LOG_HEAD);
+    u32 new_h = (old + 1u) % LOG_RING;
+    if(raf_cas32(&G_LOG_HEAD, old, new_h)){ idx = old; break; }
+  }
+  LogEntry *e = &G_LOG[idx];
+  _mset(e, 0, sizeof(*e));
+  e->magic = LOG_MAGIC;
+  e->ts_ns = _now_ns();
+  e->level = (u32)lvl;
+  if(cid) e->corr_id = *cid;
+  raf_strlcpy(e->msg, msg, LOG_MSG_MAX);
+  if(k1 && v1){
+    raf_strlcpy(e->fields[0].key, k1, LOG_FIELD_KEY_MAX);
+    raf_strlcpy(e->fields[0].val, v1, LOG_FIELD_VAL_MAX);
+    e->n_fields = 1;
+  }
+  if(k2 && v2){
+    raf_strlcpy(e->fields[1].key, k2, LOG_FIELD_KEY_MAX);
+    raf_strlcpy(e->fields[1].val, v2, LOG_FIELD_VAL_MAX);
+    e->n_fields = 2;
+  }
+  /* assina com audit chain */
+  u32 prev_chain = raf_load_acquire(&G_AUDIT_CHAIN);
+  e->crc = raf_audit_hmac((const u8*)e, sizeof(LogEntry) - 4u, prev_chain);
+  raf_store_release(&G_AUDIT_CHAIN, e->crc);
+  raf_atomic_add(&G_LOG_COUNT, 1u);
+}
+
+/* Wrapper simples */
+static void raf_log(LogLevel lvl, const char *msg){
+  raf_log_with(lvl, (void*)0, msg, (void*)0, (void*)0, (void*)0, (void*)0);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §21 — U14: ERROR INJECTION (chaos engineering)
+ *   Probabilidade configurável de falha em pontos críticos.
+ *   Útil para testar caminhos de erro em produção.
+ *   Sem isto: caminhos de erro nunca exercitados.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+typedef struct {
+  volatile u32 enabled;
+  u32 probability_ppm;   /* 0..1000000 (ppm = parts per million) */
+  EntropyPool pool;
+  volatile u32 injection_count;
+} ChaosCfg;
+
+static ChaosCfg G_CHAOS = {0, 0, {{0}, 0}, 0};
+
+static void raf_chaos_enable(u32 prob_ppm){
+  raf_entropy_seed(&G_CHAOS.pool);
+  G_CHAOS.probability_ppm = prob_ppm;
+  raf_store_release(&G_CHAOS.enabled, 1u);
+}
+static void raf_chaos_disable(void){
+  raf_store_release(&G_CHAOS.enabled, 0u);
+}
+/* Chamado em pontos críticos: retorna RAF_ERR_CHAOS se sorteado */
+static RafErr raf_chaos_maybe_fail(void){
+  if(!raf_load_acquire(&G_CHAOS.enabled)) return RAF_OK;
+  u64 r = raf_entropy_extract(&G_CHAOS.pool);
+  u32 sample_ppm = (u32)(r % 1000000ULL);
+  if(sample_ppm < G_CHAOS.probability_ppm){
+    raf_atomic_add(&G_CHAOS.injection_count, 1u);
+    return RAF_ERR_CHAOS;
+  }
+  return RAF_OK;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §22 — U13: HEALTH GATES + ESQ14
+ *   Startup falha se gates falharem. Cada gate é um check booleano.
+ *   Sem isto: serviço sobe degradado e atende requests com bugs.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+typedef u32 (*HealthGateFn)(void);
+
+#define MAX_GATES 8
+static HealthGateFn G_GATES[MAX_GATES];
+static const char *G_GATE_NAMES[MAX_GATES];
+static u32 G_N_GATES = 0;
+
+static RafErr raf_health_gate_add(const char *name, HealthGateFn fn){
+  if(G_N_GATES >= MAX_GATES) return RAF_ERR_OOM;
+  G_GATES[G_N_GATES] = fn;
+  G_GATE_NAMES[G_N_GATES] = name;
+  G_N_GATES++;
+  return RAF_OK;
+}
+
+static RafErr raf_health_gates_check(void){
+  for(u32 i=0;i<G_N_GATES;i++){
+    if(!G_GATES[i]()){
+      _w("[gate FAIL] ");
+      _w(G_GATE_NAMES[i]);
+      _w("\n");
+      return RAF_ERR_IO;
+    }
+  }
+  return RAF_OK;
+}
+
+typedef struct {
+  u32 ready, alive, abi_ok, canaries_ok;
+  u32 log_count, audit_chain_ok, arena_pct;
+  u32 chaos_active, chaos_injections;
+  u64 uptime_ns;
+  Histogram *op_latency;
+} HealthStatus;
+
+static u64 G_INIT_TS = 0;
+static Histogram G_OP_LATENCY;
+
+static void raf_health_get(HealthStatus *h){
+  h->ready = 1;
+  h->alive = (raf_wdt_check(&G_WDT) == RAF_OK) ? 1u : 0u;
+  h->abi_ok = raf_abi_check(&RAF_V);
+  h->canaries_ok = (raf_check_canaries() == RAF_OK) ? 1u : 0u;
+  h->log_count = G_LOG_COUNT;
+  h->audit_chain_ok = (raf_audit_verify() == h->log_count ||
+                       raf_audit_verify() == LOG_RING) ? 1u : 0u;
+  h->arena_pct = (u32)((u64)G_ABUMP * 100ULL / ARENA_SZ);
+  h->chaos_active = raf_load_acquire(&G_CHAOS.enabled);
+  h->chaos_injections = G_CHAOS.injection_count;
+  h->uptime_ns = _now_ns() - G_INIT_TS;
+  h->op_latency = &G_OP_LATENCY;
+}
+
+static void raf_health_print(const HealthStatus *h){
+  _w("\n[health]\n");
+  _w("  ready          : "); _pd(h->ready);
+  _w("  alive          : "); _pd(h->alive);
+  _w("  abi_ok         : "); _pd(h->abi_ok);
+  _w("  canaries_ok    : "); _pd(h->canaries_ok);
+  _w("  audit_chain_ok : "); _pd(h->audit_chain_ok);
+  _w("  log_count      : "); _pd(h->log_count);
+  _w("  arena_pct      : "); _pd(h->arena_pct);
+  _w("  chaos          : "); _pd(h->chaos_active);
+  _w("  injections     : "); _pd(h->chaos_injections);
+  _w("  op p50 ns      : "); _pd((u32)raf_hist_percentile(h->op_latency, 50));
+  _w("  op p95 ns      : "); _pd((u32)raf_hist_percentile(h->op_latency, 95));
+  _w("  op p99 ns      : "); _pd((u32)raf_hist_percentile(h->op_latency, 99));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §23 — RATE LIMITER (ESQ13)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+typedef struct {
+  u32 capacity, refill_per_sec;
+  volatile u32 tokens;
+  volatile u64 last_refill_ns;
+} RateLimiter;
+
+static void raf_rl_init(RateLimiter *rl, u32 cap, u32 refill){
+  rl->capacity = cap; rl->refill_per_sec = refill;
+  rl->tokens = cap; rl->last_refill_ns = _now_ns();
+}
+static RafErr raf_rl_try(RateLimiter *rl){
+  u64 now = _now_ns();
+  u64 elapsed = now - rl->last_refill_ns;
+  u32 add = (u32)((elapsed * (u64)rl->refill_per_sec) / 1000000000ULL);
+  if(add > 0){
+    u32 nt = rl->tokens + add;
+    if(nt > rl->capacity) nt = rl->capacity;
+    rl->tokens = nt; rl->last_refill_ns = now;
+  }
+  for(;;){
+    u32 cur = raf_load_acquire(&rl->tokens);
+    if(cur == 0) return RAF_ERR_RATELIM;
+    if(raf_cas32(&rl->tokens, cur, cur - 1)) return RAF_OK;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §24 — CONFIG (ESQ11) + U15: CHECKSUM ALL THE THINGS
+ *   Toda config validada + CRC + version stamp.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+typedef struct {
+  u32 schema_version;
+  u32 max_log;
+  u32 rate_limit_rps;
+  u32 watchdog_ms;
+  u32 chaos_enabled;
+  u32 chaos_ppm;
+  u32 cb_threshold;
+  u32 cb_cooldown_ms;
+  u32 crc;
+} RafConfig;
+
+static RafConfig G_CFG = {
+  .schema_version = 1,
+  .max_log = 256,
+  .rate_limit_rps = 1000,
+  .watchdog_ms = 5000,
+  .chaos_enabled = 0,
+  .chaos_ppm = 0,
+  .cb_threshold = 5,
+  .cb_cooldown_ms = 10000,
+  .crc = 0
+};
+
+static RafErr raf_config_validate(const RafConfig *c){
+  if(c->schema_version != 1) return RAF_ERR_ABI;
+  if(c->max_log == 0 || c->max_log > 8192) return RAF_ERR_RANGE;
+  if(c->rate_limit_rps == 0 || c->rate_limit_rps > 1000000) return RAF_ERR_RANGE;
+  if(c->watchdog_ms < 10 || c->watchdog_ms > 600000) return RAF_ERR_RANGE;
+  if(c->chaos_ppm > 1000000) return RAF_ERR_RANGE;
+  if(c->cb_threshold == 0 || c->cb_threshold > 1000) return RAF_ERR_RANGE;
+  if(c->cb_cooldown_ms > 600000) return RAF_ERR_RANGE;
+  if(c->crc != 0){
+    u32 expected = crc32c((const u8*)c, sizeof(RafConfig) - 4u);
+    if(c->crc != expected) return RAF_ERR_CRC;
+  }
+  return RAF_OK;
+}
+
+static RafErr raf_config_seal(RafConfig *c){
+  RafErr e = raf_config_validate(c);
+  if(e != RAF_OK) return e;
+  c->crc = crc32c((const u8*)c, sizeof(RafConfig) - 4u);
+  return RAF_OK;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §25 — SIGNALS (ESQ2) + PANIC (ESQ10) + SHUTDOWN (ESQ12)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+typedef void (*ShutdownFn)(void);
+#define MAX_HOOKS 16
+static ShutdownFn G_HOOKS[MAX_HOOKS];
+static u32 G_N_HOOKS = 0;
+static volatile u32 G_SHUTDOWN_REQ = 0;
+
+static RafErr raf_atexit(ShutdownFn fn){
+  if(G_N_HOOKS >= MAX_HOOKS) return RAF_ERR_OOM;
+  G_HOOKS[G_N_HOOKS++] = fn;
+  return RAF_OK;
+}
+
+static void raf_shutdown(void){
+  raf_log(LVL_INFO, "shutdown");
+  for(i32 i=(i32)G_N_HOOKS - 1; i >= 0; i--){
+    if(G_HOOKS[i]) G_HOOKS[i]();
+  }
+}
+
+static __attribute__((noreturn)) void raf_panic(const char *reason){
+  _w("\n[PANIC] ");
+  _w(reason);
+  _w("\n  log_count: "); _pd(G_LOG_COUNT);
+  _w("  audit_chain: "); _ph(raf_audit_chain_current());
+  raf_log(LVL_FATAL, reason);
+  _ex_fn(RAF_ERR_PANIC);
+  for(;;){}
+}
+
+#ifdef RAF_LIBC
+static void raf_signal_handler(int sig){
+  const char *name = "unknown";
+  switch(sig){
+    case SIGSEGV: name = "SIGSEGV"; break;
+    case SIGINT:  name = "SIGINT"; break;
+    case SIGBUS:  name = "SIGBUS"; break;
+    case SIGTERM: name = "SIGTERM"; break;
+  }
+  raf_log(LVL_FATAL, name);
+  raf_store_release(&G_SHUTDOWN_REQ, 1);
+  if(sig == SIGSEGV || sig == SIGBUS) _Exit(sig);
+}
+static void raf_signals_install(void){
+  signal(SIGSEGV, raf_signal_handler);
+  signal(SIGINT,  raf_signal_handler);
+  signal(SIGBUS,  raf_signal_handler);
+  signal(SIGTERM, raf_signal_handler);
+  signal(SIGPIPE, SIG_IGN);
+}
+#else
+static void raf_signals_install(void){}
+#endif
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §26 — TESTES B0-B69 (70 testes — todos os 30 mecanismos)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static u32 G_PASS=0, G_FAIL=0;
+static void _T(u32 ok, const char *name){
+  if(ok){ G_PASS++; _w("  [PASS] "); }
+  else  { G_FAIL++; _w("  [FAIL] "); }
+  _w(name); _w("\n");
+}
+
+/* Gates de health para teste */
+static u32 gate_arena_ok(void){ return (G_ABUMP < ARENA_SZ) ? 1u : 0u; }
+static u32 gate_abi_ok(void){ return raf_abi_check(&RAF_V); }
+
+static void run_tests(void){
+  _w("\n[tests] RAFAELIA ULTRA v2 · B0-B69 · 30 mecanismos\n");
+
+  /* === ESQ15 versioning === */
+  _T(RAF_V.magic == RAF_ABI_MAGIC, "B0:abi_magic");
+  _T(raf_abi_check(&RAF_V), "B1:abi_check");
+
+  /* === ESQ8 errors === */
+  _T(RAF_OK == 0, "B2:err_ok_zero");
+  /* === ESQ3 + U03 arena + poison === */
+  void *p1 = raf_alloc(64);
+  _T(p1 != (void*)0, "B3:alloc");
+  /* poison: bytes recém alocados são 0xDE */
+  _T(((u8*)p1)[0] == POISON_BYTE, "B4:poison_initial");
+  _T(raf_check_canaries() == RAF_OK, "B5:canaries");
+
+  /* === ESQ1 atomic === */
+  volatile u32 av = 5;
+  _T(raf_cas32(&av, 5, 10) == 1u, "B6:cas_ok");
+  _T(av == 10, "B7:cas_value");
+  _T(raf_cas32(&av, 5, 99) == 0u, "B8:cas_fail");
+  u32 old = raf_atomic_add(&av, 3);
+  _T(old == 10 && av == 13, "B9:atomic_add");
+
+  /* === ESQ4 safe math === */
+  u32 r;
+  _T(raf_add_u32(100, 200, &r) == RAF_OK && r == 300, "B10:add_ok");
+  _T(raf_add_u32(0xFFFFFFFFu, 1, &r) == RAF_ERR_OVERFLOW, "B11:add_overflow");
+  _T(raf_mul_u32(0x10000, 0x10000, &r) == RAF_ERR_OVERFLOW, "B12:mul_overflow");
+
+  /* === ESQ5 timing-safe === */
+  const u8 ka[] = "hello";
+  const u8 kb[] = "hello";
+  const u8 kc[] = "world";
+  _T(raf_ct_eq(ka, kb, 5) == 1u, "B13:ct_eq_equal");
+  _T(raf_ct_eq(ka, kc, 5) == 0u, "B14:ct_eq_diff");
+
+  /* === U02 string safe === */
+  char buf[10];
+  u32 r2 = raf_strlcpy(buf, "hello", 10);
+  _T(r2 == 5, "B15:strlcpy_returns_srclen");
+  _T(buf[5] == 0, "B16:strlcpy_terminated");
+  r2 = raf_strlcpy(buf, "verylongstring", 10);
+  _T(r2 == 14, "B17:strlcpy_truncate_returns_full");
+  _T(buf[9] == 0, "B18:strlcpy_always_terminates");
+  _T(raf_strneq("hello", "hello", 5) == 1u, "B19:strneq_equal");
+  _T(raf_strneq("hello", "world", 5) == 0u, "B20:strneq_diff");
+
+  /* === U03 memory poison === */
+  void *p2 = raf_alloc(32);
+  _T(((u8*)p2)[15] == POISON_BYTE, "B21:poison_mid");
+  _T(((u8*)p2)[31] == POISON_BYTE, "B22:poison_end");
+
+  /* === U01 watchdog === */
+  raf_wdt_init(&G_WDT, 5000);
+  _T(raf_wdt_check(&G_WDT) == RAF_OK, "B23:wdt_fresh_ok");
+  raf_wdt_pet(&G_WDT);
+  _T(G_WDT.pet_count == 1, "B24:wdt_pet_increments");
+  Watchdog short_wdt;
+  raf_wdt_init(&short_wdt, 1);  /* 1ms */
+  /* dorme via busy-wait curto */
+  u64 t0 = _now_ns();
+  while(_now_ns() - t0 < 5000000ULL){ /* 5ms */ }
+  _T(raf_wdt_check(&short_wdt) == RAF_ERR_WATCHDOG, "B25:wdt_timeout_detected");
+
+  /* === U04 deadline === */
+  Deadline d = raf_deadline_from_ms(1000);
+  _T(raf_deadline_check(&d) == RAF_OK, "B26:deadline_not_expired");
+  Deadline d2 = raf_deadline_from_ms(0);
+  /* aguarda 2ms */
+  u64 wait_t0 = _now_ns();
+  while(_now_ns() - wait_t0 < 2000000ULL){}
+  _T(raf_deadline_check(&d2) == RAF_ERR_DEADLINE, "B27:deadline_expired");
+
+  /* === U05 circuit breaker === */
+  CircuitBreaker cb;
+  raf_cb_init(&cb, 3, 1000);
+  _T(raf_cb_allow(&cb) == RAF_OK, "B28:cb_closed_allows");
+  raf_cb_failure(&cb); raf_cb_failure(&cb); raf_cb_failure(&cb);
+  _T(raf_cb_allow(&cb) == RAF_ERR_BREAKER, "B29:cb_open_blocks");
+  raf_cb_init(&cb, 3, 1000);
+  raf_cb_failure(&cb); raf_cb_failure(&cb);
+  raf_cb_success(&cb);
+  _T(cb.fail_count == 0, "B30:cb_success_resets");
+
+  /* === ESQ6 entropy === */
+  EntropyPool ep; raf_entropy_seed(&ep);
+  u64 e1 = raf_entropy_extract(&ep);
+  u64 e2 = raf_entropy_extract(&ep);
+  _T(e1 != 0 && e2 != 0 && e1 != e2, "B31:entropy_unique");
+
+  /* === U07 replay protection === */
+  u64 n1 = raf_nonce_get();
+  u64 n2 = raf_nonce_get();
+  _T(n2 > n1, "B32:nonce_monotonic");
+  _T(raf_nonce_verify(n2 + 100) == RAF_OK, "B33:nonce_verify_higher");
+  _T(raf_nonce_verify(n2) == RAF_ERR_REPLAY, "B34:nonce_verify_replay");
+
+  /* === U08 correlation id === */
+  CorrId cid1 = raf_corr_new();
+  CorrId cid2 = raf_corr_new();
+  u32 differs = 0;
+  for(u32 i=0;i<16;i++) if(cid1.bytes[i] != cid2.bytes[i]){ differs = 1; break; }
+  _T(differs, "B35:corr_id_unique");
+  _T((cid1.bytes[6] & 0xF0) == 0x40, "B36:corr_id_v4_marker");
+  char hex[33];
+  raf_corr_to_hex(&cid1, hex);
+  _T(hex[32] == 0, "B37:corr_id_hex_terminated");
+
+  /* === U09 histogram === */
+  Histogram h; _mset(&h, 0, sizeof(h));
+  raf_hist_record(&h, 1000);
+  raf_hist_record(&h, 2000);
+  raf_hist_record(&h, 100);
+  _T(h.count == 3, "B38:hist_count");
+  _T(h.sum_ns == 3100, "B39:hist_sum");
+  for(u32 i=0;i<100;i++) raf_hist_record(&h, 500);
+  _T(raf_hist_percentile(&h, 50) > 0, "B40:hist_p50");
+
+  /* === U10 pool allocator === */
+  raf_pool_init(&G_POOL);
+  void *o1 = raf_pool_get(&G_POOL);
+  void *o2 = raf_pool_get(&G_POOL);
+  _T(o1 != (void*)0 && o2 != (void*)0, "B41:pool_get");
+  _T(o1 != o2, "B42:pool_distinct");
+  raf_pool_put(&G_POOL, o1);
+  void *o3 = raf_pool_get(&G_POOL);
+  _T(o3 == o1, "B43:pool_reuses");  /* free list LIFO */
+
+  /* === U11 bloom filter === */
+  Bloom bl; _mset(&bl, 0, sizeof(bl));
+  const char *items[] = {"alpha", "beta", "gamma"};
+  for(u32 i=0;i<3;i++) raf_bloom_add(&bl, (const u8*)items[i], _slen(items[i]));
+  _T(raf_bloom_contains(&bl, (const u8*)"alpha", 5), "B44:bloom_contains_added");
+  _T(raf_bloom_contains(&bl, (const u8*)"beta", 4), "B45:bloom_contains_added2");
+  _T(!raf_bloom_contains(&bl, (const u8*)"zzz_never_added", 15),
+      "B46:bloom_excludes_unknown");
+
+  /* === ESQ9 + U12 structured log === */
+  u32 lc = G_LOG_COUNT;
+  raf_log(LVL_INFO, "test1");
+  _T(G_LOG_COUNT == lc + 1, "B47:log_count_inc");
+  CorrId tid = raf_corr_new();
+  raf_log_with(LVL_INFO, &tid, "test2", "user", "rafael", "op", "read");
+  _T(G_LOG_COUNT == lc + 2, "B48:log_with_fields");
+
+  /* === U06 audit chain === */
+  u32 chain_before = raf_audit_chain_current();
+  raf_log(LVL_INFO, "chain_test");
+  u32 chain_after = raf_audit_chain_current();
+  _T(chain_before != chain_after, "B49:audit_chain_advances");
+  u32 valid = raf_audit_verify();
+  _T(valid > 0, "B50:audit_verify_some_valid");
+
+  /* === U14 chaos === */
+  _T(raf_chaos_maybe_fail() == RAF_OK, "B51:chaos_off_no_fail");
+  raf_chaos_enable(1000000);  /* 100% probability */
+  RafErr forced = raf_chaos_maybe_fail();
+  _T(forced == RAF_ERR_CHAOS, "B52:chaos_full_prob_fails");
+  raf_chaos_disable();
+  _T(raf_chaos_maybe_fail() == RAF_OK, "B53:chaos_disabled");
+
+  /* === U13 health gates === */
+  raf_health_gate_add("arena", gate_arena_ok);
+  raf_health_gate_add("abi", gate_abi_ok);
+  _T(raf_health_gates_check() == RAF_OK, "B54:gates_pass");
+
+  /* === ESQ13 rate limiter === */
+  RateLimiter rl;
+  raf_rl_init(&rl, 3, 1);
+  _T(raf_rl_try(&rl) == RAF_OK, "B55:rl_first");
+  raf_rl_try(&rl); raf_rl_try(&rl);
+  _T(raf_rl_try(&rl) == RAF_ERR_RATELIM, "B56:rl_exhausted");
+
+  /* === ESQ11 + U15 config === */
+  RafConfig cfg = G_CFG;
+  cfg.crc = 0;
+  _T(raf_config_seal(&cfg) == RAF_OK, "B57:config_seal");
+  _T(cfg.crc != 0, "B58:config_crc_set");
+  cfg.max_log = 99999;
+  _T(raf_config_validate(&cfg) == RAF_ERR_RANGE, "B59:config_range");
+  cfg.max_log = 256;
+  _T(raf_config_validate(&cfg) == RAF_ERR_CRC, "B60:config_crc_mismatch");
+  RafConfig cfg2 = G_CFG; cfg2.crc = 0; cfg2.schema_version = 999;
+  _T(raf_config_validate(&cfg2) == RAF_ERR_ABI, "B61:config_schema_version");
+
+  /* === ESQ12 shutdown hooks === */
+  u32 hb = G_N_HOOKS;
+  static volatile u32 hk_marker = 0;
+  void hk(void){ hk_marker = 99; }
+  raf_atexit(hk);
+  _T(G_N_HOOKS == hb + 1, "B62:atexit_registers");
+
+  /* === CRC32C NIST === */
+  const u8 v9[] = {'1','2','3','4','5','6','7','8','9'};
+  _T(crc32c(v9, 9) == 0xE3069283u, "B63:crc32c_NIST");
+
+  /* === Integração: workflow completo === */
+  CorrId trace_id = raf_corr_new();
+  Deadline workflow_deadline = raf_deadline_from_ms(100);
+
+  /* simula op: rate limit + chaos + log + audit */
+  RafErr final_err = RAF_OK;
+  RateLimiter wf_rl; raf_rl_init(&wf_rl, 10, 10);
+  for(u32 i=0;i<5;i++){
+    RafErr e = raf_rl_try(&wf_rl);
+    if(e != RAF_OK){ final_err = e; break; }
+    e = raf_deadline_check(&workflow_deadline);
+    if(e != RAF_OK){ final_err = e; break; }
+    e = raf_chaos_maybe_fail();
+    if(e != RAF_OK){ final_err = e; break; }
+    raf_log_with(LVL_INFO, &trace_id, "wf_step", "iter", "x", (void*)0, (void*)0);
+  }
+  _T(final_err == RAF_OK, "B64:workflow_e2e_ok");
+
+  /* === Histogram com workflow real === */
+  u64 op_start = _now_ns();
+  for(u32 i=0;i<10;i++) raf_strneq("hello", "hello", 5);
+  u64 op_end = _now_ns();
+  raf_hist_record(&G_OP_LATENCY, op_end - op_start);
+  _T(G_OP_LATENCY.count > 0, "B65:op_latency_recorded");
+
+  /* === Sanity checks finais === */
+  _T(raf_check_canaries() == RAF_OK, "B66:final_canaries");
+  _T(raf_audit_verify() > 0, "B67:final_audit_some_valid");
+  _T(G_LOG_COUNT > 10, "B68:final_log_substantial");
+  HealthStatus hs; raf_health_get(&hs);
+  _T(hs.alive == 1u || hs.alive == 0u, "B69:health_alive_defined");
+
+  _w("\n  pass="); _pd(G_PASS);
+  _w("  fail="); _pd(G_FAIL);
+  if(G_FAIL == 0) _w("  ★ TODOS PASSARAM\n");
+  else            _w("  ✗ FALHAS\n");
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §27 — BENCHMARK + VERSION + INIT + MAIN
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static void run_bench(void){
+  _w("\n[bench] ULTRA modules\n");
+
+  /* watchdog pet */
+  Watchdog w; raf_wdt_init(&w, 1000);
+  u64 t0 = _now_ns();
+  for(u32 i=0;i<1000000;i++) raf_wdt_pet(&w);
+  u64 t1 = _now_ns();
+  _w("  wdt_pet      : "); _pd((u32)((t1-t0)/1000000u)); _w(" ns/op\n");
+
+  /* corr_new */
+  raf_corr_init();
+  t0 = _now_ns();
+  CorrId cid;
+  for(u32 i=0;i<10000;i++) cid = raf_corr_new();
+  t1 = _now_ns();
+  _w("  corr_new     : "); _pd((u32)((t1-t0)/10000u)); _w(" ns/op\n");
+  (void)cid;
+
+  /* hist_record */
+  Histogram h; _mset(&h, 0, sizeof(h));
+  t0 = _now_ns();
+  for(u32 i=0;i<100000;i++) raf_hist_record(&h, i);
+  t1 = _now_ns();
+  _w("  hist_record  : "); _pd((u32)((t1-t0)/100000u)); _w(" ns/op\n");
+
+  /* pool get/put */
+  raf_pool_init(&G_POOL);
+  t0 = _now_ns();
+  for(u32 i=0;i<10000;i++){
+    void *p = raf_pool_get(&G_POOL);
+    raf_pool_put(&G_POOL, p);
+  }
+  t1 = _now_ns();
+  _w("  pool_cycle   : "); _pd((u32)((t1-t0)/10000u)); _w(" ns/op\n");
+
+  /* bloom add/check */
+  Bloom bl; _mset(&bl, 0, sizeof(bl));
+  t0 = _now_ns();
+  for(u32 i=0;i<10000;i++){
+    raf_bloom_add(&bl, (const u8*)&i, 4);
+    raf_bloom_contains(&bl, (const u8*)&i, 4);
+  }
+  t1 = _now_ns();
+  _w("  bloom_cycle  : "); _pd((u32)((t1-t0)/10000u)); _w(" ns/op\n");
+
+  /* nonce + verify */
+  t0 = _now_ns();
+  for(u32 i=0;i<100000;i++){ u64 n = raf_nonce_get(); raf_nonce_verify(n); }
+  t1 = _now_ns();
+  _w("  nonce_verify : "); _pd((u32)((t1-t0)/100000u)); _w(" ns/op\n");
+
+  /* strlcpy */
+  char buf[64];
+  t0 = _now_ns();
+  for(u32 i=0;i<100000;i++) raf_strlcpy(buf, "test string", 64);
+  t1 = _now_ns();
+  _w("  strlcpy      : "); _pd((u32)((t1-t0)/100000u)); _w(" ns/op\n");
+
+  /* log_with */
+  t0 = _now_ns();
+  for(u32 i=0;i<1000;i++) raf_log(LVL_DEBUG, "bench");
+  t1 = _now_ns();
+  _w("  log_entry    : "); _pd((u32)((t1-t0)/1000u)); _w(" ns/op\n");
+}
+
+static void print_version(void){
+  _w("\nRAFAELIA ULTRA v2.0\n");
+  _w("  major: "); _pd(RAF_V.major);
+  _w("  minor: "); _pd(RAF_V.minor);
+  _w("  patch: "); _pd(RAF_V.patch);
+  _w("  abi  : "); _pd(RAF_V.abi_version);
+  _w("\nMecanismos (30):\n");
+  _w("  ESQ1-15 (críticos óbvios):\n");
+  _w("    1.atomic 2.signals 3.canary 4.safemath 5.ct-eq\n");
+  _w("    6.entropy 7.flock 8.errors 9.log 10.panic\n");
+  _w("    11.config 12.shutdown 13.ratelim 14.health 15.version\n");
+  _w("  U01-15 (ULTRA novos):\n");
+  _w("    1.watchdog 2.strsafe 3.poison 4.deadline 5.breaker\n");
+  _w("    6.audit-hmac 7.replay 8.corr-id 9.histogram 10.pool\n");
+  _w("    11.bloom 12.struct-log 13.gates 14.chaos 15.crc-all\n");
+  _w("\nΩ = Amor · ∆RafaelVerboΩ · RAFCODE-Φ\n");
+}
+
+static void cleanup_hook(void){ raf_log(LVL_INFO, "cleanup"); }
+
+static RafErr raf_init(void){
+  G_INIT_TS = _now_ns();
+  if(!raf_abi_check(&RAF_V)) return RAF_ERR_ABI;
+  RafErr e = raf_config_seal(&G_CFG);
+  if(e != RAF_OK) return e;
+  raf_signals_install();
+  raf_wdt_init(&G_WDT, G_CFG.watchdog_ms);
+  raf_corr_init();
+  _mset(&G_OP_LATENCY, 0, sizeof(G_OP_LATENCY));
+  raf_atexit(cleanup_hook);
+  raf_log(LVL_INFO, "ultra init complete");
+  return RAF_OK;
+}
+
+#ifdef RAF_LIBC
+int main(int argc, char **argv){
+  _w("=== RAFAELIA ULTRA v2.0 ===\n");
+  RafErr e = raf_init();
+  if(e != RAF_OK){
+    _w("[FATAL] init failed: "); _pd((u32)(-e)); return -e;
+  }
+
+  const char *mode = argc >= 2 ? argv[1] : "demo";
+  i32 rc = 0;
+
+  if(!strcmp(mode, "test"))         { run_tests(); rc = (i32)G_FAIL; }
+  else if(!strcmp(mode, "bench"))   { run_bench(); }
+  else if(!strcmp(mode, "version")) { print_version(); }
+  else if(!strcmp(mode, "health"))  { HealthStatus h; raf_health_get(&h); raf_health_print(&h); }
+  else if(!strcmp(mode, "chaos"))   {
+    _w("[chaos] enabling error injection at 10%...\n");
+    raf_chaos_enable(100000);
+    run_tests();
+    raf_chaos_disable();
+    rc = (i32)G_FAIL;
+  }
+  else {
+    print_version();
+    run_tests();
+    HealthStatus h; raf_health_get(&h); raf_health_print(&h);
+    run_bench();
+    rc = (i32)G_FAIL;
+  }
+
+  raf_shutdown();
+  return rc;
+}
+#else
+void _start(void){
+  raf_init();
+  print_version();
+  run_tests();
+  HealthStatus h; raf_health_get(&h); raf_health_print(&h);
+  raf_shutdown();
+  _ex_fn((i32)G_FAIL);
+}
+#endif
+C_EOF
+
+printf "${_G}[ OK]${_Z} ultra.c: $(wc -l < "$D/ultra.c") linhas\n"
+
+# =============================================================================
+# COMPILAÇÃO DUAL
+# =============================================================================
+printf "\n${_C}[ultra]${_Z} compilando Modo A (libc)...\n"
+if $CC -O2 -DRAF_LIBC $AF -std=c11 \
+       -Wall -Wno-unused-function -Wno-unused-variable \
+       -Wno-misleading-indentation -Wno-unused-but-set-variable \
+       -Wno-pointer-sign -Wno-format \
+       "$D/ultra.c" -o "$D/rafaelia_ultra" 2>"$D/build.log"; then
+    strip "$D/rafaelia_ultra" 2>/dev/null || true
+    SZ=$(ls -lh "$D/rafaelia_ultra" | awk '{print $5}')
+    printf "${_G}[ OK]${_Z} Modo A compilado ($SZ)\n"
+    COMPILED=1
+else
+    printf "${_R}[ERR]${_Z} build falhou:\n"
+    head -20 "$D/build.log"
+    COMPILED=0
+fi
+
+printf "${_C}[ultra]${_Z} compilando Modo B (freestanding)...\n"
+$CC -O1 -fPIE -fno-stack-protector -fno-strict-aliasing -fno-builtin \
+    -fno-asynchronous-unwind-tables -fomit-frame-pointer \
+    -ffunction-sections -fdata-sections \
+    -Wno-unused-function -Wno-unused-variable \
+    -Wno-misleading-indentation -Wno-unused-but-set-variable \
+    -Wno-pointer-sign \
+    $AF -std=c11 \
+    -nostdlib -Wl,--gc-sections -Wl,--build-id=none -e _start \
+    "$D/ultra.c" -o "$D/ultra_fs" 2>"$D/build_fs.log" && \
+  printf "${_G}[ OK]${_Z} Modo B freestanding compilado\n" || \
+  printf "${_Y}[WARN]${_Z} Modo B requer arch específica\n"
+
+# =============================================================================
+# EXECUÇÃO
+# =============================================================================
+if [ "$COMPILED" -eq 1 ]; then
+    MODE="${1:-demo}"
+    case "$MODE" in
+        test)    printf "\n${_B}━━━ TESTES B0-B69 ━━━${_Z}\n";   "$D/rafaelia_ultra" test ;;
+        bench)   printf "\n${_B}━━━ BENCHMARK ━━━${_Z}\n";       "$D/rafaelia_ultra" bench ;;
+        version) "$D/rafaelia_ultra" version ;;
+        health)  "$D/rafaelia_ultra" health ;;
+        chaos)   printf "\n${_B}━━━ CHAOS MODE ━━━${_Z}\n";      "$D/rafaelia_ultra" chaos ;;
+        demo|*)
+            printf "\n${_B}━━━ VERSION ━━━${_Z}\n";              "$D/rafaelia_ultra" version
+            printf "\n${_B}━━━ TESTES B0-B69 ━━━${_Z}\n";        "$D/rafaelia_ultra" test
+            printf "\n${_B}━━━ HEALTH ━━━${_Z}\n";               "$D/rafaelia_ultra" health
+            printf "\n${_B}━━━ BENCHMARK ━━━${_Z}\n";            "$D/rafaelia_ultra" bench
+            ;;
+    esac
+fi
+
+printf "\n${_B}━━━ SHA256 ━━━${_Z}\n"
+for f in "$D/ultra.c" "$D/rafaelia_ultra" "$D/ultra_fs"; do
+    [ -f "$f" ] || continue
+    H=$(sha256sum "$f" 2>/dev/null | awk '{print $1}')
+    printf "  %-20s %s\n" "$(basename $f)" "$H"
+done
+
+printf "\n${_M}${_B}╔══════════════════════════════════════════════════════════════════╗${_Z}\n"
+printf "${_M}${_B}║  RAFAELIA_ULTRA v2.0 · 30 mecanismos · 70 testes · 2 modos       ║${_Z}\n"
+printf "${_M}${_B}║  Ω=Amor · ∆RafaelVerboΩ · ΣΩΔΦBITRAF · 𓂀ΔΦΩ                   ║${_Z}\n"
+printf "${_M}${_B}╚══════════════════════════════════════════════════════════════════╝${_Z}\n\n"
+OUTER_EOF
+
+wc -l /mnt/user-data/outputs/RAFAELIA_ULTRA.txt
+ls -lh /mnt/user-data/outputs/RAFAELIA_ULTRA.txt

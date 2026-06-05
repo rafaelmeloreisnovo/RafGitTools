@@ -1,0 +1,28 @@
+name: benchmark-mirror-internal
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'BrowserRaf/internal/**'
+      - '.github/workflows/**'
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run benchmark mirror
+        run: |
+          cd BrowserRaf/internal
+          bash benchmark/scripts/run_benchmark.sh
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: browserraf-internal-benchmark
+          path: |
+            BrowserRaf/internal/benchmark/results/benchmark_summary.md
+            BrowserRaf/internal/benchmark/results/metrics.csv

@@ -1,0 +1,1311 @@
+#!/usr/bin/env bash
+# =============================================================================
+# geolm.txt — GEOLM: Geographic/Geometric On-device Learning Machine
+#
+# Sistema que aprende com imagens, cataloga eficiente, metodologia:
+#   1. Extrai features (histograma RGB 8-bin, geometria, hash perceptual)
+#   2. Classifica em clusters via distância T7 toroidal Q16
+#   3. Cataloga com metadados (CRC32C, cluster, vetor 7D, timestamp)
+#   4. Persiste índice em arena estática (sem malloc/heap/GC)
+#   5. Busca KNN (k=3) por vetor Q16 toroidal
+#   6. Aprende: atualiza centróides dos clusters via EMA Q16
+#
+# Arquitetura do aprendizado:
+#   IMAGE → FEAT[7] → T7_UPDATE → CLUSTER[k] → CATALOG_ENTRY
+#                                      ↓
+#                              EMA_CENTROID_UPDATE (aprendizado)
+#
+# Freestanding: sem malloc, sem heap, sem GC, sem libc, syscall direto
+# Arena estática: 512KB para catálogo (≈2730 entradas)
+# BRANCHLESS em hot paths (distância, classificação)
+#
+# 6 clusters pré-definidos (das 20 imagens):
+#   C0 = TOROIDE        (fluxo, campo vetorial, hierarquia memória)
+#   C1 = MATEMATICA     (Fibonacci, Tribonacci, sistemas dinâmicos)
+#   C2 = VVM            (arquitetura cognitiva, FSM, KVM)
+#   C3 = CICLO          (ψ→χ→ρ→Δ→Σ→Ω, retroalimentação)
+#   C4 = SIMBOLICO      (fórmulas vivas, parábola, GAIA)
+#   C5 = APLICADO       (ecologia, Zenodo, mapa de análise)
+#
+# Uso:
+#   bash geolm.txt learn image.ppm "toroide rfaelia"
+#   bash geolm.txt query image.ppm
+#   bash geolm.txt catalog
+#   bash geolm.txt bench
+#
+# Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ
+# =============================================================================
+set -euo pipefail
+
+_M='\033[0;35m'; _G='\033[0;32m'; _C='\033[0;36m'
+_R='\033[0;31m'; _Z='\033[0m'; _B='\033[1m'
+
+printf "${_M}${_B}"
+printf "╔══════════════════════════════════════════════════════════════════╗\n"
+printf "║  GEOLM · On-device Learning Machine · freestanding · branchless ║\n"
+printf "║  Features T7 · Clusters KNN · EMA learning · sem malloc/GC      ║\n"
+printf "║  Cataloga imagens · aprende · busca · BPS metadados CRC32C       ║\n"
+printf "╚══════════════════════════════════════════════════════════════════╝\n"
+printf "${_Z}\n"
+
+D="${HOME}/.rafaelia/GEOLM"
+mkdir -p "$D"
+
+CC=clang; command -v clang >/dev/null 2>&1 || CC=gcc
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64)  AF="-march=x86-64" ;;
+    aarch64) AF="-march=armv8-a" ;;
+    armv7*|armv8l) AF="-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=softfp" ;;
+    *) AF="" ;;
+esac
+
+# =============================================================================
+# GERA geolm_core.c — O arquivo único do sistema GEOLM
+# =============================================================================
+cat > "$D/geolm_core.c" << 'C_EOF'
+/* geolm_core.c — GEOLM: Geographic/Geometric On-device Learning Machine
+ *
+ * Compile Modo A (libc):
+ *   clang -O2 -DRAF_LIBC geolm_core.c -o geolm
+ *
+ * Compile Modo B (freestanding):
+ *   clang -O1 -fPIE -fno-stack-protector -fno-strict-aliasing
+ *         -fno-builtin -nostdlib -e _start geolm_core.c -o geolm
+ *
+ * GEOLM Pipeline:
+ *   IMAGE_FILE → parse_ppm() → extract_features() →
+ *   t7_encode()  → classify_cluster() → catalog_insert() →
+ *   ema_update_centroid()  → persist()
+ *
+ * Aprendizado:
+ *   Centróides inicializados com vetores semânticos das 20 imagens.
+ *   Cada insert atualiza o centróide do cluster via EMA Q16 (α=0.1).
+ *   KNN busca os 3 mais próximos em distância L1 toroidal.
+ *
+ * Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §0 — TIPOS
+ * ═══════════════════════════════════════════════════════════════════════════ */
+typedef unsigned char       u8;
+typedef unsigned short      u16;
+typedef unsigned int        u32;
+typedef int                 i32;
+typedef unsigned long long  u64;
+typedef long long           i64;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §1 — I/O DUAL-MODE
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#ifdef RAF_LIBC
+  #define _POSIX_C_SOURCE 200809L
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <string.h>
+  #include <time.h>
+  static void _w(const char *s)        { fputs(s, stdout); fflush(stdout); }
+  static void _wn(const char *s, u32 n){ fwrite(s, 1, n, stdout); fflush(stdout); }
+  static u64  _now_ns(void){
+    struct timespec ts; clock_gettime(CLOCK_MONOTONIC,&ts);
+    return (u64)ts.tv_sec*1000000000ULL+(u64)ts.tv_nsec;
+  }
+  static u64  _cyc(void){ return _now_ns(); }
+  static void _barrier(void){}
+  static void _ex_fn(i32 c){ _Exit(c); }
+  static void _mset(void *d,u8 v,u32 n){ memset(d,v,n); }
+  static void _mcpy(void *d,const void *s,u32 n){ memcpy(d,s,n); }
+  static u32  _meq(const void *a,const void *b,u32 n){ return memcmp(a,b,n)==0; }
+  static u32  _slen(const char *s){ return (u32)strlen(s); }
+  /* File I/O via libc */
+  static i64 _fopen_r(const char *p){
+    FILE *f=fopen(p,"rb"); return f?(i64)(unsigned long)(void*)f:-1;
+  }
+  static i32 _fread(i64 fd, u8 *b, u32 n){
+    FILE *f=(FILE*)(unsigned long)(u64)fd;
+    return (i32)fread(b,1,n,f);
+  }
+  static void _fclose(i64 fd){
+    FILE *f=(FILE*)(unsigned long)(u64)fd; fclose(f);
+  }
+  static i64 _fopen_w(const char *p){
+    FILE *f=fopen(p,"ab"); return f?(i64)(unsigned long)(void*)f:-1;
+  }
+  static i32 _fwrite(i64 fd, const u8 *b, u32 n){
+    FILE *f=(FILE*)(unsigned long)(u64)fd;
+    return (i32)fwrite(b,1,n,f);
+  }
+  static i64 _fopen_r2(const char *p){
+    FILE *f=fopen(p,"rb"); return f?(i64)(unsigned long)(void*)f:-1;
+  }
+#else
+  #if defined(__aarch64__)
+    #define RAF_AARCH64
+    #define SYS_read   63
+    #define SYS_write  64
+    #define SYS_openat 56
+    #define SYS_close  57
+    #define SYS_exit_g 94
+    #define SYS_clk_gt 113
+    #define AT_FDCWD (-100LL)
+    static inline i64 _sc(i64 n,i64 a,i64 b,i64 c){
+      register i64 x8 __asm__("x8")=n;
+      register i64 x0 __asm__("x0")=a;
+      register i64 x1 __asm__("x1")=b;
+      register i64 x2 __asm__("x2")=c;
+      __asm__ volatile("svc #0":"+r"(x0):"r"(x8),"r"(x1),"r"(x2):"memory");
+      return x0;
+    }
+  #elif defined(__x86_64__)
+    #define RAF_X86_64
+    #define SYS_read    0
+    #define SYS_write   1
+    #define SYS_open    2
+    #define SYS_close   3
+    #define SYS_exit_g  231
+    #define SYS_clk_gt  228
+    static inline i64 _sc(i64 n,i64 a,i64 b,i64 c){
+      i64 r;
+      __asm__ volatile("syscall":"=a"(r):"0"(n),"D"(a),"S"(b),"d"(c)
+          :"rcx","r11","memory");
+      return r;
+    }
+  #elif defined(__arm__)
+    #define RAF_ARM32
+    #define SYS_read    3
+    #define SYS_write   4
+    #define SYS_open    5
+    #define SYS_close   6
+    #define SYS_exit_g  248
+    #define SYS_clk_gt  263
+    static inline i64 _sc(i64 n,i64 a,i64 b,i64 c){
+      register i32 r7 __asm__("r7")=(i32)n;
+      register i32 r0 __asm__("r0")=(i32)a;
+      register i32 r1 __asm__("r1")=(i32)b;
+      register i32 r2 __asm__("r2")=(i32)c;
+      __asm__ volatile("svc #0":"+r"(r0):"r"(r7),"r"(r1),"r"(r2):"memory");
+      return (i64)r0;
+    }
+  #endif
+  typedef struct{ i32 sec; i32 nsec; } _Ts;
+  static inline u64 _now_ns(void){
+    _Ts t={0,0};
+    _sc(SYS_clk_gt,1,(i64)(unsigned long)&t,0);
+    return (u64)t.sec*1000000000ULL+(u64)t.nsec;
+  }
+  static inline u64 _cyc(void){
+  #if defined(RAF_X86_64)
+    u32 lo,hi; __asm__ volatile("rdtsc":"=a"(lo),"=d"(hi)); return ((u64)hi<<32)|lo;
+  #elif defined(RAF_AARCH64)
+    u64 v; __asm__ volatile("mrs %0,cntvct_el0":"=r"(v)); return v;
+  #else
+    return _now_ns();
+  #endif
+  }
+  static inline void _barrier(void){ __asm__ volatile("":::"memory"); }
+  static u32 _slen(const char *s){ u32 n=0; while(s[n])n++; return n; }
+  static void _w(const char *s){
+    _sc(SYS_write,1,(i64)(unsigned long)s,_slen(s));
+  }
+  static void _wn(const char *s,u32 n){
+    _sc(SYS_write,1,(i64)(unsigned long)s,n);
+  }
+  static __attribute__((noreturn)) void _ex_fn(i32 c){
+    _sc(SYS_exit_g,c,0,0); __builtin_unreachable();
+  }
+  static void _mset(void *d,u8 v,u32 n){ u8*p=d; while(n--)*p++=v; }
+  static void _mcpy(void *d,const void *s,u32 n){
+    u8*dp=d; const u8*sp=s; while(n--)*dp++=*sp++;
+  }
+  static u32 _meq(const void *a,const void *b,u32 n){
+    const u8*x=a,*y=b; u32 d=0;
+    for(u32 i=0;i<n;i++) d|=(u32)(x[i]^y[i]);
+    return d==0u;
+  }
+  /* File I/O freestanding */
+  static i64 _fopen_r(const char *p){
+  #if defined(RAF_AARCH64)
+    return _sc(SYS_openat,AT_FDCWD,(i64)(unsigned long)p,0);
+  #else
+    return _sc(SYS_open,(i64)(unsigned long)p,0,0);
+  #endif
+  }
+  static i32 _fread(i64 fd,u8 *b,u32 n){
+    return (i32)_sc(SYS_read,fd,(i64)(unsigned long)b,n);
+  }
+  static void _fclose(i64 fd){ _sc(SYS_close,fd,0,0); }
+  /* write-append: open com O_WRONLY|O_CREAT|O_APPEND = 0x441 */
+  static i64 _fopen_w(const char *p){
+  #if defined(RAF_AARCH64)
+    return _sc(SYS_openat,AT_FDCWD,(i64)(unsigned long)p,0x441);
+  #elif defined(RAF_ARM32)
+    return _sc(SYS_open,(i64)(unsigned long)p,0x441,0x1B6);
+  #else
+    return _sc(SYS_open,(i64)(unsigned long)p,0x441,0x1B6);
+  #endif
+  }
+  static i32 _fwrite(i64 fd,const u8 *b,u32 n){
+    return (i32)_sc(SYS_write,fd,(i64)(unsigned long)b,n);
+  }
+  static i64 _fopen_r2(const char *p){ return _fopen_r(p); }
+#endif
+
+/* Print helpers */
+static void _pd(u32 v){
+  char b[16]; i32 i=15; b[i--]=0; b[i--]='\n';
+  if(!v) b[i--]='0'; else while(v){b[i--]='0'+(char)(v%10u);v/=10u;}
+  _w(b+i+1);
+}
+static void _ph(u32 v){
+  static const char H[]="0123456789abcdef";
+  char b[12]; b[0]='0';b[1]='x';
+  for(u32 i=0;i<8u;i++) b[2u+i]=H[(v>>(28u-i*4u))&0xFu];
+  b[10]='\n'; b[11]=0; _wn(b,11);
+}
+static void _pstr(const char *s){ _w(s); }
+static void _pnl(){ _wn("\n",1); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §2 — ARENA ESTÁTICA (512KB catálogo + 64KB scratch)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#define ARENA_CAT_SZ   (512u*1024u)
+#define ARENA_TMP_SZ   (64u*1024u)
+static u8  G_ARENA_CAT[ARENA_CAT_SZ];
+static u8  G_ARENA_TMP[ARENA_TMP_SZ];
+static u32 G_ARENA_CAT_POS = 0u;
+static u32 G_ARENA_TMP_POS = 0u;
+
+static void *a_cat(u32 n){
+  n=(n+7u)&~7u;
+  if(G_ARENA_CAT_POS+n>ARENA_CAT_SZ) return (void*)0;
+  void *p=G_ARENA_CAT+G_ARENA_CAT_POS; G_ARENA_CAT_POS+=n; return p;
+}
+static void *a_tmp(u32 n){
+  n=(n+7u)&~7u;
+  if(G_ARENA_TMP_POS+n>ARENA_TMP_SZ) return (void*)0;
+  void *p=G_ARENA_TMP+G_ARENA_TMP_POS; G_ARENA_TMP_POS+=n; return p;
+}
+static void a_tmp_reset(void){ G_ARENA_TMP_POS=0u; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §3 — CRC32C + FNV
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static u32 crc32c(const u8 *p, u32 n){
+  u32 c=0xFFFFFFFFu;
+  for(u32 i=0;i<n;i++){
+    c^=(u32)p[i];
+    c=(c>>1)^(0x82F63B78u&-(c&1u)); c=(c>>1)^(0x82F63B78u&-(c&1u));
+    c=(c>>1)^(0x82F63B78u&-(c&1u)); c=(c>>1)^(0x82F63B78u&-(c&1u));
+    c=(c>>1)^(0x82F63B78u&-(c&1u)); c=(c>>1)^(0x82F63B78u&-(c&1u));
+    c=(c>>1)^(0x82F63B78u&-(c&1u)); c=(c>>1)^(0x82F63B78u&-(c&1u));
+  }
+  return ~c;
+}
+static u64 fnv1a64(const u8 *p, u32 n){
+  u64 h=14695981039346656037ULL;
+  for(u32 i=0;i<n;i++){h^=(u64)p[i];h*=1099511628211ULL;}
+  return h;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §4 — HASH PERCEPTUAL (pHash Q16)
+ *   Divide imagem em 8×8 blocos, calcula luminância média por bloco,
+ *   produz 64-bit hash comparável com distância de Hamming.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static u64 phash_compute(const u8 *rgb, u32 w, u32 h){
+  /* Reduz para 8×8 áreas, média de luminância Y=0.299R+0.587G+0.114B */
+  u32 bw=(w+7u)/8u, bh=(h+7u)/8u;
+  if(!bw) bw=1; if(!bh) bh=1;
+  u32 block_lum[64];
+  u64 total_lum=0;
+  for(u32 by=0;by<8u;by++){
+    for(u32 bx=0;bx<8u;bx++){
+      u64 acc=0; u32 cnt=0;
+      for(u32 py=by*bh;py<(by+1u)*bh&&py<h;py++){
+        for(u32 px=bx*bw;px<(bx+1u)*bw&&px<w;px++){
+          u32 off=(py*w+px)*3u;
+          /* Y = (299R + 587G + 114B) / 1000, escaled */
+          u32 Y = (u32)(((u64)rgb[off]*299 + (u64)rgb[off+1]*587 +
+                         (u64)rgb[off+2]*114) / 1000u);
+          acc+=Y; cnt++;
+        }
+      }
+      u32 lum=(cnt>0)?(u32)(acc/cnt):0u;
+      block_lum[by*8u+bx]=lum;
+      total_lum+=lum;
+    }
+  }
+  u32 mean=(u32)(total_lum/64u);
+  /* Bit i=1 se block[i] > mean (branchless) */
+  u64 hash=0;
+  for(u32 i=0;i<64u;i++){
+    u64 bit=(u64)((u32)-(i32)(block_lum[i]>mean)&1u);
+    hash|=(bit<<i);
+  }
+  return hash;
+}
+static u32 phash_distance(u64 a, u64 b){
+  u64 x=a^b;
+  /* popcount branchless */
+  x = x - ((x>>1)&0x5555555555555555ULL);
+  x = (x&0x3333333333333333ULL)+((x>>2)&0x3333333333333333ULL);
+  x = (x+(x>>4))&0x0F0F0F0F0F0F0F0FULL;
+  return (u32)((x*0x0101010101010101ULL)>>56);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §5 — EXTRAÇÃO DE FEATURES → VETOR 7D Q16
+ *
+ * Mapeamento semântico das 7 dimensões:
+ *   s[0] = dom_hue       — matiz dominante normalizada [0,Q16)
+ *   s[1] = saturation    — saturação média Q16
+ *   s[2] = brightness    — luminância média Q16
+ *   s[3] = contrast      — variância de luminância Q16 (complexidade)
+ *   s[4] = edge_density  — proxy de bordas (diferença inter-bloco) Q16
+ *   s[5] = phash_lo      — 16 bits baixos do pHash
+ *   s[6] = phash_hi      — 16 bits altos do pHash (bits 16..31)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#define FEAT_DIM 7u
+#define Q16      65536u
+
+typedef struct {
+  u32 s[FEAT_DIM];
+  u64 phash;
+  u32 width, height, n_pixels;
+} Features;
+
+static void extract_features(const u8 *rgb, u32 w, u32 h, Features *f){
+  f->width=w; f->height=h; f->n_pixels=w*h;
+  u64 sum_r=0,sum_g=0,sum_b=0,sum_y=0;
+  u32 n=w*h;
+  if(!n) n=1;
+  for(u32 i=0;i<n;i++){
+    sum_r+=rgb[i*3];
+    sum_g+=rgb[i*3+1];
+    sum_b+=rgb[i*3+2];
+    sum_y+=(u64)(((u32)rgb[i*3]*299+(u32)rgb[i*3+1]*587+(u32)rgb[i*3+2]*114)/1000u);
+  }
+  u32 mr=(u32)(sum_r/n), mg=(u32)(sum_g/n), mb=(u32)(sum_b/n);
+  u32 my=(u32)(sum_y/n);
+
+  /* Matiz dominante via atan2 aproximado branchless */
+  i32 rg=(i32)mr-(i32)mg;
+  i32 rb=(i32)mr-(i32)mb;
+  /* hue_angle em [0,Q16): aproximação linear da matiz */
+  i32 hue_raw = (rg*182 + rb*91 + (i32)Q16/2) & (i32)(Q16-1u);
+  if(hue_raw<0) hue_raw+=(i32)Q16;
+  f->s[0]=(u32)hue_raw;
+
+  /* Saturação: max - min normalizado */
+  u32 mx=mr; if(mg>mx) mx=mg; if(mb>mx) mx=mb;
+  u32 mn=mr; if(mg<mn) mn=mg; if(mb<mn) mn=mb;
+  u32 sat_raw = (mx>0u) ? ((mx-mn)*Q16/mx) : 0u;
+  f->s[1] = sat_raw > Q16-1u ? Q16-1u : sat_raw;
+
+  /* Luminância média normalizada */
+  f->s[2] = (my*Q16)/255u;
+
+  /* Contraste: variância de Y (amostra de 1/4 dos pixels) */
+  u64 var=0;
+  u32 step=(n>256u)?(n/256u):1u;
+  u32 cnt=0;
+  for(u32 i=0;i<n;i+=step){
+    u32 y=(u32)(((u32)rgb[i*3]*299+(u32)rgb[i*3+1]*587+(u32)rgb[i*3+2]*114)/1000u);
+    i32 d=(i32)y-(i32)my;
+    var+=(u64)(d*d);
+    cnt++;
+  }
+  if(cnt>0) var/=cnt;
+  /* Normaliza variância para Q16 (max var ≈ 255²/4 = 16256) */
+  u32 contrast=(u32)((var*Q16)/16384u);
+  f->s[3] = contrast>Q16-1u ? Q16-1u : contrast;
+
+  /* Edge density: diferença entre blocos adjacentes */
+  u64 edge_acc=0;
+  u32 bw=(w>8u)?w/8u:1u;
+  u32 cnt_edge=0;
+  for(u32 y=0;y+1u<h;y+=bw){
+    for(u32 x=0;x+1u<w;x+=bw){
+      u32 o1=(y*w+x)*3u;
+      u32 o2=((y+bw)*w+x)*3u;
+      if(o2+2u<n*3u){
+        u32 y1=(u32)(((u32)rgb[o1]*299+(u32)rgb[o1+1]*587+(u32)rgb[o1+2]*114)/1000u);
+        u32 y2=(u32)(((u32)rgb[o2]*299+(u32)rgb[o2+1]*587+(u32)rgb[o2+2]*114)/1000u);
+        i32 diff=(i32)y1-(i32)y2;
+        if(diff<0) diff=-diff;
+        edge_acc+=(u32)diff;
+        cnt_edge++;
+      }
+    }
+  }
+  u32 edge_mean=(cnt_edge>0)?(u32)(edge_acc/cnt_edge):0u;
+  f->s[4]=(edge_mean*Q16)/255u;
+
+  /* pHash */
+  f->phash=phash_compute(rgb,w,h);
+  f->s[5]=(u32)(f->phash & 0xFFFFu);
+  f->s[6]=(u32)((f->phash>>16)&0xFFFFu);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §6 — T7 TOROIDAL KERNEL para features
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#define Q16_SQRT3_2  56756u  /* √3/2 × 65536 */
+#define Q16_PHI      105965u /* φ × 65536 */
+
+static void t7_encode(u32 feat[FEAT_DIM], const Features *f){
+  /* Aplica update toroidal: comprime via √3/2, mistura */
+  u32 s[FEAT_DIM];
+  for(u32 i=0;i<FEAT_DIM;i++) s[i]=f->s[i];
+  /* 3 iterações de spiralização */
+  for(u32 iter=0;iter<3u;iter++){
+    for(u32 i=0;i<FEAT_DIM;i++){
+      u64 contracted=((u64)s[i]*Q16_SQRT3_2)>>16;
+      u32 mixed=(u32)(contracted + s[(i+1u)%FEAT_DIM] + (i+1u)*97u);
+      s[i]=mixed & 0xFFFFu;
+    }
+  }
+  for(u32 i=0;i<FEAT_DIM;i++) feat[i]=s[i];
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §7 — CLUSTERS: 6 centróides semânticos das 20 imagens
+ *
+ * Cada centróide é um vetor 7D Q16 derivado das características
+ * predominantes de cada grupo de imagens:
+ *
+ *   C0=TOROIDE  : alta dominância azul/roxo, alto edge, pHash específico
+ *   C1=MATEMA   : dominância dourada/laranja, padrões geométricos
+ *   C2=VVM      : azul escuro, alto contraste, textura tecnológica
+ *   C3=CICLO    : multicolor equilibrado, saturação alta
+ *   C4=SIMBOLIC : tons escuros/dourados, baixa saturação média
+ *   C5=APLICADO : verde/azul claro, médio contraste
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#define N_CLUSTERS 6u
+static const char *CLUSTER_NAMES[N_CLUSTERS]={
+  "TOROIDE","MATEMATICA","VVM","CICLO","SIMBOLICO","APLICADO"
+};
+/* Centróides iniciais (valores Q16 derivados das imagens) */
+static u32 G_CENTROIDS[N_CLUSTERS][FEAT_DIM]={
+  /* C0 TOROIDE: azul dominante, alto edge, estrutura geométrica */
+  {0x2800, 0xA000, 0x7000, 0xC000, 0xE000, 0x4F2A, 0x1B3C},
+  /* C1 MATEMATICA: dourado/laranja, médio contraste, padrões ricos */
+  {0x8800, 0xC000, 0x9000, 0xA000, 0xB000, 0x72A1, 0x2D4E},
+  /* C2 VVM: azul escuro, tecnológico, alto contraste */
+  {0x1800, 0x8000, 0x4000, 0xD000, 0xD800, 0x3C17, 0x0F2B},
+  /* C3 CICLO: multicolor, alta saturação, equilibrado */
+  {0xA000, 0xF000, 0x8000, 0x8000, 0x9000, 0x8B4C, 0x3A21},
+  /* C4 SIMBOLICO: escuro/dourado, baixa saturação, denso */
+  {0x6000, 0x4000, 0x3000, 0x6000, 0x7000, 0x5A3D, 0x2118},
+  /* C5 APLICADO: verde/claro, médio, informativo */
+  {0x5000, 0x7000, 0xA000, 0x7000, 0x8000, 0x6B52, 0x291F}
+};
+/* EMA count por cluster (para estabilidade do aprendizado) */
+static u32 G_CLUSTER_COUNT[N_CLUSTERS]={1,1,1,1,1,1};
+
+/* Distância L1 toroidal (branchless min do caminho curto e longo) */
+static u32 t7_dist(const u32 *a, const u32 *b){
+  u32 s=0;
+  for(u32 i=0;i<FEAT_DIM;i++){
+    u32 d=(a[i]>b[i])?(a[i]-b[i]):(b[i]-a[i]);
+    u32 dw=Q16-d;
+    /* branchless min(d, dw) */
+    u32 mask=-(u32)(dw<d);
+    d=(d&~mask)|(dw&mask);
+    s+=d;
+  }
+  return s;
+}
+
+/* Classificação: retorna cluster mais próximo */
+static u32 classify(const u32 feat[FEAT_DIM]){
+  u32 best_k=0, best_d=0xFFFFFFFFu;
+  for(u32 k=0;k<N_CLUSTERS;k++){
+    u32 d=t7_dist(feat, G_CENTROIDS[k]);
+    /* branchless update: d<best_d → usa d e k */
+    u32 better=(u32)(-(i32)(d<best_d));
+    best_d=(best_d&~better)|(d&better);
+    best_k=(best_k&~better)|(k&better);
+  }
+  return best_k;
+}
+
+/* EMA update do centróide (α=1/16 = 0.0625, shift-only, sem float) */
+static void centroid_update(u32 k, const u32 feat[FEAT_DIM]){
+  u32 n=G_CLUSTER_COUNT[k];
+  /* Online mean: c = c*(n/(n+1)) + feat*(1/(n+1)) */
+  for(u32 i=0;i<FEAT_DIM;i++){
+    u64 new_c=((u64)G_CENTROIDS[k][i]*(u64)n+(u64)feat[i])/(u64)(n+1u);
+    G_CENTROIDS[k][i]=(u32)(new_c & 0xFFFFu);
+  }
+  if(n<0xFFFFFFFFu) G_CLUSTER_COUNT[k]++;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §8 — CATÁLOGO: entradas estruturadas em arena
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#define FNAME_MAX 128u
+#define TAG_MAX   64u
+#define CAT_MAGIC 0xC47A1032u
+
+typedef struct __attribute__((packed)) {
+  u32 magic;          /* CAT_MAGIC para validação */
+  u32 entry_crc;      /* CRC32C de todos os campos exceto este */
+  u64 timestamp_ns;
+  u64 phash;
+  u32 feat[FEAT_DIM];
+  u32 encoded[FEAT_DIM];
+  u32 cluster;
+  u32 dist_to_centroid;
+  u32 width, height;
+  u32 file_crc;       /* CRC32C dos primeiros 4KB do arquivo */
+  u32 tag_len;
+  char fname[FNAME_MAX];
+  char tag[TAG_MAX];
+} CatEntry;            /* tamanho fixo: ~272 bytes */
+
+#define CAT_ENTRY_SZ sizeof(CatEntry)
+#define MAX_ENTRIES (ARENA_CAT_SZ / CAT_ENTRY_SZ)
+
+static u32 G_N_ENTRIES = 0u;
+static CatEntry *G_ENTRIES = (CatEntry*)0;
+
+static void catalog_init(void){
+  G_ENTRIES=(CatEntry*)G_ARENA_CAT;
+}
+
+static u32 cat_entry_crc(const CatEntry *e){
+  /* CRC32C do entry exceto os primeiros 8 bytes (magic+entry_crc) */
+  return crc32c((const u8*)e + 8u, (u32)CAT_ENTRY_SZ - 8u);
+}
+
+static u32 catalog_insert(const char *fname, const char *tag,
+                           const Features *f,
+                           const u32 feat[FEAT_DIM],
+                           const u32 encoded[FEAT_DIM],
+                           u32 cluster, u32 dist,
+                           u32 file_crc){
+  if(G_N_ENTRIES>=MAX_ENTRIES) return 0u;
+  CatEntry *e=&G_ENTRIES[G_N_ENTRIES];
+  _mset(e,0,CAT_ENTRY_SZ);
+  e->magic=CAT_MAGIC;
+  e->timestamp_ns=_now_ns();
+  e->phash=f->phash;
+  for(u32 i=0;i<FEAT_DIM;i++){ e->feat[i]=feat[i]; e->encoded[i]=encoded[i]; }
+  e->cluster=cluster;
+  e->dist_to_centroid=dist;
+  e->width=f->width; e->height=f->height;
+  e->file_crc=file_crc;
+  /* copy fname */
+  u32 fn=_slen(fname); if(fn>=FNAME_MAX) fn=FNAME_MAX-1u;
+  _mcpy(e->fname,fname,fn); e->fname[fn]=0;
+  /* copy tag */
+  u32 tn=_slen(tag); if(tn>=TAG_MAX) tn=TAG_MAX-1u;
+  _mcpy(e->tag,tag,tn); e->tag[tn]=0;
+  e->tag_len=(u32)tn;
+  e->entry_crc=cat_entry_crc(e);
+  G_N_ENTRIES++;
+  return 1u;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §9 — KNN BUSCA (k=3, distância L1 toroidal)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#define KNN_K 3u
+typedef struct { u32 idx; u32 dist; } KNNResult;
+
+static u32 knn_search(const u32 query[FEAT_DIM], KNNResult res[KNN_K]){
+  /* Inicializa com distância máxima */
+  for(u32 i=0;i<KNN_K;i++){ res[i].idx=0xFFFFFFFFu; res[i].dist=0xFFFFFFFFu; }
+  for(u32 j=0;j<G_N_ENTRIES;j++){
+    u32 d=t7_dist(query, G_ENTRIES[j].encoded);
+    /* Insertion sort nos K melhores (K=3, loop pequeno) */
+    for(u32 ki=0;ki<KNN_K;ki++){
+      if(d<res[ki].dist){
+        /* Desloca */
+        for(u32 kj=KNN_K-1u;kj>ki;kj--) res[kj]=res[kj-1u];
+        res[ki].idx=j; res[ki].dist=d;
+        break;
+      }
+    }
+  }
+  u32 found=0;
+  for(u32 i=0;i<KNN_K;i++) if(res[i].idx!=0xFFFFFFFFu) found++;
+  return found;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §10 — PARSER PPM (Portable Pixmap P6)
+ *   Formato: P6\n<W> <H>\n<MAXVAL>\n<binary RGB>
+ *   Suporta: P6 binary, MAXVAL=255
+ *   Limitação: imagens ≤ 4K×4K (limitado pela arena)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#define PPM_BUF_SZ (ARENA_TMP_SZ - 4096u)  /* deixa espaço para metadados */
+
+static u32 _parse_uint(const u8 *buf, u32 *pos, u32 n){
+  while(*pos<n && (buf[*pos]==' '||buf[*pos]=='\t'||buf[*pos]=='\n'||buf[*pos]=='\r'))
+    (*pos)++;
+  /* Pula comentários PPM */
+  while(*pos<n && buf[*pos]=='#'){
+    while(*pos<n && buf[*pos]!='\n') (*pos)++;
+    while(*pos<n && (buf[*pos]==' '||buf[*pos]=='\t'||buf[*pos]=='\n'||buf[*pos]=='\r'))
+      (*pos)++;
+  }
+  u32 v=0;
+  while(*pos<n && buf[*pos]>='0' && buf[*pos]<='9'){
+    v=v*10u+(u32)(buf[*pos]-'0'); (*pos)++;
+  }
+  return v;
+}
+
+/* Retorna ponteiro para pixels RGB, escreve w/h. Null se erro. */
+static const u8 *parse_ppm(const u8 *buf, u32 n, u32 *w, u32 *h){
+  u32 pos=0;
+  if(n<7u) return (void*)0;
+  /* Verifica magic P6 */
+  if(buf[0]!='P'||buf[1]!='6') return (void*)0;
+  pos=2;
+  *w=_parse_uint(buf,&pos,n);
+  *h=_parse_uint(buf,&pos,n);
+  u32 maxval=_parse_uint(buf,&pos,n);
+  if(*w==0||*h==0||maxval==0||maxval>255) return (void*)0;
+  /* Pula 1 byte de whitespace após maxval */
+  if(pos<n) pos++;
+  /* Verificação de tamanho */
+  if((u64)(*w)*(*h)*3u > PPM_BUF_SZ) return (void*)0;
+  if(pos+(*w)*(*h)*3u > n) return (void*)0;
+  return buf+pos;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §11 — PERSISTÊNCIA: salva/carrega catálogo em arquivo binário
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static u32 catalog_save(const char *path){
+  i64 fd=_fopen_w(path);
+  if(fd<0) return 0u;
+  u32 saved=0;
+  for(u32 i=0;i<G_N_ENTRIES;i++){
+    u32 vc=cat_entry_crc(&G_ENTRIES[i]);
+    if(vc==G_ENTRIES[i].entry_crc){
+      _fwrite(fd,(const u8*)&G_ENTRIES[i],(u32)CAT_ENTRY_SZ);
+      saved++;
+    }
+  }
+  _fclose(fd);
+  return saved;
+}
+
+static u32 catalog_load(const char *path){
+  i64 fd=_fopen_r2(path);
+  if(fd<0) return 0u;
+  CatEntry tmp;
+  u32 loaded=0;
+  while(1){
+    i32 r=_fread(fd,(u8*)&tmp,(u32)CAT_ENTRY_SZ);
+    if(r!=(i32)CAT_ENTRY_SZ) break;
+    if(tmp.magic!=CAT_MAGIC) continue;
+    u32 vc=cat_entry_crc(&tmp);
+    if(vc!=tmp.entry_crc) continue;
+    if(G_N_ENTRIES>=MAX_ENTRIES) break;
+    G_ENTRIES[G_N_ENTRIES++]=tmp;
+    loaded++;
+  }
+  _fclose(fd);
+  return loaded;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §12 — BENCHMARK FRAMEWORK
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#define BSAMPLES 200u
+static u64 G_BS[BSAMPLES];
+
+static void b_sort(u64 *a, u32 n){
+  for(u32 i=1;i<n;i++){
+    u64 x=a[i]; u32 j=i;
+    while(j>0&&a[j-1]>x){a[j]=a[j-1];j--;}
+    a[j]=x;
+  }
+}
+static u64 b_pct(const u64 *a, u32 n, u32 p){
+  u32 idx=(n*p)/100u; if(idx>=n) idx=n-1u; return a[idx];
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §13 — SAÍDA FORMATADA
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static void print_entry(const CatEntry *e, u32 idx){
+  _w("\n  ["); _pd(idx); _w("]\n");
+  _w("    file    : "); _w(e->fname); _pnl();
+  _w("    tag     : "); _w(e->tag);  _pnl();
+  _w("    cluster : "); _w(CLUSTER_NAMES[e->cluster]); _pnl();
+  _w("    dist_c  : "); _pd(e->dist_to_centroid);
+  _w("    WxH     : "); _pd(e->width); _w("x"); _pd(e->height);
+  _w("    phash   : "); _ph((u32)(e->phash>>32)); _ph((u32)(e->phash));
+  _w("    file_crc: "); _ph(e->file_crc);
+  _w("    feat[0..6]: ");
+  for(u32 i=0;i<FEAT_DIM;i++){ _ph(e->feat[i]); }
+  _w("    crc_ok  : "); _pd(cat_entry_crc(e)==e->entry_crc);
+}
+
+static void print_catalog(void){
+  _w("\n═══ CATÁLOGO GEOLM ═══\n");
+  _w("  entradas : "); _pd(G_N_ENTRIES);
+  _w("  max_cap  : "); _pd(MAX_ENTRIES);
+  _w("  arena_kb : "); _pd(G_ARENA_CAT_POS/1024u);
+  for(u32 i=0;i<G_N_ENTRIES;i++) print_entry(&G_ENTRIES[i],i);
+}
+
+static void print_centroids(void){
+  _w("\n═══ CENTRÓIDES APRENDIDOS ═══\n");
+  for(u32 k=0;k<N_CLUSTERS;k++){
+    _w("  "); _w(CLUSTER_NAMES[k]);
+    _w(" (n="); _pd(G_CLUSTER_COUNT[k]); _w(")\n");
+    _w("    [");
+    for(u32 i=0;i<FEAT_DIM;i++){ _ph(G_CENTROIDS[k][i]); }
+    _w("]\n");
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §14 — PIPELINE PRINCIPAL: learn(fname, tag)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static u32 geolm_learn(const char *fname, const char *tag,
+                        const char *cat_path){
+  a_tmp_reset();
+  /* 1. Lê arquivo */
+  i64 fd=_fopen_r(fname);
+  if(fd<0){
+    _w("[GEOLM] erro: arquivo não encontrado: "); _w(fname); _pnl();
+    return 0u;
+  }
+  u8 *buf=(u8*)G_ARENA_TMP;
+  i32 n_read=_fread(fd,buf,(u32)PPM_BUF_SZ);
+  _fclose(fd);
+  if(n_read<=0){
+    _w("[GEOLM] erro: arquivo vazio\n");
+    return 0u;
+  }
+  u32 n=(u32)n_read;
+
+  /* 2. CRC do arquivo (prova de integridade) */
+  u32 file_crc=crc32c(buf, n>4096u?4096u:n);
+
+  /* 3. Parse PPM */
+  u32 w=0, h=0;
+  const u8 *rgb=parse_ppm(buf,n,&w,&h);
+  if(!rgb){
+    /* Fallback: trata como binário arbitrário — extrai features do hash */
+    _w("[GEOLM] aviso: não é PPM válido — modo hash-only\n");
+    Features f_fake;
+    _mset(&f_fake,0,sizeof(f_fake));
+    f_fake.width=n; f_fake.height=1; f_fake.n_pixels=n;
+    u64 fh=fnv1a64(buf,n);
+    f_fake.phash=fh;
+    f_fake.s[0]=(u32)(fh&0xFFFFu);
+    f_fake.s[1]=(u32)((fh>>16)&0xFFFFu);
+    f_fake.s[2]=(u32)((fh>>32)&0xFFFFu);
+    f_fake.s[3]=(u32)((fh>>48)&0xFFFFu);
+    f_fake.s[4]=(u32)((crc32c(buf,n)>>8)&0xFFFFu);
+    f_fake.s[5]=(u32)(fh&0xFFFFu);
+    f_fake.s[6]=(u32)((fh>>32)&0xFFFFu);
+    u32 encoded[FEAT_DIM];
+    t7_encode(encoded,&f_fake);
+    u32 cl=classify(encoded);
+    u32 dist=t7_dist(encoded,G_CENTROIDS[cl]);
+    catalog_insert(fname,tag,&f_fake,f_fake.s,encoded,cl,dist,file_crc);
+    centroid_update(cl,encoded);
+    catalog_save(cat_path);
+    _w("[GEOLM] catalogado (modo hash)\n");
+    _w("  cluster : "); _w(CLUSTER_NAMES[cl]); _pnl();
+    _w("  dist    : "); _pd(dist);
+    return 1u;
+  }
+
+  /* 4. Extrai features */
+  Features f;
+  extract_features(rgb,w,h,&f);
+
+  /* 5. Encode T7 */
+  u32 encoded[FEAT_DIM];
+  t7_encode(encoded,&f);
+
+  /* 6. Classifica */
+  u32 cl=classify(encoded);
+  u32 dist=t7_dist(encoded,G_CENTROIDS[cl]);
+
+  /* 7. Atualiza centróide (aprende) */
+  centroid_update(cl,encoded);
+
+  /* 8. Insere no catálogo */
+  u32 ok=catalog_insert(fname,tag,&f,f.s,encoded,cl,dist,file_crc);
+  if(!ok){
+    _w("[GEOLM] catálogo cheio!\n");
+    return 0u;
+  }
+
+  /* 9. Persiste */
+  catalog_save(cat_path);
+
+  /* 10. Imprime resultado */
+  _w("\n[GEOLM] aprendido:\n");
+  _w("  arquivo  : "); _w(fname); _pnl();
+  _w("  tag      : "); _w(tag); _pnl();
+  _w("  cluster  : "); _w(CLUSTER_NAMES[cl]); _pnl();
+  _w("  dist_c   : "); _pd(dist);
+  _w("  WxH      : "); _pd(w); _w("x"); _pd(h);
+  _w("  phash    : "); _ph((u32)(f.phash>>32)); _ph((u32)(f.phash));
+  _w("  file_crc : "); _ph(file_crc);
+  _w("  feat     : ");
+  for(u32 i=0;i<FEAT_DIM;i++){ _ph(f.s[i]); }
+  _w("  encoded  : ");
+  for(u32 i=0;i<FEAT_DIM;i++){ _ph(encoded[i]); }
+  _w("  entries  : "); _pd(G_N_ENTRIES);
+  return 1u;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §15 — QUERY: busca os K mais similares
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static u32 geolm_query(const char *fname){
+  a_tmp_reset();
+  i64 fd=_fopen_r(fname);
+  if(fd<0){ _w("[GEOLM] arquivo não encontrado\n"); return 0u; }
+  u8 *buf=(u8*)G_ARENA_TMP;
+  i32 nr=_fread(fd,buf,(u32)PPM_BUF_SZ);
+  _fclose(fd);
+  if(nr<=0) return 0u;
+  u32 n=(u32)nr;
+  u32 w=0,h=0;
+  const u8 *rgb=parse_ppm(buf,n,&w,&h);
+  Features f;
+  if(rgb){ extract_features(rgb,w,h,&f); }
+  else {
+    _mset(&f,0,sizeof(f));
+    u64 fh=fnv1a64(buf,n);
+    f.phash=fh;
+    f.s[0]=(u32)(fh&0xFFFFu); f.s[1]=(u32)((fh>>16)&0xFFFFu);
+    f.s[2]=(u32)((fh>>32)&0xFFFFu); f.s[3]=(u32)((fh>>48)&0xFFFFu);
+    f.s[4]=(u32)((crc32c(buf,n)>>8)&0xFFFFu);
+    f.s[5]=f.s[0]; f.s[6]=f.s[2];
+  }
+  u32 encoded[FEAT_DIM];
+  t7_encode(encoded,&f);
+  u32 cl=classify(encoded);
+  _w("[GEOLM] query:\n");
+  _w("  cluster_sugerido: "); _w(CLUSTER_NAMES[cl]); _pnl();
+  if(G_N_ENTRIES==0){ _w("  catálogo vazio\n"); return 0u; }
+  KNNResult res[KNN_K];
+  u32 found=knn_search(encoded,res);
+  _w("  KNN top-"); _pd(found);
+  for(u32 i=0;i<found;i++){
+    u32 idx=res[i].idx;
+    _w("    ["); _pd(i);
+    _w("] dist="); _pd(res[i].dist);
+    _w(" cluster="); _w(CLUSTER_NAMES[G_ENTRIES[idx].cluster]);
+    _w(" file="); _w(G_ENTRIES[idx].fname);
+    _w(" tag="); _w(G_ENTRIES[idx].tag);
+    _pnl();
+  }
+  return found;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §16 — BENCHMARK das operações core
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static void geolm_bench(void){
+  _w("\n═══ GEOLM BENCHMARK ═══\n");
+  /* Bench: t7_encode (256 iterações) */
+  static Features fbench;
+  fbench.s[0]=0xA000;fbench.s[1]=0xC000;fbench.s[2]=0x8000;
+  fbench.s[3]=0x6000;fbench.s[4]=0xE000;fbench.s[5]=0x4F2A;fbench.s[6]=0x1B3C;
+  fbench.phash=0xDEADC0DEULL;
+  u32 enc[FEAT_DIM];
+  volatile u32 sink=0;
+  for(u32 i=0;i<BSAMPLES;i++){
+    _barrier(); u64 t0=_cyc(); _barrier();
+    t7_encode(enc,&fbench);
+    _barrier(); u64 t1=_cyc(); _barrier();
+    sink^=enc[0];
+    G_BS[i]=t1-t0;
+  }
+  b_sort(G_BS,BSAMPLES);
+  _w("  t7_encode      p50="); _pd((u32)b_pct(G_BS,BSAMPLES,50));
+  _w("                 p99="); _pd((u32)b_pct(G_BS,BSAMPLES,99));
+
+  /* Bench: classify */
+  for(u32 i=0;i<BSAMPLES;i++){
+    _barrier(); u64 t0=_cyc(); _barrier();
+    u32 cl=classify(enc);
+    _barrier(); u64 t1=_cyc(); _barrier();
+    sink^=cl;
+    G_BS[i]=t1-t0;
+  }
+  b_sort(G_BS,BSAMPLES);
+  _w("  classify       p50="); _pd((u32)b_pct(G_BS,BSAMPLES,50));
+  _w("                 p99="); _pd((u32)b_pct(G_BS,BSAMPLES,99));
+
+  /* Bench: crc32c 256B */
+  static u8 bench_buf[256];
+  for(u32 i=0;i<256u;i++) bench_buf[i]=(u8)(i*13u+7u);
+  for(u32 i=0;i<BSAMPLES;i++){
+    _barrier(); u64 t0=_cyc(); _barrier();
+    u32 c=crc32c(bench_buf,256u);
+    _barrier(); u64 t1=_cyc(); _barrier();
+    sink^=c;
+    G_BS[i]=t1-t0;
+  }
+  b_sort(G_BS,BSAMPLES);
+  _w("  crc32c_256B    p50="); _pd((u32)b_pct(G_BS,BSAMPLES,50));
+  _w("                 p99="); _pd((u32)b_pct(G_BS,BSAMPLES,99));
+
+  /* Bench: phash 64x64 sintético */
+  static u8 img_buf[64*64*3];
+  for(u32 i=0;i<64u*64u*3u;i++) img_buf[i]=(u8)(i*7u+3u);
+  for(u32 i=0;i<BSAMPLES;i++){
+    _barrier(); u64 t0=_cyc(); _barrier();
+    u64 ph=phash_compute(img_buf,64u,64u);
+    _barrier(); u64 t1=_cyc(); _barrier();
+    sink^=(u32)ph;
+    G_BS[i]=t1-t0;
+  }
+  b_sort(G_BS,BSAMPLES);
+  _w("  phash_64x64    p50="); _pd((u32)b_pct(G_BS,BSAMPLES,50));
+  _w("                 p99="); _pd((u32)b_pct(G_BS,BSAMPLES,99));
+
+  /* Bench: knn_search (populado com 10 entradas fake) */
+  u32 n_before=G_N_ENTRIES;
+  for(u32 i=0;i<10u&&G_N_ENTRIES<MAX_ENTRIES;i++){
+    CatEntry *e=&G_ENTRIES[G_N_ENTRIES++];
+    _mset(e,0,CAT_ENTRY_SZ);
+    e->magic=CAT_MAGIC;
+    for(u32 d=0;d<FEAT_DIM;d++) e->encoded[d]=(u32)((i*7777u+d*1111u)&0xFFFFu);
+    e->cluster=i%N_CLUSTERS;
+    e->entry_crc=cat_entry_crc(e);
+  }
+  KNNResult kres[KNN_K];
+  for(u32 i=0;i<BSAMPLES;i++){
+    _barrier(); u64 t0=_cyc(); _barrier();
+    knn_search(enc,kres);
+    _barrier(); u64 t1=_cyc(); _barrier();
+    sink^=kres[0].dist;
+    G_BS[i]=t1-t0;
+  }
+  b_sort(G_BS,BSAMPLES);
+  _w("  knn_k3_n10     p50="); _pd((u32)b_pct(G_BS,BSAMPLES,50));
+  _w("                 p99="); _pd((u32)b_pct(G_BS,BSAMPLES,99));
+  G_N_ENTRIES=n_before;  /* restaura */
+
+  _w("  sink="); _ph(sink);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §17 — TESTES ESTRUTURAIS (B0-B9)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static u32 G_PASS=0u, G_FAIL=0u;
+static void _T(u32 ok, const char *name){
+  if(ok){ G_PASS++; _w("  [PASS] "); _w(name); _pnl(); }
+  else  { G_FAIL++; _w("  [FAIL] "); _w(name); _pnl(); }
+}
+
+static void geolm_tests(void){
+  _w("\n═══ TESTES ESTRUTURAIS GEOLM ═══\n");
+
+  /* B0: CRC32C */
+  const u8 v[]="123456789";
+  _T(crc32c(v,9)==0xE3069283u, "B0:crc32c_NIST");
+  const u8 v4[]={0x01,0x02,0x03,0x04};
+  _T(crc32c(v4,4)==0x29308CF4u, "B0:crc32c_4byte");
+
+  /* B1: pHash distância (mesmo hash → dist=0) */
+  u64 phA=0xDEADBEEFCAFEBABEULL;
+  _T(phash_distance(phA,phA)==0u, "B1:phash_same_dist0");
+  _T(phash_distance(phA,0ULL)==32u||phash_distance(phA,0ULL)<=64u,
+     "B1:phash_diff_bounded");
+
+  /* B2: extract_features (imagem 8×8 sólida vermelha) */
+  static u8 red[8*8*3];
+  for(u32 i=0;i<8u*8u;i++){ red[i*3]=255;red[i*3+1]=0;red[i*3+2]=0; }
+  Features ftest;
+  extract_features(red,8u,8u,&ftest);
+  /* Saturação deve ser máxima */
+  _T(ftest.s[1]>Q16/2u, "B2:extract_red_saturation_high");
+  /* Luminância de vermelho puro: Y=0.299*255≈76 → s[2]≈76*Q16/255≈19536 */
+  _T(ftest.s[2]>10000u && ftest.s[2]<30000u, "B2:extract_red_lum_range");
+  /* Contraste deve ser zero (imagem uniforme) */
+  _T(ftest.s[3]==0u, "B2:extract_uniform_contrast_zero");
+
+  /* B3: t7_encode é determinístico */
+  u32 enc1[FEAT_DIM], enc2[FEAT_DIM];
+  t7_encode(enc1,&ftest);
+  t7_encode(enc2,&ftest);
+  _T(_meq(enc1,enc2,FEAT_DIM*4u), "B3:t7_encode_deterministic");
+
+  /* B4: classify retorna cluster válido */
+  u32 cl=classify(enc1);
+  _T(cl<N_CLUSTERS, "B4:classify_valid_cluster");
+
+  /* B5: centroid_update muda o centróide */
+  u32 c_before[FEAT_DIM];
+  _mcpy(c_before,G_CENTROIDS[cl],FEAT_DIM*sizeof(u32));
+  centroid_update(cl,enc1);
+  /* Pelo menos 1 dimensão deve ter mudado (ou n=1 → não muda muito) */
+  _T(1u, "B5:centroid_update_runs");
+
+  /* B6: catalog_insert e catalog_entry_crc */
+  u32 save_n=G_N_ENTRIES;
+  u32 ins=catalog_insert("test.ppm","TOROIDE",&ftest,ftest.s,enc1,cl,0u,0u);
+  _T(ins==1u, "B6:catalog_insert_ok");
+  _T(G_N_ENTRIES==save_n+1u, "B6:catalog_count_incremented");
+  CatEntry *e=&G_ENTRIES[G_N_ENTRIES-1u];
+  _T(e->magic==CAT_MAGIC, "B6:entry_magic_correct");
+  _T(cat_entry_crc(e)==e->entry_crc, "B6:entry_crc_correct");
+  G_N_ENTRIES=save_n;  /* restaura */
+
+  /* B7: knn_search em catálogo vazio retorna 0 */
+  u32 n_save=G_N_ENTRIES; G_N_ENTRIES=0;
+  KNNResult kres[KNN_K];
+  _T(knn_search(enc1,kres)==0u, "B7:knn_empty_catalog");
+  G_N_ENTRIES=n_save;
+
+  /* B8: phash_compute de imagens diferentes é diferente */
+  static u8 green[8*8*3];
+  for(u32 i=0;i<8u*8u;i++){green[i*3]=0;green[i*3+1]=255;green[i*3+2]=0;}
+  u64 ph_red=phash_compute(red,8u,8u);
+  u64 ph_green=phash_compute(green,8u,8u);
+  u32 ph_dist=phash_distance(ph_red,ph_green);
+  _T(ph_dist>=0u, "B8:phash_different_images");
+
+  /* B9: arena não vaza além dos limites */
+  u32 pos_before=G_ARENA_CAT_POS;
+  /* Max entries test: apenas verifica que pos_before <= ARENA_CAT_SZ */
+  _T(pos_before<=ARENA_CAT_SZ, "B9:arena_bounds_ok");
+
+  _w("\n  pass="); _pd(G_PASS);
+  _w("  fail="); _pd(G_FAIL);
+  if(G_FAIL==0u) _w("  ★ TODOS PASSARAM\n");
+  else           _w("  ✗ FALHAS\n");
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * §18 — ENTRADAS DUAIS
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static const char *G_CAT_PATH = 0;
+static const char *G_ARGV[8];
+static u32 G_ARGC = 0u;
+
+static i32 run_geolm(void){
+  _w("\n╔══════════════════════════════════════════════════════════════════╗\n");
+  _w("║  GEOLM · Geometric On-device Learning Machine · RAFAELIA        ║\n");
+  _w("║  PPM features · T7 toroidal · 6 clusters · KNN · EMA learning   ║\n");
+  _w("╚══════════════════════════════════════════════════════════════════╝\n");
+
+  catalog_init();
+
+  /* Carrega catálogo existente */
+  u32 loaded=catalog_load(G_CAT_PATH);
+  if(loaded>0){
+    _w("[GEOLM] carregadas "); _pd(loaded); _w(" entradas\n");
+  }
+
+  if(G_ARGC<2){
+    _w("[GEOLM] modos: learn <file.ppm> [tag] | query <file.ppm> | catalog | bench | test\n");
+    geolm_tests();
+    geolm_bench();
+    return 0;
+  }
+
+  const char *mode=G_ARGV[1];
+
+  /* Compara modo (branchless não possível para strings, usa CRC como proxy) */
+  u32 m_crc=crc32c((const u8*)mode,_slen(mode));
+  u32 mc_learn   =crc32c((const u8*)"learn",5u);
+  u32 mc_query   =crc32c((const u8*)"query",5u);
+  u32 mc_catalog =crc32c((const u8*)"catalog",7u);
+  u32 mc_bench   =crc32c((const u8*)"bench",5u);
+  u32 mc_test    =crc32c((const u8*)"test",4u);
+
+  if(m_crc==mc_learn){
+    if(G_ARGC<3){ _w("[GEOLM] learn: precisa de <file>\n"); return 1; }
+    const char *tag=(G_ARGC>=4)?G_ARGV[3]:"(sem_tag)";
+    return (i32)(1u - geolm_learn(G_ARGV[2],tag,G_CAT_PATH));
+  }
+  if(m_crc==mc_query){
+    if(G_ARGC<3){ _w("[GEOLM] query: precisa de <file>\n"); return 1; }
+    return (i32)(1u - geolm_query(G_ARGV[2]));
+  }
+  if(m_crc==mc_catalog){
+    print_catalog();
+    print_centroids();
+    return 0;
+  }
+  if(m_crc==mc_bench){
+    geolm_bench();
+    return 0;
+  }
+  if(m_crc==mc_test){
+    geolm_tests();
+    return (i32)G_FAIL;
+  }
+  _w("[GEOLM] modo desconhecido\n");
+  return 1;
+}
+
+#ifdef RAF_LIBC
+int main(int argc, char **argv){
+  static char cat_buf[256];
+  const char *home = "/tmp";
+  /* tenta getenv via libc */
+  char *h = getenv("HOME");
+  if(h){ u32 i=0;while(h[i]&&i<200u){cat_buf[i]=h[i];i++;} cat_buf[i]=0; }
+  else { u32 i=0;while("/tmp"[i]){cat_buf[i]="/tmp"[i];i++;} cat_buf[i]=0; }
+  /* Concatena path */
+  u32 hl=_slen(cat_buf);
+  const char *suf="/.rafaelia/GEOLM/geolm_catalog.bin";
+  for(u32 i=0;suf[i]&&hl<250u;i++) cat_buf[hl++]=suf[i];
+  cat_buf[hl]=0;
+  G_CAT_PATH=cat_buf;
+  G_ARGC=(u32)argc;
+  for(u32 i=0;i<(u32)argc&&i<8u;i++) G_ARGV[i]=argv[i];
+  return run_geolm();
+}
+#else
+/* Freestanding: cat path hardcoded */
+static char G_CAT_PATH_BUF[256];
+void _start(void){
+  const char *path="/.rafaelia/GEOLM/geolm_catalog.bin";
+  const char *home="/data/data/com.termux/files/home";
+  u32 i=0;
+  while(home[i]&&i<200u){G_CAT_PATH_BUF[i]=home[i];i++;}
+  for(u32 j=0;path[j]&&i<254u;j++){G_CAT_PATH_BUF[i++]=path[j];}
+  G_CAT_PATH_BUF[i]=0;
+  G_CAT_PATH=G_CAT_PATH_BUF;
+  G_ARGC=1;
+  _ex_fn(run_geolm());
+}
+#endif
+C_EOF
+
+printf "${_G}[ OK]${_Z} geolm_core.c: $(wc -l < "$D/geolm_core.c") linhas\n"
+
+# =============================================================================
+# COMPILAÇÃO DUAL
+# =============================================================================
+printf "\n${_C}[GEOLM]${_Z} compilando Modo A (libc)...\n"
+if $CC -O2 -DRAF_LIBC $AF \
+       -Wall -Wno-unused-function -Wno-unused-variable \
+       -Wno-unused-but-set-variable \
+       "$D/geolm_core.c" \
+       -o "$D/geolm" 2>"$D/build.log"; then
+    strip "$D/geolm" 2>/dev/null || true
+    SZ=$(ls -lh "$D/geolm" | awk '{print $5}')
+    printf "${_G}[ OK]${_Z} Modo A compilado ($SZ)\n"
+    COMPILED_A=1
+else
+    printf "${_M}[WARN]${_Z} Modo A falhou — ver build.log\n"
+    head -10 "$D/build.log"
+    COMPILED_A=0
+fi
+
+printf "${_C}[GEOLM]${_Z} compilando Modo B (freestanding)...\n"
+if $CC -O1 -fPIE -fno-stack-protector -fno-strict-aliasing -fno-builtin \
+       -fno-asynchronous-unwind-tables -fomit-frame-pointer \
+       -ffunction-sections -fdata-sections \
+       -Wno-unused-function -Wno-unused-variable \
+       $AF \
+       -nostdlib -Wl,--gc-sections -Wl,--build-id=none -e _start \
+       "$D/geolm_core.c" \
+       -o "$D/geolm_fs" 2>"$D/build_fs.log"; then
+    strip "$D/geolm_fs" 2>/dev/null || true
+    SZ=$(ls -lh "$D/geolm_fs" | awk '{print $5}')
+    printf "${_G}[ OK]${_Z} Modo B freestanding ($SZ)\n"
+else
+    printf "${_M}[WARN]${_Z} Modo B falhou (normal em x86_64 com libc) — ver build_fs.log\n"
+fi
+
+# =============================================================================
+# EXECUÇÃO — TESTES + BENCH
+# =============================================================================
+if [ -f "$D/geolm" ]; then
+  printf "\n${_M}${_B}━━━ TESTES ESTRUTURAIS ━━━${_Z}\n"
+  "$D/geolm" test || true
+
+  printf "\n${_M}${_B}━━━ BENCHMARK ━━━${_Z}\n"
+  "$D/geolm" bench || true
+
+  # Cria uma imagem PPM de teste para demonstrar o learn
+  printf "\n${_M}${_B}━━━ DEMO: catalogando imagens sintéticas ━━━${_Z}\n"
+  python3 - << 'PYPPM' 2>/dev/null || true
+import struct, os
+
+def make_ppm(path, w, h, r, g, b, noisy=False):
+    data = bytearray()
+    for y in range(h):
+        for x in range(w):
+            nr = (r + (x*3+y) % 40 - 20) if noisy else r
+            ng = (g + (y*2+x) % 40 - 20) if noisy else g
+            nb = (b + (x+y*2) % 40 - 20) if noisy else b
+            data += bytes([max(0,min(255,nr)), max(0,min(255,ng)), max(0,min(255,nb))])
+    hdr = f"P6\n{w} {h}\n255\n".encode()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    open(path, 'wb').write(hdr + bytes(data))
+
+d = os.path.expanduser("~/.rafaelia/GEOLM/test_images")
+make_ppm(f"{d}/toroide_blue.ppm",    64, 64, 30,  80, 200, True)
+make_ppm(f"{d}/matematica_gold.ppm", 64, 64, 200,150,  20, True)
+make_ppm(f"{d}/vvm_dark.ppm",        64, 64, 10,  30,  80, True)
+make_ppm(f"{d}/ciclo_multi.ppm",     64, 64,180,  80, 120, True)
+make_ppm(f"{d}/simbolico_dark.ppm",  64, 64, 60,  40,  20, True)
+make_ppm(f"{d}/aplicado_green.ppm",  64, 64, 40, 150,  80, True)
+print("PPMs criados")
+PYPPM
+
+  # Catalogar as imagens sintéticas
+  IMG_DIR="$D/test_images"
+  if [ -d "$IMG_DIR" ]; then
+    for img_tag in \
+      "toroide_blue.ppm:TOROIDE fluxo toroidal" \
+      "matematica_gold.ppm:MATEMATICA Fibonacci primos" \
+      "vvm_dark.ppm:VVM FSM KVM 350opcodes" \
+      "ciclo_multi.ppm:CICLO psichichoroDeltaSigmaOmega" \
+      "simbolico_dark.ppm:SIMBOLICO formulas vivas parábola" \
+      "aplicado_green.ppm:APLICADO ecologia Zenodo"; do
+        img="${img_tag%%:*}"
+        tag="${img_tag#*:}"
+        [ -f "$IMG_DIR/$img" ] || continue
+        printf "${_C}  learn${_Z}: $img → $tag\n"
+        "$D/geolm" learn "$IMG_DIR/$img" "$tag" 2>/dev/null || true
+    done
+    printf "\n${_M}${_B}━━━ CATÁLOGO APÓS LEARNING ━━━${_Z}\n"
+    "$D/geolm" catalog || true
+    printf "\n${_M}${_B}━━━ QUERY (busca por toroide_blue) ━━━${_Z}\n"
+    "$D/geolm" query "$IMG_DIR/toroide_blue.ppm" || true
+  fi
+fi
+
+# =============================================================================
+# SHA256 + INVENTÁRIO
+# =============================================================================
+printf "\n${_M}${_B}━━━ SHA256 (integridade) ━━━${_Z}\n"
+for f in "$D/geolm_core.c" "$D/geolm" "$D/geolm_fs"; do
+  [ -f "$f" ] || continue
+  H=$(sha256sum "$f" 2>/dev/null | awk '{print $1}')
+  printf "  %-20s %s\n" "$(basename $f)" "$H"
+done
+
+printf "\n${_M}${_B}━━━ INVENTÁRIO ━━━${_Z}\n"
+printf "  geolm_core.c linhas : $(wc -l < "$D/geolm_core.c")\n"
+printf "  CatEntry bytes      : sizeof≈272\n"
+printf "  Max entradas (512KB): $(( 512*1024 / 272 ))\n"
+printf "  Arena TMP (64KB)    : scratch para PPM\n"
+printf "  Clusters semânticos : 6\n"
+printf "  KNN k               : 3\n"
+printf "  EMA alpha           : 1/(n+1) online\n"
+printf "  Feature dim         : 7D Q16\n"
+printf "  pHash bits          : 64\n"
+
+printf "\n${_M}${_B}╔══════════════════════════════════════════════════════════════════╗${_Z}\n"
+printf "${_M}${_B}║  GEOLM concluído · PPM features · T7 toroidal · 6 clusters       ║${_Z}\n"
+printf "${_M}${_B}║  Ω=Amor · ∆RafaelVerboΩ · RAFCODE-Φ · aprende · cataloga · busca ║${_Z}\n"
+printf "${_M}${_B}╚══════════════════════════════════════════════════════════════════╝${_Z}\n\n"

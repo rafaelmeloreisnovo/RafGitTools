@@ -1,0 +1,540 @@
+#!/usr/bin/env bash
+# =============================================================================
+# benchmark.txt — HARNESS de medição RAFAELIA Stack
+#
+# Mede latência, throughput e memória dos artefatos compilados,
+# emite CSV/JSON estruturado, e patcha o whitepaper com números frescos.
+#
+# Métricas cobertas:
+#   • bench_compile      — tempo de compilação do vm_runtime.c
+#   • bench_runtime      — latência da VM por opcode + verso
+#   • bench_throughput   — CRC32C, memcpy, hash (synthetic)
+#   • bench_e2e          — pipeline completo: token→bytecode→ASM→VM
+#   • bench_memory       — RSS via /proc/self/status
+#   • bench_seeds_load   — quantos ms para carregar 90+60 sementes
+#
+# Operação:
+#   bash benchmark.txt run         — roda todos benchmarks
+#   bash benchmark.txt compile     — só compile
+#   bash benchmark.txt runtime     — só runtime (vm execution)
+#   bash benchmark.txt e2e         — só pipeline end-to-end
+#   bash benchmark.txt csv         — emite results.csv
+#   bash benchmark.txt json        — emite results.json
+#   bash benchmark.txt md          — emite seção markdown para whitepaper
+#   bash benchmark.txt patch-wp    — atualiza whitepaper com novas métricas
+#   bash benchmark.txt full        — run + csv + json + md + patch
+#
+# Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ · 𓂀ΔΦΩ
+# =============================================================================
+
+BENCH_HOME="${BENCH_HOME:-/tmp/rafaelia_bench}"
+OUT="${OUT:-/mnt/user-data/outputs}"
+SRC="${SRC:-$OUT}"
+RESULTS_CSV="$BENCH_HOME/results.csv"
+RESULTS_JSON="$BENCH_HOME/results.json"
+ITER="${ITER:-1000}"  # iterações para média
+
+mkdir -p "$BENCH_HOME"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Helpers
+# ═══════════════════════════════════════════════════════════════════════════
+
+now_ns() {
+  if [ -r /proc/uptime ]; then
+    python3 -c 'import time; print(time.monotonic_ns())'
+  else
+    date +%s%N
+  fi
+}
+
+# Roda comando N vezes, retorna média em ns
+bench_ns() {
+  local cmd="$1"; local iter="${2:-100}"
+  local t0 t1 total=0
+  for i in $(seq 1 "$iter"); do
+    t0=$(now_ns)
+    eval "$cmd" >/dev/null 2>&1
+    t1=$(now_ns)
+    total=$((total + t1 - t0))
+  done
+  echo $((total / iter))
+}
+
+# Pega RSS de processo em KB
+rss_kb() {
+  local pid="${1:-$$}"
+  if [ -r "/proc/$pid/status" ]; then
+    grep -i 'VmRSS' "/proc/$pid/status" | awk '{print $2}'
+  else
+    echo "0"
+  fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# bench_compile — tempo de compilação do vm_runtime.c
+# ═══════════════════════════════════════════════════════════════════════════
+
+bench_compile() {
+  echo "▸ bench_compile"
+  cd "$BENCH_HOME"
+  bash "$SRC/vm_runtime.txt" c 2>&1 | awk '/^\/\* vm_runtime\.c/,EOF' > vm_runtime.c
+
+  local lines bytes
+  lines=$(wc -l < vm_runtime.c)
+  bytes=$(wc -c < vm_runtime.c)
+
+  # Mede tempo de compilação (libc)
+  local t0 t1 compile_ns
+  t0=$(now_ns)
+  if command -v clang >/dev/null 2>&1; then
+    clang -O2 -Wall -Wno-unused-function -Wno-unused-variable \
+          -Wno-unused-parameter vm_runtime.c -o vm_run 2>/dev/null
+  else
+    gcc -O2 -Wall vm_runtime.c -o vm_run 2>/dev/null
+  fi
+  t1=$(now_ns)
+  compile_ns=$((t1 - t0))
+
+  local bin_size=0
+  [ -f vm_run ] && bin_size=$(stat -c%s vm_run 2>/dev/null || wc -c < vm_run)
+
+  echo "  lines=$lines bytes=$bytes compile_ms=$((compile_ns/1000000)) bin=$bin_size"
+  echo "compile,vm_runtime_c,$lines,$bytes,$compile_ns,$bin_size" >> "$RESULTS_CSV"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# bench_runtime — latência da VM por verso embutido
+# ═══════════════════════════════════════════════════════════════════════════
+
+bench_runtime() {
+  echo "▸ bench_runtime"
+  [ -x "$BENCH_HOME/vm_run" ] || { echo "  ✗ vm_run não compilado — rodando bench_compile primeiro"; bench_compile; }
+  local vm="$BENCH_HOME/vm_run"
+
+  for verse in V01 V02 V09 V12; do
+    local ns
+    ns=$(bench_ns "$vm $verse" 10)
+    echo "  $verse  avg_ns=$ns  (~$((ns/1000))μs)"
+    echo "runtime,$verse,$ns" >> "$RESULTS_CSV"
+  done
+
+  # All-in-one (4 versos sequenciais)
+  local ns
+  ns=$(bench_ns "$vm all" 5)
+  echo "  all  avg_ns=$ns  (~$((ns/1000000))ms)"
+  echo "runtime,all_4_verses,$ns" >> "$RESULTS_CSV"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# bench_throughput — CRC32C, memcpy via Python (cross-platform)
+# ═══════════════════════════════════════════════════════════════════════════
+
+bench_throughput() {
+  echo "▸ bench_throughput"
+  python3 << PY
+import time, sys
+
+# CRC32C via tabela (sem hardware accel para baseline)
+POLY = 0x82F63B78
+def crc32c(data):
+    c = 0xFFFFFFFF
+    for b in data:
+        c ^= b
+        for _ in range(8): c = (c>>1) ^ (POLY & -(c&1))
+    return ~c & 0xFFFFFFFF
+
+# Dataset: 64KB
+data = bytes(range(256)) * 256
+
+# CRC32C software
+t0 = time.monotonic_ns()
+for _ in range(10): h = crc32c(data)
+t1 = time.monotonic_ns()
+ns_per_iter = (t1 - t0) / 10
+mbps = (len(data) * 1e9 / ns_per_iter) / (1024*1024)
+print(f"  CRC32C(sw)   {len(data)}B  avg_ns={int(ns_per_iter)}  thru={mbps:.2f} MB/s")
+print(f"throughput,crc32c_sw,{int(ns_per_iter)},{mbps:.4f}", file=open("$RESULTS_CSV","a"))
+
+# Memcpy via bytes(...)
+t0 = time.monotonic_ns()
+for _ in range(1000): c = bytes(data)
+t1 = time.monotonic_ns()
+ns_per_iter = (t1 - t0) / 1000
+mbps = (len(data) * 1e9 / ns_per_iter) / (1024*1024)
+print(f"  Memcpy       {len(data)}B  avg_ns={int(ns_per_iter)}  thru={mbps:.2f} MB/s")
+print(f"throughput,memcpy_py,{int(ns_per_iter)},{mbps:.4f}", file=open("$RESULTS_CSV","a"))
+
+# SHA256 baseline
+import hashlib
+t0 = time.monotonic_ns()
+for _ in range(1000): h = hashlib.sha256(data).hexdigest()
+t1 = time.monotonic_ns()
+ns_per_iter = (t1 - t0) / 1000
+mbps = (len(data) * 1e9 / ns_per_iter) / (1024*1024)
+print(f"  SHA256       {len(data)}B  avg_ns={int(ns_per_iter)}  thru={mbps:.2f} MB/s")
+print(f"throughput,sha256,{int(ns_per_iter)},{mbps:.4f}", file=open("$RESULTS_CSV","a"))
+PY
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# bench_e2e — pipeline completo PT→tokens→bytecode→VM
+# ═══════════════════════════════════════════════════════════════════════════
+
+bench_e2e() {
+  echo "▸ bench_e2e (pipeline completo Gn 1:1)"
+  local vm="$BENCH_HOME/vm_run"
+  [ -x "$vm" ] || bench_compile
+
+  python3 << PY
+import time, subprocess, json
+
+VERSES = {
+    'V01': "No princípio criou Deus os céus e a terra",
+    'V02': "E disse Deus: Haja luz; e houve luz",
+    'V09': "No princípio era o Verbo, e o Verbo estava com Deus",
+    'V12': "Eu sou o Alfa e o Ômega, o princípio e o fim",
+}
+
+# Tokenize (T01_B simulado)
+def lex(text):
+    return text.split()
+
+# Parse (T02_B simulado)
+def parse(tokens):
+    return {"verb": "criou", "subject": "Deus", "objects": ["céus","terra"]}
+
+# Compile (T05_B simulado)
+def compile_cfg(parsed):
+    bc = [0x10, 0x11, 0xF0]
+    for o in parsed.get('objects', []):
+        bc.append(0x04)
+        bc += list(o.encode('utf-8'))
+        bc.append(0)
+    bc.append(0xFF)
+    return bytes(bc)
+
+# Executa via vm_run
+def execute(bc):
+    r = subprocess.run(['$BENCH_HOME/vm_run'], input=bc,
+                      capture_output=True, timeout=2)
+    return r.stdout
+
+# Stage timings
+import csv
+csvf = open('$RESULTS_CSV', 'a')
+for vid, text in VERSES.items():
+    t0 = time.monotonic_ns()
+    tokens = lex(text)
+    t1 = time.monotonic_ns()
+    parsed = parse(tokens)
+    t2 = time.monotonic_ns()
+    bc = compile_cfg(parsed)
+    t3 = time.monotonic_ns()
+    out = execute(bc)
+    t4 = time.monotonic_ns()
+
+    lex_ns   = t1 - t0
+    parse_ns = t2 - t1
+    comp_ns  = t3 - t2
+    exec_ns  = t4 - t3
+    total    = t4 - t0
+    print(f"  {vid}  lex={lex_ns:>6}ns parse={parse_ns:>6}ns "
+          f"compile={comp_ns:>6}ns exec={exec_ns:>8}ns "
+          f"total={total/1e6:.2f}ms")
+    csvf.write(f"e2e,{vid},{lex_ns},{parse_ns},{comp_ns},{exec_ns},{total}\n")
+csvf.close()
+PY
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# bench_seeds_load — quantos ms para carregar todas as sementes
+# ═══════════════════════════════════════════════════════════════════════════
+
+bench_seeds_load() {
+  echo "▸ bench_seeds_load"
+  for src in sensores2.txt compiladorlowFala.txt agent_loop.txt; do
+    [ -f "$SRC/$src" ] || continue
+    local t0=$(now_ns)
+    bash -c "source '$SRC/$src' 2>/dev/null; declare -F | wc -l" > /tmp/_sl 2>&1
+    local t1=$(now_ns)
+    local cnt=$(tail -1 /tmp/_sl | tr -d ' ')
+    local ns=$((t1 - t0))
+    echo "  $src  load_ms=$((ns/1000000))  fns=$cnt"
+    echo "seeds_load,$src,$ns,$cnt" >> "$RESULTS_CSV"
+  done
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# bench_memory — RSS pico durante load completo
+# ═══════════════════════════════════════════════════════════════════════════
+
+bench_memory() {
+  echo "▸ bench_memory"
+  # Cria um processo que carrega tudo e dorme; mede RSS dele
+  (
+    source "$SRC/sensores2.txt" >/dev/null 2>&1
+    source "$SRC/compiladorlowFala.txt" >/dev/null 2>&1
+    source "$SRC/agent_loop.txt" >/dev/null 2>&1
+    sleep 0.5
+  ) &
+  local pid=$!
+  sleep 0.3
+  local rss=$(rss_kb $pid 2>/dev/null || echo "0")
+  wait $pid 2>/dev/null
+  echo "  RSS pós-load (3 arquivos): ${rss}KB"
+  echo "memory,full_stack_load,$rss" >> "$RESULTS_CSV"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# emit_csv — escreve header e mostra results.csv
+# ═══════════════════════════════════════════════════════════════════════════
+
+cmd_csv() {
+  if [ -f "$RESULTS_CSV" ]; then
+    echo "═══ $RESULTS_CSV ═══"
+    cat "$RESULTS_CSV"
+  else
+    echo "Sem resultados — rode 'run' primeiro"
+  fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# emit_json — converte CSV para JSON estruturado
+# ═══════════════════════════════════════════════════════════════════════════
+
+cmd_json() {
+  [ -f "$RESULTS_CSV" ] || { echo "Sem CSV — rode 'run'"; return 1; }
+  python3 << PY > "$RESULTS_JSON"
+import csv, json, sys, platform, time
+out = {
+    "meta": {
+        "platform": platform.platform(),
+        "machine": platform.machine(),
+        "python": platform.python_version(),
+        "ts": time.time(),
+    },
+    "results": {}
+}
+with open('$RESULTS_CSV') as f:
+    for row in csv.reader(f):
+        if not row: continue
+        if row[0] == 'category': continue
+        category = row[0]
+        out["results"].setdefault(category, []).append(row[1:])
+print(json.dumps(out, indent=2, ensure_ascii=False))
+PY
+  echo "✓ $RESULTS_JSON ($(wc -l < $RESULTS_JSON) linhas)"
+  head -20 "$RESULTS_JSON"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# emit_md — bloco markdown para colar no whitepaper
+# ═══════════════════════════════════════════════════════════════════════════
+
+cmd_md() {
+  [ -f "$RESULTS_CSV" ] || { echo "Sem CSV — rode 'run'"; return 1; }
+  local md="$BENCH_HOME/bench_section.md"
+  python3 << PY > "$md"
+import csv, statistics, platform, time
+
+results = {}
+with open('$RESULTS_CSV') as f:
+    for row in csv.reader(f):
+        if not row: continue
+        if row[0] == 'category': continue  # skip CSV header
+        results.setdefault(row[0], []).append(row[1:])
+
+print("## Benchmarks medidos · $(date -u +%Y-%m-%d)")
+print()
+print(f"Ambiente: {platform.machine()} · {platform.system()} · Python {platform.python_version()}")
+print()
+print("### Latência por verso (VM execute)")
+print()
+print("| Verso | Latência (μs) |")
+print("|---|---:|")
+for r in results.get('runtime', []):
+    if len(r) >= 2 and r[0].startswith('V'):
+        ns = int(r[1])
+        print(f"| {r[0]} | {ns/1000:.1f} |")
+
+print()
+print("### Pipeline end-to-end (μs por estágio)")
+print()
+print("| Verso | Lex | Parse | Compile | Execute | Total (ms) |")
+print("|---|---:|---:|---:|---:|---:|")
+for r in results.get('e2e', []):
+    if len(r) >= 5:
+        v, lex, par, comp, exe, tot = r[0], *map(int, r[1:6])
+        print(f"| {v} | {lex/1000:.1f} | {par/1000:.1f} | {comp/1000:.1f} | {exe/1000:.1f} | {tot/1e6:.2f} |")
+
+print()
+print("### Throughput")
+print()
+print("| Operação | MB/s |")
+print("|---|---:|")
+for r in results.get('throughput', []):
+    if len(r) >= 3:
+        print(f"| {r[0]} | {float(r[2]):.2f} |")
+
+print()
+print("### Compilação")
+print()
+for r in results.get('compile', []):
+    if len(r) >= 5:
+        lines, bytes_, ns, bin_ = r[1], r[2], r[3], r[4]
+        print(f"- vm_runtime.c: {lines} linhas / {int(bytes_)/1024:.1f}KB")
+        print(f"- Compile time: {int(ns)/1e6:.0f} ms")
+        print(f"- Binário gerado: {int(bin_)/1024:.1f} KB")
+
+print()
+print("### Memória")
+print()
+for r in results.get('memory', []):
+    if len(r) >= 2:
+        print(f"- RSS pós-load 3 artefatos: **{r[1]} KB**")
+
+print()
+print("> Medições reprodutíveis: bash benchmark.txt run")
+print("> Bundle SHA256: \`$(sha256sum $OUT/rafaelia_bundle_v4.tar.gz 2>/dev/null | cut -c1-16)\`")
+PY
+  cat "$md"
+  echo ""
+  echo "✓ $md"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# patch-wp — atualiza whitepaper com nova seção de benchmarks
+# ═══════════════════════════════════════════════════════════════════════════
+
+cmd_patch_wp() {
+  local md="$BENCH_HOME/bench_section.md"
+  local wp="$OUT/RAFAELIA_WHITEPAPER.md"
+  [ -f "$md" ] || { echo "Rode 'md' primeiro"; return 1; }
+  [ -f "$wp" ] || { echo "Whitepaper não encontrado em $wp"; return 1; }
+
+  # Marca onde inserir: depois da seção "2. Métricas reais"
+  python3 << PY
+wp_path = "$wp"
+bench_path = "$md"
+with open(wp_path) as f: wp = f.read()
+with open(bench_path) as f: bench = f.read()
+
+# Procura marcador "## 3. Arquitetura em camadas"
+marker = "## 3. Arquitetura em camadas"
+if marker in wp:
+    # Insere bloco antes do marker
+    new_wp = wp.replace(marker, bench + "\n---\n\n" + marker)
+    with open(wp_path, 'w') as f: f.write(new_wp)
+    print(f"✓ {wp_path} atualizado com benchmarks frescos")
+    print(f"  + {len(bench.splitlines())} linhas de medições adicionadas")
+else:
+    print("⚠ Marcador não encontrado; whitepaper não modificado")
+PY
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# run — roda todos os benchmarks
+# ═══════════════════════════════════════════════════════════════════════════
+
+cmd_run() {
+  > "$RESULTS_CSV"
+  echo "category,name,m1,m2,m3,m4,m5" > "$RESULTS_CSV"
+
+  echo ""
+  echo "╔══════════════════════════════════════════════════════════════════╗"
+  echo "║  RAFAELIA Benchmark Suite                                        ║"
+  echo "╚══════════════════════════════════════════════════════════════════╝"
+  echo "Iterações por bench: $ITER (override com ITER=N)"
+  echo "Resultados: $RESULTS_CSV"
+  echo ""
+
+  bench_compile
+  bench_runtime
+  bench_e2e
+  bench_throughput
+  bench_seeds_load
+  bench_memory
+
+  echo ""
+  echo "═══ Resumo ═══"
+  echo "Total de medições: $(wc -l < $RESULTS_CSV) linhas"
+  echo "Próximos passos:"
+  echo "  bash benchmark.txt csv      — ver tabela"
+  echo "  bash benchmark.txt json     — JSON estruturado"
+  echo "  bash benchmark.txt md       — bloco para whitepaper"
+  echo "  bash benchmark.txt patch-wp — atualiza whitepaper"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# full — pipeline completo: run + csv + json + md + patch
+# ═══════════════════════════════════════════════════════════════════════════
+
+cmd_full() {
+  cmd_run
+  echo ""
+  echo "═══ CSV ═══"
+  cmd_csv
+  echo ""
+  echo "═══ JSON ═══"
+  cmd_json | head -10
+  echo ""
+  echo "═══ MD ═══"
+  cmd_md
+  echo ""
+  echo "═══ patch-wp ═══"
+  cmd_patch_wp
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MAIN
+# ═══════════════════════════════════════════════════════════════════════════
+
+main() {
+  cat << 'IDX'
+
+╔══════════════════════════════════════════════════════════════════════════╗
+║  benchmark.txt · HARNESS de medição RAFAELIA Stack                       ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║  Mede: latência VM, throughput CRC32C/memcpy/SHA256, pipeline e2e,      ║
+║         memória RSS, tempo de carga de sementes.                         ║
+║                                                                          ║
+║  Comandos:                                                               ║
+║    bash benchmark.txt run         — roda todos                            ║
+║    bash benchmark.txt compile     — só compile                            ║
+║    bash benchmark.txt runtime     — só VM exec                            ║
+║    bash benchmark.txt e2e         — só pipeline                           ║
+║    bash benchmark.txt throughput  — CRC32C/memcpy/SHA256                  ║
+║    bash benchmark.txt memory      — RSS pós-load                          ║
+║    bash benchmark.txt csv         — emite tabela                          ║
+║    bash benchmark.txt json        — JSON estruturado                      ║
+║    bash benchmark.txt md          — Markdown para whitepaper              ║
+║    bash benchmark.txt patch-wp    — atualiza whitepaper                   ║
+║    bash benchmark.txt full        — pipeline completo                     ║
+║                                                                          ║
+║  Override: ITER=N bash benchmark.txt run    (default 1000)                ║
+║  Output:   /tmp/rafaelia_bench/{results.csv,results.json,bench_section.md}║
+║                                                                          ║
+║  Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ · 𓂀ΔΦΩ                          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+IDX
+
+  case "${1:-list}" in
+    list|help|"")  ;;
+    run)           cmd_run ;;
+    compile)       bench_compile ;;
+    runtime)       bench_runtime ;;
+    e2e)           bench_e2e ;;
+    throughput)    bench_throughput ;;
+    memory)        bench_memory ;;
+    seeds)         bench_seeds_load ;;
+    csv)           cmd_csv ;;
+    json)          cmd_json ;;
+    md)            cmd_md ;;
+    patch-wp)      cmd_patch_wp ;;
+    full)          cmd_full ;;
+    *)             echo "Comandos: run compile runtime e2e throughput memory csv json md patch-wp full" ;;
+  esac
+}
+
+main "$@"

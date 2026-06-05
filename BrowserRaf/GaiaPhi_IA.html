@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GaiaPhi IA</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e14;--bg2:#111620;--bg3:#1a2030;
+  --c:#00e5ff;--g:#00ff88;--m:#b060ff;--y:#ffd700;
+  --r:#ff4444;--w:#e8eaf0;--dim:#607080;
+  --br:8px;
+}
+body{background:var(--bg);color:var(--w);font-family:'Courier New',monospace;font-size:14px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+#logo{padding:12px 16px;border-bottom:1px solid #1e2d40;background:var(--bg2);flex-shrink:0}
+.logo-row{display:flex;align-items:center;gap:12px}
+.logo-tag{font-size:11px;color:var(--dim);line-height:1.6}
+.logo-name{font-size:18px;font-weight:700;color:var(--c);letter-spacing:2px}
+.flags{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+.fl{font-size:10px;padding:2px 6px;border-radius:3px;border:1px solid;transition:all .15s}
+.fl.on{background:var(--c);border-color:var(--c);color:#000}
+.fl.off{border-color:#1e2d40;color:var(--dim)}
+.fl.err{background:var(--r);border-color:var(--r);color:#fff}
+#msgs{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:12px}
+.msg{display:flex;flex-direction:column;gap:4px;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.msg.user{align-items:flex-end}
+.msg.ai{align-items:flex-start}
+.msg-label{font-size:10px;color:var(--dim);margin-bottom:2px}
+.bubble{max-width:85%;padding:10px 14px;border-radius:var(--br);line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.msg.user .bubble{background:var(--bg3);border:1px solid #1e3a55;color:var(--w)}
+.msg.ai .bubble{background:#0d1a0d;border:1px solid #1a3a1a;color:#cce8cc}
+.msg.sys .bubble{background:#1a1200;border:1px solid #3a2a00;color:var(--y);font-size:12px}
+.meta{font-size:10px;color:var(--dim)}
+.typing{display:flex;gap:4px;align-items:center;padding:10px 14px;background:#0d1a0d;border:1px solid #1a3a1a;border-radius:var(--br);width:fit-content}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--g);animation:pulse 1s infinite}
+.dot:nth-child(2){animation-delay:.2s}
+.dot:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+#bar{padding:10px 16px;border-top:1px solid #1e2d40;background:var(--bg2);flex-shrink:0;display:flex;gap:8px;align-items:flex-end}
+#inp{flex:1;background:var(--bg3);border:1px solid #1e3a55;color:var(--w);padding:8px 12px;border-radius:var(--br);font-family:inherit;font-size:14px;resize:none;min-height:40px;max-height:120px;outline:none;line-height:1.5}
+#inp:focus{border-color:var(--c)}
+#inp::placeholder{color:var(--dim)}
+.btn{background:transparent;border:1px solid;border-radius:var(--br);padding:8px 14px;font-family:inherit;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.btn-send{border-color:var(--c);color:var(--c);height:40px}
+.btn-send:hover:not(:disabled){background:var(--c);color:#000}
+.btn-send:disabled{opacity:.4;cursor:not-allowed}
+.btn-sm{border-color:#1e2d40;color:var(--dim);height:40px;font-size:11px}
+.btn-sm:hover{border-color:var(--m);color:var(--m)}
+#key-banner{background:#1a0a00;border:1px solid #4a2a00;border-radius:var(--br);padding:12px 16px;margin:0 16px 12px;color:var(--y);font-size:12px;display:flex;align-items:center;gap:10px}
+#key-inp{flex:1;background:#0a0600;border:1px solid #3a2a00;color:var(--y);padding:6px 10px;border-radius:4px;font-family:inherit;font-size:12px;outline:none}
+.code{background:var(--bg3);border:1px solid #1e2d40;border-radius:4px;padding:2px 6px;font-family:monospace;font-size:12px;color:var(--c)}
+</style>
+</head>
+<body>
+
+<div id="logo">
+  <div class="logo-row">
+    <div>
+      <div class="logo-name">GΦ GAIAPHI</div>
+      <div class="logo-tag">freestanding · nolibc · nomalloc · Ω=Amor · F*=23.158</div>
+    </div>
+    <div style="margin-left:auto;text-align:right">
+      <div id="model-lbl" style="font-size:10px;color:var(--dim)">claude-sonnet-4-20250514</div>
+      <div id="arch-lbl" style="font-size:10px;color:var(--m)">ARM64/x86-64 · HTTP raw</div>
+    </div>
+  </div>
+  <div class="flags" id="flags">
+    <span class="fl off" id="fl-key" title="KEY">KEY</span>
+    <span class="fl off" id="fl-net" title="NET">NET</span>
+    <span class="fl off" id="fl-tx"  title="TX">TX</span>
+    <span class="fl off" id="fl-rx"  title="RX">RX</span>
+    <span class="fl off" id="fl-prs" title="PARSE">PARSE</span>
+    <span class="fl off" id="fl-err" title="ERR">ERR</span>
+    <span class="fl off" id="fl-done" title="DONE">DONE</span>
+  </div>
+</div>
+
+<div id="key-banner">
+  <span>⚙</span>
+  <span>API Key:</span>
+  <input id="key-inp" type="password" placeholder="sk-ant-..." autocomplete="off">
+  <button class="btn btn-sm" onclick="saveKey()">Guardar</button>
+</div>
+
+<div id="msgs" aria-live="polite" aria-label="Conversa com GaiaPhi IA"></div>
+
+<div id="bar">
+  <textarea id="inp" placeholder="/help para comandos · Enter para enviar · Shift+Enter nova linha" rows="1"></textarea>
+  <button class="btn btn-sm" onclick="clearCtx()">Reset</button>
+  <button class="btn btn-send" id="btn-send" onclick="send()" disabled>Enviar ↗</button>
+</div>
+
+<script>
+const M='claude-sonnet-4-20250514'
+const SYS='Você é GaiaPhi, uma IA monolito freestanding sem abstração. Responda de forma directa, densa, precisa. Absorba fricção. GaiaPhi=Omega=Amor=F*23.158.'
+let KEY=''
+let HIST=[]
+let HC=0
+let LAST=''
+let BUSY=false
+
+const $=id=>document.getElementById(id)
+const msgs=$('msgs')
+const inp=$('inp')
+const btn=$('btn-send')
+
+const FL={key:'fl-key',net:'fl-net',tx:'fl-tx',rx:'fl-rx',prs:'fl-prs',err:'fl-err',done:'fl-done'}
+
+function ff(f,on,err=false){
+  const el=$(FL[f])
+  if(!el)return
+  el.className='fl '+(err?'err':on?'on':'off')
+}
+function ffAll(off=true){Object.keys(FL).forEach(k=>ff(k,false))}
+
+function saveKey(){
+  const v=$('key-inp').value.trim()
+  if(!v)return
+  KEY=v
+  $('key-banner').style.display='none'
+  btn.disabled=false
+  sysMsg('✓ API key guardada. Podes começar a conversar.')
+  ff('key',true)
+  setTimeout(()=>ff('key',false),1500)
+}
+
+function sysMsg(txt,cls='sys'){
+  const d=document.createElement('div')
+  d.className='msg '+cls
+  d.innerHTML=`<div class="bubble">${esc(txt)}</div>`
+  msgs.appendChild(d)
+  scroll()
+}
+
+function addMsg(role,text,meta=''){
+  const d=document.createElement('div')
+  d.className='msg '+role
+  const label=role==='user'?'Você':'GΦ'
+  d.innerHTML=`<div class="msg-label">${label}</div><div class="bubble">${esc(text)}</div>${meta?`<div class="meta">${meta}</div>`:''}`
+  msgs.appendChild(d)
+  scroll()
+  return d
+}
+
+function showTyping(){
+  const d=document.createElement('div')
+  d.className='msg ai'
+  d.id='typing-ind'
+  d.innerHTML=`<div class="msg-label">GΦ</div><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`
+  msgs.appendChild(d)
+  scroll()
+}
+
+function removeTyping(){
+  const t=$('typing-ind')
+  if(t)t.remove()
+}
+
+function scroll(){msgs.scrollTop=msgs.scrollHeight}
+
+function esc(s){
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/\n/g,'<br>')
+}
+
+function jesc(s){
+  return s
+    .replace(/\\/g,'\\\\')
+    .replace(/"/g,'\\"')
+    .replace(/\n/g,'\\n')
+    .replace(/\r/g,'\\r')
+    .replace(/\t/g,'\\t')
+}
+
+async function apiCall(question){
+  HIST.push({role:'user',content:question})
+  HC++
+
+  const body=JSON.stringify({
+    model:M,
+    max_tokens:2048,
+    system:SYS,
+    messages:HIST
+  })
+
+  ff('tx',true)
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':KEY,
+      'anthropic-version':'2023-06-01'
+    },
+    body
+  })
+  ff('tx',false)
+  ff('rx',true)
+  const data=await resp.json()
+  ff('rx',false)
+  ff('prs',true)
+
+  if(!resp.ok){
+    ff('prs',false)
+    ff('err',true,true)
+    setTimeout(()=>ff('err',false),2000)
+    const msg=data?.error?.message||`HTTP ${resp.status}`
+    throw new Error(msg)
+  }
+
+  const text=data?.content?.[0]?.text||'[resposta vazia]'
+  const usage=data?.usage
+  const meta=usage?`in=${usage.input_tokens} out=${usage.output_tokens} · turno ${HC}`:''
+
+  HIST.push({role:'assistant',content:text})
+  LAST=text
+  ff('prs',false)
+  ff('done',true)
+  setTimeout(()=>ff('done',false),800)
+
+  return{text,meta}
+}
+
+function clearCtx(){
+  HIST=[];HC=0;LAST=''
+  sysMsg('↺ Contexto resetado — nova conversa linear.')
+}
+
+async function handleCmd(raw){
+  const cmd=raw.trim()
+  if(cmd==='/help'||cmd==='/?'){
+    sysMsg(`Comandos GaiaPhi:
+/help        → esta ajuda
+/reset       → limpa contexto
+/hist        → mostra tamanho do histórico
+/flags       → estado dos flip-flops
+/save        → copia última resposta
+/clear       → limpa ecrã
+<texto>      → envia à IA`)
+    return true
+  }
+  if(cmd==='/reset'){clearCtx();return true}
+  if(cmd==='/hist'){
+    const bytes=JSON.stringify(HIST).length
+    sysMsg(`Turnos: ${HC} · Histórico: ${bytes}B · Mensagens: ${HIST.length}`)
+    return true
+  }
+  if(cmd==='/flags'){
+    sysMsg(`Flip-flops: KEY=0 NET=0 TX=0 RX=0 PARSE=0 ERR=0 DONE=0\nRegistrador F=0x00 (idle)`)
+    return true
+  }
+  if(cmd==='/save'||cmd==='/post'){
+    if(!LAST){sysMsg('[POST] Sem resposta para guardar ainda');return true}
+    try{
+      await navigator.clipboard.writeText(LAST)
+      sysMsg('✓ Última resposta copiada para clipboard.')
+    }catch{sysMsg('[POST] Não foi possível aceder ao clipboard.')}
+    return true
+  }
+  if(cmd==='/clear'){msgs.innerHTML='';return true}
+  return false
+}
+
+async function send(){
+  if(BUSY||!KEY)return
+  const q=inp.value.trim()
+  if(!q)return
+  inp.value=''
+  inp.style.height='40px'
+  BUSY=true
+  btn.disabled=true
+
+  const isCmd=await handleCmd(q)
+  if(isCmd){BUSY=false;btn.disabled=false;return}
+
+  addMsg('user',q)
+  showTyping()
+  ff('net',true)
+
+  try{
+    const{text,meta}=await apiCall(q)
+    removeTyping()
+    ff('net',false)
+    addMsg('ai',text,meta)
+  }catch(e){
+    removeTyping()
+    ff('net',false)
+    sysMsg(`[ERR] ${e.message}`)
+  }
+
+  BUSY=false
+  btn.disabled=false
+  inp.focus()
+}
+
+inp.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){
+    e.preventDefault()
+    if(!BUSY&&KEY)send()
+  }
+})
+
+inp.addEventListener('input',()=>{
+  inp.style.height='40px'
+  inp.style.height=Math.min(inp.scrollHeight,120)+'px'
+})
+
+document.addEventListener('DOMContentLoaded',()=>{
+  $('arch-lbl').textContent=navigator.platform+' · HTTP raw'
+  sysMsg(`GaiaPhi=Ω · DeltaRafaelVerboOmega · F*=23.158 · freestanding · nolibc · nomalloc
+Cola a tua ANTHROPIC_API_KEY acima para começar.
+/help para ver comandos disponíveis.`)
+})
+</script>
+</body>
+</html>

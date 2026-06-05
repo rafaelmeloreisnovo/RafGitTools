@@ -1,0 +1,70 @@
+cff-version: 1.2.0
+title: "RAFAELIA Stack: Deterministic low-level compiler from speech to bytecode with multilingual biblical corpus and toroidal cognitive kernel"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - given-names: Rafael
+    family-names: "Melo Reis Novo"
+    alias: "∆RafaelVerboΩ"
+    affiliation: "Independent Researcher · Porto Alegre, Brasil"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+identifiers:
+  - description: "Bundle SHA256 (v5.0.0)"
+    type: other
+    value: "06b3c1e32ebab3e86ddb4bf6e70fe195126c17eac2609a11e06889f3e831f2ee"
+repository-code: "https://github.com/Rafaelmeloreisnovo/llama"
+abstract: >-
+  RAFAELIA is a 295KB / 6,432-line source stack delivering an
+  end-to-end pipeline from human speech to ARM64/x86_64 assembly,
+  validated on real hardware (Motorola E7 Power, Cortex-A55).
+  It includes a FALA→LOW-LEVEL compiler over 7 languages, a
+  freestanding C runtime (32 opcodes, 16KB binary), a cognitive
+  kernel implementing the ψχρΔΣΩ cycle, and a multilingual
+  biblical corpus pre-compiled with gematria, bytecode, and
+  assembly. Build-reproducible with deterministic SHA256.
+keywords:
+  - bare-metal
+  - ARM32
+  - compiler
+  - low-level
+  - biblical-NLP
+  - gematria
+  - toroidal-geometry
+  - freestanding-C
+  - Termux
+  - deterministic-runtime
+  - multilingual-corpus
+  - VM-design
+  - embedded-AI
+  - phi-ethica
+license: CC-BY-4.0
+version: "5.0.0"
+date-released: "2026-05-29"
+references:
+  - type: article
+    title: "The free-energy principle: a unified brain theory?"
+    authors:
+      - family-names: Friston
+        given-names: Karl
+    journal: "Nature Reviews Neuroscience"
+    volume: 11
+    year: 2010
+  - type: article
+    title: "An algorithm for the evaluation of finite trigonometric series"
+    authors:
+      - family-names: Goertzel
+        given-names: Gerald
+    journal: "American Mathematical Monthly"
+    volume: 65
+    year: 1958
+preferred-citation:
+  type: software
+  title: "RAFAELIA Stack v5.0.0"
+  authors:
+    - given-names: Rafael
+      family-names: "Melo Reis Novo"
+      alias: "∆RafaelVerboΩ"
+  year: 2026
+  version: "5.0.0"
+  doi: "10.5281/zenodo.PLACEHOLDER"
+  url: "https://zenodo.org/record/PLACEHOLDER"

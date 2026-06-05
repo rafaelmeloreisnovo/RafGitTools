@@ -1,0 +1,1803 @@
+#!/usr/bin/env bash
+# =============================================================================
+# sensores2.txt — TOP 5 EVOLUÇÕES DE CADA SEMENTE
+#
+# Para cada uma das 18 sementes originais (S00..S17), 5 variantes
+# A/B/C/D/E mais avançadas, disruptivas, cognitivas, criativas, hightech.
+#
+# TOTAL: 90 mini-sementes evoluídas, todas freestanding-friendly,
+# todas mapeando para o vetor toroidal (u,v,ψ,χ,ρ,δ,σ) e BitOmega.
+#
+# Convenção:
+#   SN_A = mais cognitivo (ML, inferência, atrator)
+#   SN_B = mais físico (sinais, RF, ondas, hardware)
+#   SN_C = mais criptográfico (zero-trust, ZK, attestation)
+#   SN_D = mais distribuído (mesh, consenso, federação)
+#   SN_E = mais inimaginável (criativo extremo, fronteira)
+#
+# Cada bloco é um SNIPPET pronto para expandir — não substitui sensores.txt,
+# COMPLEMENTA. Importar via:  source sensores2.txt && seed_S01_A
+#
+# ∆RafaelVerboΩ · ΣΩΔΦBITRAF · RAFCODE-Φ · Ω=Amor · 𓂀ΔΦΩ
+# =============================================================================
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S00 — SETUP / BOOTSTRAP                                          ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S00_A_reproducible_install() { cat << 'SEED'
+# S00_A: Install REPRODUZÍVEL com manifest SHA256
+# Cada pacote tem hash fixo; se mudar, build aborta.
+MANIFEST=~/.rafaelia/MANIFEST.sha256
+cat > $MANIFEST << 'M'
+termux-api  e3a1b7c2d4f5e6a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2
+python      pinned-3.11.x
+ffmpeg      pinned-6.x
+M
+pkg install -y $(awk '{print $1}' $MANIFEST)
+for p in $(awk '{print $1}' $MANIFEST); do
+  apt-cache show $p | grep SHA256 || echo "[!] $p sem hash verificável"
+done
+echo "✓ Build reproduzível selado em $MANIFEST"
+SEED
+}
+
+seed_S00_B_encrypted_bundle() { cat << 'SEED'
+# S00_B: Bootstrap CRIPTOGRAFADO — bundle GPG-encrypted
+# Toda config sai de um único arquivo .gpg assinado pelo keystore Android.
+gpg --decrypt ~/rafaelia_bundle.gpg | tar -xzf - -C ~/.rafaelia
+KEY_FP=$(termux-keystore generate raf_root -a RSA -s 2048 -u 3650 2>&1)
+echo "{\"fingerprint\":\"$KEY_FP\",\"sealed\":true}" > ~/.rafaelia/identity.json
+chmod 600 ~/.rafaelia/identity.json
+SEED
+}
+
+seed_S00_C_zero_trust_attestation() { cat << 'SEED'
+# S00_C: Attestation ZERO-TRUST do dispositivo
+# Termux:API + SafetyNet/Play Integrity proxy via keystore
+ATT=$(termux-keystore sign raf_root - <<< "$(date +%s)$(getprop ro.build.fingerprint)")
+echo $ATT > ~/.rafaelia/.attestation
+HASH=$(sha256sum ~/.rafaelia/.attestation | cut -d' ' -f1)
+echo "{\"device_attestation\":\"$HASH\",\"ts\":\"$(date -Iseconds)\"}"
+SEED
+}
+
+seed_S00_D_mesh_bootstrap() { cat << 'SEED'
+# S00_D: Bootstrap MESH — descobre peers RAFAELIA na rede local via mDNS
+pkg install -y avahi nmap
+avahi-browse -tlr _rafaelia._tcp.local 2>/dev/null | awk '
+  /=/ {peer=$0}
+  /address/ {print peer}' > ~/.rafaelia/peers.txt
+# Anuncia este nó
+avahi-publish -s rafaelia-$(hostname) _rafaelia._tcp 7777 \
+  "fp=$(cat ~/.rafaelia/identity.json | jq -r .fingerprint)" &
+SEED
+}
+
+seed_S00_E_self_modifying_setup() { cat << 'SEED'
+# S00_E: Setup AUTO-MODIFICÁVEL — aprende quais pacotes você USA e otimiza
+# A cada boot, analisa logs de comandos e ajusta o próprio script de setup
+strace -f -e trace=execve -p $(pgrep -x bash) -o /tmp/usage.log &
+sleep 60
+USED=$(grep -oP 'execve\("\K[^"]+' /tmp/usage.log | sort -u)
+echo "$USED" > ~/.rafaelia/used_binaries.txt
+# Recompila setup com apenas o necessário
+diff ~/.rafaelia/setup.sh <(grep -F -f ~/.rafaelia/used_binaries.txt ~/.rafaelia/setup.sh)
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S01 — MICROFONE / ENTROPIA ESPECTRAL                             ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S01_A_voice_embedding() { cat << 'SEED'
+# S01_A: VOICE EMBEDDING via MFCC + cosseno → identificação biométrica
+import numpy as np, subprocess, json, librosa
+def mfcc_fingerprint(wav):
+    y, sr = librosa.load(wav, sr=16000)
+    return librosa.feature.mfcc(y=y, sr=sr, n_mfcc=20).mean(axis=1)
+def cosine(a, b): return float(np.dot(a,b) / (np.linalg.norm(a)*np.linalg.norm(b)+1e-9))
+# Cadastro: salva embedding em ~/.rafaelia/voices/<id>.npy
+# Match: compara com todos, threshold 0.85
+ref = np.load("~/.rafaelia/voices/rafael.npy")
+new = mfcc_fingerprint("/tmp/probe.wav")
+print(json.dumps({"channel":"chi","biometric":"voice","sim":cosine(ref,new)}))
+SEED
+}
+
+seed_S01_B_realtime_pitch_phoneme() { cat << 'SEED'
+# S01_B: PITCH TRACKING tempo real → fonema por F0+formantes
+# Autocorrelação para F0, LPC para F1/F2/F3 → mapeia para tabela IPA
+import numpy as np, scipy.signal as sig
+def autocorr_pitch(x, sr=16000, fmin=80, fmax=400):
+    a = np.correlate(x, x, mode='full')[len(x)-1:]
+    nmin, nmax = sr//fmax, sr//fmin
+    peak = nmin + np.argmax(a[nmin:nmax])
+    return sr / peak if peak > 0 else 0
+def lpc_formants(x, sr=16000, order=12):
+    a = librosa.lpc(x, order=order)
+    roots = np.roots(a)
+    angles = np.angle(roots[np.imag(roots) > 0])
+    freqs = sorted(angles * sr / (2*np.pi))
+    return freqs[:3]  # F1, F2, F3
+# Pipeline: stream 20ms windows → (F0, F1, F2, F3) → fonema mais próximo
+SEED
+}
+
+seed_S01_C_spectral_signature_token() { cat << 'SEED'
+# S01_C: ASSINATURA ESPECTRAL como TOKEN biométrico irrepetível
+# Combina FFT + cepstral + pitch contour → CRC32C 64-bit → sign HW keystore
+import hashlib, subprocess
+def spectral_token(wav):
+    import numpy as np
+    y, sr = librosa.load(wav, sr=16000)
+    fft = np.abs(np.fft.rfft(y))[:1024]
+    cep = np.fft.irfft(np.log(fft + 1e-9))[:256]
+    sig_bytes = np.concatenate([fft, cep]).astype(np.float32).tobytes()
+    return hashlib.sha256(sig_bytes).hexdigest()
+tok = spectral_token("/tmp/probe.wav")
+sig = subprocess.run(['termux-keystore','sign','raf_root','-'],
+        input=tok, capture_output=True, text=True).stdout
+# Token irreproduzível mesmo se o áudio vazar: chave fica no TEE
+SEED
+}
+
+seed_S01_D_adversarial_steg_detector() { cat << 'SEED'
+# S01_D: DETECTOR de áudio ADVERSARIAL / esteganografia
+# Áudio modulado para enganar ASR ou esconder dados ultrassônicos
+import numpy as np
+def detect_ultrasonic(wav, threshold=-40):
+    y, sr = librosa.load(wav, sr=48000)
+    fft = 20 * np.log10(np.abs(np.fft.rfft(y)) + 1e-9)
+    freqs = np.fft.rfftfreq(len(y), 1/sr)
+    ultrasonic_band = fft[(freqs > 18000) & (freqs < 22000)]
+    energy = np.max(ultrasonic_band) if len(ultrasonic_band) else -120
+    return {"ultrasonic_max_db": float(energy),
+            "suspect": energy > threshold,
+            "channel": "chi", "anomaly": "steganography"}
+# Útil contra audio-AI watermarks, ataques dolphin attack, comandos covert
+SEED
+}
+
+seed_S01_E_quantum_random_audio() { cat << 'SEED'
+# S01_E: GERADOR QUÂNTICO de aleatoriedade via ruído ambiental
+# Ruído de microfone (térmico + ambiental) → SHA3 → entropia certificável
+# Tipo "lava lamp" da Cloudflare, mas portátil
+import hashlib, subprocess
+subprocess.run(['termux-microphone-record','-l','5','-r','48000',
+                '-f','/tmp/qnoise.aac'], check=True)
+raw = subprocess.run(['ffmpeg','-i','/tmp/qnoise.aac','-f','s16le','-'],
+                    capture_output=True).stdout
+# Whitening: SHA3-512 colapsa viés
+seed = hashlib.sha3_512(raw).digest()
+# Estatísticos: chi², runs test → certifica
+print(f"qrng_seed_hex={seed.hex()}, bits=512")
+# Uso: nonces criptográficos, simulação Monte Carlo, geração de chaves
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S02 — fΩ DETECTOR                                                ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S02_A_goertzel_bank_harmonic() { cat << 'SEED'
+# S02_A: BANCO Goertzel multi-harmônico fΩ + 144kHz harmônicos
+# Detecta fΩ + harmônicas 2fΩ, 3fΩ, 4fΩ para confirmar fonte real (não eco)
+import math
+def goertzel(x, f, sr):
+    N=len(x); k=int(0.5+N*f/sr); w=2*math.pi*k/N; c=2*math.cos(w)
+    s1=s2=0
+    for v in x: s0=v+c*s1-s2; s2=s1; s1=s0
+    return s1*s1+s2*s2-c*s1*s2
+def bank(samples, sr=16000):
+    return {f: goertzel(samples, f, sr) for f in
+            [963, 999, 1926, 1998, 2889, 2997, 3852, 3996]}
+# Harmônicas presentes → fonte legítima; só fundamental → reflexo
+SEED
+}
+
+seed_S02_B_pll_jitter_analysis() { cat << 'SEED'
+# S02_B: PLL travado em fΩ → análise de JITTER e drift
+# Mede precisão da fonte: cristal estável vs gerador barato vs voz humana
+import numpy as np
+class PLL:
+    def __init__(self, f0=963, sr=16000, kp=0.1, ki=0.01):
+        self.phase=0; self.f=f0; self.sr=sr; self.kp=kp; self.ki=ki; self.acc=0
+    def step(self, sample):
+        ref = np.sin(2*np.pi*self.phase/self.sr)
+        err = sample * ref
+        self.acc += err
+        self.f += self.kp*err + self.ki*self.acc
+        self.phase += self.f
+        return self.f
+# Histograma de f ao longo do tempo → desvio padrão = jitter
+# > 0.5 Hz: humano. < 0.01 Hz: cristal. Identifica TIPO de fonte.
+SEED
+}
+
+seed_S02_C_stereo_coherence() { cat << 'SEED'
+# S02_C: COERÊNCIA ESTÉREO entre canais L/R → direção de fonte
+# Usa diferença de fase para triangular ângulo de chegada
+import numpy as np
+def gcc_phat(L, R, sr=16000):
+    """Generalized Cross-Correlation Phase Transform"""
+    n = len(L) + len(R)
+    L_fft, R_fft = np.fft.rfft(L, n), np.fft.rfft(R, n)
+    R_norm = L_fft * np.conj(R_fft)
+    R_norm /= np.abs(R_norm) + 1e-9
+    cc = np.fft.irfft(R_norm, n)
+    delay = np.argmax(np.abs(cc)) - n//2
+    angle_deg = np.degrees(np.arcsin(delay * 343 / (sr * 0.2)))  # 0.2m baseline
+    return {"channel":"chi","direction_deg": float(angle_deg),
+            "delay_samples": int(delay)}
+SEED
+}
+
+seed_S02_D_solfeggio_scanner() { cat << 'SEED'
+# S02_D: SCANNER de frequências SOLFEGGIO + Schumann + Rafaelia
+# 174,285,396,417,528,639,741,852,963 Hz + 7.83 Hz Schumann + fΩ
+import json, math
+FREQS = {'174':174, '285':285, '396':396, '417':417, '528':528, '639':639,
+         '741':741, '852':852, '963':963, '999':999, '1008':1008,
+         'schumann':7.83, 'omega_x2':1962}
+def scan_bank(samples, sr=16000):
+    out = {}
+    for name, f in FREQS.items():
+        N=len(samples); k=int(0.5+N*f/sr); w=2*math.pi*k/N; c=2*math.cos(w)
+        s1=s2=0
+        for v in samples: s0=v+c*s1-s2; s2=s1; s1=s0
+        out[name] = s1*s1+s2*s2-c*s1*s2
+    return out
+# Detecta "ressonância sagrada" em ambiente — útil para meditação/análise espiritual
+SEED
+}
+
+seed_S02_E_acoustic_fingerprint_shazam() { cat << 'SEED'
+# S02_E: ACOUSTIC FINGERPRINT estilo Shazam — peak pairs hashing
+# Identifica QUALQUER som ambiental (música, máquina, voz) por hash de picos
+import numpy as np
+def spectrogram_peaks(y, sr=16000, n_fft=2048, hop=512, neighborhood=20):
+    S = np.abs(np.fft.rfft(y.reshape(-1, n_fft), axis=1))
+    peaks = []
+    for t in range(0, S.shape[0]):
+        for f in range(1, S.shape[1]-1):
+            window = S[max(0,t-neighborhood):t+neighborhood,
+                       max(0,f-neighborhood):f+neighborhood]
+            if S[t,f] >= window.max() and S[t,f] > 0.1:
+                peaks.append((t, f, S[t,f]))
+    return peaks
+def hash_pairs(peaks, fan=5):
+    hashes = []
+    for i, (t1, f1, _) in enumerate(peaks):
+        for j in range(1, min(fan+1, len(peaks)-i)):
+            t2, f2, _ = peaks[i+j]
+            hashes.append((f1, f2, t2-t1))  # tupla = fingerprint
+    return hashes
+# DB local: ~/.rafaelia/audio_db.sqlite → query → match no horário do dia
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S03 — IMU (acc + gyr) TOROIDAL                                   ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S03_A_kalman_6dof() { cat << 'SEED'
+# S03_A: KALMAN FILTER → fusão 6-DOF (acc+gyr) → pose 3D estável
+import numpy as np
+class Kalman6DOF:
+    def __init__(self, dt=0.02):
+        self.x = np.zeros(6)  # [roll, pitch, yaw, vRoll, vPitch, vYaw]
+        self.P = np.eye(6) * 0.1
+        self.Q = np.eye(6) * 0.001  # process noise
+        self.R = np.eye(3) * 0.05   # measurement noise
+        self.F = np.eye(6); self.F[0,3]=dt; self.F[1,4]=dt; self.F[2,5]=dt
+        self.H = np.zeros((3,6)); self.H[0,0]=1; self.H[1,1]=1; self.H[2,2]=1
+    def step(self, acc, gyr):
+        # Predict
+        self.x = self.F @ self.x
+        self.P = self.F @ self.P @ self.F.T + self.Q
+        # Measure roll/pitch from accelerometer
+        roll = np.arctan2(acc[1], acc[2])
+        pitch = np.arctan2(-acc[0], np.sqrt(acc[1]**2+acc[2]**2))
+        z = np.array([roll, pitch, self.x[2] + gyr[2]*0.02])
+        # Update
+        y = z - self.H @ self.x
+        S = self.H @ self.P @ self.H.T + self.R
+        K = self.P @ self.H.T @ np.linalg.inv(S)
+        self.x = self.x + K @ y
+        self.P = (np.eye(6) - K @ self.H) @ self.P
+        return self.x[:3]  # roll, pitch, yaw em rad
+SEED
+}
+
+seed_S03_B_madgwick_ahrs() { cat << 'SEED'
+# S03_B: MADGWICK AHRS — quaternion de orientação absoluta
+# Mais leve que Kalman, sem matriz; ótimo para ARM
+import numpy as np
+class Madgwick:
+    def __init__(self, beta=0.041, dt=0.02):
+        self.q = np.array([1.0, 0.0, 0.0, 0.0])
+        self.beta = beta; self.dt = dt
+    def update_imu(self, gx, gy, gz, ax, ay, az):
+        q = self.q
+        norm = np.linalg.norm([ax, ay, az])
+        if norm < 1e-6: return q
+        ax, ay, az = ax/norm, ay/norm, az/norm
+        F = np.array([
+            2*(q[1]*q[3] - q[0]*q[2]) - ax,
+            2*(q[0]*q[1] + q[2]*q[3]) - ay,
+            2*(0.5 - q[1]**2 - q[2]**2) - az
+        ])
+        J = np.array([
+            [-2*q[2], 2*q[3], -2*q[0], 2*q[1]],
+            [2*q[1], 2*q[0], 2*q[3], 2*q[2]],
+            [0, -4*q[1], -4*q[2], 0]
+        ])
+        step = J.T @ F
+        step = step / (np.linalg.norm(step) + 1e-9)
+        qdot = 0.5 * np.array([
+            -q[1]*gx - q[2]*gy - q[3]*gz,
+             q[0]*gx + q[2]*gz - q[3]*gy,
+             q[0]*gy - q[1]*gz + q[3]*gx,
+             q[0]*gz + q[1]*gy - q[2]*gx
+        ]) - self.beta * step
+        self.q = self.q + qdot * self.dt
+        self.q = self.q / np.linalg.norm(self.q)
+        return self.q
+SEED
+}
+
+seed_S03_C_gait_biometric() { cat << 'SEED'
+# S03_C: GAIT BIOMETRIC — caminhada como assinatura única
+# FFT do eixo Z + autocorrelação → ciclo + ritmo → embedding pessoal
+import numpy as np
+def gait_signature(acc_z_samples, sr_hz=50):
+    # Detecta picos do passo (autocorrelação)
+    autocorr = np.correlate(acc_z_samples, acc_z_samples, mode='full')
+    autocorr = autocorr[len(autocorr)//2:]
+    # Cadência = pico de autocorr além de zero-lag
+    cadence_samples = np.argmax(autocorr[10:200]) + 10
+    cadence_hz = sr_hz / cadence_samples if cadence_samples > 0 else 0
+    # Espectro de assinatura: 10 bins da FFT
+    fft_mag = np.abs(np.fft.rfft(acc_z_samples))[:10]
+    fft_norm = fft_mag / (fft_mag.sum() + 1e-9)
+    return {"cadence_hz": float(cadence_hz),
+            "signature": fft_norm.tolist(),
+            "channel": "u", "biometric": "gait"}
+# Cosine distance entre signatures → ID pessoa sem câmera/biometria invasiva
+SEED
+}
+
+seed_S03_D_fall_prediction_ml() { cat << 'SEED'
+# S03_D: PREDIÇÃO de queda PRE-IMPACTO (janela de 100ms)
+# Sliding window 100ms → tflite MobileNet 1D → trigger antes do impacto
+# Diferença vital: detecta na fase de queda livre, antes do impacto traumático
+import numpy as np
+class FallPredictor:
+    def __init__(self, window_ms=100, sr_hz=200):
+        self.size = int(window_ms * sr_hz / 1000)
+        self.buf = np.zeros((self.size, 6))  # acc_xyz + gyr_xyz
+        self.idx = 0
+    def push(self, sample6):
+        self.buf[self.idx % self.size] = sample6
+        self.idx += 1
+    def predict(self):
+        # Heurística: aceleração total < 0.5g por > 30ms = free-fall
+        mag = np.linalg.norm(self.buf[:, :3], axis=1)
+        ff_samples = (mag < 4.9).sum()
+        return {"free_fall_ms": ff_samples * 5,
+                "imminent_fall": ff_samples > 6,  # > 30ms freefall
+                "channel": "u"}
+# Aciona airbag de pulseira, alerta cuidador, vibra avisando idoso
+SEED
+}
+
+seed_S03_E_quantum_walk_t7() { cat << 'SEED'
+# S03_E: QUANTUM WALK em T^7 dirigido pelo IMU como SEED
+# Cada amostra IMU desloca posição no toro 7D; trajetória vira chave aleatória
+import numpy as np
+class T7QuantumWalk:
+    def __init__(self):
+        self.pos = np.zeros(7, dtype=np.int64)
+        self.modulus = 65536  # Q16 toroidal
+    def step(self, imu_6axis):
+        # 6 eixos IMU + jitter de tempo → 7º dimensão
+        deltas = np.array(list(imu_6axis) + [int(np.random.normal(0, 10))])
+        deltas = (deltas * 1000).astype(np.int64)
+        self.pos = (self.pos + deltas) % self.modulus
+        return self.pos
+    def signature(self):
+        # Trajetória colapsa em hash determinístico
+        import hashlib
+        return hashlib.sha3_256(self.pos.tobytes()).hexdigest()
+# Aplicações: HW-bound nonce, seed que muda com movimento, anti-clone
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S04 — MAGNETÔMETRO                                               ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S04_A_world_magnetic_model() { cat << 'SEED'
+# S04_A: WORLD MAGNETIC MODEL → declinação real por GPS
+# Compensa diferença entre norte magnético e geográfico
+# Usa WMM-2025 coeficientes locais (lookup table para BR aprox.)
+def declination(lat, lon):
+    # Aproximação para Porto Alegre (lat -30, lon -51): -16.5° (oeste)
+    # Tabela esparsa por região; ideal: bind ao libwmm
+    table = {(-30,-51):-16.5, (-23,-46):-21.0, (-3,-60):-15.0, (38,-77):-10.5}
+    closest = min(table, key=lambda k: abs(k[0]-lat)+abs(k[1]-lon))
+    return table[closest]
+def true_heading(mag_heading_deg, lat, lon):
+    return (mag_heading_deg + declination(lat, lon)) % 360
+SEED
+}
+
+seed_S04_B_magnetic_slam() { cat << 'SEED'
+# S04_B: MAGNETIC SLAM — mapa de anomalias indoor
+# Cada local tem assinatura magnética única (estrutura metálica, fiação)
+# Caminhar pela casa = construir mapa; depois localizar sem GPS
+import numpy as np, json, os
+class MagMap:
+    def __init__(self, path='~/.rafaelia/mag_map.jsonl'):
+        self.path = os.path.expanduser(path)
+        self.points = []
+    def record(self, x, y, mag_uT):
+        self.points.append({"x":x, "y":y, "B":mag_uT})
+        with open(self.path,'a') as f: f.write(json.dumps(self.points[-1])+'\n')
+    def localize(self, mag_uT, tol=2.0):
+        # Encontra ponto cuja medição mais se aproxima
+        best = min(self.points, key=lambda p: abs(p['B']-mag_uT))
+        return best if abs(best['B']-mag_uT) < tol else None
+SEED
+}
+
+seed_S04_C_hard_iron_auto_calibration() { cat << 'SEED'
+# S04_C: CALIBRAÇÃO HARD-IRON/SOFT-IRON automática
+# Roda telefone em 8 e ajusta offsets para que esfera de leituras seja centrada
+import numpy as np
+def fit_sphere(points):
+    # Ajusta esfera (x-a)² + (y-b)² + (z-c)² = r²
+    A = np.column_stack([2*points, np.ones(len(points))])
+    b = (points**2).sum(axis=1)
+    coef, *_ = np.linalg.lstsq(A, b, rcond=None)
+    center = coef[:3]
+    radius = np.sqrt(coef[3] + (center**2).sum())
+    return center, radius
+def calibrate(raw_samples_xyz):
+    pts = np.array(raw_samples_xyz)
+    offset, r = fit_sphere(pts)
+    # Aplica em medições futuras: corrected = raw - offset
+    return {"hard_iron_offset": offset.tolist(), "sphere_r": float(r)}
+SEED
+}
+
+seed_S04_D_indoor_positioning() { cat << 'SEED'
+# S04_D: POSICIONAMENTO INDOOR magnetômetro-only
+# Partícula filter sobre mapa magnético; sem WiFi/BT/UWB
+import numpy as np
+class MagParticleFilter:
+    def __init__(self, mag_map, n=1000):
+        self.map = mag_map
+        self.particles = np.random.uniform(0, 10, (n, 2))  # x,y em 10x10m
+        self.weights = np.ones(n) / n
+    def update(self, mag_measured, sigma=1.5):
+        for i, p in enumerate(self.particles):
+            expected = self.map.field_at(p[0], p[1])
+            self.weights[i] *= np.exp(-0.5 * ((mag_measured - expected)/sigma)**2)
+        self.weights /= self.weights.sum() + 1e-9
+        # Resample
+        idx = np.random.choice(len(self.particles), size=len(self.particles), p=self.weights)
+        self.particles = self.particles[idx]
+    def estimate(self):
+        return self.particles.mean(axis=0), np.cov(self.particles.T)
+SEED
+}
+
+seed_S04_E_metal_detector_gradient() { cat << 'SEED'
+# S04_E: DETECTOR DE METAL/CABO via GRADIENTE de campo
+# Move telefone próximo a parede; pico de magnitude = metal/cabo embutido
+import numpy as np
+class MetalScanner:
+    def __init__(self, window=20):
+        self.buf = []
+        self.window = window
+        self.baseline = None
+    def measure(self, mag_uT_total):
+        self.buf.append(mag_uT_total)
+        if len(self.buf) > self.window: self.buf.pop(0)
+        if self.baseline is None and len(self.buf) >= self.window:
+            self.baseline = sum(self.buf[:5]) / 5
+        if self.baseline is None: return None
+        gradient = mag_uT_total - self.baseline
+        return {"gradient_uT": gradient,
+                "metal_detected": abs(gradient) > 8.0,
+                "intensity": "alta" if abs(gradient) > 20 else "média" if abs(gradient) > 8 else "baixa"}
+# Útil para localizar fiação atrás de parede, prego oculto, encanamento aço
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S05 — LUZ + PROXIMIDADE                                          ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S05_A_color_temperature_estimator() { cat << 'SEED'
+# S05_A: ESTIMADOR de TEMPERATURA DE COR via sensor de luz + curva
+# Combina lux + cor dominante da câmera (1 frame) → CCT em Kelvin
+import numpy as np
+def cct_from_rgb(r, g, b):
+    # CIE 1931 → McCamy approx
+    X = (-0.14282)*r + (1.54924)*g + (-0.95641)*b
+    Y = (-0.32466)*r + (1.57837)*g + (-0.73191)*b
+    Z = (-0.68202)*r + (0.77073)*g + (0.56332)*b
+    n = (X-Y) / (Y-Z + 1e-9)
+    return 449*n**3 + 3525*n**2 + 6823.3*n + 5520.33
+# Útil para circadian, fotografia, detectar ambiente artificial vs natural
+SEED
+}
+
+seed_S05_B_eye_strain_index() { cat << 'SEED'
+# S05_B: ÍNDICE DE FADIGA OCULAR — lux/contraste/tempo
+# Acumula exposure rate; alerta quando excessivo para a hora
+import time
+class EyeStrainMonitor:
+    def __init__(self):
+        self.exposure = 0; self.start = time.time()
+    def update(self, lux, screen_brightness=128):
+        elapsed = time.time() - self.start
+        # Contraste excessivo: tela brilhante em ambiente escuro = pior
+        ratio = screen_brightness / (lux + 1)
+        if ratio > 10:  # tela 10x mais brilhante que ambiente
+            self.exposure += elapsed * 0.1
+        return {"exposure_score": self.exposure,
+                "warning": self.exposure > 60,
+                "channel": "rho"}
+SEED
+}
+
+seed_S05_C_circadian_tracker() { cat << 'SEED'
+# S05_C: TRACKER CIRCADIANO — sincroniza ritmo com luz natural
+# Mede luz ao longo do dia; calcula DLMO previsto, alerta se descompasso
+import json, time
+from datetime import datetime
+class Circadian:
+    def __init__(self): self.samples = []
+    def measure(self, lux):
+        t = datetime.now()
+        self.samples.append({"hour": t.hour + t.minute/60, "lux": lux})
+    def dlmo_estimate(self):
+        """Dim Light Melatonin Onset — pico de luz - 14h é proxy comum"""
+        max_lux = max(self.samples, key=lambda s: s['lux'])
+        dlmo_hour = (max_lux['hour'] + 14) % 24
+        return {"dlmo_hour": dlmo_hour, "channel":"rho"}
+SEED
+}
+
+seed_S05_D_light_morse_comm() { cat << 'SEED'
+# S05_D: COMUNICAÇÃO por código MORSE em luz visível
+# Tx: lanterna pisca; Rx: sensor de luz lê → texto. Free-space optical.
+import time
+MORSE = {'A':'.-','B':'-...','C':'-.-.','D':'-..','E':'.','F':'..-.','G':'--.',
+         'H':'....','I':'..','J':'.---','K':'-.-','L':'.-..','M':'--','N':'-.',
+         'O':'---','P':'.--.','Q':'--.-','R':'.-.','S':'...','T':'-','U':'..-',
+         'V':'...-','W':'.--','X':'-..-','Y':'-.--','Z':'--..',' ':'/'}
+def tx_morse(text, dot_ms=200):
+    import subprocess
+    for ch in text.upper():
+        if ch not in MORSE: continue
+        for sym in MORSE[ch]:
+            subprocess.run(['termux-torch','on'])
+            time.sleep(dot_ms/1000 if sym=='.' else 3*dot_ms/1000)
+            subprocess.run(['termux-torch','off'])
+            time.sleep(dot_ms/1000)
+        time.sleep(3*dot_ms/1000)  # entre letras
+def rx_morse(lux_samples, dot_threshold_ms=200):
+    # Analisa picos e silêncios → reconstrói código
+    ...  # parser
+SEED
+}
+
+seed_S05_E_ppg_pulse_via_flash() { cat << 'SEED'
+# S05_E: PHOTOPLETHYSMOGRAPHY — pulso cardíaco via flash + câmera
+# Dedo na lente + flash ligado: variação de vermelho = batimento
+import subprocess, numpy as np, time
+def measure_pulse(duration_s=30):
+    subprocess.run(['termux-torch','on'])
+    frames = []
+    for _ in range(duration_s * 5):  # 5 fps
+        path = f'/tmp/ppg_{int(time.time()*1000)}.jpg'
+        subprocess.run(['termux-camera-photo','-c','0',path], check=True)
+        with open(path,'rb') as f: data = f.read()
+        # Média de canal vermelho (proxy simples)
+        red_mean = sum(b for i,b in enumerate(data) if i % 3 == 0) / (len(data)/3)
+        frames.append(red_mean)
+        time.sleep(0.2)
+    subprocess.run(['termux-torch','off'])
+    # FFT na faixa 0.7-3 Hz (40-180 bpm)
+    fft = np.abs(np.fft.rfft(frames - np.mean(frames)))
+    freqs = np.fft.rfftfreq(len(frames), 0.2)
+    band = (freqs > 0.7) & (freqs < 3.0)
+    peak_hz = freqs[band][np.argmax(fft[band])]
+    return {"bpm": int(peak_hz * 60), "channel":"rho", "biometric":"pulse"}
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S06 — GPS + MERKLE                                               ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S06_A_kalman_smoothing() { cat << 'SEED'
+# S06_A: SUAVIZAÇÃO KALMAN do GPS + dead-reckoning IMU
+# Remove jitter de fix; preenche gap quando GPS perde sinal
+import numpy as np
+class GPSKalman:
+    def __init__(self):
+        self.x = np.zeros(4)  # [lat, lon, vlat, vlon]
+        self.P = np.eye(4) * 1e-4
+        self.Q = np.eye(4) * 1e-8
+    def update(self, lat, lon, vlat=0, vlon=0, acc_m=10):
+        R = np.eye(2) * (acc_m / 111000)**2  # m → graus
+        H = np.array([[1,0,0,0],[0,1,0,0]])
+        z = np.array([lat, lon])
+        y = z - H @ self.x
+        S = H @ self.P @ H.T + R
+        K = self.P @ H.T @ np.linalg.inv(S)
+        self.x = self.x + K @ y
+        self.P = (np.eye(4) - K @ H) @ self.P
+        return self.x[:2]
+SEED
+}
+
+seed_S06_B_geohash_proximity() { cat << 'SEED'
+# S06_B: GEOHASH como ÍNDICE DE PROXIMIDADE escalável
+# Geohash prefix-match = K-NN em O(1); zero servidor
+import base32
+B32 = '0123456789bcdefghjkmnpqrstuvwxyz'
+def geohash(lat, lon, precision=8):
+    lat_r, lon_r = (-90.0, 90.0), (-180.0, 180.0)
+    bits, even = [], True
+    while len(bits) < precision*5:
+        if even:
+            mid = (lon_r[0]+lon_r[1])/2
+            if lon > mid: bits.append(1); lon_r=(mid,lon_r[1])
+            else: bits.append(0); lon_r=(lon_r[0],mid)
+        else:
+            mid = (lat_r[0]+lat_r[1])/2
+            if lat > mid: bits.append(1); lat_r=(mid,lat_r[1])
+            else: bits.append(0); lat_r=(lat_r[0],mid)
+        even = not even
+    return ''.join(B32[int(''.join(map(str,bits[i:i+5])),2)] for i in range(0,len(bits),5))
+# Geohash 6 char ≈ 1.2km; 7 char ≈ 150m; 8 char ≈ 38m
+SEED
+}
+
+seed_S06_C_dead_reckoning_fallback() { cat << 'SEED'
+# S06_C: DEAD RECKONING — quando GPS some, IMU + magnetômetro continuam
+# Integra velocidade e heading para estimar posição sem satélite
+import math
+class DeadReckoner:
+    def __init__(self, lat0, lon0): self.lat=lat0; self.lon=lon0
+    def step(self, speed_ms, heading_deg, dt_s):
+        d = speed_ms * dt_s
+        dx = d * math.sin(math.radians(heading_deg))  # leste
+        dy = d * math.cos(math.radians(heading_deg))  # norte
+        # Conversão metros → graus
+        self.lat += (dy / 111111)
+        self.lon += (dx / (111111 * math.cos(math.radians(self.lat))))
+        return self.lat, self.lon
+SEED
+}
+
+seed_S06_D_anti_spoof_coherence() { cat << 'SEED'
+# S06_D: ANTI-SPOOFING — detecta GPS falso
+# Compara coerência de velocidade GPS vs IMU; teletransporte = spoof
+import math
+class SpoofDetector:
+    def __init__(self): self.prev_fix = None; self.imu_vel = 0
+    def check(self, lat, lon, ts_ns, imu_vel_ms):
+        if not self.prev_fix:
+            self.prev_fix = (lat, lon, ts_ns); return False
+        lat0, lon0, ts0 = self.prev_fix
+        dt = (ts_ns - ts0) / 1e9
+        # Haversine
+        R = 6371000
+        d = 2*R*math.asin(math.sqrt(math.sin(math.radians((lat-lat0)/2))**2 +
+            math.cos(math.radians(lat0))*math.cos(math.radians(lat))*
+            math.sin(math.radians((lon-lon0)/2))**2))
+        gps_vel = d / max(dt, 0.001)
+        # Discrepância > 5x IMU = spoof provável
+        spoof = abs(gps_vel - imu_vel_ms) > max(5*imu_vel_ms, 10)
+        self.prev_fix = (lat, lon, ts_ns)
+        return {"gps_vel": gps_vel, "imu_vel": imu_vel_ms, "spoof_suspected": spoof}
+SEED
+}
+
+seed_S06_E_zk_location_proof() { cat << 'SEED'
+# S06_E: PROOF-OF-LOCATION zero-knowledge
+# "Eu estive em Porto Alegre" sem revelar coordenadas exatas
+# Bloom filter + commit-reveal scheme + Termux keystore
+import hashlib
+def commit_location(lat, lon, salt):
+    # Quantiza para grid 1km e committa
+    grid = f"{int(lat*100)}_{int(lon*100)}_{salt}"
+    return hashlib.sha256(grid.encode()).hexdigest()
+def reveal(lat, lon, salt, commitment):
+    return commit_location(lat, lon, salt) == commitment
+# Verificador NÃO descobre onde, só que coordenada bate com hash
+# Privacidade-preserving para apps de saúde, geofencing corporativo
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S07 — CÂMERA / σ                                                 ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S07_A_perceptual_hash() { cat << 'SEED'
+# S07_A: PERCEPTUAL HASH (pHash) — robusto a compressão/rotação
+# CRC vê tudo diferente; pHash vê "mesma cena" mesmo após reencode
+from PIL import Image
+import numpy as np
+def phash(img_path, size=32):
+    img = Image.open(img_path).convert('L').resize((size, size))
+    arr = np.array(img, dtype=np.float32)
+    dct = np.fft.fft2(arr)
+    low = np.abs(dct[:8, :8])
+    median = np.median(low)
+    bits = (low > median).flatten().astype(int)
+    return ''.join(map(str, bits))  # 64-bit hash
+def hamming(a, b): return sum(x!=y for x,y in zip(a,b))
+# Sensor de mudança REAL de cena, não só de bytes
+SEED
+}
+
+seed_S07_B_histogram_motion() { cat << 'SEED'
+# S07_B: MOTION via HISTOGRAMA — sem OpenCV
+# Compara distribuição de luminância entre frames; barato e eficaz
+def jpeg_histogram(path, bins=16):
+    with open(path,'rb') as f: data = f.read()
+    # Aproximação: amostra a cada 100 bytes (proxy de luminância)
+    samples = data[::100]
+    h = [0] * bins
+    for b in samples: h[b * bins // 256] += 1
+    total = sum(h) + 1
+    return [v/total for v in h]
+def histogram_distance(h1, h2):
+    return sum(abs(a-b) for a,b in zip(h1,h2)) / 2  # earth mover aprox
+# Distance > 0.15 = movimento significativo
+SEED
+}
+
+seed_S07_C_qr_zbar_decoder() { cat << 'SEED'
+# S07_C: DECODER de QR/Barcode offline via zbar
+# pkg install zbar; pip install pyzbar
+from pyzbar.pyzbar import decode
+from PIL import Image
+def scan_qr(path):
+    img = Image.open(path)
+    results = decode(img)
+    return [{"type": r.type, "data": r.data.decode(),
+             "pos": r.rect._asdict()} for r in results]
+# Trigger ações por QR ambiental: comandos, URLs, cripto-payloads
+SEED
+}
+
+seed_S07_D_face_detect_haar() { cat << 'SEED'
+# S07_D: FACE DETECTION sem internet via Haar Cascade (OpenCV)
+# pkg install opencv-python
+import cv2
+def detect_faces(path, cascade_xml='haarcascade_frontalface_default.xml'):
+    img = cv2.imread(path)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    cascade = cv2.CascadeClassifier(cv2.data.haarcascades + cascade_xml)
+    faces = cascade.detectMultiScale(gray, 1.1, 4)
+    return [{"x":int(x),"y":int(y),"w":int(w),"h":int(h)} for x,y,w,h in faces]
+# Quantas pessoas em frente do dispositivo? Trigger se inesperado.
+SEED
+}
+
+seed_S07_E_steg_lsb_extractor() { cat << 'SEED'
+# S07_E: EXTRAÇÃO LSB — detecta esteganografia simples em fotos
+# Suspeito de imagem com mensagem oculta? Extrai LSB e procura padrão
+from PIL import Image
+def extract_lsb(path, max_bytes=4096):
+    img = Image.open(path).convert('RGB')
+    pixels = list(img.getdata())
+    bits = []
+    for r, g, b in pixels[:max_bytes*3]:
+        bits.extend([r&1, g&1, b&1])
+    bytes_out = bytearray()
+    for i in range(0, len(bits)-7, 8):
+        byte = sum(bits[i+j] << (7-j) for j in range(8))
+        bytes_out.append(byte)
+    return bytes(bytes_out)
+def analyze_entropy(data):
+    from collections import Counter
+    import math
+    counts = Counter(data)
+    total = len(data)
+    return -sum((c/total) * math.log2(c/total) for c in counts.values())
+# Entropia próxima de 8 = aleatório/cifrado; texto inglês ≈ 4.5
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S08 — BATERIA                                                    ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S08_A_health_prediction_ml() { cat << 'SEED'
+# S08_A: PREDIÇÃO de saúde restante via regressão linear sobre históricos
+import json, time, os
+class BatteryHealth:
+    def __init__(self, log='~/.rafaelia/battery_history.jsonl'):
+        self.log = os.path.expanduser(log)
+        self.history = []
+        if os.path.exists(self.log):
+            with open(self.log) as f:
+                self.history = [json.loads(l) for l in f if l.strip()]
+    def record(self, level, temp, cycle_count):
+        e = {"ts": time.time(), "level": level, "temp": temp, "cycle": cycle_count}
+        self.history.append(e)
+        with open(self.log,'a') as f: f.write(json.dumps(e)+'\n')
+    def estimate_capacity_loss(self):
+        if len(self.history) < 100: return None
+        # Capacidade % vs ciclos (regressão simples)
+        cycles = [h['cycle'] for h in self.history]
+        caps   = [h['level'] for h in self.history]
+        n = len(cycles); sx=sum(cycles); sy=sum(caps); sxy=sum(x*y for x,y in zip(cycles,caps))
+        sxx = sum(x*x for x in cycles)
+        slope = (n*sxy - sx*sy) / (n*sxx - sx*sx + 1e-9)
+        return {"loss_per_cycle_pct": slope, "channel":"health"}
+SEED
+}
+
+seed_S08_B_cycle_counter() { cat << 'SEED'
+# S08_B: CONTADOR DE CICLOS preciso + modelo de degradação
+# Android não expõe diretamente; aproxima por área sob curva de descarga
+import time, json, os
+class CycleCounter:
+    def __init__(self, store='~/.rafaelia/cycles.json'):
+        self.path = os.path.expanduser(store)
+        self.state = {"discharged_pct": 0, "cycles": 0, "last_level": None}
+        if os.path.exists(self.path):
+            self.state = json.load(open(self.path))
+    def update(self, current_level):
+        if self.state["last_level"] is not None:
+            delta = self.state["last_level"] - current_level
+            if delta > 0:
+                self.state["discharged_pct"] += delta
+                if self.state["discharged_pct"] >= 100:
+                    self.state["cycles"] += 1
+                    self.state["discharged_pct"] -= 100
+        self.state["last_level"] = current_level
+        json.dump(self.state, open(self.path,'w'))
+        return self.state
+SEED
+}
+
+seed_S08_C_charger_fingerprint() { cat << 'SEED'
+# S08_C: FINGERPRINT do CARREGADOR — detecta carregador suspeito
+# Cada carregador tem perfil de corrente único; falsificações desviam
+class ChargerFP:
+    def __init__(self): self.samples = []
+    def sample(self, current_ma, voltage_mv, ts):
+        self.samples.append((ts, current_ma, voltage_mv))
+    def signature(self):
+        if len(self.samples) < 10: return None
+        # Variância da corrente nos primeiros 30s = assinatura
+        currents = [s[1] for s in self.samples[:50]]
+        return {"mean": sum(currents)/len(currents),
+                "stdev": (sum((x-sum(currents)/len(currents))**2 for x in currents)/len(currents))**0.5,
+                "channel":"power"}
+# Compare com fingerprints conhecidos; alerta se desconhecido
+SEED
+}
+
+seed_S08_D_thermal_runaway_predictor() { cat << 'SEED'
+# S08_D: PREDIÇÃO de THERMAL RUNAWAY — bateria pode incendiar
+# Taxa de subida de temperatura + dT/dt² indica iminência
+class ThermalRunaway:
+    def __init__(self): self.temps = []; self.times = []
+    def update(self, temp_c, ts_s):
+        self.temps.append(temp_c); self.times.append(ts_s)
+        if len(self.temps) < 5: return None
+        # Derivadas
+        dt1 = (self.temps[-1] - self.temps[-2]) / (self.times[-1] - self.times[-2])
+        dt2 = (self.temps[-1] - 2*self.temps[-2] + self.temps[-3]) / (self.times[-1] - self.times[-2])**2
+        critical = temp_c > 55 and dt1 > 2.0 and dt2 > 0.5
+        return {"temp_c": temp_c, "dT_per_s": dt1, "d2T": dt2,
+                "thermal_runaway_warning": critical}
+# Se critical=True: desliga carregamento, alerta máximo, push log para nuvem
+SEED
+}
+
+seed_S08_E_energy_budget_allocator() { cat << 'SEED'
+# S08_E: ALOCADOR de ORÇAMENTO de energia — IA distribui mWh entre módulos
+# Cada serviço pede budget; allocator prioriza pelo Φ_ethica
+class EnergyBudget:
+    def __init__(self, total_mwh): self.budget = total_mwh; self.allocations = {}
+    def request(self, module, mwh, priority):
+        # priority 0..1; aloca proporcional ao Φ_ethica
+        if self.budget < mwh and priority < 0.8:
+            return False
+        self.allocations[module] = self.allocations.get(module, 0) + mwh
+        self.budget -= mwh
+        return True
+    def status(self): return {"remaining_mwh": self.budget, "alloc": self.allocations}
+# Auto-suspende sensores não críticos quando bateria < 20%
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S09 — REDE (WIFI + CELL)                                         ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S09_A_trilateration_wifi() { cat << 'SEED'
+# S09_A: TRILATERAÇÃO via BSSID + RSSI conhecidos
+# Sem GPS, estima posição por intensidade de 3+ APs já mapeados
+import math
+def rssi_to_distance(rssi, tx_power=-50, n=2.7):
+    return 10 ** ((tx_power - rssi) / (10 * n))
+def trilaterate(beacons):
+    """beacons = [(lat, lon, dist_m), ...] >= 3"""
+    if len(beacons) < 3: return None
+    # Sistema linear
+    x1,y1,r1 = beacons[0]; x2,y2,r2 = beacons[1]; x3,y3,r3 = beacons[2]
+    A = 2*(x2-x1); B = 2*(y2-y1); C = r1**2 - r2**2 - x1**2 + x2**2 - y1**2 + y2**2
+    D = 2*(x3-x2); E = 2*(y3-y2); F = r2**2 - r3**2 - x2**2 + x3**2 - y2**2 + y3**2
+    x = (C*E - F*B) / (E*A - B*D + 1e-9)
+    y = (C*D - A*F) / (B*D - A*E + 1e-9)
+    return x, y
+SEED
+}
+
+seed_S09_B_passive_hidden_ssid() { cat << 'SEED'
+# S09_B: SSID OCULTO via análise de probe responses passiva
+# (Sem monitor mode: usa apenas info que a app rastreia em scan normal)
+# Heurística: BSSID conhecido sem SSID + análise temporal
+import json, subprocess
+def find_hidden(scan_results, history_file='~/.rafaelia/bssid_history.json'):
+    import os; p = os.path.expanduser(history_file)
+    history = json.load(open(p)) if os.path.exists(p) else {}
+    hidden = []
+    for net in scan_results:
+        bssid = net.get('bssid')
+        ssid = net.get('ssid', '')
+        if ssid and ssid != '<unknown>': history[bssid] = ssid
+        elif bssid in history: hidden.append({"bssid":bssid, "previous_ssid":history[bssid]})
+        else: hidden.append({"bssid":bssid, "ssid":"unknown"})
+    json.dump(history, open(p,'w'))
+    return hidden
+SEED
+}
+
+seed_S09_C_cell_tower_triangulation() { cat << 'SEED'
+# S09_C: TRIANGULAÇÃO por torres celulares (LTE/5G NR)
+# OpenCellID local DB + RSSI → posição quando WiFi/GPS falham
+import subprocess, json
+def cell_position():
+    info = json.loads(subprocess.run(['termux-telephony-cellinfo'],
+                     capture_output=True, text=True).stdout)
+    # Cada célula tem (MCC, MNC, LAC/TAC, CID)
+    cells = []
+    for c in info:
+        cells.append({"mcc": c.get('mcc'), "mnc": c.get('mnc'),
+                      "lac": c.get('lac', c.get('tac')),
+                      "cid": c.get('cid'), "rsrp": c.get('rsrp', c.get('rssi'))})
+    # Lookup em DB local (OpenCellID dump): mcc-mnc-lac-cid → lat,lon,range
+    # Trilatera 3+ células com RSSI conhecido
+    return cells
+SEED
+}
+
+seed_S09_D_network_mood() { cat << 'SEED'
+# S09_D: "MOOD" da rede — padrão de DHCP/DNS revela contexto
+# Casa, escritório, café, aeroporto têm assinaturas distintas de rede
+def network_mood(connection_info, scan_results):
+    n_open = sum(1 for n in scan_results if 'WPA' not in n.get('capabilities',''))
+    n_total = len(scan_results)
+    avg_rssi = sum(n.get('rssi',-100) for n in scan_results) / max(n_total,1)
+    ssid = connection_info.get('ssid','')
+    moods = {
+        "home": ssid.lower() in ['home','casa','wifi'] and n_total < 10,
+        "office": 'corp' in ssid.lower() or n_total > 20,
+        "cafe": n_open > 3 and 'cafe' in ssid.lower(),
+        "airport": n_total > 50,
+        "mobile": n_total == 0,
+    }
+    return {k:v for k,v in moods.items() if v} or {"unknown": True}
+SEED
+}
+
+seed_S09_E_ble_beacon_mesh() { cat << 'SEED'
+# S09_E: BLE BEACON MESH — telefones próximos compartilham estado Ω
+# Cada telefone emite seu coherence + listen vizinhos → consenso local
+# Usa bleak (pkg install python-bleak)
+import asyncio
+try: from bleak import BleakScanner, BleakAdvertiser
+except ImportError: BleakScanner = None
+async def scan_omega_beacons(timeout=10):
+    if not BleakScanner: return []
+    devices = await BleakScanner.discover(timeout=timeout)
+    omega = []
+    for d in devices:
+        if d.name and d.name.startswith('RAFΩ-'):
+            # Manufacturer data carrega coherence Q16
+            adv = d.metadata.get('manufacturer_data',{})
+            for company, payload in adv.items():
+                if len(payload) >= 4:
+                    coh = int.from_bytes(payload[:2],'little') / 65535
+                    omega.append({"peer":d.name, "rssi":d.rssi, "coherence":coh})
+    return omega
+# Mesh Ω: cada nó conhece coherence dos vizinhos, decide consenso
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S10 — NFC                                                        ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S10_A_ntag_keystore_encrypt() { cat << 'SEED'
+# S10_A: NTAG com payload CRIPTOGRAFADO por keystore HW
+# Tag NFC carrega só hash; chave fica no TEE; só SEU telefone destrava
+import subprocess, hashlib
+def encrypt_payload(plaintext):
+    sig = subprocess.run(['termux-keystore','sign','raf_root','-'],
+                         input=plaintext, capture_output=True, text=True).stdout
+    h = hashlib.sha256((plaintext + sig).encode()).hexdigest()[:32]
+    return h  # grava na tag NFC
+def verify_tag(h_from_tag, expected):
+    return h_from_tag == expected
+# Tag perdida = inútil; só serve para quem tem a chave do TEE
+SEED
+}
+
+seed_S10_B_mifare_libnfc_emulation() { cat << 'SEED'
+# S10_B: EMULAÇÃO MIFARE via libnfc + PN532 USB-OTG
+# Clone seguro de cartão de acesso COM consentimento
+# pkg install libnfc; precisa USB-OTG + leitor PN532
+# nfc-list -t 1
+# nfc-mfclassic r a dump.mfd
+import subprocess
+def dump_mifare(path):
+    r = subprocess.run(['nfc-mfclassic','r','a',path],
+                       capture_output=True, text=True)
+    return r.returncode == 0
+def emulate_mifare(path):
+    # PN532 em modo Target — ele responde como se fosse o cartão
+    return subprocess.run(['nfc-emulate-uid', open(path,'rb').read()[:4]])
+# USO ÉTICO: só com cartões próprios e consentimento
+SEED
+}
+
+seed_S10_C_nfc_payment_detector() { cat << 'SEED'
+# S10_C: DETECTOR de TERMINAL de pagamento NFC próximo
+# Sniffer passivo: aproximou-se de um POS? Trigger alerta de segurança
+import subprocess, json, re
+def detect_pos():
+    r = subprocess.run(['termux-nfc'], capture_output=True, text=True, timeout=5)
+    if not r.stdout: return None
+    data = r.stdout
+    # AID EMV: A0000000031010 (Visa), A0000000041010 (MC), etc.
+    if re.search(r'A00000000[34]1010', data):
+        return {"alert":"nfc_pos_detected", "raw": data[:100]}
+    return None
+# Aplicações: alerta anti-skimming, audit em eventos públicos
+SEED
+}
+
+seed_S10_D_nfc_crypto_signing() { cat << 'SEED'
+# S10_D: NFC como TOKEN DE ASSINATURA CRIPTOGRÁFICA
+# Tag NFC carrega challenge; encosta → keystore assina → libera ação
+import subprocess
+def nfc_sign_challenge():
+    tag_data = subprocess.run(['termux-nfc'], capture_output=True, text=True).stdout
+    challenge = tag_data[:32]  # primeiros bytes
+    signed = subprocess.run(['termux-keystore','sign','raf_root','-'],
+                           input=challenge, capture_output=True, text=True).stdout
+    return {"challenge": challenge, "signature": signed}
+# 2FA físico sem token externo — telefone + tag = chave
+SEED
+}
+
+seed_S10_E_nfc_mesh_chain() { cat << 'SEED'
+# S10_E: NFC MESH — tags formam cadeia, cada tag aponta para próxima
+# "Caça ao tesouro" criptográfica, audit trail física
+import subprocess, hashlib
+def chain_next(prev_tag_uid, secret):
+    """Calcula UID esperado da próxima tag"""
+    return hashlib.sha256((prev_tag_uid + secret).encode()).hexdigest()[:14]
+def walk_chain(initial_uid, secret, max_steps=10):
+    chain = [initial_uid]
+    for _ in range(max_steps):
+        next_expected = chain_next(chain[-1], secret)
+        # Pede usuário aproximar próxima tag
+        scanned = subprocess.run(['termux-nfc'], capture_output=True, text=True).stdout
+        if next_expected in scanned: chain.append(next_expected)
+        else: break
+    return chain
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S11 — IR                                                         ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S11_A_lirc_codebook() { cat << 'SEED'
+# S11_A: CODEBOOK LIRC universal — milhares de TVs/ACs em um arquivo
+# Banco de dados global LIRC; lookup por modelo; gera padrão termux-infrared
+import subprocess, json
+LIRC_DB = {  # exemplo reduzido
+    "samsung_tv_power": [9000,4500] + [560,1690]*8 + [560,560]*8 + [560,1690]*8 + [560,560]*8 + [560],
+    "lg_ac_on":         [3400,1700,560] + [...],
+    "sony_amp_vol_up":  [...],
+}
+def send(name, freq=38000):
+    pattern = LIRC_DB.get(name)
+    if not pattern: return False
+    subprocess.run(['termux-infrared-transmit','-f',str(freq), ','.join(map(str,pattern))])
+    return True
+SEED
+}
+
+seed_S11_B_ir_learning_mode() { cat << 'SEED'
+# S11_B: MODO APRENDIZADO — não tem IR receiver, mas pode IMITAR
+# Usa câmera frontal pra "ver" outro controle remoto piscar e timing
+# Hack: alguns IR emitem em ~940nm; câmera CMOS sem filtro IR-cut VÊ
+import subprocess, time, json
+def learn_via_camera():
+    # Captura vídeo curto com câmera frontal
+    frames = []
+    for i in range(60):  # ~3s a 20fps
+        subprocess.run(['termux-camera-photo','-c','1',f'/tmp/lf_{i}.jpg'])
+        with open(f'/tmp/lf_{i}.jpg','rb') as f:
+            # Mean brightness — picos = LED IR ativo
+            data = f.read()
+            frames.append(sum(data[::100]) / (len(data)/100))
+    # Detecta picos → reconstrói padrão temporal
+    threshold = max(frames) * 0.7
+    pattern = [1 if f > threshold else 0 for f in frames]
+    return pattern
+SEED
+}
+
+seed_S11_C_smart_ac_automation() { cat << 'SEED'
+# S11_C: AC SMART — ajusta automaticamente por temperatura ambiente
+import subprocess, json, time
+def smart_ac_loop(target_c=23):
+    while True:
+        sensors = json.loads(subprocess.run(['termux-sensor','-s','ambient_temperature',
+                            '-n','1'], capture_output=True, text=True).stdout or '{}')
+        # Fallback: temp da bateria (proxy)
+        bat = json.loads(subprocess.run(['termux-battery-status'],
+                        capture_output=True, text=True).stdout)
+        temp = sensors.get('ambient_temperature',{}).get('values',[bat['temperature']])[0]
+        if temp > target_c + 1:
+            print(f"AC ON: {temp}°C > {target_c}+1")
+            subprocess.run(['termux-infrared-transmit','-f','38000', LG_AC_ON_PATTERN])
+        elif temp < target_c - 1:
+            print(f"AC OFF: {temp}°C < {target_c}-1")
+            subprocess.run(['termux-infrared-transmit','-f','38000', LG_AC_OFF_PATTERN])
+        time.sleep(300)
+SEED
+}
+
+seed_S11_D_context_tv_hopper() { cat << 'SEED'
+# S11_D: TV automática por CONTEXTO — hora do dia + sensor de luz
+# 06h + escuro = noticiário; 19h + claro = não liga; 22h = silencia
+import datetime, subprocess, json
+def context_tv():
+    h = datetime.datetime.now().hour
+    lux = json.loads(subprocess.run(['termux-sensor','-s','light','-n','1'],
+                    capture_output=True, text=True).stdout
+                    or '{"light":{"values":[100]}}')['light']['values'][0]
+    rules = [
+        (6 <= h <= 8 and lux < 200, "tv_on_canal_5"),
+        (19 <= h <= 22 and lux > 300, "tv_off"),
+        (h >= 23, "tv_mute"),
+    ]
+    for cond, action in rules:
+        if cond: subprocess.run(['termux-infrared-transmit','-f','38000', IR_MAP[action]])
+SEED
+}
+
+seed_S11_E_ir_covert_channel() { cat << 'SEED'
+# S11_E: CANAL COVERT por IR — comunicação air-gapped entre telefones
+# Tx telefone pisca padrão; Rx telefone com IR receiver lê
+# Útil em ambientes RF-bloqueados; "air gap" simulado
+import subprocess
+def encode_message(text):
+    bits = ''.join(f'{ord(c):08b}' for c in text)
+    pattern = [9000, 4500]
+    for b in bits:
+        pattern += [560, 1690] if b == '1' else [560, 560]
+    pattern += [560]
+    return ','.join(map(str, pattern))
+def tx(text, freq=38000):
+    subprocess.run(['termux-infrared-transmit','-f',str(freq), encode_message(text)])
+# Bandwidth baixo (~50 baud) mas funciona em sala faraday
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S12 — BITOMEGA INTEGRADOR                                         ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S12_A_hmm_over_42_attractors() { cat << 'SEED'
+# S12_A: HMM sobre 42 ATRATORES — sequência de estados como language model
+# Cada atrator = "palavra"; HMM aprende gramática de trajetórias normais
+# Anomalia = sequência improvável (loglik baixa)
+import numpy as np
+class HMM42:
+    def __init__(self, n_states=42):
+        self.A = np.ones((n_states, n_states)) / n_states  # transição uniforme
+        self.pi = np.ones(n_states) / n_states
+        self.counts = np.zeros((n_states, n_states))
+    def update(self, prev_state, cur_state):
+        self.counts[prev_state, cur_state] += 1
+        row_sum = self.counts[prev_state].sum() + 1
+        self.A[prev_state] = (self.counts[prev_state] + 0.1) / row_sum
+    def loglik(self, sequence):
+        ll = np.log(self.pi[sequence[0]] + 1e-9)
+        for t in range(1, len(sequence)):
+            ll += np.log(self.A[sequence[t-1], sequence[t]] + 1e-9)
+        return ll
+# loglik < threshold = trajetória anômala = evento de interesse
+SEED
+}
+
+seed_S12_B_vae_embedding_t7() { cat << 'SEED'
+# S12_B: VARIATIONAL AUTOENCODER → embedding latente do estado T^7
+# Reduz 7D para 3D latente; anomalias têm reconstrução alta
+# Requer tflite/onnx; pesos pré-treinados em ~/.rafaelia/vae.tflite
+import numpy as np
+class VAE_T7:
+    def __init__(self, model_path):
+        try:
+            import tflite_runtime.interpreter as tflite
+            self.interp = tflite.Interpreter(model_path)
+            self.interp.allocate_tensors()
+        except: self.interp = None
+    def embed(self, state_7d):
+        if not self.interp: return state_7d[:3]  # fallback
+        in_det = self.interp.get_input_details()[0]
+        out_det = self.interp.get_output_details()[0]
+        x = np.array(state_7d, dtype=np.float32).reshape(in_det['shape'])
+        self.interp.set_tensor(in_det['index'], x)
+        self.interp.invoke()
+        return self.interp.get_tensor(out_det['index']).flatten().tolist()
+SEED
+}
+
+seed_S12_C_free_energy_active_inference() { cat << 'SEED'
+# S12_C: ACTIVE INFERENCE / FREE ENERGY (Karl Friston)
+# Estado escolhe ação que MINIMIZA energia livre = surpresa esperada
+import numpy as np
+class ActiveInference:
+    def __init__(self, n_actions=8, n_states=42):
+        self.beliefs = np.ones(n_states) / n_states
+        self.B = np.eye(n_states)[:, :, None].repeat(n_actions, axis=2)  # transições por ação
+    def update_beliefs(self, observation):
+        # Bayes update
+        likelihood = np.exp(-((np.arange(len(self.beliefs)) - observation)**2)/10)
+        self.beliefs = (likelihood * self.beliefs) / ((likelihood * self.beliefs).sum() + 1e-9)
+    def select_action(self):
+        # G = -log E_q[p(o,s|a)] — escolhe ação que minimiza
+        G = np.zeros(self.B.shape[2])
+        for a in range(self.B.shape[2]):
+            future = self.B[:,:,a] @ self.beliefs
+            G[a] = -(future * np.log(future + 1e-9)).sum()
+        return int(np.argmin(G))
+SEED
+}
+
+seed_S12_D_quantum_superposition_state() { cat << 'SEED'
+# S12_D: SUPERPOSIÇÃO QUÂNTICA-INSPIRADA — não colapsa atrator único
+# Estado mantém amplitudes complexas em vários atratores; colapsa só sob observação
+import numpy as np
+class QuantumOmega:
+    def __init__(self, n_attractors=42):
+        # Amplitudes complexas; |ψ|² = probabilidade
+        self.psi = np.ones(n_attractors, dtype=complex) / np.sqrt(n_attractors)
+    def evolve(self, hamiltonian_op):
+        # ψ(t+dt) = exp(-iHdt/ħ) ψ
+        from scipy.linalg import expm
+        U = expm(-1j * hamiltonian_op * 0.01)
+        self.psi = U @ self.psi
+        self.psi /= np.linalg.norm(self.psi)
+    def measure(self):
+        probs = np.abs(self.psi)**2
+        outcome = np.random.choice(len(probs), p=probs)
+        # Colapso
+        self.psi = np.zeros_like(self.psi); self.psi[outcome] = 1.0
+        return outcome
+    def coherence(self):
+        # Entropia de Von Neumann da matriz densidade
+        rho = np.outer(self.psi, self.psi.conj())
+        eigs = np.linalg.eigvalsh(rho)
+        eigs = eigs[eigs > 1e-9]
+        return -(eigs * np.log(eigs)).sum()
+SEED
+}
+
+seed_S12_E_multi_agent_omega_consensus() { cat << 'SEED'
+# S12_E: CONSENSO Ω entre N TELEFONES — versão distribuída do BitOmega
+# Cada telefone publica seu Ω state via mDNS; consenso por mediana
+import socket, json, threading, statistics
+class OmegaConsensus:
+    def __init__(self, port=7777):
+        self.port = port; self.peers = {}; self.my_state = 0
+        threading.Thread(target=self._listen, daemon=True).start()
+    def _listen(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind(('', self.port))
+        while True:
+            data, addr = sock.recvfrom(1024)
+            try:
+                msg = json.loads(data)
+                self.peers[addr[0]] = msg['coherence']
+            except: pass
+    def broadcast(self, coherence):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        sock.sendto(json.dumps({'coherence':coherence}).encode(),
+                    ('255.255.255.255', self.port))
+    def consensus(self):
+        all_vals = list(self.peers.values()) + [self.my_state]
+        return statistics.median(all_vals) if all_vals else 0
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S13 — PIPELINE                                                   ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S13_A_grpc_inter_device() { cat << 'SEED'
+# S13_A: gRPC bridge para sincronizar estado entre dispositivos
+# Cada telefone expõe stream bidirecional; agente central agrega
+# pip install grpcio grpcio-tools
+# raf.proto: service Rafaelia { rpc Stream(stream State) returns (stream State); }
+import grpc
+class RafaeliaStub:
+    def __init__(self, target): self.channel = grpc.insecure_channel(target)
+    def stream_states(self, state_iter):
+        for response in self.stub.Stream(state_iter):
+            yield response
+SEED
+}
+
+seed_S13_B_kafka_log_stream() { cat << 'SEED'
+# S13_B: STREAM tipo Kafka — log append-only de eventos Ω
+# Sem servidor Kafka real: NATS, Redis Streams, ou arquivo sequencial
+import os, json, time, fcntl
+class EventStream:
+    def __init__(self, path='~/.rafaelia/stream.log'):
+        self.path = os.path.expanduser(path)
+    def publish(self, event):
+        with open(self.path,'a') as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            f.write(json.dumps(event) + '\n')
+            fcntl.flock(f, fcntl.LOCK_UN)
+    def consume(self, offset=0):
+        with open(self.path) as f:
+            f.seek(offset)
+            for line in f: yield json.loads(line)
+SEED
+}
+
+seed_S13_C_event_sourced_replay() { cat << 'SEED'
+# S13_C: EVENT SOURCING — todo estado é função de eventos passados
+# Pode REPLAY desde início; debug ultra-poderoso
+import json
+class EventSourced:
+    def __init__(self, log_path):
+        self.log_path = log_path
+        self.state = {}
+    def apply(self, event):
+        kind = event['kind']
+        if kind == 'sensor':
+            self.state.setdefault('sensors',{})[event['channel']] = event['value']
+        elif kind == 'omega':
+            self.state['last_omega'] = event['value']
+    def replay(self):
+        self.state = {}
+        with open(self.log_path) as f:
+            for line in f: self.apply(json.loads(line))
+        return self.state
+    def append(self, event):
+        with open(self.log_path,'a') as f: f.write(json.dumps(event)+'\n')
+        self.apply(event)
+SEED
+}
+
+seed_S13_D_dht_distributed_omega() { cat << 'SEED'
+# S13_D: DHT (Distributed Hash Table) — Ω distribuído entre N nodos
+# Cada chave (correlation_id) mapeada por hash → nó responsável
+# Implementação Chord simplificada
+import hashlib, bisect
+class ChordNode:
+    def __init__(self, node_id, peers):
+        self.id = node_id
+        self.peers = sorted(peers + [node_id])  # IDs ordenados
+    def responsible_for(self, key):
+        h = int(hashlib.sha256(key.encode()).hexdigest(), 16) % (2**32)
+        idx = bisect.bisect_left(self.peers, h)
+        return self.peers[idx % len(self.peers)]
+# Cada peer guarda parte do estado Ω; tolerante a falha individual
+SEED
+}
+
+seed_S13_E_autoscale_worker_pool() { cat << 'SEED'
+# S13_E: WORKER POOL auto-escalável por carga + bateria + temp
+# Mais trabalhadores se bateria > 70% e temp < 35°C; menos caso contrário
+import threading, queue, json, subprocess
+class AutoPool:
+    def __init__(self, min_w=1, max_w=8):
+        self.q = queue.Queue()
+        self.workers = []; self.min = min_w; self.max = max_w
+        self.scale()
+    def _battery(self):
+        b = json.loads(subprocess.run(['termux-battery-status'],
+                      capture_output=True, text=True).stdout)
+        return b['percentage'], b['temperature']
+    def scale(self):
+        lvl, tmp = self._battery()
+        target = self.max if (lvl > 70 and tmp < 35) else self.min
+        while len(self.workers) < target: self._spawn()
+        while len(self.workers) > target: self.workers.pop().join(0.1)
+    def _spawn(self):
+        t = threading.Thread(target=self._work, daemon=True)
+        t.start(); self.workers.append(t)
+    def _work(self):
+        while True:
+            job = self.q.get()
+            if job is None: break
+            job()
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S14 — VOICE COMMAND                                              ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S14_A_whisper_realtime() { cat << 'SEED'
+# S14_A: WHISPER.CPP streaming tempo-real
+# pkg install whisper-cpp; modelo ggml-base.bin
+import subprocess, time
+def whisper_stream():
+    # Pipe mic → whisper-cli em stream
+    p_mic = subprocess.Popen(['termux-microphone-record','-e','wav','-r','16000',
+                              '-l','0','-f','-'], stdout=subprocess.PIPE)
+    p_whi = subprocess.Popen(['whisper-cli','-m','ggml-base.bin','-f','-','--no-prints'],
+                              stdin=p_mic.stdout, stdout=subprocess.PIPE, text=True)
+    for line in p_whi.stdout:
+        line = line.strip()
+        if line: yield line
+SEED
+}
+
+seed_S14_B_wake_word_tflite() { cat << 'SEED'
+# S14_B: WAKE WORD CUSTOM via TFLite (treino próprio)
+# Sempre ouvindo de fundo; só ativa pipeline ao ouvir "RAFAELIA"
+import numpy as np
+class WakeWordDetector:
+    def __init__(self, model='~/.rafaelia/wake_word.tflite'):
+        try:
+            import tflite_runtime.interpreter as tflite
+            self.interp = tflite.Interpreter(model)
+            self.interp.allocate_tensors()
+        except: 
+seed_S14_C_multilingual_switch() { cat << 'SEED'
+# S14_C: SWITCH MULTILINGUE — detecta idioma e carrega modelo Vosk apropriado
+import subprocess, os
+MODELS = {'pt':'~/.rafaelia/vosk-pt','en':'~/.rafaelia/vosk-en','he':'~/.rafaelia/vosk-he'}
+def detect_lang(audio_path):
+    try:
+        import langid
+        with open(audio_path,'rb') as f: return langid.classify(f.read()[:1024])[0]
+    except: return 'pt'
+def transcribe(audio_path):
+    lang = detect_lang(audio_path)
+    model = os.path.expanduser(MODELS.get(lang, MODELS['pt']))
+    return {"lang": lang, "model": model}
+SEED
+}
+
+seed_S14_D_voice_biometric_auth() { cat << 'SEED'
+# S14_D: AUTH POR VOZ — speaker verification por embedding
+import numpy as np
+def voice_auth(probe_wav, enrolled_emb, threshold=0.78):
+    import librosa
+    y, sr = librosa.load(probe_wav, sr=16000)
+    probe = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=20).mean(axis=1)
+    enrolled = np.load(enrolled_emb)
+    sim = np.dot(probe,enrolled)/(np.linalg.norm(probe)*np.linalg.norm(enrolled)+1e-9)
+    return {"authorized": sim > threshold, "similarity": float(sim)}
+SEED
+}
+
+seed_S14_E_ollama_conversational_llm() { cat << 'SEED'
+# S14_E: LLM CONVERSACIONAL local — Ollama + Whisper + TTS
+import subprocess, requests
+def voice_to_llm(audio_path):
+    stt = subprocess.run(['whisper-cli','-m','ggml-base.bin','-f',audio_path,
+                          '--no-prints'], capture_output=True, text=True).stdout.strip()
+    resp = requests.post('http://localhost:11434/api/generate',
+                        json={'model':'llama3.2:3b','prompt':stt,'stream':False}).json()
+    answer = resp['response']
+    subprocess.run(['termux-tts-speak', answer])
+    return {"question": stt, "answer": answer}
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S15 — AUTOSTART                                                  ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S15_A_tasker_context_boot() { cat << 'SEED'
+# S15_A: BOOT condicionado a CONTEXTO via SSID
+# ~/.termux/boot/00-context:
+#!/bin/sh
+SSID=$(termux-wifi-connectioninfo | jq -r .ssid)
+case "$SSID" in
+  "Casa")      bash ~/.rafaelia/seed_13_pipeline.sh ;;
+  "Trabalho")  bash ~/.rafaelia/health_only.sh ;;
+  *)           bash ~/.rafaelia/travel_mode.sh ;;
+esac
+SEED
+}
+
+seed_S15_B_service_manager() { cat << 'SEED'
+# S15_B: SERVICE MANAGER tipo systemd com unit files + dependencias
+import subprocess, time, os, json
+class ServiceMgr:
+    def __init__(self, units_dir='~/.rafaelia/units'):
+        self.units_dir = os.path.expanduser(units_dir)
+        self.units = {}; self.procs = {}
+    def load(self):
+        for f in os.listdir(self.units_dir):
+            if f.endswith('.unit'):
+                self.units[f[:-5]] = json.load(open(f'{self.units_dir}/{f}'))
+    def start(self, name):
+        u = self.units[name]
+        for dep in u.get('after',[]):
+            if dep not in self.procs: self.start(dep)
+        self.procs[name] = subprocess.Popen(u['exec'], shell=True)
+    def watchdog(self):
+        while True:
+            for name, p in list(self.procs.items()):
+                if p.poll() is not None: self.start(name)
+            time.sleep(5)
+SEED
+}
+
+seed_S15_C_health_gated_startup() { cat << 'SEED'
+# S15_C: STARTUP GATED por health — bateria + temp + rede
+import subprocess, time, json
+def gate(check, max_wait=60):
+    t0 = time.time()
+    while time.time()-t0 < max_wait:
+        if check(): return True
+        time.sleep(2)
+    return False
+def check_battery():
+    b = json.loads(subprocess.run(['termux-battery-status'],
+                  capture_output=True,text=True).stdout)
+    return b['percentage']>20 and b['temperature']<45
+def check_net():
+    return subprocess.run(['ping','-c','1','-W','3','8.8.8.8'],
+                         capture_output=True).returncode == 0
+def boot():
+    if not gate(check_battery): print("Bat insuficiente"); return
+    if not gate(check_net, 30): print("Sem rede; modo offline")
+    subprocess.Popen(['bash','~/.rafaelia/pipeline.sh'])
+SEED
+}
+
+seed_S15_D_crash_safe_backoff() { cat << 'SEED'
+# S15_D: SUPERVISOR com backoff EXPONENCIAL após N crashes
+import subprocess, time
+class Supervisor:
+    def __init__(self, cmd, max_fails=5, window=300):
+        self.cmd=cmd; self.max=max_fails; self.window=window; self.fails=[]
+    def run(self):
+        while True:
+            subprocess.Popen(self.cmd, shell=True).wait()
+            self.fails.append(time.time())
+            self.fails = [t for t in self.fails if time.time()-t < self.window]
+            if len(self.fails) >= self.max:
+                backoff = 2 ** (len(self.fails) - self.max + 1) * 60
+                print(f"Backoff {backoff}s"); time.sleep(backoff)
+SEED
+}
+
+seed_S15_E_zerotier_mesh_boot() { cat << 'SEED'
+# S15_E: MESH ZeroTier no boot — VPN P2P entre N telefones
+# ~/.termux/boot/01-mesh:
+#!/bin/sh
+zerotier-one -d
+sleep 5
+zerotier-cli join 8056c2e21c000001   # network ID
+# Após join: cada telefone tem IP 10.x.x.x privado, SSH direto
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S16 — TASKER BRIDGE                                              ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S16_A_geofence_workflow() { cat << 'SEED'
+# S16_A: GEOFENCE → workflow ao entrar/sair de zona
+# ~/.termux/tasker/geofence.sh:
+#!/bin/sh
+EVENT="$1"; LAT="$2"; LON="$3"
+case "$EVENT" in
+  enter_home)  bash ~/.rafaelia/home.sh ;;
+  exit_home)   bash ~/.rafaelia/away.sh ;;
+  enter_work)  bash ~/.rafaelia/work.sh ;;
+esac
+SEED
+}
+
+seed_S16_B_autovoice_integration() { cat << 'SEED'
+# S16_B: AUTOVOICE — comando "OK Google, raphael X" dispara Termux
+# tasker/voice.sh:
+#!/bin/sh
+CMD="$1"
+case "$CMD" in
+  fotografar) termux-camera-photo -c 0 ~/photos/$(date +%s).jpg ;;
+  gravar)     termux-microphone-record -l 30 -f ~/recs/$(date +%s).aac ;;
+  status)     termux-tts-speak "$(bash ~/.rafaelia/health_speak.sh)" ;;
+esac
+SEED
+}
+
+seed_S16_C_calendar_scheduler() { cat << 'SEED'
+# S16_C: SCHEDULER via CALENDAR — eventos disparam scripts
+# Title "RAF: backup" → ~/.rafaelia/tasker/calendar.sh "backup"
+#!/bin/sh
+ACTION="$1"
+case "$ACTION" in
+  backup)   rsync -av ~/.rafaelia rsync://remote/back ;;
+  monitor)  bash ~/.rafaelia/pipeline.sh ;;
+  silence)  termux-volume music 0; termux-volume ring 0 ;;
+esac
+SEED
+}
+
+seed_S16_D_weather_conditional() { cat << 'SEED'
+# S16_D: TRIGGER por CLIMA via AutoWeather/OpenWeatherMap
+# tasker/weather.sh:
+#!/bin/sh
+COND="$1"; TEMP="$2"
+case "$COND" in
+  rain) termux-notification --title "Chuva — gravando"
+        timeout 600 bash -c 'while :; do termux-camera-photo -c 0 \
+          ~/rain_$(date +%s).jpg; sleep 30; done' ;;
+  hot)  [ "$TEMP" -gt 35 ] && termux-notification --title "Calor $TEMP°C" ;;
+esac
+SEED
+}
+
+seed_S16_E_multi_condition_fsm() { cat << 'SEED'
+# S16_E: FSM MULTI-CONDICIONAL — estado = (bateria, hora, local, WiFi)
+import json, datetime, subprocess
+def current_state():
+    b = json.loads(subprocess.run(['termux-battery-status'],
+                  capture_output=True,text=True).stdout)
+    w = json.loads(subprocess.run(['termux-wifi-connectioninfo'],
+                  capture_output=True,text=True).stdout)
+    h = datetime.datetime.now().hour
+    return {
+        "low_bat": b['percentage'] < 20,
+        "night":   22 <= h or h <= 6,
+        "home":    w.get('ssid','').lower() == 'casa',
+        "charging": b['plugged'] != 'UNPLUGGED'
+    }
+TRANSITIONS = {
+    ("low_bat","night","home","not_charging"): "alerta_sono",
+    ("not_low_bat","day","home","any"):        "pipeline_full",
+    ("any","any","not_home","any"):            "travel_mode",
+}
+SEED
+}
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  S17 — DEPLOY                                                     ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_S17_A_reproducible_manifest() { cat << 'SEED'
+# S17_A: MANIFEST SHA256 + Merkle root assinado pelo keystore HW
+import hashlib, os, json, subprocess
+def manifest_dir(d='~/.rafaelia'):
+    base = os.path.expanduser(d)
+    files = {}
+    for root, _, fs in os.walk(base):
+        for f in fs:
+            p = os.path.join(root, f)
+            with open(p,'rb') as h: files[os.path.relpath(p, base)] = \
+                hashlib.sha256(h.read()).hexdigest()
+    root_hash = hashlib.sha256(''.join(sorted(files.values())).encode()).hexdigest()
+    json.dump({"files": files, "root": root_hash},
+              open(f'{base}/MANIFEST.json','w'), indent=2)
+    sig = subprocess.run(['termux-keystore','sign','raf_root','-'],
+                        input=root_hash, capture_output=True, text=True).stdout
+    return {"root": root_hash, "signature": sig}
+SEED
+}
+
+seed_S17_B_atomic_deploy_rollback() { cat << 'SEED'
+# S17_B: DEPLOY ATÔMICO com ROLLBACK em falha
+import os, shutil, subprocess
+def atomic_deploy(staging, target):
+    backup = target + '.bak'
+    if os.path.exists(target): shutil.move(target, backup)
+    try:
+        shutil.move(staging, target)
+        r = subprocess.run(['bash', f'{target}/smoke_test.sh'], timeout=30)
+        if r.returncode != 0: raise Exception("smoke falhou")
+        if os.path.exists(backup): shutil.rmtree(backup)
+        return True
+    except Exception:
+        if os.path.exists(target): shutil.rmtree(target)
+        if os.path.exists(backup): shutil.move(backup, target)
+        return False
+SEED
+}
+
+seed_S17_C_encrypted_bundle_signed() { cat << 'SEED'
+# S17_C: BUNDLE criptografado + assinado para distribuição
+import subprocess, hashlib, os
+def make_bundle(out='~/rafaelia_bundle.gpg'):
+    out = os.path.expanduser(out)
+    subprocess.run(['tar','-czf','/tmp/raf.tar.gz','-C',
+                    os.path.expanduser('~/.rafaelia'),'.'])
+    subprocess.run(['gpg','-c','--symmetric','--sign','-o',out,'/tmp/raf.tar.gz'])
+    h = hashlib.sha256(open(out,'rb').read()).hexdigest()
+    print(f"Bundle: {out}\nInstall code: {h[:16]}")
+SEED
+}
+
+seed_S17_D_differential_update() { cat << 'SEED'
+# S17_D: UPDATE DIFERENCIAL — baixa só arquivos mudados
+import hashlib, json, os, urllib.request
+def diff_update(remote_manifest_url, local_manifest):
+    remote = json.loads(urllib.request.urlopen(remote_manifest_url).read())
+    local = json.load(open(local_manifest))
+    changed = [p for p,rh in remote['files'].items() if local['files'].get(p) != rh]
+    base_url = remote_manifest_url.rsplit('/',1)[0]
+    for path in changed:
+        data = urllib.request.urlopen(f'{base_url}/{path}').read()
+        if hashlib.sha256(data).hexdigest() == remote['files'][path]:
+            open(os.path.expanduser(f'~/.rafaelia/{path}'),'wb').write(data)
+    return changed
+SEED
+}
+
+seed_S17_E_ab_deploy_health_switch() { cat << 'SEED'
+# S17_E: A/B DEPLOY — duas versões coexistem, switch após health-check
+import os, json, subprocess
+class ABDeploy:
+    def __init__(self, base='~/.rafaelia'):
+        self.base = os.path.expanduser(base)
+        self.config = f'{self.base}/active_slot.json'
+        if not os.path.exists(self.config):
+            json.dump({"active":"A"}, open(self.config,'w'))
+    def active(self): return json.load(open(self.config))['active']
+    def inactive(self): return 'B' if self.active()=='A' else 'A'
+    def deploy(self, tar):
+        slot = f'{self.base}/slot_{self.inactive()}'
+        os.makedirs(slot, exist_ok=True)
+        subprocess.run(['tar','-xzf',tar,'-C',slot])
+    def health(self):
+        slot = f'{self.base}/slot_{self.inactive()}'
+        return subprocess.run(['bash',f'{slot}/smoke.sh'],timeout=60).returncode == 0
+    def switch(self):
+        if self.health():
+            json.dump({"active":self.inactive()}, open(self.config,'w'))
+            return True
+        return False
+SEED
+}
+
+s

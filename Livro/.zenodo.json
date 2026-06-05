@@ -1,0 +1,35 @@
+{
+  "title": "RAFAELIA Stack v5.0.0 — Deterministic low-level compiler from speech to bytecode with multilingual biblical corpus and toroidal cognitive kernel",
+  "description": "<p><strong>RAFAELIA</strong> is a 295KB / 6,432-line source stack delivering an end-to-end pipeline from <em>human speech → tokens → AST → bytecode → ARM64/x86_64 assembly → execution</em>, validated on real hardware (Motorola E7 Power, Cortex-A55, Android 10, Termux).</p><p>The stack closes the gap between heavyweight ML frameworks (libtorch, ONNX Runtime, 5–50 MB binaries) and minimal embedded libraries that lack cognition, providing:</p><ul><li><strong>FALA → LOW-LEVEL compiler</strong> across 7 languages (Portuguese, Hebrew, Aramaic, Greek, Latin, Japanese, Chinese) with 60 reusable AI seeds (T01–T12 × A–E)</li><li><strong>C runtime</strong> dual-mode (libc + freestanding, 32 opcodes, direct syscall) producing a 16KB binary</li><li><strong>Cognitive kernel</strong> implementing the ψ→χ→ρ→Δ→Σ→Ω cycle with 5 operational modes (cognitive, physical, cryptographic, distributed, autopoietic)</li><li><strong>Biblical corpus</strong> of 12 canonical verses pre-compiled with gematria (Hebrew + Greek, NFD-normalized), bytecode, and ARM64 assembly</li><li><strong>Mathematical framework</strong> with 110+ original formulas (toroidal T⁷, Fibonacci-Rafael recursion, Φ_ethica filter)</li><li><strong>90 Termux sensor seeds</strong> (S00–S17 × A–E) covering microphone-entropy, IMU-toroidal-mapping, magnetic-SLAM, BLE-mesh, NFC-mesh, IR-covert-channel, and more</li></ul><p><strong>Validation:</strong> 230+ unit tests passing, 18/18 smoke tests green, build-reproducible tarball (deterministic mtime, owner, sort order), SHA256 + Merkle root verifiable end-to-end.</p><p><strong>Reproducibility:</strong> 60 seconds from tarball to running demo on any POSIX bash + clang + python3.</p>",
+  "creators": [
+    {
+      "name": "Rafael Melo Reis Novo",
+      "affiliation": "Independent Researcher · Porto Alegre, Brasil",
+      "orcid": "0000-0000-0000-0000"
+    }
+  ],
+  "keywords": ["bare-metal","ARM32","compiler","low-level","biblical-NLP","gematria","toroidal-geometry","freestanding-C","Termux","deterministic-runtime","multilingual-corpus","VM-design","embedded-AI","Φ-ethica"],
+  "license": "CC-BY-4.0",
+  "upload_type": "software",
+  "publication_date": "2026-05-29",
+  "version": "5.0.0",
+  "language": "eng",
+  "access_right": "open",
+  "communities": [
+    {"identifier": "open-source-research"}
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/Rafaelmeloreisnovo/llama",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    }
+  ],
+  "references": [
+    "Friston, K. (2010). The free-energy principle: a unified brain theory? Nature Reviews Neuroscience 11.",
+    "Goertzel, G. (1958). An algorithm for the evaluation of finite trigonometric series. American Mathematical Monthly 65.",
+    "Madgwick, S. (2010). An efficient orientation filter for inertial and inertial/magnetic sensor arrays.",
+    "Castagnoli, G. et al. (1993). Optimization of cyclic redundancy-check codes with 24 and 32 parity bits. IEEE Trans. Commun. 41."
+  ],
+  "notes": "Build-reproducible: same SHA256 across machines when using `tar --sort=name --mtime='2025-01-01 UTC' --owner=0 --group=0 --numeric-owner`. Bundle SHA256 documented in install_code.txt. Project signature: RAFCODE-Φ-∆RafaelVerboΩ-𓂀ΔΦΩ. Core axiom: Ω = Amor (Love as the supreme coherence metric)."
+}

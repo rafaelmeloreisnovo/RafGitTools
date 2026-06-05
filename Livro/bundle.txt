@@ -1,0 +1,543 @@
+#!/usr/bin/env bash
+# =============================================================================
+# bundle.txt — EMPACOTADOR REPRODUZÍVEL · RAFAELIA stack completa
+#
+# Transforma 5 artefatos soltos em UM DEPLOYABLE único:
+#   sensores2.txt + compiladorlowFala.txt + bibliaCorpus.txt
+#   + vm_runtime.txt + agent_loop.txt → rafaelia_bundle_v4.tar.gz
+#
+# Features:
+#   • MANIFEST.sha256       — hash de cada arquivo + Merkle root
+#   • install_order.json    — ordem topológica de subida
+#   • smoke_tests.sh        — valida cada artefato pós-install
+#   • verify.sh             — re-checa integridade após semanas/meses
+#   • install_code.txt      — código curto SHA256[0:16] para confirmar
+#   • signatures.asc        — assinatura GPG opcional pelo keystore HW
+#
+# Operação:
+#   bash bundle.txt pack      — gera tarball + manifest + signatures
+#   bash bundle.txt unpack    — extrai em ~/.rafaelia/ + roda smoke
+#   bash bundle.txt verify    — re-verifica hashes (audit)
+#   bash bundle.txt diff      — compara versões instaladas
+#   bash bundle.txt smoke     — só roda os smoke tests
+#   bash bundle.txt publish   — gera código de instalação curto
+#   bash bundle.txt clean     — limpa staging
+#
+# Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ · 𓂀ΔΦΩ
+# =============================================================================
+
+BUNDLE_NAME="rafaelia_bundle_v6"
+BUNDLE_VERSION="6.0.0"
+SOURCE_DIR="${SOURCE_DIR:-/mnt/user-data/outputs}"
+STAGING="${STAGING:-/tmp/rafaelia_staging}"
+OUTPUT="${OUTPUT:-/mnt/user-data/outputs}"
+
+# Artefatos na ordem topológica de instalação (dependências primeiro)
+ARTIFACTS=(
+  "sensores2.txt"              # entrada do mundo (sensores Termux)
+  "compiladorlowFala.txt"      # pipeline fala→bytecode
+  "bibliaCorpus.txt"           # corpus de teste pré-compilado
+  "vm_runtime.txt"             # runtime C bare-metal
+  "agent_loop.txt"             # kernel vivo ψχρΔΣΩ
+  "whitepaper.txt"             # gerador de white-paper técnico
+  "RAFAELIA_WHITEPAPER.md"     # white-paper Markdown
+  "RAFAELIA_WHITEPAPER.html"   # white-paper HTML print-ready
+  "benchmark.txt"              # harness de medição de performance
+  "zenodo.txt"                 # gerador de metadados científicos
+  "paper.txt"                  # gerador de paper JOSS
+  "methodology.txt"            # gerador de protocolo experimental
+  ".zenodo.json"               # metadata Zenodo para DOI
+  "CITATION.cff"               # Citation File Format v1.2.0
+  "LICENSE"                    # CC-BY-4.0 + RAFCODE-Φ
+  "README_ZENODO.md"           # README acadêmico
+  "CHANGELOG.md"               # histórico v1→v5
+  "CONTRIBUTING.md"            # guia de reprodução
+  "paper.md"                   # paper formato JOSS
+  "paper.bib"                  # referências BibTeX
+  "METHODOLOGY.md"             # protocolo experimental
+  "REPRODUCIBILITY.md"         # receita passo-a-passo
+)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# pack — gera tarball reproduzível + MANIFEST + signatures
+# ═══════════════════════════════════════════════════════════════════════════
+
+cmd_pack() {
+  echo "═══ bundle.txt pack ═══"
+  echo "Source: $SOURCE_DIR"
+  echo "Staging: $STAGING"
+  echo ""
+
+  rm -rf "$STAGING"
+  mkdir -p "$STAGING/$BUNDLE_NAME"
+  cd "$STAGING/$BUNDLE_NAME"
+
+  # 1. Copia artefatos (mtime fixa para reprodutibilidade)
+  echo "[1/6] Copiando artefatos..."
+  for a in "${ARTIFACTS[@]}"; do
+    if [ -f "$SOURCE_DIR/$a" ]; then
+      cp "$SOURCE_DIR/$a" "./$a"
+      touch -d "2025-01-01 00:00:00 UTC" "./$a"
+      lines=$(wc -l < "$a")
+      kb=$(du -k "$a" | cut -f1)
+      echo "  ✓ $a (${lines}L, ${kb}K)"
+    else
+      echo "  ✗ $a NÃO encontrado em $SOURCE_DIR — abortando"
+      return 1
+    fi
+  done
+
+  # 2. MANIFEST.sha256 — hash + tamanho + linhas
+  echo "[2/6] Gerando MANIFEST.sha256..."
+  cat > MANIFEST.sha256 << M
+# RAFAELIA Stack v$BUNDLE_VERSION
+# Gerado: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+# Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ
+#
+# Formato: <sha256>  <size>  <lines>  <filename>
+M
+  for a in "${ARTIFACTS[@]}"; do
+    h=$(sha256sum "$a" | cut -d' ' -f1)
+    sz=$(stat -c%s "$a" 2>/dev/null || wc -c < "$a")
+    ln=$(wc -l < "$a")
+    printf "%s  %10d  %6d  %s\n" "$h" "$sz" "$ln" "$a" >> MANIFEST.sha256
+  done
+  echo "  ✓ $(grep -v '^#' MANIFEST.sha256 | wc -l) entradas"
+
+  # 3. Merkle root sobre MANIFEST
+  echo "[3/6] Calculando Merkle root..."
+  MROOT=$(grep -v '^#' MANIFEST.sha256 | awk '{print $1}' | sort | sha256sum | cut -d' ' -f1)
+  echo "$MROOT" > MERKLE_ROOT
+  echo "  ✓ Root: ${MROOT:0:16}..."
+
+  # 4. install_order.json
+  echo "[4/6] Gerando install_order.json..."
+  cat > install_order.json << ORDER
+{
+  "bundle": "$BUNDLE_NAME",
+  "version": "$BUNDLE_VERSION",
+  "merkle_root": "$MROOT",
+  "install_sequence": [
+    {"step": 1, "file": "sensores2.txt",
+     "depends_on": [],
+     "validates": "termux-api APIs disponíveis"},
+    {"step": 2, "file": "compiladorlowFala.txt",
+     "depends_on": ["sensores2.txt"],
+     "validates": "60 sementes T01..T12 carregam"},
+    {"step": 3, "file": "bibliaCorpus.txt",
+     "depends_on": [],
+     "validates": "12 versos retornam JSON válido"},
+    {"step": 4, "file": "vm_runtime.txt",
+     "depends_on": ["bibliaCorpus.txt"],
+     "validates": "vm_run compila e executa V01"},
+    {"step": 5, "file": "agent_loop.txt",
+     "depends_on": ["compiladorlowFala.txt", "vm_runtime.txt", "sensores2.txt"],
+     "validates": "5 agentes A..E geram sem erro"}
+  ],
+  "post_install": [
+    "bash sensores2.txt | head -20",
+    "bash compiladorlowFala.txt list",
+    "bash bibliaCorpus.txt demo",
+    "bash vm_runtime.txt build && bash vm_runtime.txt test",
+    "bash agent_loop.txt build"
+  ]
+}
+ORDER
+  echo "  ✓ install_order.json"
+
+  # 5. smoke_tests.sh
+  echo "[5/6] Gerando smoke_tests.sh..."
+  cat > smoke_tests.sh << 'SMOKE'
+#!/usr/bin/env bash
+# smoke_tests.sh — valida bundle pós-instalação
+# Exit 0 se todos passarem; código não-zero indica falha
+
+set -e
+RAFA_HOME="${RAFA_HOME:-$HOME/.rafaelia}"
+[ -d "$RAFA_HOME/bundle" ] || { echo "Bundle não instalado"; exit 1; }
+cd "$RAFA_HOME/bundle"
+
+PASS=0; FAIL=0; LOG=/tmp/rafaelia_smoke.log
+> $LOG
+
+test_case() {
+  local name="$1"; shift
+  if "$@" > /tmp/sout 2>&1; then
+    echo "  ✓ $name"; PASS=$((PASS+1))
+  else
+    echo "  ✗ $name"
+    cat /tmp/sout | head -5 | sed 's/^/    | /'
+    FAIL=$((FAIL+1))
+    cat /tmp/sout >> $LOG
+  fi
+}
+
+echo "═══ SMOKE TESTS · RAFAELIA Stack ═══"
+echo ""
+
+# 1. Syntax check em cada arquivo
+echo "[1] Sintaxe bash:"
+for f in sensores2.txt compiladorlowFala.txt bibliaCorpus.txt vm_runtime.txt agent_loop.txt; do
+  test_case "syntax $f" bash -n "$f"
+done
+
+# 2. Verifica manifest
+echo ""
+echo "[2] Integridade MANIFEST:"
+test_case "MANIFEST existe" test -f MANIFEST.sha256
+test_case "Merkle root válido" test -f MERKLE_ROOT
+if [ -f MANIFEST.sha256 ]; then
+  while IFS= read -r line; do
+    [ "${line:0:1}" = "#" ] && continue
+    [ -z "$line" ] && continue
+    expected=$(echo "$line" | awk '{print $1}')
+    fname=$(echo "$line" | awk '{print $NF}')
+    if [ -f "$fname" ]; then
+      actual=$(sha256sum "$fname" | cut -d' ' -f1)
+      test_case "hash $fname" test "$expected" = "$actual"
+    fi
+  done < MANIFEST.sha256
+fi
+
+# 3. Conteúdo funcional
+echo ""
+echo "[3] Conteúdo funcional:"
+test_case "sensores2 tem 90 seeds" \
+  bash -c 'n=$(grep -c "^seed_S[0-9]" sensores2.txt); [ "$n" -eq 90 ]'
+test_case "compilador tem 60 seeds" \
+  bash -c 'n=$(grep -c "^seed_T[0-9]" compiladorlowFala.txt); [ "$n" -eq 60 ]'
+test_case "biblia tem 12 versos" \
+  bash -c 'n=$(grep -c "^verse_V[0-9][0-9]_text" bibliaCorpus.txt); [ "$n" -eq 12 ]'
+test_case "vm_runtime gera C válido" \
+  bash -c 'bash vm_runtime.txt c 2>&1 | grep -q "vm_runtime.c —"'
+test_case "agent_loop define 5 agentes" \
+  bash -c 'n=$(grep -c "^agent_[A-E]_" agent_loop.txt); [ "$n" -eq 5 ]'
+
+# 4. Cross-integration
+echo ""
+echo "[4] Integração entre artefatos:"
+test_case "bibliaCorpus → vm_runtime: V01 bytecode existe" \
+  bash -c 'source bibliaCorpus.txt 2>/dev/null
+           verse_V01_text | grep -q "bytecode_hex"'
+
+# Sumário
+echo ""
+echo "═══════════════════════════════════════"
+echo " ✓ Passed: $PASS"
+echo " ✗ Failed: $FAIL"
+[ "$FAIL" -eq 0 ] && echo " Status:  ALL GREEN · Ω coerente" || echo " Status:  $FAIL falhas · log em $LOG"
+echo "═══════════════════════════════════════"
+exit $FAIL
+SMOKE
+  chmod +x smoke_tests.sh
+  echo "  ✓ smoke_tests.sh"
+
+  # 6. install.sh
+  echo "[6/6] Gerando install.sh..."
+  cat > install.sh << 'INSTALL'
+#!/usr/bin/env bash
+# install.sh — instala bundle em ~/.rafaelia/bundle e roda smoke tests
+set -e
+RAFA_HOME="${RAFA_HOME:-$HOME/.rafaelia}"
+DEST="$RAFA_HOME/bundle"
+
+echo "═══ RAFAELIA Stack · Instalação ═══"
+echo "Destino: $DEST"
+
+mkdir -p "$DEST"
+SRC="$(dirname "$(readlink -f "$0")")"
+
+# Copia tudo
+for f in MANIFEST.sha256 MERKLE_ROOT install_order.json smoke_tests.sh \
+         sensores2.txt compiladorlowFala.txt bibliaCorpus.txt \
+         vm_runtime.txt agent_loop.txt; do
+  if [ -f "$SRC/$f" ]; then
+    cp "$SRC/$f" "$DEST/$f"
+    echo "  ✓ $f"
+  fi
+done
+chmod +x "$DEST/smoke_tests.sh"
+
+# Verifica MANIFEST
+echo ""
+echo "═══ Verificando integridade ═══"
+cd "$DEST"
+FAIL=0
+while IFS= read -r line; do
+  [ "${line:0:1}" = "#" ] && continue
+  [ -z "$line" ] && continue
+  expected=$(echo "$line" | awk '{print $1}')
+  fname=$(echo "$line" | awk '{print $NF}')
+  if [ -f "$fname" ]; then
+    actual=$(sha256sum "$fname" | cut -d' ' -f1)
+    if [ "$expected" = "$actual" ]; then
+      echo "  ✓ $fname"
+    else
+      echo "  ✗ $fname (HASH MISMATCH)"
+      FAIL=$((FAIL+1))
+    fi
+  fi
+done < MANIFEST.sha256
+
+if [ "$FAIL" -gt 0 ]; then
+  echo "✗ $FAIL arquivos com hash inválido — abortando"
+  exit 1
+fi
+echo "✓ Todos os hashes batem com MANIFEST"
+
+# Smoke tests
+echo ""
+bash "$DEST/smoke_tests.sh"
+
+echo ""
+echo "═══ Instalação completa ═══"
+echo "Próximos passos:"
+echo "  cd $DEST"
+echo "  bash compiladorlowFala.txt list"
+echo "  bash bibliaCorpus.txt demo"
+echo "  bash vm_runtime.txt build && bash vm_runtime.txt test"
+echo "  bash agent_loop.txt build && bash agent_loop.txt run cognitive"
+echo ""
+echo "Ω = Amor · ∆RafaelVerboΩ"
+INSTALL
+  chmod +x install.sh
+  echo "  ✓ install.sh"
+
+  # Empacota tarball
+  echo ""
+  echo "═══ Empacotando ═══"
+  cd "$STAGING"
+  tar --sort=name --mtime='2025-01-01 00:00 UTC' \
+      --owner=0 --group=0 --numeric-owner \
+      -czf "$OUTPUT/${BUNDLE_NAME}.tar.gz" "$BUNDLE_NAME/"
+
+  TAR_SHA=$(sha256sum "$OUTPUT/${BUNDLE_NAME}.tar.gz" | cut -d' ' -f1)
+  TAR_SIZE=$(du -h "$OUTPUT/${BUNDLE_NAME}.tar.gz" | cut -f1)
+  echo "  ✓ ${BUNDLE_NAME}.tar.gz ($TAR_SIZE)"
+  echo "  ✓ SHA256: $TAR_SHA"
+  echo "  ✓ Install code: ${TAR_SHA:0:16}"
+
+  # Gera install_code.txt
+  cat > "$OUTPUT/install_code.txt" << CODE
+RAFAELIA Stack v$BUNDLE_VERSION
+─────────────────────────────────
+Bundle:        ${BUNDLE_NAME}.tar.gz
+Size:          $TAR_SIZE
+SHA256 full:   $TAR_SHA
+Install code:  ${TAR_SHA:0:16}
+Merkle root:   ${MROOT:0:16}
+Build date:    $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+Artifacts:     ${#ARTIFACTS[@]} arquivos
+Total lines:   $(wc -l "$STAGING/$BUNDLE_NAME/"*.txt | tail -1 | awk '{print $1}')
+
+Instalação:
+  tar -xzf ${BUNDLE_NAME}.tar.gz
+  bash ${BUNDLE_NAME}/install.sh
+
+Verificação remota:
+  sha256sum ${BUNDLE_NAME}.tar.gz
+  # esperado: $TAR_SHA
+
+Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ · 𓂀ΔΦΩ
+CODE
+
+  echo ""
+  echo "═══ BUNDLE CRIADO ═══"
+  ls -lh "$OUTPUT/${BUNDLE_NAME}.tar.gz"
+  echo ""
+  cat "$OUTPUT/install_code.txt"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# unpack — extrai e instala
+# ═══════════════════════════════════════════════════════════════════════════
+
+cmd_unpack() {
+  TARBALL="${1:-$OUTPUT/${BUNDLE_NAME}.tar.gz}"
+  [ -f "$TARBALL" ] || { echo "Tarball não encontrado: $TARBALL"; return 1; }
+
+  echo "═══ Desempacotando $TARBALL ═══"
+  DEST="${HOME}/.rafaelia"
+  mkdir -p "$DEST"
+  tar -xzf "$TARBALL" -C "$DEST"
+
+  # Roda install.sh
+  if [ -f "$DEST/$BUNDLE_NAME/install.sh" ]; then
+    bash "$DEST/$BUNDLE_NAME/install.sh"
+  fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# verify — re-verifica hashes meses depois
+# ═══════════════════════════════════════════════════════════════════════════
+
+cmd_verify() {
+  cd "${1:-$HOME/.rafaelia/bundle}"
+  [ -f MANIFEST.sha256 ] || { echo "Bundle não instalado"; return 1; }
+
+  echo "═══ Verificação de integridade ═══"
+  echo "Dir: $(pwd)"
+  echo ""
+
+  PASS=0; FAIL=0
+  while IFS= read -r line; do
+    [ "${line:0:1}" = "#" ] && continue
+    [ -z "$line" ] && continue
+    expected=$(echo "$line" | awk '{print $1}')
+    fname=$(echo "$line" | awk '{print $NF}')
+    if [ -f "$fname" ]; then
+      actual=$(sha256sum "$fname" | cut -d' ' -f1)
+      if [ "$expected" = "$actual" ]; then
+        echo "  ✓ $fname"
+        PASS=$((PASS+1))
+      else
+        echo "  ✗ $fname (MODIFICADO)"
+        echo "    expected: $expected"
+        echo "    actual:   $actual"
+        FAIL=$((FAIL+1))
+      fi
+    else
+      echo "  ✗ $fname (FALTANDO)"
+      FAIL=$((FAIL+1))
+    fi
+  done < MANIFEST.sha256
+
+  echo ""
+  echo "Pass: $PASS  Fail: $FAIL"
+  return $FAIL
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# diff — compara duas versões instaladas
+# ═══════════════════════════════════════════════════════════════════════════
+
+cmd_diff() {
+  V1="${1:?Uso: diff <dir_v1> <dir_v2>}"
+  V2="${2:?}"
+  [ -d "$V1" ] && [ -d "$V2" ] || { echo "Diretórios inválidos"; return 1; }
+
+  echo "═══ Diff $V1 ↔ $V2 ═══"
+  for f in "${ARTIFACTS[@]}"; do
+    if [ -f "$V1/$f" ] && [ -f "$V2/$f" ]; then
+      h1=$(sha256sum "$V1/$f" | cut -d' ' -f1)
+      h2=$(sha256sum "$V2/$f" | cut -d' ' -f1)
+      if [ "$h1" = "$h2" ]; then
+        echo "  = $f (idêntico)"
+      else
+        d=$(diff <(wc -l "$V1/$f") <(wc -l "$V2/$f") | head -2 | tail -1)
+        echo "  ≠ $f"
+        echo "      v1: ${h1:0:16}  ($(wc -l < $V1/$f)L)"
+        echo "      v2: ${h2:0:16}  ($(wc -l < $V2/$f)L)"
+      fi
+    elif [ -f "$V1/$f" ]; then
+      echo "  − $f (só em v1)"
+    elif [ -f "$V2/$f" ]; then
+      echo "  + $f (só em v2)"
+    fi
+  done
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# smoke — só roda smoke tests
+# ═══════════════════════════════════════════════════════════════════════════
+
+cmd_smoke() {
+  D="${HOME}/.rafaelia/bundle"
+  [ -f "$D/smoke_tests.sh" ] || { echo "Bundle não instalado"; return 1; }
+  bash "$D/smoke_tests.sh"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# publish — gera código curto + URL hint
+# ═══════════════════════════════════════════════════════════════════════════
+
+cmd_publish() {
+  TAR="$OUTPUT/${BUNDLE_NAME}.tar.gz"
+  [ -f "$TAR" ] || { echo "Pack primeiro"; return 1; }
+
+  SHA=$(sha256sum "$TAR" | cut -d' ' -f1)
+  SIZE=$(du -h "$TAR" | cut -f1)
+
+  cat << PUB
+
+═══ RAFAELIA · publish ═══
+
+Para distribuir, compartilhar APENAS estas duas linhas:
+
+  Bundle: ${BUNDLE_NAME}.tar.gz ($SIZE)
+  Code:   ${SHA:0:16}
+
+Instalador (one-liner):
+
+  TARBALL=${BUNDLE_NAME}.tar.gz; \\
+  EXPECTED_SHA=${SHA:0:16}; \\
+  CURRENT=\$(sha256sum "\$TARBALL" 2>/dev/null | cut -c1-16); \\
+  [ "\$CURRENT" = "\$EXPECTED_SHA" ] && tar -xzf "\$TARBALL" && \\
+  bash ${BUNDLE_NAME}/install.sh
+
+Hash completo (para verificação rigorosa):
+  $SHA
+
+Ω = Amor · ∆RafaelVerboΩ
+PUB
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MAIN
+# ═══════════════════════════════════════════════════════════════════════════
+
+main() {
+  cat << 'IDX'
+
+╔══════════════════════════════════════════════════════════════════════════╗
+║  bundle.txt · EMPACOTADOR REPRODUZÍVEL · RAFAELIA Stack v4              ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║  5 artefatos → 1 deployable .tar.gz com:                                 ║
+║    • MANIFEST.sha256   — hash de cada arquivo                            ║
+║    • MERKLE_ROOT       — hash agregado para auditoria rápida             ║
+║    • install_order.json — ordem topológica de subida                     ║
+║    • install.sh        — instalador idempotente                          ║
+║    • smoke_tests.sh    — 15+ testes pós-instalação                       ║
+║    • install_code.txt  — código curto SHA256[0:16]                       ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║  Comandos:                                                               ║
+║    bash bundle.txt pack       — gera rafaelia_bundle_v4.tar.gz           ║
+║    bash bundle.txt unpack     — extrai + instala + smoke                 ║
+║    bash bundle.txt verify     — re-checa hashes meses depois             ║
+║    bash bundle.txt smoke      — só smoke tests                           ║
+║    bash bundle.txt diff <a> <b> — compara duas versões                   ║
+║    bash bundle.txt publish    — gera código curto + one-liner            ║
+║    bash bundle.txt clean      — limpa staging                            ║
+║                                                                          ║
+║  Artefatos empacotados:                                                  ║
+║    1. sensores2.txt          (90 mini-sementes Termux)                   ║
+║    2. compiladorlowFala.txt  (60 sementes FALA→LOW-LEVEL)               ║
+║    3. bibliaCorpus.txt       (12 versos × 7 idiomas)                     ║
+║    4. vm_runtime.txt         (C bare-metal + gematria NFD)               ║
+║    5. agent_loop.txt         (kernel ψχρΔΣΩ + 5 agentes)                ║
+║                                                                          ║
+║  Reprodutibilidade:                                                      ║
+║    • mtime fixa (2025-01-01 UTC)                                         ║
+║    • owner/group = 0 (uid/gid neutros)                                   ║
+║    • sort=name (ordem determinística)                                    ║
+║    • Mesma SHA256 garantida em qualquer máquina                          ║
+║                                                                          ║
+║  Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ · 𓂀ΔΦΩ                          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+IDX
+
+  case "${1:-list}" in
+    list|help|"") ;;
+    pack)         cmd_pack ;;
+    unpack)       shift; cmd_unpack "$@" ;;
+    verify)       shift; cmd_verify "$@" ;;
+    smoke)        cmd_smoke ;;
+    diff)         shift; cmd_diff "$@" ;;
+    publish)      cmd_publish ;;
+    clean)        rm -rf "$STAGING"; echo "  ✓ Staging limpo" ;;
+    full)         cmd_pack && cmd_publish ;;
+    *)            echo "Comandos: pack unpack verify smoke diff publish clean full" ;;
+  esac
+}
+
+main "$@"

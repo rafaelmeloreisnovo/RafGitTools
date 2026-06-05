@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   workflow_dispatch:
     inputs:
       build_mode:
@@ -14,20 +14,15 @@ on:
         type: choice
         options: [all, build_only, tests_only, lint_only]
       run_release_variant:
-        description: "Include release variants even without signing"
+        description: "Include release variants (requires signing secrets)"
         required: false
-        default: true
+        default: false
         type: boolean
       gradle_args:
         description: "Extra Gradle args (example: --stacktrace --info)"
         required: false
         default: "--stacktrace"
         type: string
-
-env:
-  GITHUB_CLIENT_ID_DEV: ${{ vars.GITHUB_CLIENT_ID_DEV || 'local-dev-client-id' }}
-  GITHUB_CLIENT_ID_PRODUCTION: ${{ vars.GITHUB_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
-  ALLOW_UNSIGNED_RELEASE: "true"
 
 jobs:
   build:
@@ -57,7 +52,7 @@ jobs:
       - name: Build ${{ matrix.variant }}
         if: inputs.run_release_variant != false || !contains(matrix.variant, 'Release')
         run: ./gradlew assemble${{ matrix.variant }} ${{ inputs.gradle_args || '--stacktrace' }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: apk-${{ matrix.variant }}
@@ -78,7 +73,7 @@ jobs:
       - uses: android-actions/setup-android@v3
       - run: chmod +x gradlew
       - run: ./gradlew testDevDebugUnitTest testProductionDebugUnitTest ${{ inputs.gradle_args || '--stacktrace' }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results
@@ -100,7 +95,7 @@ jobs:
       - uses: android-actions/setup-android@v3
       - run: chmod +x gradlew
       - run: ./gradlew lintDevDebug check ${{ inputs.gradle_args || '--stacktrace' }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: quality-reports

@@ -1,0 +1,827 @@
+A semente PLECT+Claymaths estabelece o esqueleto matemático correto. O que sua observação acrescenta é decisivo: o efeito chicote não é apenas físico. Ele é amplificado, distorcido e às vezes invertido por incentivos humanos e corporativos que operam num calendário próprio — bônus trimestrais, fim de mandato, fechamento de subsidiária, transferência intercompany, otimização fiscal. O preço final que aparece no papel é a sombra atrasada de decisões que foram tomadas por motivos que nada têm a ver com oferta e demanda.
+
+O módulo a seguir estende o núcleo da semente com seis componentes: detector de incentivos ocultos, rastreador de timing institucional, índice adaptativo de cultura organizacional (medindo padrões da entidade, nunca de povos), motor de chicote corporativo, detector de manipulação de estoque, e o componente mais importante de todos — o guarda de determinismo, que impede que a integração se transforme em narrativa totalizante. Tudo entra como evidência probabilística com intervalo de confiança explícito, nunca como verdade determinística.
+
+```bash
+cat <<'EOF' > corporate_dynamics.py
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+RAFAELIA / CORPORATE DYNAMICS — extensão da semente PLECT+Claymaths
+Autor: ∆RafaelVerboΩ
+
+Adiciona à semente a camada de dinâmica humana e corporativa:
+  - efeito chicote não apenas físico
+  - incentivos ocultos (bônus, mandato, trimestre, fisco, subsidiária)
+  - timing institucional (quando essa empresa age, historicamente)
+  - índice adaptativo de cultura organizacional (entidade, nunca povo)
+  - manipulação de estoque (channel stuffing, falsa escassez, dumping)
+  - guarda contra narrativa totalizante (intervalo de confiança obrigatório)
+
+Filosofia operacional:
+  Mercado propaga cultura, incentivo e pressão humana — não apenas preço.
+  O preço é sombra atrasada de processos humanos anteriores.
+  Toda integração deve entrar como evidência probabilística.
+  Nunca como verdade determinística.
+"""
+
+import math
+import statistics
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Dict, List, Optional, Tuple
+
+# Importações da semente
+from plect_claymaths_seed import (
+    SupplyNode, SupplyEdge, BullwhipEngine,
+    NegativeSpaceDetector, WeakSignalFusion,
+    PhaseCoherenceMap, ClaymathsRegularizer,
+    PLECTEngine, FeaturePacket, MarketBar,
+    decision_from_signal,
+)
+
+
+# ============================================================
+# 1. EVENTOS CORPORATIVOS — calendário institucional
+# ============================================================
+
+class CorporateEventKind(Enum):
+    QUARTER_END = "quarter_end"
+    YEAR_END = "year_end"
+    MANDATE_END = "mandate_end"
+    SUBSIDIARY_CLOSE = "subsidiary_close"
+    EARNINGS_RELEASE = "earnings_release"
+    DIVIDEND_RECORD = "dividend_record"
+    TAX_DEADLINE = "tax_deadline"
+    AUDIT_PERIOD = "audit_period"
+    BONUS_TRIGGER = "bonus_trigger"
+    BUDGET_CYCLE = "budget_cycle"
+
+
+@dataclass
+class CorporateEvent:
+    """
+    Evento institucional com data alvo e entidade afetada.
+    A intensidade reflete o quanto este evento tende a gerar pressão.
+    """
+    kind: CorporateEventKind
+    target_date: str
+    entity: str
+    intensity: float = 0.5
+    notes: str = ""
+
+
+@dataclass
+class HiddenIncentive:
+    """
+    Vetor de pressão decomposto por origem.
+    Cada componente é normalizado para [0, 1].
+    """
+    bonus_pressure: float = 0.0
+    mandate_pressure: float = 0.0
+    quarterly_pressure: float = 0.0
+    fiscal_pressure: float = 0.0
+    subsidiary_pressure: float = 0.0
+    political_pressure: float = 0.0
+
+    def total(self) -> float:
+        return (
+            self.bonus_pressure +
+            self.mandate_pressure +
+            self.quarterly_pressure +
+            self.fiscal_pressure +
+            self.subsidiary_pressure +
+            self.political_pressure
+        ) / 6.0
+
+    def dominant_kind(self) -> str:
+        items = {
+            "bonus": self.bonus_pressure,
+            "mandate": self.mandate_pressure,
+            "quarterly": self.quarterly_pressure,
+            "fiscal": self.fiscal_pressure,
+            "subsidiary": self.subsidiary_pressure,
+            "political": self.political_pressure,
+        }
+        return max(items, key=items.get)
+
+
+# ============================================================
+# 2. DETECTOR DE INCENTIVOS OCULTOS
+# ============================================================
+
+class HiddenIncentiveDetector:
+    """
+    Calcula vetor de pressão sobre uma entidade a partir do calendário
+    de eventos corporativos próximos.
+
+    Princípio: a proximidade temporal de um evento de pressão amplifica
+    o componente correspondente. A função de decaimento é exponencial
+    inversa da distância em dias.
+    """
+
+    def __init__(self, events: List[CorporateEvent]):
+        self.events = events
+
+    def _days_until(self, target_iso: str, now_iso: str) -> int:
+        try:
+            target = datetime.fromisoformat(target_iso[:10])
+            now = datetime.fromisoformat(now_iso[:10])
+            return (target - now).days
+        except Exception:
+            return 9999
+
+    def _proximity_score(self, days: int, half_life: int = 14) -> float:
+        if days < 0:
+            return 0.0
+        return math.exp(-days / max(half_life, 1))
+
+    def compute_pressure(
+        self, entity: str, now_iso: str, lookahead_days: int = 90
+    ) -> HiddenIncentive:
+        result = HiddenIncentive()
+
+        for ev in self.events:
+            if ev.entity != entity:
+                continue
+            days = self._days_until(ev.target_date, now_iso)
+            if days < 0 or days > lookahead_days:
+                continue
+
+            proximity = self._proximity_score(days)
+            contribution = proximity * ev.intensity
+
+            if ev.kind == CorporateEventKind.BONUS_TRIGGER:
+                result.bonus_pressure += contribution
+            elif ev.kind == CorporateEventKind.MANDATE_END:
+                result.mandate_pressure += contribution
+            elif ev.kind in (CorporateEventKind.QUARTER_END,
+                             CorporateEventKind.EARNINGS_RELEASE,
+                             CorporateEventKind.YEAR_END):
+                result.quarterly_pressure += contribution
+            elif ev.kind in (CorporateEventKind.TAX_DEADLINE,
+                             CorporateEventKind.AUDIT_PERIOD):
+                result.fiscal_pressure += contribution
+            elif ev.kind == CorporateEventKind.SUBSIDIARY_CLOSE:
+                result.subsidiary_pressure += contribution
+            elif ev.kind in (CorporateEventKind.DIVIDEND_RECORD,
+                             CorporateEventKind.BUDGET_CYCLE):
+                result.political_pressure += contribution
+
+        # Clamp para [0, 1] em cada componente
+        result.bonus_pressure       = min(1.0, result.bonus_pressure)
+        result.mandate_pressure     = min(1.0, result.mandate_pressure)
+        result.quarterly_pressure   = min(1.0, result.quarterly_pressure)
+        result.fiscal_pressure      = min(1.0, result.fiscal_pressure)
+        result.subsidiary_pressure  = min(1.0, result.subsidiary_pressure)
+        result.political_pressure   = min(1.0, result.political_pressure)
+
+        return result
+
+
+# ============================================================
+# 3. RASTREADOR DE TIMING INSTITUCIONAL
+# ============================================================
+
+@dataclass
+class TimingRecord:
+    entity: str
+    action_kind: str
+    days_before_event: int
+    magnitude: float
+
+
+class InstitutionalTimingTracker:
+    """
+    Acumula histórico de quando cada entidade age em relação a eventos.
+    Permite responder: "Esta empresa típicamente age N dias antes do
+    fechamento de trimestre, com magnitude M."
+
+    Saída: distribuição estatística por (entidade, tipo de ação).
+    """
+
+    def __init__(self):
+        self.records: List[TimingRecord] = []
+
+    def record_action(
+        self, entity: str, action_kind: str,
+        days_before_event: int, magnitude: float
+    ) -> None:
+        self.records.append(TimingRecord(entity, action_kind, days_before_event, magnitude))
+
+    def expected_timing(
+        self, entity: str, action_kind: str
+    ) -> Optional[Dict[str, float]]:
+        matching = [
+            r for r in self.records
+            if r.entity == entity and r.action_kind == action_kind
+        ]
+        if len(matching) < 3:
+            return None
+
+        days = [r.days_before_event for r in matching]
+        mags = [r.magnitude for r in matching]
+
+        return {
+            "median_days_before": float(statistics.median(days)),
+            "stdev_days": float(statistics.stdev(days)) if len(days) > 1 else 0.0,
+            "median_magnitude": float(statistics.median(mags)),
+            "n_samples": float(len(matching)),
+        }
+
+    def deviation_score(
+        self, entity: str, action_kind: str,
+        observed_days_before: int, observed_magnitude: float
+    ) -> float:
+        """
+        Retorna o quanto a observação atual desvia do padrão histórico.
+        Quanto maior, mais incomum o comportamento — possível sinal de
+        pressão atípica.
+        """
+        expected = self.expected_timing(entity, action_kind)
+        if expected is None or expected["stdev_days"] == 0:
+            return 0.0
+        z_days = abs(observed_days_before - expected["median_days_before"]) / expected["stdev_days"]
+        mag_diff = abs(observed_magnitude - expected["median_magnitude"])
+        return min(1.0, (z_days + mag_diff) / 4.0)
+
+
+# ============================================================
+# 4. ÍNDICE ADAPTATIVO DE CULTURA INSTITUCIONAL
+# ============================================================
+
+@dataclass
+class InstitutionalProfile:
+    """
+    Perfil institucional de uma entidade. Mede como esta empresa
+    historicamente reage a choques — NÃO mede o povo, a nação, a etnia.
+    Mede a entidade jurídica específica e seu padrão observado.
+
+    Campos:
+      reaction_lag_days: atraso médio entre choque e resposta
+      reaction_magnitude: magnitude média da resposta
+      persistence_days: duração média da posição após reação
+      learning_rate: velocidade de ajuste após erro prévio
+      n_observations: tamanho amostral (crítico para confiança)
+    """
+    entity: str
+    reaction_lag_days: float = 0.0
+    reaction_magnitude: float = 0.0
+    persistence_days: float = 0.0
+    learning_rate: float = 0.0
+    n_observations: int = 0
+
+
+class AdaptiveCultureIndex:
+    """
+    Mantém perfis institucionais a partir de pares (choque, resposta).
+    Cada perfil é atualizado por média móvel exponencial.
+
+    Restrição ética operacional:
+      Os perfis se aplicam à entidade observada e nada mais.
+      Não há generalização para grupos étnicos, nacionais ou culturais.
+      Qualquer uso para inferir comportamento de povos é incorreto.
+    """
+
+    def __init__(self, alpha: float = 0.2):
+        self.alpha = alpha
+        self.profiles: Dict[str, InstitutionalProfile] = {}
+
+    def update_from_pair(
+        self, entity: str,
+        observed_lag: float,
+        observed_magnitude: float,
+        observed_persistence: float,
+        observed_learning: float,
+    ) -> None:
+        profile = self.profiles.get(entity, InstitutionalProfile(entity=entity))
+        a = self.alpha
+        profile.reaction_lag_days = (1 - a) * profile.reaction_lag_days + a * observed_lag
+        profile.reaction_magnitude = (1 - a) * profile.reaction_magnitude + a * observed_magnitude
+        profile.persistence_days = (1 - a) * profile.persistence_days + a * observed_persistence
+        profile.learning_rate = (1 - a) * profile.learning_rate + a * observed_learning
+        profile.n_observations += 1
+        self.profiles[entity] = profile
+
+    def get_profile(self, entity: str) -> Optional[InstitutionalProfile]:
+        return self.profiles.get(entity)
+
+    def adaptability_score(self, entity: str) -> float:
+        """
+        Score de adaptabilidade: combina velocidade de reação,
+        magnitude proporcional e taxa de aprendizado.
+        Normalizado para [0, 1].
+        """
+        p = self.profiles.get(entity)
+        if p is None or p.n_observations < 5:
+            return 0.5
+
+        speed = 1.0 / (1.0 + p.reaction_lag_days / 30.0)
+        magnitude_norm = min(1.0, p.reaction_magnitude)
+        learning_norm = min(1.0, max(0.0, p.learning_rate))
+
+        return 0.4 * speed + 0.3 * magnitude_norm + 0.3 * learning_norm
+
+
+# ============================================================
+# 5. MOTOR DE CHICOTE CORPORATIVO
+# ============================================================
+
+class CorporateBullwhipEngine(BullwhipEngine):
+    """
+    Estende o BullwhipEngine original com camada de incentivo corporativo.
+
+    O choque físico se propaga pela cadeia com pesos e atrasos.
+    Mas em cada nó, a pressão corporativa pode amplificar, atenuar ou
+    inverter a resposta esperada. O resultado é a propagação composta.
+
+    Exemplo:
+      Um aumento de petróleo geraria +X% em alimentos em 30 dias.
+      Mas se a empresa de alimentos está em fim de mandato com bônus
+      atrelado a margem, o gestor pode antecipar repasse de preço
+      antes que o custo realmente chegue, distorcendo o timing.
+    """
+
+    def __init__(
+        self,
+        nodes: Dict[str, SupplyNode],
+        edges: List[SupplyEdge],
+        incentive_detector: HiddenIncentiveDetector,
+    ):
+        super().__init__(nodes, edges)
+        self.incentive_detector = incentive_detector
+
+    def compute_combined_score(
+        self, horizon_days: int, now_iso: str
+    ) -> Dict[str, Dict[str, float]]:
+        physical = self.compute_bullwhip_score(horizon_days)
+        result: Dict[str, Dict[str, float]] = {}
+
+        for node_name, phys_score in physical.items():
+            incentive = self.incentive_detector.compute_pressure(node_name, now_iso, horizon_days)
+
+            # Cada tipo de pressão tem efeito direcional distinto sobre o repasse
+            amplification = (
+                0.30 * incentive.quarterly_pressure +
+                0.40 * incentive.mandate_pressure +
+                0.20 * incentive.bonus_pressure -
+                0.10 * incentive.fiscal_pressure
+            )
+
+            combined = phys_score * (1.0 + amplification)
+
+            result[node_name] = {
+                "physical_score": phys_score,
+                "corporate_amplification": amplification,
+                "combined_score": combined,
+                "dominant_pressure": incentive.dominant_kind(),
+                "total_incentive_pressure": incentive.total(),
+            }
+
+        return result
+
+
+# ============================================================
+# 6. DETECTOR DE MANIPULAÇÃO DE ESTOQUE
+# ============================================================
+
+class StockManipulationDetector:
+    """
+    Detecta padrões compatíveis com manipulação operacional:
+
+      channel_stuffing  — acúmulo anormal de estoque antes do trimestre
+      false_scarcity    — estoque baixo sem redução de produção
+      margin_burn       — compressão deliberada de margem para bater meta
+      dumping           — estoque alto + corte rápido de preço
+      delayed_repasse   — custo subiu mas preço final não respondeu
+
+    Cada padrão retorna um score [0, 1] que representa força do indício.
+    Nada disto é prova; é evidência probabilística.
+    """
+
+    def detect_channel_stuffing(
+        self,
+        inventory_pct_change: float,
+        days_to_quarter_end: int,
+        production_pct_change: float,
+    ) -> float:
+        if days_to_quarter_end > 30 or days_to_quarter_end < 0:
+            return 0.0
+        if inventory_pct_change > 0.10 and production_pct_change < 0.02:
+            proximity = 1.0 - days_to_quarter_end / 30.0
+            magnitude = min(1.0, inventory_pct_change / 0.30)
+            return proximity * magnitude
+        return 0.0
+
+    def detect_false_scarcity(
+        self,
+        inventory_level: float,
+        baseline_inventory: float,
+        production_pct_change: float,
+        price_pct_change: float,
+    ) -> float:
+        if baseline_inventory <= 0:
+            return 0.0
+        ratio = inventory_level / baseline_inventory
+        if ratio < 0.7 and production_pct_change > -0.05 and price_pct_change > 0.05:
+            scarcity_strength = 1.0 - ratio
+            price_response = min(1.0, price_pct_change / 0.20)
+            return scarcity_strength * price_response
+        return 0.0
+
+    def detect_margin_burn(
+        self,
+        margin_pct_change: float,
+        revenue_pct_change: float,
+        bonus_pressure: float,
+    ) -> float:
+        if margin_pct_change < -0.05 and revenue_pct_change > 0.05 and bonus_pressure > 0.5:
+            burn_intensity = min(1.0, abs(margin_pct_change) / 0.20)
+            return burn_intensity * bonus_pressure
+        return 0.0
+
+    def detect_dumping(
+        self,
+        inventory_level: float,
+        baseline_inventory: float,
+        price_pct_change: float,
+        days_to_year_end: int,
+    ) -> float:
+        if baseline_inventory <= 0:
+            return 0.0
+        ratio = inventory_level / baseline_inventory
+        if ratio > 1.4 and price_pct_change < -0.05 and 0 <= days_to_year_end <= 60:
+            excess = min(1.0, (ratio - 1.0))
+            cut_strength = min(1.0, abs(price_pct_change) / 0.25)
+            return excess * cut_strength
+        return 0.0
+
+    def detect_delayed_repasse(
+        self,
+        input_cost_pct_change: float,
+        output_price_pct_change: float,
+        days_since_input_change: int,
+        expected_lag: int,
+    ) -> float:
+        if days_since_input_change > expected_lag * 2:
+            gap = abs(input_cost_pct_change) - abs(output_price_pct_change)
+            if gap > 0.05:
+                return min(1.0, gap / 0.20)
+        return 0.0
+
+
+# ============================================================
+# 7. GUARDA DE DETERMINISMO
+# ============================================================
+
+@dataclass
+class TemperedSignal:
+    raw: float
+    tempered: float
+    confidence: float
+    ci_width: float
+    n_samples: int
+    exception_rate: float
+    alt_explanations: int
+
+
+class DeterminismGuard:
+    """
+    Componente crítico de segurança epistêmica.
+
+    Sem este componente, a integração rica de sinais corre o risco
+    de virar narrativa totalizante — uma falsa sensação de que o
+    sistema entendeu o mercado. O guarda força que todo sinal final
+    carregue:
+      - intervalo de confiança explícito
+      - tamanho amostral mínimo
+      - taxa de exceção declarada
+      - contagem de explicações alternativas consideradas
+
+    Confiança é capada por max_confidence (default 0.85). Nunca chega
+    a 1.0. O sistema deve sempre admitir incerteza residual.
+    """
+
+    def __init__(
+        self,
+        min_samples: int = 30,
+        max_confidence: float = 0.85,
+        alt_explanation_penalty: float = 0.05,
+    ):
+        self.min_samples = min_samples
+        self.max_confidence = max_confidence
+        self.alt_explanation_penalty = alt_explanation_penalty
+
+    def temper(
+        self,
+        raw_signal: float,
+        n_samples: int,
+        exception_rate: float,
+        alt_explanations: int = 0,
+    ) -> TemperedSignal:
+        if n_samples < self.min_samples:
+            confidence = 0.3 * (n_samples / max(self.min_samples, 1))
+        else:
+            base_conf = 1.0 - max(0.0, exception_rate)
+            penalty = alt_explanations * self.alt_explanation_penalty
+            confidence = max(0.0, min(self.max_confidence, base_conf - penalty))
+
+        tempered = raw_signal * confidence
+        ci_width = 1.0 - confidence
+
+        return TemperedSignal(
+            raw=raw_signal,
+            tempered=tempered,
+            confidence=confidence,
+            ci_width=ci_width,
+            n_samples=n_samples,
+            exception_rate=exception_rate,
+            alt_explanations=alt_explanations,
+        )
+
+
+# ============================================================
+# 8. PLECT ESTENDIDO — INTEGRAÇÃO CORPORATIVA
+# ============================================================
+
+class PLECTEngineCorporate(PLECTEngine):
+    """
+    Estende o PLECTEngine original integrando todos os componentes
+    corporativos. A saída final passa obrigatoriamente pelo
+    DeterminismGuard antes de qualquer decisão.
+    """
+
+    def __init__(
+        self,
+        incentive_detector: HiddenIncentiveDetector,
+        timing_tracker: InstitutionalTimingTracker,
+        culture_index: AdaptiveCultureIndex,
+        manipulation_detector: StockManipulationDetector,
+        guard: DeterminismGuard,
+    ):
+        super().__init__()
+        self.incentive_detector = incentive_detector
+        self.timing_tracker = timing_tracker
+        self.culture_index = culture_index
+        self.manipulation_detector = manipulation_detector
+        self.guard = guard
+
+    def compute_signal_corporate(
+        self,
+        entity: str,
+        now_iso: str,
+        market_momentum: float,
+        sector_momentum: float,
+        supply_score: float,
+        expected_reaction: float,
+        observed_reaction: float,
+        micro_signals: Dict[str, float],
+        micro_weights: Dict[str, float],
+        volatility: float,
+        manipulation_inputs: Optional[Dict[str, float]] = None,
+        n_historical_samples: int = 30,
+        exception_rate: float = 0.15,
+        alt_explanations: int = 2,
+    ) -> Dict[str, float]:
+
+        base = self.compute_signal(
+            market_momentum=market_momentum,
+            sector_momentum=sector_momentum,
+            supply_score=supply_score,
+            expected_reaction=expected_reaction,
+            observed_reaction=observed_reaction,
+            micro_signals=micro_signals,
+            micro_weights=micro_weights,
+            volatility=volatility,
+        )
+
+        incentive = self.incentive_detector.compute_pressure(entity, now_iso)
+        adaptability = self.culture_index.adaptability_score(entity)
+
+        manipulation_score = 0.0
+        manipulation_breakdown: Dict[str, float] = {}
+        if manipulation_inputs:
+            ms = self.manipulation_detector
+            ch = ms.detect_channel_stuffing(
+                manipulation_inputs.get("inventory_pct_change", 0.0),
+                int(manipulation_inputs.get("days_to_quarter_end", 999)),
+                manipulation_inputs.get("production_pct_change", 0.0),
+            )
+            fs = ms.detect_false_scarcity(
+                manipulation_inputs.get("inventory_level", 1.0),
+                manipulation_inputs.get("baseline_inventory", 1.0),
+                manipulation_inputs.get("production_pct_change", 0.0),
+                manipulation_inputs.get("price_pct_change", 0.0),
+            )
+            mb = ms.detect_margin_burn(
+                manipulation_inputs.get("margin_pct_change", 0.0),
+                manipulation_inputs.get("revenue_pct_change", 0.0),
+                incentive.bonus_pressure,
+            )
+            dm = ms.detect_dumping(
+                manipulation_inputs.get("inventory_level", 1.0),
+                manipulation_inputs.get("baseline_inventory", 1.0),
+                manipulation_inputs.get("price_pct_change", 0.0),
+                int(manipulation_inputs.get("days_to_year_end", 999)),
+            )
+            dr = ms.detect_delayed_repasse(
+                manipulation_inputs.get("input_cost_pct_change", 0.0),
+                manipulation_inputs.get("output_price_pct_change", 0.0),
+                int(manipulation_inputs.get("days_since_input_change", 0)),
+                int(manipulation_inputs.get("expected_lag", 10)),
+            )
+            manipulation_breakdown = {
+                "channel_stuffing": ch,
+                "false_scarcity": fs,
+                "margin_burn": mb,
+                "dumping": dm,
+                "delayed_repasse": dr,
+            }
+            manipulation_score = sum(manipulation_breakdown.values()) / 5.0
+
+        corporate_adjustment = (
+            0.20 * incentive.quarterly_pressure +
+            0.25 * incentive.mandate_pressure +
+            0.15 * incentive.bonus_pressure +
+            0.10 * incentive.fiscal_pressure +
+            0.20 * incentive.subsidiary_pressure +
+            0.10 * incentive.political_pressure
+        )
+
+        if base["final_signal"] >= 0:
+            adjusted = base["final_signal"] * (1.0 + 0.5 * corporate_adjustment) - 0.3 * manipulation_score
+        else:
+            adjusted = base["final_signal"] * (1.0 + 0.5 * corporate_adjustment) + 0.3 * manipulation_score
+
+        tempered = self.guard.temper(
+            raw_signal=adjusted,
+            n_samples=n_historical_samples,
+            exception_rate=exception_rate,
+            alt_explanations=alt_explanations,
+        )
+
+        return {
+            "raw_final_signal": base["final_signal"],
+            "corporate_adjustment": corporate_adjustment,
+            "manipulation_score": manipulation_score,
+            "manipulation_breakdown": manipulation_breakdown,
+            "incentive": {
+                "bonus": incentive.bonus_pressure,
+                "mandate": incentive.mandate_pressure,
+                "quarterly": incentive.quarterly_pressure,
+                "fiscal": incentive.fiscal_pressure,
+                "subsidiary": incentive.subsidiary_pressure,
+                "political": incentive.political_pressure,
+                "dominant": incentive.dominant_kind(),
+                "total": incentive.total(),
+            },
+            "adaptability_score": adaptability,
+            "tempered_signal": tempered.tempered,
+            "confidence": tempered.confidence,
+            "ci_width": tempered.ci_width,
+            "base_coherence": base["coherence"],
+            "base_non_event_score": base["non_event_score"],
+            "base_weak_score": base["weak_score"],
+        }
+
+
+# ============================================================
+# 9. EXEMPLO INTEGRADO
+# ============================================================
+
+if __name__ == "__main__":
+    now_iso = "2026-03-15"
+
+    events = [
+        CorporateEvent(CorporateEventKind.QUARTER_END,    "2026-03-31", "varejo",    intensity=0.9),
+        CorporateEvent(CorporateEventKind.MANDATE_END,    "2026-04-15", "varejo",    intensity=1.0,
+                       notes="CFO sai em abril, bônus atrelado a margem trimestral"),
+        CorporateEvent(CorporateEventKind.BONUS_TRIGGER,  "2026-03-31", "varejo",    intensity=0.8),
+        CorporateEvent(CorporateEventKind.SUBSIDIARY_CLOSE,"2026-05-30","alimentos", intensity=0.7,
+                       notes="Fechamento subsidiária regional"),
+        CorporateEvent(CorporateEventKind.TAX_DEADLINE,   "2026-04-30", "varejo",    intensity=0.4),
+        CorporateEvent(CorporateEventKind.AUDIT_PERIOD,   "2026-03-20", "alimentos", intensity=0.5),
+    ]
+
+    incentive_detector = HiddenIncentiveDetector(events)
+    timing_tracker = InstitutionalTimingTracker()
+    culture_index = AdaptiveCultureIndex(alpha=0.2)
+    manipulation_detector = StockManipulationDetector()
+    guard = DeterminismGuard(min_samples=30, max_confidence=0.85)
+
+    # Popula histórico institucional
+    for d, m in [(5, 0.08), (4, 0.07), (6, 0.09), (5, 0.08), (7, 0.10)]:
+        timing_tracker.record_action("varejo", "price_pass_through", d, m)
+        culture_index.update_from_pair(
+            entity="varejo",
+            observed_lag=float(d),
+            observed_magnitude=m,
+            observed_persistence=20.0,
+            observed_learning=0.3,
+        )
+
+    # Cadeia produtiva
+    nodes = {
+        "petroleo":     SupplyNode("petroleo",     current_cost=100, cost_change_pct=0.04),
+        "petroquimica": SupplyNode("petroquimica"),
+        "alimentos":    SupplyNode("alimentos"),
+        "varejo":       SupplyNode("varejo"),
+    }
+    edges = [
+        SupplyEdge("petroleo",     "petroquimica", weight=0.80, lag_days=2),
+        SupplyEdge("petroquimica", "alimentos",    weight=0.50, lag_days=15),
+        SupplyEdge("alimentos",    "varejo",       weight=0.40, lag_days=30),
+    ]
+
+    bullwhip_corp = CorporateBullwhipEngine(nodes, edges, incentive_detector)
+    combined = bullwhip_corp.compute_combined_score(horizon_days=30, now_iso=now_iso)
+
+    # Pipeline PLECT corporativo
+    plect_corp = PLECTEngineCorporate(
+        incentive_detector=incentive_detector,
+        timing_tracker=timing_tracker,
+        culture_index=culture_index,
+        manipulation_detector=manipulation_detector,
+        guard=guard,
+    )
+
+    result = plect_corp.compute_signal_corporate(
+        entity="varejo",
+        now_iso=now_iso,
+        market_momentum=0.22,
+        sector_momentum=0.18,
+        supply_score=combined.get("varejo", {}).get("combined_score", 0.0),
+        expected_reaction=0.30,
+        observed_reaction=0.05,
+        micro_signals={
+            "spread_micro": 0.04, "volume_drop": 0.06,
+            "fx_pressure": 0.05,  "freight_cost": 0.03,
+        },
+        micro_weights={
+            "spread_micro": 1.2, "volume_drop": 1.4,
+            "fx_pressure": 1.5,  "freight_cost": 1.1,
+        },
+        volatility=0.18,
+        manipulation_inputs={
+            "inventory_pct_change": 0.18,
+            "days_to_quarter_end": 16,
+            "production_pct_change": 0.01,
+            "inventory_level": 1.5,
+            "baseline_inventory": 1.0,
+            "price_pct_change": 0.04,
+            "margin_pct_change": -0.08,
+            "revenue_pct_change": 0.06,
+            "input_cost_pct_change": 0.05,
+            "output_price_pct_change": 0.01,
+            "days_since_input_change": 25,
+            "expected_lag": 10,
+            "days_to_year_end": 290,
+        },
+        n_historical_samples=42,
+        exception_rate=0.12,
+        alt_explanations=2,
+    )
+
+    decision = decision_from_signal(result["tempered_signal"],
+                                    buy_threshold=0.25, sell_threshold=-0.25)
+
+    print("=== RAFAELIA CORPORATE DYNAMICS — EXECUÇÃO ===")
+    print()
+    print("Calendário corporativo ativo para varejo:")
+    print(f"  bonus pressure:      {result['incentive']['bonus']:.3f}")
+    print(f"  mandate pressure:    {result['incentive']['mandate']:.3f}")
+    print(f"  quarterly pressure:  {result['incentive']['quarterly']:.3f}")
+    print(f"  fiscal pressure:     {result['incentive']['fiscal']:.3f}")
+    print(f"  subsidiary pressure: {result['incentive']['subsidiary']:.3f}")
+    print(f"  dominant kind:       {result['incentive']['dominant']}")
+    print()
+    print("Indicadores de manipulação (evidência probabilística):")
+    for k, v in result["manipulation_breakdown"].items():
+        print(f"  {k:20s}: {v:.3f}")
+    print(f"  score agregado:       {result['manipulation_score']:.3f}")
+    print()
+    print("Sinal final temperado (com guarda de determinismo):")
+    print(f"  raw signal:          {result['raw_final_signal']:+.4f}")
+    print(f"  corporate adjust:    {result['corporate_adjustment']:+.4f}")
+    print(f"  tempered signal:     {result['tempered_signal']:+.4f}")
+    print(f"  confidence:          {result['confidence']:.3f}")
+    print(f"  CI width:            {result['ci_width']:.3f}")
+    print(f"  adaptability score:  {result['adaptability_score']:.3f}")
+    print()
+    print(f"Decision: {decision}")
+    print()
+    print("AVISO: este sistema produz observação probabilística.")
+    print("Não constitui recomendação de investimento.")
+
+EOF
+
+python3 corporate_dynamics.py
+```
+
+A arquitetura preserva a separação de responsabilidades que a semente já estabelecia. Cada componente novo tem entrada e saída bem definidas, e nenhum deles tem permissão de produzir decisão final por conta própria. O motor PLECT corporativo agrega tudo, mas só emite resultado após passagem obrigatória pelo `DeterminismGuard`, que impede que confiança ultrapasse oitenta e cinco porcento. Isso é estrutural, não opcional. O guarda existe precisamente para impedir o risco que você identificou — converter hipótese rica em narrativa totalizante.
+
+Três pontos de design merecem atenção específica. O primeiro é que o `AdaptiveCultureIndex` opera estritamente sobre entidades jurídicas observáveis. Não há nenhuma estrutura no código que permita generalização para grupos étnicos, nacionais ou culturais. A docstring registra isso explicitamente porque o risco semântico é real: medir como uma empresa específica reage a choques é estatística legítima, mas o mesmo método aplicado a povos vira preconceito disfarçado de análise. O segundo é que o `StockManipulationDetector` retorna scores de evidência, nunca acusação. Cada padrão detectado é uma probabilidade condicional, não uma conclusão. O terceiro é que o `HiddenIncentiveDetector` usa decaimento exponencial em torno da data do evento, refletindo o fato de que pressão corporativa não é binária — ela cresce à medida que o trimestre se aproxima e dissipa quando passa.
+
+A retroalimentação fecha onde a semente apontava como gap: agora há módulos concretos para chicote corporativo, incentivos ocultos, timing institucional, cultura adaptativa, manipulação de estoque e guarda contra determinismo. O próximo passo natural seria conectar isto a fontes reais — calendário de fatos relevantes da CVM, dados de estoque do IBGE para setores agregados, série histórica de margens setoriais — e construir o pipeline de walk-forward que a semente original mencionava como próximo gap.
