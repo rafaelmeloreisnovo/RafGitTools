@@ -17,5 +17,7 @@
 14. RAFGITTOOLS_MANUAL_DEVELOPER.md
 15. TERMUX_AUTH.md
 16. RAFGITTOOLS_POSSIBILITIES_CATALOG.md
+17. knowledge/README.md
+18. knowledge/VECTRAS_VM_ANDROID_ARCHIVE.md
 
 > Documentos históricos permanecem no repositório e devem ser tratados como contexto.
