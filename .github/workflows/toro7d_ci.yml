@@ -1,0 +1,24 @@
+name: toro7d-validation
+
+on:
+  push:
+    paths:
+      - "scripts/ci/toro7d_benchmark.py"
+      - ".github/workflows/toro7d_ci.yml"
+      - "docs/maths/TORO7D_VALIDATION.md"
+  pull_request:
+    paths:
+      - "scripts/ci/toro7d_benchmark.py"
+      - ".github/workflows/toro7d_ci.yml"
+      - "docs/maths/TORO7D_VALIDATION.md"
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run Toro7D benchmark
+        run: python3 scripts/ci/toro7d_benchmark.py --iterations 420

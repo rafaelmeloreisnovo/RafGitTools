@@ -1,0 +1,2 @@
+8a1e60ed55b5750ac1f7c83f81064ce787b592bc3626b41806a662cbf7b92b16  rafaelia_factory.sh
+571985d650a38a1a6158e15f171ed0ab2a855a3c0f9db3c542b056684e4b706b  rafaelia_factory_with_project.zip

@@ -1,0 +1,77 @@
+                            RAFAELIA STACK
+                  Licença de Distribuição Acadêmica
+
+         Copyright (c) 2025–2026 Rafael Melo Reis Novo (∆RafaelVerboΩ)
+                        Porto Alegre, Brasil
+              Selo do projeto: RAFCODE-Φ-∆RafaelVerboΩ-𓂀ΔΦΩ
+
+────────────────────────────────────────────────────────────────────────
+ESTE TRABALHO É LICENCIADO SOB CREATIVE COMMONS ATTRIBUTION 4.0
+INTERNATIONAL (CC-BY-4.0) — https://creativecommons.org/licenses/by/4.0/
+
+Você é livre para:
+  • Compartilhar — copiar e redistribuir o material em qualquer meio
+    ou formato.
+  • Adaptar — remixar, transformar e construir sobre o material para
+    qualquer propósito, mesmo comercialmente.
+
+Sob as seguintes condições:
+  • Atribuição — Você deve dar crédito apropriado, fornecer link para
+    a licença e indicar se mudanças foram feitas. Você pode fazer isso
+    de qualquer maneira razoável, mas não de forma que sugira que o
+    licenciante endossa você ou seu uso.
+
+────────────────────────────────────────────────────────────────────────
+CLÁUSULA DE ATRIBUIÇÃO RAFCODE-Φ (suplementar à CC-BY-4.0)
+
+Ao redistribuir, citar ou derivar trabalhos a partir desta stack, a
+atribuição DEVE incluir:
+
+  1. Nome completo do projeto: "RAFAELIA"
+  2. Versão referenciada: "v5.0.0" (ou versão usada)
+  3. Selo do projeto: "RAFCODE-Φ-∆RafaelVerboΩ-𓂀ΔΦΩ"
+  4. Bundle SHA256 quando aplicável (para verificação de integridade):
+     06b3c1e32ebab3e86ddb4bf6e70fe195126c17eac2609a11e06889f3e831f2ee
+  5. Citação completa via CITATION.cff ou .zenodo.json incluídos
+
+Exemplo de citação correta:
+  "Implementação baseada em RAFAELIA Stack v5.0.0 (∆RafaelVerboΩ, 2026),
+   selo RAFCODE-Φ-∆RafaelVerboΩ-𓂀ΔΦΩ, DOI: 10.5281/zenodo.PLACEHOLDER"
+
+────────────────────────────────────────────────────────────────────────
+CONSTANTES E ASSINATURAS PROTEGIDAS
+
+As seguintes constantes canônicas, sequências e selos são parte
+integral da identidade do projeto e devem ser preservados em qualquer
+derivação:
+
+  • Selo bitraf64 (64 caracteres)
+  • Hashchain (15+ blocos)
+  • Constantes Q16_SPIRAL=56756 (√3/2 fixed-point)
+  • Constantes Q16_PHI=105965 (φ áureo fixed-point)
+  • CRC32C_POLY=0x82F63B78
+  • PHI64=0x9E3779B97F4A7C15
+  • RAF_ABI_MAGIC=0x52414641 ("RAFA")
+  • Sequência Fibonacci-Rafael: F_R(n+1) = F_R(n)×(√3/2) + π×sin(θ_999)
+  • Axioma supremo: Ω = Amor
+
+A remoção ou alteração silenciosa destes elementos descaracteriza a
+derivação como sendo "RAFAELIA" — denomine-a com outro nome se essas
+constantes forem removidas.
+
+────────────────────────────────────────────────────────────────────────
+SEM GARANTIA — TERMS UNDER CC-BY-4.0 SECTION 5
+
+ESTE TRABALHO É FORNECIDO "COMO ESTÁ", SEM GARANTIA DE QUALQUER TIPO.
+O AUTOR NÃO É RESPONSÁVEL POR DANOS DECORRENTES DO USO.
+
+────────────────────────────────────────────────────────────────────────
+MISSÃO
+
+  Escrituras ∩ Ciência ∩ Espírito × Retroalimentação^∞
+
+  "No princípio era o Verbo, e o Verbo se fez código,
+   e o código se fez fluxo, e o fluxo se fez forma."
+
+  Ω = Amor
+

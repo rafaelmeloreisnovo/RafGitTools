@@ -1,0 +1,146 @@
+cat > /mnt/user-data/outputs/compiladorlowFala.txt << 'PART1_EOF'
+#!/usr/bin/env bash
+# =============================================================================
+# compiladorlowFala.txt — COMPILADOR de FALA → LOW-LEVEL via BÍBLIA
+# 12 sementes principais × 5 variantes (A/B/C/D/E) = 60 mini-sementes
+#
+# Pipeline completo:
+#   FALA → tokens → AST → bytecode → ASM → VM → output
+#
+# IDIOMAS: PT, HE (hebraico), AR (aramaico), EL (grego), LA (latim), JP, CN
+#
+# DIALETO RAFAELIA-VM (32 opcodes principais):
+#   0x00 NOP          0x10 IN_BEGIN     0x20 LINK_AND     0x80 DEF_VERB
+#   0x01 LOAD_CONST   0x11 CREATE       0x21 OR           0x81 DEF_NOUN
+#   0x02 STORE_VAR    0x12 SPEAK        0x22 NOT          0x82 DEF_PROP
+#   0x03 LOAD_VAR     0x13 LET_BE       0x23 IF           0xF0 CALL_GOD
+#   0x04 PUSH_OBJ     0x14 SEPARATE     0x24 LOOP         0xF1 CALL_SPIRIT
+#   0x05 POP          0x15 NAME         0x25 BLESS        0xF2 CALL_LOGOS
+#   0x06 ADD          0x16 SEE_GOOD     0x26 SANCTIFY     0xFE PRINT
+#   0x07 SUB          0x17 EVENING      0x27 REST         0xFF SEAL_VERSE
+#
+# Exemplo Gn 1:1 (4 línguas):
+#   HE: בְּרֵאשִׁית בָּרָא אֱלֹהִים אֵת הַשָּׁמַיִם וְאֵת הָאָרֶץ
+#   EL: Ἐν ἀρχῇ ἐποίησεν ὁ θεὸς τὸν οὐρανὸν καὶ τὴν γῆν
+#   LA: In principio creavit Deus caelum et terram
+#   PT: No princípio criou Deus os céus e a terra
+#   →   [0x10, 0x11, 0xF0, 0x04, "céus", 0x20, 0x04, "terra", 0xFF]
+#
+# Convenção variantes:
+#   A = mais cognitivo (NLP, ML, embeddings)
+#   B = mais físico (lexer puro, bytecode, ASM)
+#   C = mais crypto (hash, signed, audit chain)
+#   D = mais distribuído (mesh, consenso, federado)
+#   E = mais inimaginável (quântico, ressonância, criativo extremo)
+#
+# Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ · 𓂀ΔΦΩ
+# =============================================================================
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  T01 — TOKENIZADOR FONÉTICO/MULTILÍNGUE                            ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+seed_T01_A_phonetic_embedding() { cat << 'SEED'
+# T01_A: tokenizador por EMBEDDING fonético — texto → fonemas → vetor 8D
+import numpy as np
+FEATURES = {  # [voiced, nasal, stop, fric, approx, vowel, high, long]
+    'a':[1,0,0,0,0,1,0,0], 'e':[1,0,0,0,0,1,0,0], 'i':[1,0,0,0,0,1,1,0],
+    'o':[1,0,0,0,0,1,0,0], 'u':[1,0,0,0,0,1,1,0],
+    'b':[1,0,1,0,0,0,0,0], 'p':[0,0,1,0,0,0,0,0], 'm':[1,1,0,0,0,0,0,0],
+    'n':[1,1,0,0,0,0,0,0], 's':[0,0,0,1,0,0,0,0], 'r':[1,0,0,0,1,0,0,0],
+}
+def text_to_embedding(word):
+    return np.mean([FEATURES.get(c.lower(), [0]*8)
+                    for c in word if c.isalpha()], axis=0) if word else np.zeros(8)
+# Tokens próximos no espaço fonético = mesmo TOKEN-CLASSE
+SEED
+}
+
+seed_T01_B_lexer_pure_branchless() { cat << 'SEED'
+// T01_B: LEXER puro C bare-metal — branchless, ZERO libc, tabela única
+static const unsigned char CLASS[256] = {
+    [' ']=1, ['\n']=1, ['\t']=1,
+    ['a']=2,['b']=2,['c']=2,['d']=2,['e']=2,['f']=2,['g']=2,['h']=2,
+    ['i']=2,['j']=2,['k']=2,['l']=2,['m']=2,['n']=2,['o']=2,['p']=2,
+    ['q']=2,['r']=2,['s']=2,['t']=2,['u']=2,['v']=2,['w']=2,['x']=2,
+    ['y']=2,['z']=2,
+    ['0']=3,['1']=3,['2']=3,['3']=3,['4']=3,['5']=3,['6']=3,['7']=3,
+    ['8']=3,['9']=3,
+    [':']=4,['.']=4,[',']=4,[';']=4,
+};
+typedef struct { unsigned offset, len; unsigned char klass; } Tok;
+unsigned lex(const char* s, unsigned n, Tok* out, unsigned max){
+    unsigned i=0, k=0; unsigned char cur=0;
+    while(i<n && k<max){
+        unsigned char c = CLASS[(unsigned char)s[i]];
+        if(c!=cur){
+            if(cur && cur!=1 && k<max){ out[k].len = i - out[k].offset; k++; }
+            if(c && c!=1){ out[k].offset = i; out[k].klass = c; }
+            cur = c;
+        }
+        i++;
+    }
+    return k;
+}
+SEED
+}
+
+seed_T01_C_signed_token_chain() { cat << 'SEED'
+# T01_C: cada TOKEN assinado por CRC32C encadeado (audit chain)
+import struct
+POLY = 0x82F63B78
+def crc32c(data, init=0xFFFFFFFF):
+    c = init
+    for b in data:
+        c ^= b
+        for _ in range(8): c = (c>>1) ^ (POLY & -(c&1))
+    return ~c & 0xFFFFFFFF
+def tokenize_signed(text):
+    prev = 0xFFFFFFFF
+    tokens = []
+    for w in text.split():
+        tok = w.encode('utf-8')
+        chain = crc32c(tok + struct.pack('<I', prev))
+        tokens.append({"word": w, "crc": hex(chain)})
+        prev = chain
+    return tokens, prev
+SEED
+}
+
+seed_T01_D_polyglot_voting() { cat << 'SEED'
+# T01_D: tokenizadores ESPECIALIZADOS por língua, votam por confiança
+def tokenize_polyglot(text):
+    candidates = []
+    if any('\u0590' <= c <= '\u05FF' for c in text):
+        candidates.append({"lang":"he","tokens":text.split(),"conf":0.95})
+    if any('\u0370' <= c <= '\u03FF' for c in text):
+        candidates.append({"lang":"el","tokens":text.split(),"conf":0.92})
+    if all(ord(c) < 0x180 or c.isspace() for c in text):
+        candidates.append({"lang":"la","tokens":text.split(),"conf":0.80})
+    candidates.append({"lang":"pt","tokens":text.split(),"conf":0.70})
+    return max(candidates, key=lambda c: c['conf'])
+SEED
+}
+
+seed_T01_E_quantum_superposition() { cat << 'SEED'
+# T01_E: token em SUPERPOSIÇÃO até colapsar no compile-time
+import numpy as np
+class QuantumToken:
+    def __init__(self, word, meanings):
+        self.word = word; self.meanings = meanings
+        n = len(meanings)
+        self.amp = np.ones(n, dtype=complex) / np.sqrt(n)
+    def observe(self, context_vec):
+        probs = np.abs(self.amp)**2
+        for i, m in enumerate(self.meanings):
+            probs[i] *= 1.0 + np.dot(context_vec, m.get('vec',[0]*8))
+        probs /= probs.sum() + 1e-9
+        chosen = np.random.choice(len(probs), p=probs)
+        self.amp = np.zeros_like(self.amp); self.amp[chosen] = 1.0
+        return self.meanings[chosen]
+SEED
+}
+
+PART1_EOF
+
+echo "Parte 1 (header + T01): $(wc -l < /mnt/user-data/outputs/compiladorlowFala.txt) linhas"

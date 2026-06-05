@@ -27,14 +27,17 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
+      - uses: android-actions/setup-android@v3
+      - name: Generate local.properties
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
       
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
@@ -60,14 +63,17 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
+      - uses: android-actions/setup-android@v3
+      - name: Generate local.properties
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
       
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -76,7 +82,7 @@ jobs:
         run: ./gradlew dependencies
       
       - name: Check for known vulnerabilities
-        uses: aquasecurity/trivy-action@0.34.0
+        uses: aquasecurity/trivy-action@0.34.1
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -96,12 +102,12 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
       
       - name: TruffleHog Secret Scan
-        uses: trufflesecurity/trufflehog@v3.93.1
+        uses: trufflesecurity/trufflehog@v3.93.6
         with:
           path: ./
           base: ${{ github.event.repository.default_branch }}
@@ -114,14 +120,17 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
+      - uses: android-actions/setup-android@v3
+      - name: Generate local.properties
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
       
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -130,7 +139,7 @@ jobs:
         run: ./gradlew dependencies | tee dependencies.txt
       
       - name: Upload dependency list
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dependencies
           path: dependencies.txt

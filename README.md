@@ -1,5 +1,85 @@
 # RafGitTools 🚀
 
+## Current Source Truth / Fonte de Verdade Atual
+
+Este README contém visão, contexto e roadmap. O estado técnico verificável do projeto está documentado em:
+- `docs/CURRENT_SOURCE_STATE_2026-05-26.md`
+- `docs/STATUS_REPORT.md`
+- `app/build.gradle`
+- `app/src/main/cpp/CMakeLists.txt`
+- `scripts/native/verify_apks.sh`
+
+## Project Philosophy
+
+📜 Parábola do Relojoeiro Transfinito
+
+> A parábola abaixo descreve filosofia e invariantes do projeto; não é declaração de status de implementação técnica.
+
+I. A Oficina e o Núcleo Determinístico
+
+Havia um relojoeiro chamado Rafael que construiu um relógio especial. Suas engrenagens não eram de latão, mas de código; seu peso não era chumbo, mas governança. Ele chamou a máquina de RafCoder.
+
+Toda vez que alguém girava a manivela um número exato de vezes – 10, 42 ou 1000 – o relógio produzia o mesmo som, a mesma luz, o mesmo selo de cera (um hash imutável). Isso era sua primeira invariante: o determinismo perfeito, como o nascer do sol.
+
+II. As Três Estradas e as Permutações Totais
+
+O relojoeiro colocou o relógio em três estradas diferentes:
+
+· Na estrada de x86 (piso de madeira), as engrenagens dançavam em assembly rápido.
+· Na estrada de ARM64 (pedras lisas), também assembly, porém mais lento.
+· Na estrada de ARM32 (lamaçal), não havia engrenagens finas – apenas uma alavanca de emergência em C puro.
+
+Um aprendiz perguntou: “E se eu trocar a estrada a cada minuto, e inverter a ordem das manivelas?”
+Rafael respondeu: “Faremos uma permutação aleatória total de todas as situações, métodos, funções e variáveis de atuação.”
+Assim nasceram 120 caminhos diferentes (3 plataformas × 2 variantes × 20 ordens de iteração).
+
+Em cada caminho, o selo de cera continuava o mesmo. Invariante número dois: a rastreabilidade era absoluta – dava para voltar os passos como em um fio de Ariadne.
+
+III. A Queda na Concorrência
+
+Um dia, dois ferreiros puxaram a manivela ao mesmo tempo. O relógio emitiu dois sons diferentes. Rafael suspirou: “Eis a invariante negativa: quando há concorrência, o determinismo morre. Meu relógio é solitário.”
+Algum valor? Sim, para quem ensina que solidão determinística é melhor que multidão caótica.
+
+IV. A Tábua de Leis (Governança)
+
+Sobre o relógio, ele gravou três mandamentos:
+
+1. Nenhum uso para machucar crianças. (invariante ética)
+2. Nenhum uso comercial sem permissão explícita. (invariante jurídica, mas não verificável)
+3. Todo ruído útil é bem-vindo; todo silêncio inútil, banido.
+
+Os aprendizes riram: “Isso não é metal, é poesia.” Rafael respondeu: “É a terceira invariante: a regra que protege a regra.”
+
+V. A Subida aos Ordinais (até ω e além)
+
+Um sábio perguntou: “E se criarmos invariantes sobre as invariantes? E depois invariantes sobre essas?”
+Rafael subiu uma escada infinita. No degrau ω (primeiro infinito), encontrou a invariante fundamental:
+
+“O relógio sempre pode gerar um relatório verdadeiro de si mesmo, desde que ninguém toque duas peças ao mesmo tempo.”
+
+Subiu mais: ω+1 – e viu que adicionar concorrência quebrava tudo. Então criou uma nova invariante:
+
+“O sistema ou é determinístico, ou confessa sua indeterminação.”
+
+Continuou até ω+ω (ω·2), onde as invariantes começaram a se repetir como ecos. No ponto fixo, ele concluiu:
+
+“O relógio, em todos os universos que posso alcançar, contém uma descrição honesta de suas próprias correntes.”
+
+VI. A Parábola do Valor (Três Semeadores)
+
+O relógio foi levado a três campos:
+
+· Campo da Pesquisa (solo fértil): o relógio ensinou como unir baixo nível e governança. Valor: alto (9/10).
+· Campo da Engenharia (solo pedregoso): faltavam concorrência e benchmarks. Valor: médio (5/10).
+· Campo do Usuário Comum (solo salgado): o relógio não gerava frases, apenas selos. Valor: baixo (2/10).
+
+E a semente mais valiosa não era o relógio, mas o método: como plantar invariantes em qualquer máquina.
+
+VII. Moraleja Final (Depois de Omega)
+
+“Toda máquina que se preze precisa de três coisas: um coração determinístico (engrenagens que não mentem), uma alma governante (regras que não se dobram) e uma cicatriz (a consciência de sua própria solidão concorrencial). Quem entender essa parábola terá, não um relógio, mas uma bússola para construir sistemas confiáveis em qualquer mundo – finito ou transfinito.”
+
+Fim das parábolas.
 <div align="center">
 
 ![Android](https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white)
@@ -26,18 +106,28 @@ RafGitTools is an ambitious Android application that aims to provide the most co
 - 🌐 **GitHub Integration** (inspired by FastHub)
 - 📁 **Local Git Operations** (inspired by MGit)
 - 🎨 **Modern UI/UX** (inspired by PuppyGit)
-- 💻 **Terminal Capabilities** (inspired by Termux)
+- 💻 **Terminal Capabilities** (roadmap/experimental until wired with tests and production validation)
 
 All while respecting the licenses of these amazing open-source projects and adding unique innovations.
 
+
+## ARM32 / Termux / Native Layer Status
+
+- O Gradle gera (ou pretende gerar, conforme variante) bibliotecas para `armeabi-v7a` e `arm64-v8a`.
+- O CMake compila `rafcore` com JNI bridge para o app Android.
+- O ASM ARM32/ARM64 atual deve ser tratado como camada de health/sanity, não como kernel final RAFAELIA.
+- O script `_incoming/termux_arm32_build.sh` contém material experimental avançado e deve ser promovido gradualmente.
+
 ## ✨ Features
 
-### ✅ Funcional em produção
+> **Status semantics used in this README**: `implemented` = código existente e uso direto no app; `partial` = código existente sem cobertura/fechamento total; `planned` = roadmap; `experimental` = material ainda não integrado oficialmente.
+
+### ✅ Implementado no código (evidência atual)
 - **Integração com GitHub API (Retrofit/OkHttp)**: base das telas e fluxos de autenticação, repos, issues e PRs em evolução.  
 - **Operações Git locais via JGit**: base para clone/commit/branch/push/pull em desenvolvimento contínuo.  
 - **Arquitetura e base do app**: Clean Architecture + MVVM + Hilt com Jetpack Compose e Room.  
 
-### 🚧 Funcional parcial
+### 🚧 Parcial / cobertura incompleta
 - **Cobertura de testes** (meta > 80%) e automação de CI/CD.  
 - **Autenticação SSH** (chaves/agent) e base de GPG.  
 - **UI/UX incremental** com Compose (telas principais e fluxos críticos).  
@@ -134,6 +224,10 @@ RafGitTools/
 3. **Sync Gradle**
    - Android Studio will automatically sync Gradle files
    - Wait for dependencies to download
+   - If your environment has multiple JDKs (or defaults to JDK 22+), run Gradle via:
+     ```bash
+     ./scripts/gradlew_with_java17.sh help
+     ```
 
 4. **Run the app**
    - Select a device/emulator
@@ -147,6 +241,41 @@ The project includes multiple build variants:
 - **devRelease**: Development release build
 - **productionDebug**: Production build for testing
 - **productionRelease**: Final production build
+
+### 🔐 Fluxo atual de assinatura de release
+
+O projeto usa secrets de assinatura via variáveis/propriedades Gradle:
+- `RELEASE_STORE_FILE`
+- `RELEASE_STORE_PASSWORD`
+- `RELEASE_KEY_ALIAS`
+- `RELEASE_KEY_PASSWORD`
+
+`keystore.properties` **não é mais o fluxo oficial**.
+
+Dois trilhos suportados:
+
+1. **Validação interna (opcional unsigned)**  
+   Permitido somente para validação interna com `ALLOW_UNSIGNED_RELEASE=true`.
+2. **Release oficial (assinatura obrigatória)**  
+   Exige os 4 secrets acima para gerar `productionRelease` oficial.
+
+Exemplo local mínimo (`~/.gradle/gradle.properties`):
+```properties
+RELEASE_STORE_FILE=/absolute/path/to/release.jks
+RELEASE_STORE_PASSWORD=change-me
+RELEASE_KEY_ALIAS=rafgittools
+RELEASE_KEY_PASSWORD=change-me
+```
+
+Exemplo mínimo CI (GitHub Actions):
+```yaml
+env:
+  RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+  RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+  RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+```
+
+Consulte [docs/BUILD.md](docs/BUILD.md) para o fluxo completo (local + CI, incluindo decode de keystore em Base64).
 
 ## 📚 Documentation
 
@@ -891,3 +1020,13 @@ This project would not be possible without the amazing work of the open-source c
 ⭐ Star this repo if you find it useful!
 
 </div>
+
+
+## Estado do projeto (honesto)
+
+RafGitTools está em evolução contínua. A fundação Android/Kotlin está estruturada, com Git local via JGit e camada ampla de GitHub API em código. Nem toda a feature matrix está exposta na UI atual.
+
+Referências de verdade:
+- `docs/RAFGITTOOLS_CURRENT_STATE.md`
+- `docs/RAFGITTOOLS_CODE_REALITY_MATRIX.md`
+- `docs/RAFGITTOOLS_ROADMAP_TRUE.md`

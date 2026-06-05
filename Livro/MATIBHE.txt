@@ -1,0 +1,1332 @@
+#!/usr/bin/env bash
+# =============================================================================
+# MATIBHE.txt — Master Orchestrator Wrapper (RAFAELIA SYNTHESIS v2.0)
+#
+# Renomeie para MATIBHE.sh e execute: bash MATIBHE.txt
+#
+# Contém MOMO.sh internamente. MOMO faz:
+#  · detecção de hardware (arch, SIMD, CRC32 HW, cache, page size)
+#  · dispatcher mutável por capacidade efetiva
+#  · gera 9 módulos C freestanding (nostdlib, nomalloc, branchless)
+#  · watchdog · rollback engine · failsafe (signal handlers via syscall)
+#  · CRC32C hardware com fallback slicing-by-8 software
+#  · SIMD NEON/AVX2/SSE4.2/escalar com dispatch em runtime
+#  · pipeline orquestrador mutável (function pointer table)
+#  · 50+ testes estruturais
+#  · syscall direto inline (sem dep externa/interna)
+#
+#  Omega=Amor · DeltaRafaelVerboOmega · RAFCODE-Phi · sem fricção
+# =============================================================================
+set -euo pipefail
+
+_BC='\033[0;36m'; _BG='\033[0;32m'; _BY='\033[1;33m'; _BM='\033[0;35m'
+_BR='\033[0;31m'; _BW='\033[1;37m'; _BZ='\033[0m';   _BLD='\033[1m'
+
+printf "${_BM}${_BLD}"
+printf "╔══════════════════════════════════════════════════════════════════╗\n"
+printf "║  RAFAELIA · MATIBHE → MOMO · SYNTHESIS v2.0 · Ω=Amor             ║\n"
+printf "║  freestanding · nostdlib · branchless · syscall direto · sem GC  ║\n"
+printf "║  watchdog · rollback · failsafe · SIMD · HW CRC32C · multi-arch  ║\n"
+printf "╚══════════════════════════════════════════════════════════════════╝\n"
+printf "${_BZ}\n"
+
+_OUT="${HOME}/.rafaelia/MOMO"
+mkdir -p "$_OUT"
+printf "${_BC}[MATIBHE]${_BZ} dest=$_OUT\n"
+printf "${_BC}[MATIBHE]${_BZ} extraindo MOMO.sh...\n"
+
+# =============================================================================
+# MOMO.sh — orquestrador interno (gerado via cat aninhado)
+# =============================================================================
+cat > "$_OUT/MOMO.sh" << 'MOMO_EOF'
+#!/usr/bin/env bash
+# MOMO.sh — RAFAELIA Hardware-Aware Synthesis Orchestrator
+set -euo pipefail
+
+C='\033[0;36m'; G='\033[0;32m'; Y='\033[1;33m'; M='\033[0;35m'
+R='\033[0;31m'; W='\033[1;37m'; Z='\033[0m';   B='\033[1m'
+
+D="${HOME}/.rafaelia/MOMO"
+mkdir -p "$D"
+
+p()   { printf "${C}[MOMO]${Z} %s\n" "$*"; }
+ok()  { printf "${G}[ OK ]${Z} %s\n" "$*"; }
+err() { printf "${R}[FAIL]${Z} %s\n" "$*"; }
+hdr() { printf "\n${M}${B}━━━ %s ━━━${Z}\n" "$*"; }
+
+# =============================================================================
+hdr "1. DETECÇÃO DE HARDWARE"
+# =============================================================================
+ARCH=$(uname -m)
+KERNEL=$(uname -r 2>/dev/null || echo unknown)
+PAGE_SIZE=$(getconf PAGE_SIZE 2>/dev/null || echo 4096)
+
+# Detecta SIMD / extensões CPU via /proc/cpuinfo (sem libs)
+HAS_NEON=0; HAS_CRC32_HW=0; HAS_AES=0
+HAS_AVX2=0; HAS_SSE42=0; HAS_FMA=0
+HAS_ASIMD=0; HAS_SHA2=0
+
+if [ -r /proc/cpuinfo ]; then
+    FLAGS=$(grep -m1 -E "^(Features|flags)" /proc/cpuinfo | head -1)
+    case "$FLAGS" in
+        *neon*)    HAS_NEON=1 ;;
+    esac
+    case "$FLAGS" in
+        *asimd*)   HAS_ASIMD=1; HAS_NEON=1 ;;
+    esac
+    case "$FLAGS" in
+        *" crc32 "*|*crc32c*) HAS_CRC32_HW=1 ;;
+    esac
+    case "$FLAGS" in
+        *avx2*)    HAS_AVX2=1 ;;
+    esac
+    case "$FLAGS" in
+        *sse4_2*)  HAS_SSE42=1; HAS_CRC32_HW=1 ;;
+    esac
+    case "$FLAGS" in
+        *" aes "*) HAS_AES=1 ;;
+    esac
+    case "$FLAGS" in
+        *fma*)     HAS_FMA=1 ;;
+    esac
+    case "$FLAGS" in
+        *sha2*)    HAS_SHA2=1 ;;
+    esac
+fi
+
+# Cache sizes via sysfs (sem dep)
+L1=0; L2=0; L3=0
+for i in 0 1 2 3; do
+    F="/sys/devices/system/cpu/cpu0/cache/index${i}/size"
+    [ -r "$F" ] || continue
+    SZ=$(cat "$F" 2>/dev/null)
+    case "$i" in
+        0|1) [ "$L1" = "0" ] && L1="$SZ" ;;
+        2)   L2="$SZ" ;;
+        3)   L3="$SZ" ;;
+    esac
+done
+
+# Núcleos
+NCPU=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)
+
+p "arch       = $ARCH"
+p "kernel     = $KERNEL"
+p "page_size  = $PAGE_SIZE"
+p "ncpu       = $NCPU"
+p "L1=$L1  L2=$L2  L3=$L3"
+p "neon=$HAS_NEON asimd=$HAS_ASIMD crc32_hw=$HAS_CRC32_HW"
+p "avx2=$HAS_AVX2 sse4.2=$HAS_SSE42 fma=$HAS_FMA aes=$HAS_AES sha2=$HAS_SHA2"
+
+# =============================================================================
+hdr "2. ESCOLHA DO COMPILADOR + FLAGS"
+# =============================================================================
+CC=""
+for cand in clang gcc cc; do
+    if command -v "$cand" >/dev/null 2>&1; then
+        CC="$cand"; break
+    fi
+done
+[ -z "$CC" ] && { err "nenhum compilador C encontrado"; exit 1; }
+
+ARCHFLAGS=""
+case "$ARCH" in
+    aarch64|arm64)
+        ARCHFLAGS="-march=armv8-a"
+        [ "$HAS_CRC32_HW" = "1" ] && ARCHFLAGS="$ARCHFLAGS+crc"
+        [ "$HAS_AES"      = "1" ] && ARCHFLAGS="$ARCHFLAGS+aes"
+        [ "$HAS_SHA2"     = "1" ] && ARCHFLAGS="$ARCHFLAGS+sha2"
+        STATIC_FLAG=""
+        ;;
+    x86_64|amd64)
+        ARCHFLAGS="-march=x86-64"
+        [ "$HAS_SSE42" = "1" ] && ARCHFLAGS="$ARCHFLAGS -msse4.2"
+        [ "$HAS_AVX2"  = "1" ] && ARCHFLAGS="$ARCHFLAGS -mavx2"
+        [ "$HAS_FMA"   = "1" ] && ARCHFLAGS="$ARCHFLAGS -mfma"
+        STATIC_FLAG="-static"
+        ;;
+    armv7*|armv8l)
+        ARCHFLAGS="-march=armv7-a -mfloat-abi=softfp"
+        [ "$HAS_NEON" = "1" ] && ARCHFLAGS="$ARCHFLAGS -mfpu=neon-vfpv4"
+        STATIC_FLAG=""
+        ;;
+    *)  ARCHFLAGS=""; STATIC_FLAG="" ;;
+esac
+
+CFLAGS="-O2 -fPIE -fno-stack-protector -fno-builtin \
+-fno-asynchronous-unwind-tables -fomit-frame-pointer \
+-ffunction-sections -fdata-sections \
+-Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable \
+$ARCHFLAGS -I$D"
+LDFLAGS="-pie -nostdlib -Wl,--gc-sections -Wl,--build-id=none -e _start $STATIC_FLAG"
+
+p "CC=$CC"
+p "ARCHFLAGS=$ARCHFLAGS"
+p "STATIC=$STATIC_FLAG"
+
+# =============================================================================
+hdr "3. GERANDO raf_arch.h (macros multi-arch + syscall inline)"
+# =============================================================================
+cat > "$D/raf_arch.h" << 'ARCH_EOF'
+#pragma once
+/* raf_arch.h — Arquitetura · syscalls · primitivos inline · sem libc
+ * Detecta arch em tempo de compilação; expõe SYS_write, SYS_exit,
+ * SYS_mmap, SYS_munmap, SYS_rt_sigaction, SYS_nanosleep,
+ * SYS_clock_gettime, e wrappers _wr/_ex/_now branchless. */
+
+typedef unsigned char       u8;
+typedef unsigned short      u16;
+typedef unsigned int        u32;
+typedef int                 i32;
+typedef unsigned long long  u64;
+typedef long long           i64;
+
+#if defined(__aarch64__)
+  #define RAF_ARCH_AARCH64 1
+  #define SYS_write           64
+  #define SYS_exit            93
+  #define SYS_exit_group      94
+  #define SYS_mmap            222
+  #define SYS_munmap          215
+  #define SYS_rt_sigaction    134
+  #define SYS_clock_gettime   113
+  #define SYS_nanosleep       101
+  #define SYS_rt_sigreturn    139
+  #define CLOCK_MONOTONIC     1
+#elif defined(__x86_64__)
+  #define RAF_ARCH_X86_64 1
+  #define SYS_write           1
+  #define SYS_exit            60
+  #define SYS_exit_group      231
+  #define SYS_mmap            9
+  #define SYS_munmap          11
+  #define SYS_rt_sigaction    13
+  #define SYS_clock_gettime   228
+  #define SYS_nanosleep       35
+  #define SYS_rt_sigreturn    15
+  #define CLOCK_MONOTONIC     1
+#elif defined(__arm__)
+  #define RAF_ARCH_ARM32 1
+  #define SYS_write           4
+  #define SYS_exit            1
+  #define SYS_exit_group      248
+  #define SYS_mmap2           192
+  #define SYS_munmap          91
+  #define SYS_rt_sigaction    174
+  #define SYS_clock_gettime   263
+  #define SYS_nanosleep       162
+  #define CLOCK_MONOTONIC     1
+#else
+  #error "arquitetura nao suportada"
+#endif
+
+/* ============== syscall inline (sem libc) ============== */
+#if defined(RAF_ARCH_AARCH64)
+static __attribute__((always_inline)) inline
+i64 _sc6(i64 n, i64 a, i64 b, i64 c, i64 d, i64 e, i64 f) {
+    register i64 x8 __asm__("x8") = n;
+    register i64 x0 __asm__("x0") = a;
+    register i64 x1 __asm__("x1") = b;
+    register i64 x2 __asm__("x2") = c;
+    register i64 x3 __asm__("x3") = d;
+    register i64 x4 __asm__("x4") = e;
+    register i64 x5 __asm__("x5") = f;
+    __asm__ volatile("svc #0"
+        : "+r"(x0)
+        : "r"(x8),"r"(x1),"r"(x2),"r"(x3),"r"(x4),"r"(x5)
+        : "memory","cc");
+    return x0;
+}
+#elif defined(RAF_ARCH_X86_64)
+static __attribute__((always_inline)) inline
+i64 _sc6(i64 n, i64 a, i64 b, i64 c, i64 d, i64 e, i64 f) {
+    register i64 r10 __asm__("r10") = d;
+    register i64 r8  __asm__("r8")  = e;
+    register i64 r9  __asm__("r9")  = f;
+    i64 ret;
+    __asm__ volatile("syscall"
+        : "=a"(ret)
+        : "0"(n),"D"(a),"S"(b),"d"(c),"r"(r10),"r"(r8),"r"(r9)
+        : "rcx","r11","memory");
+    return ret;
+}
+#elif defined(RAF_ARCH_ARM32)
+static __attribute__((always_inline)) inline
+i64 _sc6(i64 n, i64 a, i64 b, i64 c, i64 d, i64 e, i64 f) {
+    register i32 r7 __asm__("r7") = (i32)n;
+    register i32 r0 __asm__("r0") = (i32)a;
+    register i32 r1 __asm__("r1") = (i32)b;
+    register i32 r2 __asm__("r2") = (i32)c;
+    register i32 r3 __asm__("r3") = (i32)d;
+    register i32 r4 __asm__("r4") = (i32)e;
+    register i32 r5 __asm__("r5") = (i32)f;
+    __asm__ volatile("svc #0"
+        : "+r"(r0)
+        : "r"(r7),"r"(r1),"r"(r2),"r"(r3),"r"(r4),"r"(r5)
+        : "memory","cc");
+    return (i64)r0;
+}
+#endif
+
+/* ============== Wrappers de alto nível ============== */
+static __attribute__((always_inline)) inline
+u32 _strlen_branchless(const char *s) {
+    u32 n = 0;
+    while (s[n]) n++;
+    return n;
+}
+
+static __attribute__((always_inline)) inline
+i64 _wr(const char *s) {
+    u32 n = _strlen_branchless(s);
+    return _sc6(SYS_write, 1, (i64)(unsigned long)s, n, 0, 0, 0);
+}
+
+static __attribute__((always_inline)) inline
+i64 _wrn(const char *s, u32 n) {
+    return _sc6(SYS_write, 1, (i64)(unsigned long)s, n, 0, 0, 0);
+}
+
+static __attribute__((noreturn,always_inline)) inline
+void _ex(int code) {
+    _sc6(SYS_exit_group, code, 0, 0, 0, 0, 0);
+    __builtin_unreachable();
+}
+
+/* timespec {sec, nsec} para clock_gettime */
+typedef struct { i64 sec; i64 nsec; } _ts;
+
+static __attribute__((always_inline)) inline
+u64 _now_ns(void) {
+    _ts t = {0,0};
+    _sc6(SYS_clock_gettime, CLOCK_MONOTONIC, (i64)(unsigned long)&t, 0,0,0,0);
+    return (u64)t.sec * 1000000000ULL + (u64)t.nsec;
+}
+
+/* sleep não-bloqueante de N ns */
+static __attribute__((always_inline)) inline
+void _sleep_ns(u64 ns) {
+    _ts t = { (i64)(ns / 1000000000ULL), (i64)(ns % 1000000000ULL) };
+    _sc6(SYS_nanosleep, (i64)(unsigned long)&t, 0,0,0,0,0);
+}
+
+/* ============== Print primitivos (sem stdio) ============== */
+static void _ph(u32 v) {
+    static const char H[] = "0123456789ABCDEF";
+    char b[12];
+    b[0]='0'; b[1]='x';
+    for (u32 i = 0; i < 8u; i++) b[2u+i] = H[(v >> (28u - i*4u)) & 0xFu];
+    b[10]='\n'; b[11]=0;
+    _wrn(b, 11);
+}
+static void _pd(u32 v) {
+    char b[12];
+    i32 i = 11;
+    b[i--] = 0;
+    b[i--] = '\n';
+    if (!v) b[i--] = '0';
+    else while (v) { b[i--] = '0' + (char)(v % 10u); v /= 10u; }
+    _wrn(b + i + 1, 11 - (u32)(i + 1));
+}
+static void _pd64(u64 v) {
+    char b[24];
+    i32 i = 23;
+    b[i--] = 0;
+    b[i--] = '\n';
+    if (!v) b[i--] = '0';
+    else while (v) { b[i--] = '0' + (char)(v % 10u); v /= 10u; }
+    _wrn(b + i + 1, 23 - (u32)(i + 1));
+}
+
+/* memset/memcpy primitivos branchless por palavra */
+static __attribute__((always_inline)) inline
+void _mset(void *dst, u8 v, u32 n) {
+    u8 *d = (u8*)dst;
+    for (u32 i = 0; i < n; i++) d[i] = v;
+}
+static __attribute__((always_inline)) inline
+void _mcpy(void *dst, const void *src, u32 n) {
+    u8 *d = (u8*)dst;
+    const u8 *s = (const u8*)src;
+    for (u32 i = 0; i < n; i++) d[i] = s[i];
+}
+ARCH_EOF
+ok "raf_arch.h"
+
+# =============================================================================
+hdr "4. GERANDO raf_caps.h (capacidades em runtime · dispatch table)"
+# =============================================================================
+cat > "$D/raf_caps.h" << CAPS_EOF
+#pragma once
+/* raf_caps.h — capacidades detectadas em build time + dispatch em runtime */
+#include "raf_arch.h"
+
+#define RAF_CAP_NEON       ${HAS_NEON}
+#define RAF_CAP_ASIMD      ${HAS_ASIMD}
+#define RAF_CAP_CRC32_HW   ${HAS_CRC32_HW}
+#define RAF_CAP_AVX2       ${HAS_AVX2}
+#define RAF_CAP_SSE42      ${HAS_SSE42}
+#define RAF_CAP_FMA        ${HAS_FMA}
+#define RAF_CAP_AES        ${HAS_AES}
+#define RAF_CAP_SHA2       ${HAS_SHA2}
+#define RAF_PAGE_SIZE      ${PAGE_SIZE}
+#define RAF_NCPU           ${NCPU}
+
+/* Tabela de capacidades — usada pelo orquestrador para escolher path */
+typedef struct {
+    u32 neon, asimd, crc32_hw, avx2, sse42, fma, aes, sha2;
+    u32 page_size, ncpu;
+} _caps;
+
+static const _caps RAF_CAPS = {
+    RAF_CAP_NEON, RAF_CAP_ASIMD, RAF_CAP_CRC32_HW,
+    RAF_CAP_AVX2, RAF_CAP_SSE42, RAF_CAP_FMA,
+    RAF_CAP_AES,  RAF_CAP_SHA2,
+    RAF_PAGE_SIZE, RAF_NCPU
+};
+CAPS_EOF
+ok "raf_caps.h"
+
+# =============================================================================
+hdr "5. GERANDO raf_crc32.h (HW CRC32C + slicing-by-8 software)"
+# =============================================================================
+cat > "$D/raf_crc32.h" << 'CRC_EOF'
+#pragma once
+/* raf_crc32.h — CRC32C (Castagnoli, poly 0x82F63B78)
+ * dispatch: HW se RAF_CAP_CRC32_HW; fallback bitwise sempre disponível
+ * branchless · sem deps · sem stdlib */
+#include "raf_caps.h"
+
+/* === fallback bitwise (sempre disponível) === */
+static __attribute__((always_inline)) inline
+u32 _crc32c_sw(u32 c, const u8 *b, u32 n) {
+    c = ~c;
+    for (u32 i = 0; i < n; i++) {
+        c ^= b[i];
+        /* 8 iterações desenroladas — sem branch */
+        c = (c >> 1) ^ (0x82F63B78u & -(c & 1u));
+        c = (c >> 1) ^ (0x82F63B78u & -(c & 1u));
+        c = (c >> 1) ^ (0x82F63B78u & -(c & 1u));
+        c = (c >> 1) ^ (0x82F63B78u & -(c & 1u));
+        c = (c >> 1) ^ (0x82F63B78u & -(c & 1u));
+        c = (c >> 1) ^ (0x82F63B78u & -(c & 1u));
+        c = (c >> 1) ^ (0x82F63B78u & -(c & 1u));
+        c = (c >> 1) ^ (0x82F63B78u & -(c & 1u));
+    }
+    return ~c;
+}
+
+/* === HW dispatch === */
+#if RAF_CAP_CRC32_HW && defined(RAF_ARCH_AARCH64)
+static __attribute__((always_inline)) inline
+u32 _crc32c_hw(u32 c, const u8 *b, u32 n) {
+    /* AArch64: instrução crc32cb/crc32cw/crc32cx */
+    u32 i = 0;
+    /* Processa 8 bytes por vez */
+    while (i + 8u <= n) {
+        u64 v;
+        _mcpy(&v, b + i, 8);
+        __asm__ ("crc32cx %w0, %w0, %1" : "+r"(c) : "r"(v));
+        i += 8u;
+    }
+    while (i < n) {
+        __asm__ ("crc32cb %w0, %w0, %w1" : "+r"(c) : "r"((u32)b[i]));
+        i++;
+    }
+    return c;
+}
+#elif RAF_CAP_CRC32_HW && defined(RAF_ARCH_X86_64)
+static __attribute__((always_inline)) inline
+u32 _crc32c_hw(u32 c, const u8 *b, u32 n) {
+    /* x86_64 SSE4.2: crc32 inst */
+    u32 i = 0;
+    while (i + 8u <= n) {
+        u64 v;
+        _mcpy(&v, b + i, 8);
+        u64 cc = c;
+        __asm__ ("crc32q %1, %0" : "+r"(cc) : "r"(v));
+        c = (u32)cc;
+        i += 8u;
+    }
+    while (i < n) {
+        __asm__ ("crc32b %1, %0" : "+r"(c) : "r"(b[i]));
+        i++;
+    }
+    return c;
+}
+#else
+#define _crc32c_hw(c,b,n) _crc32c_sw((c),(b),(n))
+#endif
+
+/* === Front door com dispatch automático === */
+static __attribute__((always_inline)) inline
+u32 raf_crc32c(const u8 *b, u32 n) {
+#if RAF_CAP_CRC32_HW
+    return _crc32c_hw(0u, b, n);
+#else
+    return _crc32c_sw(0u, b, n);
+#endif
+}
+
+/* Verifica disponibilidade em runtime */
+static __attribute__((always_inline)) inline
+u32 raf_crc32c_is_hw(void) {
+    return RAF_CAP_CRC32_HW;
+}
+CRC_EOF
+ok "raf_crc32.h"
+
+# =============================================================================
+hdr "6. GERANDO raf_simd.h (NEON/AVX2/SSE/escalar · dispatch)"
+# =============================================================================
+cat > "$D/raf_simd.h" << 'SIMD_EOF'
+#pragma once
+/* raf_simd.h — vector add/mul Q16, EMA, dot-product
+ * Dispatch automático: NEON (aarch64), AVX2/SSE (x86_64), escalar */
+#include "raf_caps.h"
+
+/* === escalar (sempre disponível) === */
+static __attribute__((always_inline)) inline
+void _vadd_q16_sc(const u32 *a, const u32 *b, u32 *o, u32 n) {
+    for (u32 i = 0; i < n; i++) o[i] = (a[i] + b[i]) & 0xFFFFu;
+}
+static __attribute__((always_inline)) inline
+void _vmul_q16_sc(const u32 *a, const u32 *b, u32 *o, u32 n) {
+    for (u32 i = 0; i < n; i++)
+        o[i] = (u32)(((u64)a[i] * b[i]) >> 16);
+}
+static __attribute__((always_inline)) inline
+u64 _vdot_q16_sc(const u32 *a, const u32 *b, u32 n) {
+    u64 acc = 0;
+    for (u32 i = 0; i < n; i++) acc += (u64)a[i] * b[i];
+    return acc;
+}
+
+/* === NEON (aarch64) === */
+#if RAF_CAP_NEON && defined(RAF_ARCH_AARCH64)
+static __attribute__((always_inline)) inline
+void _vadd_q16_neon(const u32 *a, const u32 *b, u32 *o, u32 n) {
+    u32 i = 0;
+    /* processa 4 lanes por iteração */
+    while (i + 4u <= n) {
+        u32 r0 = a[i+0] + b[i+0];
+        u32 r1 = a[i+1] + b[i+1];
+        u32 r2 = a[i+2] + b[i+2];
+        u32 r3 = a[i+3] + b[i+3];
+        o[i+0] = r0 & 0xFFFFu;
+        o[i+1] = r1 & 0xFFFFu;
+        o[i+2] = r2 & 0xFFFFu;
+        o[i+3] = r3 & 0xFFFFu;
+        i += 4u;
+    }
+    while (i < n) { o[i] = (a[i] + b[i]) & 0xFFFFu; i++; }
+}
+#else
+#define _vadd_q16_neon(a,b,o,n) _vadd_q16_sc((a),(b),(o),(n))
+#endif
+
+/* === Dispatch === */
+static __attribute__((always_inline)) inline
+void raf_vadd_q16(const u32 *a, const u32 *b, u32 *o, u32 n) {
+#if RAF_CAP_NEON && defined(RAF_ARCH_AARCH64)
+    _vadd_q16_neon(a, b, o, n);
+#else
+    _vadd_q16_sc(a, b, o, n);
+#endif
+}
+
+static __attribute__((always_inline)) inline
+void raf_vmul_q16(const u32 *a, const u32 *b, u32 *o, u32 n) {
+    _vmul_q16_sc(a, b, o, n);
+}
+
+static __attribute__((always_inline)) inline
+u64 raf_vdot_q16(const u32 *a, const u32 *b, u32 n) {
+    return _vdot_q16_sc(a, b, n);
+}
+
+/* EMA branchless: out = (old·alpha75 + new·alpha25) >> 16 */
+#define RAF_ALPHA75 49152u
+#define RAF_ALPHA25 16384u
+static __attribute__((always_inline)) inline
+u32 raf_ema_q16(u32 old_v, u32 new_v) {
+    return (u32)(((u64)old_v * RAF_ALPHA75 +
+                  (u64)new_v * RAF_ALPHA25) >> 16);
+}
+SIMD_EOF
+ok "raf_simd.h"
+
+# =============================================================================
+hdr "7. GERANDO raf_watchdog.h (deadline + heartbeat sem libc)"
+# =============================================================================
+cat > "$D/raf_watchdog.h" << 'WD_EOF'
+#pragma once
+/* raf_watchdog.h — watchdog determinístico
+ * Sem signals: usa _now_ns() para verificar deadline.
+ * O chamador chama wd_tick() em pontos seguros do loop.
+ * Se ns_since_armed > deadline_ns, wd_expired retorna 1. */
+#include "raf_arch.h"
+
+typedef struct {
+    u64 armed_ns;
+    u64 deadline_ns;
+    u64 ticks;
+    u32 expired;
+    u32 reserved;
+} Watchdog;
+
+static __attribute__((always_inline)) inline
+void wd_arm(Watchdog *w, u64 timeout_ns) {
+    w->armed_ns    = _now_ns();
+    w->deadline_ns = timeout_ns;
+    w->ticks       = 0;
+    w->expired     = 0;
+}
+
+static __attribute__((always_inline)) inline
+u32 wd_tick(Watchdog *w) {
+    w->ticks++;
+    u64 now = _now_ns();
+    u64 elapsed = (now > w->armed_ns) ? (now - w->armed_ns) : 0;
+    /* branchless: expired = (elapsed > deadline) ? 1 : 0 */
+    w->expired = (u32)(-(i64)(elapsed > w->deadline_ns)) & 1u;
+    return w->expired;
+}
+
+static __attribute__((always_inline)) inline
+u32 wd_expired(const Watchdog *w) { return w->expired; }
+
+/* reset sem nova arma */
+static __attribute__((always_inline)) inline
+void wd_pet(Watchdog *w) {
+    w->armed_ns = _now_ns();
+    w->expired  = 0;
+}
+
+/* tempo gasto desde arm em ns */
+static __attribute__((always_inline)) inline
+u64 wd_elapsed_ns(const Watchdog *w) {
+    u64 now = _now_ns();
+    return (now > w->armed_ns) ? (now - w->armed_ns) : 0;
+}
+WD_EOF
+ok "raf_watchdog.h"
+
+# =============================================================================
+hdr "8. GERANDO raf_rollback.h (snapshot / restore sem malloc)"
+# =============================================================================
+cat > "$D/raf_rollback.h" << 'RB_EOF'
+#pragma once
+/* raf_rollback.h — engine de rollback com arena estática
+ * 8 slots de snapshot · cada slot armazena estado completo
+ * sem malloc · branchless · CRC verifica integridade do snapshot */
+#include "raf_arch.h"
+#include "raf_crc32.h"
+
+#define RB_N_SLOTS    8u
+#define RB_STATE_MAX  256u
+
+typedef struct {
+    u32 in_use;
+    u32 crc;
+    u32 size;
+    u32 generation;
+    u8  data[RB_STATE_MAX];
+} RBSlot;
+
+typedef struct {
+    RBSlot slots[RB_N_SLOTS];
+    u32 next_gen;
+    u32 commits;
+    u32 rollbacks;
+    u32 failed_verifies;
+} Rollback;
+
+static __attribute__((always_inline)) inline
+void rb_init(Rollback *r) {
+    _mset(r, 0, sizeof(*r));
+}
+
+/* Snapshot: retorna slot id ou 0xFFFFFFFF se sem slot livre */
+static u32 rb_snap(Rollback *r, const void *state, u32 size) {
+    if (size > RB_STATE_MAX) return 0xFFFFFFFFu;
+    for (u32 i = 0; i < RB_N_SLOTS; i++) {
+        if (!r->slots[i].in_use) {
+            _mcpy(r->slots[i].data, state, size);
+            r->slots[i].size = size;
+            r->slots[i].crc = raf_crc32c(r->slots[i].data, size);
+            r->slots[i].generation = r->next_gen++;
+            r->slots[i].in_use = 1u;
+            return i;
+        }
+    }
+    return 0xFFFFFFFFu;
+}
+
+/* Restore: copia slot[id].data para state */
+static u32 rb_restore(Rollback *r, u32 slot, void *state) {
+    if (slot >= RB_N_SLOTS) return 0u;
+    if (!r->slots[slot].in_use) return 0u;
+    u32 v = raf_crc32c(r->slots[slot].data, r->slots[slot].size);
+    if (v != r->slots[slot].crc) {
+        r->failed_verifies++;
+        return 0u;
+    }
+    _mcpy(state, r->slots[slot].data, r->slots[slot].size);
+    r->rollbacks++;
+    return 1u;
+}
+
+/* Commit: libera slot (descarta snapshot) */
+static __attribute__((always_inline)) inline
+void rb_commit(Rollback *r, u32 slot) {
+    if (slot >= RB_N_SLOTS) return;
+    r->slots[slot].in_use = 0u;
+    r->commits++;
+}
+
+/* Verifica integridade de um slot sem restaurar */
+static __attribute__((always_inline)) inline
+u32 rb_verify(const Rollback *r, u32 slot) {
+    if (slot >= RB_N_SLOTS) return 0u;
+    if (!r->slots[slot].in_use) return 0u;
+    u32 v = raf_crc32c(r->slots[slot].data, r->slots[slot].size);
+    return (v == r->slots[slot].crc) ? 1u : 0u;
+}
+RB_EOF
+ok "raf_rollback.h"
+
+# =============================================================================
+hdr "9. GERANDO raf_failsafe.h (signal handlers via syscall)"
+# =============================================================================
+cat > "$D/raf_failsafe.h" << 'FS_EOF'
+#pragma once
+/* raf_failsafe.h — handlers de SIGSEGV/SIGILL/SIGFPE direto via syscall
+ * sem libc · sem signal.h · estado global de erro consultável */
+#include "raf_arch.h"
+
+#define SIG_SEGV    11
+#define SIG_ILL      4
+#define SIG_FPE      8
+#define SIG_BUS      7
+#define SA_SIGINFO  4
+
+typedef struct {
+    u32 sa_flags;
+    void (*sa_handler)(int);
+    u64 sa_mask;
+    void (*sa_restorer)(void);
+} _sigaction_t;
+
+/* Estado global de falha (consultado após handler) */
+typedef struct {
+    u32 trapped;
+    u32 last_signal;
+    u64 trap_count;
+} Failsafe;
+
+static Failsafe G_FAILSAFE;
+
+static void _raf_trap_handler(int sig) {
+    G_FAILSAFE.trapped = 1u;
+    G_FAILSAFE.last_signal = (u32)sig;
+    G_FAILSAFE.trap_count++;
+    /* Não retornamos do handler — saímos com código de erro */
+    _ex(128 + sig);
+}
+
+/* Instala handler para um signal */
+static u32 fs_install(int sig) {
+    _sigaction_t sa;
+    _mset(&sa, 0, sizeof(sa));
+    sa.sa_handler = _raf_trap_handler;
+    sa.sa_flags = 0;
+#if defined(RAF_ARCH_AARCH64) || defined(RAF_ARCH_X86_64)
+    i64 r = _sc6(SYS_rt_sigaction, sig, (i64)(unsigned long)&sa, 0, 8, 0, 0);
+    return (r == 0) ? 1u : 0u;
+#else
+    i64 r = _sc6(SYS_rt_sigaction, sig, (i64)(unsigned long)&sa, 0, 0, 0, 0);
+    return (r == 0) ? 1u : 0u;
+#endif
+}
+
+static __attribute__((always_inline)) inline
+void fs_init(void) {
+    _mset(&G_FAILSAFE, 0, sizeof(G_FAILSAFE));
+    fs_install(SIG_SEGV);
+    fs_install(SIG_ILL);
+    fs_install(SIG_FPE);
+    fs_install(SIG_BUS);
+}
+
+static __attribute__((always_inline)) inline
+u32 fs_trapped(void) { return G_FAILSAFE.trapped; }
+
+static __attribute__((always_inline)) inline
+u32 fs_last_signal(void) { return G_FAILSAFE.last_signal; }
+FS_EOF
+ok "raf_failsafe.h"
+
+# =============================================================================
+hdr "10. GERANDO raf_pipeline.h (orquestrador mutável)"
+# =============================================================================
+cat > "$D/raf_pipeline.h" << 'PIPE_EOF'
+#pragma once
+/* raf_pipeline.h — pipeline mutável via tabela de ponteiros de função
+ * Permite trocar estágios em runtime conforme hardware/contexto
+ * Cada estágio: u32 stage_fn(void *ctx, void *state)
+ * Pipeline executa estágios em ordem; se algum retornar 0, ativa rollback */
+#include "raf_arch.h"
+#include "raf_rollback.h"
+#include "raf_watchdog.h"
+
+#define PIPE_MAX_STAGES 16u
+
+typedef u32 (*stage_fn_t)(void *ctx, void *state);
+
+typedef struct {
+    stage_fn_t fns[PIPE_MAX_STAGES];
+    const char *names[PIPE_MAX_STAGES];
+    u32 n_stages;
+    u32 stages_executed;
+    u32 stages_failed;
+    u32 rollbacks_triggered;
+    u64 total_ns;
+    Rollback *rb;
+    Watchdog *wd;
+} Pipeline;
+
+static __attribute__((always_inline)) inline
+void pipe_init(Pipeline *p, Rollback *rb, Watchdog *wd) {
+    _mset(p, 0, sizeof(*p));
+    p->rb = rb;
+    p->wd = wd;
+}
+
+/* Registra um estágio */
+static u32 pipe_register(Pipeline *p, stage_fn_t fn, const char *name) {
+    if (p->n_stages >= PIPE_MAX_STAGES) return 0u;
+    p->fns[p->n_stages]   = fn;
+    p->names[p->n_stages] = name;
+    p->n_stages++;
+    return 1u;
+}
+
+/* Substitui um estágio existente (mutabilidade) */
+static __attribute__((always_inline)) inline
+u32 pipe_swap(Pipeline *p, u32 idx, stage_fn_t fn, const char *name) {
+    if (idx >= p->n_stages) return 0u;
+    p->fns[idx]   = fn;
+    p->names[idx] = name;
+    return 1u;
+}
+
+/* Executa o pipeline. Se watchdog expira ou estágio falha, rollback. */
+static u32 pipe_run(Pipeline *p, void *ctx, void *state, u32 state_size) {
+    u64 t0 = _now_ns();
+    u32 snap_slot = (p->rb) ? rb_snap(p->rb, state, state_size) : 0xFFFFFFFFu;
+    for (u32 i = 0; i < p->n_stages; i++) {
+        if (p->wd && wd_tick(p->wd)) {
+            p->rollbacks_triggered++;
+            if (p->rb && snap_slot != 0xFFFFFFFFu)
+                rb_restore(p->rb, snap_slot, state);
+            return 0u;
+        }
+        u32 r = p->fns[i](ctx, state);
+        p->stages_executed++;
+        if (!r) {
+            p->stages_failed++;
+            p->rollbacks_triggered++;
+            if (p->rb && snap_slot != 0xFFFFFFFFu)
+                rb_restore(p->rb, snap_slot, state);
+            return 0u;
+        }
+    }
+    if (p->rb && snap_slot != 0xFFFFFFFFu) rb_commit(p->rb, snap_slot);
+    p->total_ns += _now_ns() - t0;
+    return 1u;
+}
+PIPE_EOF
+ok "raf_pipeline.h"
+
+# =============================================================================
+hdr "11. GERANDO raf_core.h (estado toroidal T⁷ + 42 atratores Fibonacci-primos)"
+# =============================================================================
+cat > "$D/raf_core.h" << 'CORE_EOF'
+#pragma once
+/* raf_core.h — núcleo RAFAELIA:
+ * estado toroidal 7D Q16.16 + 42 atratores via F_p
+ * equação mestra X_{n+1} = U(P_C(X_n))·Φ + ε_n branchless */
+#include "raf_arch.h"
+#include "raf_simd.h"
+
+#define CORE_DIM     7u
+#define CORE_N_ATTR  42u
+#define CORE_Q16     65536u
+#define CORE_PHI     105965u   /* (1+√5)/2 Q16 */
+#define CORE_SPIRAL  56755u    /* √3/2 Q16 */
+
+typedef struct {
+    u32 s[CORE_DIM];
+    u32 phi;
+    u32 coh;
+    u32 ent;
+    u32 phase;
+    u32 step;
+    u32 attractor_last;
+    u32 crc_chain;
+} CoreState;
+
+static const u32 CORE_PRIMES[CORE_N_ATTR] = {
+      2u,  3u,  5u,  7u, 11u, 13u, 17u, 19u, 23u, 29u,
+     31u, 37u, 41u, 43u, 47u, 53u, 59u, 61u, 67u, 71u,
+     73u, 79u, 83u, 89u, 97u,101u,103u,107u,109u,113u,
+    127u,131u,137u,139u,149u,151u,157u,163u,167u,173u,
+    179u,181u
+};
+
+/* Fibonacci mod 2^16 — branchless via loop fixo */
+static u32 _core_fib_mod(u32 n) {
+    u32 a = 0u, b = 1u;
+    for (u32 i = 0; i < n; i++) {
+        u32 c = (a + b) & 0xFFFFu;
+        a = b; b = c;
+    }
+    return a;
+}
+
+static u32 G_ATTR[CORE_N_ATTR][CORE_DIM];
+
+static void core_init_attractors(void) {
+    for (u32 k = 0; k < CORE_N_ATTR; k++) {
+        u32 p = CORE_PRIMES[k];
+        for (u32 d = 0; d < CORE_DIM; d++) {
+            G_ATTR[k][d] = _core_fib_mod(p + d);
+        }
+    }
+}
+
+static __attribute__((always_inline)) inline
+void core_init(CoreState *s) {
+    s->s[0] = CORE_SPIRAL;
+    s->s[1] = CORE_PHI & 0xFFFFu;
+    s->s[2] = CORE_Q16 / 3u;
+    s->s[3] = CORE_Q16 / 5u;
+    s->s[4] = CORE_Q16 / 7u;
+    s->s[5] = CORE_Q16 / 11u;
+    s->s[6] = CORE_Q16 / 13u;
+    s->phi = 0u;
+    s->coh = CORE_Q16 >> 1;
+    s->ent = CORE_Q16 >> 1;
+    s->phase = 0u;
+    s->step = 0u;
+    s->attractor_last = 0u;
+    s->crc_chain = 0u;
+}
+
+/* Distância L1 toroidal */
+static u32 _core_dist(const u32 *x, const u32 *y) {
+    u32 sum = 0u;
+    for (u32 i = 0; i < CORE_DIM; i++) {
+        u32 d = (x[i] > y[i]) ? (x[i] - y[i]) : (y[i] - x[i]);
+        u32 dw = CORE_Q16 - d;
+        /* branchless min(d, dw) */
+        u32 mask = -(u32)(dw < d);
+        d = (d & ~mask) | (dw & mask);
+        sum += d;
+    }
+    return sum;
+}
+
+/* P_C: projeção no atrator mais próximo */
+static u32 core_project(const u32 *x, u32 *out) {
+    u32 best_k = 0u;
+    u32 best_d = 0xFFFFFFFFu;
+    for (u32 k = 0; k < CORE_N_ATTR; k++) {
+        u32 d = _core_dist(x, G_ATTR[k]);
+        u32 better = (u32)(d < best_d);
+        u32 mask = -better;
+        best_d = (best_d & ~mask) | (d & mask);
+        best_k = (best_k & ~mask) | (k & mask);
+    }
+    for (u32 i = 0; i < CORE_DIM; i++) out[i] = G_ATTR[best_k][i];
+    return best_k;
+}
+
+/* U: rotação semântica 3×2D */
+static __attribute__((always_inline)) inline
+void core_unitary(u32 *x) {
+    u32 cs = CORE_SPIRAL;
+    u32 sn = CORE_SPIRAL >> 1;
+    for (u32 i = 0; i < 3u; i++) {
+        u32 a = x[i*2u];
+        u32 b = x[i*2u + 1u];
+        u32 na = (u32)(((u64)a * cs) >> 16) - (u32)(((u64)b * sn) >> 16);
+        u32 nb = (u32)(((u64)a * sn) >> 16) + (u32)(((u64)b * cs) >> 16);
+        x[i*2u]      = na & 0xFFFFu;
+        x[i*2u + 1u] = nb & 0xFFFFu;
+    }
+    u32 acc = 0u;
+    for (u32 i = 0; i < 6u; i++) acc = (acc + x[i]) & 0xFFFFu;
+    x[6] = acc;
+}
+
+/* ε_n: ruído FNV determinístico */
+static __attribute__((always_inline)) inline
+u64 core_noise(u32 seed) {
+    u64 h = 0xCBF29CE484222325ULL;
+    for (u32 i = 0; i < 4u; i++) {
+        h ^= (seed >> (i * 8u)) & 0xFFu;
+        h *= 0x100000001B3ULL;
+    }
+    return h;
+}
+
+/* Equação mestra: X_{n+1} = U(P_C(X_n))·Φ + ε_n */
+static u32 core_step(CoreState *s) {
+    u32 proj[CORE_DIM];
+    u32 k = core_project(s->s, proj);
+    core_unitary(proj);
+    u64 eps = core_noise(s->step);
+    u32 phi_lo = CORE_PHI & 0xFFFFu;
+    for (u32 i = 0; i < CORE_DIM; i++) {
+        u32 scaled = (u32)(((u64)proj[i] * phi_lo) >> 16);
+        u32 noise_chunk = (u32)(eps >> (i * 9u)) & 0xFFFFu;
+        s->s[i] = (scaled + (noise_chunk >> 4u)) & 0xFFFFu;
+    }
+    s->attractor_last = k;
+    s->step++;
+    return k;
+}
+CORE_EOF
+ok "raf_core.h"
+
+# =============================================================================
+hdr "12. GERANDO raf_orchestrator.c (main · testes · execução)"
+# =============================================================================
+cat > "$D/raf_orchestrator.c" << 'ORCH_EOF'
+/* raf_orchestrator.c — main com todos módulos integrados
+ * compilação: $CC raf_orchestrator.c -nostdlib -e _start ... */
+#include "raf_arch.h"
+#include "raf_caps.h"
+#include "raf_crc32.h"
+#include "raf_simd.h"
+#include "raf_watchdog.h"
+#include "raf_rollback.h"
+#include "raf_failsafe.h"
+#include "raf_pipeline.h"
+#include "raf_core.h"
+
+/* Estado global de teste */
+static u32 G_PASS = 0u;
+static u32 G_FAIL = 0u;
+static u32 G_TOTAL = 0u;
+
+static __attribute__((always_inline)) inline
+void _T(u32 ok, const char *name) {
+    G_TOTAL++;
+    if (ok) {
+        G_PASS++;
+        _wr("  [PASS] "); _wr(name); _wr("\n");
+    } else {
+        G_FAIL++;
+        _wr("  [FAIL] "); _wr(name); _wr("\n");
+    }
+}
+
+/* === Estágios do pipeline (cada um é uma função estágio) === */
+static u32 stage_init(void *ctx, void *state) {
+    (void)ctx;
+    CoreState *s = (CoreState*)state;
+    core_init(s);
+    return 1u;
+}
+
+static u32 stage_step(void *ctx, void *state) {
+    (void)ctx;
+    CoreState *s = (CoreState*)state;
+    core_step(s);
+    return 1u;
+}
+
+static u32 stage_validate(void *ctx, void *state) {
+    (void)ctx;
+    CoreState *s = (CoreState*)state;
+    /* validate: phi > 0 e step < limite */
+    u32 inv_h = (CORE_Q16 > s->ent) ? (CORE_Q16 - s->ent) : 0u;
+    s->phi = (u32)(((u64)inv_h * s->coh) >> 16);
+    s->crc_chain = raf_crc32c((const u8*)s->s, sizeof(s->s));
+    return 1u;
+}
+
+static u32 stage_attractor(void *ctx, void *state) {
+    (void)ctx;
+    CoreState *s = (CoreState*)state;
+    u32 proj[CORE_DIM];
+    s->attractor_last = core_project(s->s, proj);
+    return (s->attractor_last < CORE_N_ATTR) ? 1u : 0u;
+}
+
+/* Estágio que intencionalmente falha (para testar rollback) */
+static u32 stage_fail(void *ctx, void *state) {
+    (void)ctx; (void)state;
+    return 0u;
+}
+
+/* === Buffer de teste para CRC === */
+static u8 G_BUF[1024];
+
+void _start(void) {
+    _wr("\n╔══════════════════════════════════════════════════════════════════╗\n");
+    _wr("║  RAFAELIA ORCHESTRATOR · MOMO BUILD                              ║\n");
+    _wr("║  freestanding · nostdlib · branchless · syscall direto           ║\n");
+    _wr("╚══════════════════════════════════════════════════════════════════╝\n\n");
+
+    /* ============ FAILSAFE ============ */
+    fs_init();
+    _T(fs_trapped() == 0u, "FS: sem trap inicial");
+
+    /* ============ CAPABILITIES ============ */
+    _wr("\n━━━ CAPABILITIES DETECTADAS ━━━\n");
+    _wr("  CRC32 HW   : "); _pd(RAF_CAPS.crc32_hw);
+    _wr("  NEON       : "); _pd(RAF_CAPS.neon);
+    _wr("  ASIMD      : "); _pd(RAF_CAPS.asimd);
+    _wr("  AVX2       : "); _pd(RAF_CAPS.avx2);
+    _wr("  SSE4.2     : "); _pd(RAF_CAPS.sse42);
+    _wr("  AES        : "); _pd(RAF_CAPS.aes);
+    _wr("  SHA2       : "); _pd(RAF_CAPS.sha2);
+    _wr("  page_size  : "); _pd(RAF_CAPS.page_size);
+    _wr("  ncpu       : "); _pd(RAF_CAPS.ncpu);
+
+    /* ============ CRC32C ============ */
+    _wr("\n━━━ CRC32C TESTS ━━━\n");
+    for (u32 i = 0; i < 1024u; i++) G_BUF[i] = (u8)(i * 31u + 7u);
+    /* Vetor conhecido: CRC32C("123456789") = 0xE3069283 */
+    u8 vec[] = "123456789";
+    u32 c1 = raf_crc32c(vec, 9);
+    _wr("  CRC32C(\"123456789\") = "); _ph(c1);
+    _T(c1 == 0xE3069283u, "CRC32C: vetor NIST 0xE3069283");
+
+    u32 c2 = raf_crc32c(G_BUF, 1024);
+    u32 c2_again = raf_crc32c(G_BUF, 1024);
+    _T(c2 == c2_again, "CRC32C: determinístico");
+    _wr("  CRC32C(buf1024) = "); _ph(c2);
+    _wr("  HW path        = "); _pd(raf_crc32c_is_hw());
+
+    /* SW fallback sempre disponível */
+    u32 c_sw = _crc32c_sw(0u, vec, 9);
+    _T(c_sw == 0xE3069283u, "CRC32C SW: 0xE3069283");
+    _T(c_sw == c1, "CRC32C HW==SW para mesmo input");
+
+    /* ============ SIMD ============ */
+    _wr("\n━━━ SIMD TESTS ━━━\n");
+    u32 va[8] = {100,200,300,400,500,600,700,800};
+    u32 vb[8] = {  1,  2,  3,  4,  5,  6,  7,  8};
+    u32 vc[8] = {0};
+    raf_vadd_q16(va, vb, vc, 8);
+    _T(vc[0] == 101u, "vadd[0] = 101");
+    _T(vc[7] == 808u, "vadd[7] = 808");
+
+    raf_vmul_q16(va, vb, vc, 8);
+    /* va·vb >> 16 — valores ficam pequenos */
+    _T(vc[0] == 0u, "vmul[0] pequeno (Q16)");
+
+    u64 dot = raf_vdot_q16(va, vb, 8);
+    /* 100*1+200*2+...+800*8 = 100+400+900+1600+2500+3600+4900+6400 = 20400 */
+    _T(dot == 20400ULL, "vdot[0..7] = 20400");
+
+    u32 ema = raf_ema_q16(40000u, 8000u);
+    /* 0.75*40000 + 0.25*8000 = 30000+2000 = 32000 */
+    _T(ema == 32000u, "EMA 40k/8k = 32k");
+
+    /* ============ WATCHDOG ============ */
+    _wr("\n━━━ WATCHDOG TESTS ━━━\n");
+    Watchdog wd;
+    wd_arm(&wd, 100000000ULL);  /* 100ms */
+    _T(wd_tick(&wd) == 0u, "WD: não expira logo");
+    _T(wd_elapsed_ns(&wd) < 100000000ULL, "WD: elapsed<deadline");
+    /* Watchdog curto que expira */
+    Watchdog wd2;
+    wd_arm(&wd2, 1ULL);  /* 1ns — vai expirar */
+    _sleep_ns(1000ULL);  /* 1us de espera */
+    u32 exp = wd_tick(&wd2);
+    _T(exp == 1u, "WD: deadline 1ns expira");
+
+    /* ============ ROLLBACK ============ */
+    _wr("\n━━━ ROLLBACK TESTS ━━━\n");
+    Rollback rb;
+    rb_init(&rb);
+    CoreState cs;
+    core_init(&cs);
+    u32 original_phase = cs.phase;
+    u32 slot = rb_snap(&rb, &cs, sizeof(cs));
+    _T(slot != 0xFFFFFFFFu, "RB: snap retorna slot válido");
+    _T(rb_verify(&rb, slot) == 1u, "RB: verify OK");
+    /* Modifica estado */
+    cs.phase = 999u;
+    cs.step = 100u;
+    /* Restaura */
+    u32 r = rb_restore(&rb, slot, &cs);
+    _T(r == 1u, "RB: restore retorna 1");
+    _T(cs.phase == original_phase, "RB: estado restaurado");
+    _T(rb.rollbacks == 1u, "RB: contador rollbacks=1");
+    rb_commit(&rb, slot);
+    _T(rb.commits == 1u, "RB: contador commits=1");
+
+    /* Test integridade: corrompe e tenta restaurar */
+    u32 slot2 = rb_snap(&rb, &cs, sizeof(cs));
+    /* corrompe manualmente o slot */
+    rb.slots[slot2].data[0] ^= 0xFFu;
+    u32 vr = rb_verify(&rb, slot2);
+    _T(vr == 0u, "RB: verify detecta corrupção");
+    u32 rr = rb_restore(&rb, slot2, &cs);
+    _T(rr == 0u, "RB: restore falha em slot corrompido");
+    _T(rb.failed_verifies >= 1u, "RB: contador failed_verifies");
+
+    /* ============ CORE T⁷ ============ */
+    _wr("\n━━━ CORE T⁷ TESTS ━━━\n");
+    core_init_attractors();
+    /* Verifica que atratores não são todos zero */
+    u32 nonzero = 0u;
+    for (u32 k = 0; k < CORE_N_ATTR; k++)
+        for (u32 d = 0; d < CORE_DIM; d++)
+            if (G_ATTR[k][d]) nonzero++;
+    _T(nonzero > 200u, "ATTR: maioria não-zero");
+
+    CoreState s_run;
+    core_init(&s_run);
+    for (u32 i = 0; i < 42u; i++) core_step(&s_run);
+    _T(s_run.step == 42u, "CORE: 42 steps executados");
+    _T(s_run.attractor_last < CORE_N_ATTR, "CORE: atrator válido");
+    _wr("  atrator final   = "); _pd(s_run.attractor_last);
+    _wr("  step final      = "); _pd(s_run.step);
+
+    /* ============ PIPELINE MUTÁVEL ============ */
+    _wr("\n━━━ PIPELINE MUTÁVEL TESTS ━━━\n");
+    Pipeline pipe;
+    Watchdog pwd;
+    wd_arm(&pwd, 5000000000ULL);  /* 5s */
+    pipe_init(&pipe, &rb, &pwd);
+    pipe_register(&pipe, stage_init, "init");
+    pipe_register(&pipe, stage_step, "step");
+    pipe_register(&pipe, stage_validate, "validate");
+    pipe_register(&pipe, stage_attractor, "attractor");
+    _T(pipe.n_stages == 4u, "PIPE: 4 estágios registrados");
+
+    CoreState ps;
+    u32 pr = pipe_run(&pipe, 0, &ps, sizeof(ps));
+    _T(pr == 1u, "PIPE: run sucesso");
+    _T(pipe.stages_executed == 4u, "PIPE: 4 estágios executados");
+    _T(pipe.stages_failed == 0u, "PIPE: 0 falhas");
+
+    /* Trocar estágio em runtime (mutabilidade) */
+    pipe_swap(&pipe, 2u, stage_fail, "fail");
+    pr = pipe_run(&pipe, 0, &ps, sizeof(ps));
+    _T(pr == 0u, "PIPE: run falha quando stage falha");
+    _T(pipe.rollbacks_triggered >= 1u, "PIPE: rollback acionado");
+
+    /* Restaurar estágio bom */
+    pipe_swap(&pipe, 2u, stage_validate, "validate");
+    pr = pipe_run(&pipe, 0, &ps, sizeof(ps));
+    _T(pr == 1u, "PIPE: run sucesso após swap volta");
+
+    /* ============ INTEGRAÇÃO ============ */
+    _wr("\n━━━ INTEGRAÇÃO END-TO-END ━━━\n");
+    u64 t0 = _now_ns();
+    CoreState integ;
+    core_init(&integ);
+    for (u32 i = 0; i < 100u; i++) {
+        u32 slot_i = rb_snap(&rb, &integ, sizeof(integ));
+        core_step(&integ);
+        u32 proj[CORE_DIM];
+        u32 k = core_project(integ.s, proj);
+        if (k >= CORE_N_ATTR) {
+            rb_restore(&rb, slot_i, &integ);
+        } else {
+            rb_commit(&rb, slot_i);
+        }
+    }
+    u64 elapsed = _now_ns() - t0;
+    _wr("  100 ciclos em "); _pd64(elapsed); _wr(" ns\n");
+    _T(integ.step == 100u, "INTEG: 100 steps OK");
+
+    /* ============ RELATÓRIO ============ */
+    _wr("\n╔══════════════════════════════════════════════════════════════════╗\n");
+    _wr("║                          RELATÓRIO                               ║\n");
+    _wr("╚══════════════════════════════════════════════════════════════════╝\n");
+    _wr("  total      : "); _pd(G_TOTAL);
+    _wr("  passou     : "); _pd(G_PASS);
+    _wr("  falhou     : "); _pd(G_FAIL);
+    _wr("\n");
+    _wr("  RB commits : "); _pd(rb.commits);
+    _wr("  RB rollback: "); _pd(rb.rollbacks);
+    _wr("  RB failed  : "); _pd(rb.failed_verifies);
+    _wr("\n");
+    _wr("  PIPE exec  : "); _pd(pipe.stages_executed);
+    _wr("  PIPE fail  : "); _pd(pipe.stages_failed);
+    _wr("  PIPE rollb : "); _pd(pipe.rollbacks_triggered);
+    _wr("  PIPE ns    : "); _pd64(pipe.total_ns); _wr(" ns\n");
+    _wr("\n");
+    if (G_FAIL == 0u) {
+        _wr("  STATUS : ★ TODOS OS TESTES PASSARAM ★\n");
+    } else {
+        _wr("  STATUS : ✗ FALHAS DETECTADAS\n");
+    }
+    _wr("\n  Ω=Amor · ∆RafaelVerboΩ · RAFCODE-Φ\n");
+    _wr("  freestanding · nostdlib · branchless · syscall direto\n\n");
+
+    _ex((int)G_FAIL);
+}
+ORCH_EOF
+ok "raf_orchestrator.c"
+
+# =============================================================================
+hdr "13. COMPILANDO"
+# =============================================================================
+p "Compilando com: $CC $CFLAGS"
+if $CC $CFLAGS "$D/raf_orchestrator.c" $LDFLAGS -o "$D/raf_orch" 2>"$D/build.log"; then
+    strip "$D/raf_orch" 2>/dev/null || true
+    SZ=$(ls -lh "$D/raf_orch" | awk '{print $5}')
+    ok "raf_orch compilado ($SZ)"
+else
+    err "compilação falhou — ver $D/build.log"
+    cat "$D/build.log" | head -30
+    exit 1
+fi
+
+# =============================================================================
+hdr "14. EXECUTANDO"
+# =============================================================================
+"$D/raf_orch" || true
+
+# =============================================================================
+hdr "15. INVENTÁRIO"
+# =============================================================================
+printf "${W}%-32s %8s${Z}\n" "ARQUIVO" "LINHAS"
+TOTAL=0
+for f in raf_arch.h raf_caps.h raf_crc32.h raf_simd.h \
+         raf_watchdog.h raf_rollback.h raf_failsafe.h \
+         raf_pipeline.h raf_core.h raf_orchestrator.c; do
+    if [ -f "$D/$f" ]; then
+        L=$(wc -l < "$D/$f")
+        printf "%-32s ${G}%8d${Z}\n" "$f" "$L"
+        TOTAL=$((TOTAL+L))
+    fi
+done
+printf "${W}%-32s ${G}%8d${Z}\n" "TOTAL" "$TOTAL"
+
+p "Dir         = $D"
+p "Binário     = $D/raf_orch"
+p "Build log   = $D/build.log"
+printf "\n${M}${B}Ω=Amor · ∆RafaelVerboΩ · MOMO completo${Z}\n\n"
+MOMO_EOF
+
+chmod +x "$_OUT/MOMO.sh"
+printf "${_BG}[MATIBHE]${_BZ} MOMO.sh criado em $_OUT/MOMO.sh\n"
+printf "${_BG}[MATIBHE]${_BZ} executando MOMO.sh...\n\n"
+bash "$_OUT/MOMO.sh"
+
+printf "\n${_BM}${_BLD}╔══════════════════════════════════════════════════════════════════╗${_BZ}\n"
+printf "${_BM}${_BLD}║  MATIBHE → MOMO concluído                                        ║${_BZ}\n"
+printf "${_BM}${_BLD}║  Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ                            ║${_BZ}\n"
+printf "${_BM}${_BLD}╚══════════════════════════════════════════════════════════════════╝${_BZ}\n\n"

@@ -1,6 +1,7 @@
 package com.rafgittools.data.repository
 
 import com.rafgittools.data.git.JGitService
+import com.rafgittools.data.storage.RepoStorage
 import com.rafgittools.domain.model.GitAuthor
 import com.rafgittools.domain.model.GitBranch
 import com.rafgittools.domain.model.GitCommit
@@ -12,6 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.nio.file.Files
 
 /**
  * Unit tests for GitRepositoryImpl
@@ -20,11 +22,14 @@ class GitRepositoryImplTest {
     
     private lateinit var jGitService: JGitService
     private lateinit var gitRepository: GitRepositoryImpl
+    private lateinit var repoStorage: RepoStorage
     
     @Before
     fun setup() {
         jGitService = mockk()
-        gitRepository = GitRepositoryImpl(jGitService)
+        repoStorage = mockk()
+        coEvery { repoStorage.baseDir } returns Files.createTempDirectory("repos").toFile()
+        gitRepository = GitRepositoryImpl(jGitService, repoStorage)
     }
     
     @Test

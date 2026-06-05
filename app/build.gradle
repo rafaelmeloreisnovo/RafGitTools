@@ -2,9 +2,10 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'com.google.dagger.hilt.android'
-    id 'com.google.devtools.ksp'
     id 'kotlin-parcelize'
 }
+
+apply plugin: 'com.google.devtools.ksp'
 
 def readSecret = { String key ->
     def envValue = System.getenv(key)
@@ -46,11 +47,17 @@ def releaseKeyPassword = readSecret('RELEASE_KEY_PASSWORD')
 def isReleaseTaskRequested = gradle.startParameter.taskNames.any { taskName ->
     taskName.toLowerCase().contains('release')
 }
-def allowUnsignedRelease = readSecretOrDefault('ALLOW_UNSIGNED_RELEASE', 'false').toBoolean() || System.getenv('CI') == 'true'
+def allowUnsignedRelease = readSecretOrDefault('ALLOW_UNSIGNED_RELEASE', 'false').toBoolean()
 
-def hasReleaseSigning = !releaseStoreFilePath.isEmpty() && !releaseStorePassword.isEmpty() && !releaseKeyAlias.isEmpty() && !releaseKeyPassword.isEmpty()
-if (isReleaseTaskRequested && !hasReleaseSigning && !allowUnsignedRelease) {
+def hasSigningEnv = !releaseStoreFilePath.isEmpty() && !releaseStorePassword.isEmpty() && !releaseKeyAlias.isEmpty() && !releaseKeyPassword.isEmpty()
+def hasValidKeystoreFile = hasSigningEnv && file(releaseStoreFilePath).exists()
+
+if (isReleaseTaskRequested && !hasSigningEnv && !allowUnsignedRelease) {
     throw new GradleException('Release signing is required. Set RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS and RELEASE_KEY_PASSWORD or ALLOW_UNSIGNED_RELEASE=true in gradle.properties or CI environment.')
+}
+
+if (isReleaseTaskRequested && hasSigningEnv && !hasValidKeystoreFile) {
+    throw new GradleException("RELEASE_STORE_FILE not found at '${releaseStoreFilePath}'. Check the path or enable ALLOW_UNSIGNED_RELEASE=true only for internal validation.")
 }
 
 android {
@@ -72,6 +79,15 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
 
+        externalNativeBuild {
+            cmake {
+                cppFlags "-O2"
+            }
+        }
+        ndk {
+            abiFilters "armeabi-v7a", "arm64-v8a"
+        }
+
         // Configure Room schema export directory for KSP.  KSP arguments are
         // specified in the `ksp` block of defaultConfig.
         ksp {
@@ -85,7 +101,7 @@ android {
             // Default debug keystore is used automatically.
         }
         release {
-            if (hasReleaseSigning) {
+            if (hasValidKeystoreFile) {
                 storeFile file(releaseStoreFilePath)
                 storePassword releaseStorePassword
                 keyAlias releaseKeyAlias
@@ -111,7 +127,11 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            if (allowUnsignedRelease && !hasValidKeystoreFile) {
+                signingConfig null
+            } else {
+                signingConfig signingConfigs.release
+            }
         }
     }
 
@@ -140,7 +160,7 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     composeOptions {
-        kotlinCompilerExtensionVersion "1.5.8"
+        kotlinCompilerExtensionVersion "1.5.14"
     }
 
     kotlinOptions {
@@ -181,6 +201,12 @@ android {
         warningsAsErrors false
     }
 
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+        }
+    }
+
     sourceSets {
         androidTest.assets.srcDirs += files("$projectDir/schemas")
     }
@@ -195,11 +221,11 @@ configurations.all {
 
 dependencies {
     // Core Android libraries
-    implementation 'androidx.core:core-ktx:1.12.0'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
-    implementation 'androidx.activity:activity-compose:1.8.2'
-    implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.6.2'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2'
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.4'
+    implementation 'androidx.activity:activity-compose:1.9.1'
+    implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.8.4'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4'
 
     // Biometric Authentication and Crypto
     implementation 'androidx.biometric:biometric:1.1.0'
@@ -208,19 +234,19 @@ dependencies {
     // Compose BOM defines versions for all Compose artifacts.  Using a
     // timestamped BOM (e.g. 2023.10.01) ensures that all compose
     // dependencies are aligned to a compatible set.
-    def composeBom = platform('androidx.compose:compose-bom:2023.10.01')
+    def composeBom = platform('androidx.compose:compose-bom:2024.06.00')
     implementation composeBom
     implementation 'androidx.compose.ui:ui'
     implementation 'androidx.compose.ui:ui-graphics'
     implementation 'androidx.compose.ui:ui-tooling-preview'
     implementation 'androidx.compose.material3:material3'
     implementation 'androidx.compose.material:material-icons-extended'
-    implementation 'androidx.navigation:navigation-compose:2.7.5'
+    implementation 'androidx.navigation:navigation-compose:2.7.7'
 
     // Hilt dependency injection
     implementation 'com.google.dagger:hilt-android:2.48'
     ksp 'com.google.dagger:hilt-compiler:2.48'
-    implementation 'androidx.hilt:hilt-navigation-compose:1.1.0'
+    implementation 'androidx.hilt:hilt-navigation-compose:1.2.0'
 
     // Room Database
     def roomVersion = "2.6.1"
@@ -231,8 +257,8 @@ dependencies {
     // Retrofit & OkHttp for networking
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
-    implementation 'com.squareup.okhttp3:okhttp:4.11.0'
-    implementation 'com.squareup.okhttp3:logging-interceptor:4.11.0'
+    implementation 'com.squareup.okhttp3:okhttp:5.3.2'
+    implementation 'com.squareup.okhttp3:logging-interceptor:5.3.2'
 
     // Gson for JSON parsing
     implementation 'com.google.code.gson:gson:2.10.1'
@@ -251,11 +277,11 @@ dependencies {
     }
 
     // Coil for image loading
-    implementation 'io.coil-kt:coil-compose:2.3.0'
-    implementation 'io.coil-kt:coil-svg:2.3.0'
+    implementation 'io.coil-kt:coil-compose:2.7.0'
+    implementation 'io.coil-kt:coil-svg:2.7.0'
 
     // DataStore preferences API
-    implementation 'androidx.datastore:datastore-preferences:1.0.0'
+    implementation 'androidx.datastore:datastore-preferences:1.1.1'
 
     // Accompanist libraries for system UI, permissions, and swipe refresh
     def accompanistVersion = "0.33.0-alpha"
@@ -268,21 +294,23 @@ dependencies {
     implementation 'org.commonmark:commonmark-ext-gfm-tables:0.21.0'
 
     // WorkManager for background tasks
-    implementation 'androidx.work:work-runtime-ktx:2.8.1'
+    implementation 'androidx.work:work-runtime-ktx:2.9.1'
 
     // Splashscreen API
-    implementation 'androidx.core:core-splashscreen:1.1.0-alpha01'
+    implementation 'androidx.core:core-splashscreen:1.0.1'
 
     // Testing libraries
     testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.jetbrains.kotlin:kotlin-test-junit:1.9.24'
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3'
     testImplementation 'io.mockk:mockk:1.13.10'
     testImplementation 'com.google.truth:truth:1.4.0'
     testImplementation 'androidx.arch.core:core-testing:2.2.0'
 
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test:core:1.6.1'
     androidTestImplementation "androidx.room:room-testing:$roomVersion"
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
     androidTestImplementation composeBom
     androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
 

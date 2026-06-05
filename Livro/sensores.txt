@@ -1,0 +1,1373 @@
+#!/usr/bin/env bash
+# =============================================================================
+# sensores.txt — SEMENTES RAFAELIA × TERMUX × SENSORES
+#
+# SEMENTES expansíveis para qualquer IA / sistema / arquitetura.
+# Motorola E7 Power · Cortex-A55 · Android 10 · ARM32 · Termux:API
+#
+# Cada semente = bloco autônomo pronto para integrar em:
+#   → GAIA-BBS, RMR PolyLib, RAFAELIA_TOTAL, pipeline RAFAELIA
+#   → Qualquer IA que leia este arquivo
+#   → Qualquer plataforma ARM32/ARM64/x86
+#
+# CANAIS do vetor toroidal (u,v,ψ,χ,ρ,δ,σ):
+#   u  = acelerômetro (X,Y,Z → magnitude)
+#   v  = giroscópio   (X,Y,Z → rotação)
+#   ψ  = magnetômetro (X,Y,Z → heading)
+#   χ  = áudio        (FFT → entropia espectral)
+#   ρ  = luz + prox   (ambiente)
+#   δ  = GPS          (lat,lon,alt → δ de deslocamento)
+#   σ  = câmera       (CRC32C de frame)
+#
+# ψ→χ→ρ→Δ→Σ→Ω : cada semente alimenta o ciclo cognitivo.
+# Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ · 𓂀ΔΦΩ
+# =============================================================================
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 00 — SETUP INICIAL (instalação base)
+# ─────────────────────────────────────────────────────────────────────────────
+seed_00_setup() {
+cat << 'SEED'
+# Instalação base — rodar uma vez
+pkg update -y && pkg upgrade -y
+pkg install -y termux-api    # cliente CLI
+pkg install -y python        # processamento
+pkg install -y ffmpeg        # conversão de áudio
+pkg install -y clang make    # compilar C bare-metal
+pkg install -y jq bc         # parse JSON / aritmética
+pkg install -y openssh       # rsync / túnel
+
+# Add-ons APK (instalar pelo F-Droid):
+#   com.termux.api       — Termux:API
+#   com.termux.boot      — autostart
+#   com.termux.tasker    — gatilhos externos
+#   com.termux.widget    — atalhos home screen
+#   com.termux.gui       — UI nativa Android
+
+# Desabilitar otimização de bateria para cada APK acima:
+#   Configurações → Apps → [app] → Bateria → Sem restrições
+
+# Testar tudo de uma vez:
+termux-battery-status | jq .
+termux-sensor -l
+termux-camera-info | jq .
+termux-location -p gps -r once | jq .
+termux-wifi-connectioninfo | jq .
+echo "SETUP OK"
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 01 — MICROFONE → ENTROPIA SONORA
+# Canal χ do vetor toroidal
+# ─────────────────────────────────────────────────────────────────────────────
+seed_01_mic_entropy() {
+cat << 'SEED'
+#!/usr/bin/env python3
+"""
+SEMENTE 01: Microfone → Entropia Espectral → canal χ (toroidal)
+Captura 2 s de áudio a 16 kHz, calcula entropia de Shannon do
+espectro FFT e mapeia para Q16 [0, 65535].
+Saída: JSON {chi_q16, entropy_float, freq_peak_hz, crc32c}
+"""
+import subprocess, struct, math, hashlib, json, os, tempfile, time
+
+SAMPLE_RATE = 16000
+DURATION    = 2        # segundos
+POLY_CRC32C = 0x82F63B78
+
+def crc32c(data: bytes) -> int:
+    crc = 0xFFFFFFFF
+    for b in data:
+        crc ^= b
+        for _ in range(8):
+            crc = (crc >> 1) ^ (POLY_CRC32C & -(crc & 1))
+    return (~crc) & 0xFFFFFFFF
+
+def record_pcm(secs: int, rate: int) -> bytes:
+    """Grava AAC via termux-microphone-record, converte para PCM16 com ffmpeg."""
+    aac = tempfile.mktemp(suffix='.aac')
+    subprocess.run(
+        ['termux-microphone-record', '-e', 'aac', '-r', str(rate),
+         '-c', '1', '-l', str(secs), '-f', aac],
+        check=True, capture_output=True
+    )
+    pcm = subprocess.run(
+        ['ffmpeg', '-y', '-i', aac, '-ar', str(rate), '-ac', '1',
+         '-f', 's16le', '-'],
+        capture_output=True, check=True
+    ).stdout
+    os.unlink(aac)
+    return pcm
+
+def shannon_entropy(spectrum: list) -> float:
+    total = sum(spectrum) + 1e-12
+    return -sum((v/total) * math.log2(v/total + 1e-12) for v in spectrum)
+
+def pcm_to_spectrum(raw: bytes, rate: int, n_bins: int = 512) -> list:
+    """FFT manual via Goertzel-like: bins de magnitude"""
+    samples = [struct.unpack_from('<h', raw, i*2)[0] / 32768.0
+               for i in range(len(raw) // 2)]
+    # DFT simplificado para N_bins primeiros
+    N = min(n_bins * 2, len(samples))
+    mag = []
+    for k in range(n_bins):
+        re = im = 0.0
+        for n, s in enumerate(samples[:N]):
+            angle = -2 * math.pi * k * n / N
+            re += s * math.cos(angle)
+            im += s * math.sin(angle)
+        mag.append(math.sqrt(re*re + im*im))
+    return mag
+
+def run():
+    raw = record_pcm(DURATION, SAMPLE_RATE)
+    spec = pcm_to_spectrum(raw, SAMPLE_RATE)
+    h = shannon_entropy(spec)
+    # Normaliza entropia para Q16: max teórico = log2(512) ≈ 9
+    chi_q16 = int(min(h / 9.0, 1.0) * 65535)
+    peak_bin = spec.index(max(spec))
+    peak_hz  = int(peak_bin * SAMPLE_RATE / (len(spec) * 2))
+    checksum = crc32c(raw)
+    out = {
+        "channel":     "chi",
+        "timestamp_ns": time.time_ns(),
+        "chi_q16":      chi_q16,
+        "entropy":      round(h, 4),
+        "peak_hz":      peak_hz,
+        "crc32c":       hex(checksum),
+        "samples":      len(raw) // 2,
+    }
+    print(json.dumps(out, indent=2))
+
+if __name__ == "__main__":
+    run()
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 02 — DETECTOR fΩ ∈ [963, 999] Hz
+# Detecta presença da banda de coerência RAFAELIA no ambiente sonoro
+# ─────────────────────────────────────────────────────────────────────────────
+seed_02_fomega_detector() {
+cat << 'SEED'
+#!/usr/bin/env python3
+"""
+SEMENTE 02: Detector fΩ ∈ [963, 999] Hz
+Calcula potência de Goertzel em 963 Hz e 999 Hz relativamente ao
+espectro total. Emite evento JSON quando coerência > limiar.
+Sinal de coerência RAFAELIA: fΩ = 963 ↔ 999 Hz.
+"""
+import subprocess, struct, math, json, time, os, tempfile
+
+RATE    = 16000
+SECS    = 2
+F_LOW   = 963.0   # Hz
+F_HIGH  = 999.0   # Hz
+THRESH  = 0.05    # 5% de potência espectral total = evento de coerência
+
+def record_pcm_samples(secs, rate):
+    aac = tempfile.mktemp(suffix='.aac')
+    subprocess.run(['termux-microphone-record','-e','aac','-r',str(rate),
+                    '-c','1','-l',str(secs),'-f',aac],
+                   check=True, capture_output=True)
+    raw = subprocess.run(['ffmpeg','-y','-i',aac,'-ar',str(rate),'-ac','1',
+                         '-f','s16le','-'], capture_output=True, check=True).stdout
+    os.unlink(aac)
+    return [struct.unpack_from('<h', raw, i*2)[0] / 32768.0
+            for i in range(len(raw) // 2)]
+
+def goertzel(samples, target_hz, rate):
+    """Algoritmo de Goertzel — energia na frequência alvo."""
+    N = len(samples)
+    k = int(0.5 + N * target_hz / rate)
+    w = 2 * math.pi * k / N
+    cos_w = math.cos(w)
+    coeff = 2 * cos_w
+    s0 = s1 = s2 = 0.0
+    for x in samples:
+        s0 = x + coeff * s1 - s2
+        s2 = s1; s1 = s0
+    power = s1*s1 + s2*s2 - s1*s2*coeff
+    return power
+
+def total_power(samples):
+    return sum(x*x for x in samples) + 1e-12
+
+def run():
+    while True:
+        samples = record_pcm_samples(SECS, RATE)
+        tp  = total_power(samples)
+        p_low  = goertzel(samples, F_LOW,  RATE)
+        p_high = goertzel(samples, F_HIGH, RATE)
+        ratio_low  = p_low  / tp
+        ratio_high = p_high / tp
+        coherence  = (ratio_low + ratio_high) / 2.0
+        event = coherence >= THRESH
+        out = {
+            "channel":       "f_omega",
+            "timestamp_ns":  time.time_ns(),
+            "f963_ratio":    round(ratio_low,  6),
+            "f999_ratio":    round(ratio_high, 6),
+            "coherence":     round(coherence,  6),
+            "event_OMEGA":   event,
+            "Phi_ethica_approx": round(1.0 - coherence, 4),
+        }
+        print(json.dumps(out))
+        if event:
+            subprocess.run(['termux-notification','--title','fΩ DETECTED',
+                '--content',f'Coerência {coherence:.4f} em [{F_LOW},{F_HIGH}] Hz',
+                '--priority','high'], capture_output=True)
+        time.sleep(SECS)
+
+if __name__ == "__main__":
+    run()
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 03 — ACELERÔMETRO + GIROSCÓPIO → VETOR u,v TOROIDAL
+# Canal u (aceleração) + canal v (rotação)
+# ─────────────────────────────────────────────────────────────────────────────
+seed_03_imu_toroidal() {
+cat << 'SEED'
+#!/usr/bin/env python3
+"""
+SEMENTE 03: IMU → Estado Toroidal u,v
+Lê acelerômetro + giroscópio via termux-sensor,
+calcula magnitude 3D, normaliza para Q16, mapeia para T^7.
+Detecta quedas (|a| > 2g por Δt), vibração de máquinas (FFT-Z).
+"""
+import subprocess, json, math, time
+
+Q16 = 65536
+G   = 9.81
+
+def read_sensors(sensors: list, n_samples: int = 10, delay_ms: int = 50):
+    """Lê N amostras dos sensores listados."""
+    cmd = ['termux-sensor', '-s', ','.join(sensors),
+           '-n', str(n_samples), '-d', str(delay_ms)]
+    out = subprocess.run(cmd, capture_output=True, text=True, timeout=30).stdout
+    data = {}
+    for line in out.strip().split('\n'):
+        try:
+            obj = json.loads(line)
+            for name, payload in obj.items():
+                if name not in data:
+                    data[name] = []
+                data[name].append(payload.get('values', []))
+        except Exception:
+            pass
+    return data
+
+def mag3(v): return math.sqrt(sum(x*x for x in v)) if len(v) >= 3 else 0.0
+
+def to_q16(value, vmax): return int(min(abs(value) / vmax, 1.0) * (Q16 - 1))
+
+def run():
+    sensors = ['accelerometer', 'gyroscope']
+    while True:
+        data = read_sensors(sensors, n_samples=20, delay_ms=25)
+        acc_samples = data.get('accelerometer', [])
+        gyr_samples = data.get('gyroscope', [])
+
+        if not acc_samples:
+            time.sleep(0.5); continue
+
+        # Magnitude média de aceleração
+        acc_mags = [mag3(s) for s in acc_samples if len(s) >= 3]
+        acc_mean = sum(acc_mags) / len(acc_mags) if acc_mags else 0.0
+        acc_peak = max(acc_mags) if acc_mags else 0.0
+
+        # Magnitude média de rotação angular (rad/s)
+        gyr_mags = [mag3(s) for s in gyr_samples if len(s) >= 3]
+        gyr_mean = sum(gyr_mags) / len(gyr_mags) if gyr_mags else 0.0
+
+        # Mapeamento para Q16 toroidal
+        # u = aceleração / (4G) → [0,1] → Q16
+        u_q16 = to_q16(acc_mean, 4 * G)
+        # v = rotação / (10 rad/s) → [0,1] → Q16
+        v_q16 = to_q16(gyr_mean, 10.0)
+
+        # Detecção de queda: pico > 3G seguido de queda abaixo de 0.3G
+        fall_event = acc_peak > 3 * G and acc_mean < 0.3 * G
+
+        # Vibração de máquina: desvio padrão alto em Z
+        z_vals = [s[2] for s in acc_samples if len(s) >= 3]
+        z_mean = sum(z_vals) / len(z_vals) if z_vals else 0.0
+        z_std  = math.sqrt(sum((x - z_mean)**2 for x in z_vals) / len(z_vals)) if z_vals else 0.0
+        machine_vib = z_std > 1.5  # m/s² stddev > 1.5 = vibração
+
+        out = {
+            "channel":       "u_v",
+            "timestamp_ns":  time.time_ns(),
+            "u_q16":         u_q16,
+            "v_q16":         v_q16,
+            "acc_mean_ms2":  round(acc_mean, 3),
+            "acc_peak_ms2":  round(acc_peak, 3),
+            "gyr_mean_rads": round(gyr_mean, 3),
+            "z_std":         round(z_std, 4),
+            "fall_event":    fall_event,
+            "machine_vib":   machine_vib,
+        }
+        print(json.dumps(out))
+        if fall_event:
+            subprocess.run(['termux-vibrate','-d','1000','-f'])
+            subprocess.run(['termux-notification','--title','QUEDA DETECTADA',
+                            '--content',f'|a|={acc_peak:.1f} m/s²','--priority','high'])
+        time.sleep(0.5)
+
+if __name__ == "__main__":
+    run()
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 04 — MAGNETÔMETRO → HEADING + CANAL ψ
+# ─────────────────────────────────────────────────────────────────────────────
+seed_04_magnetometer() {
+cat << 'SEED'
+#!/usr/bin/env python3
+"""
+SEMENTE 04: Magnetômetro → Heading 0-359° → canal ψ toroidal
+Detecta anomalias de campo magnético (objetos ferrosos próximos,
+EMI industrial, mapeamento de campo local).
+"""
+import subprocess, json, math, time
+
+def read_mag(n=10, delay_ms=50):
+    out = subprocess.run(['termux-sensor','-s','magnetic_field',
+                         '-n',str(n),'-d',str(delay_ms)],
+                        capture_output=True, text=True, timeout=20).stdout
+    samples = []
+    for line in out.strip().split('\n'):
+        try:
+            obj = json.loads(line)
+            for v in obj.values():
+                vals = v.get('values', [])
+                if len(vals) >= 3:
+                    samples.append(vals)
+        except Exception:
+            pass
+    return samples
+
+def heading_deg(x, y):
+    h = math.degrees(math.atan2(y, x))
+    return h + 360 if h < 0 else h
+
+def run():
+    baseline = None
+    while True:
+        samples = read_mag(n=20)
+        if not samples:
+            time.sleep(0.5); continue
+        xs = [s[0] for s in samples]
+        ys = [s[1] for s in samples]
+        zs = [s[2] for s in samples]
+        mx = sum(xs) / len(xs)
+        my = sum(ys) / len(ys)
+        mz = sum(zs) / len(zs)
+        mag_total = math.sqrt(mx*mx + my*my + mz*mz)
+        hdg = heading_deg(mx, my)
+
+        # Calibração automática de linha de base (primeiros 5 s)
+        if baseline is None:
+            baseline = mag_total
+        anomaly = abs(mag_total - baseline) > baseline * 0.15  # 15% desvio
+
+        # canal ψ: heading / 360 → Q16
+        psi_q16 = int((hdg / 360.0) * 65535)
+
+        out = {
+            "channel":   "psi",
+            "ts_ns":     time.time_ns(),
+            "psi_q16":   psi_q16,
+            "heading":   round(hdg, 1),
+            "mag_uT":    round(mag_total, 2),
+            "baseline_uT": round(baseline, 2),
+            "anomaly":   anomaly,
+            "vec_uT":    [round(mx,2), round(my,2), round(mz,2)],
+        }
+        print(json.dumps(out))
+        time.sleep(0.25)
+
+if __name__ == "__main__":
+    run()
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 05 — LUZ AMBIENTE + PROXIMIDADE → CANAL ρ
+# ─────────────────────────────────────────────────────────────────────────────
+seed_05_light_prox() {
+cat << 'SEED'
+#!/usr/bin/env python3
+"""
+SEMENTE 05: Luz + Proximidade → canal ρ (ambiente)
+Calcula ciclo dia/noite, detecta cobertura do sensor (mão/bolso),
+ajusta brilho de notificações, alimenta índice de contexto ambiental.
+"""
+import subprocess, json, math, time
+
+def read_env(n=5, delay_ms=100):
+    out = subprocess.run(['termux-sensor','-s','light,proximity',
+                         '-n',str(n),'-d',str(delay_ms)],
+                        capture_output=True, text=True, timeout=15).stdout
+    light = []; prox = []
+    for line in out.strip().split('\n'):
+        try:
+            obj = json.loads(line)
+            for k, v in obj.items():
+                vals = v.get('values', [0])
+                if 'light' in k.lower():    light.append(vals[0])
+                if 'proxim' in k.lower():   prox.append(vals[0])
+        except Exception:
+            pass
+    return light, prox
+
+def lux_to_q16(lux, max_lux=10000.0):
+    # Log escala: log2(lux+1) / log2(max+1) → Q16
+    return int(min(math.log2(lux + 1) / math.log2(max_lux + 1), 1.0) * 65535)
+
+def classify_light(lux):
+    if lux < 1:   return "escuro"
+    if lux < 100: return "interior_baixo"
+    if lux < 500: return "interior"
+    if lux < 2000: return "nublado"
+    return "sol_direto"
+
+def run():
+    while True:
+        lights, proxs = read_env()
+        lux    = sum(lights) / len(lights) if lights else 0.0
+        prox_v = sum(proxs)  / len(proxs)  if proxs  else 9999.0
+        covered = prox_v < 3.0  # tipicamente 0=coberto, 5=longe
+        rho_q16 = lux_to_q16(lux)
+        out = {
+            "channel":   "rho",
+            "ts_ns":     time.time_ns(),
+            "rho_q16":   rho_q16,
+            "lux":       round(lux, 2),
+            "prox_cm":   round(prox_v, 1),
+            "covered":   covered,
+            "context":   classify_light(lux),
+        }
+        print(json.dumps(out))
+        time.sleep(1.0)
+
+if __name__ == "__main__":
+    run()
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 06 — GPS → CANAL δ TOROIDAL + TRAIL MERKLE
+# ─────────────────────────────────────────────────────────────────────────────
+seed_06_gps_merkle() {
+cat << 'SEED'
+#!/usr/bin/env python3
+"""
+SEMENTE 06: GPS → canal δ + trilha de auditoria Merkle imutável
+Calcula δ de deslocamento entre fixes, detecta geofence por coerência
+geométrica, gera hash de posição CRC32C encadeado (Merkle simples).
+"""
+import subprocess, json, math, time, hashlib
+
+POLY = 0x82F63B78
+
+def crc32c(data: bytes) -> int:
+    crc = 0xFFFFFFFF
+    for b in data:
+        crc ^= b
+        for _ in range(8):
+            crc = (crc >> 1) ^ (POLY & -(crc & 1))
+    return (~crc) & 0xFFFFFFFF
+
+def get_gps():
+    out = subprocess.run(['termux-location','-p','gps','-r','once'],
+                        capture_output=True, text=True, timeout=30).stdout
+    return json.loads(out)
+
+def haversine_m(lat1, lon1, lat2, lon2):
+    R = 6371000
+    f1, f2 = math.radians(lat1), math.radians(lat2)
+    df = math.radians(lat2 - lat1)
+    dl = math.radians(lon2 - lon1)
+    a = math.sin(df/2)**2 + math.cos(f1)*math.cos(f2)*math.sin(dl/2)**2
+    return 2 * R * math.asin(math.sqrt(a))
+
+def pos_to_q16(lat, lon):
+    # lat [-90,90] → [0,1] → Q16
+    lat_q16 = int((lat + 90) / 180 * 65535)
+    # lon [-180,180] → [0,1] → Q16
+    lon_q16 = int((lon + 180) / 360 * 65535)
+    return lat_q16, lon_q16
+
+def run():
+    chain_hash = 0xFFFFFFFF
+    prev_lat = prev_lon = None
+    trail = []
+
+    while True:
+        try:
+            fix = get_gps()
+        except Exception as e:
+            print(json.dumps({"error": str(e)}))
+            time.sleep(10); continue
+
+        lat  = fix.get('latitude',  0.0)
+        lon  = fix.get('longitude', 0.0)
+        alt  = fix.get('altitude',  0.0)
+        acc  = fix.get('accuracy',  999.0)
+        spd  = fix.get('speed',     0.0)
+
+        delta_m = 0.0
+        if prev_lat is not None:
+            delta_m = haversine_m(prev_lat, prev_lon, lat, lon)
+
+        lat_q16, lon_q16 = pos_to_q16(lat, lon)
+        delta_q16 = int(min(delta_m / 1000, 1.0) * 65535)  # / 1km
+
+        # Merkle: hash desta fix = CRC32C(prev_hash || lat_bytes || lon_bytes)
+        payload = (chain_hash.to_bytes(4, 'little') +
+                   int(lat * 1e6).to_bytes(4, 'little', signed=True) +
+                   int(lon * 1e6).to_bytes(4, 'little', signed=True))
+        chain_hash = crc32c(payload)
+
+        # Toroidal δ: movimento / (πφ) rad representado em Q16
+        PHI_PI = 3.14159265 * 1.61803398
+        delta_torus = int(min(delta_m / (PHI_PI * 100), 1.0) * 65535)
+
+        entry = {
+            "channel":    "delta",
+            "ts_ns":      time.time_ns(),
+            "lat":        round(lat, 7),
+            "lon":        round(lon, 7),
+            "alt_m":      round(alt, 1),
+            "acc_m":      round(acc, 1),
+            "speed_ms":   round(spd, 2),
+            "delta_m":    round(delta_m, 2),
+            "delta_q16":  delta_q16,
+            "lat_q16":    lat_q16,
+            "lon_q16":    lon_q16,
+            "torus_delta":delta_torus,
+            "merkle_crc": hex(chain_hash),
+            "trail_len":  len(trail),
+        }
+        trail.append({"hash": hex(chain_hash), "lat": lat, "lon": lon, "ts": entry["ts_ns"]})
+        print(json.dumps(entry))
+        prev_lat, prev_lon = lat, lon
+        time.sleep(5)
+
+if __name__ == "__main__":
+    run()
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 07 — CÂMERA → CRC32C DE FRAME + CANAL σ
+# ─────────────────────────────────────────────────────────────────────────────
+seed_07_camera_crc() {
+cat << 'SEED'
+#!/usr/bin/env python3
+"""
+SEMENTE 07: Câmera → CRC32C de frame → canal σ + diff score
+Detecta adulteração/mudança de cena por diferença de hash entre frames.
+Alimenta scanner CTI: bad_event se miss_score > threshold.
+"""
+import subprocess, json, time, os, tempfile
+
+POLY = 0x82F63B78
+CAMERA_ID = "0"  # 0=back, 1=front
+
+def crc32c(data: bytes) -> int:
+    crc = 0xFFFFFFFF
+    for b in data:
+        crc ^= b
+        for _ in range(8):
+            crc = (crc >> 1) ^ (POLY & -(crc & 1))
+    return (~crc) & 0xFFFFFFFF
+
+def capture_jpeg() -> bytes:
+    path = tempfile.mktemp(suffix='.jpg')
+    subprocess.run(['termux-camera-photo', '-c', CAMERA_ID, path],
+                  check=True, capture_output=True, timeout=15)
+    with open(path, 'rb') as f:
+        data = f.read()
+    os.unlink(path)
+    return data
+
+def jpeg_mean_byte(data: bytes) -> float:
+    # Amostra cada 100 bytes para mean (proxy de brilho)
+    sampled = data[::100]
+    return sum(sampled) / len(sampled) if sampled else 0
+
+def run():
+    prev_crc = None
+    prev_mean = None
+    while True:
+        try:
+            img = capture_jpeg()
+        except Exception as e:
+            print(json.dumps({"error": str(e)}))
+            time.sleep(5); continue
+
+        cur_crc  = crc32c(img)
+        cur_mean = jpeg_mean_byte(img)
+
+        # miss_score: quanto o CRC mudou (branchless: 1 se diferente, 0 se igual)
+        crc_changed = int(prev_crc is not None and cur_crc != prev_crc)
+        mean_delta  = abs(cur_mean - prev_mean) if prev_mean is not None else 0.0
+
+        # canal σ: CRC mapped to Q16 (low 16 bits)
+        sigma_q16 = cur_crc & 0xFFFF
+
+        bad_event = mean_delta > 20.0  # diferença de brilho > 20/255
+
+        out = {
+            "channel":    "sigma",
+            "ts_ns":      time.time_ns(),
+            "sigma_q16":  sigma_q16,
+            "crc32c":     hex(cur_crc),
+            "size_kb":    round(len(img) / 1024, 1),
+            "mean_byte":  round(cur_mean, 2),
+            "mean_delta": round(mean_delta, 2),
+            "crc_changed":crc_changed,
+            "bad_event":  bad_event,
+        }
+        print(json.dumps(out))
+        if bad_event:
+            subprocess.run(['termux-notification','--title','σ CHANGE DETECTED',
+                '--content', f'Mean delta={mean_delta:.1f}'], capture_output=True)
+        prev_crc  = cur_crc
+        prev_mean = cur_mean
+        time.sleep(10)
+
+if __name__ == "__main__":
+    run()
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 08 — BATERIA → SENSOR TÉRMICO + SAÚDE
+# ─────────────────────────────────────────────────────────────────────────────
+seed_08_battery() {
+cat << 'SEED'
+#!/usr/bin/env bash
+# SEMENTE 08: Bateria → monitoramento de saúde + alerta
+# Publica via notificação se temperatura > 45°C ou nível < 10%
+while true; do
+  STATUS=$(termux-battery-status)
+  TEMP=$(echo "$STATUS" | jq '.temperature')
+  LEVEL=$(echo "$STATUS" | jq '.percentage')
+  HEALTH=$(echo "$STATUS" | jq -r '.health')
+  PLUG=$(echo "$STATUS" | jq -r '.plugged')
+  CURRENT=$(echo "$STATUS" | jq '.current' 2>/dev/null || echo 0)
+
+  # Alerta temperatura
+  if (( $(echo "$TEMP > 45" | bc -l) )); then
+    termux-notification --id 9001 --title "⚠ TEMPERATURA ALTA" \
+      --content "$(echo $TEMP)°C — resfriar dispositivo" --priority high
+  fi
+
+  # Alerta bateria baixa
+  if (( $(echo "$LEVEL < 10" | bc -l) )); then
+    termux-notification --id 9002 --title "🔋 BATERIA CRÍTICA" \
+      --content "${LEVEL}% — conectar carregador" --priority max
+    termux-vibrate -d 2000 -f
+  fi
+
+  # Log JSON
+  TS=$(date +%s%N)
+  echo "{\"ts_ns\":$TS,\"temp_c\":$TEMP,\"level\":$LEVEL,\"health\":\"$HEALTH\",\"plugged\":\"$PLUG\",\"current_ma\":$CURRENT}"
+
+  sleep 60
+done
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 09 — WIFI + CÉLULA → SCAN DE REDES + RSSI LOG
+# ─────────────────────────────────────────────────────────────────────────────
+seed_09_network_scan() {
+cat << 'SEED'
+#!/usr/bin/env bash
+# SEMENTE 09: Rede → scan Wi-Fi + info celular + trilha RSSI
+# Wardriving passivo: SSID, BSSID, RSSI, frequency → CSV
+LOG="${HOME}/.rafaelia/wifi_trail.csv"
+mkdir -p "$(dirname $LOG)"
+echo "ts,ssid,bssid,rssi,freq,security" >> "$LOG"
+
+while true; do
+  TS=$(date +%s)
+
+  # Wi-Fi scan
+  termux-wifi-scaninfo | jq -r '.[] |
+    [.ssid // "hidden", .bssid, .rssi, .frequency, .capabilities] |
+    @csv' | while IFS= read -r line; do
+      echo "${TS},${line}" | tee -a "$LOG"
+  done
+
+  # Info célula (LTE + 5G NR se disponível)
+  termux-telephony-cellinfo | jq -c '.[] | {
+    ts: '$TS',
+    type: .type,
+    mcc: .mcc,
+    mnc: .mnc,
+    rssi: (.rssi // .rsrp // 0),
+    arfcn: (.arfcn // .earfcn // .nrarfcn // 0)
+  }'
+
+  # Conexão atual
+  termux-wifi-connectioninfo | jq '{
+    ts: '$TS',
+    ssid: .ssid,
+    ip: .ip,
+    gateway: .gateway_ip,
+    link_mbps: .link_speed_mbps,
+    freq_mhz: .frequency_mhz
+  }'
+
+  sleep 30
+done
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 10 — NFC → LEITURA + TRIGGER DE AÇÃO
+# ─────────────────────────────────────────────────────────────────────────────
+seed_10_nfc_trigger() {
+cat << 'SEED'
+#!/usr/bin/env bash
+# SEMENTE 10: NFC → lê tag, dispara ação por UID
+# Tag A → inicia gravação de voz
+# Tag B → snapshot de câmera
+# Qualquer → registra em log Merkle
+POLY=0x82F63B78
+
+crc32c_str() {
+  echo -n "$1" | python3 -c "
+import sys, struct
+POLY=0x82F63B78
+data=sys.stdin.buffer.read()
+crc=0xFFFFFFFF
+for b in data:
+    crc^=b
+    for _ in range(8): crc=(crc>>1)^(POLY&-(crc&1))
+print(hex(~crc&0xFFFFFFFF))
+"
+}
+
+TAG_A="04:AB:12:34"  # UID da tag de gravação
+TAG_B="04:CD:56:78"  # UID da tag de câmera
+
+echo "Aguardando tags NFC..."
+while true; do
+  RESULT=$(termux-nfc 2>/dev/null)
+  UID=$(echo "$RESULT" | jq -r '.id // empty')
+
+  if [ -z "$UID" ]; then
+    sleep 1; continue
+  fi
+
+  TS=$(date +%s%N)
+  HASH=$(crc32c_str "${UID}${TS}")
+
+  echo "{\"ts_ns\":$TS,\"uid\":\"$UID\",\"hash\":\"$HASH\"}"
+
+  case "$UID" in
+    "$TAG_A")
+      termux-notification --title "🎙 GRAVAÇÃO INICIADA" --content "Tag $UID"
+      termux-microphone-record -e aac -r 16000 -c 1 -l 30 \
+        -f "${HOME}/.rafaelia/nfc_audio_${TS}.aac"
+      ;;
+    "$TAG_B")
+      termux-notification --title "📷 CAPTURA" --content "Tag $UID"
+      termux-camera-photo -c 0 "${HOME}/.rafaelia/nfc_photo_${TS}.jpg"
+      ;;
+    *)
+      termux-vibrate -d 100
+      ;;
+  esac
+  sleep 2
+done
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 11 — IR BLASTER → CONTROLE UNIVERSAL
+# ─────────────────────────────────────────────────────────────────────────────
+seed_11_ir_control() {
+cat << 'SEED'
+#!/usr/bin/env bash
+# SEMENTE 11: IR Blaster → controle de TV/AC via RAFAELIA
+# Padrão NEC 32-bit: endereço 8 bits + comando 8 bits + inversos
+# Frequência padrão: 38000 Hz
+
+ir_tx() {
+  local freq="$1"; shift
+  termux-infrared-transmit -f "$freq" "$@"
+}
+
+# Encode NEC (address, command)
+nec_encode() {
+  local addr=$1 cmd=$2
+  local addr_inv=$(( addr ^ 0xFF ))
+  local cmd_inv=$(( cmd  ^ 0xFF ))
+  # Lead: 9000µs + 4500µs, cada bit: 560µs + (560 ou 1690)µs
+  local pattern="9000,4500"
+  for bit in $(python3 -c "
+a,ai,c,ci=$addr,$addr_inv,$cmd,$cmd_inv
+bits=[]
+for v in [a,ai,c,ci]:
+    for i in range(8):
+        bits.append((v>>i)&1)
+print(' '.join(str(b) for b in bits))
+"); do
+    if [ "$bit" = "1" ]; then
+      pattern="${pattern},560,1690"
+    else
+      pattern="${pattern},560,560"
+    fi
+  done
+  pattern="${pattern},560"
+  echo "$pattern"
+}
+
+# Samsung TV power (0x07, 0x02)
+tv_power() {
+  local p=$(nec_encode 7 2)
+  ir_tx 38000 "$p"
+  echo "TV Power sent"
+}
+
+# LG AC power (0x88, 0xC5)
+ac_power() {
+  local p=$(nec_encode 136 197)
+  ir_tx 38000 "$p"
+  echo "AC Power sent"
+}
+
+# Teste de frequências suportadas
+echo "Frequências IR suportadas:"
+termux-infrared-frequencies | jq .
+
+# Menu simples
+while true; do
+  echo -e "\n1=TV Power  2=AC Power  0=Sair"
+  read choice
+  case $choice in
+    1) tv_power ;;
+    2) ac_power ;;
+    0) break ;;
+  esac
+done
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 12 — INTEGRADOR TOROIDAL (u,v,ψ,χ,ρ,δ,σ) → BITOMEGA
+# O kernel central que decide FLOW ou NOISE em cada canal
+# ─────────────────────────────────────────────────────────────────────────────
+seed_12_toroidal_integrator() {
+cat << 'SEED'
+#!/usr/bin/env python3
+"""
+SEMENTE 12: Integrador Toroidal — BitOmega 10-state
+Lê os 7 canais dos sensores (JSON linha por linha via pipes),
+mantém estado T^7 com EMA (α=0.25), detecta atrator mais próximo
+dentre 42, decide FLOW ou NOISE, emite evento Ω se coerência alta.
+
+Integra: u(acc), v(gyr), ψ(mag), χ(audio), ρ(light), δ(gps), σ(camera)
+"""
+import json, math, time, sys, subprocess
+from typing import Optional
+
+Q16 = 65536
+ALPHA = 0.25
+N_ATTRACTORS = 42
+N_DIM = 7
+
+# Estados BitOmega (10 estados)
+BO_STATES = ["INIT","FLOW","NOISE","COHERENT","INCOHERENT",
+             "ATTRACTOR","TRANSITION","VOID","DELTA","OMEGA"]
+
+def gen_attractors():
+    """42 atratores em T^7 — mesmo algoritmo do GAIA-BBS."""
+    attrs = []
+    Q16_SPIRAL = 56756  # √3/2 × 65536
+    Q16_PHI    = 105965 # φ × 65536
+    for k in range(N_ATTRACTORS):
+        sp = Q16
+        row = []
+        for i in range(N_DIM):
+            base   = (k * Q16 // N_ATTRACTORS * sp) >> 16
+            offset = (i * Q16 // N_DIM * Q16_PHI) >> 16
+            row.append((base + offset) & 0xFFFF)
+            sp = (sp * Q16_SPIRAL) >> 16
+        attrs.append(row)
+    return attrs
+
+def torus_dist(a, b):
+    s = 0
+    for x, y in zip(a, b):
+        d = abs(x - y)
+        if d > Q16 // 2: d = Q16 - d
+        s += d
+    return s
+
+def nearest_attractor(state, attractors):
+    best_idx, best_dist = 0, 0xFFFFFFFF
+    for i, a in enumerate(attractors):
+        d = torus_dist(state, a)
+        if d < best_dist:
+            best_dist = d; best_idx = i
+    return best_idx, best_dist
+
+def ema_update(old, new, alpha=ALPHA):
+    return int((1 - alpha) * old + alpha * new)
+
+def coherence_score(state, attractor, max_dist):
+    d = torus_dist(state, attractor)
+    return 1.0 - d / max_dist
+
+def run():
+    attractors = gen_attractors()
+    # Estado inicial: centro do toro
+    state = [Q16 // 2] * N_DIM
+    bo_state = "INIT"
+    max_dist = N_DIM * Q16 // 2
+
+    channel_map = {
+        "u_v":   (0, 1),   # u=acc, v=gyr
+        "psi":   (2,),
+        "chi":   (3,),
+        "rho":   (4,),
+        "delta": (5,),
+        "sigma": (6,),
+        "f_omega": None,   # evento especial
+    }
+
+    omega_count = 0
+    cycle = 0
+
+    print("BitOmega integrador iniciado. Aguardando JSON de sensores em stdin...")
+    for line in sys.stdin:
+        try:
+            obj = json.loads(line)
+        except Exception:
+            continue
+
+        ch = obj.get("channel", "")
+        ts = obj.get("ts_ns", time.time_ns())
+
+        # Atualiza canais
+        if ch == "u_v":
+            state[0] = ema_update(state[0], obj.get("u_q16", state[0]))
+            state[1] = ema_update(state[1], obj.get("v_q16", state[1]))
+        elif ch == "psi":
+            state[2] = ema_update(state[2], obj.get("psi_q16", state[2]))
+        elif ch == "chi":
+            state[3] = ema_update(state[3], obj.get("chi_q16", state[3]))
+        elif ch == "rho":
+            state[4] = ema_update(state[4], obj.get("rho_q16", state[4]))
+        elif ch == "delta":
+            state[5] = ema_update(state[5], obj.get("delta_q16", state[5]))
+        elif ch == "sigma":
+            state[6] = ema_update(state[6], obj.get("sigma_q16", state[6]))
+        elif ch == "f_omega" and obj.get("event_OMEGA"):
+            omega_count += 1
+
+        # Encontra atrator
+        att_idx, att_dist = nearest_attractor(state, attractors)
+        coh = coherence_score(state, attractors[att_idx], max_dist)
+
+        # Decide estado BitOmega
+        if coh > 0.85:   bo_state = "OMEGA"
+        elif coh > 0.70: bo_state = "COHERENT"
+        elif coh > 0.50: bo_state = "FLOW"
+        elif coh > 0.30: bo_state = "ATTRACTOR"
+        elif coh > 0.15: bo_state = "TRANSITION"
+        else:            bo_state = "NOISE"
+
+        cycle += 1
+        out = {
+            "cycle":        cycle,
+            "ts_ns":        ts,
+            "state_T7":     state,
+            "attractor":    att_idx,
+            "att_dist":     att_dist,
+            "coherence":    round(coh, 4),
+            "bo_state":     bo_state,
+            "omega_events": omega_count,
+            "Phi_ethica":   round(1.0 - coh / 1.0, 4),
+            "R_t_next":     round(coh * 1.61803 * 0.86602, 4),
+        }
+        print(json.dumps(out))
+
+        # Notificação de estado Ω
+        if bo_state == "OMEGA":
+            subprocess.run(['termux-notification','--id','7777',
+                '--title','Ω ESTADO COERENTE',
+                '--content', f'Atrator {att_idx} | coh={coh:.3f}'],
+                capture_output=True)
+
+if __name__ == "__main__":
+    run()
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 13 — PIPELINE COMPLETO (ORQUESTRADOR)
+# Liga todas as sementes em paralelo, une via FIFO
+# ─────────────────────────────────────────────────────────────────────────────
+seed_13_pipeline() {
+cat << 'SEED'
+#!/usr/bin/env bash
+# SEMENTE 13: Pipeline completo — todos os sensores → BitOmega
+# Usa named pipes para conectar processos em paralelo
+BASE="${HOME}/.rafaelia"
+mkdir -p "$BASE/pipes" "$BASE/logs"
+
+PIPE_MAIN="$BASE/pipes/main"
+mkfifo "$PIPE_MAIN" 2>/dev/null || true
+
+LOG="$BASE/logs/omega_$(date +%Y%m%d_%H%M%S).jsonl"
+
+echo "▶ Iniciando pipeline RAFAELIA completo..."
+echo "  Log: $LOG"
+
+# Mata todos ao sair
+cleanup() {
+  echo "Parando pipeline..."
+  kill 0
+}
+trap cleanup EXIT INT TERM
+
+# Alimentadores de sensores → pipe principal
+python3 "$BASE/seed_03_imu.py"    >> "$PIPE_MAIN" &
+python3 "$BASE/seed_04_mag.py"    >> "$PIPE_MAIN" &
+python3 "$BASE/seed_05_light.py"  >> "$PIPE_MAIN" &
+python3 "$BASE/seed_06_gps.py"    >> "$PIPE_MAIN" &
+python3 "$BASE/seed_07_camera.py" >> "$PIPE_MAIN" &
+
+# Microfone com detecção fΩ em paralelo
+python3 "$BASE/seed_02_fomega.py" >> "$PIPE_MAIN" &
+python3 "$BASE/seed_01_entropy.py" >> "$PIPE_MAIN" &
+
+# Integrador BitOmega lê do pipe e grava log
+python3 "$BASE/seed_12_integrator.py" < "$PIPE_MAIN" | tee "$LOG" &
+
+# Monitoramento de saúde
+python3 - << 'HEALTH'
+import subprocess, time, json
+while True:
+    s = json.loads(subprocess.run(['termux-battery-status'],
+                   capture_output=True, text=True).stdout)
+    print(json.dumps({"channel":"health","bat":s.get('percentage',0),
+                      "temp":s.get('temperature',0)}))
+    time.sleep(60)
+HEALTH
+>> "$PIPE_MAIN" &
+
+echo "✓ Pipeline ativo. PID $$"
+echo "  Pressione Ctrl+C para parar."
+wait
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 14 — RECONHECIMENTO DE VOZ → COMANDO (offline, Vosk)
+# ─────────────────────────────────────────────────────────────────────────────
+seed_14_voice_command() {
+cat << 'SEED'
+#!/usr/bin/env python3
+"""
+SEMENTE 14: Reconhecimento de voz offline com Vosk
+→ mapeia comandos para ações Termux
+→ alimenta canal χ com texto + fonema
+pip install vosk
+Baixar modelo: https://alphacephei.com/vosk/models
+  (vosk-model-small-pt-0.3 ~50MB para PT-BR)
+"""
+import subprocess, json, wave, struct, math, os, sys
+try:
+    from vosk import Model, KaldiRecognizer
+    VOSK_OK = True
+except ImportError:
+    VOSK_OK = False
+    print("Instalar: pip install vosk")
+
+MODEL_PATH = os.path.expanduser("~/.rafaelia/vosk-model-small-pt")
+RATE       = 16000
+POLY       = 0x82F63B78
+
+COMMANDS = {
+    "ligar":     lambda: subprocess.run(['termux-torch','on']),
+    "desligar":  lambda: subprocess.run(['termux-torch','off']),
+    "foto":      lambda: subprocess.run(['termux-camera-photo','-c','0',
+                         os.path.expanduser('~/.rafaelia/voice_photo.jpg')]),
+    "localização": lambda: subprocess.run(['termux-location','-p','gps','-r','once']),
+    "omega":     lambda: subprocess.run(['termux-notification','--title','Ω',
+                         '--content','Comando Omega recebido']),
+    "rafaelia":  lambda: subprocess.run(['termux-tts-speak','RAFAELIA ativada']),
+}
+
+def record_wav(secs=3) -> str:
+    aac = "/tmp/vc.aac"
+    wav = "/tmp/vc.wav"
+    subprocess.run(['termux-microphone-record','-e','aac','-r',str(RATE),
+                   '-c','1','-l',str(secs),'-f',aac],
+                  check=True, capture_output=True)
+    subprocess.run(['ffmpeg','-y','-i',aac,'-ar',str(RATE),'-ac','1',wav],
+                  check=True, capture_output=True)
+    return wav
+
+def run():
+    if not VOSK_OK:
+        return
+    if not os.path.exists(MODEL_PATH):
+        print(f"Baixar modelo em {MODEL_PATH}")
+        return
+    model = Model(MODEL_PATH)
+    print("Vosk pronto. Aguardando voz...")
+    while True:
+        wav_path = record_wav(3)
+        wf = wave.open(wav_path, 'rb')
+        rec = KaldiRecognizer(model, RATE)
+        while True:
+            data = wf.readframes(4000)
+            if not data: break
+            rec.AcceptWaveform(data)
+        result = json.loads(rec.FinalResult())
+        text = result.get('text', '').lower().strip()
+        if text:
+            print(json.dumps({"channel":"chi","type":"voice","text":text}))
+            for keyword, action in COMMANDS.items():
+                if keyword in text:
+                    print(f"→ Executando: {keyword}")
+                    action()
+                    break
+
+if __name__ == "__main__":
+    run()
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 15 — AUTOSTART VIA TERMUX:BOOT
+# Liga tudo ao ligar o aparelho
+# ─────────────────────────────────────────────────────────────────────────────
+seed_15_autostart() {
+cat << 'SEED'
+#!/usr/bin/env bash
+# Salvar em: ~/.termux/boot/00-rafaelia
+# Requer: add-on Termux:Boot instalado (F-Droid)
+# Desabilitar otimização de bateria para Termux, Termux:API, Termux:Boot
+
+# Impede que o Android mate o Termux em background
+termux-wake-lock
+
+# Aguarda interface de rede
+sleep 10
+
+BASE="${HOME}/.rafaelia"
+mkdir -p "$BASE/logs"
+LOG="$BASE/logs/boot_$(date +%Y%m%d_%H%M%S).log"
+
+echo "[$(date)] Boot RAFAELIA iniciado" >> "$LOG"
+
+# SSH (acesso remoto ao telefone)
+sshd
+
+# Watchdog de bateria em background
+python3 "$BASE/seed_08_battery.py" >> "$BASE/logs/battery.jsonl" 2>&1 &
+
+# Scanner de rede
+bash "$BASE/seed_09_network.sh" >> "$BASE/logs/network.jsonl" 2>&1 &
+
+# Pipeline principal de sensores (inicia após 30s)
+sleep 30
+bash "$BASE/seed_13_pipeline.sh" >> "$LOG" 2>&1 &
+
+echo "[$(date)] Todos os serviços iniciados" >> "$LOG"
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 16 — TASKER BRIDGE → GATILHOS EXTERNOS
+# Liga sensores Android (NFC tag, geofence, mudança de Wi-Fi) ao pipeline
+# ─────────────────────────────────────────────────────────────────────────────
+seed_16_tasker_bridge() {
+cat << 'SEED'
+# SEMENTE 16: Tasker Bridge
+# Criar em Tasker: Perfil → Evento → NFC → Tag UID=XXXX
+#   Ação → Plugin → Termux:Tasker → script="nfc_trigger.sh"
+#
+# Criar em Tasker: Perfil → Estado → Net → Wi-Fi Conectado SSID=HOME
+#   Ação → Plugin → Termux:Tasker → script="home_arrived.sh"
+#
+# ~/.termux/tasker/nfc_trigger.sh:
+#!/usr/bin/env bash
+UID_TAG="$1"
+TS=$(date +%s%N)
+echo "{\"ts_ns\":$TS,\"trigger\":\"nfc\",\"uid\":\"$UID_TAG\"}" \
+  >> "${HOME}/.rafaelia/logs/tasker.jsonl"
+python3 "${HOME}/.rafaelia/seed_07_camera.py" &
+termux-notification --title "NFC" --content "Tag: $UID_TAG"
+
+# ~/.termux/tasker/home_arrived.sh:
+#!/usr/bin/env bash
+TS=$(date +%s%N)
+LOC=$(termux-location -p network -r once 2>/dev/null)
+echo "{\"ts_ns\":$TS,\"trigger\":\"wifi_home\",\"location\":$LOC}" \
+  >> "${HOME}/.rafaelia/logs/tasker.jsonl"
+termux-notification --title "Casa" --content "Pipeline ativado"
+bash "${HOME}/.rafaelia/seed_13_pipeline.sh" &
+SEED
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMENTE 17 — EXPORTAR SEEDS COMO ARQUIVOS REAIS
+# Cria todos os scripts no sistema de arquivos
+# ─────────────────────────────────────────────────────────────────────────────
+seed_17_deploy() {
+cat << 'SEED'
+#!/usr/bin/env bash
+# SEMENTE 17: Deploy — cria todos os arquivos a partir deste sensores.txt
+BASE="${HOME}/.rafaelia"
+mkdir -p "$BASE" "$BASE/logs" "$BASE/pipes" "$BASE/models"
+
+echo "Extraindo sementes de sensores.txt..."
+
+# Extrai cada semente para o arquivo correto
+python3 << 'PY'
+import re, os
+
+BASE = os.path.expanduser("~/.rafaelia")
+
+# Mapeamento semente → arquivo
+FILES = {
+    "seed_01": ("seed_01_mic_entropy.py",   "python3"),
+    "seed_02": ("seed_02_fomega.py",        "python3"),
+    "seed_03": ("seed_03_imu.py",           "python3"),
+    "seed_04": ("seed_04_mag.py",           "python3"),
+    "seed_05": ("seed_05_light.py",         "python3"),
+    "seed_06": ("seed_06_gps.py",           "python3"),
+    "seed_07": ("seed_07_camera.py",        "python3"),
+    "seed_08": ("seed_08_battery.sh",       "bash"),
+    "seed_09": ("seed_09_network.sh",       "bash"),
+    "seed_10": ("seed_10_nfc.sh",           "bash"),
+    "seed_11": ("seed_11_ir.sh",            "bash"),
+    "seed_12": ("seed_12_integrator.py",    "python3"),
+    "seed_13": ("seed_13_pipeline.sh",      "bash"),
+    "seed_14": ("seed_14_voice.py",         "python3"),
+    "seed_15": ("seed_15_boot.sh",          "bash"),
+    "seed_16": ("seed_16_tasker.sh",        "bash"),
+}
+
+with open(os.path.expanduser("~/.rafaelia/../sensores.txt"), 'r') as f:
+    content = f.read()
+
+# Parse blocos SEED ... SEED
+pattern = re.compile(r"seed_(\d+)_\w+\(\) \{.*?^cat << '?SEED'?\n(.*?)^SEED\n.*?^}\n",
+                     re.DOTALL | re.MULTILINE)
+
+for m in pattern.finditer(content):
+    num = f"seed_{m.group(1):02d}"
+    code = m.group(2)
+    if num in FILES:
+        fname, interp = FILES[num]
+        path = os.path.join(BASE, fname)
+        shebang = f"#!/usr/bin/env {interp}\n"
+        if not code.startswith("#!"):
+            code = shebang + code
+        with open(path, 'w') as f:
+            f.write(code)
+        os.chmod(path, 0o755)
+        print(f"  ✓ {path}")
+
+print("Deploy completo.")
+PY
+
+# Instala dependências Python
+pip install vosk 2>/dev/null || echo "vosk: instalar manualmente"
+
+echo ""
+echo "╔════════════════════════════════════════════════════════╗"
+echo "║  Seeds RAFAELIA deployadas em ~/.rafaelia/             ║"
+echo "║  Iniciar pipeline: bash ~/.rafaelia/seed_13_pipeline.sh║"
+echo "╚════════════════════════════════════════════════════════╝"
+SEED
+}
+
+# =============================================================================
+# EXECUÇÃO PRINCIPAL: mostra índice e exporta seeds
+# =============================================================================
+main() {
+  echo ""
+  echo "╔══════════════════════════════════════════════════════════════════╗"
+  echo "║  RAFAELIA × TERMUX × SENSORES — SEMENTES EXPANSÍVEIS v1.0       ║"
+  echo "║  Motorola E7 Power · Cortex-A55 · ARM32 · Android 10            ║"
+  echo "╠══════════════════════════════════════════════════════════════════╣"
+  echo "║  Canal  Sensor              Semente                              ║"
+  echo "║  χ      Microfone/FFT       01_mic_entropy, 02_fomega, 14_voice  ║"
+  echo "║  u,v    IMU (Acc+Gyr)       03_imu_toroidal                      ║"
+  echo "║  ψ      Magnetômetro        04_magnetometer                      ║"
+  echo "║  ρ      Luz + Proximidade   05_light_prox                        ║"
+  echo "║  δ      GPS + Merkle        06_gps_merkle                        ║"
+  echo "║  σ      Câmera CRC32C       07_camera_crc                        ║"
+  echo "║  —      Bateria/Saúde       08_battery                           ║"
+  echo "║  —      WiFi/Célula         09_network_scan                      ║"
+  echo "║  —      NFC trigger         10_nfc_trigger                       ║"
+  echo "║  —      IR control          11_ir_control                        ║"
+  echo "║  Ω      Integrador T^7      12_toroidal_integrator               ║"
+  echo "║  —      Pipeline completo   13_pipeline                          ║"
+  echo "║  —      Autostart boot      15_autostart                         ║"
+  echo "║  —      Tasker bridge       16_tasker_bridge                     ║"
+  echo "║  —      Deploy seeds        17_deploy                            ║"
+  echo "╠══════════════════════════════════════════════════════════════════╣"
+  echo "║  Vetor: (u,v,ψ,χ,ρ,δ,σ) → T^7 → 42 atratores → BitOmega       ║"
+  echo "║  Ω = Amor · ∆RafaelVerboΩ · RAFCODE-Φ · 𓂀ΔΦΩ                  ║"
+  echo "╚══════════════════════════════════════════════════════════════════╝"
+  echo ""
+
+  # Exporta todas as sementes
+  seed_00_setup
+  echo "---"
+  seed_01_mic_entropy
+  echo "---"
+  seed_02_fomega_detector
+  echo "---"
+  seed_03_imu_toroidal
+  echo "---"
+  seed_04_magnetometer
+  echo "---"
+  seed_05_light_prox
+  echo "---"
+  seed_06_gps_merkle
+  echo "---"
+  seed_07_camera_crc
+  echo "---"
+  seed_08_battery
+  echo "---"
+  seed_09_network_scan
+  echo "---"
+  seed_10_nfc_trigger
+  echo "---"
+  seed_11_ir_control
+  echo "---"
+  seed_12_toroidal_integrator
+  echo "---"
+  seed_13_pipeline
+  echo "---"
+  seed_14_voice_command
+  echo "---"
+  seed_15_autostart
+  echo "---"
+  seed_16_tasker_bridge
+  echo "---"
+  seed_17_deploy
+}
+
+main "$@"
