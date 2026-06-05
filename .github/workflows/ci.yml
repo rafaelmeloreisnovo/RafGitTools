@@ -34,8 +34,8 @@ jobs:
       matrix:
         variant: [devDebug, productionDebug, devRelease, productionRelease]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
@@ -64,8 +64,8 @@ jobs:
     if: github.event_name != 'workflow_dispatch' || inputs.build_mode == 'all' || inputs.build_mode == 'tests_only'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
@@ -86,8 +86,8 @@ jobs:
     if: github.event_name != 'workflow_dispatch' || inputs.build_mode == 'all' || inputs.build_mode == 'lint_only'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
