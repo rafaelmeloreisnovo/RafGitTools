@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -28,8 +29,8 @@ fun StashListScreen(
     viewModel: StashListViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val stashes by viewModel.stashes.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val stashes by viewModel.stashes.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
     var stashToApply by remember { mutableStateOf<GitStash?>(null) }
     var stashToDrop by remember { mutableStateOf<GitStash?>(null) }
@@ -190,7 +191,7 @@ private fun StashList(
             )
         }
         
-        items(stashes) { stash ->
+        items(stashes, key = { it.index }) { stash ->
             StashCard(
                 stash = stash,
                 dateFormat = dateFormat,

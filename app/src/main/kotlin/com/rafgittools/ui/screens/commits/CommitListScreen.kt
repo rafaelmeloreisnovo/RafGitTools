@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -29,9 +30,9 @@ fun CommitListScreen(
     onNavigateBack: () -> Unit = {},
     onCommitClick: (GitCommit) -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val commits by viewModel.commits.collectAsState()
-    val currentBranch by viewModel.currentBranch.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val commits by viewModel.commits.collectAsStateWithLifecycle()
+    val currentBranch by viewModel.currentBranch.collectAsStateWithLifecycle()
     
     LaunchedEffect(repoPath) {
         viewModel.loadCommits(repoPath)
@@ -124,7 +125,7 @@ private fun CommitList(
             )
         }
         
-        items(commits) { commit ->
+        items(commits, key = { it.sha }) { commit ->
             CommitCard(
                 commit = commit,
                 onClick = { onCommitClick(commit) }

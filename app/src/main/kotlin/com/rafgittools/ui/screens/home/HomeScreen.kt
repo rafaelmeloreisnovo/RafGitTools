@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,10 +29,10 @@ fun HomeScreen(
     onNavigateToAuth: () -> Unit = {},
     onNavigateToRepository: (GithubRepository) -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val isAuthenticated by viewModel.isAuthenticated.collectAsState()
-    val user by viewModel.user.collectAsState()
-    val repositories by viewModel.repositories.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
+    val user by viewModel.user.collectAsStateWithLifecycle()
+    val repositories by viewModel.repositories.collectAsStateWithLifecycle()
     
     var showMenu by remember { mutableStateOf(false) }
     
@@ -200,7 +201,7 @@ private fun RepositoryList(
             )
         }
         
-        items(repositories) { repo ->
+        items(repositories, key = { it.id }) { repo ->
             RepositoryCard(
                 repository = repo,
                 onClick = { onRepositoryClick(repo) }

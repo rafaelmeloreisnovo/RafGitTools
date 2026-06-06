@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
@@ -25,8 +26,8 @@ fun ReleaseDetailScreen(
     viewModel: ReleaseDetailViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val release by viewModel.release.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val release by viewModel.release.collectAsStateWithLifecycle()
     val uriHandler = LocalUriHandler.current
 
     LaunchedEffect(owner, repo, releaseId) {

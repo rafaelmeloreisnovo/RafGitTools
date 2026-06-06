@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -18,11 +19,11 @@ fun CreatePullRequestScreen(
     onNavigateBack: () -> Unit = {},
     onPullRequestCreated: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val title by viewModel.title.collectAsState()
-    val body by viewModel.body.collectAsState()
-    val baseBranch by viewModel.baseBranch.collectAsState()
-    val headBranch by viewModel.headBranch.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val title by viewModel.title.collectAsStateWithLifecycle()
+    val body by viewModel.body.collectAsStateWithLifecycle()
+    val baseBranch by viewModel.baseBranch.collectAsStateWithLifecycle()
+    val headBranch by viewModel.headBranch.collectAsStateWithLifecycle()
     val isLoading = uiState is CreatePullRequestViewModel.UiState.Loading
     
     LaunchedEffect(uiState) {

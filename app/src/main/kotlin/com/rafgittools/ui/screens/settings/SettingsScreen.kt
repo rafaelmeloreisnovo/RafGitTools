@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
@@ -27,9 +28,9 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit = {},
     onLanguageChange: (Language) -> Unit = {}
 ) {
-    val isDarkMode by viewModel.isDarkMode.collectAsState()
-    val currentLanguage by viewModel.currentLanguage.collectAsState()
-    val gitConfig by viewModel.gitConfig.collectAsState()
+    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
+    val currentLanguage by viewModel.currentLanguage.collectAsStateWithLifecycle()
+    val gitConfig by viewModel.gitConfig.collectAsStateWithLifecycle()
     
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showGitConfigDialog by remember { mutableStateOf(false) }

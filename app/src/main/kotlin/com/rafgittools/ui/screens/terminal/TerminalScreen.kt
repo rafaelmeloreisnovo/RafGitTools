@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -39,9 +41,9 @@ fun TerminalScreen(
     viewModel: TerminalViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
-    val lines by viewModel.lines.collectAsState()
-    val isRunning by viewModel.isRunning.collectAsState()
-    val currentInput by viewModel.currentInput.collectAsState()
+    val lines by viewModel.lines.collectAsStateWithLifecycle()
+    val isRunning by viewModel.isRunning.collectAsStateWithLifecycle()
+    val currentInput by viewModel.currentInput.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
 
@@ -112,7 +114,7 @@ fun TerminalScreen(
                     .padding(horizontal = 8.dp),
                 contentPadding = PaddingValues(vertical = 8.dp)
             ) {
-                items(lines) { line ->
+                itemsIndexed(lines) { idx, line ->
                     TerminalLineItem(line)
                 }
             }

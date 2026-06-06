@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,9 +32,9 @@ fun PullRequestListScreen(
     onNavigateBack: () -> Unit = {},
     onPullRequestClick: (GithubPullRequest) -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val pullRequests by viewModel.pullRequests.collectAsState()
-    val selectedFilter by viewModel.selectedFilter.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val pullRequests by viewModel.pullRequests.collectAsStateWithLifecycle()
+    val selectedFilter by viewModel.selectedFilter.collectAsStateWithLifecycle()
     
     LaunchedEffect(owner, repo) {
         viewModel.loadPullRequests(owner, repo)
@@ -164,7 +165,7 @@ private fun PullRequestList(
             )
         }
         
-        items(pullRequests) { pr ->
+        items(pullRequests, key = { it.number }) { pr ->
             PullRequestCard(
                 pullRequest = pr,
                 onClick = { onPullRequestClick(pr) }

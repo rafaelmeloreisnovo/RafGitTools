@@ -10,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -40,12 +41,12 @@ fun PullRequestDetailScreen(
     viewModel: PullRequestDetailViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val pullRequest by viewModel.pullRequest.collectAsState()
-    val files by viewModel.files.collectAsState()
-    val commits by viewModel.commits.collectAsState()
-    val reviews by viewModel.reviews.collectAsState()
-    val selectedTab by viewModel.selectedTab.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val pullRequest by viewModel.pullRequest.collectAsStateWithLifecycle()
+    val files by viewModel.files.collectAsStateWithLifecycle()
+    val commits by viewModel.commits.collectAsStateWithLifecycle()
+    val reviews by viewModel.reviews.collectAsStateWithLifecycle()
+    val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
     
     LaunchedEffect(owner, repo, prNumber) {
         viewModel.loadPullRequest(owner, repo, prNumber)
@@ -409,7 +410,7 @@ private fun FilesTab(files: List<GithubPullRequestFile>) {
             }
         }
         
-        items(files) { file ->
+        items(files, key = { it.sha }) { file ->
             FileChangeCard(file = file)
         }
     }
@@ -520,7 +521,7 @@ private fun CommitsTab(commits: List<GithubCommit>) {
             )
         }
         
-        items(commits) { commit ->
+        items(commits, key = { it.sha }) { commit ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Row(
@@ -611,7 +612,7 @@ private fun ReviewsTab(reviews: List<GithubReview>) {
                 }
             }
         } else {
-            items(reviews) { review ->
+            items(reviews, key = { it.id }) { review ->
                 ReviewCard(review = review, dateFormat = dateFormat)
             }
         }

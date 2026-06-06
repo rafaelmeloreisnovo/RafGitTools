@@ -11,6 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,10 +33,10 @@ fun DiffViewerScreen(
     viewModel: DiffViewerViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val diffs by viewModel.diffs.collectAsState()
-    val viewMode by viewModel.viewMode.collectAsState()
-    val showStagedOnly by viewModel.showStagedOnly.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val diffs by viewModel.diffs.collectAsStateWithLifecycle()
+    val viewMode by viewModel.viewMode.collectAsStateWithLifecycle()
+    val showStagedOnly by viewModel.showStagedOnly.collectAsStateWithLifecycle()
     
     LaunchedEffect(repoPath) {
         viewModel.loadDiff(repoPath)
@@ -139,7 +140,7 @@ private fun DiffList(
         }
         
         // Individual diffs
-        items(diffs) { diff ->
+        items(diffs, key = { it.fileName }) { diff ->
             DiffCard(diff = diff, viewMode = viewMode)
         }
     }

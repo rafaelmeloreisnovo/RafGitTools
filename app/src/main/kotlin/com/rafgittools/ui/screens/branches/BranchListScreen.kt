@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -27,9 +28,9 @@ fun BranchListScreen(
     viewModel: BranchListViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val branches by viewModel.branches.collectAsState()
-    val operationStatus by viewModel.operationStatus.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val branches by viewModel.branches.collectAsStateWithLifecycle()
+    val operationStatus by viewModel.operationStatus.collectAsStateWithLifecycle()
     
     var showCreateDialog by remember { mutableStateOf(false) }
     var selectedBranchForDelete by remember { mutableStateOf<GitBranch?>(null) }
@@ -183,7 +184,7 @@ private fun BranchList(
                 )
             }
             
-            items(localBranches) { branch ->
+            items(localBranches, key = { it.name }) { branch ->
                 BranchCard(
                     branch = branch,
                     onCheckout = { onCheckout(branch) },
@@ -205,7 +206,7 @@ private fun BranchList(
                 )
             }
             
-            items(remoteBranches) { branch ->
+            items(remoteBranches, key = { it.name }) { branch ->
                 BranchCard(
                     branch = branch,
                     onCheckout = { onCheckout(branch) },
