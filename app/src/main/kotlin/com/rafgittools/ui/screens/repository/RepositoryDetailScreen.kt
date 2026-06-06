@@ -173,7 +173,7 @@ fun RepositoryDetailScreen(
                                     )
                                 }
                                 
-                                items(allChanges.take(10), key = { it.path }) { file ->
+                                items(allChanges.take(10), key = { it }) { file ->
                                     ChangedFileItem(
                                         file = file,
                                         status = when {
