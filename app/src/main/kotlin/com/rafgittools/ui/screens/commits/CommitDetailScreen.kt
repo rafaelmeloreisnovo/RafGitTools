@@ -4,12 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,10 +50,10 @@ fun CommitDetailScreen(
     viewModel: CommitDetailViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
-    val uiState     by viewModel.uiState.collectAsState()
-    val commit      by viewModel.commit.collectAsState()
-    val diffs       by viewModel.diffs.collectAsState()
-    val changedFiles by viewModel.changedFiles.collectAsState()
+    val uiState     by viewModel.uiState.collectAsStateWithLifecycle()
+    val commit      by viewModel.commit.collectAsStateWithLifecycle()
+    val diffs       by viewModel.diffs.collectAsStateWithLifecycle()
+    val changedFiles by viewModel.changedFiles.collectAsStateWithLifecycle()
 
     LaunchedEffect(repoPath, commitSha) {
         viewModel.loadCommit(repoPath, commitSha)
@@ -245,7 +247,7 @@ private fun CommitFilesTab(files: List<String>) {
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        items(files) { path ->
+        itemsIndexed(files) { idx, path ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier.padding(12.dp).fillMaxWidth(),
@@ -287,7 +289,7 @@ private fun CommitDiffTab(diffs: List<GitDiff>) {
         contentPadding = PaddingValues(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(diffs) { diff ->
+        items(diffs, key = { it.newPath ?: it.oldPath ?: "" }) { diff ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column {
                     // File header — FIX C7: diff.filePath → diff.newPath ?: diff.oldPath

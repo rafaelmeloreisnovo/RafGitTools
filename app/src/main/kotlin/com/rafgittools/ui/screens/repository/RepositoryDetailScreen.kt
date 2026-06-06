@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,11 +35,11 @@ fun RepositoryDetailScreen(
     onNavigateToCommits: (String) -> Unit = {},
     onNavigateToBranches: (String) -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val status by viewModel.status.collectAsState()
-    val branches by viewModel.branches.collectAsState()
-    val commits by viewModel.recentCommits.collectAsState()
-    val operationStatus by viewModel.operationStatus.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val status by viewModel.status.collectAsStateWithLifecycle()
+    val branches by viewModel.branches.collectAsStateWithLifecycle()
+    val commits by viewModel.recentCommits.collectAsStateWithLifecycle()
+    val operationStatus by viewModel.operationStatus.collectAsStateWithLifecycle()
     
     var showBranchDialog by remember { mutableStateOf(false) }
     var showCommitDialog by remember { mutableStateOf(false) }
@@ -140,7 +141,7 @@ fun RepositoryDetailScreen(
                             )
                         }
                         
-                        items(branches.take(5)) { branch ->
+                        items(branches.take(5), key = { it.name }) { branch ->
                             BranchItem(
                                 branch = branch,
                                 onCheckout = { viewModel.checkout(branch.shortName) }
@@ -156,7 +157,7 @@ fun RepositoryDetailScreen(
                             )
                         }
                         
-                        items(commits.take(5)) { commit ->
+                        items(commits.take(5), key = { it.sha }) { commit ->
                             CommitItem(commit = commit)
                         }
                         
@@ -172,7 +173,7 @@ fun RepositoryDetailScreen(
                                     )
                                 }
                                 
-                                items(allChanges.take(10)) { file ->
+                                items(allChanges.take(10), key = { it.path }) { file ->
                                     ChangedFileItem(
                                         file = file,
                                         status = when {
@@ -257,6 +258,7 @@ private fun StatusCard(
                 if (status?.hasUncommittedChanges == true) {
                     AssistChip(
                         onClick = { },
+                        enabled = false,
                         label = { Text(stringResource(R.string.repository_uncommitted_changes)) },
                         leadingIcon = {
                             Icon(
@@ -506,6 +508,7 @@ private fun BranchItem(
             if (branch.isCurrent) {
                 AssistChip(
                     onClick = { },
+                    enabled = false,
                     label = { Text(stringResource(R.string.repository_current)) }
                 )
             }

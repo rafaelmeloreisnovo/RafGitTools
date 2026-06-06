@@ -1,3 +1,4 @@
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 package com.rafgittools.ui.screens.repository
 
 import androidx.compose.foundation.layout.*
@@ -30,7 +31,7 @@ fun RepositoryListScreen(
     reloadSignal: Boolean = false,
     onReloadHandled: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(reloadSignal) {
         if (reloadSignal) {
@@ -100,7 +101,7 @@ private fun RepositoryList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(repositories) { repo ->
+        items(repositories, key = { it.id }) { repo ->
             RepositoryItem(
                 repository = repo,
                 onClick = { onRepositoryClick(repo) }

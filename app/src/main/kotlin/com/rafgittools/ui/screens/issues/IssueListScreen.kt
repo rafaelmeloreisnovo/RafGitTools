@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,9 +33,9 @@ fun IssueListScreen(
     onIssueClick: (GithubIssue) -> Unit = {},
     onCreateIssue: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val issues by viewModel.issues.collectAsState()
-    val selectedFilter by viewModel.selectedFilter.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val issues by viewModel.issues.collectAsStateWithLifecycle()
+    val selectedFilter by viewModel.selectedFilter.collectAsStateWithLifecycle()
     
     LaunchedEffect(owner, repo) {
         viewModel.loadIssues(owner, repo)
@@ -171,7 +172,7 @@ private fun IssueList(
             )
         }
         
-        items(issues) { issue ->
+        items(issues, key = { it.number }) { issue ->
             IssueCard(
                 issue = issue,
                 onClick = { onIssueClick(issue) }

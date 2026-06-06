@@ -6,6 +6,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -26,13 +27,13 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val viewModelUsername by viewModel.username.collectAsState()
-    val name by viewModel.name.collectAsState()
-    val bio by viewModel.bio.collectAsState()
-    val publicRepos by viewModel.publicRepos.collectAsState()
-    val followers by viewModel.followers.collectAsState()
-    val following by viewModel.following.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val viewModelUsername by viewModel.username.collectAsStateWithLifecycle()
+    val name by viewModel.name.collectAsStateWithLifecycle()
+    val bio by viewModel.bio.collectAsStateWithLifecycle()
+    val publicRepos by viewModel.publicRepos.collectAsStateWithLifecycle()
+    val followers by viewModel.followers.collectAsStateWithLifecycle()
+    val following by viewModel.following.collectAsStateWithLifecycle()
     var selectedTab by rememberSaveable { mutableStateOf(0) }
     val tabs = listOf(
         ProfileTab(

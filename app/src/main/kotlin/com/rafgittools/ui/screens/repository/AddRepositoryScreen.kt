@@ -1,3 +1,4 @@
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 package com.rafgittools.ui.screens.repository
 
 import androidx.compose.foundation.layout.Arrangement
@@ -35,7 +36,7 @@ fun AddRepositoryScreen(
     onNavigateBack: () -> Unit = {},
     onCloneSuccess: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {

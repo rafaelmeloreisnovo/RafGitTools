@@ -5,6 +5,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
@@ -12,11 +13,13 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -33,12 +36,12 @@ fun FileBrowserScreen(
     viewModel: FileBrowserViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val files by viewModel.files.collectAsState()
-    val currentPath by viewModel.currentPath.collectAsState()
-    val breadcrumbs by viewModel.breadcrumbs.collectAsState()
-    val selectedFile by viewModel.selectedFile.collectAsState()
-    val fileContent by viewModel.fileContent.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val files by viewModel.files.collectAsStateWithLifecycle()
+    val currentPath by viewModel.currentPath.collectAsStateWithLifecycle()
+    val breadcrumbs by viewModel.breadcrumbs.collectAsStateWithLifecycle()
+    val selectedFile by viewModel.selectedFile.collectAsStateWithLifecycle()
+    val fileContent by viewModel.fileContent.collectAsStateWithLifecycle()
     
     LaunchedEffect(repoPath) {
         viewModel.loadRepository(repoPath)
@@ -219,7 +222,7 @@ private fun FileList(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-            items(files) { file ->
+            items(files, key = { it.path }) { file ->
                 FileItem(
                     file = file,
                     onClick = { onFileClick(file) }
@@ -361,43 +364,36 @@ private fun FileViewer(content: FileContent) {
                 }
             }
         } else {
-            // Code viewer with line numbers
-            Row(modifier = Modifier.fillMaxSize()) {
-                val lines = content.content.lines()
-                
-                // Line numbers
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.width(48.dp)
+            // Code viewer — single LazyColumn with Row per line to keep
+            // line numbers and code content always in sync during scroll.
+            val lines = content.content.lines()
+            SelectionContainer {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .horizontalScroll(rememberScrollState()),
+                    contentPadding = PaddingValues(8.dp)
                 ) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxHeight(),
-                        contentPadding = PaddingValues(8.dp)
-                    ) {
-                        items(lines.size) { index ->
+                    itemsIndexed(lines) { index, line ->
+                        Row(
+                            modifier = Modifier.padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            // Line number gutter — fixed width, right-aligned
                             Text(
                                 text = "${index + 1}",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(vertical = 2.dp)
+                                modifier = Modifier.width(40.dp),
+                                textAlign = TextAlign.End
                             )
-                        }
-                    }
-                }
-                
-                // Code content
-                SelectionContainer {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(8.dp)
-                    ) {
-                        items(lines) { line ->
+                            Spacer(modifier = Modifier.width(8.dp))
+                            // Code line
                             Text(
                                 text = line.ifEmpty { " " },
                                 style = MaterialTheme.typography.bodySmall,
-                                fontFamily = FontFamily.Monospace,
-                                modifier = Modifier.padding(vertical = 2.dp)
+                                fontFamily = FontFamily.Monospace
                             )
                         }
                     }

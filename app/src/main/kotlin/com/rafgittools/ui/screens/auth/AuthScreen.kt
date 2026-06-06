@@ -1,3 +1,4 @@
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 package com.rafgittools.ui.screens.auth
 
 import androidx.compose.foundation.layout.Arrangement
@@ -60,10 +61,10 @@ import com.rafgittools.data.auth.AuthMethod
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(viewModel: AuthViewModel = hiltViewModel(), onAuthSuccess: () -> Unit = {}) {
-    val uiState by viewModel.uiState.collectAsState()
-    val isAuthenticated by viewModel.isAuthenticated.collectAsState()
-    val username by viewModel.username.collectAsState()
-    val selectedMethod by viewModel.selectedMethod.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
+    val username by viewModel.username.collectAsStateWithLifecycle()
+    val selectedMethod by viewModel.selectedMethod.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success || uiState is AuthUiState.Offline) onAuthSuccess()

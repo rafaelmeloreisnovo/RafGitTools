@@ -10,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,9 +39,9 @@ fun IssueDetailScreen(
     viewModel: IssueDetailViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val issue by viewModel.issue.collectAsState()
-    val comments by viewModel.comments.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val issue by viewModel.issue.collectAsStateWithLifecycle()
+    val comments by viewModel.comments.collectAsStateWithLifecycle()
     var newComment by remember { mutableStateOf("") }
     var isSubmitting by remember { mutableStateOf(false) }
     
@@ -236,7 +237,7 @@ private fun IssueContent(
                 }
             }
         } else {
-            items(comments) { comment ->
+            items(comments, key = { it.id }) { comment ->
                 CommentCard(comment = comment, dateFormat = dateFormat)
             }
         }

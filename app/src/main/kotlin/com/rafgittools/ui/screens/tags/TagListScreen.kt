@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -29,8 +30,8 @@ fun TagListScreen(
     viewModel: TagListViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val tags by viewModel.tags.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val tags by viewModel.tags.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
     var tagToDelete by remember { mutableStateOf<GitTag?>(null) }
     
@@ -166,7 +167,7 @@ private fun TagList(
             )
         }
         
-        items(tags) { tag ->
+        items(tags, key = { it.name }) { tag ->
             TagCard(
                 tag = tag,
                 dateFormat = dateFormat,
@@ -207,6 +208,7 @@ private fun TagCard(
                     if (tag.isAnnotated) {
                         AssistChip(
                             onClick = { },
+                            enabled = false,
                             label = { Text("Annotated") },
                             modifier = Modifier.height(24.dp)
                         )

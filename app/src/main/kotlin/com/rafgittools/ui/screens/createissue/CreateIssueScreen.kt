@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -18,9 +19,9 @@ fun CreateIssueScreen(
     onNavigateBack: () -> Unit = {},
     onIssueCreated: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val title by viewModel.title.collectAsState()
-    val body by viewModel.body.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val title by viewModel.title.collectAsStateWithLifecycle()
+    val body by viewModel.body.collectAsStateWithLifecycle()
     val isLoading = uiState is CreateIssueViewModel.UiState.Loading
     
     LaunchedEffect(uiState) {
