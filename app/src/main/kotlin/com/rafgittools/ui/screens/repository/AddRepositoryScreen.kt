@@ -1,6 +1,6 @@
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 package com.rafgittools.ui.screens.repository
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row

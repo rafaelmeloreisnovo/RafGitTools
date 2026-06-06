@@ -140,7 +140,7 @@ private fun DiffList(
         }
         
         // Individual diffs
-        items(diffs, key = { it.fileName }) { diff ->
+        items(diffs, key = { it.newPath ?: it.oldPath ?: it.hashCode().toString() }) { diff ->
             DiffCard(diff = diff, viewMode = viewMode)
         }
     }
