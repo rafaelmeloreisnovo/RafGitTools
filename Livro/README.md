@@ -18,7 +18,7 @@ A regra deste diretório é simples:
 arquivo solto não vira fonte de verdade por nome bonito
 zip não vira release por estar completo
 texto histórico não vira implementação sem teste
-gap declarado vale mais do que claim inventado
+gap declarado vale mais que claim inventado
 TOKEN_VAZIO é saída válida quando não houver evidência local
 ```
 

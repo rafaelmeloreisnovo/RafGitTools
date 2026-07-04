@@ -1,99 +1,67 @@
 #!/usr/bin/env bash
-# Refatoração conservadora dos arquivos compactados e textos do diretório Livro.
-# Modo padrão: --check, sem mover nada.
-
 set -Eeuo pipefail
 IFS=$'\n\t'
 
 MODE="check"
 REPORT=""
-ROOT=""
 
 usage() {
   cat <<'EOF'
-Uso: bash scripts/refactor_livro_archives.sh [opções]
+Uso: bash scripts/refactor_livro_archives.sh [--check] [--apply] [--report ARQUIVO]
 
-Opções:
-  --check              inventaria e gera relatório sem mover arquivos (padrão)
-  --apply              cria diretórios e move apenas arquivos históricos conhecidos
-  --report ARQUIVO     caminho do relatório Markdown gerado
-  -h, --help           mostra esta ajuda
-
-Exemplos:
-  bash scripts/refactor_livro_archives.sh --check
-  bash scripts/refactor_livro_archives.sh --apply
-  bash scripts/refactor_livro_archives.sh --check --report Livro/_archives/reports/livro_refactor_report.md
+--check   gera relatório sem alterar arquivos
+--apply   cria diretórios e move apenas compactados conhecidos
+--report  define caminho do relatório
 EOF
 }
 
-die() {
-  printf '[livro-refactor:erro] %s\n' "$*" >&2
-  exit 1
-}
+while (($#)); do
+  case "$1" in
+    --check) MODE="check"; shift ;;
+    --apply) MODE="apply"; shift ;;
+    --report) REPORT="${2:?faltou caminho}"; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "opção desconhecida: $1" >&2; exit 2 ;;
+  esac
+done
 
-log() {
-  printf '[livro-refactor] %s\n' "$*" >&2
-}
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+LIVRO="$ROOT/Livro"
+[[ -d "$LIVRO" ]] || { echo "Livro não encontrado" >&2; exit 1; }
 
-parse_args() {
-  while (($#)); do
-    case "$1" in
-      --check) MODE="check"; shift ;;
-      --apply) MODE="apply"; shift ;;
-      --report)
-        [[ $# -ge 2 ]] || die "faltou valor para --report"
-        REPORT="$2"; shift 2 ;;
-      -h|--help) usage; exit 0 ;;
-      *) die "opção desconhecida: $1" ;;
-    esac
-  done
-}
-
-resolve_root() {
-  if git rev-parse --show-toplevel >/dev/null 2>&1; then
-    ROOT="$(git rev-parse --show-toplevel)"
-  else
-    ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-  fi
-  [[ -d "$ROOT/Livro" ]] || die "diretório Livro não encontrado em $ROOT"
-  if [[ -z "$REPORT" ]]; then
-    REPORT="$ROOT/Livro/_archives/reports/livro_refactor_report.md"
-  elif [[ "$REPORT" != /* ]]; then
-    REPORT="$ROOT/$REPORT"
-  fi
-}
+if [[ -z "$REPORT" ]]; then
+  REPORT="$LIVRO/_archives/reports/livro_refactor_report.md"
+elif [[ "$REPORT" != /* ]]; then
+  REPORT="$ROOT/$REPORT"
+fi
 
 category_for() {
-  local path="$1" base
-  base="$(basename "$path")"
-  case "$base" in
-    *.zip) printf 'archive_zip' ;;
-    *.tar.gz|*.tgz) printf 'archive_tarball' ;;
-    *.md|*.MD) printf 'document_markdown' ;;
-    *.txt|*.TXT) printf 'raw_text' ;;
-    *.sh) printf 'script_shell' ;;
-    *.py) printf 'prototype_python' ;;
-    *.c|*.h|*.S|*.asm|*.s) printf 'prototype_lowlevel' ;;
-    *.json|*.yml|*.yaml) printf 'metadata' ;;
-    *) printf 'other' ;;
+  case "$(basename "$1")" in
+    *.zip) echo archive_zip ;;
+    *.tar.gz|*.tgz) echo archive_tarball ;;
+    *.md|*.MD) echo document_markdown ;;
+    *.txt|*.TXT) echo raw_text ;;
+    *.sh) echo script_shell ;;
+    *.py) echo prototype_python ;;
+    *.c|*.h|*.S|*.asm|*.s) echo prototype_lowlevel ;;
+    *.json|*.yml|*.yaml) echo metadata ;;
+    *) echo other ;;
   esac
 }
 
 recommended_dest_for() {
-  local path="$1" category
-  category="$(category_for "$path")"
-  case "$category" in
+  local base cat
+  base="$(basename "$1")"
+  cat="$(category_for "$1")"
+  case "$cat" in
     archive_zip)
-      case "$(basename "$path")" in
-        *SESSION*|*session*) printf 'Livro/_archives/sessions/%s' "$(basename "$path")" ;;
-        *) printf 'Livro/_archives/bundles/%s' "$(basename "$path")" ;;
-      esac ;;
-    archive_tarball) printf 'Livro/_archives/bundles/%s' "$(basename "$path")" ;;
-    script_shell|prototype_python|prototype_lowlevel) printf 'Livro/03_compiladores/%s' "$(basename "$path")" ;;
-    document_markdown) printf 'Livro/02_pesquisa/%s' "$(basename "$path")" ;;
-    raw_text) printf 'Livro/04_raw/%s' "$(basename "$path")" ;;
-    metadata) printf 'Livro/_archives/reports/%s' "$(basename "$path")" ;;
-    *) printf 'Livro/04_raw/%s' "$(basename "$path")" ;;
+      case "$base" in *SESSION*|*session*) echo "Livro/_archives/sessions/$base" ;; *) echo "Livro/_archives/bundles/$base" ;; esac ;;
+    archive_tarball) echo "Livro/_archives/bundles/$base" ;;
+    script_shell|prototype_python|prototype_lowlevel) echo "Livro/03_compiladores/$base" ;;
+    document_markdown) echo "Livro/02_pesquisa/$base" ;;
+    raw_text) echo "Livro/04_raw/$base" ;;
+    metadata) echo "Livro/_archives/reports/$base" ;;
+    *) echo "Livro/04_raw/$base" ;;
   esac
 }
 
@@ -106,88 +74,42 @@ Livro/rafaelia_bundle_v6.tar.gz|Livro/_archives/bundles/rafaelia_bundle_v6.tar.g
 EOF
 }
 
-safe_move() {
-  local src_rel="$1" dst_rel="$2" src="$ROOT/$src_rel" dst="$ROOT/$dst_rel"
-  [[ -e "$src" ]] || { log "ignorado, não existe: $src_rel"; return 0; }
-  [[ ! -e "$dst" ]] || die "destino já existe: $dst_rel"
-  mkdir -p "$(dirname "$dst")"
-  if git -C "$ROOT" ls-files --error-unmatch "$src_rel" >/dev/null 2>&1; then
-    git -C "$ROOT" mv "$src_rel" "$dst_rel"
-  else
-    mv "$src" "$dst"
-  fi
-  log "movido: $src_rel -> $dst_rel"
-}
-
-write_report() {
-  local livro="$ROOT/Livro"
-  mkdir -p "$(dirname "$REPORT")"
-  {
-    printf '# Relatório de refatoração do Livro\n\n'
-    printf 'Modo: `%s`\n\n' "$MODE"
-    printf 'Raiz: `%s`\n\n' "$ROOT"
-    printf '## Plano de movimentos seguros\n\n'
-    printf '| Origem | Destino | Status |\n'
-    printf '| --- | --- | --- |\n'
-    while IFS='|' read -r src dst; do
-      [[ -n "$src" ]] || continue
-      if [[ -e "$ROOT/$src" ]]; then
-        printf '| `%s` | `%s` | pronto_para_mover |\n' "$src" "$dst"
-      elif [[ -e "$ROOT/$dst" ]]; then
-        printf '| `%s` | `%s` | já_movido |\n' "$src" "$dst"
-      else
-        printf '| `%s` | `%s` | ausente |\n' "$src" "$dst"
-      fi
-    done < <(known_moves)
-
-    printf '\n## Inventário até 2 níveis\n\n'
-    printf '| Arquivo | Classe | Destino recomendado |\n'
-    printf '| --- | --- | --- |\n'
-    while IFS= read -r file; do
-      rel="${file#$ROOT/}"
-      printf '| `%s` | `%s` | `%s` |\n' "$rel" "$(category_for "$file")" "$(recommended_dest_for "$file")"
-    done < <(find "$livro" -maxdepth 2 -type f | sort)
-
-    printf '\n## Regras aplicadas\n\n'
-    printf -- '- Pacotes compactados ficam como arquivo histórico.\n'
-    printf -- '- O script não extrai zip nem tarball.\n'
-    printf -- '- Arquivos ativos com referência conhecida não são movidos automaticamente.\n'
-    printf -- '- Qualquer promoção futura precisa de comando de validação e diff revisado.\n'
-  } > "$REPORT"
-  log "relatório: ${REPORT#$ROOT/}"
-}
-
-apply_moves() {
-  mkdir -p \
-    "$ROOT/Livro/_archives/sessions" \
-    "$ROOT/Livro/_archives/bundles" \
-    "$ROOT/Livro/_archives/reports" \
-    "$ROOT/Livro/01_capitulos" \
-    "$ROOT/Livro/02_pesquisa" \
-    "$ROOT/Livro/03_compiladores" \
-    "$ROOT/Livro/04_raw"
-
+mkdir -p "$(dirname "$REPORT")"
+{
+  echo '# Relatório de refatoração do Livro'
+  echo
+  echo "Modo: \`$MODE\`"
+  echo
+  echo '## Plano de compactados conhecidos'
+  echo
+  echo '| Origem | Destino | Status |'
+  echo '| --- | --- | --- |'
   while IFS='|' read -r src dst; do
     [[ -n "$src" ]] || continue
-    safe_move "$src" "$dst"
+    if [[ -e "$ROOT/$src" ]]; then status="pronto"; elif [[ -e "$ROOT/$dst" ]]; then status="ja_movido"; else status="ausente"; fi
+    echo "| \`$src\` | \`$dst\` | $status |"
   done < <(known_moves)
-}
+  echo
+  echo '## Inventário até 2 níveis'
+  echo
+  echo '| Arquivo | Classe | Destino recomendado |'
+  echo '| --- | --- | --- |'
+  while IFS= read -r file; do
+    rel="${file#$ROOT/}"
+    echo "| \`$rel\` | \`$(category_for "$file")\` | \`$(recommended_dest_for "$file")\` |"
+  done < <(find "$LIVRO" -maxdepth 2 -type f | sort)
+} > "$REPORT"
 
-main() {
-  parse_args "$@"
-  resolve_root
-  case "$MODE" in
-    check)
-      write_report
-      log "checagem concluída sem mover arquivos"
-      ;;
-    apply)
-      apply_moves
-      write_report
-      log "aplicação concluída; revise git status e git diff"
-      ;;
-    *) die "modo inválido: $MODE" ;;
-  esac
-}
+echo "relatório: ${REPORT#$ROOT/}"
 
-main "$@"
+if [[ "$MODE" == "apply" ]]; then
+  mkdir -p "$LIVRO/_archives/sessions" "$LIVRO/_archives/bundles" "$LIVRO/_archives/reports" "$LIVRO/01_capitulos" "$LIVRO/02_pesquisa" "$LIVRO/03_compiladores" "$LIVRO/04_raw"
+  while IFS='|' read -r src dst; do
+    [[ -n "$src" ]] || continue
+    [[ -e "$ROOT/$src" ]] || continue
+    [[ ! -e "$ROOT/$dst" ]] || { echo "destino já existe: $dst" >&2; exit 1; }
+    mkdir -p "$(dirname "$ROOT/$dst")"
+    git -C "$ROOT" mv "$src" "$dst"
+    echo "movido: $src -> $dst"
+  done < <(known_moves)
+fi
