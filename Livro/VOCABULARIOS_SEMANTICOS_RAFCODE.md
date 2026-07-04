@@ -1,49 +1,41 @@
 # Vocabulários Semânticos RAFCODE-Φ
 
-Este arquivo documenta a camada `semantic_vocab.py`, criada para ampliar o diretório `Livro` com vocabulários, clusters semânticos e seleção de métodos operacionais.
+Esta camada amplia o diretório `Livro` com vocabulário operacional, clusters semânticos, varredura de corpus local, seleção de métodos e scheduler de próxima ação.
 
-A ideia é simples e operacional: antes de compilar ou responder, o sistema identifica termos, scripts, domínio semântico, método provável e possíveis lacunas. Isso reduz preenchimento falso e melhora a passagem:
+Ela não substitui o `falas.sh`; ela fica acima dele como camada de decisão:
 
 ```text
 FALA → FONEMA → TOKEN → AST → BYTECODE → ASM → VM → OUTPUT
 ```
 
-## Arquivo principal
+## O que foi adicionado
 
-```text
-Livro/semantic_vocab.py
-```
-
-## Funções centrais
-
-| Função | Papel |
+| Arquivo | O que faz |
 | --- | --- |
-| `normalize(text)` | Normaliza Unicode em NFKC e reduz espaços. |
-| `detect_script(char)` | Detecta HE, AR, EL, CN, JP, RU, latin, numérico ou separador. |
-| `tokenize(text)` | Gera tokens com `raw`, `norm`, `script`, `cluster` e `phi`. |
-| `expand_semantics(tokens)` | Agrupa tokens em clusters e identifica lacunas. |
-| `choose_methods(text)` | Escolhe os três métodos mais coerentes para o estado atual. |
-| `rvm_hints(tokens)` | Emite uma sequência sugerida de opcodes RVM. |
-| `context_frame(text)` | Produz o quadro completo: tokens, semântica, métodos, gaps e próximo passo. |
-| `export_vocab()` | Exporta o vocabulário completo em JSON. |
+| `semantic_vocab.py` | Motor de vocabulário, cluster, score `phi`, scan do `Livro`, decisão de scheduler e hints RVM. |
+| `falas_vocab.sh` | Wrapper que roda tudo: gera monólito, manifesto, vocabulário, smoke-test, schedule e explicação dos métodos. |
+| `VOCABULARIOS_SEMANTICOS_RAFCODE.md` | Documentação do sistema semântico. |
 
-## Métodos disponíveis
+## O que o `semantic_vocab.py` faz
 
-| Método | Estágio | Uso |
-| --- | --- | --- |
-| `tokenize` | FALA→FONEMA→TOKEN | Separar, normalizar, detectar script e preparar lexemas. |
-| `parse_ast` | TOKEN→AST | Montar estrutura sintática mínima. |
-| `semantic_expand` | TOKEN→CLUSTER→CONTEXTO | Expandir sentido, aliases, glossas e clusters. |
-| `compile_rvm` | AST→BYTECODE→VM | Sugerir opcodes e ponte com runtime. |
-| `audit_phi` | OUTPUT→VERIFICAÇÃO | Medir coerência, cobertura e lacunas. |
-| `agent_loop` | PLAN→ACT→OBSERVE→VERIFY | Escolher próximo método por estado. |
+Ele recebe texto e transforma em um quadro operacional:
 
-## Clusters semânticos iniciais
+1. normaliza Unicode;
+2. tokeniza por script;
+3. identifica clusters semânticos;
+4. mede cobertura;
+5. calcula `phi`;
+6. lista gaps;
+7. escolhe métodos;
+8. gera bytecode/hints RVM;
+9. decide o próximo passo pelo scheduler.
 
-| Cluster | Domínio | Finalidade |
+## Clusters fixos
+
+| Cluster | Domínio | Uso |
 | --- | --- | --- |
 | `CRIAR` | ação | gerar, emitir, produzir, criar forma operacional. |
-| `FALA` | entrada | voz, áudio, fonema, utterance. |
+| `FALA` | entrada | voz, áudio, fonema, fala. |
 | `TOKEN` | representação | lexema, símbolo, chunk, unidade mínima. |
 | `AST` | estrutura | árvore, parse, sintaxe, dependência. |
 | `BYTECODE` | execução | opcode, VM, RVM, instrução. |
@@ -53,62 +45,99 @@ Livro/semantic_vocab.py
 | `SCHEDULER` | operação | cache, latência, reuse, thread, pipeline. |
 | `BIBLIA_CORPUS` | corpus | hebraico, grego, latim, logos, gênesis. |
 | `AGENTE` | controle | plano, ação, observação, feedback. |
+| `TERMUX_ANDROID` | operação | Termux, Android, AndroidX, Gradle, NDK/JNI, Vectras. |
+| `QEMU_TCG` | execução | QEMU, TCG, JIT, tradução guest→host. |
+| `MEMORIA_CACHE` | baixo_nível | memória, cache, L1/L2, prefetch, warm/cold/ghost state. |
 
-## Uso rápido
+## Métodos operacionais
 
-### Analisar uma frase
+| Método | Estágio | O que faz |
+| --- | --- | --- |
+| `tokenize` | FALA→FONEMA→TOKEN | Separa entrada em unidades rastreáveis. |
+| `parse_ast` | TOKEN→AST | Organiza tokens em forma estrutural. |
+| `semantic_expand` | TOKEN→CLUSTER→CONTEXTO | Amplia cobertura semântica sem inventar. |
+| `compile_rvm` | AST→BYTECODE→VM | Emite forma executável compacta. |
+| `audit_phi` | OUTPUT→VERIFICAÇÃO | Bloqueia saída fraca e expõe lacunas. |
+| `agent_loop` | PLAN→ACT→OBSERVE→VERIFY | Decide próximo método operacional. |
+| `scan_livro` | CORPUS→VOCAB→CLUSTER | Aprende termos em uso no próprio diretório `Livro`. |
+
+## Scheduler
+
+O scheduler retorna sempre um destes estados:
+
+| Estado | Significado |
+| --- | --- |
+| `F_DE_RESOLVIDO` | Cobertura e `phi` suficientes para seguir. |
+| `F_DE_GAP` | Há termos sem cluster; precisa expandir ou varrer corpus. |
+| `F_DE_NEXT` | Não há gap crítico, mas ainda existe próximo método necessário. |
+
+## Uso completo
+
+```bash
+cd Livro
+chmod +x falas.sh falas_vocab.sh
+./falas_vocab.sh
+```
+
+Isso gera:
+
+```text
+compiladorlowFala.txt
+compiladorlowFala.manifest.json
+semantic_vocab.export.json
+semantic_vocab.export.smoke.json
+semantic_vocab.export.schedule.json
+semantic_vocab.export.methods.json
+```
+
+## Uso direto do vocabulário
+
+### Analisar frase
 
 ```bash
 python3 Livro/semantic_vocab.py --pretty "compilar fala em bytecode com coerência phi"
 ```
 
-Saída esperada:
-
-```json
-{
-  "semantic": {
-    "dominant_domain": "execução",
-    "phi": 0.78
-  },
-  "methods": [
-    {
-      "method": "compile_rvm",
-      "stage": "AST→BYTECODE→VM"
-    }
-  ],
-  "next": "compile_rvm"
-}
-```
-
-### Exportar vocabulário completo
+### Varrer o diretório Livro e ampliar vocabulário
 
 ```bash
-python3 Livro/semantic_vocab.py --export-vocab --pretty > Livro/semantic_vocab.export.json
+python3 Livro/semantic_vocab.py --root Livro --scan-livro --pretty "QEMU TCG VM cache scheduler"
 ```
 
-## Integração recomendada com `falas.sh`
-
-Depois de gerar `compiladorlowFala.txt`, rode:
+### Ver só a decisão do scheduler
 
 ```bash
-python3 Livro/semantic_vocab.py --pretty "FALA TOKEN AST BYTECODE VM COERENCIA"
+python3 Livro/semantic_vocab.py --root Livro --scan-livro --schedule --pretty "Termux Android QEMU bytecode cache"
 ```
 
-Isso cria uma leitura rápida do estado semântico do pipeline e aponta o próximo método com base em domínio e cobertura.
+### Explicar métodos
 
-## Regras de coerência
+```bash
+python3 Livro/semantic_vocab.py --explain-methods --pretty
+```
 
-1. Se o termo entra em cluster conhecido, ele recebe maior `phi`.
-2. Se o termo não entra em cluster, ele aparece em `gap`.
-3. Se o domínio dominante for execução, os métodos `compile_rvm`, `audit_phi` e `agent_loop` ganham prioridade.
-4. Se o domínio dominante for diagnóstico, `audit_phi` vem antes de gerar mais código.
-5. Se o vocabulário não cobre o termo, o sistema não inventa: marca lacuna.
+### Exportar vocabulário com termos aprendidos do Livro
 
-## Próxima expansão natural
+```bash
+python3 Livro/semantic_vocab.py --root Livro --scan-livro --export-vocab --pretty > Livro/semantic_vocab.export.json
+```
 
-- Adicionar termos vindos de `bibliaCorpus.txt` como glossário multilíngue.
-- Conectar `vm_runtime.txt` para validar opcodes aceitos pelo runtime real.
-- Ligar `agent_loop.txt` ao campo `next`, transformando método sugerido em ação executável.
-- Acrescentar exportação automática ao `falas.sh`.
+## Regra de integridade
+
+- Termo conhecido entra em cluster.
+- Termo desconhecido vira `gap`.
+- Gap não é preenchido por invenção.
+- `scan_livro` só cria clusters derivados de termos realmente encontrados nos arquivos locais.
+- `compile_rvm` só deve vir depois de `phi` e cobertura mínimos.
+
+## Para que serve na prática
+
+Essa camada permite transformar o `Livro` em um sistema mais usável:
+
+- saber o que o texto está tentando fazer;
+- localizar vocabulário em uso no próprio repo;
+- decidir se deve tokenizar, expandir, compilar ou auditar;
+- produzir pistas de bytecode para a VM;
+- reduzir resposta ornamental e forçar rastreabilidade.
 
 SEAL: 0xFF · RAFCODE-Φ
