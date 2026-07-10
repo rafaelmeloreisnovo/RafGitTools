@@ -1,7 +1,12 @@
 package com.rafgittools.bridge;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.os.Build;
 import android.os.IBinder;
 
 import org.json.JSONObject;
@@ -33,6 +38,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class RafBridgeService extends Service {
     private static final int MAX_HEADER_BYTES = 16 * 1024;
     private static final int MAX_BODY_BYTES = 128 * 1024;
+    private static final String CHANNEL_ID = "raf_bridge_local";
+    private static final int NOTIFICATION_ID = 144;
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final ExecutorService clients = Executors.newFixedThreadPool(2);
@@ -45,6 +52,7 @@ public final class RafBridgeService extends Service {
     public void onCreate() {
         super.onCreate();
         if (RafBridgePrefs.isEnabled(this)) {
+            enterForeground();
             startServer();
         }
     }
@@ -55,6 +63,7 @@ public final class RafBridgeService extends Service {
             stopSelf();
             return START_NOT_STICKY;
         }
+        enterForeground();
         startServer();
         return START_STICKY;
     }
@@ -63,12 +72,47 @@ public final class RafBridgeService extends Service {
     public void onDestroy() {
         stopServer();
         clients.shutdownNow();
+        stopForeground(STOP_FOREGROUND_REMOVE);
         super.onDestroy();
     }
 
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    private void enterForeground() {
+        NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "Raf Bridge local",
+                    NotificationManager.IMPORTANCE_LOW
+            );
+            channel.setDescription("Mantém a ponte local Kiwi ↔ RafGitTools ativa");
+            manager.createNotificationChannel(channel);
+        }
+
+        Intent open = new Intent(this, RafBridgeActivity.class);
+        PendingIntent pending = PendingIntent.getActivity(
+                this,
+                0,
+                open,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                ? new Notification.Builder(this, CHANNEL_ID)
+                : new Notification.Builder(this);
+        Notification notification = builder
+                .setSmallIcon(android.R.drawable.stat_notify_sync)
+                .setContentTitle("Raf Bridge ativo")
+                .setContentText("Somente 127.0.0.1:" + RafBridgePrefs.BRIDGE_PORT)
+                .setContentIntent(pending)
+                .setOngoing(true)
+                .setCategory(Notification.CATEGORY_SERVICE)
+                .build();
+        startForeground(NOTIFICATION_ID, notification);
     }
 
     private synchronized void startServer() {
@@ -106,75 +150,82 @@ public final class RafBridgeService extends Service {
         try (Socket client = socket;
              BufferedInputStream input = new BufferedInputStream(client.getInputStream());
              BufferedOutputStream output = new BufferedOutputStream(client.getOutputStream())) {
-
-            HttpRequest request = HttpRequest.read(input);
-            if (request == null) {
-                writeJson(output, 400, error("invalid_request", "Requisição HTTP inválida"));
-                return;
-            }
-
-            if ("OPTIONS".equals(request.method)) {
-                writeEmpty(output, 204);
-                return;
-            }
-
-            if ("GET".equals(request.method) && "/health".equals(request.path)) {
-                JSONObject health = new JSONObject();
-                health.put("ok", true);
-                health.put("service", "raf-bridge");
-                health.put("port", RafBridgePrefs.BRIDGE_PORT);
-                health.put("model", RafBridgePrefs.getModelName(this));
-                writeJson(output, 200, health);
-                return;
-            }
-
-            if (!"POST".equals(request.method) || !"/v1/chat".equals(request.path)) {
-                writeJson(output, 404, error("not_found", "Rota inexistente"));
-                return;
-            }
-
-            String suppliedToken = request.headers.getOrDefault("x-raf-token", "");
-            if (!constantTimeEquals(suppliedToken, RafBridgePrefs.getToken(this))) {
-                writeJson(output, 401, error("unauthorized", "Token local inválido"));
-                return;
-            }
-
-            JSONObject json = new JSONObject(request.body);
-            RafBridgeContract.Result contract = RafBridgeContract.validate(
-                    json,
-                    RafBridgePrefs.allowSensitive(this)
-            );
-            if (!contract.allowed) {
-                writeJson(output, 422, error("contract_rejected", contract.error));
-                return;
-            }
-
-            String response = modelClient.chat(
-                    RafBridgePrefs.getModelEndpoint(this),
-                    RafBridgePrefs.getModelName(this),
-                    contract.intent,
-                    contract.dataClass,
-                    contract.message
-            );
-
-            JSONObject result = new JSONObject();
-            result.put("ok", true);
-            result.put("request_id", contract.requestId);
-            result.put("reply", response);
-            result.put("executed_external_action", false);
-            result.put("retained_message", false);
-            writeJson(output, 200, result);
-        } catch (Exception error) {
             try {
-                BufferedOutputStream output = new BufferedOutputStream(socket.getOutputStream());
+                processRequest(input, output);
+            } catch (Exception error) {
                 writeJson(output, 502, error(
                         "bridge_error",
-                        error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage()
+                        error.getMessage() == null
+                                ? error.getClass().getSimpleName()
+                                : error.getMessage()
                 ));
-            } catch (Exception ignored) {
-                // Connection already closed.
             }
+        } catch (Exception ignored) {
+            // The browser may close the connection before the response is written.
         }
+    }
+
+    private void processRequest(
+            BufferedInputStream input,
+            BufferedOutputStream output
+    ) throws Exception {
+        HttpRequest request = HttpRequest.read(input);
+        if (request == null) {
+            writeJson(output, 400, error("invalid_request", "Requisição HTTP inválida"));
+            return;
+        }
+
+        if ("OPTIONS".equals(request.method)) {
+            writeEmpty(output, 204);
+            return;
+        }
+
+        if ("GET".equals(request.method) && "/health".equals(request.path)) {
+            JSONObject health = new JSONObject();
+            health.put("ok", true);
+            health.put("service", "raf-bridge");
+            health.put("port", RafBridgePrefs.BRIDGE_PORT);
+            health.put("model", RafBridgePrefs.getModelName(this));
+            writeJson(output, 200, health);
+            return;
+        }
+
+        if (!"POST".equals(request.method) || !"/v1/chat".equals(request.path)) {
+            writeJson(output, 404, error("not_found", "Rota inexistente"));
+            return;
+        }
+
+        String suppliedToken = request.headers.getOrDefault("x-raf-token", "");
+        if (!constantTimeEquals(suppliedToken, RafBridgePrefs.getToken(this))) {
+            writeJson(output, 401, error("unauthorized", "Token local inválido"));
+            return;
+        }
+
+        JSONObject json = new JSONObject(request.body);
+        RafBridgeContract.Result contract = RafBridgeContract.validate(
+                json,
+                RafBridgePrefs.allowSensitive(this)
+        );
+        if (!contract.allowed) {
+            writeJson(output, 422, error("contract_rejected", contract.error));
+            return;
+        }
+
+        String response = modelClient.chat(
+                RafBridgePrefs.getModelEndpoint(this),
+                RafBridgePrefs.getModelName(this),
+                contract.intent,
+                contract.dataClass,
+                contract.message
+        );
+
+        JSONObject result = new JSONObject();
+        result.put("ok", true);
+        result.put("request_id", contract.requestId);
+        result.put("reply", response);
+        result.put("executed_external_action", false);
+        result.put("retained_message", false);
+        writeJson(output, 200, result);
     }
 
     private synchronized void stopServer() {
