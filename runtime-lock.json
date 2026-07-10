@@ -3,12 +3,12 @@
   "components": {
     "llama_rafaelia": {
       "repository": "rafaelmeloreisnovo/llamaRafaelia",
-      "commit": "8a041fe5641642a2574697f465de0ee5e54bff2f",
-      "ref": "claude/rafgittools-kernel-architecture-1dghar"
+      "commit": "6f2963adee0a34ea472a22f5aa30fecd64323a23",
+      "ref": "master"
     },
     "rafpolimata": {
       "repository": "rafaelmeloreisnovo/RafPolimata",
-      "commit": "ead8a18c830c248f07f50decb7152098d18f3e97",
+      "commit": "b5552195242f4b3cbe949509f45d86177e647e8b",
       "ref": "main"
     }
   }
