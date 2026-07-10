@@ -1,6 +1,5 @@
 package com.rafgittools.ui.screens.auth
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,7 +40,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,35 +54,59 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rafgittools.data.auth.AuthMethod
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AuthScreen(viewModel: AuthViewModel = hiltViewModel(), onAuthSuccess: () -> Unit = {}) {
+fun AuthScreen(
+    viewModel: AuthViewModel = hiltViewModel(),
+    onAuthSuccess: () -> Unit = {}
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
     val username by viewModel.username.collectAsStateWithLifecycle()
     val selectedMethod by viewModel.selectedMethod.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState) {
-        if (uiState is AuthUiState.Success || uiState is AuthUiState.Offline) onAuthSuccess()
+        if (uiState is AuthUiState.Success || uiState is AuthUiState.Offline) {
+            onAuthSuccess()
+        }
     }
 
-    Scaffold(topBar = {
-        CenterAlignedTopAppBar(
-            title = { Text("GitHub Authentication") },
-            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Conectar ao GitHub") },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             )
-        )
-    }) { padding ->
+        }
+    ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when {
-                isAuthenticated && username != null -> AuthenticatedContent(username!!, onLogout = viewModel::logout)
-                selectedMethod == null -> AuthMethodSelection(onSelect = viewModel::selectMethod, onStartDeviceCode = viewModel::startDeviceCodeLogin, onStartOauthWeb = viewModel::startOAuthWebLogin, onImportGh = viewModel::importGhCliToken, onSsh = viewModel::authenticateWithSshKey, onOffline = viewModel::continueOffline)
+                isAuthenticated && username != null -> AuthenticatedContent(
+                    username = username!!,
+                    onLogout = viewModel::logout
+                )
+
+                selectedMethod == null -> AuthMethodSelection(
+                    onStartOauthWeb = viewModel::startOAuthWebLogin,
+                    onStartDeviceCode = viewModel::startDeviceCodeLogin,
+                    onSelectPat = { viewModel.selectMethod(AuthMethod.PAT) },
+                    onImportGh = viewModel::importGhCliToken,
+                    onSsh = viewModel::authenticateWithSshKey,
+                    onOffline = viewModel::continueOffline
+                )
+
                 selectedMethod == AuthMethod.PAT -> PatLoginForm(viewModel, uiState)
-                else -> MethodPlaceholder(selectedMethod = selectedMethod, uiState = uiState, onBack = viewModel::clearSelectedMethod)
+                else -> MethodStatus(
+                    selectedMethod = selectedMethod,
+                    uiState = uiState,
+                    onBack = viewModel::clearSelectedMethod
+                )
             }
         }
     }
@@ -92,90 +114,311 @@ fun AuthScreen(viewModel: AuthViewModel = hiltViewModel(), onAuthSuccess: () -> 
 
 @Composable
 private fun AuthMethodSelection(
-    onSelect: (AuthMethod) -> Unit,
-    onStartDeviceCode: () -> Unit,
     onStartOauthWeb: () -> Unit,
+    onStartDeviceCode: () -> Unit,
+    onSelectPat: () -> Unit,
     onImportGh: () -> Unit,
     onSsh: () -> Unit,
     onOffline: () -> Unit
 ) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Text("Escolha o método de login", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Code,
+            contentDescription = null,
+            modifier = Modifier.size(72.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(Modifier.height(20.dp))
+        Text(
+            "Escolha como conectar sua conta",
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "O RafGitTools nunca pede nem armazena sua senha do GitHub.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onStartDeviceCode, modifier = Modifier.fillMaxWidth()) { Text("Login com GitHub pelo navegador / código") }
+
+        Button(onClick = onStartOauthWeb, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Default.OpenInNew, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Entrar pelo navegador")
+        }
         Spacer(Modifier.height(12.dp))
-        Button(onClick = onStartOauthWeb, modifier = Modifier.fillMaxWidth()) { Text("OAuth Web (browser)") }
+
+        OutlinedButton(onClick = onStartDeviceCode, modifier = Modifier.fillMaxWidth()) {
+            Text("Entrar com código do dispositivo")
+        }
         Spacer(Modifier.height(12.dp))
-        Button(onClick = { onSelect(AuthMethod.PAT) }, modifier = Modifier.fillMaxWidth()) { Text("Usar Personal Access Token") }
+
+        OutlinedButton(onClick = onSelectPat, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Default.Key, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Usar token de acesso — não é senha")
+        }
         Spacer(Modifier.height(12.dp))
-        Button(onClick = onImportGh, modifier = Modifier.fillMaxWidth()) { Text("Importar sessão do gh CLI / Termux") }
+
+        OutlinedButton(onClick = onImportGh, modifier = Modifier.fillMaxWidth()) {
+            Text("Importar sessão do gh CLI / Termux")
+        }
         Spacer(Modifier.height(12.dp))
-        OutlinedButton(onClick = onSsh, modifier = Modifier.fillMaxWidth()) { Text("Usar chave SSH") }
+
+        OutlinedButton(onClick = onSsh, modifier = Modifier.fillMaxWidth()) {
+            Text("Usar chave SSH para Git local/remoto")
+        }
         Spacer(Modifier.height(12.dp))
-        OutlinedButton(onClick = onOffline, modifier = Modifier.fillMaxWidth()) { Text("Continuar offline/local") }
+
+        TextButton(onClick = onOffline, modifier = Modifier.fillMaxWidth()) {
+            Text("Continuar somente com repositórios locais")
+        }
     }
 }
 
 @Composable
-private fun MethodPlaceholder(selectedMethod: AuthMethod?, uiState: AuthUiState, onBack: () -> Unit) {
+private fun MethodStatus(
+    selectedMethod: AuthMethod?,
+    uiState: AuthUiState,
+    onBack: () -> Unit
+) {
     val uriHandler = LocalUriHandler.current
 
-    Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Text("Método: ${selectedMethod?.name}")
-        if (uiState is AuthUiState.Loading) CircularProgressIndicator()
-        if (uiState is AuthUiState.DeviceCodePending) {
-            Text("Abra o navegador e confirme o login:", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
-            OutlinedCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) {
-                    Text("User code", style = MaterialTheme.typography.labelMedium)
-                    Text(uiState.userCode, style = MaterialTheme.typography.headlineSmall)
-                    Spacer(Modifier.height(12.dp))
-                    Text("Verification URL", style = MaterialTheme.typography.labelMedium)
-                    Text(uiState.verificationUri, style = MaterialTheme.typography.bodyMedium)
-                    if (selectedMethod == AuthMethod.OAUTH_WEB) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        when (uiState) {
+            AuthUiState.Loading -> {
+                CircularProgressIndicator()
+                Spacer(Modifier.height(16.dp))
+                Text("Preparando conexão segura com o GitHub…")
+            }
+
+            is AuthUiState.DeviceCodePending -> {
+                Text(
+                    "Autorize o RafGitTools no GitHub",
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(16.dp))
+                OutlinedCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("Código", style = MaterialTheme.typography.labelMedium)
+                        Text(uiState.userCode, style = MaterialTheme.typography.headlineSmall)
                         Spacer(Modifier.height(12.dp))
-                        TextButton(onClick = { uriHandler.openUri(uiState.verificationUri) }) {
+                        Text("Endereço oficial", style = MaterialTheme.typography.labelMedium)
+                        Text(uiState.verificationUri, style = MaterialTheme.typography.bodyMedium)
+                        Spacer(Modifier.height(16.dp))
+                        Button(
+                            onClick = { uriHandler.openUri(uiState.verificationUri) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Icon(Icons.Default.OpenInNew, contentDescription = null)
-                            Spacer(Modifier.width(4.dp))
-                            Text("Abrir navegador")
+                            Spacer(Modifier.width(8.dp))
+                            Text("Abrir GitHub no navegador")
                         }
                     }
                 }
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    "Digite o código no site do GitHub. A senha permanece apenas no GitHub.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
             }
+
+            is AuthUiState.DeviceCodePolling -> {
+                CircularProgressIndicator()
+                Spacer(Modifier.height(16.dp))
+                Text("Aguardando autorização no GitHub…")
+                Text(
+                    "Verificação ${uiState.attempt} de ${uiState.max}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            is AuthUiState.Error -> {
+                Text(
+                    uiState.message,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            is AuthUiState.Offline -> Text("Modo local ativado.")
+            else -> Text("Método selecionado: ${selectedMethod?.name.orEmpty()}")
         }
-        if (uiState is AuthUiState.DeviceCodePolling) {
-            Text("Aguardando autorização no GitHub (${uiState.attempt}/${uiState.max})")
-        }
-        if (uiState is AuthUiState.Error) Text(uiState.message, color = MaterialTheme.colorScheme.error)
-        if (uiState is AuthUiState.Offline) Text("Modo offline ativo. Recursos locais liberados.")
-        Spacer(Modifier.height(16.dp))
+
+        Spacer(Modifier.height(20.dp))
         OutlinedButton(onClick = onBack) { Text("Voltar") }
     }
 }
 
 @Composable
-private fun PatLoginForm(viewModel: AuthViewModel, uiState: AuthUiState) { /* keep old form */
+private fun PatLoginForm(viewModel: AuthViewModel, uiState: AuthUiState) {
     var token by remember { mutableStateOf("") }
     var showToken by remember { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Icon(Icons.Default.Code, null, Modifier.size(80.dp), tint = MaterialTheme.colorScheme.primary)
-        Spacer(Modifier.height(24.dp))
-        Text("Sign in with GitHub", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            Icons.Default.Key,
+            contentDescription = null,
+            modifier = Modifier.size(72.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(Modifier.height(20.dp))
+        Text(
+            "Token de acesso do GitHub",
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center
+        )
         Spacer(Modifier.height(8.dp))
-        Text("Enter your Personal Access Token (PAT) to authenticate", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(32.dp))
-        OutlinedTextField(value = token, onValueChange = { token = it }, label = { Text("Personal Access Token") }, placeholder = { Text("ghp_xxxxxxxxxxxx") }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = if (showToken) VisualTransformation.None else PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { if (token.isNotBlank()) viewModel.authenticateWithPat(token) }), trailingIcon = { IconButton(onClick = { showToken = !showToken }) { Icon(if (showToken) Icons.Default.VisibilityOff else Icons.Default.Visibility, null) } }, leadingIcon = { Icon(Icons.Default.Key, null) }, isError = uiState is AuthUiState.Error)
-        if (uiState is AuthUiState.Error) { Spacer(Modifier.height(8.dp)); Text(uiState.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+        Text(
+            "Cole um Personal Access Token. Não informe sua senha.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
         Spacer(Modifier.height(24.dp))
-        Button(onClick = { viewModel.authenticateWithPat(token) }, modifier = Modifier.fillMaxWidth().height(50.dp), enabled = token.isNotBlank() && uiState !is AuthUiState.Loading) {
-            if (uiState is AuthUiState.Loading) CircularProgressIndicator(Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary) else { Icon(Icons.Default.Login, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text("Sign In") }
+
+        OutlinedTextField(
+            value = token,
+            onValueChange = { token = it },
+            label = { Text("Personal Access Token") },
+            placeholder = { Text("github_pat_… ou ghp_…") },
+            supportingText = { Text("A credencial será validada em api.github.com/user e cifrada no Android Keystore.") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            visualTransformation = if (showToken) VisualTransformation.None else PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    if (token.isNotBlank()) viewModel.authenticateWithPat(token.trim())
+                }
+            ),
+            trailingIcon = {
+                IconButton(onClick = { showToken = !showToken }) {
+                    Icon(
+                        if (showToken) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        contentDescription = if (showToken) "Ocultar token" else "Mostrar token"
+                    )
+                }
+            },
+            leadingIcon = { Icon(Icons.Default.Key, contentDescription = null) },
+            isError = uiState is AuthUiState.Error
+        )
+
+        if (uiState is AuthUiState.Error) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                uiState.message,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
+
+        Spacer(Modifier.height(20.dp))
+        Button(
+            onClick = { viewModel.authenticateWithPat(token.trim()) },
+            modifier = Modifier.fillMaxWidth().height(50.dp),
+            enabled = token.isNotBlank() && uiState !is AuthUiState.Loading
+        ) {
+            if (uiState is AuthUiState.Loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            } else {
+                Icon(Icons.Default.Login, contentDescription = null, Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Validar e conectar")
+            }
+        }
+
         Spacer(Modifier.height(16.dp))
-        OutlinedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) { Text("How to create a PAT:"); Spacer(Modifier.height(8.dp)); Text("1. Go to GitHub Settings → Developer settings → Personal access tokens\n2. Click 'Generate new token (classic)' or 'Fine-grained tokens'\n3. Select scopes: repo, read:user, read:org\n4. Copy the generated token", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant); Spacer(Modifier.height(12.dp)); TextButton(onClick = { uriHandler.openUri("https://github.com/settings/tokens") }, modifier = Modifier.align(Alignment.End)) { Icon(Icons.Default.OpenInNew, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Create Token") } } }
+        OutlinedCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Permissões recomendadas", style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Para cliente completo: acesso aos repositórios escolhidos, leitura do perfil, issues, pull requests e notificações. Prefira token fine-grained e conceda apenas os repositórios necessários.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(12.dp))
+                TextButton(
+                    onClick = { uriHandler.openUri("https://github.com/settings/personal-access-tokens") },
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Icon(Icons.Default.OpenInNew, contentDescription = null, Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Criar token no GitHub")
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        TextButton(onClick = viewModel::clearSelectedMethod) { Text("Voltar") }
     }
 }
 
 @Composable
-private fun AuthenticatedContent(username: String, onLogout: () -> Unit) { Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) { Icon(Icons.Default.CheckCircle, null, Modifier.size(80.dp), tint = MaterialTheme.colorScheme.primary); Spacer(Modifier.height(24.dp)); Text("Authenticated", style = MaterialTheme.typography.headlineMedium); Spacer(Modifier.height(8.dp)); Text("Signed in as @$username", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant); Spacer(Modifier.height(32.dp)); OutlinedButton(onClick = onLogout, colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Icon(Icons.Default.Logout, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text("Sign Out") } } }
+private fun AuthenticatedContent(username: String, onLogout: () -> Unit) {
+    Column(
+        Modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            Icons.Default.CheckCircle,
+            contentDescription = null,
+            modifier = Modifier.size(80.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(Modifier.height(24.dp))
+        Text("GitHub conectado", style = MaterialTheme.typography.headlineMedium)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Sessão ativa como @$username",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(32.dp))
+        OutlinedButton(
+            onClick = onLogout,
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.error
+            )
+        ) {
+            Icon(Icons.Default.Logout, contentDescription = null, Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Encerrar sessão")
+        }
+    }
+}
