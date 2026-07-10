@@ -1,15 +1,75 @@
 {
   "schema": "rafaelia.runtime-lock.v1",
-  "components": {
-    "llama_rafaelia": {
-      "repository": "rafaelmeloreisnovo/llamaRafaelia",
-      "commit": "6f2963adee0a34ea472a22f5aa30fecd64323a23",
-      "ref": "master"
+  "generated_at": "TOKEN_VAZIO",
+  "integration_repository": {
+    "name": "rafaelmeloreisnovo/RafGitTools",
+    "url": "https://github.com/rafaelmeloreisnovo/RafGitTools.git",
+    "branch": "main",
+    "commit": "TOKEN_VAZIO"
+  },
+  "repositories": [
+    {
+      "name": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "url": "https://github.com/rafaelmeloreisnovo/termux-app-rafacodephi.git",
+      "branch": "main",
+      "commit": "TOKEN_VAZIO",
+      "expected_hashes": {
+        "manifest_sha256": "TOKEN_VAZIO",
+        "bundle_sha256": "TOKEN_VAZIO"
+      }
     },
-    "rafpolimata": {
-      "repository": "rafaelmeloreisnovo/RafPolimata",
+    {
+      "name": "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE",
+      "url": "https://github.com/rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE.git",
+      "branch": "main",
+      "commit": "TOKEN_VAZIO",
+      "expected_hashes": {
+        "manifest_sha256": "TOKEN_VAZIO",
+        "bundle_sha256": "TOKEN_VAZIO"
+      }
+    },
+    {
+      "name": "rafaelmeloreisnovo/RafGitTools",
+      "url": "https://github.com/rafaelmeloreisnovo/RafGitTools.git",
+      "branch": "main",
+      "commit": "TOKEN_VAZIO",
+      "expected_hashes": {
+        "manifest_sha256": "TOKEN_VAZIO",
+        "bundle_sha256": "TOKEN_VAZIO"
+      }
+    },
+    {
+      "name": "rafaelmeloreisnovo/llamaRafaelia",
+      "url": "https://github.com/rafaelmeloreisnovo/llamaRafaelia.git",
+      "branch": "master",
+      "commit": "6f2963adee0a34ea472a22f5aa30fecd64323a23",
+      "expected_hashes": {
+        "manifest_sha256": "TOKEN_VAZIO",
+        "bundle_sha256": "TOKEN_VAZIO"
+      }
+    },
+    {
+      "name": "rafaelmeloreisnovo/RafPolimata",
+      "url": "https://github.com/rafaelmeloreisnovo/RafPolimata.git",
+      "branch": "main",
       "commit": "b5552195242f4b3cbe949509f45d86177e647e8b",
-      "ref": "main"
+      "expected_hashes": {
+        "manifest_sha256": "TOKEN_VAZIO",
+        "bundle_sha256": "TOKEN_VAZIO"
+      }
+    }
+  ],
+  "platform": {
+    "abis": [
+      "arm64-v8a",
+      "armeabi-v7a"
+    ],
+    "toolchain": {
+      "jdk": "17",
+      "gradle": "8.4",
+      "agp": "8.3.0",
+      "kotlin": "TOKEN_VAZIO",
+      "ksp": "TOKEN_VAZIO"
     }
   }
 }

@@ -1,0 +1,14 @@
+{
+  "schema": "rafaelia.governance.policy.v1",
+  "default_decision": "blocked",
+  "require_compiled_plan": true,
+  "forbid_free_text_shell": true,
+  "allowlisted_commands": [
+    "git status",
+    "git diff --stat"
+  ],
+  "required_capabilities": [
+    "git.read",
+    "git.diff"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rafaelia.conversation_chunk.v1",
+  "title": "ConversationChunk",
+  "type": "object",
+  "required": ["schema", "chunk_id", "source", "content"],
+  "properties": {
+    "schema": {"const": "rafaelia.conversation_chunk.v1"},
+    "chunk_id": {"type": "string", "minLength": 1},
+    "source": {"type": "string", "minLength": 1},
+    "content": {"type": "string"},
+    "metadata": {"type": "object", "additionalProperties": true}
+  },
+  "additionalProperties": false
+}
