@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Raf Bridge",
+  "version": "0.1.0",
+  "description": "Conversa local entre Kiwi Browser, RafGitTools e llamaRafaelia com consentimento explícito.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8765/*"
+  ],
+  "action": {
+    "default_title": "Raf Bridge",
+    "default_popup": "popup.html"
+  }
+}
