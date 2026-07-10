@@ -1,44 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Network Security Configuration
-    
-    Enforces secure network communication practices:
-    - HTTPS/TLS enforcement
-    - Certificate pinning for critical services
-    - No cleartext traffic allowed
-    
-    Standards Compliance:
-    - OWASP Mobile Top 10 (M3: Insecure Communication)
-    - NIST SP 800-52 (TLS Configuration)
-    - ISO/IEC 27001 (A.13: Communications Security)
+
+    Remote traffic remains HTTPS-only. Cleartext is permitted exclusively for
+    the device loopback used by the local Kiwi/APK/model bridge.
 -->
 <network-security-config>
-    <!-- Base configuration for all connections -->
+    <!-- Base configuration for all remote connections -->
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
-            <!-- Trust system certificate authorities -->
             <certificates src="system" />
         </trust-anchors>
     </base-config>
-    
+
+    <!-- Local llamaRafaelia/llama.cpp runtime. Never broaden this to LAN hosts. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+
     <!-- GitHub API Configuration -->
-    <!-- Note: Certificate pinning is disabled for flexibility. -->
     <domain-config>
         <domain includeSubdomains="true">github.com</domain>
         <domain includeSubdomains="true">api.github.com</domain>
     </domain-config>
-    
+
     <!-- GitLab Configuration -->
-    <!-- Note: Certificate pinning is disabled for flexibility. -->
     <domain-config>
         <domain includeSubdomains="true">gitlab.com</domain>
     </domain-config>
-    
+
     <!-- Development Configuration (Debug builds only) -->
-    <!-- This configuration is overridden in debug builds to allow local testing -->
     <debug-overrides>
         <trust-anchors>
-            <!-- Trust user-added certificates for debugging -->
             <certificates src="user" />
             <certificates src="system" />
         </trust-anchors>
