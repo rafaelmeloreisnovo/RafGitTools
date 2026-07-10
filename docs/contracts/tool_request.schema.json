@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rafaelia.tool_request.v1",
+  "title": "ToolRequest",
+  "type": "object",
+  "required": ["schema", "request_id", "intent_id", "capability", "payload"],
+  "properties": {
+    "schema": {"const": "rafaelia.tool_request.v1"},
+    "request_id": {"type": "string", "minLength": 1},
+    "intent_id": {"type": "string", "minLength": 1},
+    "capability": {"type": "string", "minLength": 1},
+    "payload": {"type": "object"}
+  },
+  "additionalProperties": false
+}
