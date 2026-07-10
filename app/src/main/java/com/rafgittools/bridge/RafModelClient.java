@@ -30,25 +30,8 @@ public final class RafModelClient {
             throw new IOException("Endpoint externo recusado; use apenas localhost/127.0.0.1");
         }
 
-        JSONObject body = new JSONObject();
-        body.put("model", model);
-        body.put("stream", false);
-        body.put("temperature", 0.7);
-
-        JSONArray messages = new JSONArray();
-        messages.put(new JSONObject()
-                .put("role", "system")
-                .put("content", MORAL_SYSTEM_PROMPT));
-        messages.put(new JSONObject()
-                .put("role", "system")
-                .put("content", "Intenção declarada: " + intent
-                        + ". Classe de dados: " + dataClass + "."));
-        messages.put(new JSONObject()
-                .put("role", "user")
-                .put("content", message));
-        body.put("messages", messages);
-
-        byte[] payload = body.toString().getBytes(StandardCharsets.UTF_8);
+        byte[] payload = buildPayload(model, intent, dataClass, message)
+                .getBytes(StandardCharsets.UTF_8);
         HttpURLConnection connection = (HttpURLConnection) new URL(endpoint).openConnection();
         connection.setRequestMethod("POST");
         connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
@@ -72,19 +55,60 @@ public final class RafModelClient {
         if (status < 200 || status >= 300) {
             throw new IOException("Modelo local respondeu HTTP " + status + ": " + response);
         }
+        return extractContent(response);
+    }
 
-        JSONObject parsed = new JSONObject(response);
-        JSONArray choices = parsed.optJSONArray("choices");
-        if (choices == null || choices.length() == 0) {
-            throw new IOException("Resposta do modelo sem choices");
+    private static String buildPayload(
+            String model,
+            String intent,
+            String dataClass,
+            String message
+    ) throws IOException {
+        try {
+            JSONObject body = new JSONObject();
+            body.put("model", model);
+            body.put("stream", false);
+            body.put("temperature", 0.7);
+
+            JSONArray messages = new JSONArray();
+            messages.put(new JSONObject()
+                    .put("role", "system")
+                    .put("content", MORAL_SYSTEM_PROMPT));
+            messages.put(new JSONObject()
+                    .put("role", "system")
+                    .put("content", "Intenção declarada: " + intent
+                            + ". Classe de dados: " + dataClass + "."));
+            messages.put(new JSONObject()
+                    .put("role", "user")
+                    .put("content", message));
+            body.put("messages", messages);
+            return body.toString();
+        } catch (Exception error) {
+            throw new IOException("Falha ao montar requisição do modelo", error);
         }
-        JSONObject choice = choices.optJSONObject(0);
-        JSONObject responseMessage = choice == null ? null : choice.optJSONObject("message");
-        String content = responseMessage == null ? "" : responseMessage.optString("content", "").trim();
-        if (content.isEmpty()) {
-            throw new IOException("Resposta do modelo sem conteúdo");
+    }
+
+    private static String extractContent(String response) throws IOException {
+        try {
+            JSONObject parsed = new JSONObject(response);
+            JSONArray choices = parsed.optJSONArray("choices");
+            if (choices == null || choices.length() == 0) {
+                throw new IOException("Resposta do modelo sem choices");
+            }
+            JSONObject choice = choices.optJSONObject(0);
+            JSONObject responseMessage = choice == null ? null : choice.optJSONObject("message");
+            String content = responseMessage == null
+                    ? ""
+                    : responseMessage.optString("content", "").trim();
+            if (content.isEmpty()) {
+                throw new IOException("Resposta do modelo sem conteúdo");
+            }
+            return content;
+        } catch (IOException error) {
+            throw error;
+        } catch (Exception error) {
+            throw new IOException("Resposta JSON inválida do modelo local", error);
         }
-        return content;
     }
 
     private static String readAll(InputStream stream) throws IOException {
