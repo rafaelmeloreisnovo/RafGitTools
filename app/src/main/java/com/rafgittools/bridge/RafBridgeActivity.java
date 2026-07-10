@@ -6,6 +6,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.ViewGroup;
@@ -120,7 +121,12 @@ public final class RafBridgeActivity extends Activity {
             RafBridgePrefs.setModelName(this, model);
             RafBridgePrefs.setAllowSensitive(this, sensitiveCheck.isChecked());
             RafBridgePrefs.setEnabled(this, true);
-            startService(new Intent(this, RafBridgeService.class));
+            Intent service = new Intent(this, RafBridgeService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(service);
+            } else {
+                startService(service);
+            }
             refreshState();
             toast("Ponte local iniciada");
         } catch (IllegalArgumentException error) {
