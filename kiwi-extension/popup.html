@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Raf Bridge</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Raf Bridge</h1>
+      <p>Kiwi ↔ APK ↔ llamaRafaelia</p>
+    </header>
+
+    <section class="card">
+      <label for="token">Token local do APK</label>
+      <input id="token" type="password" autocomplete="off" spellcheck="false">
+      <div class="row">
+        <button id="saveToken" type="button">Salvar token</button>
+        <button id="health" type="button" class="secondary">Testar ponte</button>
+      </div>
+      <a id="openApp" href="rafgittools://bridge">Abrir configurações no RafGitTools</a>
+      <p id="healthStatus" class="status"></p>
+    </section>
+
+    <section class="card">
+      <label for="intent">Intenção</label>
+      <input id="intent" value="conversa natural" maxlength="160">
+
+      <label for="dataClass">Classe dos dados</label>
+      <select id="dataClass">
+        <option value="public">Público</option>
+        <option value="private" selected>Privado/local</option>
+        <option value="sensitive">Sensível — exige liberação no APK</option>
+      </select>
+
+      <label for="message">Mensagem</label>
+      <textarea id="message" rows="8" maxlength="32768"
+        placeholder="Fale normalmente. A ponte não executa ações externas."></textarea>
+
+      <div class="row">
+        <button id="selection" type="button" class="secondary">Usar seleção da página</button>
+        <button id="clear" type="button" class="secondary">Limpar</button>
+      </div>
+
+      <label class="consent">
+        <input id="consent" type="checkbox">
+        Autorizo este envio local e entendo que nenhuma ação externa será executada.
+      </label>
+
+      <button id="send" type="button" class="primary">Conversar</button>
+      <p id="sendStatus" class="status"></p>
+    </section>
+
+    <section class="card response-card">
+      <h2>Resposta</h2>
+      <pre id="response">Aguardando conversa.</pre>
+    </section>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>
