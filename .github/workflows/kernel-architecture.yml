@@ -1,0 +1,114 @@
+name: Kernel Architecture Build
+
+on:
+  push:
+    branches: ['claude/rafgittools-kernel-architecture-1dghar']
+    paths:
+      - 'runtime-lock.json'
+      - 'kernel/**'
+      - 'app/src/main/cpp/**'
+      - 'app/src/main/kotlin/com/rafgittools/kernel/**'
+      - 'app/src/main/assets/kernel/**'
+      - '.github/workflows/kernel-architecture.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: kernel-arch-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  assemble-kernel:
+    name: Assemble RAF Kernel APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout RafGitTools
+        uses: actions/checkout@v4
+
+      - name: Parse runtime-lock.json
+        id: lock
+        run: |
+          LLAMA_COMMIT=$(python3 -c "
+import json
+d = json.load(open('runtime-lock.json'))
+print(d['components']['llama_rafaelia']['commit'])
+")
+          RAF_COMMIT=$(python3 -c "
+import json
+d = json.load(open('runtime-lock.json'))
+print(d['components']['rafpolimata']['commit'])
+")
+          echo "llama_commit=${LLAMA_COMMIT}" >> "$GITHUB_OUTPUT"
+          echo "raf_commit=${RAF_COMMIT}"     >> "$GITHUB_OUTPUT"
+          echo "Locked llamaRafaelia @ ${LLAMA_COMMIT}"
+          echo "Locked RafPolimata  @ ${RAF_COMMIT}"
+
+      - name: Checkout llamaRafaelia @ locked commit
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/llamaRafaelia
+          ref: ${{ steps.lock.outputs.llama_commit }}
+          path: runtime-src/llama-rafaelia
+          token: ${{ secrets.RAF_CROSS_REPO_TOKEN }}
+
+      - name: Checkout RafPolimata @ locked commit
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/RafPolimata
+          ref: ${{ steps.lock.outputs.raf_commit }}
+          path: runtime-src/rafpolimata
+          token: ${{ secrets.RAF_CROSS_REPO_TOKEN }}
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK + NDK
+        uses: android-actions/setup-android@v3
+
+      - name: Apply formula_ci.zip overlay
+        run: bash scripts/apply_formula_ci_zip.sh formula_ci.zip
+
+      - name: Prepare local.properties
+        run: bash scripts/prepare_local_properties.sh
+
+      - name: Assemble devDebug APK (with kernel)
+        run: bash scripts/gradlew_with_java17.sh assembleDevDebug
+
+      - name: Generate RUNTIME_MANIFEST.json
+        if: always()
+        run: |
+          bash scripts/generate_runtime_manifest.sh \
+            runtime-lock.json \
+            app/.cxx \
+            RUNTIME_MANIFEST.json
+
+      - name: Verify kernel library presence
+        run: |
+          APK=$(find app/build/outputs/apk -name '*.apk' 2>/dev/null | head -1 || echo '')
+          if [ -n "$APK" ]; then
+            echo "APK: $APK  ($(du -sh "$APK" | cut -f1))"
+            sha256sum "$APK"
+          fi
+          find app/.cxx -name 'libraf_llama_kernel.so' 2>/dev/null \
+            && echo 'libraf_llama_kernel.so: PRESENT' \
+            || echo 'libraf_llama_kernel.so: TOKEN_VAZIO — runtime-src absent or kernel build skipped'
+
+      - name: Upload kernel APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-apk-${{ github.run_id }}
+          path: app/build/outputs/apk/dev/debug/*.apk
+          if-no-files-found: warn
+
+      - name: Upload RUNTIME_MANIFEST
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-manifest-${{ github.run_id }}
+          path: RUNTIME_MANIFEST.json
+          if-no-files-found: warn

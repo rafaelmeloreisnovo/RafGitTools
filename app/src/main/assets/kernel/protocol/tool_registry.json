@@ -1,0 +1,12 @@
+{
+  "version": "1",
+  "tools": {
+    "git.status":             { "allowed": true, "requires_auth": false },
+    "git.diff":               { "allowed": true, "requires_auth": false },
+    "git.commit.prepare":     { "allowed": true, "requires_auth": true  },
+    "github.repository.read": { "allowed": true, "requires_auth": true  },
+    "termux.health":          { "allowed": true, "requires_auth": false },
+    "rafpolimata.compile":    { "allowed": true, "requires_auth": true  },
+    "cti.search":             { "allowed": true, "requires_auth": false }
+  }
+}

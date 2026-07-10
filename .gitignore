@@ -17,3 +17,5 @@ gen/
 out/
 .DS_Store
 *.log
+# CI-populated dependency sources — never committed
+runtime-src/
