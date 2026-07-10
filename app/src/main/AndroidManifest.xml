@@ -12,11 +12,11 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="32"
         tools:ignore="ScopedStorage" />
-    
+
     <!-- Android 13+ permissions -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-    
+
     <!-- Notification permission for Android 13+ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
@@ -37,9 +37,8 @@
         android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31">
         <!-- Note: usesCleartextTraffic is set to false for security.
-             This blocks HTTP connections and enforces HTTPS.
-             Network security configuration enforces TLS and certificate pinning.
-             For development with local Git servers using HTTP, set this to true in the dev flavor. -->
+             The network security config permits cleartext only for loopback,
+             where the local llamaRafaelia server runs. -->
 
         <!-- Main Activity -->
         <activity
@@ -74,6 +73,32 @@
                     android:host="gitlab.com" />
             </intent-filter>
         </activity>
+
+        <!-- Direct Java control surface for Kiwi <-> APK <-> local model. -->
+        <activity
+            android:name=".bridge.RafBridgeActivity"
+            android:exported="true"
+            android:label="Raf Bridge"
+            android:theme="@style/Theme.RafGitTools">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="rafgittools"
+                    android:host="bridge" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".bridge.RafBridgeService"
+            android:enabled="true"
+            android:exported="false"
+            android:stopWithTask="false" />
 
         <!-- File provider for sharing files -->
         <provider
