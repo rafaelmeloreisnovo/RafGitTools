@@ -16,9 +16,11 @@
     <!-- Android 13+ permissions -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-
-    <!-- Notification permission for Android 13+ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Foreground loopback bridge -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <!-- Wake lock for background operations -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -36,11 +38,9 @@
         android:usesCleartextTraffic="false"
         android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31">
-        <!-- Note: usesCleartextTraffic is set to false for security.
-             The network security config permits cleartext only for loopback,
-             where the local llamaRafaelia server runs. -->
+        <!-- Remote cleartext remains blocked. The network security config permits
+             cleartext only for loopback, where the local model server runs. -->
 
-        <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -51,7 +51,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep links for OAuth -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -61,16 +60,13 @@
                     android:host="oauth" />
             </intent-filter>
 
-            <!-- Handle Git URLs -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="git" />
-                <data android:scheme="https"
-                    android:host="github.com" />
-                <data android:scheme="https"
-                    android:host="gitlab.com" />
+                <data android:scheme="https" android:host="github.com" />
+                <data android:scheme="https" android:host="gitlab.com" />
             </intent-filter>
         </activity>
 
@@ -88,9 +84,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="rafgittools"
-                    android:host="bridge" />
+                <data android:scheme="rafgittools" android:host="bridge" />
             </intent-filter>
         </activity>
 
@@ -98,9 +92,9 @@
             android:name=".bridge.RafBridgeService"
             android:enabled="true"
             android:exported="false"
+            android:foregroundServiceType="dataSync"
             android:stopWithTask="false" />
 
-        <!-- File provider for sharing files -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -111,7 +105,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- WorkManager initialization -->
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
