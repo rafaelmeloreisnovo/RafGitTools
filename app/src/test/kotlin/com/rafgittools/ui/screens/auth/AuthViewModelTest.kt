@@ -8,6 +8,7 @@ import com.rafgittools.data.auth.AuthTokenCache
 import com.rafgittools.data.auth.GhCliAuthImporter
 import com.rafgittools.data.auth.OAuthDeviceFlowManager
 import com.rafgittools.data.github.GithubDataRepository
+import io.mockk.any
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
