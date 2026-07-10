@@ -1,0 +1,11 @@
+{
+  "schema": "rafaelia.governance-gate.v1",
+  "status": "PENDING",
+  "note": "Runtime gate rules are in app/src/main/assets/kernel/protocol/tool_registry.json. This file documents planned policy extensions.",
+  "planned_extensions": {
+    "rate_limiting":   "VOID",
+    "user_auth_levels": "VOID",
+    "audit_log":       "VOID",
+    "sandbox_paths":   "VOID"
+  }
+}
