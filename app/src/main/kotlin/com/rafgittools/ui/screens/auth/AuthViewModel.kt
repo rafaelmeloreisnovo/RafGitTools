@@ -145,13 +145,17 @@ class AuthViewModel @Inject constructor(
         authJob?.cancel()
         authJob = viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
-            ghCliAuthImporter.importToken()
-                .onSuccess { token -> authenticateWithToken(token, AuthMethod.GH_CLI_IMPORT) }
-                .onFailure {
-                    _uiState.value = AuthUiState.Error(
-                        it.message ?: "Falha ao importar o token do gh CLI."
-                    )
-                }
+            val importedToken = ghCliAuthImporter.importToken().getOrElse {
+                _uiState.value = AuthUiState.Error(
+                    it.message ?: "Falha ao importar o token do gh CLI."
+                )
+                return@launch
+            }
+
+            // Release the importer job before starting the token-validation job.
+            // Otherwise authenticateWithToken() would cancel the coroutine that invoked it.
+            authJob = null
+            authenticateWithToken(importedToken, AuthMethod.GH_CLI_IMPORT)
         }
     }
 
