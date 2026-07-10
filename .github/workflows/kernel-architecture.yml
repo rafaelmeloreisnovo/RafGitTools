@@ -2,13 +2,26 @@ name: Kernel Architecture Build
 
 on:
   push:
-    branches: ['claude/rafgittools-kernel-architecture-1dghar']
+    branches: ['main']
     paths:
       - 'runtime-lock.json'
       - 'kernel/**'
       - 'app/src/main/cpp/**'
       - 'app/src/main/kotlin/com/rafgittools/kernel/**'
       - 'app/src/main/assets/kernel/**'
+      - 'scripts/build_llama_kernel.sh'
+      - 'scripts/generate_runtime_manifest.sh'
+      - '.github/workflows/kernel-architecture.yml'
+  pull_request:
+    branches: ['main']
+    paths:
+      - 'runtime-lock.json'
+      - 'kernel/**'
+      - 'app/src/main/cpp/**'
+      - 'app/src/main/kotlin/com/rafgittools/kernel/**'
+      - 'app/src/main/assets/kernel/**'
+      - 'scripts/build_llama_kernel.sh'
+      - 'scripts/generate_runtime_manifest.sh'
       - '.github/workflows/kernel-architecture.yml'
   workflow_dispatch:
 
@@ -29,6 +42,7 @@ jobs:
       - name: Parse runtime-lock.json
         id: lock
         run: |
+          set -euo pipefail
           LLAMA_COMMIT=$(python3 -c "
 import json
 d = json.load(open('runtime-lock.json'))
@@ -39,6 +53,8 @@ import json
 d = json.load(open('runtime-lock.json'))
 print(d['components']['rafpolimata']['commit'])
 ")
+          test -n "$LLAMA_COMMIT"
+          test -n "$RAF_COMMIT"
           echo "llama_commit=${LLAMA_COMMIT}" >> "$GITHUB_OUTPUT"
           echo "raf_commit=${RAF_COMMIT}"     >> "$GITHUB_OUTPUT"
           echo "Locked llamaRafaelia @ ${LLAMA_COMMIT}"
@@ -75,7 +91,7 @@ print(d['components']['rafpolimata']['commit'])
       - name: Prepare local.properties
         run: bash scripts/prepare_local_properties.sh
 
-      - name: Assemble devDebug APK (with kernel)
+      - name: Assemble devDebug APK with cognitive kernel
         run: bash scripts/gradlew_with_java17.sh assembleDevDebug
 
       - name: Generate RUNTIME_MANIFEST.json
@@ -86,24 +102,48 @@ print(d['components']['rafpolimata']['commit'])
             app/.cxx \
             RUNTIME_MANIFEST.json
 
-      - name: Verify kernel library presence
+      - name: Verify kernel libraries and APK packaging
+        shell: bash
         run: |
-          APK=$(find app/build/outputs/apk -name '*.apk' 2>/dev/null | head -1 || echo '')
-          if [ -n "$APK" ]; then
-            echo "APK: $APK  ($(du -sh "$APK" | cut -f1))"
-            sha256sum "$APK"
-          fi
-          find app/.cxx -name 'libraf_llama_kernel.so' 2>/dev/null \
-            && echo 'libraf_llama_kernel.so: PRESENT' \
-            || echo 'libraf_llama_kernel.so: TOKEN_VAZIO — runtime-src absent or kernel build skipped'
+          set -euo pipefail
 
-      - name: Upload kernel APK
-        if: always()
+          APK=$(find app/build/outputs/apk/dev/debug -type f -name '*.apk' -print -quit)
+          if [ -z "$APK" ] || [ ! -f "$APK" ]; then
+            echo '[FALHA] devDebug APK não foi produzido.' >&2
+            exit 1
+          fi
+
+          echo "APK: $APK ($(du -h "$APK" | cut -f1))"
+          sha256sum "$APK"
+
+          mapfile -t KERNEL_LIBS < <(find app/.cxx -type f -name 'libraf_llama_kernel.so' | sort)
+          if [ "${#KERNEL_LIBS[@]}" -lt 2 ]; then
+            echo "[FALHA] esperadas bibliotecas do kernel para duas ABIs; encontradas: ${#KERNEL_LIBS[@]}" >&2
+            printf '%s\n' "${KERNEL_LIBS[@]:-}"
+            exit 1
+          fi
+
+          for lib in "${KERNEL_LIBS[@]}"; do
+            file "$lib"
+            sha256sum "$lib"
+          done
+
+          APK_ENTRIES=$(unzip -Z1 "$APK")
+          for ABI in armeabi-v7a arm64-v8a; do
+            ENTRY="lib/${ABI}/libraf_llama_kernel.so"
+            if ! grep -Fxq "$ENTRY" <<< "$APK_ENTRIES"; then
+              echo "[FALHA] biblioteca obrigatória ausente do APK: $ENTRY" >&2
+              exit 1
+            fi
+            echo "[OK] $ENTRY"
+          done
+
+      - name: Upload validated kernel APK
         uses: actions/upload-artifact@v4
         with:
           name: kernel-apk-${{ github.run_id }}
           path: app/build/outputs/apk/dev/debug/*.apk
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload RUNTIME_MANIFEST
         if: always()
