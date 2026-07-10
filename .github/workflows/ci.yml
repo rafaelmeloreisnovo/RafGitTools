@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - develop
-      - codex/finalize-github-client-login-build
   pull_request:
     branches:
       - main
@@ -14,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -47,6 +47,8 @@ jobs:
         run: chmod +x gradlew
 
       - name: Authentication tests
+        id: auth_tests
+        continue-on-error: true
         run: >-
           ./gradlew --no-daemon
           testDevDebugUnitTest
@@ -54,15 +56,24 @@ jobs:
           --stacktrace
 
       - name: Full dev unit tests
+        id: unit_tests
+        continue-on-error: true
         run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
 
       - name: Lint
+        id: lint
+        continue-on-error: true
         run: ./gradlew --no-daemon lintDevDebug --stacktrace
 
       - name: Assemble APK
+        id: assemble
+        continue-on-error: true
         run: ./gradlew --no-daemon assembleDevDebug --stacktrace
 
       - name: Verify and checksum APK
+        id: verify_apk
+        if: steps.assemble.outcome == 'success'
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -73,6 +84,7 @@ jobs:
           ls -lh "$APK" app/build/outputs/apk/dev/debug/SHA256SUMS.txt
 
       - name: Upload APK
+        if: steps.assemble.outcome == 'success' && steps.verify_apk.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: RafGitTools-devDebug
@@ -82,13 +94,59 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Upload test and lint reports on failure
-        if: failure()
+      - name: Upload diagnostics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: RafGitTools-diagnostics
+          name: RafGitTools-diagnostics-${{ github.run_id }}
           path: |
             app/build/reports/
             app/build/test-results/
           if-no-files-found: ignore
           retention-days: 14
+
+      - name: Publish build result to PR 236
+        if: always() && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUTH_RESULT: ${{ steps.auth_tests.outcome }}
+          UNIT_RESULT: ${{ steps.unit_tests.outcome }}
+          LINT_RESULT: ${{ steps.lint.outcome }}
+          ASSEMBLE_RESULT: ${{ steps.assemble.outcome }}
+          APK_RESULT: ${{ steps.verify_apk.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/rafgittools-ci.md <<EOF
+          ## Resultado automático do fechamento RafGitTools
+
+          Commit: \`${GITHUB_SHA}\`
+
+          | Gate | Resultado |
+          |---|---|
+          | Testes de autenticação | \`${AUTH_RESULT}\` |
+          | Testes unitários dev | \`${UNIT_RESULT}\` |
+          | Lint Android | \`${LINT_RESULT}\` |
+          | Assemble devDebug | \`${ASSEMBLE_RESULT}\` |
+          | APK + SHA-256 | \`${APK_RESULT}\` |
+
+          Execução: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          EOF
+          gh api "repos/${GITHUB_REPOSITORY}/issues/236/comments" \
+            --method POST \
+            --field body="$(cat /tmp/rafgittools-ci.md)"
+
+      - name: Enforce build gate
+        if: always()
+        shell: bash
+        env:
+          AUTH_RESULT: ${{ steps.auth_tests.outcome }}
+          UNIT_RESULT: ${{ steps.unit_tests.outcome }}
+          LINT_RESULT: ${{ steps.lint.outcome }}
+          ASSEMBLE_RESULT: ${{ steps.assemble.outcome }}
+          APK_RESULT: ${{ steps.verify_apk.outcome }}
+        run: |
+          set -euo pipefail
+          for result in "$AUTH_RESULT" "$UNIT_RESULT" "$LINT_RESULT" "$ASSEMBLE_RESULT" "$APK_RESULT"; do
+            test "$result" = "success"
+          done
