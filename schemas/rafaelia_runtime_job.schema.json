@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafaelia.local/schemas/rafaelia_runtime_job.schema.json",
+  "title": "RAFAELIA Runtime Job",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "job_id", "operation", "source", "policy", "requested_outputs"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "job_id": {"type": "string", "minLength": 16, "maxLength": 128},
+    "operation": {
+      "enum": [
+        "inventory_source",
+        "index_conversations",
+        "index_text_logs",
+        "inspect_sqlite",
+        "index_matrix_json",
+        "build_timeline",
+        "semantic_anchor"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "locator", "name", "size_bytes"],
+      "properties": {
+        "provider": {"enum": ["google_drive", "filesystem", "github", "zip_entry"]},
+        "locator": {"type": "string", "minLength": 1},
+        "name": {"type": "string", "minLength": 1},
+        "size_bytes": {"type": "integer", "minimum": 0},
+        "mime_type": {"type": "string"},
+        "etag": {"type": "string"},
+        "revision": {"type": "string"},
+        "content_hash": {"type": "string"}
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["read_only", "exclude_private_media", "max_memory_bytes", "max_expanded_bytes"],
+      "properties": {
+        "read_only": {"const": true},
+        "exclude_private_media": {"type": "boolean"},
+        "max_memory_bytes": {"type": "integer", "minimum": 1048576},
+        "max_expanded_bytes": {"type": "integer", "minimum": 0},
+        "allow_network": {"type": "boolean", "default": false},
+        "allow_model_inference": {"type": "boolean", "default": false}
+      }
+    },
+    "requested_outputs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "source_manifest",
+          "objects_segment",
+          "conversations_segment",
+          "messages_segment",
+          "relations_segment",
+          "timeline_segment",
+          "audit_jsonl",
+          "coverage_report",
+          "checkpoint_state"
+        ]
+      }
+    },
+    "created_at": {"type": "string"},
+    "requested_by": {"type": "string"}
+  }
+}
