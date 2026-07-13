@@ -11,6 +11,8 @@ on:
       - 'app/src/main/assets/kernel/**'
       - 'scripts/build_llama_kernel.sh'
       - 'scripts/generate_runtime_manifest.sh'
+      - 'scripts/runtime_lock_contract.py'
+      - 'tests/test_runtime_lock_contract.py'
       - '.github/workflows/kernel-architecture.yml'
   pull_request:
     branches: ['main']
@@ -22,6 +24,8 @@ on:
       - 'app/src/main/assets/kernel/**'
       - 'scripts/build_llama_kernel.sh'
       - 'scripts/generate_runtime_manifest.sh'
+      - 'scripts/runtime_lock_contract.py'
+      - 'tests/test_runtime_lock_contract.py'
       - '.github/workflows/kernel-architecture.yml'
   workflow_dispatch:
 
@@ -39,26 +43,18 @@ jobs:
       - name: Checkout RafGitTools
         uses: actions/checkout@v4
 
-      - name: Parse runtime-lock.json
+      - name: Test runtime-lock contract
+        run: python3 -m unittest discover -s tests -p 'test_runtime_lock_contract.py' -v
+
+      - name: Validate and parse runtime-lock.json
         id: lock
         run: |
           set -euo pipefail
-          LLAMA_COMMIT=$(python3 -c "
-import json
-d = json.load(open('runtime-lock.json'))
-print(d['components']['llama_rafaelia']['commit'])
-")
-          RAF_COMMIT=$(python3 -c "
-import json
-d = json.load(open('runtime-lock.json'))
-print(d['components']['rafpolimata']['commit'])
-")
-          test -n "$LLAMA_COMMIT"
-          test -n "$RAF_COMMIT"
-          echo "llama_commit=${LLAMA_COMMIT}" >> "$GITHUB_OUTPUT"
-          echo "raf_commit=${RAF_COMMIT}"     >> "$GITHUB_OUTPUT"
-          echo "Locked llamaRafaelia @ ${LLAMA_COMMIT}"
-          echo "Locked RafPolimata  @ ${RAF_COMMIT}"
+          python3 scripts/runtime_lock_contract.py validate \
+            runtime-lock.json \
+            --github-output "$GITHUB_OUTPUT"
+          echo "Locked llamaRafaelia @ ${{ steps.lock.outputs.llama_commit }}"
+          echo "Locked RafPolimata  @ ${{ steps.lock.outputs.rafpolimata_commit }}"
 
       - name: Checkout llamaRafaelia @ locked commit
         uses: actions/checkout@v4
@@ -72,7 +68,7 @@ print(d['components']['rafpolimata']['commit'])
         uses: actions/checkout@v4
         with:
           repository: rafaelmeloreisnovo/RafPolimata
-          ref: ${{ steps.lock.outputs.raf_commit }}
+          ref: ${{ steps.lock.outputs.rafpolimata_commit }}
           path: runtime-src/rafpolimata
           token: ${{ secrets.RAF_CROSS_REPO_TOKEN }}
 
