@@ -25,6 +25,12 @@ class RuntimeLockContractTest(unittest.TestCase):
         mapped = module.validate(self.data)
         self.assertEqual(set(mapped), set(module.REQUIRED_REPOSITORIES))
 
+    def test_integration_repository_uses_non_recursive_self_marker(self) -> None:
+        broken = copy.deepcopy(self.data)
+        broken["integration_repository"]["commit"] = "0" * 40
+        with self.assertRaisesRegex(module.ContractError, "recursive self-lock"):
+            module.validate(broken)
+
     def test_duplicate_repository_is_rejected(self) -> None:
         broken = copy.deepcopy(self.data)
         broken["repositories"].append(copy.deepcopy(broken["repositories"][0]))
