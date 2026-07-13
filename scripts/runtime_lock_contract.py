@@ -85,9 +85,8 @@ def validate(data: dict[str, Any], require_artifact_hashes: bool = False) -> dic
             errors.append("integration_repository.name must be rafaelmeloreisnovo/RafGitTools")
         if integration.get("branch") != "main":
             errors.append("integration_repository.branch must be main")
-        commit = integration.get("commit")
-        if not isinstance(commit, str) or not SHA40_RE.fullmatch(commit):
-            errors.append("integration_repository.commit must be a concrete lowercase 40-hex SHA")
+        if integration.get("commit") != "SELF":
+            errors.append("integration_repository.commit must be SELF to avoid a recursive self-lock")
 
     try:
         mapped = repository_map(data)
@@ -137,9 +136,8 @@ def validate(data: dict[str, Any], require_artifact_hashes: bool = False) -> dic
     return mapped
 
 
-def emit_github_outputs(path: Path, data: dict[str, Any], mapped: dict[str, dict[str, Any]]) -> None:
-    integration = data["integration_repository"]
-    lines = [f"rafgittools_commit={integration['commit']}"]
+def emit_github_outputs(path: Path, mapped: dict[str, dict[str, Any]]) -> None:
+    lines: list[str] = []
     for name, output_name in OUTPUT_NAMES.items():
         lines.append(f"{output_name}={mapped[name]['commit']}")
     with path.open("a", encoding="utf-8") as handle:
@@ -150,7 +148,7 @@ def command_validate(args: argparse.Namespace) -> int:
     data = load_lock(args.lock_file)
     mapped = validate(data, require_artifact_hashes=args.require_artifact_hashes)
     if args.github_output is not None:
-        emit_github_outputs(args.github_output, data, mapped)
+        emit_github_outputs(args.github_output, mapped)
     print(f"[OK] {args.lock_file}: source lock contract valid")
     if not args.require_artifact_hashes:
         print("[INFO] artifact hashes may remain TOKEN_VAZIO until promotion")
