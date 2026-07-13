@@ -1,18 +1,19 @@
 {
   "schema": "rafaelia.runtime-lock.v1",
-  "generated_at": "TOKEN_VAZIO",
+  "generated_at": "2026-07-13T09:23:27Z",
+  "release_state": "SOURCE_LOCKED_ARTIFACT_HASH_PENDING",
   "integration_repository": {
     "name": "rafaelmeloreisnovo/RafGitTools",
     "url": "https://github.com/rafaelmeloreisnovo/RafGitTools.git",
     "branch": "main",
-    "commit": "TOKEN_VAZIO"
+    "commit": "SELF"
   },
   "repositories": [
     {
       "name": "rafaelmeloreisnovo/termux-app-rafacodephi",
       "url": "https://github.com/rafaelmeloreisnovo/termux-app-rafacodephi.git",
-      "branch": "main",
-      "commit": "TOKEN_VAZIO",
+      "branch": "master",
+      "commit": "459c8114adfd63b00b17cb26cb6eea0bd9f87fa6",
       "expected_hashes": {
         "manifest_sha256": "TOKEN_VAZIO",
         "bundle_sha256": "TOKEN_VAZIO"
@@ -22,17 +23,7 @@
       "name": "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE",
       "url": "https://github.com/rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE.git",
       "branch": "main",
-      "commit": "TOKEN_VAZIO",
-      "expected_hashes": {
-        "manifest_sha256": "TOKEN_VAZIO",
-        "bundle_sha256": "TOKEN_VAZIO"
-      }
-    },
-    {
-      "name": "rafaelmeloreisnovo/RafGitTools",
-      "url": "https://github.com/rafaelmeloreisnovo/RafGitTools.git",
-      "branch": "main",
-      "commit": "TOKEN_VAZIO",
+      "commit": "8753c1152f2399e258387d5b6e26e00090d1478e",
       "expected_hashes": {
         "manifest_sha256": "TOKEN_VAZIO",
         "bundle_sha256": "TOKEN_VAZIO"
@@ -42,7 +33,7 @@
       "name": "rafaelmeloreisnovo/llamaRafaelia",
       "url": "https://github.com/rafaelmeloreisnovo/llamaRafaelia.git",
       "branch": "master",
-      "commit": "6f2963adee0a34ea472a22f5aa30fecd64323a23",
+      "commit": "40f3e72bcb0d63b5acc9af6ff7b3f6a38307d763",
       "expected_hashes": {
         "manifest_sha256": "TOKEN_VAZIO",
         "bundle_sha256": "TOKEN_VAZIO"
@@ -52,7 +43,7 @@
       "name": "rafaelmeloreisnovo/RafPolimata",
       "url": "https://github.com/rafaelmeloreisnovo/RafPolimata.git",
       "branch": "main",
-      "commit": "b5552195242f4b3cbe949509f45d86177e647e8b",
+      "commit": "543852ecf47da66984c8c7152fcb0917c21b82a4",
       "expected_hashes": {
         "manifest_sha256": "TOKEN_VAZIO",
         "bundle_sha256": "TOKEN_VAZIO"
