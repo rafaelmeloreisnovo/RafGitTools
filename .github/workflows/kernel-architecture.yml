@@ -53,8 +53,6 @@ jobs:
           python3 scripts/runtime_lock_contract.py validate \
             runtime-lock.json \
             --github-output "$GITHUB_OUTPUT"
-          echo "Locked llamaRafaelia @ ${{ steps.lock.outputs.llama_commit }}"
-          echo "Locked RafPolimata  @ ${{ steps.lock.outputs.rafpolimata_commit }}"
 
       - name: Checkout llamaRafaelia @ locked commit
         uses: actions/checkout@v4
