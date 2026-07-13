@@ -15,7 +15,14 @@ RUN_ID="${GITHUB_RUN_ID:-local}"
 
 python3 "${LOCK_TOOL}" validate "${LOCK_FILE}"
 
-RAFGITTOOLS_COMMIT="$(python3 "${LOCK_TOOL}" get "${LOCK_FILE}" rafaelmeloreisnovo/RafGitTools commit)"
+if [ -n "${GITHUB_SHA:-}" ]; then
+  RAFGITTOOLS_COMMIT="${GITHUB_SHA}"
+elif git rev-parse --verify HEAD >/dev/null 2>&1; then
+  RAFGITTOOLS_COMMIT="$(git rev-parse HEAD)"
+else
+  echo "[FALHA] não foi possível determinar o commit real do RafGitTools." >&2
+  exit 2
+fi
 TERMUX_COMMIT="$(python3 "${LOCK_TOOL}" get "${LOCK_FILE}" rafaelmeloreisnovo/termux-app-rafacodephi commit)"
 CONVERSATIONS_COMMIT="$(python3 "${LOCK_TOOL}" get "${LOCK_FILE}" rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE commit)"
 LLAMA_COMMIT="$(python3 "${LOCK_TOOL}" get "${LOCK_FILE}" rafaelmeloreisnovo/llamaRafaelia commit)"
