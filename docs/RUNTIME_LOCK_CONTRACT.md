@@ -6,7 +6,7 @@ O `runtime-lock.json` é a fonte de verdade para **proveniência de código-font
 
 O contrato separa duas promoções:
 
-1. **SOURCE_LOCKED** — todos os repositórios têm branch declarada e commit SHA-1 concreto de 40 caracteres;
+1. **SOURCE_LOCKED** — todas as dependências têm branch declarada e commit SHA-1 concreto de 40 caracteres;
 2. **ARTIFACT_VERIFIED** — manifests e bundles produzidos pelo build têm SHA-256 concreto e foram verificados por um gate de promoção.
 
 Enquanto os artefatos ainda não foram produzidos, seus hashes permanecem `TOKEN_VAZIO`. Isso é permitido no build de desenvolvimento, mas é rejeitado quando o validador recebe `--require-artifact-hashes`.
@@ -15,7 +15,7 @@ Enquanto os artefatos ainda não foram produzidos, seus hashes permanecem `TOKEN
 
 | Campo | Autoridade | Regra |
 |---|---|---|
-| `integration_repository` | RafGitTools | aparece uma única vez, fora de `repositories` |
+| `integration_repository` | RafGitTools | aparece uma única vez; usa `commit: SELF` para evitar autorreferência impossível |
 | `repositories[].commit` | lock de fonte | nunca pode ser branch flutuante ou `TOKEN_VAZIO` |
 | `repositories[].branch` | origem humana | precisa corresponder à branch real de desenvolvimento |
 | `expected_hashes` | gate de artefato | `TOKEN_VAZIO` antes do build; SHA-256 concreto na promoção |
@@ -30,7 +30,7 @@ rafaelmeloreisnovo/llamaRafaelia                 @ master
 rafaelmeloreisnovo/RafPolimata                   @ main
 ```
 
-O próprio RafGitTools fica em `integration_repository` e não pode ser duplicado na lista de dependências.
+O próprio RafGitTools fica em `integration_repository` e não pode ser duplicado na lista de dependências. Seu commit é `SELF` no lock; o SHA concreto é capturado no manifesto por `GITHUB_SHA` ou `git rev-parse HEAD`.
 
 ## Validação
 
@@ -61,8 +61,9 @@ python3 scripts/runtime_lock_contract.py get \
 
 ```text
 nome único
++ integrador SELF sem recursão
 + branch canônica
-+ commit concreto
++ commit concreto nas dependências
 + parser único
 + manifesto derivado do mesmo lock
 = proveniência reproduzível
