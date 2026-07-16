@@ -1,0 +1,156 @@
+{
+  "schema": "rafaelia.workflow-master-index.v1",
+  "generated_at": "2026-07-16T00:00:00-03:00",
+  "authority": {
+    "integration_repository": "rafaelmeloreisnovo/RafGitTools",
+    "source_lock": "runtime-lock.json",
+    "rule": "O índice organiza significado e sustentação; não substitui runtime-lock, testes, hashes ou evidência externa."
+  },
+  "cycle": [
+    "PSI_INTENT",
+    "CHI_OBSERVE",
+    "RHO_NOISE",
+    "DELTA_TRANSFORM",
+    "SIGMA_CUSTODY",
+    "OMEGA_CLOSE",
+    "PSI_REOPEN"
+  ],
+  "modules": [
+    {
+      "id": "M01",
+      "name": "RAFAELIA simbólica",
+      "role": "linguagem, ética e compressão conceitual",
+      "canonical_repository": "TOKEN_VAZIO",
+      "related_repositories": ["RafGitTools", "papers"],
+      "repository_state": "TOKEN_VAZIO"
+    },
+    {
+      "id": "M02",
+      "name": "RLL científico",
+      "role": "modelos falsificáveis, likelihood e comparação cosmológica",
+      "canonical_repository": "instituto-Rafael/relativity-living-light",
+      "related_repositories": ["RafPolimata"],
+      "repository_state": "DECLARED"
+    },
+    {
+      "id": "M03",
+      "name": "Omega Kernel",
+      "role": "núcleo determinístico, Q16, invariantes e checkpoints",
+      "canonical_repository": "rafaelmeloreisnovo/ZIPRAF_OMEGA_FULL",
+      "related_repositories": ["qemu_rafaelia"],
+      "repository_state": "DECLARED"
+    },
+    {
+      "id": "M04",
+      "name": "Omega Governance",
+      "role": "políticas, ledger, runtime-lock e promoção",
+      "canonical_repository": "rafaelmeloreisnovo/RafGitTools",
+      "related_repositories": [],
+      "repository_state": "DECLARED"
+    },
+    {
+      "id": "M05",
+      "name": "Termux RAFCODEΦ",
+      "role": "runtime Android local e transporte tipado",
+      "canonical_repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "related_repositories": [],
+      "repository_state": "DECLARED"
+    },
+    {
+      "id": "M06",
+      "name": "Vectras VM Android",
+      "role": "QEMU, Proot e ciclo de VM no Android",
+      "canonical_repository": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "related_repositories": [],
+      "repository_state": "DECLARED"
+    },
+    {
+      "id": "M07",
+      "name": "ChipQuantum Geometria",
+      "role": "papers, projeções, √3/2 e experimentos formais",
+      "canonical_repository": "rafaelmeloreisnovo/ChipQuantum",
+      "related_repositories": [],
+      "repository_state": "DECLARED"
+    },
+    {
+      "id": "M08",
+      "name": "RAFAELIA Engine",
+      "role": "indexação, memória, coerência e drift",
+      "canonical_repository": "TOKEN_VAZIO",
+      "related_repositories": ["DeepSeek-RafCoder", "llamaRafaelia"],
+      "repository_state": "TOKEN_VAZIO"
+    },
+    {
+      "id": "M09",
+      "name": "Android Middleware IA",
+      "role": "interface controlada entre apps e modelos",
+      "canonical_repository": "rafaelmeloreisnovo/llamaRafaelia",
+      "related_repositories": ["RafGitTools"],
+      "repository_state": "DECLARED"
+    },
+    {
+      "id": "M10",
+      "name": "CompiladorLowFala",
+      "role": "fala, bytecode e VM simbólica experimental",
+      "canonical_repository": "TOKEN_VAZIO",
+      "related_repositories": [],
+      "repository_state": "TOKEN_VAZIO"
+    },
+    {
+      "id": "M11",
+      "name": "Bare-metal Edge",
+      "role": "registradores, sensores e execução de borda",
+      "canonical_repository": "TOKEN_VAZIO",
+      "related_repositories": ["qemu_rafaelia"],
+      "repository_state": "TOKEN_VAZIO"
+    },
+    {
+      "id": "M12",
+      "name": "Corpus e memória",
+      "role": "fontes, chunks, matrizes e custódia de dados",
+      "canonical_repository": "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE",
+      "related_repositories": [],
+      "repository_state": "DECLARED"
+    },
+    {
+      "id": "M13",
+      "name": "GitHub Agents e ResearchOps",
+      "role": "orquestração, claims, PRs e artefatos",
+      "canonical_repository": "rafaelmeloreisnovo/RafGitTools",
+      "related_repositories": ["RafPolimata", "papers"],
+      "repository_state": "DECLARED"
+    }
+  ],
+  "support_layers": [
+    {"id":"S01","name":"Origem semântica","category":"semantic","purpose":"Preservar a formulação original antes de qualquer normalização.","required_evidence":"trecho de sessão, documento ou issue com autoria e data","failure_state":"TOKEN_VAZIO","promotion_gate":"origem localizada e referenciada"},
+    {"id":"S02","name":"Vocabulário canônico","category":"semantic","purpose":"Definir termos, símbolos e sinônimos sem trocar significado silenciosamente.","required_evidence":"glossário versionado e exemplos de uso","failure_state":"CONTRADICTION","promotion_gate":"termo possui definição, domínio e aliases"},
+    {"id":"S03","name":"Atomicidade de claim","category":"semantic","purpose":"Quebrar afirmações compostas em unidades verificáveis.","required_evidence":"ledger com identificadores únicos","failure_state":"BLOCKED","promotion_gate":"cada claim pode ser testado ou classificado isoladamente"},
+    {"id":"S04","name":"Estado epistemológico","category":"semantic","purpose":"Distinguir evidência, método, hipótese e símbolo.","required_evidence":"estado explícito por claim","failure_state":"TOKEN_VAZIO","promotion_gate":"nenhuma promoção ocorre sem evidência compatível"},
+    {"id":"S05","name":"Fronteira de domínio","category":"semantic","purpose":"Declarar onde uma relação vale e onde deixa de valer.","required_evidence":"domínio, pré-condições e contraexemplos","failure_state":"OUT_OF_DOMAIN","promotion_gate":"limites e exclusões estão registrados"},
+    {"id":"S06","name":"Consistência dimensional","category":"formal","purpose":"Impedir equações fisicamente incompatíveis.","required_evidence":"unidades, dimensões e checagem simbólica","failure_state":"FAIL","promotion_gate":"todas as somas e igualdades preservam dimensões"},
+    {"id":"S07","name":"Derivação matemática","category":"formal","purpose":"Registrar passos entre premissas e conclusão.","required_evidence":"derivação reproduzível ou referência formal","failure_state":"TOKEN_VAZIO","promotion_gate":"cada transformação possui justificativa"},
+    {"id":"S08","name":"Invariante geométrica","category":"formal","purpose":"Identificar quantidades preservadas sob transformações declaradas.","required_evidence":"definição da transformação e teste analítico ou numérico","failure_state":"PARTIAL","promotion_gate":"invariante passa em casos válidos e falha nos inválidos"},
+    {"id":"S09","name":"Falsificador explícito","category":"formal","purpose":"Definir observação capaz de enfraquecer ou rejeitar a hipótese.","required_evidence":"critério de rejeição antes do teste","failure_state":"UNFALSIFIABLE","promotion_gate":"ao menos um resultado possível rejeita a claim"},
+    {"id":"S10","name":"Baseline comparável","category":"formal","purpose":"Comparar com método simples, clássico ou estado da arte apropriado.","required_evidence":"baseline, mesma entrada e mesma métrica","failure_state":"NO_BASELINE","promotion_gate":"ganho ou perda é mensurável sob condições iguais"},
+    {"id":"S11","name":"Proveniência de dados","category":"evidence","purpose":"Rastrear fonte, revisão, tamanho, hash e transformações.","required_evidence":"manifesto de entrada e cadeia de custódia","failure_state":"TOKEN_VAZIO","promotion_gate":"entrada é identificável sem depender do nome do arquivo"},
+    {"id":"S12","name":"Lock de fonte","category":"evidence","purpose":"Fixar commits e versões usados na execução.","required_evidence":"runtime-lock ou equivalente validado","failure_state":"SOURCE_FLOATING","promotion_gate":"dependências apontam para SHAs concretos"},
+    {"id":"S13","name":"Hash de artefato","category":"evidence","purpose":"Provar identidade dos produtos gerados.","required_evidence":"SHA-256 e tamanho por artefato","failure_state":"ARTIFACT_UNVERIFIED","promotion_gate":"hash concreto no gate de promoção"},
+    {"id":"S14","name":"Execução determinística","category":"execution","purpose":"Obter mesma saída para mesma entrada e configuração declarada.","required_evidence":"vetores repetidos e hashes iguais","failure_state":"NON_DETERMINISTIC","promotion_gate":"repetições concordam dentro da tolerância"},
+    {"id":"S15","name":"Recorrência e ponto fixo","category":"execution","purpose":"Caracterizar evolução por ciclos, atratores e condições de parada.","required_evidence":"traço de iterações e critério de convergência","failure_state":"DIVERGENT","promotion_gate":"ponto fixo ou ausência dele é demonstrado"},
+    {"id":"S16","name":"Tolerância numérica","category":"execution","purpose":"Separar igualdade exata de aproximação finita.","required_evidence":"erro absoluto/relativo, escala e limite","failure_state":"UNBOUNDED_ERROR","promotion_gate":"tolerância é justificada antes da execução"},
+    {"id":"S17","name":"Plataforma e ABI","category":"execution","purpose":"Explicitar arquitetura, compilador, flags e ambiente.","required_evidence":"manifesto de plataforma e smoke test","failure_state":"PLATFORM_UNKNOWN","promotion_gate":"alvos declarados foram exercitados"},
+    {"id":"S18","name":"Limites de recursos","category":"execution","purpose":"Controlar memória, armazenamento, expansão, tempo e ciclos.","required_evidence":"limites configurados e medidos","failure_state":"RESOURCE_UNBOUNDED","promotion_gate":"execução permanece dentro dos limites"},
+    {"id":"S19","name":"Governança de ação","category":"governance","purpose":"Autorizar somente operações tipadas e permitidas.","required_evidence":"policy, GovernanceGate e decisão auditável","failure_state":"DENIED","promotion_gate":"ação possui identidade, escopo e decisão"},
+    {"id":"S20","name":"Privacidade e consentimento","category":"governance","purpose":"Proteger credenciais, corpus e dados pessoais.","required_evidence":"base legal/consentimento, minimização e isolamento","failure_state":"PRIVACY_BLOCKED","promotion_gate":"nenhum dado sensível vaza para log, prompt ou artefato"},
+    {"id":"S21","name":"Proteção infantil","category":"governance","purpose":"Bloquear usos que exponham ou prejudiquem crianças.","required_evidence":"regra explícita, teste de negação e trilha de auditoria","failure_state":"HARD_DENY","promotion_gate":"qualquer cenário infantil inseguro é rejeitado"},
+    {"id":"S22","name":"Confissão de ausência","category":"governance","purpose":"Usar TOKEN_VAZIO em vez de inventar valores.","required_evidence":"campo vazio classificado com razão","failure_state":"FABRICATION","promotion_gate":"ausência é visível e não convertida em zero"},
+    {"id":"S23","name":"Ledger de contradições","category":"governance","purpose":"Preservar evidências conflitantes sem apagamento oportunista.","required_evidence":"registros dos lados, escopo e estado","failure_state":"CONTRADICTION","promotion_gate":"conflito permanece rastreável até resolução"},
+    {"id":"S24","name":"Reprodutibilidade","category":"evidence","purpose":"Permitir repetição por terceiro com entradas e comandos conhecidos.","required_evidence":"comandos, seeds, versões e artefatos","failure_state":"NOT_REPRODUCIBLE","promotion_gate":"terceiro consegue repetir o resultado"},
+    {"id":"S25","name":"Testes por camada","category":"evidence","purpose":"Testar unidade, contrato, integração, regressão e casos inválidos.","required_evidence":"suíte executável e relatório","failure_state":"TEST_GAP","promotion_gate":"claims executáveis têm testes correspondentes"},
+    {"id":"S26","name":"Gate de promoção","category":"evolution","purpose":"Separar rascunho, método, teste local, evidência e release.","required_evidence":"critérios de entrada e saída por estado","failure_state":"PROMOTION_BLOCKED","promotion_gate":"estado superior exige todos os gates anteriores"},
+    {"id":"S27","name":"Observabilidade","category":"evolution","purpose":"Registrar o que ocorreu sem expor segredos.","required_evidence":"logs estruturados, métricas e IDs correlacionáveis","failure_state":"UNOBSERVABLE","promotion_gate":"falha aponta estágio e ação de recuperação"},
+    {"id":"S28","name":"Checkpoint e rollback","category":"evolution","purpose":"Retomar ou desfazer operações sem corromper a origem.","required_evidence":"checkpoint, hash, journal e teste de recuperação","failure_state":"ROLLBACK_UNPROVEN","promotion_gate":"estado anterior é restaurável e verificável"},
+    {"id":"S29","name":"Rastreabilidade semântica→código","category":"evolution","purpose":"Ligar símbolo, claim, arquivo, teste, commit e artefato.","required_evidence":"matriz de rastreabilidade com IDs estáveis","failure_state":"TRACE_GAP","promotion_gate":"cada promoção aponta sua cadeia de sustentação"},
+    {"id":"S30","name":"Fronteira transdisciplinar","category":"evolution","purpose":"Transferir conceitos entre áreas sem promover metáfora a lei.","required_evidence":"mapeamento origem→analogia→hipótese→teste por domínio","failure_state":"CATEGORY_ERROR","promotion_gate":"aplicação declara o que é preservado e o que muda"}
+  ]
+}
