@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafaelia.local/schemas/rafaelia_workflow_session.schema.json",
+  "title": "RAFAELIA Longitudinal Workflow Session",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "session_id", "title", "observed_at", "cycle", "scope", "semantic_anchors", "claims", "invariants", "evidence", "tests", "contradictions", "token_vazio", "support_layers", "artifacts", "next_action"],
+  "properties": {
+    "schema": {"const": "rafaelia.workflow-session.v1"},
+    "session_id": {"type": "string", "pattern": "^[A-Z0-9_.:-]{8,128}$"},
+    "title": {"type": "string", "minLength": 8},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "cycle": {"type": "array", "minItems": 7, "maxItems": 7, "items": {"type": "string"}},
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["question", "completion_criterion", "repositories", "paths"],
+      "properties": {
+        "question": {"type": "string", "minLength": 8},
+        "completion_criterion": {"type": "string", "minLength": 8},
+        "repositories": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "paths": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+      }
+    },
+    "semantic_anchors": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/semantic_anchor"}},
+    "claims": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/claim"}},
+    "invariants": {"type": "array", "items": {"$ref": "#/$defs/invariant"}},
+    "evidence": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidence"}},
+    "tests": {"type": "array", "items": {"$ref": "#/$defs/test"}},
+    "contradictions": {"type": "array", "items": {"$ref": "#/$defs/contradiction"}},
+    "token_vazio": {"type": "array", "items": {"$ref": "#/$defs/token_vazio"}},
+    "support_layers": {"type": "array", "minItems": 30, "maxItems": 30, "items": {"$ref": "#/$defs/support_layer"}},
+    "artifacts": {"type": "array", "items": {"$ref": "#/$defs/artifact"}},
+    "next_action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "state"],
+      "properties": {
+        "action": {"type": "string", "minLength": 8},
+        "state": {"enum": ["READY", "BLOCKED", "TOKEN_VAZIO"]},
+        "blocker": {"type": "string"}
+      }
+    }
+  },
+  "$defs": {
+    "semantic_anchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text", "kind", "source_ref"],
+      "properties": {
+        "id": {"type": "string"},
+        "text": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["TERM", "RELATION", "NEGATION", "CONDITION", "EXCEPTION", "METAPHOR"]},
+        "source_ref": {"type": "string", "minLength": 1}
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "statement", "kind", "state", "domain", "verification_mode", "evidence_refs", "test_refs", "contradiction_refs"],
+      "properties": {
+        "id": {"type": "string"},
+        "statement": {"type": "string", "minLength": 8},
+        "kind": {"enum": ["EVIDENCE", "METHOD", "HYPOTHESIS", "SYMBOL"]},
+        "state": {"enum": ["VERIFIED", "PARTIAL", "DECLARED", "TOKEN_VAZIO", "CONTRADICTION", "BLOCKED"]},
+        "domain": {"type": "string", "minLength": 1},
+        "verification_mode": {"enum": ["DOCUMENT", "TEST", "DERIVATION", "OBSERVATION", "NONE"]},
+        "evidence_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "test_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "contradiction_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "reason": {"type": "string"}
+      }
+    },
+    "invariant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "statement", "transformations", "status", "evidence_refs"],
+      "properties": {
+        "id": {"type": "string"},
+        "statement": {"type": "string", "minLength": 8},
+        "transformations": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "status": {"enum": ["VERIFIED", "PARTIAL", "TOKEN_VAZIO", "CONTRADICTION"]},
+        "evidence_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "reason": {"type": "string"}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "locator", "observed_at"],
+      "properties": {
+        "id": {"type": "string"},
+        "type": {"enum": ["FILE", "COMMIT", "TEST_REPORT", "LOG", "DATASET", "DERIVATION", "PUBLICATION", "OBSERVATION", "POLICY"]},
+        "locator": {"type": "string", "minLength": 1},
+        "observed_at": {"type": "string", "format": "date-time"},
+        "digest": {"type": "string"},
+        "notes": {"type": "string"}
+      }
+    },
+    "test": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "command", "result", "supports_claims"],
+      "properties": {
+        "id": {"type": "string"},
+        "command": {"type": "string", "minLength": 1},
+        "result": {"enum": ["PASS", "FAIL", "TOKEN_VAZIO", "NOT_RUN"]},
+        "supports_claims": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "evidence_ref": {"type": "string"},
+        "notes": {"type": "string"}
+      }
+    },
+    "contradiction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "statement_a", "statement_b", "state"],
+      "properties": {
+        "id": {"type": "string"},
+        "statement_a": {"type": "string", "minLength": 1},
+        "statement_b": {"type": "string", "minLength": 1},
+        "state": {"enum": ["OPEN", "SCOPE_SPLIT", "RESOLVED", "TOKEN_VAZIO"]},
+        "resolution": {"type": "string"},
+        "evidence_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+      }
+    },
+    "token_vazio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "field", "reason"],
+      "properties": {
+        "id": {"type": "string"},
+        "field": {"type": "string", "minLength": 1},
+        "reason": {"type": "string", "minLength": 8},
+        "promotion_condition": {"type": "string"}
+      }
+    },
+    "support_layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "reason", "evidence_refs"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^S(0[1-9]|[12][0-9]|30)$"},
+        "status": {"enum": ["PASS", "PARTIAL", "FAIL", "NOT_APPLICABLE", "TOKEN_VAZIO"]},
+        "reason": {"type": "string"},
+        "evidence_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "state", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "state": {"enum": ["CREATED", "UPDATED", "DECLARED", "TOKEN_VAZIO"]},
+        "sha256": {"type": "string"},
+        "reason": {"type": "string"}
+      }
+    }
+  }
+}
