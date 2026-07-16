@@ -1,0 +1,66 @@
+name: Federation Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: "Optional owner/repository failure to simulate"
+        required: false
+        default: ""
+        type: string
+  pull_request:
+    paths:
+      - "configs/rafaelia-federation.json"
+      - "scripts/federation/**"
+      - "tests/federation/**"
+      - "docs/federation/**"
+      - ".github/workflows/federation-audit.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: federation-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate deterministic manifest
+        run: |
+          mkdir -p artifacts
+          python3 scripts/federation/watchdog.py \
+            --manifest configs/rafaelia-federation.json \
+            --report artifacts/federation-watchdog.json
+
+      - name: Run blind and failure tests
+        run: |
+          python3 -m pip install --disable-pip-version-check pytest
+          python3 -m pytest -q tests/federation/test_watchdog.py
+
+      - name: Simulate requested failure
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.simulate_failure != '' }}
+        run: |
+          python3 scripts/federation/watchdog.py \
+            --manifest configs/rafaelia-federation.json \
+            --simulate-failure "${{ inputs.simulate_failure }}" \
+            --report artifacts/federation-failure-simulation.json
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: federation-audit-${{ github.run_id }}
+          path: artifacts/*.json
+          if-no-files-found: warn
+          retention-days: 30
