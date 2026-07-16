@@ -1,0 +1,155 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-07-16T00:00:00-03:00",
+  "control_plane": "rafaelmeloreisnovo/RafGitTools",
+  "claim_states": [
+    "VERIFIED",
+    "TESTED",
+    "PARTIAL",
+    "DECLARED_BY_AUTHOR",
+    "TOKEN_VAZIO",
+    "CONTRADICTION",
+    "BLOCKED"
+  ],
+  "policies": {
+    "token_vazio_is_valid": true,
+    "temporal_inference_is_forbidden": true,
+    "default_change_mode": "draft_pull_request",
+    "merge_requires_local_gates": true,
+    "failover_does_not_promote_claims": true
+  },
+  "repositories": [
+    {
+      "name": "rafaelmeloreisnovo/RafGitTools",
+      "role": "control-plane",
+      "critical": true,
+      "dependencies": [],
+      "health_probe": "./scripts/gradlew_with_java17.sh testDevDebugUnitTest",
+      "safe_state": "read-only-status",
+      "failover": "rafaelmeloreisnovo/Mapa",
+      "rollback": "git-revert-draft-pr",
+      "blind_tests": ["order-permutation", "failure-injection"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/Mapa",
+      "role": "ecosystem-navigation",
+      "critical": false,
+      "dependencies": [],
+      "health_probe": "test -f README.md || test -f docs/README.md",
+      "safe_state": "static-index",
+      "failover": "rafaelmeloreisnovo/RafGitTools",
+      "rollback": "restore-previous-index-commit",
+      "blind_tests": ["order-permutation"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "role": "vm-runtime",
+      "critical": true,
+      "dependencies": ["rafaelmeloreisnovo/termux-app-rafacodephi"],
+      "health_probe": "follow BUILDING.md canonical validation lane",
+      "safe_state": "vm-stopped-no-image-mutation",
+      "failover": "rafaelmeloreisnovo/qemu_rafaelia",
+      "rollback": "base-commit-plus-release-ledger",
+      "blind_tests": ["failure-injection", "fixture-blindness"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "role": "android-shell-runtime",
+      "critical": true,
+      "dependencies": [],
+      "health_probe": "scripts/validate_abi_policy_consistency.sh",
+      "safe_state": "bootstrap-diagnostic-only",
+      "failover": "rafaelmeloreisnovo/UserLAnd",
+      "rollback": "previous-apk-sha256-and-base-commit",
+      "blind_tests": ["failure-injection", "implementation-blindness"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/RafPolimata",
+      "role": "semantic-governance",
+      "critical": true,
+      "dependencies": [],
+      "health_probe": "repository-native CI and P(k) smoke test",
+      "safe_state": "claims-read-only",
+      "failover": "rafaelmeloreisnovo/Matem-tica-",
+      "rollback": "revert-protocol-commit",
+      "blind_tests": ["order-permutation", "temporal-blindness"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/GAIA_phi",
+      "role": "deterministic-data-index",
+      "critical": true,
+      "dependencies": [],
+      "health_probe": "make test && bash tests/run_tests.sh",
+      "safe_state": "immutable-last-manifest",
+      "failover": "rafaelmeloreisnovo/ZIPRAF_OMEGA_FULL",
+      "rollback": "restore-last-manifest-hash",
+      "blind_tests": ["order-permutation", "fixture-blindness"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/ZIPRAF_OMEGA_FULL",
+      "role": "integrity-and-serialization",
+      "critical": false,
+      "dependencies": [],
+      "health_probe": "pytest tests/ -v",
+      "safe_state": "reject-invalid-input",
+      "failover": "rafaelmeloreisnovo/GAIA_phi",
+      "rollback": "restore-versioned-codec-and-hash-report",
+      "blind_tests": ["fixture-blindness", "implementation-blindness"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/llamaRafaelia",
+      "role": "local-model-runtime",
+      "critical": false,
+      "dependencies": ["rafaelmeloreisnovo/GAIA_phi"],
+      "health_probe": "runtime smoke test defined by repository",
+      "safe_state": "no-inference-no-model-write",
+      "failover": "rafaelmeloreisnovo/TinyGPT",
+      "rollback": "runtime-lock-and-model-hash",
+      "blind_tests": ["fixture-blindness", "temporal-blindness"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/Rafaelia_Private",
+      "role": "restricted-evidence-vault",
+      "critical": true,
+      "dependencies": [],
+      "health_probe": "access-control-and-integrity-audit",
+      "safe_state": "deny-by-default",
+      "failover": null,
+      "rollback": "immutable-backup-plus-access-log",
+      "blind_tests": ["failure-injection"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/ChipQuantum",
+      "role": "low-level-math-and-experiments",
+      "critical": true,
+      "dependencies": ["rafaelmeloreisnovo/Matem-tica-"],
+      "health_probe": "pytest tests/ -v and repository C smoke build",
+      "safe_state": "experiments-disabled-kernel-read-only",
+      "failover": "rafaelmeloreisnovo/Matem-tica-",
+      "rollback": "base-commit-and-benchmark-artifact-hash",
+      "blind_tests": ["implementation-blindness", "fixture-blindness"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/Matem-tica-",
+      "role": "formal-mathematics",
+      "critical": true,
+      "dependencies": [],
+      "health_probe": "python3 src/verify_123.py",
+      "safe_state": "preserve-proof-mark-token-vazio",
+      "failover": "rafaelmeloreisnovo/RafPolimata",
+      "rollback": "restore-last-proved-commit",
+      "blind_tests": ["order-permutation", "fixture-blindness"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/relativity-living-light",
+      "role": "scientific-validation",
+      "critical": true,
+      "dependencies": ["rafaelmeloreisnovo/GAIA_phi"],
+      "health_probe": ".github/workflows/real-data-complete-execution.yml",
+      "safe_state": "no-new-scientific-claim",
+      "failover": null,
+      "rollback": "claim-ledger-plus-artifact-checksums",
+      "blind_tests": ["temporal-blindness", "fixture-blindness", "failure-injection"]
+    }
+  ]
+}
