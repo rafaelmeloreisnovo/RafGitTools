@@ -53,6 +53,17 @@
       "blind_tests": ["failure-injection", "fixture-blindness"]
     },
     {
+      "name": "rafaelmeloreisnovo/qemu_rafaelia",
+      "role": "vm-engine-failover",
+      "critical": false,
+      "dependencies": [],
+      "health_probe": "repository-native QEMU smoke test",
+      "safe_state": "engine-stopped-no-disk-write",
+      "failover": null,
+      "rollback": "base-commit-and-known-good-binary-hash",
+      "blind_tests": ["failure-injection", "fixture-blindness"]
+    },
+    {
       "name": "rafaelmeloreisnovo/termux-app-rafacodephi",
       "role": "android-shell-runtime",
       "critical": true,
@@ -62,6 +73,17 @@
       "failover": "rafaelmeloreisnovo/UserLAnd",
       "rollback": "previous-apk-sha256-and-base-commit",
       "blind_tests": ["failure-injection", "implementation-blindness"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/UserLAnd",
+      "role": "linux-userspace-failover",
+      "critical": false,
+      "dependencies": [],
+      "health_probe": "repository-native build and session smoke test",
+      "safe_state": "session-stopped-filesystem-read-only",
+      "failover": null,
+      "rollback": "previous-apk-and-rootfs-hash",
+      "blind_tests": ["failure-injection"]
     },
     {
       "name": "rafaelmeloreisnovo/RafPolimata",
@@ -105,6 +127,17 @@
       "safe_state": "no-inference-no-model-write",
       "failover": "rafaelmeloreisnovo/TinyGPT",
       "rollback": "runtime-lock-and-model-hash",
+      "blind_tests": ["fixture-blindness", "temporal-blindness"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/TinyGPT",
+      "role": "minimal-model-failover",
+      "critical": false,
+      "dependencies": [],
+      "health_probe": "repository-native deterministic inference smoke test",
+      "safe_state": "no-inference",
+      "failover": null,
+      "rollback": "model-hash-and-config-lock",
       "blind_tests": ["fixture-blindness", "temporal-blindness"]
     },
     {
