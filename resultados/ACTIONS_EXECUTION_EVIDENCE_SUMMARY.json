@@ -1,34 +1,36 @@
 {
   "schema": "actions_execution_evidence_summary_v1",
-  "generated_at": "2026-07-17T17:45:00Z",
+  "generated_at": "2026-07-17T18:35:00Z",
   "status": "PASS",
   "status_scope": "local_structural_validation_only",
-  "incident_count": 4,
+  "incident_count": 5,
   "classification_counts": {
+    "WORKFLOW_PASS": 1,
     "ZERO_STEP_NO_LOGS": 4
   },
   "billing_inferred_from_zero_steps": false,
   "legacy_startup_failure_label_deprecated": true,
   "local_validation": {
-    "py_compile": "PASS",
-    "unit_tests_passed": 14,
-    "contract_validation": "PASS",
-    "manifest_validation": "PASS",
-    "summary_deterministic": true,
-    "shell_syntax": "PASS",
+    "json_parse": "PASS",
+    "incident_derivation": "PASS",
+    "unique_incident_ids": "PASS",
+    "unique_repository_job_pairs": "PASS",
+    "expected_classification_counts": "PASS",
     "external_dependencies": 0
   },
   "claim_boundary": {
-    "mapa_workflow_failure_proven": false,
-    "rafgittools_workflow_failure_proven": false,
-    "mapa_billing_block_proven": false,
-    "rafgittools_billing_block_proven": false,
-    "rll_billing_scope_state": "DECLARED",
-    "remote_pass_proven": false
+    "non_rll_billing_block_scope_state": "DECLARED",
+    "billing_message_artifact_captured": false,
+    "payment_refund_chronology_state": "DECLARED",
+    "rll_execution_exception_proven": true,
+    "rll_workflow_pass_proven": true,
+    "root_cause_of_rll_exception": "TOKEN_VAZIO",
+    "remote_pass_proven_for_non_rll_repositories": false
   },
   "next_actions": [
-    "capture explicit billing message artifact for instituto-Rafael/relativity-living-light",
-    "inspect Actions policy and runner availability for personal repositories",
-    "retain ZERO_STEP_NO_LOGS until a causal message is observed"
+    "capture privately the GitHub billing message shown on one blocked non-RLL repository",
+    "preserve privately the Google Play payment and refund chronology without publishing sensitive transaction data",
+    "compare user and organization Actions billing/policy settings while retaining the RLL workflow as a positive control",
+    "do not invert the exception: RLL is the repository still executing"
   ]
 }

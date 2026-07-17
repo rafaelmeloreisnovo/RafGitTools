@@ -18,6 +18,8 @@
     "executed_failure_requires_positive_step_count": true,
     "zero_step_no_logs_requires_failed_conclusion": true,
     "declared_scope_is_not_remote_proof": true,
+    "execution_observation_and_causal_scope_are_separate": true,
+    "positive_control_exception_must_not_be_inverted": true,
     "legacy_startup_failure_label_is_deprecated": true
   },
   "billing_evidence_codes": [
