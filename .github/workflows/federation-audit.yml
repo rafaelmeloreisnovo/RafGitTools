@@ -77,6 +77,12 @@ jobs:
             --profile configs/knowledge-antiderivative-v1.json \
             --report artifacts/knowledge-antiderivative-report.json
 
+      - name: Validate session lineage author correction
+        run: |
+          python3 scripts/federation/session_lineage.py \
+            --profile docs/federation/session-lineage-v1.json \
+            --report artifacts/session-lineage-report.json
+
       - name: Run real local rollback drill
         run: |
           python3 scripts/federation/recovery_drill.py \
@@ -92,14 +98,15 @@ jobs:
             --requirements requirements/federation-audit.lock \
             --report artifacts/supply-chain.spdx.json
 
-      - name: Run blind, temporal, ownership, recovery, interop and knowledge tests
+      - name: Run blind, temporal, ownership, recovery, interop, knowledge and lineage tests
         run: |
           python3 -m pytest -q \
             tests/federation/test_watchdog.py \
             tests/federation/test_master_index.py \
             tests/federation/test_supply_chain.py \
             tests/federation/test_epistemic_interop.py \
-            tests/federation/test_knowledge_antiderivative.py
+            tests/federation/test_knowledge_antiderivative.py \
+            tests/federation/test_session_lineage.py
 
       - name: Simulate requested failure
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.simulate_failure != '' }}
@@ -117,6 +124,7 @@ jobs:
             configs/workflow-master-index.json \
             configs/epistemic-provenance-interop.json \
             configs/knowledge-antiderivative-v1.json \
+            docs/federation/session-lineage-v1.json \
             schemas/workflow-master-index.schema.json \
             schemas/epistemic-provenance-interop.schema.json \
             schemas/knowledge-antiderivative-v1.schema.json \
@@ -132,6 +140,10 @@ jobs:
             'DRIVE_STORAGE_MODE=POINTER_ONLY' \
             'PRIVATE_PAYLOAD_COPIED=false' \
             'SECRET_VALUE_COPIED=false' \
+            'HISTORICAL_TERMUX_DEBIAN_BRIDGE_ACTIVE_NOW=false' \
+            'DRIVE_PERIODIC_CUSTODY_NOW=true' \
+            'EVERY_ZIP_FULLY_INSPECTED=TOKEN_VAZIO' \
+            'EVERY_SNAPSHOT_LINKED_TO_EXACT_PROMPT=TOKEN_VAZIO' \
             'PHYSICAL_TOROIDAL_UNIVERSE_PROVEN=false' \
             'UNIVERSAL_HEX_RECONSTRUCTION_PROVEN=false' \
             'VOYNICH_DECODED=false' \
@@ -153,7 +165,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
         with:
-          name: federation-audit-v4-${{ github.run_id }}
+          name: federation-audit-v5-${{ github.run_id }}
           path: artifacts/
           if-no-files-found: error
           retention-days: 30
