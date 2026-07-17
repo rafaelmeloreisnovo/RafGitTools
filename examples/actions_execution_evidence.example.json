@@ -1,0 +1,76 @@
+{
+  "schema": "actions_execution_evidence_manifest_v1",
+  "schema_version": "1.0.0",
+  "observed_at": "2026-07-17T17:45:00Z",
+  "incidents": [
+    {
+      "incident_id": "ACT-MAPA-TOPOLOGY-20260717",
+      "repository_full_name": "rafaelmeloreisnovo/Mapa",
+      "run_id": 29600507830,
+      "job_id": 87951195310,
+      "status": "completed",
+      "conclusion": "failure",
+      "steps_observed": 0,
+      "logs_state": "ABSENT",
+      "evidence_code": "NO_EXPLICIT_CAUSE",
+      "evidence_source": "github_connector.fetch_workflow_run_jobs",
+      "observed_at": "2026-07-17T17:33:25Z",
+      "declared_classification": "ZERO_STEP_NO_LOGS"
+    },
+    {
+      "incident_id": "ACT-MAPA-CI-20260717",
+      "repository_full_name": "rafaelmeloreisnovo/Mapa",
+      "run_id": 29600507825,
+      "job_id": 87951195363,
+      "status": "completed",
+      "conclusion": "failure",
+      "steps_observed": 0,
+      "logs_state": "ABSENT",
+      "evidence_code": "NO_EXPLICIT_CAUSE",
+      "evidence_source": "github_connector.fetch_workflow_run_jobs",
+      "observed_at": "2026-07-17T17:33:25Z",
+      "declared_classification": "ZERO_STEP_NO_LOGS"
+    },
+    {
+      "incident_id": "ACT-RAFGITTOOLS-PR-VALIDATION-20260717-A",
+      "repository_full_name": "rafaelmeloreisnovo/RafGitTools",
+      "run_id": 29586438868,
+      "job_id": 87904483057,
+      "status": "completed",
+      "conclusion": "failure",
+      "steps_observed": 0,
+      "logs_state": "ABSENT",
+      "evidence_code": "NO_EXPLICIT_CAUSE",
+      "evidence_source": "github_connector.fetch_workflow_run_jobs",
+      "observed_at": "2026-07-17T14:04:00Z",
+      "declared_classification": "ZERO_STEP_NO_LOGS"
+    },
+    {
+      "incident_id": "ACT-RAFGITTOOLS-PR-VALIDATION-20260717-B",
+      "repository_full_name": "rafaelmeloreisnovo/RafGitTools",
+      "run_id": 29586438868,
+      "job_id": 87904483088,
+      "status": "completed",
+      "conclusion": "failure",
+      "steps_observed": 0,
+      "logs_state": "ABSENT",
+      "evidence_code": "NO_EXPLICIT_CAUSE",
+      "evidence_source": "github_connector.fetch_workflow_run_jobs",
+      "observed_at": "2026-07-17T14:04:00Z",
+      "declared_classification": "ZERO_STEP_NO_LOGS"
+    }
+  ],
+  "scope_assertions": [
+    {
+      "assertion_id": "SCOPE-BILLING-RLL-ONLY-20260717",
+      "statement": "O problema de pagamento foi informado somente para instituto-Rafael/relativity-living-light; outros zero-step não devem ser classificados como pagamento sem mensagem explícita.",
+      "source_type": "user_statement",
+      "state": "DECLARED",
+      "claim_allowed": false,
+      "exit_criteria": [
+        "capturar a mensagem remota de pagamento do RLL como artefato",
+        "capturar mensagem causal equivalente nos demais repositórios ou manter ZERO_STEP_NO_LOGS"
+      ]
+    }
+  ]
+}

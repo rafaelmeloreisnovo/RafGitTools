@@ -1,0 +1,46 @@
+{
+  "schema": "actions_execution_evidence_contract_v1",
+  "schema_version": "1.0.0",
+  "token_vazio": "TOKEN_VAZIO",
+  "classifications": [
+    "WORKFLOW_PASS",
+    "WORKFLOW_EXECUTED_FAILURE",
+    "ZERO_STEP_NO_LOGS",
+    "BILLING_BLOCKED",
+    "POLICY_BLOCKED",
+    "CANCELLED_BEFORE_EXECUTION",
+    "TOKEN_VAZIO"
+  ],
+  "rules": {
+    "billing_requires_explicit_evidence_code": true,
+    "zero_steps_never_implies_billing": true,
+    "pass_requires_positive_step_count": true,
+    "executed_failure_requires_positive_step_count": true,
+    "zero_step_no_logs_requires_failed_conclusion": true,
+    "declared_scope_is_not_remote_proof": true,
+    "legacy_startup_failure_label_is_deprecated": true
+  },
+  "billing_evidence_codes": [
+    "BILLING_OR_SPENDING_LIMIT_MESSAGE",
+    "PAYMENT_REQUIRED_MESSAGE"
+  ],
+  "policy_evidence_codes": [
+    "ACTIONS_DISABLED_BY_POLICY",
+    "RUNNER_GROUP_NOT_ALLOWED",
+    "ACTION_NOT_ALLOWED"
+  ],
+  "required_incident_fields": [
+    "incident_id",
+    "repository_full_name",
+    "run_id",
+    "job_id",
+    "status",
+    "conclusion",
+    "steps_observed",
+    "logs_state",
+    "evidence_code",
+    "evidence_source",
+    "observed_at",
+    "declared_classification"
+  ]
+}
