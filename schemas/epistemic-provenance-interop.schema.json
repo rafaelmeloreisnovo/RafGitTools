@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rafaelia:schema:epistemic-provenance-interop:1.0.0",
+  "title": "RAFAELIA Epistemic Provenance Interop Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile",
+    "observed_at",
+    "claim_allowed",
+    "authority_mode",
+    "source_index",
+    "boundary",
+    "state_axes",
+    "standards",
+    "vocabulary",
+    "relation_semantics",
+    "promotion_rules"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "profile": {"const": "RAFAELIA-EPISTEMIC-INTEROP-1"},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "claim_allowed": {"const": false},
+    "authority_mode": {"const": "federated-local-authority"},
+    "source_index": {"type": "string", "minLength": 1},
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "structural_mapping_is_conformance",
+        "hash_is_authenticated_provenance",
+        "schema_validity_is_scientific_validity",
+        "documentation_is_runtime_evidence",
+        "token_vazio_is_numeric",
+        "automatic_cross_repository_write",
+        "automatic_claim_promotion"
+      ],
+      "properties": {
+        "structural_mapping_is_conformance": {"const": false},
+        "hash_is_authenticated_provenance": {"const": false},
+        "schema_validity_is_scientific_validity": {"const": false},
+        "documentation_is_runtime_evidence": {"const": false},
+        "token_vazio_is_numeric": {"const": false},
+        "automatic_cross_repository_write": {"const": false},
+        "automatic_claim_promotion": {"const": false}
+      }
+    },
+    "state_axes": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "source_status",
+          "epistemic_status",
+          "operational_status",
+          "claim_gate"
+        ]
+      }
+    },
+    "standards": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "w3c_prov",
+        "openlineage",
+        "slsa_provenance",
+        "spdx",
+        "nist_ai_rmf"
+      ],
+      "properties": {
+        "w3c_prov": {"$ref": "#/$defs/standard"},
+        "openlineage": {"$ref": "#/$defs/standard"},
+        "slsa_provenance": {
+          "allOf": [
+            {"$ref": "#/$defs/standard"},
+            {
+              "type": "object",
+              "required": ["attestation"],
+              "properties": {"attestation": {"const": "TOKEN_VAZIO"}}
+            }
+          ]
+        },
+        "spdx": {"$ref": "#/$defs/standard"},
+        "nist_ai_rmf": {"$ref": "#/$defs/standard"}
+      }
+    },
+    "vocabulary": {
+      "type": "array",
+      "minItems": 15,
+      "items": {"$ref": "#/$defs/vocabularyTerm"}
+    },
+    "relation_semantics": {
+      "type": "array",
+      "minItems": 5,
+      "items": {"$ref": "#/$defs/relation"}
+    },
+    "promotion_rules": {
+      "type": "array",
+      "minItems": 5,
+      "items": {"$ref": "#/$defs/promotionRule"}
+    }
+  },
+  "$defs": {
+    "standard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "target", "conformance", "purpose"],
+      "properties": {
+        "status": {
+          "enum": [
+            "STRUCTURAL_MAPPING",
+            "STRUCTURAL_MAPPING_ONLY",
+            "CONCEPTUAL_CROSSWALK"
+          ]
+        },
+        "target": {"type": "string", "minLength": 1},
+        "conformance": {"const": "TOKEN_VAZIO"},
+        "attestation": {"const": "TOKEN_VAZIO"},
+        "purpose": {"type": "string", "minLength": 1}
+      }
+    },
+    "mappings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "w3c_prov",
+        "openlineage",
+        "slsa_provenance",
+        "spdx",
+        "nist_ai_rmf"
+      ],
+      "properties": {
+        "w3c_prov": {"type": "string", "minLength": 1},
+        "openlineage": {"type": "string", "minLength": 1},
+        "slsa_provenance": {"type": "string", "minLength": 1},
+        "spdx": {"type": "string", "minLength": 1},
+        "nist_ai_rmf": {"type": "string", "minLength": 1}
+      }
+    },
+    "vocabularyTerm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["term", "kind", "semantics", "mappings"],
+      "properties": {
+        "term": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"},
+        "kind": {"enum": ["ENTITY", "ACTIVITY", "AGENT", "EPISTEMIC_STATE"]},
+        "semantics": {"type": "string", "minLength": 20},
+        "mappings": {"$ref": "#/$defs/mappings"}
+      }
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relation", "rule", "w3c_prov"],
+      "properties": {
+        "relation": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"},
+        "rule": {"type": "string", "minLength": 20},
+        "w3c_prov": {"type": "string", "minLength": 1}
+      }
+    },
+    "promotionRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "condition", "effect"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^P[0-9]+-[a-z0-9-]+$"},
+        "condition": {"type": "string", "minLength": 20},
+        "effect": {"enum": ["BLOCK", "PRESERVE", "BLOCK_CONFORMANCE_CLAIM"]}
+      }
+    }
+  }
+}
