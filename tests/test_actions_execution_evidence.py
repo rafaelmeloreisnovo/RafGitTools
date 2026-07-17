@@ -69,6 +69,15 @@ class ActionsExecutionEvidenceTests(unittest.TestCase):
         item["logs_state"] = "AVAILABLE"
         self.assertEqual(classify_incident(item, self.contract), "WORKFLOW_PASS")
 
+    def test_rll_positive_control_is_pass(self) -> None:
+        item = next(
+            incident
+            for incident in self.manifest["incidents"]
+            if incident["repository_full_name"] == "instituto-Rafael/relativity-living-light"
+        )
+        self.assertEqual(classify_incident(item, self.contract), "WORKFLOW_PASS")
+        self.assertGreater(item["steps_observed"], 0)
+
     def test_cancelled_before_execution(self) -> None:
         item = self.incident()
         item["conclusion"] = "cancelled"
@@ -109,7 +118,10 @@ class ActionsExecutionEvidenceTests(unittest.TestCase):
         one = summarize(self.contract, self.manifest)
         two = summarize(self.contract, self.manifest)
         self.assertEqual(one, two)
-        self.assertEqual(one["classification_counts"], {"ZERO_STEP_NO_LOGS": 4})
+        self.assertEqual(
+            one["classification_counts"],
+            {"WORKFLOW_PASS": 1, "ZERO_STEP_NO_LOGS": 4},
+        )
         self.assertFalse(one["billing_inferred_from_zero_steps"])
 
 
