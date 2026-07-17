@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rafaelmeloreisnovo/RafGitTools/schemas/workflow-master-index.schema.json",
+  "title": "RAFAELIA Workflow Master Index v2",
+  "description": "Structural contract for temporal ownership, runtime evidence, supply chain and recovery. Validation does not prove remote execution or scientific truth.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at", "control_plane", "claim_allowed", "ontology", "policies", "defaults", "nodes", "relations"],
+  "properties": {
+    "schema_version": {"const": "2.0.0"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "control_plane": {"type": "string", "minLength": 1},
+    "claim_allowed": {"const": false},
+    "ontology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node_types", "state_axes", "relation_fields"],
+      "properties": {
+        "node_types": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "state_axes": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "relation_fields": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+      }
+    },
+    "policies": {"type": "object", "additionalProperties": {"type": ["boolean", "string"]}},
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["states", "temporal", "runtime_evidence", "supply_chain", "recovery"],
+      "properties": {
+        "states": {"$ref": "#/$defs/statesPartial"},
+        "temporal": {"$ref": "#/$defs/temporal"},
+        "runtime_evidence": {"$ref": "#/$defs/runtimeEvidence"},
+        "supply_chain": {"$ref": "#/$defs/supplyChain"},
+        "recovery": {"$ref": "#/$defs/recoveryPartial"}
+      }
+    },
+    "nodes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/node"}},
+    "relations": {"type": "array", "items": {"$ref": "#/$defs/relation"}}
+  },
+  "$defs": {
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "repository", "layer", "canonical_source", "owner", "critical", "dependencies", "states", "next_action", "exit_criteria", "recovery"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+        "repository": {"type": "string", "pattern": "^[^/]+/[^/]+$"},
+        "layer": {"type": "string", "minLength": 1},
+        "canonical_source": {"type": "string", "minLength": 1, "not": {"const": "TOKEN_VAZIO"}},
+        "owner": {"type": "string", "minLength": 1},
+        "critical": {"type": "boolean"},
+        "dependencies": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "states": {"$ref": "#/$defs/statesPartial"},
+        "temporal": {"$ref": "#/$defs/temporalPartial"},
+        "runtime_evidence": {"$ref": "#/$defs/runtimeEvidencePartial"},
+        "supply_chain": {"$ref": "#/$defs/supplyChainPartial"},
+        "recovery": {"$ref": "#/$defs/recoveryPartial"},
+        "next_action": {"type": "string", "minLength": 10},
+        "exit_criteria": {"type": "string", "minLength": 10}
+      }
+    },
+    "statesPartial": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "source_status": {"enum": ["VERIFIED", "VERIFIED_LIMITED", "DECLARED_BY_AUTHOR", "TOKEN_VAZIO", "CONTRADICTION"]},
+        "epistemic_status": {"type": "string", "minLength": 1},
+        "operational_status": {"enum": ["VERIFIED", "TESTED", "PARTIAL", "BLOCKED", "TOKEN_VAZIO", "CONTRADICTION"]},
+        "claim_gate": {"enum": ["BLOCKED", "ALLOWED_STRUCTURAL", "ALLOWED"]}
+      }
+    },
+    "temporal": {
+      "type": "object", "additionalProperties": false,
+      "required": ["observed_at", "valid_from", "valid_until", "superseded_at", "event_sequence"],
+      "properties": {
+        "observed_at": {"type": "string", "format": "date-time"}, "valid_from": {"type": "string", "format": "date-time"}, "valid_until": {"type": ["string", "null"]}, "superseded_at": {"type": ["string", "null"]}, "event_sequence": {"type": "integer", "minimum": 1}
+      }
+    },
+    "temporalPartial": {"type": "object", "additionalProperties": false, "properties": {"observed_at": {"type": "string"}, "valid_from": {"type": "string"}, "valid_until": {"type": ["string", "null"]}, "superseded_at": {"type": ["string", "null"]}, "event_sequence": {"type": "integer", "minimum": 1}}},
+    "runtimeEvidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "artifact", "device", "abi", "environment"],
+      "properties": {"status": {"enum": ["VERIFIED", "TESTED", "PARTIAL", "BLOCKED", "TOKEN_VAZIO", "CONTRADICTION"]}, "artifact": {"type": "string"}, "device": {"type": "string"}, "abi": {"type": "string"}, "environment": {"type": "string"}}
+    },
+    "runtimeEvidencePartial": {"type": "object", "additionalProperties": false, "properties": {"status": {"type": "string"}, "artifact": {"type": "string"}, "device": {"type": "string"}, "abi": {"type": "string"}, "environment": {"type": "string"}}},
+    "supplyChain": {"type": "object", "additionalProperties": false, "required": ["source_ref", "dependency_lock", "sbom", "attestation"], "properties": {"source_ref": {"type": "string"}, "dependency_lock": {"type": "string"}, "sbom": {"type": "string"}, "attestation": {"type": "string"}}},
+    "supplyChainPartial": {"type": "object", "additionalProperties": false, "properties": {"source_ref": {"type": "string"}, "dependency_lock": {"type": "string"}, "sbom": {"type": "string"}, "attestation": {"type": "string"}}},
+    "recoveryPartial": {"type": "object", "additionalProperties": false, "properties": {"safe_state": {"type": "string"}, "rollback": {"type": "string"}, "drill_command": {"type": "string"}, "last_drill_status": {"type": "string"}, "last_drill_artifact": {"type": "string"}}},
+    "relation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "producer", "consumer", "schema_version", "compatibility", "authentication", "privacy_class", "timeout_seconds", "retry_policy", "idempotency", "failure_behavior", "evidence_required"],
+      "properties": {"id": {"type": "string"}, "producer": {"type": "string"}, "consumer": {"type": "string"}, "schema_version": {"type": "string"}, "compatibility": {"type": "string"}, "authentication": {"type": "string"}, "privacy_class": {"type": "string"}, "timeout_seconds": {"type": "integer", "minimum": 1}, "retry_policy": {"type": "string"}, "idempotency": {"enum": ["required", "not-required"]}, "failure_behavior": {"type": "string"}, "evidence_required": {"type": "string"}}
+    }
+  }
+}
