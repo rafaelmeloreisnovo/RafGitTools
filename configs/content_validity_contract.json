@@ -1,0 +1,101 @@
+{
+  "schema": "rafaelia.content-validity-contract.v1",
+  "version": "1.0.0",
+  "authority": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "rule": "This contract classifies support for a declared use. It does not convert weights into truth probabilities."
+  },
+  "principles": [
+    "TOKEN_VAZIO is a valid epistemic record and never coerces to zero, false, null, success or failure.",
+    "A valid token is valid only for its declared domain, use and time window.",
+    "Weights measure linked support dimensions; they are not learned truth scores.",
+    "Missing required support is non-compensatory: strong dimensions cannot average away TOKEN_VAZIO.",
+    "Tokenization must preserve source boundaries, negation, modality, conditions, exceptions, numbers and units."
+  ],
+  "token_states": [
+    "RAW",
+    "ANCHORED",
+    "CLASSIFIED",
+    "WEIGHTED",
+    "WINDOWED",
+    "CROSS_CHECKED",
+    "VALID_LIMITED",
+    "VALID",
+    "TOKEN_VAZIO",
+    "CONTRADICTION",
+    "BLOCKED",
+    "REJECTED"
+  ],
+  "token_kinds": [
+    "DEFINITION",
+    "CLAIM",
+    "CONDITION",
+    "NEGATION",
+    "EXCEPTION",
+    "METAPHOR",
+    "FORMULA",
+    "UNIT",
+    "PARAMETER",
+    "RESULT",
+    "METHOD",
+    "GAP"
+  ],
+  "dimensions": [
+    {"id": "D01", "name": "provenance", "meaning": "source, author, revision, locator and custody"},
+    {"id": "D02", "name": "semantic_fidelity", "meaning": "meaning, negation, modality, conditions and exceptions preserved"},
+    {"id": "D03", "name": "domain_fit", "meaning": "declared scope, preconditions and exclusions"},
+    {"id": "D04", "name": "formal_consistency", "meaning": "logic, dimensions, derivation and baseline consistency"},
+    {"id": "D05", "name": "empirical_support", "meaning": "data, measurement, uncertainty and falsifier"},
+    {"id": "D06", "name": "reproducibility", "meaning": "command, versions, seed, environment, tests and artifact identity"},
+    {"id": "D07", "name": "temporal_validity", "meaning": "observed_at, valid_from, valid_until and supersession"},
+    {"id": "D08", "name": "governance", "meaning": "privacy, consent, authority, claim gate and rollback"}
+  ],
+  "weight_domain": {
+    "numeric_min": 0.0,
+    "numeric_max": 1.0,
+    "missing_value": "TOKEN_VAZIO",
+    "numeric_weight_requires_evidence": true,
+    "token_vazio_is_numeric": false
+  },
+  "required_dimensions_by_kind": {
+    "DEFINITION": ["D01", "D02", "D03", "D07", "D08"],
+    "CLAIM": ["D01", "D02", "D03", "D04", "D05", "D06", "D07", "D08"],
+    "CONDITION": ["D01", "D02", "D03", "D07"],
+    "NEGATION": ["D01", "D02", "D03", "D07"],
+    "EXCEPTION": ["D01", "D02", "D03", "D07"],
+    "METAPHOR": ["D01", "D02", "D03", "D07", "D08"],
+    "FORMULA": ["D01", "D02", "D03", "D04", "D06", "D07", "D08"],
+    "UNIT": ["D01", "D02", "D03", "D04", "D07"],
+    "PARAMETER": ["D01", "D02", "D03", "D04", "D06", "D07"],
+    "RESULT": ["D01", "D02", "D03", "D04", "D05", "D06", "D07", "D08"],
+    "METHOD": ["D01", "D02", "D03", "D04", "D06", "D07", "D08"],
+    "GAP": ["D01", "D02", "D03", "D07", "D08"]
+  },
+  "aggregation": {
+    "tensor_axes": ["token", "window", "dimension"],
+    "coverage_formula": "known_required_dimensions / required_dimensions",
+    "quality_formula": "minimum numeric weight across required dimensions",
+    "non_compensatory": true,
+    "valid_threshold": 0.8,
+    "valid_limited_threshold": 0.6,
+    "hard_block_states": ["TOKEN_VAZIO", "CONTRADICTION", "BLOCKED", "REJECTED"]
+  },
+  "window_policy": {
+    "source_boundary_required": true,
+    "cross_source_requires_explicit_bridge": true,
+    "overlap_must_be_less_than_max_tokens": true,
+    "truncation_must_be_declared": true,
+    "default_max_tokens": "TOKEN_VAZIO",
+    "default_overlap_tokens": "TOKEN_VAZIO"
+  },
+  "promotion_order": [
+    "RAW",
+    "ANCHORED",
+    "CLASSIFIED",
+    "WEIGHTED",
+    "WINDOWED",
+    "CROSS_CHECKED",
+    "VALID_LIMITED",
+    "VALID"
+  ]
+}
