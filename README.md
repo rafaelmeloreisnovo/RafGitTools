@@ -436,7 +436,7 @@ Source: `app/src/main/kotlin/com/rafgittools/data/auth/`
 
 ## fazer/ Directory
 
-The `fazer/` directory contains improved or alternative versions of source files that are pending review and integration into the main build. These files are **not** compiled as part of the app; they serve as a staging area for contributed code before it is promoted to `app/src/`. See `fazer/1.md` for integration notes associated with each file.
+The `fazer/` directory contains earlier draft versions of source files that predate the current `app/src/` implementations. These files are **not** compiled as part of the app. After audit (July 2026), all `fazer/` files were found to be superseded by the more complete implementations already in `app/src/`. The directory is retained for historical reference and will be removed in a future cleanup PR.
 
 ---
 
