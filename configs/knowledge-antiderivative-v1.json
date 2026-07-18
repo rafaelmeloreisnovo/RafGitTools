@@ -1,0 +1,217 @@
+{
+  "schema_version": "1.0.0",
+  "profile_id": "RAFAELIA-KNOWLEDGE-ANTIDERIVATIVE-1",
+  "generated_from_observation_date": "2026-07-17",
+  "claim_allowed": false,
+  "automatic_merge": false,
+  "automatic_cross_repository_write": false,
+  "private_payload_copied": false,
+  "security": {
+    "secret_detected_in_historical_drive_dump": true,
+    "secret_value_copied": false,
+    "required_remediation": [
+      "revoke_or_rotate_exposed_credential",
+      "run_secret_scanning_before_ingestion",
+      "redact_environment_dumps",
+      "treat_raw_dumps_as_restricted"
+    ]
+  },
+  "drive_outputs": {
+    "folder_id": "1H7VtNdhcopTcT8mhJcJsnG-EkML7WxSe",
+    "document_id": "1wxi_LKwyl8D0XLatBbpyOfkfw5S3v1Rmt4XQFrlFF6I",
+    "spreadsheet_id": "1KY4_uaZTo9pbTan_K19jlwxvUP4RHnjpPSDyAfJBlOE",
+    "storage_mode": "POINTER_ONLY"
+  },
+  "source_pointers": [
+    {
+      "id": "1b3b4ClNfb17NwpmoZPc1fJE2n1XoeHHa",
+      "title": "BLOCO_UNIFICADO_TOTAL_RafaelIA.txt",
+      "class": "RESTRICTED_ENVIRONMENT_DUMP",
+      "payload_copied": false
+    },
+    {
+      "id": "1VFRvj5cAcfSNNEdBI2M0MVTctazhVdFw",
+      "title": "for.md",
+      "class": "MATHEMATICAL_INVENTORY",
+      "payload_copied": false
+    },
+    {
+      "id": "1X02CbWoQyBXnAqsUT3AB3b8JD5nMlF1z",
+      "title": "33.md",
+      "class": "AUTHORIAL_BOUNDARY",
+      "payload_copied": false
+    },
+    {
+      "id": "1tncw3RYsQtLbV9Jz65NB4qyNoFrJrMY6",
+      "title": "RAFAELIA__OMEGA_NAV_SEMANTICA__INDEX_RELACOES",
+      "class": "SEMANTIC_NAVIGATION_ROOT",
+      "payload_copied": false
+    }
+  ],
+  "empty_state_model": {
+    "token_vazio_is_numeric": false,
+    "token_vazio_is_pass": false,
+    "states": [
+      "NOT_EXAMINED",
+      "TOKEN_VAZIO",
+      "OPEN_GAP",
+      "BLOCKED",
+      "CONTRADICTION",
+      "CLOSED",
+      "NOT_APPLICABLE"
+    ],
+    "required_fields_for_unresolved": [
+      "reason",
+      "owner",
+      "next_action",
+      "exit_criteria"
+    ]
+  },
+  "operators": [
+    {
+      "id": "DIRECT_DERIVATIVE",
+      "expression": "D(X_t)=X_(t+1)-X_t",
+      "purpose": "local version delta"
+    },
+    {
+      "id": "REVERSE_CAUSAL_TRAVERSAL",
+      "expression": "pred(result)",
+      "purpose": "trace explicit predecessor paths without assuming a unique inverse"
+    },
+    {
+      "id": "HISTORICAL_ANTIDERIVATIVE",
+      "expression": "A[n]=A[0]+sum(delta_k)",
+      "purpose": "accumulate commits, sessions, evidence, contradictions and rollbacks"
+    },
+    {
+      "id": "LOG_MISSINGNESS_ANTIDERIVATIVE",
+      "expression": "L_V[n]=sum(log(1+mu_V[t]))",
+      "purpose": "compare observed unresolved burden without applying logarithm to TOKEN_VAZIO"
+    },
+    {
+      "id": "RECURSIVE_MULTISCALE",
+      "expression": "symbol->claim->file->repository->federation",
+      "purpose": "apply the same state contract at nested scales"
+    },
+    {
+      "id": "COUNTERFACTUAL_REMOVAL",
+      "expression": "K\\S",
+      "purpose": "test finite robustness after removing a source, node, edge or model candidate"
+    }
+  ],
+  "toroidal_model": {
+    "state_space": "(Z_q)^d",
+    "transition": "X_(t+1)=X_t+F(X_t,omega,phi) mod q",
+    "global_flux_invariant": "sum_v div(J)(v)=0",
+    "conditions": [
+      "closed_graph",
+      "consistent_edge_orientation",
+      "all_sources_and_sinks_accounted_for"
+    ],
+    "physical_universe_claim": "TOKEN_VAZIO"
+  },
+  "hexagonal_longitudinal_model": {
+    "topology": "six-neighbor axial lattice with optional toroidal wrap",
+    "longitudinal_axis": "time_or_version",
+    "universal_reconstruction_claim": "TOKEN_VAZIO",
+    "required_graph_condition": "test vertex connectivity or an explicit erasure-reconstruction contract",
+    "three_edges_is_proof": false
+  },
+  "permutation_contract": {
+    "admissible_reordering_preserves_digest": true,
+    "canonicalization": [
+      "sort_by_stable_id",
+      "utf8",
+      "sorted_json_keys",
+      "fixed_separators",
+      "final_newline",
+      "source_derived_timestamps_only"
+    ]
+  },
+  "term_boundaries": {
+    "observed_terms": [
+      "VERB",
+      "GODEX",
+      "FCEA",
+      "VORTEX",
+      "FIB",
+      "VOY",
+      "QUANTUM",
+      "OMEGA",
+      "ZIPRAF",
+      "ZRF",
+      "RAFAELIA",
+      "MATRIX",
+      "JSON",
+      "BASHRC",
+      "ASM",
+      "C",
+      "CORE",
+      "KERNEL",
+      "MEMORY",
+      "HCPM",
+      "999",
+      "YAML",
+      "SIGIL",
+      "LAYER",
+      "TOROIDAL",
+      "HEXAGONAL"
+    ],
+    "unresolved_terms": [
+      {
+        "term": "ZFR",
+        "state": "TOKEN_VAZIO",
+        "reason": "no canonical Drive result; silent aliasing to ZRF is forbidden",
+        "owner": "rafaelmeloreisnovo",
+        "next_action": "locate or define canonical source",
+        "exit_criteria": "explicit definition or alias declaration"
+      },
+      {
+        "term": "OMINI",
+        "state": "TOKEN_VAZIO",
+        "reason": "no canonical Drive result; OMNI results were mostly third-party documentation",
+        "owner": "rafaelmeloreisnovo",
+        "next_action": "define OMINI or declare its alias",
+        "exit_criteria": "canonical source with scope and authority"
+      },
+      {
+        "term": "888",
+        "state": "TOKEN_VAZIO",
+        "reason": "no unambiguous canonical semantics were found",
+        "owner": "rafaelmeloreisnovo",
+        "next_action": "preserve unresolved state and avoid numerological inference",
+        "exit_criteria": "canonical source and explicit semantics"
+      },
+      {
+        "term": "CVV",
+        "state": "NOT_EXAMINED",
+        "reason": "search results were noisy and did not establish a canonical expansion",
+        "owner": "rafaelmeloreisnovo",
+        "next_action": "identify exact expansion and repository authority",
+        "exit_criteria": "definition linked to source and owner"
+      }
+    ]
+  },
+  "repository_routes": [
+    {
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "authority": "control plane, schema, validation, security and reports"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Matem-tica-",
+      "authority": "definitions, proofs, counterexamples and finite verification"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/ChipQuantum",
+      "authority": "C/fixed-point implementation, ABI and KAT"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/papers",
+      "authority": "academic synthesis, limitations and falsifiers"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Mapa",
+      "authority": "pointer-only navigation, relations and rollout"
+    }
+  ]
+}

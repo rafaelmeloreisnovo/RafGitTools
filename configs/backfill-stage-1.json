@@ -1,0 +1,17 @@
+{
+  "profile_id": "RAFAELIA-BACKFILL-STAGE-1",
+  "claim_allowed": false,
+  "automatic_merge": false,
+  "records": [
+    {"id":"GAP-001","state":"PARTIAL","owner":"Drive/RafGitTools","next_action":"declare canonical matrix","exit_criteria":"one authority and digest"},
+    {"id":"GAP-002","state":"PARTIAL","owner":"RafGitTools","next_action":"expand session manifest","exit_criteria":"all items have source and predecessor"},
+    {"id":"GAP-003","state":"TOKEN_VAZIO","owner":"GAIA/RafGitTools","next_action":"build incremental lineage index","exit_criteria":"stable ids and digests"},
+    {"id":"GAP-004","state":"TOKEN_VAZIO","owner":"GAIA","next_action":"inventory archives with checkpoints","exit_criteria":"all scoped objects classified"},
+    {"id":"GAP-005","state":"BLOCKED","owner":"GitHub account","next_action":"obtain observable workflow run","exit_criteria":"steps and logs exist"},
+    {"id":"GAP-006","state":"TOKEN_VAZIO","owner":"termux-app-rafacodephi","next_action":"run collector on ARM32 device","exit_criteria":"device ABI commands exits and digests"},
+    {"id":"GAP-007","state":"BLOCKED","owner":"Vectras-VM-Android","next_action":"run guest boot smoke","exit_criteria":"guest console or display evidence"},
+    {"id":"GAP-008","state":"TOKEN_VAZIO","owner":"ChipQuantum","next_action":"run KAT on ARM32","exit_criteria":"reproduced output and environment digest"},
+    {"id":"GAP-011","state":"OPEN_GAP","owner":"RLL","next_action":"recompute acoustic scale inside MCMC","exit_criteria":"converged chain and published artifacts"},
+    {"id":"GAP-016","state":"TOKEN_VAZIO","owner":"RafGitTools","next_action":"run official format validators","exit_criteria":"conformance report or explicit gaps"}
+  ]
+}

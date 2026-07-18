@@ -1,0 +1,8 @@
+{
+  "id": "LINEAGE-STAGE-2",
+  "status": "POINTER_ONLY",
+  "canonical_table": "configs/lineage-stage-2.tsv",
+  "validator": "scripts/federation/validate_lineage_stage2.py",
+  "claim_allowed": false,
+  "automatic_merge": false
+}

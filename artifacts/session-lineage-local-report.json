@@ -1,0 +1,14 @@
+{
+  "profile_id": "RAFAELIA-SESSION-LINEAGE-1",
+  "status": "PASS_LOCAL_DECLARED_SCOPE",
+  "tests": "3 passed",
+  "profile_sha256": "05d4d1e9487377073962b3229a398040de2075b56e8c046a31a79ce700bb2b03",
+  "checks": [
+    "author correction keeps bridge inactive",
+    "Drive periodic custody remains current",
+    "TOKEN_VAZIO cannot be promoted to PASS"
+  ],
+  "remote_ci": "BLOCKED:ZERO_STEP_NO_LOGS",
+  "claim_allowed": false,
+  "automatic_merge": false
+}

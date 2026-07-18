@@ -1,0 +1,292 @@
+{
+  "schema_version": "1.0.0",
+  "profile": "RAFAELIA-EPISTEMIC-INTEROP-1",
+  "observed_at": "2026-07-17T20:00:00Z",
+  "claim_allowed": false,
+  "authority_mode": "federated-local-authority",
+  "source_index": "configs/workflow-master-index.json",
+  "boundary": {
+    "structural_mapping_is_conformance": false,
+    "hash_is_authenticated_provenance": false,
+    "schema_validity_is_scientific_validity": false,
+    "documentation_is_runtime_evidence": false,
+    "token_vazio_is_numeric": false,
+    "automatic_cross_repository_write": false,
+    "automatic_claim_promotion": false
+  },
+  "state_axes": [
+    "source_status",
+    "epistemic_status",
+    "operational_status",
+    "claim_gate"
+  ],
+  "standards": {
+    "w3c_prov": {
+      "status": "STRUCTURAL_MAPPING",
+      "target": "PROV-JSON-shaped projection",
+      "conformance": "TOKEN_VAZIO",
+      "purpose": "Represent entities, activities, agents, derivation, use, generation and responsibility."
+    },
+    "openlineage": {
+      "status": "STRUCTURAL_MAPPING",
+      "target": "OpenLineage RunEvent-shaped projection",
+      "conformance": "TOKEN_VAZIO",
+      "purpose": "Represent bounded runs, jobs, inputs, outputs and custom epistemic facets."
+    },
+    "slsa_provenance": {
+      "status": "STRUCTURAL_MAPPING_ONLY",
+      "target": "in-toto Statement with SLSA provenance predicate shape",
+      "conformance": "TOKEN_VAZIO",
+      "attestation": "TOKEN_VAZIO",
+      "purpose": "Represent source subjects, resolved dependencies, builder identity and invocation boundary without claiming a signed attestation."
+    },
+    "spdx": {
+      "status": "STRUCTURAL_MAPPING",
+      "target": "SPDX JSON-shaped software and evidence inventory",
+      "conformance": "TOKEN_VAZIO",
+      "purpose": "Represent repositories, artifacts and dependency relationships as a bounded materials inventory."
+    },
+    "nist_ai_rmf": {
+      "status": "CONCEPTUAL_CROSSWALK",
+      "target": "GOVERN-MAP-MEASURE-MANAGE crosswalk",
+      "conformance": "TOKEN_VAZIO",
+      "purpose": "Relate RAFAELIA governance and evidence gates to risk-management functions without asserting certification."
+    }
+  },
+  "vocabulary": [
+    {
+      "term": "SESSION",
+      "kind": "ENTITY",
+      "semantics": "Versioned epistemic work unit whose later review preserves the prior state and records a delta.",
+      "mappings": {
+        "w3c_prov": "prov:Entity",
+        "openlineage": "run.facets.rafaelia_session",
+        "slsa_provenance": "buildDefinition.externalParameters.session",
+        "spdx": "Annotation",
+        "nist_ai_rmf": "MAP"
+      }
+    },
+    {
+      "term": "CLAIM",
+      "kind": "ENTITY",
+      "semantics": "Atomic assertion with domain, assumptions, uncertainty, falsifier and four independent state axes.",
+      "mappings": {
+        "w3c_prov": "prov:Entity",
+        "openlineage": "run.facets.rafaelia_claim",
+        "slsa_provenance": "buildDefinition.externalParameters.claim",
+        "spdx": "Annotation",
+        "nist_ai_rmf": "MAP"
+      }
+    },
+    {
+      "term": "SOURCE",
+      "kind": "ENTITY",
+      "semantics": "Repository path, dataset, document, commit, artifact or observation from which a claim is derived.",
+      "mappings": {
+        "w3c_prov": "prov:Entity",
+        "openlineage": "inputs[]",
+        "slsa_provenance": "buildDefinition.resolvedDependencies[]",
+        "spdx": "File|Package|ExternalRef",
+        "nist_ai_rmf": "MAP"
+      }
+    },
+    {
+      "term": "IMPLEMENTATION",
+      "kind": "ACTIVITY",
+      "semantics": "Bounded transformation from definition or contract into code, configuration or executable procedure.",
+      "mappings": {
+        "w3c_prov": "prov:Activity",
+        "openlineage": "job",
+        "slsa_provenance": "buildDefinition.buildType",
+        "spdx": "Relationship:GENERATED_FROM",
+        "nist_ai_rmf": "MANAGE"
+      }
+    },
+    {
+      "term": "TEST",
+      "kind": "ACTIVITY",
+      "semantics": "Reproducible procedure that evaluates a declared obligation without silently widening its domain.",
+      "mappings": {
+        "w3c_prov": "prov:Activity",
+        "openlineage": "run",
+        "slsa_provenance": "runDetails.metadata",
+        "spdx": "Annotation",
+        "nist_ai_rmf": "MEASURE"
+      }
+    },
+    {
+      "term": "EVIDENCE",
+      "kind": "ENTITY",
+      "semantics": "Artifact, log, result, hash, measurement or receipt produced by an identified activity.",
+      "mappings": {
+        "w3c_prov": "prov:Entity generatedBy activity",
+        "openlineage": "outputs[]",
+        "slsa_provenance": "subject[]",
+        "spdx": "File|Package|Annotation",
+        "nist_ai_rmf": "MEASURE"
+      }
+    },
+    {
+      "term": "DECISION",
+      "kind": "ACTIVITY",
+      "semantics": "Gate evaluation that may preserve, block, promote structurally or revert a state.",
+      "mappings": {
+        "w3c_prov": "prov:Activity",
+        "openlineage": "run.facets.rafaelia_decision",
+        "slsa_provenance": "runDetails.metadata",
+        "spdx": "Annotation",
+        "nist_ai_rmf": "GOVERN|MANAGE"
+      }
+    },
+    {
+      "term": "ROLLBACK",
+      "kind": "ACTIVITY",
+      "semantics": "Restoration of a known-good operational or epistemic state while preserving the evidence that caused reversal.",
+      "mappings": {
+        "w3c_prov": "prov:Activity",
+        "openlineage": "run.facets.rafaelia_rollback",
+        "slsa_provenance": "runDetails.metadata",
+        "spdx": "Annotation",
+        "nist_ai_rmf": "MANAGE"
+      }
+    },
+    {
+      "term": "TOKEN_VAZIO",
+      "kind": "EPISTEMIC_STATE",
+      "semantics": "A required position is known, but the evidence needed to fill it has not been obtained; it is neither zero, null, false, pass nor fail.",
+      "mappings": {
+        "w3c_prov": "rafaelia:EpistemicState",
+        "openlineage": "custom facet state",
+        "slsa_provenance": "externalParameters unresolved field",
+        "spdx": "Annotation",
+        "nist_ai_rmf": "MAP|MEASURE"
+      }
+    },
+    {
+      "term": "CONTRADICTION",
+      "kind": "EPISTEMIC_STATE",
+      "semantics": "Evidence or conditions conflict with an assertion; the conflicting record remains visible and versioned.",
+      "mappings": {
+        "w3c_prov": "rafaelia:EpistemicState",
+        "openlineage": "custom facet state",
+        "slsa_provenance": "externalParameters conflict",
+        "spdx": "Annotation",
+        "nist_ai_rmf": "MEASURE|MANAGE"
+      }
+    },
+    {
+      "term": "FALSIFIER",
+      "kind": "ENTITY",
+      "semantics": "Predeclared observation, threshold or counterexample capable of blocking or changing a claim state.",
+      "mappings": {
+        "w3c_prov": "prov:Entity",
+        "openlineage": "run.facets.rafaelia_falsifier",
+        "slsa_provenance": "buildDefinition.externalParameters.falsifier",
+        "spdx": "Annotation",
+        "nist_ai_rmf": "MEASURE"
+      }
+    },
+    {
+      "term": "GAP",
+      "kind": "ENTITY",
+      "semantics": "Explicit unresolved obligation with owner, next action and exit criteria.",
+      "mappings": {
+        "w3c_prov": "prov:Entity",
+        "openlineage": "run.facets.rafaelia_gap",
+        "slsa_provenance": "buildDefinition.externalParameters.gap",
+        "spdx": "Annotation",
+        "nist_ai_rmf": "MAP|MANAGE"
+      }
+    },
+    {
+      "term": "AUTHORITY",
+      "kind": "AGENT",
+      "semantics": "Repository, organization, person or service responsible for defining, executing, testing, interpreting or guarding a local truth boundary.",
+      "mappings": {
+        "w3c_prov": "prov:Agent",
+        "openlineage": "job.namespace|producer",
+        "slsa_provenance": "runDetails.builder.id",
+        "spdx": "Creator|Supplier|Originator",
+        "nist_ai_rmf": "GOVERN"
+      }
+    },
+    {
+      "term": "ARTIFACT",
+      "kind": "ENTITY",
+      "semantics": "Versioned output with identity, digest, producer, conditions and bounded interpretation.",
+      "mappings": {
+        "w3c_prov": "prov:Entity",
+        "openlineage": "inputs[]|outputs[]",
+        "slsa_provenance": "subject[]",
+        "spdx": "File|Package",
+        "nist_ai_rmf": "MEASURE"
+      }
+    },
+    {
+      "term": "RUNTIME_CONTEXT",
+      "kind": "ENTITY",
+      "semantics": "Device, ABI, environment, compiler, flags, model, tokenizer and parameter set needed to interpret execution evidence.",
+      "mappings": {
+        "w3c_prov": "prov:Entity collection",
+        "openlineage": "run.facets.environment",
+        "slsa_provenance": "runDetails.builder|metadata",
+        "spdx": "Package|ExternalRef",
+        "nist_ai_rmf": "MAP|MEASURE"
+      }
+    }
+  ],
+  "relation_semantics": [
+    {
+      "relation": "DERIVED_FROM",
+      "rule": "A claim or artifact may be derived from a source only when source identity and transformation are recorded.",
+      "w3c_prov": "prov:wasDerivedFrom"
+    },
+    {
+      "relation": "IMPLEMENTS",
+      "rule": "Code implements a method or experiment; code alone does not close a gap.",
+      "w3c_prov": "prov:used plus qualified derivation"
+    },
+    {
+      "relation": "PRODUCES",
+      "rule": "An activity produces evidence; the evidence may close or preserve a gap according to a separate decision.",
+      "w3c_prov": "prov:wasGeneratedBy"
+    },
+    {
+      "relation": "NOT_EVIDENCE_FOR",
+      "rule": "Semantic or symbolic similarity cannot be promoted into scientific, physical, legal or runtime evidence.",
+      "w3c_prov": "rafaelia:notEvidenceFor"
+    },
+    {
+      "relation": "SUPERSEDES_WITH_HISTORY",
+      "rule": "A newer state may supersede an older state without deleting the older evidence or its validity interval.",
+      "w3c_prov": "prov:specializationOf plus invalidation time"
+    }
+  ],
+  "promotion_rules": [
+    {
+      "id": "P1-no-silent-promotion",
+      "condition": "source_status does not imply epistemic_status, operational_status or claim_gate",
+      "effect": "BLOCK"
+    },
+    {
+      "id": "P2-token-vazio-preserved",
+      "condition": "TOKEN_VAZIO cannot be coerced to numeric, null, false, success or confidence",
+      "effect": "BLOCK"
+    },
+    {
+      "id": "P3-runtime-context-required",
+      "condition": "runtime claim requires artifact, device, ABI and environment evidence",
+      "effect": "BLOCK"
+    },
+    {
+      "id": "P4-negative-evidence-preserved",
+      "condition": "failure, contradiction and unfavorable result remain versioned assets",
+      "effect": "PRESERVE"
+    },
+    {
+      "id": "P5-attestation-honesty",
+      "condition": "SLSA-shaped projection without signer and verified builder remains TOKEN_VAZIO for attestation",
+      "effect": "BLOCK_CONFORMANCE_CLAIM"
+    }
+  ]
+}
