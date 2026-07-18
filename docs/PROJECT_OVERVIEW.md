@@ -135,6 +135,8 @@ For a complete feature comparison with industry-leading Git clients, see [FEATUR
 - Intelligent refactoring
 - Test case generation
 - Security vulnerability prediction
+- **GovernanceGate** (kernel/GovernanceGate.kt): runtime allow/deny control for AI tool calls, driven by `assets/kernel/protocol/tool_registry.json`
+- **ToolRouter** (kernel/ToolRouter.kt): routes incoming AI tool-call JSON through GovernanceGate before dispatching to handlers
 
 ### DevOps & CI/CD (12+ Features)
 - Universal CI/CD support (GitHub Actions, GitLab CI, Jenkins, CircleCI, Travis CI)
@@ -320,8 +322,8 @@ This project respects all source licenses:
 ## Development Roadmap
 
 ### Phase 1: Foundation (Weeks 1-4)
-- [ ] Project setup and architecture
-- [ ] Core Git operations (clone, commit, push, pull)
+- [x] Project setup and architecture
+- [x] Core Git operations (clone, commit, push, pull, amend, force-push-with-lease, pull-with-rebase, merge-with-strategy, cherry-pick, blame, reflog, revert, clean, reset)
 - [ ] Basic repository browsing
 - [ ] Authentication system
 
@@ -369,6 +371,7 @@ This project respects all source licenses:
 - GPG signature verification
 - No logging of sensitive data
 - Regular security audits
+- **DiffAuditLogger** (core/logging/DiffAuditLogger.kt): persistent audit trail for every diff operation — records file paths, change type, diff/file size, and MD5 hash to a DataStore-backed log (capped at 1,000 entries)
 
 ## Contributing
 
