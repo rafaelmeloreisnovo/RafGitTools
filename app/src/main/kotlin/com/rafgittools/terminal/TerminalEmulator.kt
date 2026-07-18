@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit
  */
 object TerminalEmulator {
 
+    // STUB: not a real PTY/VT100 emulator. Commands are run via ProcessBuilder with a fixed allowlist; interactive programs and terminal escape sequences are not supported.
     private val SUPPORTED_COMMANDS = setOf(
         "git", "ls", "cat", "head", "tail", "pwd", "echo", "grep", "find",
         "wc", "sort", "uniq", "diff", "stat", "file", "which", "date", "whoami"

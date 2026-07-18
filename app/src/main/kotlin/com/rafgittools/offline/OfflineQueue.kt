@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
  * backoff and error handling.
  */
 class OfflineQueue<T> {
+    // STUB: in-memory only; queued operations are lost on process death. A real implementation would persist to Room or a file.
     private val queue = ConcurrentLinkedQueue<T>()
 
     fun enqueue(item: T) {

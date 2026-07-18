@@ -66,7 +66,7 @@ object MultiPlatformManager {
         token: String = "",
         baseUrl: String = "https://gitlab.com"
     ): List<HostedRepository> {
-        // TODO: implement GitLab REST API integration
+        // STUB: GitLab API not implemented. Returns empty list.
         return emptyList()
     }
 
@@ -86,7 +86,7 @@ object MultiPlatformManager {
         accessToken: String = "",
         workspace: String = ""
     ): List<HostedRepository> {
-        // TODO: implement Bitbucket REST API integration
+        // STUB: Bitbucket API not implemented. Returns empty list.
         return emptyList()
     }
 
@@ -106,7 +106,7 @@ object MultiPlatformManager {
         token: String = "",
         baseUrl: String = ""
     ): List<HostedRepository> {
-        // TODO: implement Gitea REST API integration
+        // STUB: Gitea API not implemented. Returns empty list.
         return emptyList()
     }
 
@@ -128,7 +128,7 @@ object MultiPlatformManager {
         organization: String = "",
         project: String = ""
     ): List<HostedRepository> {
-        // TODO: implement Azure DevOps REST API integration
+        // STUB: Azure DevOps API not implemented. Returns empty list.
         return emptyList()
     }
 
