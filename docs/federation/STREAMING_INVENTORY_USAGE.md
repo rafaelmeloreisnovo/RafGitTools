@@ -22,6 +22,17 @@ python3 scripts/federation/streaming_inventory.py \
   --checkpoint artifacts/inventory-first-100.checkpoint.json
 ```
 
+Continue after the last recorded path:
+
+```bash
+python3 scripts/federation/streaming_inventory.py \
+  --root /path/to/custody/root \
+  --resume-checkpoint artifacts/inventory-first-100.checkpoint.json \
+  --max-files 100 \
+  --output artifacts/inventory-next-100.json \
+  --checkpoint artifacts/inventory-next-100.checkpoint.json
+```
+
 ## Guarantees in the implemented scope
 
 - deterministic path ordering;
@@ -31,11 +42,11 @@ python3 scripts/federation/streaming_inventory.py \
 - no symlink traversal;
 - no file payload embedded in output;
 - optional bounded file count;
-- checkpoint with record count and last path.
+- checkpoint with record count and last path;
+- resumable continuation after the last recorded path.
 
 ## Not yet implemented
 
-- resumable continuation after the last path;
 - archive-member inventory without extraction;
 - secret scanning and redacted text indexing;
 - semantic linking to exact session input and response;
