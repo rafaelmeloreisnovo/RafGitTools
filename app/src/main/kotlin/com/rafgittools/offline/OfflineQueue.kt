@@ -39,12 +39,12 @@ class OfflineQueue<T>(
     }
 
     fun dequeue(): T? = lock.withLock {
-        val item = queue.removeFirstOrNull() ?: return null
+        val item = queue.pollFirst() ?: return null
         persistOrRollback { queue.addFirst(item) }
         item
     }
 
-    fun peek(): T? = lock.withLock { queue.firstOrNull() }
+    fun peek(): T? = lock.withLock { queue.peekFirst() }
 
     fun isEmpty(): Boolean = lock.withLock { queue.isEmpty() }
 
