@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RAFAELIA ZIPRAF Direct Runtime Federation v1",
+  "type": "object",
+  "required": ["profile", "claim_allowed", "invariants", "routes"],
+  "properties": {
+    "profile": {"const": "RAFAELIA-ZIPRAF-DIRECT-RUNTIME-FEDERATION-1"},
+    "claim_allowed": {"const": false},
+    "invariants": {
+      "type": "object",
+      "required": ["storage_method", "decompression_required", "stages", "core_count_max", "physical_cache_control_claimed", "fixed_bits_required"],
+      "properties": {
+        "storage_method": {"const": "STORE"},
+        "decompression_required": {"const": false},
+        "stages": {"const": ["BUFFER", "L1_HOT", "L2_SHARED"]},
+        "core_count_max": {"const": 8},
+        "physical_cache_control_claimed": {"const": false},
+        "fixed_bits_required": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "routes": {
+      "type": "array",
+      "minItems": 7,
+      "items": {
+        "type": "object",
+        "required": ["repository", "authority", "body_copy_allowed", "claim_allowed"],
+        "properties": {
+          "repository": {"type": "string"},
+          "authority": {"type": "string"},
+          "body_copy_allowed": {"const": false},
+          "claim_allowed": {"const": false}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
