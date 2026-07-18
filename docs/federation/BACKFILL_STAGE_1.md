@@ -30,6 +30,18 @@ Status: `STAGED_BACKFILL / NON_DESTRUCTIVE / CLAIM_ALLOWED=false`.
 24. Lacuna/Void é ancestral conceitual do estado tipado de ausência.
 25. FceaDebian 03→07 segue executor→memória→semântica→Git→auditoria.
 
+## Lacunas de infraestrutura
+
+| ID | Autoridade | Próxima ação | Critério de saída |
+|---|---|---|---|
+| GAP-001 Sheet parcial | Drive / RafGitTools | importar a matriz ou declarar XLSX canônico | uma autoridade e hash registrados |
+| GAP-002 Manifesto mínimo | RafGitTools | ampliar perfil e schema | itens com predecessor, estado e fonte |
+| GAP-003 Linhagem incompleta | GAIA / RafGitTools | indexar metadados incrementalmente | relações com IDs, hashes e predecessores |
+| GAP-004 Arquivos não examinados | GAIA | inventário com checkpoint | todo objeto do escopo classificado |
+| GAP-005 CI sem etapas | GitHub / conta | obter execução observável | um run com steps e logs por PR |
+| GAP-006 Termux ARM32 | termux-app-rafacodephi | executar coletor no aparelho | ABI, comandos, exits e hashes |
+| GAP-007 Guest boot | Vectras-VM-Android | executar preflight e boot smoke | console ou display do guest |
+
 ## Regra
 
 Cada lacuna precisa de responsável, próxima ação, critério de saída e rollback.
