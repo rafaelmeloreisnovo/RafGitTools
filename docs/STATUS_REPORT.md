@@ -1,91 +1,86 @@
 # RafGitTools — Relatório de Status
 
-**Data:** 2026-07-10  
-**Estado geral:** 🟡 Cliente GitHub/Git funcional avançado, em fechamento de build e validação end-to-end  
-**Relatório detalhado:** `docs/CURRENT_SOURCE_STATE_2026-07-10.md`
+**Data:** 2026-07-18  
+**Estado geral:** 🟡 Cliente GitHub/Git funcional avançado; build/device permanecem sem prova nesta atividade  
+**Matriz executável:** `ECOSYSTEM_RUNTIME_STATE.json`  
+**Validador sem Actions:** `python3 scripts/validate_runtime_truth.py`
+
+## Regra de evidência
+
+```text
+arquivo existente
+≠ código integrado
+≠ teste executado
+≠ APK gerado
+≠ runtime em aparelho
+```
+
+GitHub Actions está marcado como `OUT_OF_SCOPE_NO_CREDIT`. Nenhuma ausência de
+workflow é convertida em PASS ou FAIL de implementação.
 
 ## Semântica de status
 
-- **IMPLEMENTED:** código integrado e usado pelo app.
-- **TESTS ADDED:** testes existem no repositório; o resultado da execução deve ser consultado no CI/local.
-- **PARTIAL ADVANCED:** implementação extensa, mas sem matriz completa de regressão/end-to-end.
-- **STUB:** arquivo ou API existe, porém contém `NotImplementedError`, retorno mínimo ou placeholder.
-- **EXPERIMENTAL:** material fora do caminho principal ou sem validação de produção.
-- **BUILD BLOCKED:** pipeline não chegou ao compilador por falha de infraestrutura/Actions.
+- **IMPLEMENTED:** código integrado, com contrato concreto.
+- **TESTS_ADDED:** testes presentes; execução deve ser registrada separadamente.
+- **PARTIAL_ADVANCED:** implementação extensa, sem matriz end-to-end completa.
+- **ADAPTER_IMPLEMENTED:** wrapper existe, mas depende de processo/ferramenta externa.
+- **STUB_TYPED:** interface existe e retorna estado explícito de não implementação.
+- **TOKEN_VAZIO:** falta build, device, log, ferramenta ou artefato verificável.
+- **BOUNDED_EXECUTOR:** executor limitado, não terminal PTY/VT100.
 
 ## Classificação técnica atual
 
-| Componente | Status | Evidência principal |
+| Componente | Status | Evidência/limite |
 |---|---|---|
-| Android + Compose + Hilt + Room | IMPLEMENTED | `app/`, `app/build.gradle` |
-| Login PAT | IMPLEMENTED + TESTS ADDED | `AuthScreen.kt`, `AuthViewModel.kt`, `OAuthDeviceFlowManager.kt` |
-| OAuth Device Flow | IMPLEMENTED / CONFIG REQUIRED | `GITHUB_CLIENT_ID_DEV`, `GITHUB_CLIENT_ID_PRODUCTION` |
-| Importação `gh` / Termux | IMPLEMENTED + TESTS ADDED | `GhCliAuthImporter`, `AuthViewModel` |
-| SSH | PARTIAL | `SshKeyManager`, JGit SSH |
-| API GitHub | PARTIAL ADVANCED | `GithubApiService.kt`, `GithubRepository.kt` |
-| Git local via JGit | PARTIAL ADVANCED | `JGitService.kt` |
-| UI GitHub/Git | PARTIAL ADVANCED | `ui/screens/`, `MainActivity.kt` |
-| Build `devDebug` | BUILD CONTRACT ADDED | `.github/workflows/android-client-build.yml` |
-| APK verificável | PENDING BUILD EVIDENCE | APK + `SHA256SUMS.txt` |
-| GPG | STUB |
-| LFS | STUB |
-| Worktree | STUB |
-| Webhooks | STUB |
-| Terminal embutido | EXPERIMENTAL/PLANNED |
-| Native ASM | HEALTH/SANITY |
+| Android + Compose + Hilt + Room | `IMPLEMENTED` | Código integrado; APK não produzido nesta atividade |
+| Login PAT | `IMPLEMENTED + TESTS_ADDED` | Armazenamento seguro e fluxo de identidade presentes |
+| OAuth Device Flow | `IMPLEMENTED / CONFIG_REQUIRED` | Exige Client ID público |
+| Importação `gh` / Termux | `IMPLEMENTED + TESTS_ADDED` | Runtime externo ainda precisa de prova no device |
+| SSH | `PARTIAL` | Matriz real de chaves/servidores pendente |
+| API GitHub | `PARTIAL_ADVANCED` | Endpoints e repositórios presentes |
+| Git local via JGit | `PARTIAL_ADVANCED` | Conflitos/rede/credenciais pedem regressão |
+| UI GitHub/Git | `PARTIAL_ADVANCED` | Telas não equivalem a fluxo end-to-end |
+| Fila offline | `DURABLE_STORAGE_AVAILABLE` | Codec de operação e WorkManager ainda pendentes |
+| GPG | `ADAPTER_IMPLEMENTED / TOKEN_VAZIO_RUNTIME` | Requer binário autorizado e teste real |
+| LFS | `ADAPTER_IMPLEMENTED / TOKEN_VAZIO_RUNTIME` | Requer `git-lfs` e repositório real |
+| Worktree | `ADAPTER_IMPLEMENTED / TOKEN_VAZIO_RUNTIME` | Requer filesystem/device |
+| Bisect | `ADAPTER_IMPLEMENTED / TOKEN_VAZIO_RUNTIME` | Requer fixture de regressão |
+| Webhooks | `STUB` | Sem implementação funcional comprovada |
+| Multi-provider | `STUB_TYPED` | Não confunde não implementado com lista vazia |
+| Terminal | `BOUNDED_EXECUTOR` | Leitura/diagnóstico; escrita deve usar job tipado |
+| APK verificável | `TOKEN_VAZIO` | Sem APK/SHA/device nesta atividade |
 
-## Autenticação — caminho real
+## Correções deste corte
 
-```text
-método escolhido
-→ credencial/código
-→ validação direta no GitHub
-→ identidade `/user`
-→ armazenamento cifrado
-→ cache de sessão
-→ Authorization: Bearer
-```
-
-A tela não solicita a senha do GitHub. O campo protegido é um **Personal Access Token**, não uma senha.
-
-## Dependências verificadas no `app/build.gradle`
-
-- Retrofit: **2.9.0**
-- OkHttp: **4.12.0**
-- Room: **2.6.1**
-- Hilt: **2.48**
-- JSch: **0.2.9**
-- JGit: **7.5.0.202512021534-r**
-- compileSdk/targetSdk: **34**
-- minSdk: **24**
-- ABIs: **armeabi-v7a**, **arm64-v8a**
-- Java/Kotlin target: **17**
-
-## Evidência de build esperada
-
-O workflow `Android Client Build` foi adicionado para executar:
-
-1. testes de autenticação;
-2. testes unitários `devDebug`;
-3. `lintDevDebug`;
-4. `assembleDevDebug`;
-5. verificação do APK;
-6. SHA-256;
-7. upload do artefato `RafGitTools-devDebug`.
-
-No momento desta atualização, execuções de Actions do repositório estavam encerrando como `startup_failure` antes da criação de jobs. Portanto, não se deve declarar APK compilado enquanto o pipeline não produzir o arquivo.
+1. `TerminalEmulator` drena saída concorrentemente e rejeita comandos/argumentos perigosos.
+2. `OfflineQueue` possui fronteira durável e rollback quando a gravação falha.
+3. `AtomicFileQueueStorage` grava registros limitados, executa `fsync` e publica por rename.
+4. Multi-provider usa estados tipados: `NotConfigured`, `NotImplemented`, erros e sucesso.
+5. `fazer/` foi classificado como legado superado, não como implementação pendente.
+6. `job.v1` e a matriz de runtime foram materializados em `contracts/` e na raiz.
 
 ## Fonte de verdade
 
-1. código e testes;
-2. Gradle/CMake;
-3. workflows e logs;
-4. `CURRENT_SOURCE_STATE_2026-07-10.md`;
-5. este status;
-6. roadmaps/documentos históricos.
+1. código integrado em `app/src/`;
+2. testes em `app/src/test/`;
+3. contratos em `contracts/`;
+4. `ECOSYSTEM_RUNTIME_STATE.json`;
+5. `docs/RAFGITTOOLS_CURRENT_STATE.md`;
+6. este relatório;
+7. roadmaps e documentos históricos.
+
+## Próximo gate local
+
+```sh
+python3 scripts/validate_runtime_truth.py
+```
+
+O build Android e a prova de aparelho devem ser executados localmente quando o
+SDK/device estiver disponível e registrados com comando, stdout/stderr, APK,
+SHA-256 e identificação da ABI. Até lá permanecem `TOKEN_VAZIO`.
 
 ## Retroalimentar[3]
 
-- **F_ok:** documentação agora acompanha o código de autenticação e cliente GitHub.
-- **F_gap:** falta evidência de compilação por bloqueio de Actions anterior ao runner.
-- **F_next:** fazer o workflow chegar ao job, corrigir eventuais erros reais do compilador e gerar o APK com checksum.
+- **F_ok:** falhas estruturais foram convertidas em código, testes e contratos.
+- **F_gap:** APK, device, WorkManager e transporte Termux ainda não foram comprovados.
+- **F_next:** executar a validação local e ligar `job.v1` ao runtime autorizado sem shell genérico.
