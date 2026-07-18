@@ -42,6 +42,24 @@ Status: `STAGED_BACKFILL / NON_DESTRUCTIVE / CLAIM_ALLOWED=false`.
 | GAP-006 Termux ARM32 | termux-app-rafacodephi | executar coletor no aparelho | ABI, comandos, exits e hashes |
 | GAP-007 Guest boot | Vectras-VM-Android | executar preflight e boot smoke | console ou display do guest |
 
+## Lacunas científicas e de formato
+
+| ID | Autoridade | Próxima ação | Critério de saída |
+|---|---|---|---|
+| GAP-008 Ω-CUBE alvo | ChipQuantum | executar KAT no ARM32 | saída reproduzida com ambiente e hash |
+| GAP-009 Atrator | ChipQuantum / papers | medir bacias e estabilidade | definição e métricas atendidas |
+| GAP-010 Ablação 42 | ChipQuantum / Matem-tica- | comparar 36/42/48/64 | relatório com métricas e seeds iguais |
+| GAP-011 Escala acústica dinâmica | RLL | recalcular dentro do MCMC | cadeia convergida e artefatos publicados |
+| GAP-012 G4 global | RLL | mapear superfície paramétrica | domínio e erro documentados |
+| GAP-013 Camada ZIPRAF | ZIPRAF / GAIA | localizar binários e comparar bytes | offsets, hashes e conteúdo identificados |
+| GAP-014 Fluxo de 80 MiB | ZIPRAF / GAIA | localizar sequência e fechamento | arquivo recomposto e validado |
+| GAP-015 ABI AO42 | ZIPRAF_CORE | fechar layout e endianness | schema, vetores e corrupção testados |
+| GAP-016 Conformidade pública | RafGitTools | usar validadores oficiais | relatório de conformidade ou gaps explícitos |
+| GAP-017 Attestation | RafGitTools / GAIA | definir identidade e assinatura | verificação independente reproduzível |
+| GAP-018 Anterioridade | papers / Matem-tica- | revisão técnica e bibliográfica | matriz de trabalhos relacionados |
+| GAP-019 Revisão externa | papers | obter parecer independente | parecer e respostas rastreáveis |
+| GAP-020 Termos não resolvidos | Mapa / autor | localizar ou definir fonte | definição explícita ou encerramento |
+
 ## Regra
 
 Cada lacuna precisa de responsável, próxima ação, critério de saída e rollback.
