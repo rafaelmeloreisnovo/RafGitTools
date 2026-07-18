@@ -64,14 +64,15 @@
       "repository": "rafaelmeloreisnovo/RafGitTools",
       "path": "app/src/main/kotlin/com/rafgittools/platform/MultiPlatformManager.kt",
       "implementation_state": "STUB",
-      "evidence_state": "VERIFIED",
+      "evidence_state": "DECLARED_BY_AUTHOR",
       "evidence": [
-        "GitLab, Bitbucket, Gitea and Azure DevOps return typed NotConfigured or NotImplemented states"
+        "GitLab, Bitbucket, Gitea and Azure DevOps return typed NotConfigured or NotImplemented states in the branch source"
       ],
       "gaps": [
-        "Provider HTTP adapters are not implemented"
+        "Provider HTTP adapters are not implemented",
+        "Kotlin tests were added but not executed in this activity"
       ],
-      "next_action": "Implement one provider adapter at a time behind ProviderQueryResult and add fixture-based tests.",
+      "next_action": "Run the local unit suite, then implement one provider adapter at a time behind ProviderQueryResult.",
       "commit": null
     },
     {
