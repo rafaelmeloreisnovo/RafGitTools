@@ -28,3 +28,12 @@ def test_streaming_inventory_is_deterministic(tmp_path):
     assert [item["relative_path"] for item in first] == ["a.zip", "b.txt"]
     assert first[0]["is_archive_candidate"] is True
     assert all(item["payload_copied"] is False for item in first)
+
+
+def test_streaming_inventory_resumes_after_path(tmp_path):
+    for name in ("a.txt", "b.txt", "c.txt"):
+        (tmp_path / name).write_text(name, encoding="utf-8")
+    first = INV.scan(tmp_path, 4096, max_files=1)
+    second = INV.scan(tmp_path, 4096, max_files=2, after_path=first[-1]["relative_path"])
+    assert [item["relative_path"] for item in first] == ["a.txt"]
+    assert [item["relative_path"] for item in second] == ["b.txt", "c.txt"]
