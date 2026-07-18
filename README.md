@@ -324,8 +324,8 @@ See the complete [Status Report](docs/STATUS_REPORT.md) for detailed progress in
 |---|---:|
 | Total de features | 288 |
 | Concluídas | 115 |
-| Em progresso | 26 |
-| Pendentes | 147 |
+| Em progresso | 35 |
+| Pendentes | 138 |
 | Arquivos Kotlin | 168 |
 | Arquivos de teste (.kt em `test`/`androidTest`) | 11 |
 | Arquivos de documentação (`docs/**/*.md`) | 36 |
@@ -355,7 +355,7 @@ See the complete [Status Report](docs/STATUS_REPORT.md) for detailed progress in
 - [ ] Git LFS support
 - [ ] Release preparation for Play Store
 
-**Progress**: 115/288 features complete (40%), 26 in progress (9%), 147 pending (51%)
+**Progress**: 115/288 features complete (40%), 35 in progress (12%), 138 pending (48%)
 
 ### How to Contribute
 
@@ -405,6 +405,40 @@ This project would not be possible without the amazing work of the open-source c
 
 - **Project Repository**: https://github.com/rafaelmeloreisnovo/RafGitTools
 - **Issues**: https://github.com/rafaelmeloreisnovo/RafGitTools/issues
+
+## AI / Local LLM Bridge
+
+An Android foreground service exposes a minimal HTTP server on `127.0.0.1:8765` so that a local LLM running on the device can be reached from the browser without external network access.
+
+- **RafBridgeService** — foreground `Service` that binds a `ServerSocket` on localhost port 8765. Exposes two routes: `GET /health` and `POST /v1/chat`. No shell, git-write, or filesystem routes are exposed by design.
+- **RafBridgeContract** — security policy gate that validates every inbound message (size limits, required fields, origin checks) before forwarding it to the model client.
+- **RafModelClient** — HTTP client that submits chat completion requests to the local model and returns the response through the bridge.
+
+Source: `app/src/main/java/com/rafgittools/bridge/`
+
+## Kiwi Browser Extension
+
+A Manifest V3 Chrome extension designed for Kiwi Browser on Android. It communicates with the LLM bridge at `http://127.0.0.1:8765` to relay chat messages between the browser and the local model. The extension requires explicit user consent before sending any request. The `host_permissions` in `manifest.json` are intentionally limited to the loopback address only.
+
+Source: `kiwi-extension/`
+
+## Authentication Methods
+
+RafGitTools implements five authentication paths for local Git operations and GitHub API calls:
+
+1. **PAT (Personal Access Token)** — token passed as the HTTP password via `UsernamePasswordCredentialsProvider`. Recommended method for GitHub.
+2. **OAuth Device Flow (RFC 8628)** — implemented in `OAuthDeviceFlowManager.kt`; the user authorizes on a secondary device or browser tab, and the app polls until a token is granted.
+3. **SSH key** — Ed25519, RSA, and ECDSA private keys are supported via `SshSessionFactory`. Passphrases are optional.
+4. **gh CLI token import** — `GhCliAuthImporter.kt` reads credentials previously saved by the `gh` CLI, so users who already have `gh` configured can authenticate without re-entering a token.
+5. **Offline mode** — `OfflineQueue.kt` and `BackgroundSyncManager.kt` allow read-only local Git operations when no network or credentials are available; remote operations are queued and replayed when connectivity is restored.
+
+Source: `app/src/main/kotlin/com/rafgittools/data/auth/`
+
+## fazer/ Directory
+
+The `fazer/` directory contains earlier draft versions of source files that predate the current `app/src/` implementations. These files are **not** compiled as part of the app. After audit (July 2026), all `fazer/` files were found to be superseded by the more complete implementations already in `app/src/`. The directory is retained for historical reference and will be removed in a future cleanup PR.
+
+---
 
 ## 🗺️ Roadmap
 
@@ -458,25 +492,25 @@ This project would not be possible without the amazing work of the open-source c
 | 21 | Git clone (single branch) | 🔴 L1 | Git Protocol v2 | Git Engine Lead | 📋 |
 | 22 | Git clone (with submodules) | 🔴 L1 | Git Protocol v2 | Git Engine Lead | 📋 |
 | 23 | Git commit (standard) | 🟠 L2 | DCO 1.1, Git | Git Engine Lead | 🚧 |
-| 24 | Git commit (amend) | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
+| 24 | Git commit (amend) | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
 | 25 | Interactive staging | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
 | 26 | Git push | 🟠 L2 | Git Protocol v2 | Git Engine Lead | 🚧 |
 | 27 | Git pull | 🟠 L2 | Git Protocol v2 | Git Engine Lead | 🚧 |
 | 28 | Git fetch | 🟠 L2 | Git Protocol v2 | Git Engine Lead | 🚧 |
-| 29 | Force push with lease | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
-| 30 | Pull with rebase | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
+| 29 | Force push with lease | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 30 | Pull with rebase | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
 | 31 | Branch create | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
 | 32 | Branch delete | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
 | 33 | Branch rename | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
 | 34 | Branch checkout | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
 | 35 | Branch merge | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
-| 36 | Merge strategies | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
+| 36 | Merge strategies | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
 | 37 | Git status | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
 | 38 | Git log | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
 | 39 | Git diff | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
 | 40 | Stash operations | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
 | 41 | Remote management | 🟠 L2 | Git Protocol v2 | Git Engine Lead | 🚧 |
-| 42 | Git config management | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
+| 42 | Git config management | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
 
 **Standards Coverage**: Git Protocol v2, DCO 1.1, RFC 4880 (GPG), SSH RFC 4251/4252
 </details>
@@ -491,12 +525,12 @@ This project would not be possible without the amazing work of the open-source c
 | 45 | File content viewer | 🟠 L2 | W3C WCAG 2.1 | UI/UX Lead | 🚧 |
 | 46 | Syntax highlighting | 🔴 L1 | TextMate Grammar | UI/UX Lead | 📋 |
 | 47 | Line numbers | 🔴 L1 | W3C WCAG 2.1 | UI/UX Lead | 📋 |
-| 48 | File search | 🔴 L1 | W3C WCAG 2.1 | UI/UX Lead | 📋 |
+| 48 | File search | 🟡 L3 | W3C WCAG 2.1 | UI/UX Lead | 🚧 |
 | 49 | Directory navigation | 🟠 L2 | W3C WCAG 2.1 | UI/UX Lead | 🚧 |
 | 50 | Breadcrumb navigation | 🔴 L1 | W3C WCAG 2.1 | UI/UX Lead | 📋 |
 | 51 | File type icons | 🔴 L1 | Material Icons | UI/UX Lead | 📋 |
 | 52 | File size display | 🔴 L1 | SI Units, IEC 60027-2 | UI/UX Lead | 📋 |
-| 53 | Last modified date | 🔴 L1 | ISO 8601 | UI/UX Lead | 📋 |
+| 53 | Last modified date | 🟡 L3 | ISO 8601 | UI/UX Lead | 🚧 |
 | 54 | Commit info display | 🔴 L1 | Git Protocol | UI/UX Lead | 📋 |
 | 55 | Branch selector | 🔴 L1 | W3C WCAG 2.1 | UI/UX Lead | 📋 |
 | 56 | Tag selector | 🔴 L1 | W3C WCAG 2.1 | UI/UX Lead | 📋 |
@@ -680,7 +714,7 @@ This project would not be possible without the amazing work of the open-source c
 | 163 | Interactive rebase | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
 | 164 | Rebase --onto | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
 | 165 | Rebase continue/skip/abort | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
-| 166 | Cherry-pick single | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
+| 166 | Cherry-pick single | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
 | 167 | Cherry-pick range | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
 | 168 | Tag creation (annotated) | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
 | 169 | Tag creation (lightweight) | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
@@ -694,7 +728,7 @@ This project would not be possible without the amazing work of the open-source c
 | 177 | Worktree add | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
 | 178 | Worktree list/remove | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
 | 179 | Git bisect | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
-| 180 | Git blame | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
+| 180 | Git blame | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
 
 **Standards Coverage**: Git Protocol v2, Git LFS Specification, RFC 4880 (OpenPGP), Semantic Versioning 2.0
 </details>
