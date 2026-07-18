@@ -1,0 +1,21 @@
+{
+  "profile": "RAFAELIA-ZIPRAF-DIRECT-RUNTIME-FEDERATION-1",
+  "claim_allowed": false,
+  "invariants": {
+    "storage_method": "STORE",
+    "decompression_required": false,
+    "stages": ["BUFFER", "L1_HOT", "L2_SHARED"],
+    "core_count_max": 8,
+    "physical_cache_control_claimed": false,
+    "fixed_bits_required": true
+  },
+  "routes": [
+    {"repository":"ZIPRAF_CORE","authority":"binary ABI","body_copy_allowed":false,"claim_allowed":false},
+    {"repository":"ZIPRAF_OMEGA_FULL","authority":"container runtime","body_copy_allowed":false,"claim_allowed":false},
+    {"repository":"llamaRafaelia","authority":"model consumer","body_copy_allowed":false,"claim_allowed":false},
+    {"repository":"Vectras-VM-Android","authority":"Android mapped execution","body_copy_allowed":false,"claim_allowed":false},
+    {"repository":"Rafaelia_Private","authority":"private policy","body_copy_allowed":false,"claim_allowed":false},
+    {"repository":"GAIA_phi","authority":"pointer custody","body_copy_allowed":false,"claim_allowed":false},
+    {"repository":"RafGitTools","authority":"federated control plane","body_copy_allowed":false,"claim_allowed":false}
+  ]
+}
