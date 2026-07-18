@@ -724,6 +724,39 @@ For detailed compliance information, see:
 - [SECURITY.md](SECURITY.md) - Security standards and practices
 - [COMPLIANCE.md](COMPLIANCE.md) - Regulatory and standards compliance
 
+---
+
+## AI Tool Governance (Kernel)
+
+Two components in `app/src/main/kotlin/com/rafgittools/kernel/` enforce which AI-generated tool calls the application is permitted to execute at runtime.
+
+### GovernanceGate
+
+**File**: `kernel/GovernanceGate.kt`
+
+Reads `assets/kernel/protocol/tool_registry.json` at construction time and evaluates every incoming tool call against the registry.
+
+```kotlin
+kernel/
+└── GovernanceGate.kt   # evaluates toolName + userAuthenticated → Decision(allowed, reason)
+```
+
+**Behaviour:**
+- Loads the tool registry from app assets on first instantiation.
+- `evaluate(toolName: String, userAuthenticated: Boolean): Decision` — returns `Decision(allowed=true, "ok")` when the named tool is registered, has `allowed=true`, and (where `requires_auth=true`) the user is authenticated. Returns a denial with a descriptive reason code otherwise.
+- `buildDenialJson(toolName, reason): String` — serialises a `DENIED` response envelope for the calling layer.
+
+### ToolRouter
+
+**File**: `kernel/ToolRouter.kt`
+
+Accepts a raw JSON tool-call string, passes it through `GovernanceGate`, and dispatches to the appropriate internal handler.
+
+**Behaviour:**
+- Parses the `tool` field from the incoming JSON; returns an error envelope for malformed input.
+- Calls `GovernanceGate.evaluate()`; logs a warning and returns the denial envelope on rejection.
+- Dispatches to `handleGitStatus()` or `handleGitDiff()` for handlers that are wired; returns a `TOKEN_VAZIO` response for tools with handlers not yet implemented.
+
 ## Monitoring and Logging
 
 ```kotlin

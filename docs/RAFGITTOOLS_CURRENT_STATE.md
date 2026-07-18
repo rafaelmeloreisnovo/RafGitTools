@@ -1,6 +1,6 @@
 # RAFGITTOOLS_CURRENT_STATE
 
-- Status: ATIVO — refatoração profissional concluída (2026-06-05)
+- Status: ATIVO — refatoração profissional concluída (2026-06-05); documentação sincronizada (2026-07-18)
 - Branch: `claude/code-cleanup-refactor-HRE6d`
 - Ambiente: remoto (sem SDK Android configurado → build local não verificável)
 
@@ -47,3 +47,24 @@ Todos os 8 novos métodos acima foram adicionados à interface e delegados no im
 - Sem SDK Android no ambiente remoto → `./gradlew assembleDevDebug` não é executável aqui.
 - Testes unitários que exercem JGit real requerem repositório local; cobertos pela suite existente.
 - Integrações GitLab/Bitbucket/Gitea/AzureDevOps permanecem como skeletons com integration path documentado.
+
+## Diretório fazer/ — status de integração (2026-07-18)
+
+O diretório `fazer/` contém implementações pendentes ainda não integradas à estrutura de módulos principal (`feature:` / `core:`):
+
+| Arquivo | Tipo | Observação |
+|---|---|---|
+| `AuthScreen.kt`, `AuthViewModel.kt` | UI / ViewModel | Pendente de migração para `feature:auth` |
+| `CommitDetailScreen.kt`, `CommitDetailViewModel.kt` | UI / ViewModel | Pendente de migração para `feature:commit` |
+| `DiffViewerScreen.kt` | UI | Pendente de migração para `feature:diff` |
+| `HomeViewModel.kt` | ViewModel | Pendente de migração para módulo principal |
+| `NotificationsViewModel.kt` | ViewModel | Pendente de migração para módulo de notificações |
+| `OAuthDeviceFlowManager.kt` | Suporte | Pendente de integração com `feature:auth` |
+| `ReleaseDetailScreen.kt`, `ReleaseDetailViewModel.kt` | UI / ViewModel | Pendente de migração para `feature:github` |
+| `ReleasesViewModel.kt`, `SearchViewModel.kt` | ViewModel | Pendente de migração |
+| `SyntaxHighlighter.kt` | Suporte | Pendente de migração para `core:ui` |
+| `TerminalScreen.kt`, `TerminalViewModel.kt` | UI / ViewModel | Pendente de migração para `feature:terminal` |
+| `TokenRefreshManager.kt` | Suporte | Pendente de integração com autenticação |
+| `MultiAccountManager.kt` | Duplicata rasa | Implementação real em `core/security/MultiAccountManager.kt` |
+
+Nenhum arquivo do `fazer/` está referenciado nos grafos de dependência do Gradle. Precisam ser migrados para os módulos corretos antes de serem considerados integrados.

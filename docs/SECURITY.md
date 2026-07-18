@@ -491,6 +491,25 @@ Configuration Changes: Security setting modifications
 Security Events: Threats detected, blocked actions
 ```
 
+### Diff Operation Audit Log (DiffAuditLogger)
+
+Every call to `getDiff()` or `getDiffBetweenCommits()` in `JGitService` is recorded by `DiffAuditLogger` (`core/logging/DiffAuditLogger.kt`), a Hilt singleton backed by Android DataStore.
+
+Each audit entry captures:
+
+```kotlin
+// Fields persisted per diff operation
+oldPath: String?        // source file path (null for additions)
+newPath: String?        // destination file path (null for deletions)
+changeType: String      // ADD, MODIFY, DELETE, RENAME, COPY
+timestamp: Long         // epoch milliseconds
+diffSizeBytes: Long     // size of the diff content
+fileSizeBytes: Long     // size of the file at time of diff
+md5: String             // MD5 hash of diff content for integrity verification
+```
+
+Entries are stored in a dedicated `diff_audit_logs` DataStore partition (persisted across app restarts). The log is capped at 1,000 entries; the oldest entries are trimmed when the cap is reached. Failures are silently swallowed so that audit logging never interrupts a Git operation. Entries can be retrieved via `getEntries(limit)` (suspend, for coroutine callers) or `getEntriesBlocking(limit)` (blocking, must not be called from the main thread).
+
 ### Audit Log Protection
 - Immutable logging
 - Encrypted storage
