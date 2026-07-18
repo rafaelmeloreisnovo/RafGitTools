@@ -39,7 +39,7 @@
         "Production operation codec and WorkManager scheduling remain to be connected"
       ],
       "next_action": "Bind a typed OfflineOperation codec and WorkManager worker without changing the persistence format silently.",
-      "commit": null
+      "commit": "ed271de758c51cd9377258e5d1e937f7710326d0"
     },
     {
       "id": "rafgittools.terminal-bounded-executor",
@@ -57,7 +57,7 @@
         "This remains a bounded executor, not PTY/VT100"
       ],
       "next_action": "Route writable operations through typed jobs and GovernanceGate instead of expanding the command allowlist.",
-      "commit": null
+      "commit": "607a9f6e5f4e2d1fadfe36496ad17a48c62a3932"
     },
     {
       "id": "rafgittools.multi-provider",
@@ -73,23 +73,23 @@
         "Kotlin tests were added but not executed in this activity"
       ],
       "next_action": "Run the local unit suite, then implement one provider adapter at a time behind ProviderQueryResult.",
-      "commit": null
+      "commit": "6aa9b59c34de228e496ae7958c4f96f659c8e2fe"
     },
     {
       "id": "rafpolimata.segment-runtime",
       "repository": "rafaelmeloreisnovo/RafPolimata",
-      "path": "raf_compile.*; Apkc/; scripts/",
+      "path": "runtime/conversation_indexer/raf_segment_v1.*",
       "implementation_state": "EXPERIMENTAL",
-      "evidence_state": "TOKEN_VAZIO",
+      "evidence_state": "DECLARED_BY_AUTHOR",
       "evidence": [
-        "Compiler, ApkC, proof scripts and structural audit files exist"
+        "Paired RafPolimata branch contains the frozen segment v1 header codec"
       ],
       "gaps": [
-        "NativeActivity runtime proof is absent",
-        "Cross-repository segment.v1 execution is not verified in this activity"
+        "Cross-repository consumption is not verified in this activity",
+        "NativeActivity runtime proof remains absent"
       ],
-      "next_action": "Consume RafPolimata ECOSYSTEM_RUNTIME_STATE.json after its local contract checks pass.",
-      "commit": "dfd554dd329530b6523b6fb160709b5443b11233"
+      "next_action": "Pin the reviewed RafPolimata PR head and consume only after its local contract checks pass.",
+      "commit": "00d4fbf9896eaaec68c7a17f871de4171dbe21a2"
     }
   ]
 }
