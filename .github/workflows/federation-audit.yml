@@ -15,6 +15,7 @@ on:
       - "configs/epistemic-provenance-interop.json"
       - "configs/knowledge-antiderivative-v1.json"
       - "configs/backfill-stage-1.json"
+      - "configs/lineage-stage-2.tsv"
       - "schemas/workflow-master-index.schema.json"
       - "schemas/epistemic-provenance-interop.schema.json"
       - "schemas/knowledge-antiderivative-v1.schema.json"
@@ -90,6 +91,12 @@ jobs:
             --profile configs/backfill-stage-1.json \
             --report artifacts/backfill-stage-1-report.json
 
+      - name: Validate temporal lineage stage 2
+        run: |
+          python3 scripts/federation/validate_lineage_stage2.py \
+            --table configs/lineage-stage-2.tsv \
+            --report artifacts/lineage-stage-2-report.json
+
       - name: Run real local rollback drill
         run: |
           python3 scripts/federation/recovery_drill.py \
@@ -114,7 +121,8 @@ jobs:
             tests/federation/test_epistemic_interop.py \
             tests/federation/test_knowledge_antiderivative.py \
             tests/federation/test_session_lineage.py \
-            tests/federation/test_backfill_stage1.py
+            tests/federation/test_backfill_stage1.py \
+            tests/federation/test_lineage_stage2.py
 
       - name: Simulate requested failure
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.simulate_failure != '' }}
@@ -133,6 +141,7 @@ jobs:
             configs/epistemic-provenance-interop.json \
             configs/knowledge-antiderivative-v1.json \
             configs/backfill-stage-1.json \
+            configs/lineage-stage-2.tsv \
             docs/federation/session-lineage-v1.json \
             docs/federation/BACKFILL_STAGE_1.md \
             schemas/workflow-master-index.schema.json \
@@ -155,6 +164,8 @@ jobs:
             'FULL_ARCHIVE_SCAN=TOKEN_VAZIO' \
             'ALL_SNAPSHOTS_LINKED=TOKEN_VAZIO' \
             'BACKFILL_STAGE_1_REGISTERED=true' \
+            'TEMPORAL_LINEAGE_STAGE_2_REGISTERED=true' \
+            'EXACT_EVENT_TIMES=TOKEN_VAZIO' \
             'PHYSICAL_TOROIDAL_UNIVERSE_PROVEN=false' \
             'UNIVERSAL_HEX_RECONSTRUCTION_PROVEN=false' \
             'VOYNICH_DECODED=false' \
@@ -176,7 +187,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
         with:
-          name: federation-audit-v6-${{ github.run_id }}
+          name: federation-audit-v7-${{ github.run_id }}
           path: artifacts/
           if-no-files-found: error
           retention-days: 30
