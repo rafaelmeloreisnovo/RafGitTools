@@ -1,0 +1,94 @@
+{
+  "schema": "raf.ecosystem-runtime-state.v1",
+  "observed_at": "2026-07-18T18:43:58-03:00",
+  "ci_execution": {
+    "state": "OUT_OF_SCOPE_NO_CREDIT",
+    "reason": "GitHub Actions execution is intentionally excluded from this activity because the account currently has no Actions credit. No workflow result is promoted to PASS."
+  },
+  "components": [
+    {
+      "id": "rafgittools.android-client",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/",
+      "implementation_state": "PARTIAL",
+      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence": [
+        "Kotlin/Compose/Hilt/Room sources are integrated",
+        "GitHub API and JGit implementations are present",
+        "authentication source and unit tests are present"
+      ],
+      "gaps": [
+        "No APK produced in this activity",
+        "No device smoke transcript in this activity"
+      ],
+      "next_action": "Run scripts/validate_runtime_truth.py locally, then build and test on ARM32/ARM64 when a local Android SDK/device is available.",
+      "commit": "75b422a815e7a58f9cd191e0ae012e2216adb67f"
+    },
+    {
+      "id": "rafgittools.offline-queue",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/src/main/kotlin/com/rafgittools/offline/",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence": [
+        "OfflineQueue supports a synchronous durable storage boundary",
+        "AtomicFileQueueStorage uses bounded length-prefixed records, fsync and same-directory rename",
+        "Unit tests cover reload and rollback on persistence failure"
+      ],
+      "gaps": [
+        "Production operation codec and WorkManager scheduling remain to be connected"
+      ],
+      "next_action": "Bind a typed OfflineOperation codec and WorkManager worker without changing the persistence format silently.",
+      "commit": null
+    },
+    {
+      "id": "rafgittools.terminal-bounded-executor",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/src/main/kotlin/com/rafgittools/terminal/TerminalEmulator.kt",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence": [
+        "Output is drained concurrently to prevent pipe deadlock",
+        "Unclosed quotes and incomplete escapes are rejected",
+        "Git is restricted to read-only subcommands",
+        "find execution and deletion actions are rejected"
+      ],
+      "gaps": [
+        "This remains a bounded executor, not PTY/VT100"
+      ],
+      "next_action": "Route writable operations through typed jobs and GovernanceGate instead of expanding the command allowlist.",
+      "commit": null
+    },
+    {
+      "id": "rafgittools.multi-provider",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/src/main/kotlin/com/rafgittools/platform/MultiPlatformManager.kt",
+      "implementation_state": "STUB",
+      "evidence_state": "VERIFIED",
+      "evidence": [
+        "GitLab, Bitbucket, Gitea and Azure DevOps return typed NotConfigured or NotImplemented states"
+      ],
+      "gaps": [
+        "Provider HTTP adapters are not implemented"
+      ],
+      "next_action": "Implement one provider adapter at a time behind ProviderQueryResult and add fixture-based tests.",
+      "commit": null
+    },
+    {
+      "id": "rafpolimata.segment-runtime",
+      "repository": "rafaelmeloreisnovo/RafPolimata",
+      "path": "raf_compile.*; Apkc/; scripts/",
+      "implementation_state": "EXPERIMENTAL",
+      "evidence_state": "TOKEN_VAZIO",
+      "evidence": [
+        "Compiler, ApkC, proof scripts and structural audit files exist"
+      ],
+      "gaps": [
+        "NativeActivity runtime proof is absent",
+        "Cross-repository segment.v1 execution is not verified in this activity"
+      ],
+      "next_action": "Consume RafPolimata ECOSYSTEM_RUNTIME_STATE.json after its local contract checks pass.",
+      "commit": "dfd554dd329530b6523b6fb160709b5443b11233"
+    }
+  ]
+}
