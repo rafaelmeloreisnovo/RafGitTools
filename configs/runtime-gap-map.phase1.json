@@ -1,0 +1,174 @@
+{
+  "schema": "raf.runtime-gap-map.v1",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "ref": "codex/close-runtime-gaps-phase-1",
+  "policy": {
+    "claim_allowed": false,
+    "certification_requires_evidence": true,
+    "unknown_is_success": false
+  },
+  "domains": [
+    {
+      "id": "BR-001",
+      "domain": "Browser ASM/C bootstrap",
+      "state": "PARTIAL",
+      "artifacts": ["BrowserRaf/internal/br_start.S", "BrowserRaf/internal/br_main.c"],
+      "gaps": ["No reproducible ARM32/ARM64 device run is attached", "No browser conformance suite is attached"],
+      "next_actions": ["Build both Android ABIs", "Capture binary hashes and smoke-test logs"],
+      "evidence": [
+        {"kind": "SOURCE", "path": "BrowserRaf/internal/br_start.S", "status": "PRESENT"},
+        {"kind": "SOURCE", "path": "BrowserRaf/internal/br_main.c", "status": "PRESENT"},
+        {"kind": "RUNTIME", "path": "BrowserRaf/proofs/device-runtime", "status": "TOKEN_VAZIO"}
+      ]
+    },
+    {
+      "id": "TLS-001",
+      "domain": "TLS 1.3 cryptographic handshake",
+      "state": "PARTIAL",
+      "artifacts": ["BrowserRaf/internal/br_tls.h"],
+      "gaps": ["X25519 is not implemented", "HKDF and transcript hash are not implemented", "Certificate and hostname validation are not implemented", "Finished and AEAD record protection are not implemented"],
+      "next_actions": ["Define a fail-closed TLS provider boundary", "Add RFC interoperability vectors before enabling HTTPS"],
+      "evidence": [
+        {"kind": "SOURCE", "path": "BrowserRaf/internal/br_tls.h", "status": "PRESENT"},
+        {"kind": "TEST", "path": "BrowserRaf/tests/tls13", "status": "TOKEN_VAZIO"},
+        {"kind": "CERTIFICATION", "path": "BrowserRaf/proofs/tls13-certification", "status": "EXTERNAL_REQUIRED"}
+      ]
+    },
+    {
+      "id": "TLS-002",
+      "domain": "TLS entropy",
+      "state": "BLOCKED",
+      "artifacts": ["BrowserRaf/internal/br_tls.h"],
+      "gaps": ["The current ClientHello random is produced by a deterministic fixed-seed LFSR"],
+      "next_actions": ["Use the Linux getrandom syscall", "Fail closed when the CSPRNG cannot fill the buffer"],
+      "evidence": [
+        {"kind": "SOURCE", "path": "BrowserRaf/internal/br_tls.h", "status": "FAIL"}
+      ]
+    },
+    {
+      "id": "TLS-003",
+      "domain": "TLS 1.2 profile",
+      "state": "DESIGN",
+      "artifacts": ["BrowserRaf/internal/br_tls.h"],
+      "gaps": ["Wire constants do not constitute a TLS 1.2 implementation"],
+      "next_actions": ["Declare TLS 1.2 unsupported or implement a separately tested profile"],
+      "evidence": [
+        {"kind": "SOURCE", "path": "BrowserRaf/internal/br_tls.h", "status": "PRESENT"},
+        {"kind": "TEST", "path": "BrowserRaf/tests/tls12", "status": "TOKEN_VAZIO"}
+      ]
+    },
+    {
+      "id": "TLS-004",
+      "domain": "TLS certification",
+      "state": "TOKEN_VAZIO",
+      "artifacts": ["BrowserRaf/README.md"],
+      "gaps": ["No external certification or complete RFC conformance report is attached"],
+      "next_actions": ["Keep certified=false", "Record external laboratory or reproducible interoperability evidence"],
+      "evidence": [
+        {"kind": "CERTIFICATION", "path": "BrowserRaf/proofs/tls-certification", "status": "EXTERNAL_REQUIRED"}
+      ]
+    },
+    {
+      "id": "DEX-001",
+      "domain": "DEX strict verifier",
+      "state": "PARTIAL",
+      "artifacts": ["external:rafaelmeloreisnovo/RafPolimata/_incoming/raf_dex.h"],
+      "gaps": ["Incoming header is not an integrated strict verifier", "SHA-1 and complete offset/index validation are unproved"],
+      "next_actions": ["Promote only after bounds-hardening and malformed corpus tests"],
+      "evidence": [
+        {"kind": "REFERENCE", "path": "external:rafaelmeloreisnovo/RafPolimata/_incoming/raf_dex.h", "status": "PRESENT"},
+        {"kind": "TEST", "path": "external:rafaelmeloreisnovo/RafPolimata/tests/dex", "status": "TOKEN_VAZIO"}
+      ]
+    },
+    {
+      "id": "DEX-002",
+      "domain": "DEX writer and ART execution",
+      "state": "TOKEN_VAZIO",
+      "artifacts": ["external:rafaelmeloreisnovo/RafPolimata/Apkc"],
+      "gaps": ["No complete class/method/code-item writer and ART install/run proof is attached"],
+      "next_actions": ["Define writer contract", "Round-trip with dexdump and ART"],
+      "evidence": [
+        {"kind": "RUNTIME", "path": "external:rafaelmeloreisnovo/RafPolimata/Apkc/proofs/dex-runtime", "status": "TOKEN_VAZIO"}
+      ]
+    },
+    {
+      "id": "ELF-001",
+      "domain": "ELF strict verifier",
+      "state": "PARTIAL",
+      "artifacts": ["external:rafaelmeloreisnovo/RafPolimata/_incoming/raf_elf.h"],
+      "gaps": ["Parser remains in an incoming area", "Overflow, alignment, entry-point and relocation policies are unproved"],
+      "next_actions": ["Harden and test ELF32/ELF64 ARM/AArch64 validation"],
+      "evidence": [
+        {"kind": "REFERENCE", "path": "external:rafaelmeloreisnovo/RafPolimata/_incoming/raf_elf.h", "status": "PRESENT"},
+        {"kind": "TEST", "path": "external:rafaelmeloreisnovo/RafPolimata/tests/elf", "status": "TOKEN_VAZIO"}
+      ]
+    },
+    {
+      "id": "ELF-002",
+      "domain": "ELF emission and loader proof",
+      "state": "TOKEN_VAZIO",
+      "artifacts": ["external:rafaelmeloreisnovo/RafPolimata/Apkc"],
+      "gaps": ["No reproducible ET_EXEC/ET_DYN ARM32/ARM64 evidence matrix is attached"],
+      "next_actions": ["Emit minimal deterministic binaries", "Validate with readelf and target execution"],
+      "evidence": [
+        {"kind": "RUNTIME", "path": "external:rafaelmeloreisnovo/RafPolimata/Apkc/proofs/elf-runtime", "status": "TOKEN_VAZIO"}
+      ]
+    },
+    {
+      "id": "APK-001",
+      "domain": "End-to-end APK pipeline",
+      "state": "PARTIAL",
+      "artifacts": ["external:rafaelmeloreisnovo/RafPolimata/Apkc", "external:rafaelmeloreisnovo/RafPolimata/tools/termuxforge/forge.sh"],
+      "gaps": ["Source-to-DEX/resources/manifest/package/sign/zipalign/install is not proved as one chain"],
+      "next_actions": ["Define a deterministic unsigned APK contract", "Attach install and launch evidence"],
+      "evidence": [
+        {"kind": "REFERENCE", "path": "external:rafaelmeloreisnovo/RafPolimata/Apkc/proofs", "status": "PRESENT"},
+        {"kind": "RUNTIME", "path": "external:rafaelmeloreisnovo/RafPolimata/Apkc/proofs/apk-install", "status": "TOKEN_VAZIO"}
+      ]
+    },
+    {
+      "id": "APK-002",
+      "domain": "Language frontend inventory",
+      "state": "PARTIAL",
+      "artifacts": ["external:rafaelmeloreisnovo/RafPolimata/Apkc"],
+      "gaps": ["Routing/profile recognition can be mistaken for complete compilation support"],
+      "next_actions": ["Record one compile/run vector per claimed language", "Downgrade unsupported frontends explicitly"],
+      "evidence": [
+        {"kind": "REFERENCE", "path": "external:rafaelmeloreisnovo/RafPolimata/docs/APKC_VALUE_AND_GAPS.md", "status": "PRESENT"},
+        {"kind": "TEST", "path": "external:rafaelmeloreisnovo/RafPolimata/Apkc/proofs/language-matrix", "status": "TOKEN_VAZIO"}
+      ]
+    },
+    {
+      "id": "DOC-001",
+      "domain": "Loose-file canonicality and provenance",
+      "state": "BLOCKED",
+      "artifacts": ["_incoming", "Livro", "fazer", "BrowserRaf"],
+      "gaps": ["Loose material has ambiguous authority, destination and licensing"],
+      "next_actions": ["Scan and hash without modifying sources", "Quarantine unknown and historical artifacts"],
+      "evidence": [
+        {"kind": "SOURCE", "path": "tools/document_completion_scan.py", "status": "PRESENT"}
+      ]
+    },
+    {
+      "id": "DOC-002",
+      "domain": "Non-destructive document completion",
+      "state": "PARTIAL",
+      "artifacts": ["schemas/document-completion.schema.json", "tools/document_completion_scan.py", "tests/test_document_completion_scan.py"],
+      "gaps": ["Section-level semantic matching and patch generation remain unimplemented"],
+      "next_actions": ["Generate a dry-run manifest", "Add reviewed section mapping and conflict ledger"],
+      "evidence": [
+        {"kind": "SOURCE", "path": "schemas/document-completion.schema.json", "status": "PRESENT"},
+        {"kind": "SOURCE", "path": "tools/document_completion_scan.py", "status": "PRESENT"},
+        {"kind": "TEST", "path": "tests/test_document_completion_scan.py", "status": "PRESENT"}
+      ]
+    }
+  ],
+  "summary": {
+    "pass": 0,
+    "partial": 7,
+    "design": 1,
+    "token_vazio": 3,
+    "blocked": 2,
+    "quarantine": 0
+  }
+}
