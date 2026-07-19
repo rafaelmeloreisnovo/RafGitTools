@@ -2,7 +2,7 @@
 /* raf_elf.h — ELF32/ELF64 packed structs + parse context
  * nomalloc nolibc — zero stdlib, zero heap, zero abstraction
  * ELF32 header: 52 bytes  ELF64 header: 64 bytes
- * e_machine: EM_386=3 EM_ARM=40 EM_X86_64=62 EM_AARCH64=183
+ * e_machine: EM_386=3 EM_ARM=40 EM_X86_64=62 EM_AARCH64=183 EM_RISCV=243
  * e_type: ET_EXEC=2 ET_DYN=3 ET_CORE=4
  */
 #include "raf_client_sys.h"
@@ -106,6 +106,7 @@ typedef struct PK {
 #define EM_ARM    40u
 #define EM_X86_64 62u
 #define EM_AA64   183u
+#define EM_RISCV  243u
 
 /* ── e_type constants ───────────────────────────────────────────────── */
 #define ET_EXEC 2u
@@ -160,6 +161,7 @@ AI const char* ELF_MACH_STR(u16 m){
     if(m==EM_AA64)  return "arm64";
     if(m==EM_X86_64)return "x86-64";
     if(m==EM_386)   return "x86-32";
+    if(m==EM_RISCV) return "riscv64";
     return "unk";
 }
 

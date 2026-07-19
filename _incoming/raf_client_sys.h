@@ -1,9 +1,10 @@
 #pragma once
-/* raf_client_sys.h — syscalls ARM32/ARM64/x86-64 + arena BSS + I/O
+/* raf_client_sys.h — syscalls ARM32/ARM64/x86-64/RISCV64 + arena BSS + I/O
  * nomalloc nolibc noGC — zero stdlib, zero heap, zero abstraction
- * ARM32 : open=5  read=3  write=4  close=6  exit_group=248
- * ARM64 : openat=56 read=63 write=64 close=57 exit_group=94
- * x86-64: open=2  read=0  write=1  close=3  exit_group=231
+ * ARM32  : open=5   read=3   write=4   close=6   exit_group=248
+ * ARM64  : openat=56 read=63 write=64  close=57  exit_group=94
+ * x86-64 : open=2   read=0   write=1   close=3   exit_group=231
+ * RISCV64: openat=56 read=63 write=64  close=57  exit_group=94
  */
 typedef unsigned char      u8;
 typedef unsigned short     u16;
@@ -11,7 +12,8 @@ typedef unsigned int       u32;
 typedef unsigned long long u64;
 typedef signed   int       s32;
 typedef signed   long long s64;
-#if defined(__aarch64__) || defined(__x86_64__)
+#if defined(__aarch64__) || defined(__x86_64__) || \
+    (defined(__riscv) && (__riscv_xlen == 64))
 typedef unsigned long long usize;
 #else
 typedef unsigned int       usize;
@@ -89,6 +91,35 @@ AI s32 READ(s32 f,void*b,u32 n){return(s32)_sc3(0u,(u64)f,(u64)(usize)b,(u64)n);
 AI s32 WR  (u32 f,const void*b,u32 n){return(s32)_sc3(1u,(u64)f,(u64)(usize)b,(u64)n);}
 AI s32 CLOSE(s32 f){return(s32)_sc1(3u,(u64)f);}
 NR void EX(s32 c){_sc1(231u,(u64)c);__builtin_unreachable();}
+
+#elif defined(__riscv) && (__riscv_xlen == 64)
+/* RISCV64 Linux ecall: syscall# in a7, args in a0-a5, result in a0  */
+/* Numbers identical to AArch64 (same "new" Linux ABI set)            */
+#define AT_FDCWD (-100)
+AI s64 _sc4(u64 r,u64 a,u64 b,u64 c,u64 d){
+    register u64 a7 __asm__("a7")=r;
+    register s64 a0 __asm__("a0")=(s64)a; register u64 a1 __asm__("a1")=b;
+    register u64 a2 __asm__("a2")=c;     register u64 a3 __asm__("a3")=d;
+    __asm__ volatile("ecall":"+r"(a0):"r"(a7),"r"(a1),"r"(a2),"r"(a3):"memory");
+    return a0;
+}
+AI s64 _sc3(u64 r,u64 a,u64 b,u64 c){
+    register u64 a7 __asm__("a7")=r;
+    register s64 a0 __asm__("a0")=(s64)a; register u64 a1 __asm__("a1")=b;
+    register u64 a2 __asm__("a2")=c;
+    __asm__ volatile("ecall":"+r"(a0):"r"(a7),"r"(a1),"r"(a2):"memory");
+    return a0;
+}
+AI s64 _sc1(u64 r,u64 a){
+    register u64 a7 __asm__("a7")=r; register s64 a0 __asm__("a0")=(s64)a;
+    __asm__ volatile("ecall":"+r"(a0):"r"(a7):"memory");
+    return a0;
+}
+AI s32 OPEN(const char*p,u32 f){return(s32)_sc4(56u,(u64)(s64)AT_FDCWD,(u64)(usize)p,(u64)f,0u);}
+AI s32 READ(s32 f,void*b,u32 n){return(s32)_sc3(63u,(u64)f,(u64)(usize)b,(u64)n);}
+AI s32 WR  (u32 f,const void*b,u32 n){return(s32)_sc3(64u,(u64)f,(u64)(usize)b,(u64)n);}
+AI s32 CLOSE(s32 f){return(s32)_sc1(57u,(u64)f);}
+NR void EX(s32 c){_sc1(94u,(u64)c);__builtin_unreachable();}
 #endif
 
 /* ── CRC32C (Castagnoli, poly 0x82F63B78) branchless ────────────────── */
