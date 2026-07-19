@@ -1,0 +1,103 @@
+{
+  "schema": "raf.canonical-four-bodies.v1",
+  "version": "1.0.0",
+  "date": "2026-07-18",
+  "authority": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "role": "CONTROL_GOVERNANCE",
+    "local_commit": "SELF",
+    "pull_request": 268
+  },
+  "paired_projection": {
+    "repository": "rafaelmeloreisnovo/RafPolimata",
+    "role": "EVIDENCE_COMPILER",
+    "branch": "audit/runtime-truth-local-validation-20260718",
+    "pull_request": 140
+  },
+  "bodies": [
+    {
+      "id": "RAFGITTOOLS",
+      "authority": [
+        "identity",
+        "authorization",
+        "governance",
+        "typed_jobs"
+      ],
+      "forbidden_promotion": "UNBOUNDED_SHELL"
+    },
+    {
+      "id": "TERMUX_RAFCODEPHI",
+      "authority": [
+        "authorized_local_execution",
+        "recovery"
+      ],
+      "forbidden_promotion": "SELF_AUTHORIZATION"
+    },
+    {
+      "id": "RAFPOLIMATA",
+      "authority": [
+        "segmentation",
+        "structural_compilation",
+        "evidence"
+      ],
+      "forbidden_promotion": "ABSENCE_TO_PASS"
+    },
+    {
+      "id": "LLAMARAFAELIA",
+      "authority": [
+        "bounded_interpretation"
+      ],
+      "forbidden_promotion": "DIRECT_EXECUTION"
+    }
+  ],
+  "tail": [
+    "origin",
+    "authorship",
+    "intent",
+    "license",
+    "evidence"
+  ],
+  "evidence_states": [
+    "VERIFIED",
+    "DECLARED_BY_AUTHOR",
+    "TOKEN_VAZIO",
+    "CONTRADICTION",
+    "OUT_OF_SCOPE_NO_CREDIT"
+  ],
+  "invariants": [
+    "FILE_EXISTS_NE_CODE_INTEGRATED",
+    "CODE_INTEGRATED_NE_TEST_EXECUTED",
+    "TEST_EXECUTED_NE_RUNTIME_PROVEN",
+    "WORKFLOW_NOT_EXECUTED_NE_PASS",
+    "ORIGINAL_LICENSE_IS_NOT_REPLACED_BY_LOCAL_AUTHORSHIP"
+  ],
+  "current_cut": {
+    "durable_queue": "DECLARED_BY_AUTHOR",
+    "bounded_executor": "DECLARED_BY_AUTHOR",
+    "typed_provider_states": "DECLARED_BY_AUTHOR",
+    "job_v1": "DECLARED_BY_AUTHOR",
+    "android_gradle_apk_device": "TOKEN_VAZIO",
+    "termux_bridge": "TOKEN_VAZIO",
+    "github_actions": "OUT_OF_SCOPE_NO_CREDIT"
+  },
+  "r3": {
+    "ok": [
+      "typed_authority_split",
+      "durability_boundary",
+      "bounded_executor",
+      "typed_job_contract"
+    ],
+    "gap": [
+      "workmanager",
+      "offline_operation_codec",
+      "termux_transport",
+      "android_build",
+      "device_runtime"
+    ],
+    "next": [
+      "run_local_gate_with_transcript",
+      "implement_typed_termux_consumer_without_generic_shell"
+    ]
+  },
+  "claim_allowed": false
+}
