@@ -1,4 +1,4 @@
-/* raf_client_start.S — Entry ARM32/ARM64/x86-64
+/* raf_client_start.S — Entry ARM32/ARM64/x86-64/RISCV64
  * Freestanding bootstrap: zero stdlib, zero CRT, zero interpreter.
  * Single documented transition: _start → client_main.
  * After return: exit_group(0) via direct syscall.
@@ -45,5 +45,19 @@ _start:
     mov  $231,%rax
     xor  %rdi,%rdi
     syscall
+
+#elif defined(__riscv)
+.text
+.align 2
+.global _start
+.global client_main
+_start:
+    mv   fp,zero        /* clear frame pointer (s0)                    */
+    mv   ra,zero        /* clear return address                        */
+    call client_main
+    li   a7,94          /* exit_group                                  */
+    li   a0,0
+    ecall
+.h: j .h
 #endif
 .section .note.GNU-stack,"",@progbits

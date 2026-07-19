@@ -1,10 +1,11 @@
-/* raf_client.c — Freestanding ELF/DEX binary client
+/* raf_client.c — Freestanding ELF/DEX/PE binary client
  * nomalloc nolibc noGC — zero stdlib, zero heap, zero abstraction
  * friction-as-catalyst: CRC32C mismatch → EMA update, not error
  * entry: client_main() called from raf_client_start.S _start
  */
 #include "raf_elf.h"
 #include "raf_dex.h"
+#include "raf_pe.h"
 
 /* ── BSS globals (no heap, no malloc) ──────────────────────────────── */
 static u32 g_ema;   /* EMA accumulator of friction deltas              */
@@ -60,6 +61,13 @@ static void _out_elf(const ECtx*e){
     CP("type=");CP(ELF_TYPE_STR(e->etype));_sep();
     CP("phnum=");CN(e->phnum);
     CP("shnum=");CN(e->shnum);
+}
+
+static void _out_pe(const PeCtx*p){
+    CP("fmt=PE");_sep();
+    CP("bits=");CP(p->bits==64u?"64":"32");_sep();
+    CP("arch=");CP(PE_MACH_STR(p->mach));_sep();
+    CP("sections=");CN(p->sections);
 }
 
 static void _out_dex(const DCtx*d){
@@ -126,6 +134,16 @@ void client_main(void){
         /* friction gate on full buffer CRC */
         FG(fb,sz,_crc(fb,sz));
         _out_dex(&dc);
+    } else if(sz>=64u&&PE_MAGIC_OK(fb)){
+        /* PE/COFF path */
+        PeCtx pc;
+        PE_PARSE(fb,sz,pc);
+        if(!pc.mach){CP("err:pe-parse\n");EX(1);}
+        /* friction gate: DOS header (first 64 bytes) */
+        FG(fb,64u,_crc(fb,64u));
+        /* friction gate: full buffer */
+        FG(fb,sz,_crc(fb,sz));
+        _out_pe(&pc);
     } else {
         /* unknown — still run friction on raw bytes */
         FG(fb,sz,0u);               /* expected=0: always friction     */
