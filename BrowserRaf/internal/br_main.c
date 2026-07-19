@@ -67,9 +67,9 @@ static u8 HTTP_IS_CHUNKED(const u8*buf,u32 n){
         }
         if(k!=kl||buf[i+kl]!=':')continue;
         u32 j=i+kl+1u;
-        while(j<n&&(buf[j]==' '||buf[j]=='	'))j++;
+        while(j<n&&(buf[j]==' '||buf[j]=='\t'))j++;
         while(j<n&&buf[j]!='\r'&&buf[j]!='\n'){
-            while(j<n&&(buf[j]==' '||buf[j]=='	'||buf[j]==','))j++;
+            while(j<n&&(buf[j]==' '||buf[j]=='\t'||buf[j]==','))j++;
             const char tok[]="chunked";
             u32 t=0u;
             while(t<7u&&j+t<n){
@@ -294,7 +294,7 @@ void browser_main(void){
     PS("\033[1;36m");
     PS("╔══════════════════════════════════════════════════════════════╗\n");
     PS("║  \033[1;33m██████╗ ██████╗  ██████╗ ██╗    ██╗███████╗███████╗██████╗\033[1;36m  ║\n");
-    PS("║  \033[1;32m RAFAELIA BROWSER · TLS1.3 · HTTP/1.1 · freestanding    \033[1;36m  ║\n");
+    PS("║  \033[1;32m RAFAELIA BROWSER · HTTP/1.1 · HTTPS FAIL-CLOSED         \033[1;36m  ║\n");
     PS("║  \033[0;37m ARM32/ARM64/x86-64 · nolibc · nomalloc · inline ASM    \033[1;36m  ║\n");
     PS("║  \033[0;35m Turing Geométrica · Flip-Flop · Branchless · F*=23.158 \033[1;36m  ║\n");
     PS("╚══════════════════════════════════════════════════════════════╝\n");
@@ -331,7 +331,7 @@ void browser_main(void){
     PS("Host: ");PS(_BC.host);PS("\n");
     PS("Port: ");PN(_BC.port);
     PS("Path: ");PS(_BC.path);PS("\n");
-    PS("TLS:  ");PS(_BC.use_tls?"SIM":"NAO");PS("\n\n");
+    PS("TLS:  ");PS(_BC.use_tls?"SOLICITADO (FAIL-CLOSED)":"NAO");PS("\n\n");
 
     /* Executa fetch */
     s32 res=DO_FETCH(&_BC);
@@ -344,7 +344,7 @@ void browser_main(void){
     PS("  RX bytes: ");PN(_BC.rx_bytes);
     PS("  Latência: ");PN(_BC.t_ns/1000000u);PS("ms\n");
     PS("  Flags:    ");PH(_BC.flags);
-    PS("  TLS:      ");PH(_BC.tls);
+    PS("  TLS roadmap: ");PH(_BC.tls);
     HEADER_LINE();
 
     if(res==0){PS("\033[1;32m[OK] Fetch completo\033[0m\n");}
