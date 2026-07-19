@@ -1,0 +1,386 @@
+{
+  "schema": "raf.ecosystem-runtime-map.v1",
+  "generated_at": "2026-07-19T23:20:00Z",
+  "coordinator": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "branch": "codex/close-runtime-gaps-phase-1"
+  },
+  "policy": {
+    "claim_allowed": false,
+    "unknown_is_success": false,
+    "file_presence_is_runtime": false,
+    "certified_without_external_evidence": false
+  },
+  "repositories": [
+    {
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "default_branch": "main",
+      "observed_ref": "bce8bc23638689205d286630c86ab19c36edaf10",
+      "repository_size_kib": 8162,
+      "role": "Android control plane, Git/GitHub operations, governance, BrowserRaf and document-ingestion coordinator",
+      "state": "PARTIAL",
+      "evidence": [
+        "BrowserRaf/internal/br_start.S",
+        "BrowserRaf/internal/br_tls.h",
+        "schemas/document-completion.schema.json",
+        "tools/document_completion_scan.py"
+      ],
+      "gaps": [
+        "cross-repository job transport and recovery are not proved end to end",
+        "BrowserRaf TLS is neither complete nor certified",
+        "loose-file scanner has not produced a reviewed semantic patch"
+      ],
+      "next_actions": [
+        "implement fail-closed CSPRNG/TLS provider boundary",
+        "run document scan against one canonical document",
+        "emit signed or hashed job evidence for Termux"
+      ]
+    },
+    {
+      "repository": "rafaelmeloreisnovo/llamaRafaelia",
+      "default_branch": "master",
+      "observed_ref": "56451b3df51aa579fa0041cda99590050bf5ac07",
+      "repository_size_kib": 186651,
+      "role": "bounded semantic interpreter and local model runtime over provenance-preserving segments",
+      "state": "PARTIAL",
+      "evidence": [
+        "docs/RUNTIME_SEGMENT_CONTRACT.md",
+        "docs/RAFAELIA_VECTRA_LAMA_CONNECTOR_BRIDGE.md",
+        "runtime-lock.json"
+      ],
+      "gaps": [
+        "the contract forbids raw-source ingestion but full RafGitTools-Termux-RafPolimata-Llama execution evidence is absent",
+        "model weights, device memory budget and Android runtime matrix are not attached to this map"
+      ],
+      "next_actions": [
+        "consume a deterministic sample segment bundle",
+        "record model hash, memory peak and output anchoring",
+        "prove rejection of raw unbounded inputs"
+      ]
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "default_branch": "master",
+      "observed_ref": "54c70615c77772a3a7074fd297743f25936cb168",
+      "repository_size_kib": 366448,
+      "role": "Android VM application, Vectra runtime integration and QEMU artifact consumer",
+      "state": "BLOCKED",
+      "evidence": [
+        "reports/CANONICAL_BUILD_STATUS.md",
+        "docs/active/CODEX_CONTINUA_VECTRAS_RUNTIME_GATE.md",
+        "app/build.gradle"
+      ],
+      "gaps": [
+        "canonical validated SHA is older than the observed ref",
+        "current commit has no canonical CI validation recorded",
+        "release remains BETA_BLOCKED and device runtime evidence is incomplete"
+      ],
+      "next_actions": [
+        "run the canonical JDK21 assembleDebug command on the observed ref",
+        "consume the QEMU artifact contract",
+        "record install, launch and VM smoke evidence"
+      ]
+    },
+    {
+      "repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "default_branch": "master",
+      "observed_ref": "037efb4d1c4fa42dce6153df508c591814dfeb9e",
+      "repository_size_kib": 27394,
+      "role": "local Android execution plane, package/bootstrap runtime, APK build and native toolchain host",
+      "state": "BLOCKED",
+      "evidence": [
+        "docs/RUNTIME_TRUTH_TABLE.md",
+        "scripts/build_apk_matrix.sh",
+        "scripts/build_real_arm_bootstrap_core.py",
+        "scripts/device_runtime_smoke.sh"
+      ],
+      "gaps": [
+        "real package payload is blocked by LEGACY_PREFIX_BINARY_RISK in upstream ELFs",
+        "pkg, apt, dpkg, proot, certificates and network remain unproved on device",
+        "a project APK build is proved but a universal multi-language source-to-APK compiler is not"
+      ],
+      "next_actions": [
+        "rebuild dependency closure for the RAFCODEPhi prefix",
+        "run DEVICE_REAL_PKG_VALIDATED on ARM32 and ARM64",
+        "separate APK project build evidence from language compiler claims"
+      ]
+    },
+    {
+      "repository": "rafaelmeloreisnovo/qemu_rafaelia",
+      "default_branch": "master",
+      "observed_ref": "8e4cf4e377386abbaac386949889e7546f322841",
+      "repository_size_kib": 627699,
+      "role": "virtual machine engine and producer of contract-packaged qemu-system artifacts",
+      "state": "PARTIAL",
+      "evidence": [
+        ".github/workflows/ci-build.yml",
+        "tools/rafaelia/package_qemu_artifact.sh",
+        "tools/rafaelia/check_qemu_artifact_contract.sh",
+        "PR #57"
+      ],
+      "gaps": [
+        "the workflow is wired but a green build and downloadable artifact are not attached here",
+        "Android/Termux execution and Vectra consumption are not proved end to end",
+        "build targets do not by themselves prove guest boot or hardware acceleration"
+      ],
+      "next_actions": [
+        "capture successful multi-target workflow evidence",
+        "verify artifact hashes and manifests",
+        "boot a minimal guest through the Vectra consumer path"
+      ]
+    },
+    {
+      "repository": "rafaelmeloreisnovo/androidx_RmR",
+      "default_branch": "androidx-main",
+      "observed_ref": "91795d4969c8e69e6bca78bf9834e3c20d77dd4e",
+      "repository_size_kib": 1070678,
+      "role": "AndroidX fork plus isolated RmR native/matrix extension module",
+      "state": "PARTIAL",
+      "evidence": [
+        "rmr/rafaelia/build.gradle",
+        "rmr/rafaelia/src/main/cpp/CMakeLists.txt",
+        "rmr/rafaelia/src/main/cpp/rafaelia_core.cpp",
+        "settings.gradle"
+      ],
+      "gaps": [
+        "published performance and memory claims require current reproducible benchmark artifacts",
+        "QEMU/Termux/Vectra interoperability is not proved by module presence",
+        "upstream AndroidX and RmR extension boundaries need continuous license and build verification"
+      ],
+      "next_actions": [
+        "run isolated module tests and benchmarks",
+        "publish exact environment and result JSON",
+        "build a minimal consumer app without modifying AndroidX defaults"
+      ]
+    },
+    {
+      "repository": "rafaelmeloreisnovo/gradle",
+      "default_branch": "master",
+      "observed_ref": "8ed9a557db78f52c13ccab34a152af79313fa1f6",
+      "repository_size_kib": 647823,
+      "role": "build engine fork with isolated vectra-orchestrator module and backend selection",
+      "state": "PARTIAL",
+      "evidence": [
+        "platforms/native/vectra-orchestrator/README.md",
+        "platforms/native/vectra-orchestrator/src/main/java/org/gradle/vectra/runtime/JavaPureVectraEngine.java",
+        "platforms/native/vectra-orchestrator/src/main/asm/vectra_pulse.S"
+      ],
+      "gaps": [
+        "ASM implementation is currently x86_64 only",
+        "AArch64 uses native C or pure Java fallback",
+        "capability detection is partly architecture/hint based rather than native instruction probing",
+        "cross-repository Android build is not proved by the module alone"
+      ],
+      "next_actions": [
+        "add AArch64 ASM only with ABI tests or keep explicit fallback",
+        "run vectraPerfBenchmark and vectraPerfGate",
+        "consume AndroidX/Vectra test fixtures in an isolated integration build"
+      ]
+    }
+  ],
+  "external_dependencies": [
+    {
+      "id": "external:rafaelmeloreisnovo/RafPolimata",
+      "role": "strict ELF/DEX/APK compiler-verifier work, source segmentation and evidence production",
+      "state": "PARTIAL",
+      "reason": "Required by current RafGitTools and Llama contracts but outside this first branch."
+    },
+    {
+      "id": "external:Android-SDK-NDK-ART",
+      "role": "official Android build, signing, DEX inspection, installation and runtime environment",
+      "state": "REFERENCE",
+      "reason": "External toolchain evidence must be pinned per build and device."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "browser_asm",
+      "state": "PARTIAL",
+      "repositories": ["rafaelmeloreisnovo/RafGitTools"],
+      "evidence": ["BrowserRaf/internal/br_start.S", "BrowserRaf/internal/br_main.c"],
+      "gap": "No current ARM32/ARM64 device run or browser conformance suite is attached.",
+      "gate": "Build, hash and execute smoke vectors on both target ABIs."
+    },
+    {
+      "id": "tls_1_3",
+      "state": "BLOCKED",
+      "repositories": ["rafaelmeloreisnovo/RafGitTools"],
+      "evidence": ["BrowserRaf/internal/br_tls.h"],
+      "gap": "ClientHello and record parsing exist, but deterministic entropy and missing cryptographic handshake make HTTPS unsafe.",
+      "gate": "CSPRNG, X25519, HKDF, transcript, certificate/hostname validation, Finished and AEAD interoperability must pass."
+    },
+    {
+      "id": "tls_1_2",
+      "state": "DESIGN",
+      "repositories": ["rafaelmeloreisnovo/RafGitTools"],
+      "evidence": ["BrowserRaf/internal/br_tls.h:TLS_VER_12"],
+      "gap": "A version constant is not a TLS 1.2 implementation.",
+      "gate": "Declare unsupported or pass a separately implemented interoperability profile."
+    },
+    {
+      "id": "apk_project_build",
+      "state": "PASS",
+      "repositories": ["rafaelmeloreisnovo/termux-app-rafacodephi"],
+      "evidence": ["docs/RUNTIME_TRUTH_TABLE.md", "scripts/build_apk_matrix.sh"],
+      "gap": "This PASS applies to the project APK build contract, not arbitrary language-to-APK compilation.",
+      "gate": "Preserve the narrower claim and attach the produced APK evidence to releases."
+    },
+    {
+      "id": "apk_multilanguage_compiler",
+      "state": "PARTIAL",
+      "repositories": ["rafaelmeloreisnovo/RafGitTools", "rafaelmeloreisnovo/termux-app-rafacodephi"],
+      "evidence": ["COMPILER/rafaelia_factory.sh", "docs/RUNTIME_TRUTH_TABLE.md"],
+      "gap": "Language routing and profiles are not complete frontends, DEX writers, resource packagers and ART run proofs.",
+      "gate": "One deterministic compile/link/package/install/run vector per claimed language."
+    },
+    {
+      "id": "elf_pipeline",
+      "state": "BLOCKED",
+      "repositories": ["rafaelmeloreisnovo/RafGitTools", "rafaelmeloreisnovo/termux-app-rafacodephi", "rafaelmeloreisnovo/qemu_rafaelia"],
+      "evidence": ["configs/runtime-gap-map.phase1.json", "docs/RUNTIME_TRUTH_TABLE.md", "tools/rafaelia/package_qemu_artifact.sh"],
+      "gap": "Termux real payload contains legacy-prefix ELF risk and the custom emitter/runtime ABI matrix is absent.",
+      "gate": "Strict ELF verification plus reproducible ARMv7/AArch64 emission, readelf validation and target execution."
+    },
+    {
+      "id": "dex_pipeline",
+      "state": "TOKEN_VAZIO",
+      "repositories": ["rafaelmeloreisnovo/RafGitTools", "external:rafaelmeloreisnovo/RafPolimata"],
+      "evidence": ["configs/runtime-gap-map.phase1.json"],
+      "gap": "A strict verifier, complete writer and ART round-trip are not jointly proved.",
+      "gate": "Malformed corpus rejection and deterministic dexdump/ART round-trip."
+    },
+    {
+      "id": "qemu_artifact",
+      "state": "PARTIAL",
+      "repositories": ["rafaelmeloreisnovo/qemu_rafaelia", "rafaelmeloreisnovo/Vectras-VM-Android", "rafaelmeloreisnovo/termux-app-rafacodephi"],
+      "evidence": ["qemu_rafaelia PR #57", "tools/rafaelia/check_qemu_artifact_contract.sh"],
+      "gap": "Producer workflow is wired, but green artifact evidence and Android consumer boot are not attached.",
+      "gate": "Artifact contract PASS followed by Termux/Vectra guest boot smoke."
+    },
+    {
+      "id": "androidx_rmr",
+      "state": "PARTIAL",
+      "repositories": ["rafaelmeloreisnovo/androidx_RmR"],
+      "evidence": ["rmr/rafaelia/src/main/cpp/rafaelia_core.cpp", "rmr/rafaelia/src/androidTest"],
+      "gap": "Implementation exists; current benchmark, ABI and consumer-app evidence is incomplete.",
+      "gate": "Reproducible tests and benchmarks on declared Android ABIs."
+    },
+    {
+      "id": "gradle_orchestrator",
+      "state": "PARTIAL",
+      "repositories": ["rafaelmeloreisnovo/gradle"],
+      "evidence": ["platforms/native/vectra-orchestrator/README.md"],
+      "gap": "x86_64 has ASM, AArch64 does not; cross-repository Android build evidence is absent.",
+      "gate": "Backend capability report and isolated integration build with exact toolchain."
+    },
+    {
+      "id": "llama_segment_interpreter",
+      "state": "PARTIAL",
+      "repositories": ["rafaelmeloreisnovo/llamaRafaelia", "external:rafaelmeloreisnovo/RafPolimata"],
+      "evidence": ["docs/RUNTIME_SEGMENT_CONTRACT.md"],
+      "gap": "The segment boundary is specified but the full producer-consumer runtime is not attached.",
+      "gate": "Consume bounded sample segments and emit anchored output with model and source hashes."
+    },
+    {
+      "id": "document_completion",
+      "state": "PARTIAL",
+      "repositories": ["rafaelmeloreisnovo/RafGitTools"],
+      "evidence": ["schemas/document-completion.schema.json", "tools/document_completion_scan.py", "tests/test_document_completion_scan.py"],
+      "gap": "Hash/classification scanner exists; section matching, git provenance and reviewed patch generation remain open.",
+      "gate": "Generate one dry-run manifest and one human-reviewed non-destructive patch."
+    },
+    {
+      "id": "cross_repo_e2e",
+      "state": "TOKEN_VAZIO",
+      "repositories": [
+        "rafaelmeloreisnovo/RafGitTools",
+        "rafaelmeloreisnovo/termux-app-rafacodephi",
+        "external:rafaelmeloreisnovo/RafPolimata",
+        "rafaelmeloreisnovo/llamaRafaelia",
+        "rafaelmeloreisnovo/qemu_rafaelia",
+        "rafaelmeloreisnovo/Vectras-VM-Android"
+      ],
+      "evidence": ["docs/RUNTIME_SEGMENT_CONTRACT.md", "configs/runtime-gap-map.phase1.json"],
+      "gap": "No single trace proves authorized job, local execution, segmentation, interpretation, QEMU artifact consumption and Android VM launch.",
+      "gate": "One content-addressed transaction with logs, hashes, rollback and device evidence across every edge."
+    }
+  ],
+  "edges": [
+    {
+      "from": "rafaelmeloreisnovo/RafGitTools",
+      "to": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "contract": "signed or hashed raf.job.v1 control-to-execution handoff",
+      "state": "PARTIAL",
+      "evidence": ["RafGitTools contracts/job-v1.schema.json", "llamaRafaelia docs/RUNTIME_SEGMENT_CONTRACT.md"],
+      "gap": "Transport, authorization verification, recovery and typed result are not proved end to end."
+    },
+    {
+      "from": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "to": "rafaelmeloreisnovo/qemu_rafaelia",
+      "contract": "local toolchain builds or installs the QEMU artifact",
+      "state": "PARTIAL",
+      "evidence": ["termux-app docs/RUNTIME_TRUTH_TABLE.md", "qemu tools/rafaelia/package_qemu_artifact.sh"],
+      "gap": "Prefix-safe dependencies and device execution are not proved."
+    },
+    {
+      "from": "rafaelmeloreisnovo/qemu_rafaelia",
+      "to": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "contract": "RAFAELIA QEMU artifact package plus execution manifest",
+      "state": "PARTIAL",
+      "evidence": ["qemu_rafaelia PR #57", "Vectras docs/active/CODEX_CONTINUA_VECTRAS_RUNTIME_GATE.md"],
+      "gap": "Current artifact download, hash verification and guest boot evidence are absent."
+    },
+    {
+      "from": "rafaelmeloreisnovo/gradle",
+      "to": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "contract": "isolated vectra-orchestrator build and backend capability report",
+      "state": "PARTIAL",
+      "evidence": ["gradle platforms/native/vectra-orchestrator/README.md"],
+      "gap": "The module does not by itself prove the Android application build or runtime."
+    },
+    {
+      "from": "rafaelmeloreisnovo/gradle",
+      "to": "rafaelmeloreisnovo/androidx_RmR",
+      "contract": "isolated extension-module build without redefining Gradle or AndroidX defaults",
+      "state": "PARTIAL",
+      "evidence": ["androidx_RmR rmr/rafaelia/build.gradle", "gradle vectra-orchestrator README"],
+      "gap": "A reproducible combined fixture with exact toolchain and artifact hashes is absent."
+    },
+    {
+      "from": "rafaelmeloreisnovo/androidx_RmR",
+      "to": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "contract": "Android compatibility/UI extension consumed by the Vectra application",
+      "state": "TOKEN_VAZIO",
+      "evidence": ["androidx_RmR rmr/rafaelia module"],
+      "gap": "No current consumer dependency lock, APK build and device test are attached."
+    },
+    {
+      "from": "external:rafaelmeloreisnovo/RafPolimata",
+      "to": "rafaelmeloreisnovo/llamaRafaelia",
+      "contract": "bounded provenance-preserving segment bundle",
+      "state": "PARTIAL",
+      "evidence": ["llamaRafaelia docs/RUNTIME_SEGMENT_CONTRACT.md"],
+      "gap": "A current sample bundle and anchored model output are absent."
+    }
+  ],
+  "summary": {
+    "repositories_total": 7,
+    "repository_states": {
+      "pass": 0,
+      "partial": 5,
+      "design": 0,
+      "token_vazio": 0,
+      "blocked": 2,
+      "quarantine": 0
+    },
+    "capabilities_total": 13,
+    "capability_states": {
+      "pass": 1,
+      "partial": 7,
+      "design": 1,
+      "token_vazio": 2,
+      "blocked": 2,
+      "quarantine": 0
+    }
+  }
+}

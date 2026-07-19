@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafaelia.dev/schemas/document-completion.v1.json",
+  "title": "RAFAELIA Document Completion Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "job_id",
+    "canonical_document",
+    "source_roots",
+    "policy",
+    "candidates",
+    "result"
+  ],
+  "properties": {
+    "schema": {"const": "raf.document-completion.v1"},
+    "job_id": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{1,128}$"},
+    "canonical_document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "repository", "ref"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "repository": {"type": "string", "pattern": "^[^/]+/[^/]+$"},
+        "ref": {"type": "string", "minLength": 1}
+      }
+    },
+    "source_roots": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "preserve_sources",
+        "require_provenance",
+        "on_conflict",
+        "allow_unverified_claims"
+      ],
+      "properties": {
+        "mode": {"enum": ["DRY_RUN", "PROPOSE_PATCH"]},
+        "preserve_sources": {"const": true},
+        "require_provenance": {"const": true},
+        "on_conflict": {"enum": ["RECORD", "QUARANTINE"]},
+        "allow_unverified_claims": {"const": false}
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_path",
+          "sha256",
+          "classification",
+          "target_section",
+          "epistemic_status",
+          "decision"
+        ],
+        "properties": {
+          "source_path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "classification": {
+            "enum": [
+              "CODE",
+              "DOCUMENTATION",
+              "SPECIFICATION",
+              "EVIDENCE",
+              "GENERATED",
+              "HISTORICAL",
+              "DUPLICATE",
+              "UNKNOWN"
+            ]
+          },
+          "target_section": {"type": ["string", "null"]},
+          "epistemic_status": {
+            "enum": [
+              "PARABLE",
+              "INTERPRETATION",
+              "HYPOTHESIS",
+              "REFERENCE",
+              "PASS",
+              "FAIL",
+              "TOKEN_VAZIO",
+              "CONTRADICTION",
+              "QUARANTINE"
+            ]
+          },
+          "provenance": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "repository": {"type": ["string", "null"]},
+              "ref": {"type": ["string", "null"]},
+              "commit": {"type": ["string", "null"]},
+              "author": {"type": ["string", "null"]},
+              "license": {"type": ["string", "null"]}
+            }
+          },
+          "decision": {
+            "enum": [
+              "INCLUDE",
+              "REFERENCE_ONLY",
+              "REJECT_DUPLICATE",
+              "REJECT_CONFLICT",
+              "QUARANTINE",
+              "TOKEN_VAZIO"
+            ]
+          },
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["candidate_path", "canonical_fragment", "kind", "resolution"],
+        "properties": {
+          "candidate_path": {"type": "string"},
+          "canonical_fragment": {"type": "string"},
+          "kind": {"enum": ["SEMANTIC", "LICENSE", "AUTHORSHIP", "FACTUAL", "VERSION", "DUPLICATE"]},
+          "resolution": {"enum": ["UNRESOLVED", "CANONICAL_WINS", "SOURCE_WINS", "MANUAL_MERGE", "QUARANTINE"]}
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "claim_allowed", "patch_path", "evidence_paths"],
+      "properties": {
+        "status": {"enum": ["PASS", "PARTIAL", "TOKEN_VAZIO", "BLOCKED", "QUARANTINE"]},
+        "claim_allowed": {"const": false},
+        "patch_path": {"type": ["string", "null"]},
+        "evidence_paths": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}
