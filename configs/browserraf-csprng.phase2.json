@@ -44,13 +44,24 @@
       "status": "PRESENT"
     },
     {
-      "kind": "COMPILE_ARM32",
-      "path": "BrowserRaf/proofs/csprng/armeabi-v7a",
-      "status": "TOKEN_VAZIO"
+      "kind": "CROSS_ABI_VERIFIER",
+      "path": "tools/verify_browserraf_entropy_cross_abi.py",
+      "status": "PRESENT"
     },
     {
-      "kind": "COMPILE_ARM64",
-      "path": "BrowserRaf/proofs/csprng/arm64-v8a",
+      "kind": "CROSS_ABI_VERIFIER_TEST",
+      "path": "tests/test_browser_entropy_cross_abi_verifier.py",
+      "status": "PRESENT"
+    },
+    {
+      "kind": "INDEPENDENT_CROSS_ABI_COMPILE",
+      "path": "external:pull-request-273-validation-comment",
+      "status": "PASS_LIMITED",
+      "scope": "connector-materialized source text; relocatable ELF compile only"
+    },
+    {
+      "kind": "CANONICAL_RUNNER_EXECUTION",
+      "path": "BrowserRaf/proofs/csprng/cross-abi-runner",
       "status": "TOKEN_VAZIO"
     },
     {
@@ -61,11 +72,12 @@
   ],
   "status": {
     "source_boundary": "IMPLEMENTED",
-    "test_execution": "TOKEN_VAZIO",
-    "cross_abi_compile": "TOKEN_VAZIO",
+    "host_contract_logic": "PASS_LIMITED",
+    "cross_abi_compile": "PASS_LIMITED",
+    "canonical_runner_execution": "TOKEN_VAZIO",
     "device_runtime": "TOKEN_VAZIO",
     "tls_handshake": "PARTIAL",
     "https": "FAIL_CLOSED"
   },
-  "claim": "The deterministic ClientHello random fallback was removed and replaced by a fail-closed Linux getrandom boundary. This does not constitute a complete TLS handshake, HTTPS runtime or certification."
+  "claim": "The deterministic ClientHello random fallback was removed and replaced by a fail-closed Linux getrandom boundary. Independent compile-only checks passed for ARM32, ARM64 and x86-64, but canonical runner and Android runtime evidence remain open. This does not constitute a complete TLS handshake, HTTPS runtime or certification."
 }
