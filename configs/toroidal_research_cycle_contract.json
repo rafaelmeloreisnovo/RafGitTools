@@ -1,0 +1,140 @@
+{
+  "schema": "rafaelia.toroidal-research-cycle-contract.v1",
+  "version": "1.0.0",
+  "authority": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "rule": "The contract governs research custody and promotion. It does not establish external scientific truth."
+  },
+  "principles": [
+    "The toroidal model is an operational recurrence model, not proof that the investigated physical system is toroidal.",
+    "A pure sine is a reference signal for identification and phase control, not a universal stabilizer.",
+    "TOKEN_VAZIO is preserved as a first-class epistemic state and never coerced to zero, false, PASS or FAIL.",
+    "Repository diversity is federated by authority; domain evidence remains owned by the domain repository.",
+    "Promotion is fail-closed and non-compensatory: missing provenance, falsifier, uncertainty or execution evidence blocks the claim."
+  ],
+  "cycle_phases": [
+    "VOID",
+    "QUERY",
+    "SOURCE",
+    "CLAIM",
+    "FORMULA",
+    "TEST",
+    "EVIDENCE",
+    "RESIDUAL",
+    "NEW_VOID",
+    "FEEDBACK"
+  ],
+  "required_cycle_edges": [
+    ["VOID", "QUERY"],
+    ["QUERY", "SOURCE"],
+    ["SOURCE", "CLAIM"],
+    ["CLAIM", "FORMULA"],
+    ["FORMULA", "TEST"],
+    ["TEST", "EVIDENCE"],
+    ["EVIDENCE", "RESIDUAL"],
+    ["RESIDUAL", "NEW_VOID"],
+    ["NEW_VOID", "FEEDBACK"],
+    ["FEEDBACK", "VOID"]
+  ],
+  "toroidal_state_axes": [
+    "inner_research_cycle",
+    "federation_cycle"
+  ],
+  "sine_reference_policy": {
+    "allowed_purpose": [
+      "system_identification",
+      "phase_reference",
+      "frequency_sweep",
+      "calibration",
+      "regression_fixture"
+    ],
+    "pure_sine_is_universal_stabilizer": false,
+    "feedback_required": true,
+    "damping_or_boundedness_required": true,
+    "amplitude_must_be_positive": true,
+    "frequency_must_be_positive": true,
+    "units_required": true
+  },
+  "repository_roles": [
+    {
+      "id": "GOVERNANCE",
+      "authority_repository": "rafaelmeloreisnovo/RafGitTools",
+      "responsibility": "contracts, evidence states, claim gates, rollback and custody"
+    },
+    {
+      "id": "MAP",
+      "authority_repository": "rafaelmeloreisnovo/Mapa",
+      "responsibility": "repository identity, authority graph, dependency and maturity navigation"
+    },
+    {
+      "id": "SCIENCE",
+      "authority_repository": "instituto-Rafael/relativity-living-light",
+      "responsibility": "scientific hypotheses, formulas, datasets, likelihoods, falsifiers and bounded claims"
+    },
+    {
+      "id": "ORCHESTRATION",
+      "authority_repository": "rafaelmeloreisnovo/RafPolimata",
+      "responsibility": "formula routing, execution planning, compiler and hardware-domain selection"
+    },
+    {
+      "id": "RUNTIME",
+      "authority_repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "responsibility": "Android and Termux device execution evidence"
+    },
+    {
+      "id": "MEMORY",
+      "authority_repository": "rafaelmeloreisnovo/llamaRafaelia",
+      "responsibility": "memory, retrieval and consumption of bounded claims"
+    }
+  ],
+  "source_classes": [
+    "PRIMARY_PAPER",
+    "OFFICIAL_DATASET",
+    "OFFICIAL_DOCUMENTATION",
+    "SOURCE_CODE",
+    "EXECUTION_RECEIPT",
+    "SECONDARY_CONTEXT"
+  ],
+  "claim_states": [
+    "HYPOTHESIS",
+    "SUPPORTED_LIMITED",
+    "RESTRICTED",
+    "CONTRADICTED",
+    "TOKEN_VAZIO",
+    "BLOCKED"
+  ],
+  "formula_states": [
+    "EXTRACTED",
+    "DIMENSIONAL_PASS",
+    "DIMENSIONAL_FAIL",
+    "TESTED_LIMITED",
+    "TOKEN_VAZIO",
+    "BLOCKED"
+  ],
+  "test_states": [
+    "PLANNED",
+    "EXECUTED_PASS",
+    "EXECUTED_FAIL",
+    "ZERO_STEP_NO_LOGS",
+    "POLICY_BLOCKED",
+    "BILLING_BLOCKED",
+    "TOKEN_VAZIO"
+  ],
+  "promotion_requirements": [
+    "primary_or_official_source",
+    "explicit_scope",
+    "formula_or_method_when_applicable",
+    "uncertainty_or_error_model",
+    "baseline",
+    "falsifier",
+    "execution_evidence",
+    "repository_authority",
+    "no_unresolved_hard_residual"
+  ],
+  "aggregation": {
+    "non_compensatory": true,
+    "missing_value": "TOKEN_VAZIO",
+    "coverage_formula": "known_required_fields / required_fields",
+    "claim_allowed_default": false
+  }
+}
