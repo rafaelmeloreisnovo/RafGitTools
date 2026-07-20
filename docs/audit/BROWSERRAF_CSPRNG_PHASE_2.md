@@ -33,6 +33,22 @@ fallback     -> none
 
 `TLS_INIT` now returns a status. It calls `BR_RANDOM_FILL` and records `TLS_ALERT_INTERNAL_ERROR` when the kernel cannot provide the requested bytes.
 
+## Reproducible compile gate
+
+`tools/verify_browserraf_entropy_cross_abi.py` compiles a minimal probe against the repository headers for all three supported targets. It preserves `-Wall`, `-Wextra` and `-Werror`, suppressing only `unused-function` because `br_sys.h` intentionally contains UI helpers that are unrelated to the entropy probe.
+
+The verifier checks:
+
+- compiler return code;
+- ELF magic;
+- 32-bit versus 64-bit ELF class;
+- little-endian encoding;
+- expected `e_machine` for ARM, AArch64 and x86-64;
+- SHA-256 of every generated relocatable object;
+- SHA-256 of the three source headers used by the proof.
+
+An independent connector-materialized execution produced relocatable ELF objects for the three targets. This is classified as `PASS_LIMITED`: it proves source-level cross-target compilation, not canonical CI execution or Android runtime behavior.
+
 ## Claims that remain forbidden
 
 This phase does **not** provide:
@@ -62,29 +78,32 @@ certified = false
 | Entropy source boundary | `IMPLEMENTED` |
 | TLS consumer integration | `IMPLEMENTED` |
 | Regression test contract | `PRESENT` |
-| Test execution on runner | `TOKEN_VAZIO` |
-| ARM32 compile evidence | `TOKEN_VAZIO` |
-| ARM64 compile evidence | `TOKEN_VAZIO` |
+| Cross-ABI verifier | `PRESENT` |
+| Independent host contract logic | `PASS_LIMITED` |
+| Independent ARM32/ARM64/x86-64 compile | `PASS_LIMITED` |
+| Canonical runner execution | `TOKEN_VAZIO` |
 | Android device runtime | `TOKEN_VAZIO` |
 
 Machine-readable state is recorded in `configs/browserraf-csprng.phase2.json`.
 
 ## Next operational gate
 
-The next gate is not to enable HTTPS. It is to establish reproducible evidence in this order:
+The next gate is not to enable HTTPS. It is to establish canonical and device evidence in this order:
 
-1. compile the BrowserRaf source for ARM32 and ARM64;
-2. run a minimal entropy smoke test on an Android device;
-3. record binary hashes, kernel/API information and exact command lines;
-4. prove failure behavior when the syscall is unavailable or rejected;
-5. only then begin the X25519 and HKDF provider boundary.
+1. execute `tools/verify_browserraf_entropy_cross_abi.py` from an actual repository checkout;
+2. persist the generated manifest and source hashes;
+3. run a minimal entropy smoke test on an Android device;
+4. record kernel/API information, exact commands and binary hashes;
+5. prove failure behavior when the syscall is unavailable or rejected;
+6. only then begin the X25519 and HKDF provider boundary.
 
 ## Canonical conclusion
 
 ```text
 deterministic TLS random = removed
 kernel entropy boundary  = implemented
-cross-ABI proof          = TOKEN_VAZIO
-runtime proof            = TOKEN_VAZIO
+cross-ABI compile        = PASS_LIMITED
+canonical runner proof   = TOKEN_VAZIO
+Android runtime proof    = TOKEN_VAZIO
 complete TLS             = false
 ```
