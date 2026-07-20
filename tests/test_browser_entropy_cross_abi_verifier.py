@@ -29,6 +29,7 @@ class BrowserEntropyCrossAbiVerifierTests(unittest.TestCase):
                 "x86_64": ("x86_64-linux-android21", 2, 62),
             },
         )
+        self.assertEqual(MODULE.IGNORED_WARNINGS, ("unused-function",))
 
     def test_elf_inspector_rejects_wrong_machine(self) -> None:
         data = bytearray(20)
@@ -49,12 +50,16 @@ class BrowserEntropyCrossAbiVerifierTests(unittest.TestCase):
         self.assertFalse(manifest["claim_allowed"])
         self.assertFalse(manifest["runtime_proved"])
         self.assertFalse(manifest["https_enabled"])
+        self.assertEqual(manifest["ignored_warnings"], ["unused-function"])
         self.assertTrue(manifest["source_hashes"])
         self.assertEqual(
             {item["abi"] for item in manifest["results"]},
             {"armeabi-v7a", "arm64-v8a", "x86_64"},
         )
         self.assertTrue(all(item["status"] == "PASS" for item in manifest["results"]))
+        for item in manifest["results"]:
+            self.assertIn("-Werror", item["command"])
+            self.assertIn("-Wno-unused-function", item["command"])
 
 
 if __name__ == "__main__":
