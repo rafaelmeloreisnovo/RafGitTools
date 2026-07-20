@@ -44,11 +44,8 @@ class ComplianceManager {
      * @return Detailed compliance report
      */
     fun generateComplianceReport(standard: ComplianceStandard? = null): ComplianceReport {
-        val statuses = if (standard != null) {
-            mapOf(standard to getComplianceStatus()[standard]!!)
-        } else {
-            getComplianceStatus()
-        }
+        val all = getComplianceStatus()
+        val statuses = if (standard != null) all.filterKeys { it == standard } else all
         
         return ComplianceReport(
             generatedDate = Date(),

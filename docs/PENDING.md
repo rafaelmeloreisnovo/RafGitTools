@@ -65,11 +65,10 @@ Only GitHub is currently functional.
 
 ---
 
-## P5 — Pending: rafaelia/block1 Makefile
+## ~~P5 — DONE: rafaelia/block1 Makefile~~
 
-`rafaelia/block1/` has no Makefile. The `raf_geom.c` file compiles cleanly with
-`gcc -O2 -std=c11 raf_geom.c raf_geom_demo.c -lm -o raf_geom_demo`. A Makefile should be
-added to match the `rafaelia/omega_hybrid/Makefile` style.
+Added `rafaelia/block1/Makefile` in PR #279. Targets: `libraf_geom.a`, `demo`, `clean`.
+Style matches `rafaelia/omega_hybrid/Makefile`.
 
 ---
 

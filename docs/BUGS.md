@@ -68,14 +68,13 @@ but with the canonical `#ifndef` guards.
 
 ---
 
-## OPEN — BUG-06: ComplianceManager map access with `!!`
+## FIXED — BUG-06: ComplianceManager map access with `!!`
 
 **File**: `app/src/main/kotlin/com/rafgittools/core/compliance/ComplianceManager.kt:48`
-**Problem**: `getComplianceStatus()[standard]!!` — map lookup returns nullable; `!!` will
-crash if `standard` is not a key in the map. The key set should be validated first or a
-default value used.
-**Severity**: Medium — crashes on unknown compliance standard keys.
-**Suggested fix**: Replace with `?: ComplianceStatus.UNKNOWN` or add an `in` guard.
+**Was**: `getComplianceStatus()[standard]!!` — map lookup returns nullable; `!!` would
+crash if `standard` is not present in the map.
+**Fix (PR #279)**: Replaced with `getComplianceStatus().filterKeys { it == standard }`,
+which returns an empty map instead of crashing if the key is missing.
 
 ---
 
@@ -89,15 +88,16 @@ unhandled error rather than a friendly message.
 
 ---
 
-## OPEN — BUG-08: HomeScreen / AuthScreen non-null assert on user data
+## FIXED — BUG-08: HomeScreen / AuthScreen non-null assert on user data
 
 **Files**:
 - `ui/screens/home/HomeScreen.kt:61` — `user!!`
 - `ui/screens/auth/AuthScreen.kt:91` — `username!!`
-**Problem**: Non-null asserts on state that flows from network calls. A race between the
-null check and the coroutine delivering data (or a network failure leaving the field null)
-will crash with `NullPointerException`.
-**Severity**: Low-Medium — only triggered in error/race paths not the happy path.
+**Was**: Non-null asserts on StateFlow-backed delegate properties. Kotlin cannot smart-cast
+delegates, so `user!!` inside `if (user != null)` was needed to compile but was still
+unsafe if the value changed between check and use.
+**Fix (PR #279)**: Captured `val u = user` / `val currentUsername = username` as local
+vals before the null check, allowing Kotlin smart-cast to eliminate the `!!` entirely.
 
 ---
 
