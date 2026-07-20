@@ -132,12 +132,22 @@ that is now complete. The entire `fazer/` directory can be deleted.
 
 ---
 
-## P11 — License consolidation
+## P11 — Root artifact rename (three misnamed files)
 
-Four license files exist at the repo root:
-- `LICENSE`
-- `LICENSE.md`
-- `License2.md`
-- `Lincense4.md` (typo: "Lincense")
+Four files at the repo root were originally described as license files. Audited 2026-07-20:
 
-These should be consolidated into a single `LICENSE` file with the correct SPDX identifier.
+| File | Actual content | Action |
+|------|----------------|--------|
+| `LICENSE` | GNU GPL v3 (real license) | Keep as-is |
+| `LICENSE.md` | C source: `core_rafaelia_matriz_supralegal.c` — author's protected IP | Rename to `.c` only with author approval |
+| `License2.md` | C source: `bitraf64_compressor_supralegal.c` — author's protected IP | Rename to `.c` only with author approval |
+| `Lincense4.md` | Math/theory document (not a license; typo in filename) | Rename to `math_theory.md` only with author approval |
+
+`LICENSE.md` and `License2.md` carry explicit "cláusula pétrea" intellectual-property headers
+forbidding alteration of the file or its metadata. These files must **not** be renamed, moved,
+or deleted without the author's consent. The file name is part of the metadata.
+
+**Owner action required**: confirm whether these three files should be renamed / moved,
+or left at their current paths. The `LICENSE` (GPL v3) is the operative license and
+GitHub will detect it correctly. SPDX header `SPDX-License-Identifier: GPL-3.0-only`
+can be added to `LICENSE` as a cosmetic improvement without touching the other files.
