@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # Canonical dependency-free gate for RAFAELIA longitudinal, content validity,
-# toroidal research-cycle, GitHub Actions execution-evidence, and platform
-# assurance control-plane contracts.
+# toroidal research-cycle, GitHub Actions execution-evidence, platform assurance,
+# and evidence-backed compliance contracts.
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -47,3 +47,10 @@ python3 -m unittest discover -s tests \
 python3 scripts/platform_assurance_control_plane.py \
   configs/platform-assurance/index.json \
   --write-report artifacts/platform-assurance-report.json
+
+python3 -m unittest discover -s tests \
+  -p 'test_compliance_evidence_boundary.py' -v
+python3 scripts/validate_compliance_evidence_boundary.py \
+  --strict --write-report
+make -C rafaelia/block1 clean check
+make -C rafaelia/block1 clean
