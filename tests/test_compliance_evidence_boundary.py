@@ -29,7 +29,7 @@ class ComplianceEvidenceBoundaryTests(unittest.TestCase):
     def test_non_null_assertion_is_rejected(self):
         files = fixture()
         files["compliance"] += "\ngetComplianceStatus()[standard]!!\n"
-        self.assert_invalid(files, "non")
+        self.assert_invalid(files, "forbidden unsupported assertion")
 
     def test_hardcoded_implemented_true_is_rejected(self):
         files = fixture()
