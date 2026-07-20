@@ -78,13 +78,15 @@ which returns an empty map instead of crashing if the key is missing.
 
 ---
 
-## OPEN — BUG-07: LfsManager install/track/fetch always throw
+## FIXED — BUG-07: LfsManager install/track/fetch always throw
 
-**File**: `app/src/main/kotlin/com/rafgittools/gitlfs/LfsManager.kt`, lines 65, 85, 104
-**Problem**: These three functions unconditionally return `NotImplementedError` (not just
-for empty repoPath). Any UI that allows the user to trigger LFS operations will see an
-unhandled error rather than a friendly message.
-**Severity**: Low — LFS UI entry points are not yet exposed in the main navigation.
+**File**: `app/src/main/kotlin/com/rafgittools/gitlfs/LfsManager.kt`
+**Was**: These three functions were documented as unconditionally returning `NotImplementedError`.
+**Fix (verified 2026-07-20)**: The functions already have real `ProcessBuilder` + `git lfs`
+implementations. `NotImplementedError` fires only when `repoPath.isEmpty()` — the same
+backward-compatibility guard used by `WorktreeManager` and `BisectManager` (see P1 in PENDING.md).
+Non-empty `repoPath` invokes `isLfsAvailable()` then `runLfs(repoPath, ...)`. The `PENDING.md`
+entry P2 was based on a stale reading of the file.
 
 ---
 
@@ -101,9 +103,11 @@ vals before the null check, allowing Kotlin smart-cast to eliminate the `!!` ent
 
 ---
 
-## OPEN — BUG-09: TerminalEmulator GIT_SAFE_COMMANDS check uses `map { split() }`
+## FIXED — BUG-09: TerminalEmulator GIT_SAFE_COMMANDS check uses `map { split() }`
 
-**File**: `ui/screens/terminal/TerminalViewModel.kt:108`
-**Problem**: `GIT_SAFE_COMMANDS.map { it.split(" ").first() }` re-creates a list on every
-command execution. Should be a `Set` computed once at class init.
-**Severity**: Very low — negligible performance impact given the command frequency.
+**File**: `ui/screens/terminal/TerminalViewModel.kt`
+**Was**: Line 108: `GIT_SAFE_COMMANDS.map { it.split(" ").first() }` re-created a list on
+every command execution.
+**Fix (PR #278)**: Added `private val SAFE_BASE_CMDS: Set<String> = GIT_SAFE_COMMANDS.map {
+it.split(" ").first() }.toSet()` at class-init level; the check now reads `baseCmd !in
+SAFE_BASE_CMDS`.
