@@ -65,7 +65,20 @@ class BrowserCapabilityClaimTests(unittest.TestCase):
         self.assertEqual(manifest["implementation"]["entropy_source"], "linux_getrandom")
         self.assertEqual(manifest["implementation"]["fallback"], "none")
         self.assertEqual(manifest["status"]["https"], "FAIL_CLOSED")
+        self.assertEqual(manifest["status"]["cross_abi_compile"], "PASS_LIMITED")
+        self.assertEqual(
+            manifest["status"]["canonical_runner_execution"], "TOKEN_VAZIO"
+        )
         self.assertEqual(manifest["status"]["device_runtime"], "TOKEN_VAZIO")
+
+        evidence = {item["kind"]: item for item in manifest["evidence"]}
+        self.assertEqual(evidence["CROSS_ABI_VERIFIER"]["status"], "PRESENT")
+        self.assertEqual(
+            evidence["INDEPENDENT_CROSS_ABI_COMPILE"]["status"], "PASS_LIMITED"
+        )
+        self.assertEqual(
+            evidence["CANONICAL_RUNNER_EXECUTION"]["status"], "TOKEN_VAZIO"
+        )
 
 
 if __name__ == "__main__":
