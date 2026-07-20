@@ -56,6 +56,7 @@ class TerminalViewModel @Inject constructor() : ViewModel() {
         "pwd", "echo", "grep", "find", "wc", "sort", "uniq",
         "diff", "stat", "file", "which", "date", "whoami", "help", "clear", "cd"
     )
+    private val SAFE_BASE_CMDS: Set<String> = GIT_SAFE_COMMANDS.map { it.split(" ").first() }.toSet()
 
     fun setWorkingDirectory(path: String) {
         val dir = File(path)
@@ -99,13 +100,13 @@ class TerminalViewModel @Inject constructor() : ViewModel() {
     }
 
     private fun runShellCommand(command: String) {
-        if (_workingDir.value == null) {
+        val dir = _workingDir.value ?: run {
             appendLine(TerminalLine.Error("No working directory. Open a repository first."))
             return
         }
         // Safety: only allow git commands and safe read-only commands in prod mode
         val baseCmd = command.split(" ").firstOrNull()?.lowercase() ?: ""
-        if (baseCmd !in GIT_SAFE_COMMANDS.map { it.split(" ").first() }) {
+        if (baseCmd !in SAFE_BASE_CMDS) {
             appendLine(TerminalLine.Error("Command '$baseCmd' not allowed. Permitted: git, ls, cat, grep, find, pwd, echo, diff, stat, head, tail, wc"))
             return
         }
@@ -115,7 +116,7 @@ class TerminalViewModel @Inject constructor() : ViewModel() {
             try {
                 val result = TerminalEmulator.executeCommand(
                     command = command,
-                    workingDir = _workingDir.value!!,
+                    workingDir = dir,
                     timeoutMs = 15_000L
                 )
 
