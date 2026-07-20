@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 # Canonical dependency-free gate for RAFAELIA longitudinal, content validity,
-# toroidal research-cycle, and GitHub Actions execution-evidence contracts.
+# toroidal research-cycle, GitHub Actions execution-evidence, and platform
+# assurance control-plane contracts.
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -40,3 +41,9 @@ python3 scripts/actions_execution_evidence.py validate-manifest \
 python3 scripts/actions_execution_evidence.py summarize \
   configs/actions_execution_evidence_contract.json \
   examples/actions_execution_evidence.example.json
+
+python3 -m unittest discover -s tests \
+  -p 'test_platform_assurance_control_plane.py' -v
+python3 scripts/platform_assurance_control_plane.py \
+  configs/platform-assurance/index.json \
+  --write-report artifacts/platform-assurance-report.json
