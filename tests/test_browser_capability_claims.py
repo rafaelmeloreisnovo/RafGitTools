@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unittest
 from pathlib import Path
 
@@ -8,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BROWSER_MAIN = ROOT / "BrowserRaf" / "internal" / "br_main.c"
 TLS_HEADER = ROOT / "BrowserRaf" / "internal" / "br_tls.h"
 ENTROPY_HEADER = ROOT / "BrowserRaf" / "internal" / "br_entropy.h"
+CSPRNG_CONFIG = ROOT / "configs" / "browserraf-csprng.phase2.json"
 
 
 class BrowserCapabilityClaimTests(unittest.TestCase):
@@ -52,6 +54,18 @@ class BrowserCapabilityClaimTests(unittest.TestCase):
         self.assertIn("if(got==-(s32)BR_EINTR)continue", entropy_source)
         self.assertGreaterEqual(entropy_source.count("MC0(p,n)"), 2)
         self.assertIn("return-1", entropy_source)
+
+    def test_csprng_manifest_preserves_fail_closed_claim_boundary(self) -> None:
+        manifest = json.loads(CSPRNG_CONFIG.read_text(encoding="utf-8"))
+
+        self.assertFalse(manifest["policy"]["claim_allowed"])
+        self.assertFalse(manifest["policy"]["https_enabled"])
+        self.assertFalse(manifest["policy"]["tls_certified"])
+        self.assertFalse(manifest["policy"]["deterministic_fallback_allowed"])
+        self.assertEqual(manifest["implementation"]["entropy_source"], "linux_getrandom")
+        self.assertEqual(manifest["implementation"]["fallback"], "none")
+        self.assertEqual(manifest["status"]["https"], "FAIL_CLOSED")
+        self.assertEqual(manifest["status"]["device_runtime"], "TOKEN_VAZIO")
 
 
 if __name__ == "__main__":
