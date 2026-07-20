@@ -1,0 +1,71 @@
+{
+  "schema": "raf.browserraf-csprng.v1",
+  "date": "2026-07-20",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "base_commit": "ff33313f87fafd6ff4cf89a7adc367ffa60094d1",
+  "branch": "codex/browserraf-csprng-fail-closed-phase-2",
+  "policy": {
+    "claim_allowed": false,
+    "https_enabled": false,
+    "tls_certified": false,
+    "unknown_is_success": false,
+    "deterministic_fallback_allowed": false
+  },
+  "implementation": {
+    "source": "BrowserRaf/internal/br_entropy.h",
+    "consumer": "BrowserRaf/internal/br_tls.h",
+    "entropy_source": "linux_getrandom",
+    "flags": 0,
+    "architectures": {
+      "armeabi-v7a": 384,
+      "arm64-v8a": 278,
+      "x86_64": 318
+    },
+    "short_read_policy": "retry_until_full",
+    "eintr_policy": "retry",
+    "other_error_policy": "zeroize_and_fail",
+    "zero_return_policy": "zeroize_and_fail",
+    "fallback": "none"
+  },
+  "evidence": [
+    {
+      "kind": "SOURCE",
+      "path": "BrowserRaf/internal/br_entropy.h",
+      "status": "PRESENT"
+    },
+    {
+      "kind": "INTEGRATION",
+      "path": "BrowserRaf/internal/br_tls.h",
+      "status": "PRESENT"
+    },
+    {
+      "kind": "TEST_CONTRACT",
+      "path": "tests/test_browser_capability_claims.py",
+      "status": "PRESENT"
+    },
+    {
+      "kind": "COMPILE_ARM32",
+      "path": "BrowserRaf/proofs/csprng/armeabi-v7a",
+      "status": "TOKEN_VAZIO"
+    },
+    {
+      "kind": "COMPILE_ARM64",
+      "path": "BrowserRaf/proofs/csprng/arm64-v8a",
+      "status": "TOKEN_VAZIO"
+    },
+    {
+      "kind": "RUNTIME_DEVICE",
+      "path": "BrowserRaf/proofs/csprng/device-runtime",
+      "status": "TOKEN_VAZIO"
+    }
+  ],
+  "status": {
+    "source_boundary": "IMPLEMENTED",
+    "test_execution": "TOKEN_VAZIO",
+    "cross_abi_compile": "TOKEN_VAZIO",
+    "device_runtime": "TOKEN_VAZIO",
+    "tls_handshake": "PARTIAL",
+    "https": "FAIL_CLOSED"
+  },
+  "claim": "The deterministic ClientHello random fallback was removed and replaced by a fail-closed Linux getrandom boundary. This does not constitute a complete TLS handshake, HTTPS runtime or certification."
+}
