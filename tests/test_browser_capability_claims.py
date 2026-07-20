@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 BROWSER_MAIN = ROOT / "BrowserRaf" / "internal" / "br_main.c"
 TLS_HEADER = ROOT / "BrowserRaf" / "internal" / "br_tls.h"
+ENTROPY_HEADER = ROOT / "BrowserRaf" / "internal" / "br_entropy.h"
 
 
 class BrowserCapabilityClaimTests(unittest.TestCase):
@@ -34,6 +35,23 @@ class BrowserCapabilityClaimTests(unittest.TestCase):
             "TLS_UP_RECORD_CRYPT",
         ):
             self.assertIn(symbol, source)
+
+    def test_tls_random_uses_kernel_entropy_without_deterministic_fallback(self) -> None:
+        tls_source = TLS_HEADER.read_text(encoding="utf-8")
+        entropy_source = ENTROPY_HEADER.read_text(encoding="utf-8")
+
+        self.assertIn("BR_RANDOM_FILL(t->random", tls_source)
+        self.assertIn("static s32 TLS_INIT", tls_source)
+        self.assertIn("TLS_ALERT_INTERNAL_ERROR", tls_source)
+        self.assertNotIn("0xDEADBEEF", tls_source)
+        self.assertNotIn("AI u32 PRNG", tls_source)
+        self.assertNotIn("LFSR + PHI64", tls_source)
+
+        for syscall_number in ("384u", "278u", "318u"):
+            self.assertIn(f"BR_NR_GETRANDOM {syscall_number}", entropy_source)
+        self.assertIn("if(got==-(s32)BR_EINTR)continue", entropy_source)
+        self.assertGreaterEqual(entropy_source.count("MC0(p,n)"), 2)
+        self.assertIn("return-1", entropy_source)
 
 
 if __name__ == "__main__":
