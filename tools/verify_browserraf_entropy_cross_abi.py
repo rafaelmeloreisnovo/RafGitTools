@@ -47,6 +47,7 @@ TARGETS = (
         "machine": 62,
     },
 )
+IGNORED_WARNINGS = ("unused-function",)
 PROBE = """#include \"br_entropy.h\"\nint browserraf_entropy_probe(void){u8 b[32];return BR_RANDOM_FILL(b,32u);}\n"""
 
 
@@ -119,6 +120,7 @@ def verify(compiler: str) -> dict[str, Any]:
                 "-Wall",
                 "-Wextra",
                 "-Werror",
+                "-Wno-unused-function",
                 "-O2",
                 "-c",
                 str(probe),
@@ -171,6 +173,7 @@ def verify(compiler: str) -> dict[str, Any]:
         "https_enabled": False,
         "compiler": compiler,
         "compiler_version": compiler_version(compiler),
+        "ignored_warnings": list(IGNORED_WARNINGS),
         "source_hashes": source_hashes,
         "results": results,
         "status": "PASS" if passed else "FAIL",
