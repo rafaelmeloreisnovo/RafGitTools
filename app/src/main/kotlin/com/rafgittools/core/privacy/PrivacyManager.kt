@@ -5,11 +5,14 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Date
@@ -44,12 +47,11 @@ class PrivacyManager(
     
     private val _privacySettings = MutableStateFlow(PrivacySettings())
     val privacySettings: StateFlow<PrivacySettings> = _privacySettings.asStateFlow()
-    
+
+    private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     init {
-        // Load initial settings from storage
-        kotlinx.coroutines.GlobalScope.launch {
-            _privacySettings.value = storage.getPrivacySettings()
-        }
+        managerScope.launch { _privacySettings.value = storage.getPrivacySettings() }
     }
     
     /**
@@ -282,18 +284,22 @@ class PrivacyManager(
     }
     
     private suspend fun getCredentialsCount(): Int {
-        // Implementation would count stored credentials
-        return 0
+        return try {
+            val ks = java.security.KeyStore.getInstance("AndroidKeyStore")
+            ks.load(null)
+            ks.aliases().toList().size
+        } catch (_: Exception) { 0 }
     }
-    
+
     private suspend fun getRepositoriesCount(): Int {
-        // Implementation would count cloned repositories
-        return 0
+        return context.filesDir.resolve("repositories")
+            .takeIf { it.isDirectory }?.listFiles()?.count { it.isDirectory } ?: 0
     }
-    
+
     private suspend fun getSettingsCount(): Int {
-        // Implementation would count settings entries
-        return 0
+        return try {
+            context.dataStore.data.first().asMap().size
+        } catch (_: Exception) { 0 }
     }
     
     private suspend fun getCacheSize(): Long {
