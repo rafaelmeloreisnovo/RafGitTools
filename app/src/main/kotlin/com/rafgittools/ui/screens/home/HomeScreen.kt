@@ -56,9 +56,10 @@ fun HomeScreen(
                         // User avatar and menu
                         Box {
                             IconButton(onClick = { showMenu = true }) {
-                                if (user != null) {
+                                val u = user
+                                if (u != null) {
                                     AsyncImage(
-                                        model = user!!.avatarUrl,
+                                        model = u.avatarUrl,
                                         contentDescription = "User avatar",
                                         modifier = Modifier
                                             .size(32.dp)

@@ -68,42 +68,46 @@ but with the canonical `#ifndef` guards.
 
 ---
 
-## OPEN — BUG-06: ComplianceManager map access with `!!`
+## FIXED — BUG-06: ComplianceManager map access with `!!`
 
 **File**: `app/src/main/kotlin/com/rafgittools/core/compliance/ComplianceManager.kt:48`
-**Problem**: `getComplianceStatus()[standard]!!` — map lookup returns nullable; `!!` will
-crash if `standard` is not a key in the map. The key set should be validated first or a
-default value used.
-**Severity**: Medium — crashes on unknown compliance standard keys.
-**Suggested fix**: Replace with `?: ComplianceStatus.UNKNOWN` or add an `in` guard.
+**Was**: `getComplianceStatus()[standard]!!` — map lookup returns nullable; `!!` would
+crash if `standard` is not present in the map.
+**Fix (PR #279)**: Replaced with `getComplianceStatus().filterKeys { it == standard }`,
+which returns an empty map instead of crashing if the key is missing.
 
 ---
 
-## OPEN — BUG-07: LfsManager install/track/fetch always throw
+## FIXED — BUG-07: LfsManager install/track/fetch always throw
 
-**File**: `app/src/main/kotlin/com/rafgittools/gitlfs/LfsManager.kt`, lines 65, 85, 104
-**Problem**: These three functions unconditionally return `NotImplementedError` (not just
-for empty repoPath). Any UI that allows the user to trigger LFS operations will see an
-unhandled error rather than a friendly message.
-**Severity**: Low — LFS UI entry points are not yet exposed in the main navigation.
+**File**: `app/src/main/kotlin/com/rafgittools/gitlfs/LfsManager.kt`
+**Was**: These three functions were documented as unconditionally returning `NotImplementedError`.
+**Fix (verified 2026-07-20)**: The functions already have real `ProcessBuilder` + `git lfs`
+implementations. `NotImplementedError` fires only when `repoPath.isEmpty()` — the same
+backward-compatibility guard used by `WorktreeManager` and `BisectManager` (see P1 in PENDING.md).
+Non-empty `repoPath` invokes `isLfsAvailable()` then `runLfs(repoPath, ...)`. The `PENDING.md`
+entry P2 was based on a stale reading of the file.
 
 ---
 
-## OPEN — BUG-08: HomeScreen / AuthScreen non-null assert on user data
+## FIXED — BUG-08: HomeScreen / AuthScreen non-null assert on user data
 
 **Files**:
 - `ui/screens/home/HomeScreen.kt:61` — `user!!`
 - `ui/screens/auth/AuthScreen.kt:91` — `username!!`
-**Problem**: Non-null asserts on state that flows from network calls. A race between the
-null check and the coroutine delivering data (or a network failure leaving the field null)
-will crash with `NullPointerException`.
-**Severity**: Low-Medium — only triggered in error/race paths not the happy path.
+**Was**: Non-null asserts on StateFlow-backed delegate properties. Kotlin cannot smart-cast
+delegates, so `user!!` inside `if (user != null)` was needed to compile but was still
+unsafe if the value changed between check and use.
+**Fix (PR #279)**: Captured `val u = user` / `val currentUsername = username` as local
+vals before the null check, allowing Kotlin smart-cast to eliminate the `!!` entirely.
 
 ---
 
-## OPEN — BUG-09: TerminalEmulator GIT_SAFE_COMMANDS check uses `map { split() }`
+## FIXED — BUG-09: TerminalEmulator GIT_SAFE_COMMANDS check uses `map { split() }`
 
-**File**: `ui/screens/terminal/TerminalViewModel.kt:108`
-**Problem**: `GIT_SAFE_COMMANDS.map { it.split(" ").first() }` re-creates a list on every
-command execution. Should be a `Set` computed once at class init.
-**Severity**: Very low — negligible performance impact given the command frequency.
+**File**: `ui/screens/terminal/TerminalViewModel.kt`
+**Was**: Line 108: `GIT_SAFE_COMMANDS.map { it.split(" ").first() }` re-created a list on
+every command execution.
+**Fix (PR #278)**: Added `private val SAFE_BASE_CMDS: Set<String> = GIT_SAFE_COMMANDS.map {
+it.split(" ").first() }.toSet()` at class-init level; the check now reads `baseCmd !in
+SAFE_BASE_CMDS`.

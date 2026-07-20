@@ -22,17 +22,12 @@ calling code is discovered to be broken.**
 
 ---
 
-## P2 — Stub: LFS install/track/fetch
+## ~~P2 — DONE: LFS install/track/fetch~~
 
-`LfsManager.install()`, `LfsManager.track()`, and `LfsManager.fetch()` all return
-`NotImplementedError("... is not implemented yet")` unconditionally (not just for empty
-repoPath). These functions need real implementations using `ProcessBuilder` + `git lfs`.
-
-| File | Function | Line |
-|------|----------|------|
-| `gitlfs/LfsManager.kt` | `install()` | 65 |
-| `gitlfs/LfsManager.kt` | `track(pattern)` | 85 |
-| `gitlfs/LfsManager.kt` | `fetch()` | 104 |
+`LfsManager.install()`, `.track()`, and `.fetch()` already have real `ProcessBuilder` +
+`git lfs` implementations. The `NotImplementedError` fires only for the empty-repoPath
+guard (see P1), not unconditionally. Verified 2026-07-20 by reading the actual file.
+Also closes BUG-07 in BUGS.md.
 
 ---
 
@@ -55,36 +50,53 @@ is not in this repository.
 
 ## P4 — Pending: MultiPlatformManager GitLab/Bitbucket/Gitea/Azure
 
-`platform/MultiPlatformManager.kt` contains 4 `// TODO` items for non-GitHub platforms:
-- GitLab API integration
-- Bitbucket API integration
-- Gitea/Forgejo API integration
-- Azure DevOps API integration
+`platform/MultiPlatformManager.kt` has typed `ProviderQueryResult.NotImplemented` responses
+for non-GitHub providers (the raw `// TODO` comments were replaced with structured stubs).
+The API wire-up still needs Retrofit adapters:
 
-Only GitHub is currently functional.
+| Provider | Required API endpoint |
+|---|---|
+| GitLab | `GET /api/v4/projects?membership=true` via `GitLabApiService` |
+| Bitbucket | `GET /repositories/{workspace}` via Bitbucket v2 adapter |
+| Gitea/Forgejo | `GET /repos/search` via Gitea API adapter |
+| Azure DevOps | `GET /_apis/git/repositories` via Azure DevOps REST adapter |
 
----
-
-## P5 — Pending: rafaelia/block1 Makefile
-
-`rafaelia/block1/` has no Makefile. The `raf_geom.c` file compiles cleanly with
-`gcc -O2 -std=c11 raf_geom.c raf_geom_demo.c -lm -o raf_geom_demo`. A Makefile should be
-added to match the `rafaelia/omega_hybrid/Makefile` style.
+Only GitHub is currently functional. The `NotImplemented` results surface the required
+endpoint path so callers can display a meaningful message.
 
 ---
 
-## P6 — Pending: _upcoming/ contents audit
+## ~~P5 — DONE: rafaelia/block1 Makefile~~
 
-`_upcoming/` contains two ZIP files and an unexplored `1/` subdirectory. These should be
-inventoried and either promoted to active branches or deleted.
+Added `rafaelia/block1/Makefile` in PR #279. Targets: `libraf_geom.a`, `demo`, `clean`.
+Style matches `rafaelia/omega_hybrid/Makefile`.
 
 ---
 
-## P7 — Stub: OfflineQueue persistence
+## ~~P6 — DONE: _upcoming/ contents audit~~
 
-`OfflineQueue.kt` (if present) stores queued git operations in memory only — they are
-lost on process death. A Room-backed persistent queue would be needed for reliable
-offline-first operation.
+Inventoried 2026-07-20. `_upcoming/` contains:
+
+| File | Size | Content |
+|------|------|---------|
+| `RafGitTools-main_fixed_build (1).zip` | 548 KB | Source snapshot with build fixes applied prior to PR #278 |
+| `RafGitTools-main_patched (1).zip` | 552 KB | Source snapshot with additional patches |
+| `1` | 1 byte | Newline-only placeholder — trivial |
+
+The ZIP archives are historical build snapshots. No unique code exists in them that is not
+already present in the current `main` history. They can be deleted from the branch once the
+team is satisfied the snapshots are no longer needed as references.
+
+---
+
+## ~~P7 — DONE: OfflineQueue persistence~~
+
+`OfflineQueue.kt` already implements the `OfflineQueueStorage<T>` interface pattern.
+The queue accepts an optional `storage: OfflineQueueStorage<T>?` constructor parameter;
+when supplied, every `enqueue()` and `dequeue()` atomically commits the new snapshot via
+`storage.replace()`, with rollback on failure. The in-memory default remains when `storage`
+is null. A Room-backed `OfflineQueueStorage` implementation can be wired in without changing
+`OfflineQueue` itself — the extension point is ready.
 
 ---
 
@@ -104,20 +116,38 @@ bridge analogous to `kernel/native/raf_kernel_jni.c` must be created.
 
 ---
 
-## P10 — fazer/ cleanup
+## ~~P10 — DONE: fazer/ audit (safe to delete)~~
 
-`fazer/` contains 19 `.kt` files that are older drafts. They should be deleted once the
-team confirms no unique algorithm or UI pattern exists in them that was not forward-ported
-to `app/src/`.
+All 18 `.kt` files in `fazer/` were audited 2026-07-20 by diffing against `app/src/`
+counterparts:
+
+| Result | Files |
+|--------|-------|
+| Identical (already integrated) | `NotificationsViewModel.kt`, `ReleaseDetailViewModel.kt`, `ReleasesViewModel.kt`, `SyntaxHighlighter.kt` |
+| `app/src/` is ahead | All remaining 14 — they use `collectAsStateWithLifecycle()` vs the older `collectAsState()` in fazer/, and include bug-fixes from PR #278 (SAFE_BASE_CMDS, `val dir` capture) and PR #282 (smart-cast fixes). |
+
+No unique algorithm or UI pattern in `fazer/` was missed in the forward-port.
+The `fazer/1.md` and `fazer/README_FIXES.md` describe the February 2026 integration plan
+that is now complete. The entire `fazer/` directory can be deleted.
 
 ---
 
-## P11 — License consolidation
+## P11 — Root artifact rename (three misnamed files)
 
-Four license files exist at the repo root:
-- `LICENSE`
-- `LICENSE.md`
-- `License2.md`
-- `Lincense4.md` (typo: "Lincense")
+Four files at the repo root were originally described as license files. Audited 2026-07-20:
 
-These should be consolidated into a single `LICENSE` file with the correct SPDX identifier.
+| File | Actual content | Action |
+|------|----------------|--------|
+| `LICENSE` | GNU GPL v3 (real license) | Keep as-is |
+| `LICENSE.md` | C source: `core_rafaelia_matriz_supralegal.c` — author's protected IP | Rename to `.c` only with author approval |
+| `License2.md` | C source: `bitraf64_compressor_supralegal.c` — author's protected IP | Rename to `.c` only with author approval |
+| `Lincense4.md` | Math/theory document (not a license; typo in filename) | Rename to `math_theory.md` only with author approval |
+
+`LICENSE.md` and `License2.md` carry explicit "cláusula pétrea" intellectual-property headers
+forbidding alteration of the file or its metadata. These files must **not** be renamed, moved,
+or deleted without the author's consent. The file name is part of the metadata.
+
+**Owner action required**: confirm whether these three files should be renamed / moved,
+or left at their current paths. The `LICENSE` (GPL v3) is the operative license and
+GitHub will detect it correctly. SPDX header `SPDX-License-Identifier: GPL-3.0-only`
+can be added to `LICENSE` as a cosmetic improvement without touching the other files.
