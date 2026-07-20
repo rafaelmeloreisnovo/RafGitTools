@@ -10,7 +10,7 @@
  * [R15] Flip-flop TLS: cada bit do estado TLS é um flip-flop D
  * [R16] Branchless transition: mask = -(cond), new = (a&mask)|(b&~mask)
  */
-#include "br_sys.h"
+#include "br_entropy.h"
 
 /* ── TLS 1.3 RECORD LAYER ───────────────────────────────────────────────── */
 /* record = [type:1][0x03 0x03:2][len_hi:1][len_lo:1][data:len] */
@@ -28,6 +28,7 @@
 #define TLS_HT_CERTIFICATE    0x0Bu
 #define TLS_HT_CERT_VERIFY    0x0Fu
 #define TLS_HT_FINISHED       0x14u
+#define TLS_ALERT_INTERNAL_ERROR 80u
 /* Extension types */
 #define EXT_SERVER_NAME       0x0000u
 #define EXT_SUPPORTED_GROUPS  0x000Au
@@ -48,29 +49,23 @@ typedef struct PK {
     u8  _p;
     u32 rx_seq;         /* sequence number RX                          */
     u32 tx_seq;         /* sequence number TX                          */
-    u8  random[32];     /* client random (pseudo-random Q16-based)     */
+    u8  random[32];     /* client random from fail-closed getrandom    */
     u8  session[32];    /* session ID (zeros para TLS 1.3)             */
     u16 cipher;         /* cipher suite negociado                      */
     u16 _p2;
 } TLSCtx;
 static TLSCtx _TLS;
 
-/* Gerador pseudo-aleatório determinístico para random[] (sem /dev/urandom)
- * Em produção: usar getrandom() syscall. Aqui: LFSR + PHI64 */
-AI u32 PRNG(u32 s){return(s>>1u)^((u32)(-(s&1u))&0xB4BCD35Cu);}
-
-static void TLS_INIT(TLSCtx*t){
+/* Inicialização de contexto sem fallback pseudo-aleatório.
+ * A ausência de entropia do kernel bloqueia a criação do ClientHello. */
+static s32 TLS_INIT(TLSCtx*t){
     MC0(t,sizeof(*t));
     t->state=TLS_IDLE;
-    /* Preenche random[32] via PRNG */
-    u32 s=0xDEADBEEFu;
-    for(u32 i=0;i<8u;i++){
-        s=PRNG(s);
-        t->random[i*4+0]=(u8)(s>>24u);
-        t->random[i*4+1]=(u8)(s>>16u);
-        t->random[i*4+2]=(u8)(s>>8u);
-        t->random[i*4+3]=(u8)(s);
+    if(BR_RANDOM_FILL(t->random,(u32)sizeof(t->random))!=0){
+        t->alert=TLS_ALERT_INTERNAL_ERROR;
+        return-1;
     }
+    return 0;
 }
 
 /* ── CONSTRUTOR DE ClientHello ──────────────────────────────────────────── */
