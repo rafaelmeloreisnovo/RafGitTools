@@ -109,11 +109,25 @@ For a richer terminal, integrate the Termux `terminal-view` library.
 
 ---
 
-## P9 — Missing JNI integration: rafaelia engine → Android app
+## ~~P9 — DONE: rafaelia engine JNI bridge~~
 
-The `_incoming/` rafaelia files (C) are not compiled into any Android `.so`. They are
-standalone research artifacts. If real-time inference inside the app is needed, a JNI
-bridge analogous to `kernel/native/raf_kernel_jni.c` must be created.
+`kernel/native/rafaelia_jni.c` (new) is the JNI bridge for the RAFAELIA engine,
+adapted from `_incoming/rafaelia_jni_direct.c` and re-targeted to the
+`com.rafgittools.kernel` package. `app/.../kernel/RafaeliaCore.kt` declares the
+five native methods:
+
+| Method | Description |
+|--------|-------------|
+| `processNative(in, len, out)` | CRC32C + EMA coherence/entropy update → 8 or 16 bytes out |
+| `stepNative(state, cycle)` | Advance 7D toroidal map by one cycle; returns phi Q16.16 |
+| `profileNative(out, cap)` | Write JSON hw-profile (ABI, CPU count, core freqs, page size) |
+| `arenaSizeNative()` | Bytes used in the 256 KB static JNI arena (diagnostic) |
+| `crc32Native(buf, len)` | Raw CRC32C of a DirectByteBuffer slice |
+
+Library name: `rafaelia` (must be added to `Android.mk` / `CMakeLists.txt` to build).
+The `_incoming/` C source files (`rafaelia_core.c`, `rafaelia_glue.c`, etc.) remain
+standalone research artifacts and are not compiled into the `.so`; only
+`rafaelia_jni.c` and its self-contained inline CRC32C are in the bridge.
 
 ---
 
