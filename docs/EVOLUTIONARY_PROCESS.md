@@ -49,11 +49,17 @@ All five providers are implemented:
 | Gitea/Forgejo | `GiteaApiService` — `GET /api/v1/user/repos` (token auth) | #284 |
 | Azure DevOps | `AzureDevOpsApiService` — `GET /{org}/{project}/_apis/git/repositories?api-version=7.0` (PAT Basic) | #284 |
 
-### 2C — LFS UI exposure
+### ~~2C — LFS UI exposure (DONE 2026-07-21)~~
 
-`LfsManager` is implemented but no UI screen exists. Add:
-- `ui/screens/lfs/LfsScreen.kt` — shows tracked patterns, allows `lfs install`/`track`
-- Wire into `RepositoryDetailScreen.kt` via a tab or menu item
+`ui/screens/lfs/LfsScreen.kt` and `LfsViewModel.kt` added:
+- Shows tracked patterns (`LfsManager.listTracked()`) in a `LazyColumn`
+- Top-bar actions: Install (installs LFS hooks), Env (shows `git lfs env` in dialog)
+- FAB → Track Pattern dialog (glob input → `LfsManager.track()`)
+- Inline Fetch and Pull buttons when patterns exist
+- `NotAvailable` state when git-lfs binary is absent (with Termux install hint)
+- Snackbar feedback for all operations
+
+**Remaining**: wire `LfsScreen` into the navigation graph / `RepositoryDetailScreen` menu.
 
 ### 2D — TerminalEmulator PTY
 
