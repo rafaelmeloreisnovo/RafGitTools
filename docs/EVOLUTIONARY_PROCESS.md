@@ -1,23 +1,23 @@
 # Evolutionary Process — RafGitTools
 
-Generated: 2026-07-20
+Generated: 2026-07-21 (updated)
 
 This document maps the next development iterations in order of impact and effort.
 Each phase builds on the previous without breaking existing behavior.
 
 ---
 
-## Phase 1 — Stability (immediate)
+## ~~Phase 1 — Stability (COMPLETE as of 2026-07-21)~~
 
-These are correctness fixes that should land before any new features.
+All five E1 items are done. See BUGS.md for details.
 
-| ID | Item | File | Effort |
-|----|------|------|--------|
-| E1-01 | Fix `ComplianceManager.kt:48` map-access `!!` crash | `core/compliance/ComplianceManager.kt` | 30 min |
-| E1-02 | Fix `HomeScreen.kt:61` / `AuthScreen.kt:91` null-assert crashes | `ui/screens/home/`, `ui/screens/auth/` | 1 h |
-| E1-03 | Fix `GIT_SAFE_COMMANDS` computed per-call (set → constant) | `ui/screens/terminal/TerminalViewModel.kt:108` | 15 min |
-| E1-04 | Implement `LfsManager.install()` / `track()` / `fetch()` | `gitlfs/LfsManager.kt` | 2 h |
-| E1-05 | Add Makefile to `rafaelia/block1/` | `rafaelia/block1/Makefile` | 30 min |
+| ID | Item | Status |
+|----|------|--------|
+| E1-01 | Fix `ComplianceManager.kt:48` map-access `!!` crash | **Fixed** PR #279 |
+| E1-02 | Fix `HomeScreen.kt:61` / `AuthScreen.kt:91` null-assert | **Fixed** PR #279 |
+| E1-03 | Fix `GIT_SAFE_COMMANDS` computed per-call | **Fixed** PR #278 |
+| E1-04 | Implement `LfsManager.install()` / `track()` / `fetch()` | **Verified done** — were already implemented; `NotImplementedError` only for empty `repoPath` guard |
+| E1-05 | Add Makefile to `rafaelia/block1/` | **Fixed** PR #279 |
 
 ---
 
@@ -37,14 +37,17 @@ Features that are architecturally present but not wired end-to-end.
 - Add llama.cpp as a Git submodule under `kernel/native/llama.cpp/`
 - Update `kernel/native/Android.mk` or `CMakeLists.txt` to build it
 
-### 2B — Multi-platform manager
+### ~~2B — Multi-platform manager (COMPLETE 2026-07-21)~~
 
-`platform/MultiPlatformManager.kt` is GitHub-only. Adding GitLab requires:
-1. A `GitLabApiService.kt` (Retrofit interface for GitLab REST v4)
-2. Token handling in `AuthRepository.kt`
-3. A platform discriminator in `AuthMethod.kt`
+All five providers are implemented:
 
-Bitbucket and Azure DevOps follow the same pattern.
+| Provider | Adapter | PR |
+|---|---|---|
+| GitHub | Original `GithubApiService` | — |
+| GitLab | `GitLabApiService` — `GET /api/v4/projects?membership=true` | #283 |
+| Bitbucket | `BitbucketApiService` — `GET /2.0/repositories/{workspace}` | #283 |
+| Gitea/Forgejo | `GiteaApiService` — `GET /api/v1/user/repos` (token auth) | #284 |
+| Azure DevOps | `AzureDevOpsApiService` — `GET /{org}/{project}/_apis/git/repositories?api-version=7.0` (PAT Basic) | #284 |
 
 ### 2C — LFS UI exposure
 
@@ -88,12 +91,13 @@ key rotation for SSH keys or PATs. Add:
 
 ## Phase 4 — Native Performance (advanced)
 
-### 4A — rafaelia engine → Android
+### ~~4A — rafaelia engine → Android (BRIDGE DONE 2026-07-21)~~
 
-Promote `_incoming/` rafaelia C files from research to production:
-1. Create `app/src/main/cpp/CMakeLists.txt` to build `rafaelia_core.c` + dependencies
-2. Add a `RafaeliaJNI.kt` bridge and `librafaelia.so` target
-3. Use the EMA/commit-gate primitives for predictive prefetch of git objects
+JNI bridge created (P9):
+- `kernel/native/rafaelia_jni.c` — re-targeted from `_incoming/rafaelia_jni_direct.c` to `com.rafgittools.kernel`; zero malloc, DirectByteBuffer I/O, inline CRC32C
+- `app/.../kernel/RafaeliaCore.kt` — five native methods: `processNative`, `stepNative`, `profileNative`, `arenaSizeNative`, `crc32Native`
+
+**Remaining**: wire `rafaelia_jni.c` into the Android build system (`CMakeLists.txt` or `Android.mk`) to produce `librafaelia.so`. Then use the EMA/commit-gate primitives for predictive prefetch of git objects.
 
 ### 4B — raf_client as forensic tool
 
@@ -123,20 +127,21 @@ This is the most speculative phase:
 ## Connection Map
 
 ```
-Android App ─────────────► GitHub API (Retrofit)
+Android App ─────────────► GitHub / GitLab / Bitbucket / Gitea / Azure DevOps APIs (Retrofit)
      │
-     ├──► JGitService ─────► Local git repositories (JGit 7.5.0)
+     ├──► JGitService ─────────────────────► Local git repositories (JGit 7.5.0)
      │
-     ├──► kernel/native ─(PENDING llama.h)─► Local LLaMA inference
+     ├──► kernel/RafKernelBridge ─(llama.h PENDING)─► Local LLaMA inference
      │
-     └──► [FUTURE] RafaeliaJNI ─────────────► _incoming/ rafaelia engine
+     └──► kernel/RafaeliaCore ──(build PENDING)────► rafaelia_jni.c → 7D toroidal engine
 
-_incoming/raf_client ────(standalone)────► ELF/DEX/PE binary analysis
-BrowserRaf/ ─────────────(standalone)────► HTTPS client (ARM64 Linux)
+_incoming/raf_client ────(standalone)────► ELF/DEX/PE binary analysis (arm64/arm/x64/riscv64)
+BrowserRaf/ ─────────────(standalone)────► HTTPS client (ARM64 Linux, freestanding)
 rafaelia/block1/ ────────(standalone)────► Q16.16 geometry primitives
 rafaelia/omega_hybrid/ ─(standalone)────► EMA attractor state machine
 kiwi-extension/ ─────────(standalone)────► Browser extension (JS)
 ```
 
 Items marked `(standalone)` have no current Android app connection.
-Connecting them is the core evolutionary path.
+`kernel/RafaeliaCore` bridge exists but needs the native `.so` in the build system.
+`kernel/RafKernelBridge` bridge exists but needs `llama.h` from an external llama.cpp build.

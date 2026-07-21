@@ -1,6 +1,9 @@
 package com.rafgittools.platform
 
+import android.util.Base64
+import com.rafgittools.data.azuredevops.AzureDevOpsApiService
 import com.rafgittools.data.bitbucket.BitbucketApiService
+import com.rafgittools.data.gitea.GiteaApiService
 import com.rafgittools.data.gitlab.GitLabApiService
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -13,8 +16,8 @@ import java.io.IOException
  * Git-hosting provider abstraction layer.
  *
  * GitHub is implemented through the existing GithubRepository/GithubApiService.
- * GitLab (v4 API) and Bitbucket (v2 API) are implemented via their own Retrofit
- * service interfaces. Gitea and Azure DevOps return NotImplemented until added.
+ * GitLab (v4 API), Bitbucket (v2 API), Gitea/Forgejo (v1 API), and Azure DevOps
+ * (REST API 7.0) are implemented via their own Retrofit service interfaces.
  */
 object MultiPlatformManager {
 
@@ -133,10 +136,30 @@ object MultiPlatformManager {
                 "Gitea token and valid instance URL are required"
             )
         }
-        return ProviderQueryResult.NotImplemented(
-            Provider.GITEA,
-            "Add configurable Gitea API adapter and GET /api/v1/user/repos"
-        )
+        return try {
+            val service = buildRetrofit(baseUrl).create(GiteaApiService::class.java)
+            val repos = runBlocking { service.getUserRepos(authorization = "token $token") }
+            ProviderQueryResult.Success(repos.map { r ->
+                HostedRepository(
+                    id = r.id.toString(),
+                    name = r.name,
+                    fullName = r.fullName,
+                    description = r.description,
+                    cloneUrl = r.cloneUrl,
+                    sshUrl = r.sshUrl,
+                    isPrivate = r.isPrivate,
+                    provider = Provider.GITEA
+                )
+            })
+        } catch (e: HttpException) {
+            if (e.code() == 401 || e.code() == 403) {
+                ProviderQueryResult.AuthenticationError(Provider.GITEA, "Gitea auth failed: ${e.message()}")
+            } else {
+                ProviderQueryResult.NetworkError(Provider.GITEA, "Gitea HTTP ${e.code()}: ${e.message()}")
+            }
+        } catch (e: IOException) {
+            ProviderQueryResult.NetworkError(Provider.GITEA, "Gitea network error: ${e.message}")
+        }
     }
 
     fun queryAzureDevOpsRepos(
@@ -150,10 +173,44 @@ object MultiPlatformManager {
                 "Azure token, organization and project are required"
             )
         }
-        return ProviderQueryResult.NotImplemented(
-            Provider.AZURE_DEVOPS,
-            "Add Azure DevOps API 7.0 adapter and GET /{project}/_apis/git/repositories"
-        )
+        return try {
+            val pat = Base64.encodeToString(":$token".toByteArray(), Base64.NO_WRAP)
+            val service = buildRetrofit("https://dev.azure.com").create(AzureDevOpsApiService::class.java)
+            val result = runBlocking {
+                service.getRepositories(
+                    authorization = "Basic $pat",
+                    organization = organization,
+                    project = project
+                )
+            }
+            ProviderQueryResult.Success(result.value.mapNotNull { r ->
+                if (r.remoteUrl.isNullOrBlank()) null
+                else HostedRepository(
+                    id = r.id,
+                    name = r.name,
+                    fullName = r.fullName,
+                    description = null,
+                    cloneUrl = r.remoteUrl,
+                    sshUrl = r.sshUrl,
+                    isPrivate = r.project?.isPrivate ?: true,
+                    provider = Provider.AZURE_DEVOPS
+                )
+            })
+        } catch (e: HttpException) {
+            if (e.code() == 401 || e.code() == 203) {
+                ProviderQueryResult.AuthenticationError(
+                    Provider.AZURE_DEVOPS,
+                    "Azure DevOps auth failed: ${e.message()}"
+                )
+            } else {
+                ProviderQueryResult.NetworkError(
+                    Provider.AZURE_DEVOPS,
+                    "Azure DevOps HTTP ${e.code()}: ${e.message()}"
+                )
+            }
+        } catch (e: IOException) {
+            ProviderQueryResult.NetworkError(Provider.AZURE_DEVOPS, "Azure DevOps network error: ${e.message}")
+        }
     }
 
     /**
