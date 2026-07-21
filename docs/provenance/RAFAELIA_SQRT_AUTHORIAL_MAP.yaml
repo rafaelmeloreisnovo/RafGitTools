@@ -1,0 +1,167 @@
+schema: rafaelia.sqrt.authorial-map/v1
+updated: 2026-07-21
+repository: rafaelmeloreisnovo/RafGitTools
+policy: LICENSES/SQRT_REFERENCES_AND_CHILD_PROTECTION.md
+claim_allowed_default: false
+
+protected_identity:
+  internal_id: ESTUDANTE_MENOR_PROTEGIDA_RJ
+  expose_civil_name: false
+  academic_reference_id: RJ-RPM107-2023
+  reason: minimizacao de dados e protecao integral de pessoa menor
+
+classification_rules:
+  rafaelia_original:
+    meaning: nucleo RAFAELIA com evidencia versionada e origem identificada
+    sole_author_claim: requires_commit_genealogy
+  standard_math:
+    meaning: uso independente de operacao matematica comum
+    citation_required: false
+  regression_julia_reference:
+    meaning: dependencia conceitual ou implementacional do metodo/trabalho nomeado
+    citation_required: true
+  derived_with_changes:
+    meaning: adaptacao com fonte, licenca e mudancas declaradas
+    citation_required: true
+  third_party:
+    meaning: material externo preservado com atribuicao e licenca
+    citation_required: true
+  needs_review:
+    meaning: origem incompleta ou autoria ainda nao comprovada
+    release_authorial_claim: forbidden
+
+nuclei:
+  - id: RAF-SQRT-H-KERNEL-DOC
+    destination: docs/rafaelia_reference/sqrt3_2_kernel.md
+    source_repository: rafaelmeloreisnovo/Vectras-VM-Android
+    source_path: docs/rafaelia_reference/sqrt3_2_kernel.md
+    source_commit: 6ab34fcfbbaa7fa3536507d9c42d066d2fe94365
+    classification: rafaelia_original
+    evidence:
+      - RAFAELIA_H_KERNEL title and domain-specific contract
+      - fixed-point Q16 constant and falsification rules
+      - source located in repository controlled by the project owner
+    limitations:
+      - repository ownership alone does not prove sole authorship
+      - commit ancestry and upstream similarity still require review
+    sole_author: null
+    claim_allowed: false
+
+  - id: RAF-MATRIX-Q16
+    destination: rafaelia/matrix/raf_matrix_q16.h
+    source_repository: rafaelmeloreisnovo/Vectras-VM-Android
+    source_path: .ci/matrixbitraf.c
+    source_commit: 6ab34fcfbbaa7fa3536507d9c42d066d2fe94365
+    source_blob: 8fb9960fb821a26eef1538ca9a4270dadd5d3a6d
+    classification: rafaelia_original
+    sqrt_symbols:
+      - RAF_SQRT2_Q16
+      - RAF_SQRT2_HALF_Q16
+      - RAF_SQRT3_HALF_Q16
+      - raf_isqrt_u64
+      - raf_matrix_q16_cross_e
+    evidence:
+      - RAFAELIA-specific 10x10x10 body with tetra parity and dual core
+      - deterministic integer square root with no libm dependency
+      - source commit and blob fixed in the promoted header
+      - dedicated C assertions in rafaelia/matrix/tests/test_raf_matrix_q16.c
+    changes_from_source:
+      - normalized public symbols under raf_matrix_q16 namespace
+      - changed setter to return success status
+      - added provenance and mathematical-scope contract
+      - preserved Q16 geometric-mean semantics
+    limitations:
+      - restoring integer square root is a standard algorithmic family
+      - concrete source genealogy and upstream similarity still require review
+      - benchmark claims are not made
+    sole_author: null
+    claim_allowed: false
+
+  - id: RAF-GEOM-Q16-HEADER
+    destination: rafaelia/block1/raf_geom.h
+    source_repository: rafaelmeloreisnovo/RafGitTools
+    source_path: rafaelia/block1/raf_geom.h
+    source_commit: e9d7f5c1f08a2cf2940418cd79eb9676c7b0c407
+    classification: rafaelia_original
+    sqrt_symbols:
+      - Q16_SQRT3_2
+      - q16_spiral
+      - q16_fraf_next
+    evidence:
+      - RAFAELIA-specific data model Toroid7
+      - Q16 constants tied to the traceability matrix
+    limitations:
+      - no explicit author header in inspected header
+      - implementation file and genealogy must be compared before sole-author claim
+    sole_author: null
+    claim_allowed: false
+
+  - id: RAF-MVP-PURE-SQRT
+    destination: _incoming/repo_mvp_puro.s
+    source_repository: rafaelmeloreisnovo/termux-app-rafacodephi
+    source_path: mvp/rafaelia_mvp_puro.s
+    source_commit: 0940da1c6017910d2ccd7951b63b6480df606b5b
+    classification: rafaelia_original
+    sqrt_symbols:
+      - fast_sqrt
+      - test_fast_sqrt
+    evidence:
+      - embedded author field instituto-Rafael
+      - embedded RAFAELIA signature words
+      - zero-dependency AArch64 implementation
+    limitations:
+      - embedded signature is evidence, not independent proof
+      - Newton-Raphson is standard mathematics; only the concrete implementation may be claimed
+      - SYS_BRK declaration conflicts with broad no-allocation wording unless unused and verified
+    sole_author: null
+    claim_allowed: false
+
+  - id: RAF-TRACE-SQRT
+    destination: docs/RAFAELIA_TRACEABILITY_MATRIX.md
+    source_repository: rafaelmeloreisnovo/RafGitTools
+    source_path: docs/RAFAELIA_TRACEABILITY_MATRIX.md
+    source_commit: e9d7f5c1f08a2cf2940418cd79eb9676c7b0c407
+    classification: rafaelia_original
+    evidence:
+      - explicit SPIRAL-SQRT3, FRAF-NEXT and GOLDEN-PHI records
+      - separates implementation, specification and conceptual claims
+    limitations:
+      - matrix itself states some evidence derives from prompts
+      - conceptual entries are not proof of implementation or authorship
+    sole_author: null
+    claim_allowed: false
+
+migration_decisions:
+  - source: rafaelmeloreisnovo/Vectras-VM-Android
+    action: selective_import_only
+    imported_now:
+      - docs/rafaelia_reference/sqrt3_2_kernel.md
+      - rafaelia/matrix/raf_matrix_q16.h
+    rejected_scope:
+      - full repository copy
+      - UI screens without file-level provenance
+      - QEMU/Vectras upstream code
+
+  - source: rafaelmeloreisnovo/termux-app-rafacodephi
+    action: selective_import_only
+    already_present:
+      - _incoming/repo_mvp_puro.s
+    rejected_scope:
+      - full Termux application
+      - upstream terminal-emulator code
+      - files whose only evidence is repository location
+
+  - source: rafaelmeloreisnovo/RafPolimata
+    action: reconcile_before_import
+    candidates:
+      - Benchmark/raf_types.h
+      - Benchmark/raf_q16.h
+    reason: symbols overlap with rafaelia/block1 and must have one canonical implementation
+
+release_gates:
+  - no_unclassified_sqrt_occurrences
+  - no_minor_civil_identifier
+  - no_sole_author_claim_without_genealogy
+  - regression_julia_usage_requires_RJ-RPM107-2023
+  - copied_or_derived_code_requires_license_and_source_commit
+  - generated_or_vendor_paths_must_not_be_counted_as_rafaelia_original
