@@ -1,5 +1,13 @@
 # RafGitTools - Unified Git/GitHub Android Client
 
+## Implementation Scope (as of 2026-07-21)
+
+> **Current scope**: GitHub + JGit + multi-platform adapters (GitLab, Bitbucket, Gitea/Forgejo, Azure DevOps). The sections below describe the full vision; for verified implementation status see [EVOLUTIONARY_PROCESS.md](EVOLUTIONARY_PROCESS.md) and [STATUS_REPORT.md](STATUS_REPORT.md).
+>
+> **What's fully wired**: GitHub/GitLab/Bitbucket/Gitea/Azure DevOps API adapters; Git ops via JGit (25+ ops); Git LFS UI; SSH key rotation + PAT expiry detection; Room-backed offline queue; repository sync state worker; rafaelia JNI bridge (CMake); 15+ Compose screens.
+>
+> **What's stubbed / blocked**: terminal PTY (current impl is a `ProcessBuilder` command-allowlist, not a VT100/PTY — blocked on Termux `terminal-view`); LLaMA kernel JNI (bridge exists, `llama.h` missing); AI/ML features (GovernanceGate + ToolRouter present, model integration pending).
+
 ## Project Vision
 
 RafGitTools aims to create a comprehensive, high-performance Android application that combines the best features from multiple popular Git and GitHub clients while respecting their open-source licenses. The goal is to provide a unified, intuitive, and powerful mobile Git experience.

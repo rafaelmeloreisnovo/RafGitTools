@@ -1,27 +1,33 @@
 # RAFGITTOOLS_CURRENT_STATE
 
 - Status: **ATIVO — código integrado, validação local pendente**
-- Estado observado: **2026-07-18**
+- Estado observado: **2026-07-21** (atualizado)
 - Fonte de verdade: código em `app/src/`, testes, contratos e `ECOSYSTEM_RUNTIME_STATE.json`
-- GitHub Actions: **OUT_OF_SCOPE_NO_CREDIT** nesta atividade; ausência de run não é PASS nem FAIL de código
+- GitHub Actions: **OUT_OF_SCOPE** — workflows falham por `actions/checkout@v6` inexistente (baseline pré-existente); ausência de run não é PASS nem FAIL de código
 
 ## Núcleo Android/Git/GitHub
 
 | Componente | Estado | Limite atual |
 |---|---|---|
-| Android / Compose / Hilt / Room | `IMPLEMENTED` | APK e device smoke não executados nesta atividade |
+| Android / Compose / Hilt / Room v4 | `IMPLEMENTED` | APK e device smoke não executados nesta atividade |
 | PAT + armazenamento seguro | `IMPLEMENTED` | Resultado end-to-end depende de execução local/device |
-| OAuth Device Flow | `IMPLEMENTED / CONFIG_REQUIRED` | Exige Client ID público configurado |
-| API GitHub | `PARTIAL_ADVANCED` | Falta matriz end-to-end completa |
-| Git local via JGit | `PARTIAL_ADVANCED` | Rede, credenciais e conflitos precisam de regressão real |
-| SSH | `PARTIAL` | Depende de ambiente/chaves e teste em device |
+| OAuth Device Flow (RFC 8628) | `IMPLEMENTED / CONFIG_REQUIRED` | Exige Client ID público configurado |
+| SSH key rotation (Ed25519) | `IMPLEMENTED` | Upload/delete via GitHub API — `SshKeyRotationManager` |
+| PAT expiry detection | `IMPLEMENTED` | `TokenRefreshManager.checkPATExpiry()` via `GitHub-Authentication-Token-Expiry` header |
+| API GitHub (50+ endpoints) | `PARTIAL_ADVANCED` | Falta matriz end-to-end completa |
+| Git local via JGit (25+ ops) | `PARTIAL_ADVANCED` | Rede, credenciais e conflitos precisam de regressão real |
+| SSH auth (key use) | `PARTIAL` | Depende de ambiente/chaves e teste em device |
 | GPG | `ADAPTER_IMPLEMENTED / RUNTIME_TOKEN_VAZIO` | Wrapper exige binário `gpg` acessível pelo processo autorizado |
-| Git LFS | `ADAPTER_IMPLEMENTED / RUNTIME_TOKEN_VAZIO` | Wrapper exige `git-lfs` e repositório real |
+| Git LFS (UI completo) | `IMPLEMENTED / RUNTIME_TOKEN_VAZIO` | `LfsScreen` + `LfsViewModel` + `LfsManager`; requer `git-lfs` e repositório real para validar |
 | Worktree | `ADAPTER_IMPLEMENTED / RUNTIME_TOKEN_VAZIO` | Falta matriz de filesystem/device |
 | Bisect | `ADAPTER_IMPLEMENTED / RUNTIME_TOKEN_VAZIO` | Falta cenário regressivo controlado |
 | Webhooks | `STUB` | Sem implementação funcional comprovada |
-| Terminal | `BOUNDED_EXECUTOR` | Não é PTY/VT100 e não aceita Git gravável |
-| Multi-provider | `STUB_TYPED` | Estados `NOT_CONFIGURED` e `NOT_IMPLEMENTED` são distintos de lista vazia |
+| Terminal | `BOUNDED_EXECUTOR` | Não é PTY/VT100 e não aceita Git gravável (ProcessBuilder allowlist) |
+| Multi-provider (5 providers) | `IMPLEMENTED` | GitHub, GitLab, Bitbucket, Gitea/Forgejo, Azure DevOps — todos via `MultiPlatformManager` |
+| Offline queue (Room) | `IMPLEMENTED` | `RoomOfflineQueueStorage` + `OfflineOperationDao` (DB v3); `SyncWorker` ainda usa AtomicFile |
+| Repository sync state | `IMPLEMENTED` | `RepositorySyncWorker` (15 min) — `BranchTrackingStatus` → `SyncState` (DB v4) |
+| rafaelia JNI bridge | `IMPLEMENTED / BUILD_WIRED` | CMakeLists.txt produz `librafaelia.so`; integração EMA/prefetch pendente |
+| LLaMA kernel JNI | `BRIDGE_IMPLEMENTED / BLOCKED` | `raf_kernel_jni.c` existe; bloqueado em `llama.h` externo |
 
 ## Correções estruturais deste corte
 
@@ -61,14 +67,17 @@ Ainda falta conectar um codec de `OfflineOperation` e WorkManager. Portanto,
 
 ### Multi-plataforma
 
-GitLab, Bitbucket, Gitea e Azure DevOps não retornam mais `emptyList()` como se
-a integração estivesse concluída. As consultas tipadas distinguem:
+Todos os cinco providers estão implementados em `MultiPlatformManager`:
 
-- `Success`;
-- `NotConfigured`;
-- `NotImplemented`;
-- `AuthenticationError`;
-- `NetworkError`.
+| Provider | Adapter | Autenticação |
+|---|---|---|
+| GitHub | `GithubApiService` | PAT / OAuth |
+| GitLab | `GitLabApiService` — `GET /api/v4/projects?membership=true` | `Authorization: Bearer token` |
+| Bitbucket | `BitbucketApiService` — `GET /2.0/repositories/{workspace}` | Basic Auth |
+| Gitea/Forgejo | `GiteaApiService` — `GET /api/v1/user/repos` | `Authorization: token token` |
+| Azure DevOps | `AzureDevOpsApiService` — `GET /{org}/{project}/_apis/git/repositories?api-version=7.0` | PAT Basic (`Base64(":token")`) |
+
+As consultas tipadas distinguem `Success`, `NotConfigured`, `AuthenticationError`, `NetworkError`.
 
 ## Diretório `fazer/`
 
@@ -102,8 +111,8 @@ Nenhuma funcionalidade deve ser contabilizada duas vezes por existir em
 - APK, device smoke ARM32/ARM64 e integração Termux permanecem `TOKEN_VAZIO` até
   existirem comando, stdout/stderr, hash e resultado de aparelho.
 
-## Retroalimentar[3]
+## Retroalimentar[4] — 2026-07-21
 
-- **F_ok:** inconsistências conhecidas foram transformadas em código, contratos e testes locais.
-- **F_gap:** build Android, device runtime, WorkManager e ponte Termux não foram comprovados.
-- **F_next:** executar o validador local; depois, em ambiente Android disponível, compilar APK e registrar hashes/logs sem depender de Actions.
+- **F_ok:** inconsistências foram transformadas em código (multi-platform 5 providers, LFS UI, SSH rotation, PAT expiry, Room offline queue + sync worker, rafaelia build wiring, HomeViewModel local repos). Documentação alinhada com código em README, ROADMAP, EVOLUTIONARY_PROCESS, PROJECT_OVERVIEW, RAFGITTOOLS_CURRENT_STATE.
+- **F_gap:** build Android em device físico, WorkManager scheduling em device real, ponte Termux PTY e `llama.h` para LLaMA kernel não comprovados.
+- **F_next:** executar `./gradlew assembleDevDebug` em ambiente com SDK; resolver `actions/checkout@v6` nos workflows para desbloquear CI; adicionar `llama.cpp` como submódulo para desbloquear RafKernelBridge.
