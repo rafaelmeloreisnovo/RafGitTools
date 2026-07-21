@@ -1,6 +1,6 @@
 # Pending Items — RafGitTools
 
-Generated: 2026-07-20 | Branch: claude/code-docs-alignment-4ue3r1
+Generated: 2026-07-21 | Branch: claude/code-docs-alignment-4ue3r1
 
 This file tracks stubs, incomplete implementations, and known gaps.
 See BUGS.md for correctness defects. See EVOLUTIONARY_PROCESS.md for roadmap.
@@ -48,21 +48,21 @@ is not in this repository.
 
 ---
 
-## P4 — Pending: MultiPlatformManager GitLab/Bitbucket/Gitea/Azure
+## P4 — Partial: MultiPlatformManager Azure DevOps
 
-`platform/MultiPlatformManager.kt` has typed `ProviderQueryResult.NotImplemented` responses
-for non-GitHub providers (the raw `// TODO` comments were replaced with structured stubs).
-The API wire-up still needs Retrofit adapters:
+GitLab, Bitbucket, and Gitea/Forgejo are now implemented:
 
-| Provider | Required API endpoint |
-|---|---|
-| GitLab | `GET /api/v4/projects?membership=true` via `GitLabApiService` |
-| Bitbucket | `GET /repositories/{workspace}` via Bitbucket v2 adapter |
-| Gitea/Forgejo | `GET /repos/search` via Gitea API adapter |
-| Azure DevOps | `GET /_apis/git/repositories` via Azure DevOps REST adapter |
+| Provider | Status | PR |
+|---|---|---|
+| GitHub | Implemented (original) | — |
+| GitLab | Implemented: `GET /api/v4/projects?membership=true` via `GitLabApiService` | #283 |
+| Bitbucket | Implemented: `GET /2.0/repositories/{workspace}` via `BitbucketApiService` | #283 |
+| Gitea/Forgejo | Implemented: `GET /api/v1/user/repos` via `GiteaApiService` (token auth) | this branch |
+| Azure DevOps | **Still NotImplemented**: needs `GET /{project}/_apis/git/repositories` | — |
 
-Only GitHub is currently functional. The `NotImplemented` results surface the required
-endpoint path so callers can display a meaningful message.
+Only Azure DevOps remains. The `NotImplemented` result for Azure surfaces the required
+endpoint path. The PAT scope inspector (`PATScopeInspector.kt`, PR #283) already reads
+`X-OAuth-Scopes` from the GitHub token; a similar approach can be applied to Azure PATs.
 
 ---
 
@@ -151,3 +151,23 @@ or deleted without the author's consent. The file name is part of the metadata.
 or left at their current paths. The `LICENSE` (GPL v3) is the operative license and
 GitHub will detect it correctly. SPDX header `SPDX-License-Identifier: GPL-3.0-only`
 can be added to `LICENSE` as a cosmetic improvement without touching the other files.
+
+---
+
+## ~~P12 — DONE: raf_client RISCV64 + PE/COFF support~~
+
+`_incoming/raf_client` now supports four ISAs and three binary formats. Verified 2026-07-21
+by reading the actual files:
+
+| File | What was added |
+|------|---------------|
+| `_incoming/raf_client_sys.h` | RISCV64 ecall block (`a7`/`a0`–`a3`, `ecall`); `openat=56 read=63 write=64 close=57 exit_group=94`; `usize` typedef covers RISCV64 |
+| `_incoming/raf_elf.h` | `EM_RISCV=243u` constant; `ELF_MACH_STR()` returns `"riscv64"` |
+| `_incoming/raf_client_start.S` | RISCV64 `_start`: `mv fp,zero / mv ra,zero / call client_main / li a7,94 / li a0,0 / ecall` |
+| `_incoming/Makefile.client` | `ARCH=riscv64` target using `riscv64-linux-gnu-gcc`, `-march=rv64gc -mabi=lp64d` |
+| `_incoming/raf_pe.h` | New file — PE/COFF parser: `DosH`, `CoffH`, `PeCtx`, `PE_PARSE`, `PE_MACH_STR` macro; machine codes AMD64/ARM64/ARM/I386/RISCV64/RISCV32/THUMB |
+| `_incoming/raf_client.c` | PE detection branch after ELF/DEX: `PE_MAGIC_OK` → `PE_PARSE` → friction gate → `_out_pe()` |
+
+Build matrix: `ARCH=arm64` (default), `ARCH=arm`, `ARCH=x64`, `ARCH=riscv64`.
+Freestanding constraints maintained: zero `DT_NEEDED`, zero libc, zero malloc.
+The plan at `~/.claude/plans/os-c-digos-est-o-mais-purring-starlight.md` (PRÓXIMA FASE section) is complete.

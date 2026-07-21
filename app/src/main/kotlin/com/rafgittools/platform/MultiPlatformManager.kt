@@ -1,6 +1,7 @@
 package com.rafgittools.platform
 
 import com.rafgittools.data.bitbucket.BitbucketApiService
+import com.rafgittools.data.gitea.GiteaApiService
 import com.rafgittools.data.gitlab.GitLabApiService
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -133,10 +134,30 @@ object MultiPlatformManager {
                 "Gitea token and valid instance URL are required"
             )
         }
-        return ProviderQueryResult.NotImplemented(
-            Provider.GITEA,
-            "Add configurable Gitea API adapter and GET /api/v1/user/repos"
-        )
+        return try {
+            val service = buildRetrofit(baseUrl).create(GiteaApiService::class.java)
+            val repos = runBlocking { service.getUserRepos(authorization = "token $token") }
+            ProviderQueryResult.Success(repos.map { r ->
+                HostedRepository(
+                    id = r.id.toString(),
+                    name = r.name,
+                    fullName = r.fullName,
+                    description = r.description,
+                    cloneUrl = r.cloneUrl,
+                    sshUrl = r.sshUrl,
+                    isPrivate = r.isPrivate,
+                    provider = Provider.GITEA
+                )
+            })
+        } catch (e: HttpException) {
+            if (e.code() == 401 || e.code() == 403) {
+                ProviderQueryResult.AuthenticationError(Provider.GITEA, "Gitea auth failed: ${e.message()}")
+            } else {
+                ProviderQueryResult.NetworkError(Provider.GITEA, "Gitea HTTP ${e.code()}: ${e.message()}")
+            }
+        } catch (e: IOException) {
+            ProviderQueryResult.NetworkError(Provider.GITEA, "Gitea network error: ${e.message}")
+        }
     }
 
     fun queryAzureDevOpsRepos(
