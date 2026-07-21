@@ -3,6 +3,7 @@ package com.rafgittools.ui.screens.terminal
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.rafgittools.terminal.AnsiOutputProcessor
 import com.rafgittools.terminal.TerminalEmulator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -121,7 +122,7 @@ class TerminalViewModel @Inject constructor() : ViewModel() {
 
                 if (result.output.isNotBlank()) {
                     result.output.lines().take(500).forEach { line ->
-                        appendLine(TerminalLine.Output(line))
+                        appendLine(TerminalLine.Output(AnsiOutputProcessor.strip(line)))
                     }
                     if (result.output.lines().size > 500) {
                         appendLine(TerminalLine.Info("... output truncated at 500 lines"))
