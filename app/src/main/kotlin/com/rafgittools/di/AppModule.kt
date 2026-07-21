@@ -10,6 +10,7 @@ import com.rafgittools.data.cache.CacheDao
 import com.rafgittools.data.cache.CacheDatabase
 import com.rafgittools.data.cache.RepositoryNameCacheDao
 import com.rafgittools.data.cache.UserCacheDao
+import com.rafgittools.data.cache.LocalRepositoryDao
 import com.rafgittools.offline.OfflineOperationDao
 import com.rafgittools.offline.RoomOfflineQueueStorage
 import com.rafgittools.data.github.GithubApiService
@@ -81,7 +82,11 @@ object CacheModule {
     @Singleton
     fun provideCacheDatabase(@ApplicationContext context: Context): CacheDatabase =
         Room.databaseBuilder(context, CacheDatabase::class.java, "rafgittools_cache.db")
-            .addMigrations(CacheDatabase.MIGRATION_1_2, CacheDatabase.MIGRATION_2_3)
+            .addMigrations(
+                CacheDatabase.MIGRATION_1_2,
+                CacheDatabase.MIGRATION_2_3,
+                CacheDatabase.MIGRATION_3_4
+            )
             .build()
 
     @Provides @Singleton
@@ -99,6 +104,9 @@ object CacheModule {
     @Provides @Singleton
     fun provideRoomOfflineQueueStorage(dao: OfflineOperationDao): RoomOfflineQueueStorage =
         RoomOfflineQueueStorage(dao)
+
+    @Provides @Singleton
+    fun provideLocalRepositoryDao(db: CacheDatabase): LocalRepositoryDao = db.localRepositoryDao()
 }
 
 @Module

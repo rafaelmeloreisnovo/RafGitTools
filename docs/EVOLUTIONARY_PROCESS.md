@@ -86,11 +86,20 @@ Room entity and DAO added to `CacheDatabase` (v3 via `MIGRATION_2_3`):
 
 `SyncWorker` still uses `AtomicFileQueueStorage` (file-based). `RoomOfflineQueueStorage` is available via DI for callers that need SQL visibility (retry count filtering, repoPath queries, `observeCount()` Flow for UI badges).
 
-### 3B — Repository sync state
+### ~~3B — Repository sync state (DONE 2026-07-21)~~
 
-Add a `SyncState` column to the Room `Repository` entity:
-- `SYNCED` / `BEHIND` / `AHEAD` / `DIVERGED` / `CONFLICT`
-- Background `WorkManager` job runs `git fetch` every 15 minutes for open repos
+`SyncState` enum and `LocalRepositoryEntity` Room entity added (DB v4 via `MIGRATION_3_4`):
+
+| Artifact | Details |
+|---|---|
+| `domain/model/SyncState.kt` | Enum: SYNCED / BEHIND / AHEAD / DIVERGED / CONFLICT |
+| `data/cache/LocalRepositoryEntity.kt` | `@Entity(local_repositories)`: path (PK), name, remoteUrl, currentBranch, lastUpdated, syncState |
+| `data/cache/LocalRepositoryDao.kt` | `insertIfAbsent()`, `upsert()`, `loadAll()`, `observeAll()` Flow, `updateSyncState()`, `delete()` |
+| `data/cache/CacheDatabase.kt` | Bumped to v4; entity registered; `MIGRATION_3_4`; `localRepositoryDao()` accessor |
+| `di/AppModule.kt` | `provideLocalRepositoryDao()` singleton |
+| `di/RepositorySyncEntryPoint.kt` | Hilt `@EntryPoint` for worker-side DAO access |
+| `offline/RepositorySyncWorker.kt` | `CoroutineWorker`: scans filesystem, best-effort fetch, `BranchTrackingStatus` → sync state |
+| `RafGitToolsApplication.kt` | `scheduleRepositorySync()` schedules `RepositorySyncWorker` every 15 min |
 
 ### 3C — Credential rotation
 

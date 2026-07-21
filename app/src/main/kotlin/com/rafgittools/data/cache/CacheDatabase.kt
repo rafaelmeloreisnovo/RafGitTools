@@ -11,16 +11,17 @@ import com.rafgittools.offline.OfflineOperationEntity
  * Room database for caching
  *
  * Contains tables for caching repository names, user data, generic content,
- * and durable offline operations.
+ * durable offline operations, and local repository sync state.
  */
 @Database(
     entities = [
         CacheEntry::class,
         RepositoryNameCache::class,
         UserCache::class,
-        OfflineOperationEntity::class
+        OfflineOperationEntity::class,
+        LocalRepositoryEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class CacheDatabase : RoomDatabase() {
@@ -51,10 +52,26 @@ abstract class CacheDatabase : RoomDatabase() {
                 )
             }
         }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    """CREATE TABLE IF NOT EXISTS local_repositories (
+                        path TEXT PRIMARY KEY NOT NULL,
+                        name TEXT NOT NULL,
+                        remoteUrl TEXT,
+                        currentBranch TEXT,
+                        lastUpdated INTEGER NOT NULL,
+                        syncState TEXT NOT NULL
+                    )"""
+                )
+            }
+        }
     }
 
     abstract fun cacheDao(): CacheDao
     abstract fun repositoryNameCacheDao(): RepositoryNameCacheDao
     abstract fun userCacheDao(): UserCacheDao
     abstract fun offlineOperationDao(): OfflineOperationDao
+    abstract fun localRepositoryDao(): LocalRepositoryDao
 }
