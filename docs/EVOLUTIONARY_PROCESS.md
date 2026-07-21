@@ -115,13 +115,14 @@ SSH key rotation and PAT expiry detection added:
 
 ## Phase 4 — Native Performance (advanced)
 
-### ~~4A — rafaelia engine → Android (BRIDGE DONE 2026-07-21)~~
+### ~~4A — rafaelia engine → Android (DONE 2026-07-21)~~
 
-JNI bridge created (P9):
+JNI bridge and build system wiring complete:
 - `kernel/native/rafaelia_jni.c` — re-targeted from `_incoming/rafaelia_jni_direct.c` to `com.rafgittools.kernel`; zero malloc, DirectByteBuffer I/O, inline CRC32C
 - `app/.../kernel/RafaeliaCore.kt` — five native methods: `processNative`, `stepNative`, `profileNative`, `arenaSizeNative`, `crc32Native`
+- `app/src/main/cpp/CMakeLists.txt` — `add_library(rafaelia SHARED rafaelia_jni.c)` produces `librafaelia.so`; conditional `raf_llama_kernel` block for llama.cpp when available
 
-**Remaining**: wire `rafaelia_jni.c` into the Android build system (`CMakeLists.txt` or `Android.mk`) to produce `librafaelia.so`. Then use the EMA/commit-gate primitives for predictive prefetch of git objects.
+**Remaining**: wire EMA/commit-gate primitives into predictive prefetch of git objects (application-level work, not build system).
 
 ### 4B — raf_client as forensic tool
 
@@ -157,7 +158,7 @@ Android App ─────────────► GitHub / GitLab / Bitbuck
      │
      ├──► kernel/RafKernelBridge ─(llama.h PENDING)─► Local LLaMA inference
      │
-     └──► kernel/RafaeliaCore ──(build PENDING)────► rafaelia_jni.c → 7D toroidal engine
+     └──► kernel/RafaeliaCore ──(build wired)──────► rafaelia_jni.c → 7D toroidal engine
 
 _incoming/raf_client ────(standalone)────► ELF/DEX/PE binary analysis (arm64/arm/x64/riscv64)
 BrowserRaf/ ─────────────(standalone)────► HTTPS client (ARM64 Linux, freestanding)
@@ -167,5 +168,5 @@ kiwi-extension/ ─────────(standalone)────► Browser e
 ```
 
 Items marked `(standalone)` have no current Android app connection.
-`kernel/RafaeliaCore` bridge exists but needs the native `.so` in the build system.
+`kernel/RafaeliaCore` bridge and build system are both wired; `.so` is produced by CMake. Application-level integration (EMA prefetch) is the remaining work.
 `kernel/RafKernelBridge` bridge exists but needs `llama.h` from an external llama.cpp build.
