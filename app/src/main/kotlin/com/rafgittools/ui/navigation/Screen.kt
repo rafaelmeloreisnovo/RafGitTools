@@ -68,6 +68,9 @@ sealed class Screen(val route: String) {
     object CreatePullRequest : Screen("create_pr/{owner}/{repo}") {
         fun createRoute(owner: String, repo: String) = "create_pr/${encodeArg(owner)}/${encodeArg(repo)}"
     }
+    object Lfs : Screen("lfs/{repoPath}") {
+        fun createRoute(repoPath: String) = "lfs/${encodeArg(repoPath)}"
+    }
 }
 
 private fun encodeArg(value: String): String = URLEncoder.encode(value, "UTF-8")

@@ -52,6 +52,7 @@ import com.rafgittools.ui.screens.repository.RepositoryDetailScreen
 import com.rafgittools.ui.screens.repository.RepositoryListScreen
 import com.rafgittools.ui.screens.search.SearchScreen
 import com.rafgittools.ui.screens.settings.SettingsScreen
+import com.rafgittools.ui.screens.lfs.LfsScreen
 import com.rafgittools.ui.screens.stash.StashListScreen
 import com.rafgittools.ui.screens.tags.TagListScreen
 import com.rafgittools.ui.screens.terminal.TerminalScreen
@@ -203,6 +204,9 @@ fun RafGitToolsApp(
                     },
                     onNavigateToBranches = { path ->
                         navController.navigate(Screen.BranchList.createRoute(path))
+                    },
+                    onNavigateToLfs = { path ->
+                        navController.navigate(Screen.Lfs.createRoute(path))
                     }
                 )
             }
@@ -494,6 +498,17 @@ fun RafGitToolsApp(
                     repo = repo,
                     onNavigateBack = { navController.popBackStack() },
                     onPullRequestCreated = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Screen.Lfs.route,
+                arguments = listOf(navArgument("repoPath") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val repoPath = decodeNavArg(backStackEntry.arguments?.getString("repoPath"))
+                LfsScreen(
+                    repoPath = repoPath,
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
         }

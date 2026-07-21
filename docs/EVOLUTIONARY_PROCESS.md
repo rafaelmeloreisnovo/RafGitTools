@@ -51,15 +51,15 @@ All five providers are implemented:
 
 ### ~~2C — LFS UI exposure (DONE 2026-07-21)~~
 
-`ui/screens/lfs/LfsScreen.kt` and `LfsViewModel.kt` added:
+`ui/screens/lfs/LfsScreen.kt` and `LfsViewModel.kt` added and fully wired:
 - Shows tracked patterns (`LfsManager.listTracked()`) in a `LazyColumn`
 - Top-bar actions: Install (installs LFS hooks), Env (shows `git lfs env` in dialog)
 - FAB → Track Pattern dialog (glob input → `LfsManager.track()`)
 - Inline Fetch and Pull buttons when patterns exist
 - `NotAvailable` state when git-lfs binary is absent (with Termux install hint)
 - Snackbar feedback for all operations
-
-**Remaining**: wire `LfsScreen` into the navigation graph / `RepositoryDetailScreen` menu.
+- `Screen.Lfs` route added; composable registered in `MainActivity` NavHost
+- "Git LFS" entry in `RepositoryDetailScreen` overflow menu (⋮ → Git LFS)
 
 ### 2D — TerminalEmulator PTY
 
@@ -72,13 +72,19 @@ Replace the `ProcessBuilder` allowlist approach with Termux `terminal-view` for:
 
 ## Phase 3 — Offline-First (resilience)
 
-### 3A — OfflineQueue persistence
+### ~~3A — OfflineQueue persistence (DONE 2026-07-21)~~
 
-Replace the in-memory queue with a Room entity:
-```
-OfflineOperation(id, repoPath, command, args, createdAt, retryCount)
-```
-A `WorkManager` periodic task drains the queue when connectivity is restored.
+Room entity and DAO added to `CacheDatabase` (v3 via `MIGRATION_2_3`):
+
+| Artifact | Details |
+|---|---|
+| `offline/OfflineOperationEntity.kt` | `@Entity(offline_operations)`: id, repoPath, command, args, createdAt, retryCount |
+| `offline/OfflineOperationDao.kt` | `loadAll()`, `observeAll()`, `observeCount()`, `replaceAll()` (transactional) |
+| `offline/RoomOfflineQueueStorage.kt` | Implements `OfflineQueueStorage<SyncOperation>`; encode/decode via `SyncOperation.encode/decode` |
+| `data/cache/CacheDatabase.kt` | Bumped to v3; entity registered; `offlineOperationDao()` accessor added |
+| `di/AppModule.kt` | `provideOfflineOperationDao()` and `provideRoomOfflineQueueStorage()` provided as singletons |
+
+`SyncWorker` still uses `AtomicFileQueueStorage` (file-based). `RoomOfflineQueueStorage` is available via DI for callers that need SQL visibility (retry count filtering, repoPath queries, `observeCount()` Flow for UI badges).
 
 ### 3B — Repository sync state
 
