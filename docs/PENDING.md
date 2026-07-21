@@ -48,21 +48,22 @@ is not in this repository.
 
 ---
 
-## P4 — Partial: MultiPlatformManager Azure DevOps
+## ~~P4 — DONE: MultiPlatformManager all providers~~
 
-GitLab, Bitbucket, and Gitea/Forgejo are now implemented:
+All five providers are now implemented:
 
 | Provider | Status | PR |
 |---|---|---|
 | GitHub | Implemented (original) | — |
 | GitLab | Implemented: `GET /api/v4/projects?membership=true` via `GitLabApiService` | #283 |
 | Bitbucket | Implemented: `GET /2.0/repositories/{workspace}` via `BitbucketApiService` | #283 |
-| Gitea/Forgejo | Implemented: `GET /api/v1/user/repos` via `GiteaApiService` (token auth) | this branch |
-| Azure DevOps | **Still NotImplemented**: needs `GET /{project}/_apis/git/repositories` | — |
+| Gitea/Forgejo | Implemented: `GET /api/v1/user/repos` via `GiteaApiService` (token auth) | #284 |
+| Azure DevOps | Implemented: `GET /{org}/{project}/_apis/git/repositories?api-version=7.0` via `AzureDevOpsApiService` (PAT Basic auth) | this branch |
 
-Only Azure DevOps remains. The `NotImplemented` result for Azure surfaces the required
-endpoint path. The PAT scope inspector (`PATScopeInspector.kt`, PR #283) already reads
-`X-OAuth-Scopes` from the GitHub token; a similar approach can be applied to Azure PATs.
+Azure DevOps uses PAT-as-Basic-auth (`Base64(":token")` per Microsoft docs). The
+`isDisabled`/`isInMaintenance` flags on `AzureDevOpsRepository` allow callers to
+filter inactive repos. HTTP 203 (Non-Authoritative — returned by Azure when the PAT
+lacks `vso.code` scope) is treated as an auth error alongside 401.
 
 ---
 
