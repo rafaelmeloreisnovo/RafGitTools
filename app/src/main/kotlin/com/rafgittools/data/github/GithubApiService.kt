@@ -369,6 +369,16 @@ interface GithubApiService {
         @Path("repo") repo: String,
         @Body fork: ForkRepositoryRequest? = null
     ): GithubRepository
+
+    // SSH Keys
+    @GET("user/keys")
+    suspend fun getSshKeys(): List<GithubSshKey>
+
+    @POST("user/keys")
+    suspend fun addSshKey(@Body key: AddSshKeyRequest): GithubSshKey
+
+    @DELETE("user/keys/{keyId}")
+    suspend fun deleteSshKey(@Path("keyId") keyId: Long)
 }
 
 /**
@@ -522,4 +532,22 @@ data class ForkRepositoryRequest(
     val organization: String? = null,
     val name: String? = null,
     val default_branch_only: Boolean = false
+)
+
+/**
+ * GitHub SSH key as returned by the API
+ */
+data class GithubSshKey(
+    val id: Long,
+    val key: String,
+    val title: String,
+    @SerializedName("created_at") val createdAt: String? = null
+)
+
+/**
+ * Request body for adding a new SSH key
+ */
+data class AddSshKeyRequest(
+    val title: String,
+    val key: String
 )

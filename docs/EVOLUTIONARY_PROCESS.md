@@ -101,12 +101,15 @@ Room entity and DAO added to `CacheDatabase` (v3 via `MIGRATION_2_3`):
 | `offline/RepositorySyncWorker.kt` | `CoroutineWorker`: scans filesystem, best-effort fetch, `BranchTrackingStatus` → sync state |
 | `RafGitToolsApplication.kt` | `scheduleRepositorySync()` schedules `RepositorySyncWorker` every 15 min |
 
-### 3C — Credential rotation
+### ~~3C — Credential rotation (DONE 2026-07-21)~~
 
-`TokenRefreshManager.kt` proactively refreshes OAuth tokens but does not handle
-key rotation for SSH keys or PATs. Add:
-- SSH key rotation: generate new Ed25519 key, call GitHub API to replace
-- PAT expiry detection: parse `X-OAuth-Scopes` header, warn if < 7 days remaining
+SSH key rotation and PAT expiry detection added:
+
+| Artifact | Details |
+|---|---|
+| `GithubApiService.kt` | `getSshKeys()`, `addSshKey()`, `deleteSshKey()` endpoints; `GithubSshKey` + `AddSshKeyRequest` models |
+| `data/auth/SshKeyRotationManager.kt` | Generates Ed25519 key via `SshKeyManager`, uploads via GitHub API, deletes old key; rotation is safe (upload-first, delete-after) |
+| `data/auth/TokenRefreshManager.kt` | `PatExpiryState` sealed class; `checkPATExpiry()` from `GitHub-Authentication-Token-Expiry` header (warns if ≤ 7 days); `parseScopesFromHeader()` for `X-OAuth-Scopes` |
 
 ---
 
