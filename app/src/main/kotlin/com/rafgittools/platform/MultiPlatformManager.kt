@@ -1,12 +1,20 @@
 package com.rafgittools.platform
 
+import com.rafgittools.data.bitbucket.BitbucketApiService
+import com.rafgittools.data.gitlab.GitLabApiService
+import kotlinx.coroutines.runBlocking
+import okhttp3.OkHttpClient
+import retrofit2.HttpException
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.io.IOException
+
 /**
  * Git-hosting provider abstraction layer.
  *
  * GitHub is implemented through the existing GithubRepository/GithubApiService.
- * Other providers expose typed capability results until their Retrofit adapters
- * are connected. A missing adapter is never represented as a successful empty
- * repository list.
+ * GitLab (v4 API) and Bitbucket (v2 API) are implemented via their own Retrofit
+ * service interfaces. Gitea and Azure DevOps return NotImplemented until added.
  */
 object MultiPlatformManager {
 
@@ -48,10 +56,30 @@ object MultiPlatformManager {
         if (!isHttpUrl(baseUrl)) {
             return ProviderQueryResult.NotConfigured(Provider.GITLAB, "GitLab base URL is invalid")
         }
-        return ProviderQueryResult.NotImplemented(
-            Provider.GITLAB,
-            "Add GitLabApiService and GET /api/v4/projects?membership=true&per_page=100"
-        )
+        return try {
+            val service = buildRetrofit(baseUrl).create(GitLabApiService::class.java)
+            val projects = runBlocking { service.getUserProjects(token) }
+            ProviderQueryResult.Success(projects.map { p ->
+                HostedRepository(
+                    id = p.id.toString(),
+                    name = p.name,
+                    fullName = p.fullPath,
+                    description = p.description,
+                    cloneUrl = p.cloneUrlHttp,
+                    sshUrl = p.cloneUrlSsh,
+                    isPrivate = p.isPrivate,
+                    provider = Provider.GITLAB
+                )
+            })
+        } catch (e: HttpException) {
+            if (e.code() == 401 || e.code() == 403) {
+                ProviderQueryResult.AuthenticationError(Provider.GITLAB, "GitLab auth failed: ${e.message()}")
+            } else {
+                ProviderQueryResult.NetworkError(Provider.GITLAB, "GitLab HTTP ${e.code()}: ${e.message()}")
+            }
+        } catch (e: IOException) {
+            ProviderQueryResult.NetworkError(Provider.GITLAB, "GitLab network error: ${e.message}")
+        }
     }
 
     fun queryBitbucketRepositories(
@@ -64,10 +92,35 @@ object MultiPlatformManager {
                 "Bitbucket access token and workspace are required"
             )
         }
-        return ProviderQueryResult.NotImplemented(
-            Provider.BITBUCKET,
-            "Add Bitbucket v2 API adapter and GET /repositories/{workspace}"
-        )
+        return try {
+            val service = buildRetrofit("https://api.bitbucket.org").create(BitbucketApiService::class.java)
+            val page = runBlocking {
+                service.getWorkspaceRepositories(
+                    authorization = "Bearer $accessToken",
+                    workspace = workspace
+                )
+            }
+            ProviderQueryResult.Success(page.values.map { r ->
+                HostedRepository(
+                    id = r.uuid,
+                    name = r.name,
+                    fullName = r.fullName,
+                    description = r.description,
+                    cloneUrl = r.links?.httpsCloneUrl() ?: "",
+                    sshUrl = r.links?.sshCloneUrl(),
+                    isPrivate = r.isPrivate,
+                    provider = Provider.BITBUCKET
+                )
+            })
+        } catch (e: HttpException) {
+            if (e.code() == 401 || e.code() == 403) {
+                ProviderQueryResult.AuthenticationError(Provider.BITBUCKET, "Bitbucket auth failed: ${e.message()}")
+            } else {
+                ProviderQueryResult.NetworkError(Provider.BITBUCKET, "Bitbucket HTTP ${e.code()}: ${e.message()}")
+            }
+        } catch (e: IOException) {
+            ProviderQueryResult.NetworkError(Provider.BITBUCKET, "Bitbucket network error: ${e.message}")
+        }
     }
 
     fun queryGiteaRepositories(
@@ -146,6 +199,15 @@ object MultiPlatformManager {
         is ProviderQueryResult.NotImplemented -> throw UnsupportedOperationException(result.integrationPath)
         is ProviderQueryResult.AuthenticationError -> throw SecurityException(result.message)
         is ProviderQueryResult.NetworkError -> throw IllegalStateException(result.message)
+    }
+
+    private fun buildRetrofit(baseUrl: String): Retrofit {
+        val normalized = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+        return Retrofit.Builder()
+            .baseUrl(normalized)
+            .client(OkHttpClient.Builder().build())
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
     }
 
     private fun isHttpUrl(value: String): Boolean =
