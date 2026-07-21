@@ -30,6 +30,8 @@ class TokenRefreshManager @Inject constructor(
         // or return 401 with "Bad credentials" message when expired/revoked
         private const val EXPIRY_HEADER = "GitHub-Authentication-Token-Expiry"
         private const val RATE_LIMIT_HEADER = "X-RateLimit-Remaining"
+        private const val SCOPES_HEADER = "X-OAuth-Scopes"
+        private const val SEVEN_DAYS_MS = 7L * 24 * 60 * 60 * 1000
     }
 
     /** State of the current token health */
@@ -39,6 +41,14 @@ class TokenRefreshManager @Inject constructor(
         object Revoked : TokenState()
         data class RateLimited(val resetEpoch: Long) : TokenState()
         object Unknown : TokenState()
+    }
+
+    /** PAT expiry warning states */
+    sealed class PatExpiryState {
+        object NoExpiryInfo : PatExpiryState()
+        object Ok : PatExpiryState()
+        data class WarningSoon(val expiresAt: Long, val daysLeft: Long) : PatExpiryState()
+        object AlreadyExpired : PatExpiryState()
     }
 
     /**
@@ -104,6 +114,39 @@ class TokenRefreshManager @Inject constructor(
     }
 
     /**
+     * Derives the PAT expiry state from response headers.
+     *
+     * Returns [PatExpiryState.WarningSoon] when the token expires within 7 days,
+     * [PatExpiryState.AlreadyExpired] if already past, [PatExpiryState.Ok] otherwise,
+     * and [PatExpiryState.NoExpiryInfo] when the header is absent (e.g. classic PATs
+     * with no configured expiry).
+     */
+    fun checkPATExpiry(headers: Map<String, String>): PatExpiryState {
+        val expiryEpoch = extractExpiryFromHeaders(headers) ?: return PatExpiryState.NoExpiryInfo
+        val now = System.currentTimeMillis()
+        val remaining = expiryEpoch - now
+        return when {
+            remaining <= 0 -> PatExpiryState.AlreadyExpired
+            remaining < SEVEN_DAYS_MS -> PatExpiryState.WarningSoon(
+                expiresAt = expiryEpoch,
+                daysLeft = remaining / (24 * 60 * 60 * 1000)
+            )
+            else -> PatExpiryState.Ok
+        }
+    }
+
+    /**
+     * Parses the `X-OAuth-Scopes` header into a set of granted scope strings.
+     *
+     * Returns an empty set when the header is absent (fine-grained PATs don't
+     * send this header — they use repository permissions instead).
+     */
+    fun parseScopesFromHeader(headers: Map<String, String>): Set<String> {
+        val raw = headers[SCOPES_HEADER] ?: return emptySet()
+        return raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+    }
+
+    /**
      * For OAuth apps with refresh_token support (future use):
      * Exchange refresh token for new access token.
      *
@@ -125,7 +168,7 @@ class TokenRefreshManager @Inject constructor(
         // authRepository.savePat(response.access_token, authRepository.getUsername() ?: "")
         // return Result.success(response.access_token)
         return Result.failure(
-            IllegalStateException(
+            UnsupportedOperationException(
                 "OAuth token refresh not yet supported. GitHub PATs don't use refresh tokens. " +
                     "Use OAuthDeviceFlowManager.startDeviceFlow() to re-authenticate."
             )

@@ -4,19 +4,24 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.rafgittools.offline.OfflineOperationDao
+import com.rafgittools.offline.OfflineOperationEntity
 
 /**
  * Room database for caching
- * 
- * Contains tables for caching repository names, user data, and generic content
+ *
+ * Contains tables for caching repository names, user data, generic content,
+ * durable offline operations, and local repository sync state.
  */
 @Database(
     entities = [
         CacheEntry::class,
         RepositoryNameCache::class,
-        UserCache::class
+        UserCache::class,
+        OfflineOperationEntity::class,
+        LocalRepositoryEntity::class
     ],
-    version = 2,
+    version = 4,
     exportSchema = true
 )
 abstract class CacheDatabase : RoomDatabase() {
@@ -32,9 +37,41 @@ abstract class CacheDatabase : RoomDatabase() {
                 )
             }
         }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    """CREATE TABLE IF NOT EXISTS offline_operations (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        repoPath TEXT NOT NULL,
+                        command TEXT NOT NULL,
+                        args TEXT NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        retryCount INTEGER NOT NULL
+                    )"""
+                )
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    """CREATE TABLE IF NOT EXISTS local_repositories (
+                        path TEXT PRIMARY KEY NOT NULL,
+                        name TEXT NOT NULL,
+                        remoteUrl TEXT,
+                        currentBranch TEXT,
+                        lastUpdated INTEGER NOT NULL,
+                        syncState TEXT NOT NULL
+                    )"""
+                )
+            }
+        }
     }
-    
+
     abstract fun cacheDao(): CacheDao
     abstract fun repositoryNameCacheDao(): RepositoryNameCacheDao
     abstract fun userCacheDao(): UserCacheDao
+    abstract fun offlineOperationDao(): OfflineOperationDao
+    abstract fun localRepositoryDao(): LocalRepositoryDao
 }

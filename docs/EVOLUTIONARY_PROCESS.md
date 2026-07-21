@@ -49,11 +49,17 @@ All five providers are implemented:
 | Gitea/Forgejo | `GiteaApiService` — `GET /api/v1/user/repos` (token auth) | #284 |
 | Azure DevOps | `AzureDevOpsApiService` — `GET /{org}/{project}/_apis/git/repositories?api-version=7.0` (PAT Basic) | #284 |
 
-### 2C — LFS UI exposure
+### ~~2C — LFS UI exposure (DONE 2026-07-21)~~
 
-`LfsManager` is implemented but no UI screen exists. Add:
-- `ui/screens/lfs/LfsScreen.kt` — shows tracked patterns, allows `lfs install`/`track`
-- Wire into `RepositoryDetailScreen.kt` via a tab or menu item
+`ui/screens/lfs/LfsScreen.kt` and `LfsViewModel.kt` added and fully wired:
+- Shows tracked patterns (`LfsManager.listTracked()`) in a `LazyColumn`
+- Top-bar actions: Install (installs LFS hooks), Env (shows `git lfs env` in dialog)
+- FAB → Track Pattern dialog (glob input → `LfsManager.track()`)
+- Inline Fetch and Pull buttons when patterns exist
+- `NotAvailable` state when git-lfs binary is absent (with Termux install hint)
+- Snackbar feedback for all operations
+- `Screen.Lfs` route added; composable registered in `MainActivity` NavHost
+- "Git LFS" entry in `RepositoryDetailScreen` overflow menu (⋮ → Git LFS)
 
 ### 2D — TerminalEmulator PTY
 
@@ -66,26 +72,44 @@ Replace the `ProcessBuilder` allowlist approach with Termux `terminal-view` for:
 
 ## Phase 3 — Offline-First (resilience)
 
-### 3A — OfflineQueue persistence
+### ~~3A — OfflineQueue persistence (DONE 2026-07-21)~~
 
-Replace the in-memory queue with a Room entity:
-```
-OfflineOperation(id, repoPath, command, args, createdAt, retryCount)
-```
-A `WorkManager` periodic task drains the queue when connectivity is restored.
+Room entity and DAO added to `CacheDatabase` (v3 via `MIGRATION_2_3`):
 
-### 3B — Repository sync state
+| Artifact | Details |
+|---|---|
+| `offline/OfflineOperationEntity.kt` | `@Entity(offline_operations)`: id, repoPath, command, args, createdAt, retryCount |
+| `offline/OfflineOperationDao.kt` | `loadAll()`, `observeAll()`, `observeCount()`, `replaceAll()` (transactional) |
+| `offline/RoomOfflineQueueStorage.kt` | Implements `OfflineQueueStorage<SyncOperation>`; encode/decode via `SyncOperation.encode/decode` |
+| `data/cache/CacheDatabase.kt` | Bumped to v3; entity registered; `offlineOperationDao()` accessor added |
+| `di/AppModule.kt` | `provideOfflineOperationDao()` and `provideRoomOfflineQueueStorage()` provided as singletons |
 
-Add a `SyncState` column to the Room `Repository` entity:
-- `SYNCED` / `BEHIND` / `AHEAD` / `DIVERGED` / `CONFLICT`
-- Background `WorkManager` job runs `git fetch` every 15 minutes for open repos
+`SyncWorker` still uses `AtomicFileQueueStorage` (file-based). `RoomOfflineQueueStorage` is available via DI for callers that need SQL visibility (retry count filtering, repoPath queries, `observeCount()` Flow for UI badges).
 
-### 3C — Credential rotation
+### ~~3B — Repository sync state (DONE 2026-07-21)~~
 
-`TokenRefreshManager.kt` proactively refreshes OAuth tokens but does not handle
-key rotation for SSH keys or PATs. Add:
-- SSH key rotation: generate new Ed25519 key, call GitHub API to replace
-- PAT expiry detection: parse `X-OAuth-Scopes` header, warn if < 7 days remaining
+`SyncState` enum and `LocalRepositoryEntity` Room entity added (DB v4 via `MIGRATION_3_4`):
+
+| Artifact | Details |
+|---|---|
+| `domain/model/SyncState.kt` | Enum: SYNCED / BEHIND / AHEAD / DIVERGED / CONFLICT |
+| `data/cache/LocalRepositoryEntity.kt` | `@Entity(local_repositories)`: path (PK), name, remoteUrl, currentBranch, lastUpdated, syncState |
+| `data/cache/LocalRepositoryDao.kt` | `insertIfAbsent()`, `upsert()`, `loadAll()`, `observeAll()` Flow, `updateSyncState()`, `delete()` |
+| `data/cache/CacheDatabase.kt` | Bumped to v4; entity registered; `MIGRATION_3_4`; `localRepositoryDao()` accessor |
+| `di/AppModule.kt` | `provideLocalRepositoryDao()` singleton |
+| `di/RepositorySyncEntryPoint.kt` | Hilt `@EntryPoint` for worker-side DAO access |
+| `offline/RepositorySyncWorker.kt` | `CoroutineWorker`: scans filesystem, best-effort fetch, `BranchTrackingStatus` → sync state |
+| `RafGitToolsApplication.kt` | `scheduleRepositorySync()` schedules `RepositorySyncWorker` every 15 min |
+
+### ~~3C — Credential rotation (DONE 2026-07-21)~~
+
+SSH key rotation and PAT expiry detection added:
+
+| Artifact | Details |
+|---|---|
+| `GithubApiService.kt` | `getSshKeys()`, `addSshKey()`, `deleteSshKey()` endpoints; `GithubSshKey` + `AddSshKeyRequest` models |
+| `data/auth/SshKeyRotationManager.kt` | Generates Ed25519 key via `SshKeyManager`, uploads via GitHub API, deletes old key; rotation is safe (upload-first, delete-after) |
+| `data/auth/TokenRefreshManager.kt` | `PatExpiryState` sealed class; `checkPATExpiry()` from `GitHub-Authentication-Token-Expiry` header (warns if ≤ 7 days); `parseScopesFromHeader()` for `X-OAuth-Scopes` |
 
 ---
 

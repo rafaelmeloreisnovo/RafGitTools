@@ -33,7 +33,8 @@ fun RepositoryDetailScreen(
     viewModel: RepositoryDetailViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {},
     onNavigateToCommits: (String) -> Unit = {},
-    onNavigateToBranches: (String) -> Unit = {}
+    onNavigateToBranches: (String) -> Unit = {},
+    onNavigateToLfs: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val status by viewModel.status.collectAsStateWithLifecycle()
@@ -43,6 +44,7 @@ fun RepositoryDetailScreen(
     
     var showBranchDialog by remember { mutableStateOf(false) }
     var showCommitDialog by remember { mutableStateOf(false) }
+    var showOverflowMenu by remember { mutableStateOf(false) }
     
     LaunchedEffect(repoPath) {
         viewModel.loadRepository(repoPath)
@@ -82,6 +84,22 @@ fun RepositoryDetailScreen(
                 actions = {
                     IconButton(onClick = { viewModel.refresh() }) {
                         Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.action_refresh))
+                    }
+                    IconButton(onClick = { showOverflowMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                    }
+                    DropdownMenu(
+                        expanded = showOverflowMenu,
+                        onDismissRequest = { showOverflowMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Git LFS") },
+                            leadingIcon = { Icon(Icons.Default.Storage, contentDescription = null) },
+                            onClick = {
+                                showOverflowMenu = false
+                                onNavigateToLfs(repoPath)
+                            }
+                        )
                     }
                 }
             )
