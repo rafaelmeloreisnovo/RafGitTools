@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # Canonical dependency-free gate for RAFAELIA longitudinal, content validity,
 # toroidal research-cycle, GitHub Actions execution-evidence, platform assurance,
-# and evidence-backed compliance contracts.
+# evidence-backed compliance, and human-AI bivalent privacy contracts.
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -52,5 +52,16 @@ python3 -m unittest discover -s tests \
   -p 'test_compliance_evidence_boundary.py' -v
 python3 scripts/validate_compliance_evidence_boundary.py \
   --strict --write-report
+
+# Human-AI bivalent privacy middleware: tests and semantic validation are part
+# of the existing canonical gate, not a competing workflow.  The generated
+# report proves contract evaluation only; it never promotes target runtime.
+python3 -m unittest discover -s tests \
+  -p 'test_human_ai_middleware.py' -v
+python3 scripts/validate_human_ai_middleware.py \
+  examples/human-ai-middleware/request.safe.json \
+  --adapters configs/human-ai-middleware/adapters.v1.json \
+  --report artifacts/human-ai-middleware-checkout-validation.json
+
 make -C rafaelia/block1 clean check
 make -C rafaelia/block1 clean
