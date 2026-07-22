@@ -34,7 +34,9 @@ fun RepositoryDetailScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToCommits: (String) -> Unit = {},
     onNavigateToBranches: (String) -> Unit = {},
-    onNavigateToLfs: (String) -> Unit = {}
+    onNavigateToLfs: (String) -> Unit = {},
+    onNavigateToWorktree: (String) -> Unit = {},
+    onNavigateToBisect: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val status by viewModel.status.collectAsStateWithLifecycle()
@@ -98,6 +100,22 @@ fun RepositoryDetailScreen(
                             onClick = {
                                 showOverflowMenu = false
                                 onNavigateToLfs(repoPath)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Worktrees") },
+                            leadingIcon = { Icon(Icons.Default.AccountTree, contentDescription = null) },
+                            onClick = {
+                                showOverflowMenu = false
+                                onNavigateToWorktree(repoPath)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Bisect") },
+                            leadingIcon = { Icon(Icons.Default.BugReport, contentDescription = null) },
+                            onClick = {
+                                showOverflowMenu = false
+                                onNavigateToBisect(repoPath)
                             }
                         )
                     }

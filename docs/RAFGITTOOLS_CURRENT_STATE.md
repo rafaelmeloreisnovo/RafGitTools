@@ -21,7 +21,9 @@
 | Git LFS (UI completo) | `IMPLEMENTED / RUNTIME_TOKEN_VAZIO` | `LfsScreen` + `LfsViewModel` + `LfsManager`; requer `git-lfs` e repositório real para validar |
 | Worktree | `ADAPTER_IMPLEMENTED / RUNTIME_TOKEN_VAZIO` | Falta matriz de filesystem/device |
 | Bisect | `ADAPTER_IMPLEMENTED / RUNTIME_TOKEN_VAZIO` | Falta cenário regressivo controlado |
-| Webhooks | `STUB` | Sem implementação funcional comprovada |
+| Webhooks (GitHub API) | `IMPLEMENTED` | `WebhooksScreen` + `WebhooksViewModel`; list/create/delete/ping via `GithubApiService` |
+| Worktree (UI) | `IMPLEMENTED` | `WorktreeScreen` + `WorktreeViewModel`; add/list/remove/lock/unlock/prune via `WorktreeManager` |
+| Bisect (UI) | `IMPLEMENTED` | `BisectScreen` + `BisectViewModel`; start/good/bad/skip/reset workflow via `BisectManager` |
 | Terminal | `BOUNDED_EXECUTOR` | Não é PTY/VT100 e não aceita Git gravável (ProcessBuilder allowlist) |
 | Multi-provider (5 providers) | `IMPLEMENTED` | GitHub, GitLab, Bitbucket, Gitea/Forgejo, Azure DevOps — todos via `MultiPlatformManager` |
 | Offline queue (Room) | `IMPLEMENTED` | `RoomOfflineQueueStorage` + `OfflineOperationDao` (DB v3); `SyncWorker` ainda usa AtomicFile |
@@ -113,6 +115,6 @@ Nenhuma funcionalidade deve ser contabilizada duas vezes por existir em
 
 ## Retroalimentar[4] — 2026-07-21
 
-- **F_ok:** inconsistências foram transformadas em código (multi-platform 5 providers, LFS UI, SSH rotation, PAT expiry, Room offline queue + sync worker, rafaelia build wiring, HomeViewModel local repos). Documentação alinhada com código em README, ROADMAP, EVOLUTIONARY_PROCESS, PROJECT_OVERVIEW, RAFGITTOOLS_CURRENT_STATE.
-- **F_gap:** build Android em device físico, WorkManager scheduling em device real, ponte Termux PTY e `llama.h` para LLaMA kernel não comprovados.
+- **F_ok:** inconsistências foram transformadas em código (multi-platform 5 providers, LFS UI, SSH rotation, PAT expiry, Room offline queue + sync worker, rafaelia build wiring, HomeViewModel local repos, **Webhooks UI**, **Worktree UI**, **Bisect UI** — todos os TOKEN_VAZIO de UI agora têm Screen + ViewModel com navegação completa). Documentação alinhada com código.
+- **F_gap:** build Android em device físico, WorkManager scheduling em device real, ponte Termux PTY e `llama.h` para LLaMA kernel não comprovados. GPG exige binário `gpg` acessível.
 - **F_next:** executar `./gradlew assembleDevDebug` em ambiente com SDK; resolver `actions/checkout@v6` nos workflows para desbloquear CI; adicionar `llama.cpp` como submódulo para desbloquear RafKernelBridge.

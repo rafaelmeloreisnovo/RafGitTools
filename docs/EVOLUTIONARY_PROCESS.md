@@ -25,6 +25,43 @@ All five E1 items are done. See BUGS.md for details.
 
 Features that are architecturally present but not wired end-to-end.
 
+### ~~2E — Webhooks UI (DONE 2026-07-22)~~
+
+`WebhookHandler` was a routing stub (no GitHub API calls, no UI). Now complete:
+
+| Artifact | Details |
+|---|---|
+| `GithubApiService.kt` | `getWebhooks()`, `createWebhook()`, `deleteWebhook()`, `pingWebhook()` + models `GithubWebhook`, `WebhookConfig`, `CreateWebhookRequest` |
+| `ui/screens/webhooks/WebhooksViewModel.kt` | Loads list, create, delete, ping with `@HiltViewModel` |
+| `ui/screens/webhooks/WebhooksScreen.kt` | List with active badge + last-response status; FAB → create dialog (URL + event checkboxes); per-item ping/delete |
+| `Screen.kt` | `Screen.Webhooks` route `webhooks/{owner}/{repo}` |
+| `IssueListScreen.kt` | Overflow menu "Webhooks" → `Screen.Webhooks` |
+| `MainActivity.kt` | NavHost composable wired |
+
+### ~~2F — Worktree UI (DONE 2026-07-22)~~
+
+`WorktreeManager` had a full adapter (add/list/remove/lock/unlock/prune) but no UI. Now complete:
+
+| Artifact | Details |
+|---|---|
+| `ui/screens/worktree/WorktreeViewModel.kt` | Full CRUD wrapping `WorktreeManager`; `@HiltViewModel` |
+| `ui/screens/worktree/WorktreeScreen.kt` | List with path/branch/HEAD/locked badges; FAB → add dialog (path + branch + create flag); per-item lock/unlock/remove; prune action |
+| `Screen.kt` | `Screen.Worktree` route `worktree/{repoPath}` |
+| `RepositoryDetailScreen.kt` | Overflow "Worktrees" → `Screen.Worktree` |
+| `MainActivity.kt` | NavHost composable wired |
+
+### ~~2G — Bisect UI (DONE 2026-07-22)~~
+
+`BisectManager` had a full adapter (start/markGood/markBad/skip/finish/log) but no UI. Now complete:
+
+| Artifact | Details |
+|---|---|
+| `ui/screens/bisect/BisectViewModel.kt` | State machine NotStarted → Loading → Running; wraps `BisectManager`; loads bisect log |
+| `ui/screens/bisect/BisectScreen.kt` | NotStarted: good/bad commit inputs + start button + how-it-works card; Running: Good/Bad/Skip buttons + bisect log card + reset action |
+| `Screen.kt` | `Screen.Bisect` route `bisect/{repoPath}` |
+| `RepositoryDetailScreen.kt` | Overflow "Bisect" → `Screen.Bisect` |
+| `MainActivity.kt` | NavHost composable wired |
+
 ### 2A — LLaMA kernel JNI
 
 `kernel/native/raf_kernel_jni.c` is complete except for two PENDING items:

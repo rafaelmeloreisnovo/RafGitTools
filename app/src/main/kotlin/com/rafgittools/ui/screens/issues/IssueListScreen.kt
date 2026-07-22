@@ -31,16 +31,18 @@ fun IssueListScreen(
     viewModel: IssueListViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {},
     onIssueClick: (GithubIssue) -> Unit = {},
-    onCreateIssue: () -> Unit = {}
+    onCreateIssue: () -> Unit = {},
+    onNavigateToWebhooks: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val issues by viewModel.issues.collectAsStateWithLifecycle()
     val selectedFilter by viewModel.selectedFilter.collectAsStateWithLifecycle()
-    
+    var showOverflowMenu by remember { mutableStateOf(false) }
+
     LaunchedEffect(owner, repo) {
         viewModel.loadIssues(owner, repo)
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -66,6 +68,19 @@ fun IssueListScreen(
                 actions = {
                     IconButton(onClick = { viewModel.refresh() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    }
+                    IconButton(onClick = { showOverflowMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                    }
+                    DropdownMenu(
+                        expanded = showOverflowMenu,
+                        onDismissRequest = { showOverflowMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Webhooks") },
+                            leadingIcon = { Icon(Icons.Default.Webhook, null) },
+                            onClick = { showOverflowMenu = false; onNavigateToWebhooks() }
+                        )
                     }
                 }
             )
