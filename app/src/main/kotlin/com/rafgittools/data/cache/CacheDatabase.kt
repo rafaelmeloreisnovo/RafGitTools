@@ -21,7 +21,7 @@ import com.rafgittools.offline.OfflineOperationEntity
         OfflineOperationEntity::class,
         LocalRepositoryEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class CacheDatabase : RoomDatabase() {
@@ -65,6 +65,17 @@ abstract class CacheDatabase : RoomDatabase() {
                         syncState TEXT NOT NULL
                     )"""
                 )
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE repository_name_cache ADD COLUMN watchersCount INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE repository_name_cache ADD COLUMN openIssuesCount INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE repository_name_cache ADD COLUMN isFork INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE repository_name_cache ADD COLUMN defaultBranch TEXT NOT NULL DEFAULT 'main'")
+                database.execSQL("ALTER TABLE repository_name_cache ADD COLUMN createdAtGh TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE repository_name_cache ADD COLUMN updatedAtGh TEXT NOT NULL DEFAULT ''")
             }
         }
     }

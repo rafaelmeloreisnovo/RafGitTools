@@ -12,17 +12,12 @@ import java.io.File
 import javax.inject.Inject
 
 /**
- * TerminalViewModel — feature completamente ausente
+ * Provides a bounded read-only git terminal running in the app's process.
+ * Delegates command execution to TerminalEmulator with a bounded executor
+ * (read-only git subcommands only) in the context of the repository working directory.
  *
- * Provides a basic interactive terminal running in the app's process.
- * Delegates command execution to TerminalEmulator in the context of
- * the repository working directory.
- *
- * Security: only supported commands are allowed and executed without
- * invoking an interactive shell.
- *
- * For a richer terminal (PTY + ANSI colors) consider integrating
- * the Termux terminal-view library as a future enhancement.
+ * Security: only safe read-only subcommands (status, log, diff, show, rev-parse,
+ * ls-files, grep, blame) are allowed; write operations are rejected.
  */
 @HiltViewModel
 class TerminalViewModel @Inject constructor() : ViewModel() {
@@ -149,16 +144,15 @@ class TerminalViewModel @Inject constructor() : ViewModel() {
     private fun showHelp() {
         val help = """
 Available commands:
-  Git operations:
+  Read-only git operations:
     git status          — show working tree status
     git log --oneline   — compact commit history
     git diff            — show unstaged changes
-    git branch          — list branches
-    git add <file>      — stage a file
-    git commit -m "..."  — commit staged changes
-    git push            — push to remote
-    git pull            — pull from remote
-    git clone <url>     — clone a repository
+    git show <ref>      — show object content
+    git rev-parse HEAD  — resolve ref to hash
+    git ls-files        — list tracked files
+    git grep <pattern>  — search in tracked files
+    git blame <file>    — annotate file with commit info
 
   File operations:
     ls [-la]            — list directory contents

@@ -9,8 +9,11 @@ import com.rafgittools.core.localization.Language
 import com.rafgittools.data.cache.AsyncCacheManager
 import com.rafgittools.data.preferences.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -30,6 +33,9 @@ class SettingsViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val cacheManager: AsyncCacheManager
 ) : ViewModel() {
+
+    private val _navEvent = MutableSharedFlow<SettingsNavEvent>()
+    val navEvent: SharedFlow<SettingsNavEvent> = _navEvent.asSharedFlow()
 
     private val _isDarkMode = MutableStateFlow(false)
     val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
@@ -101,8 +107,17 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { cacheManager.clearAllCache() }
     }
 
-    fun openPrivacyPolicy() { /* handled by Activity/Navigation callback */ }
-    fun openLicenses()      { /* handled by Activity/Navigation callback */ }
+    fun openPrivacyPolicy() {
+        viewModelScope.launch { _navEvent.emit(SettingsNavEvent.OpenUrl(PRIVACY_POLICY_URL)) }
+    }
+
+    fun openLicenses() {
+        viewModelScope.launch { _navEvent.emit(SettingsNavEvent.OpenLicenses) }
+    }
+
+    companion object {
+        private const val PRIVACY_POLICY_URL = "https://rafgittools.example.com/privacy"
+    }
 }
 
 data class GitConfig(
@@ -110,3 +125,8 @@ data class GitConfig(
     val userEmail: String = "",
     val signCommits: Boolean = false
 )
+
+sealed class SettingsNavEvent {
+    data class OpenUrl(val url: String) : SettingsNavEvent()
+    object OpenLicenses : SettingsNavEvent()
+}
