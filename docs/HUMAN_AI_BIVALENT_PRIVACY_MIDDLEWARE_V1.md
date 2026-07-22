@@ -1,7 +1,7 @@
 # RAFAELIA Human–AI Bivalent Privacy Middleware v1
 
 **Operation:** `RAFAELIA-HAM-V1-20260722`  
-**State:** `IMPLEMENTED_POC / RUNTIME_ACTION_TOKEN_VAZIO / CLAIM_ALLOWED_FALSE`
+**State:** `IMPLEMENTED_POC / EXACT_CHECKOUT_RUNTIME_TOKEN_VAZIO / CLAIM_ALLOWED_FALSE`
 
 ## Invariant
 
@@ -14,6 +14,7 @@ Human -> define intent, approve scope, revoke, appeal, make final decision
 AI assistance != transfer of human authority
 privacy controls != promise of zero risk
 file presence != runtime execution
+semantic equivalence != byte identity
 94% usefulness target != measured usefulness
 ```
 
@@ -89,13 +90,27 @@ python3 scripts/validate_human_ai_middleware.py \
 
 The validator uses only the Python standard library. It rejects secret material, authority inflation, public exposure of private data, missing consent, missing rights review, unbounded loops, unsupported writes, absent rollback and adapter capability violations.
 
+The observed proof was executed against a local equivalent source bundle before the GitHub branch was fully materialized:
+
+```yaml
+local_equivalent_source_tests: 16/16_PASS
+local_equivalent_request_validation: PASS
+local_equivalent_adapter_count: 8
+local_equivalent_findings: 0
+exact_git_checkout_execution: TOKEN_VAZIO
+source_byte_identity: TOKEN_VAZIO_UNTIL_EXACT_CHECKOUT_RUN
+```
+
+This proves the bounded mechanism at PoC scope. It does not claim that the final Git commit bytes have already executed.
+
 ## State boundary
 
 ```yaml
 canonical_contract: IMPLEMENTED
 semantic_validator: IMPLEMENTED
 adversarial_tests: IMPLEMENTED
-local_validation: VERIFIED
+local_equivalent_source_validation: VERIFIED
+exact_git_checkout_validation: TOKEN_VAZIO
 federated_adapter_runtime: TOKEN_VAZIO
 Android_device_receipt: TOKEN_VAZIO
 measured_usefulness_0_94: TOKEN_VAZIO
