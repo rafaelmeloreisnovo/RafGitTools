@@ -52,7 +52,10 @@ import com.rafgittools.ui.screens.repository.RepositoryDetailScreen
 import com.rafgittools.ui.screens.repository.RepositoryListScreen
 import com.rafgittools.ui.screens.search.SearchScreen
 import com.rafgittools.ui.screens.settings.SettingsScreen
+import com.rafgittools.ui.screens.bisect.BisectScreen
 import com.rafgittools.ui.screens.lfs.LfsScreen
+import com.rafgittools.ui.screens.webhooks.WebhooksScreen
+import com.rafgittools.ui.screens.worktree.WorktreeScreen
 import com.rafgittools.ui.screens.stash.StashListScreen
 import com.rafgittools.ui.screens.tags.TagListScreen
 import com.rafgittools.ui.screens.terminal.TerminalScreen
@@ -207,6 +210,12 @@ fun RafGitToolsApp(
                     },
                     onNavigateToLfs = { path ->
                         navController.navigate(Screen.Lfs.createRoute(path))
+                    },
+                    onNavigateToWorktree = { path ->
+                        navController.navigate(Screen.Worktree.createRoute(path))
+                    },
+                    onNavigateToBisect = { path ->
+                        navController.navigate(Screen.Bisect.createRoute(path))
                     }
                 )
             }
@@ -277,6 +286,9 @@ fun RafGitToolsApp(
                     },
                     onCreateIssue = {
                         navController.navigate(Screen.CreateIssue.createRoute(owner, repo))
+                    },
+                    onNavigateToWebhooks = {
+                        navController.navigate(Screen.Webhooks.createRoute(owner, repo))
                     }
                 )
             }
@@ -508,6 +520,44 @@ fun RafGitToolsApp(
                 val repoPath = decodeNavArg(backStackEntry.arguments?.getString("repoPath"))
                 LfsScreen(
                     repoPath = repoPath,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Screen.Worktree.route,
+                arguments = listOf(navArgument("repoPath") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val repoPath = decodeNavArg(backStackEntry.arguments?.getString("repoPath"))
+                WorktreeScreen(
+                    repoPath = repoPath,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Screen.Bisect.route,
+                arguments = listOf(navArgument("repoPath") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val repoPath = decodeNavArg(backStackEntry.arguments?.getString("repoPath"))
+                BisectScreen(
+                    repoPath = repoPath,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Screen.Webhooks.route,
+                arguments = listOf(
+                    navArgument("owner") { type = NavType.StringType },
+                    navArgument("repo") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val owner = decodeNavArg(backStackEntry.arguments?.getString("owner"))
+                val repo = decodeNavArg(backStackEntry.arguments?.getString("repo"))
+                WebhooksScreen(
+                    owner = owner,
+                    repo = repo,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

@@ -71,6 +71,15 @@ sealed class Screen(val route: String) {
     object Lfs : Screen("lfs/{repoPath}") {
         fun createRoute(repoPath: String) = "lfs/${encodeArg(repoPath)}"
     }
+    object Worktree : Screen("worktree/{repoPath}") {
+        fun createRoute(repoPath: String) = "worktree/${encodeArg(repoPath)}"
+    }
+    object Bisect : Screen("bisect/{repoPath}") {
+        fun createRoute(repoPath: String) = "bisect/${encodeArg(repoPath)}"
+    }
+    object Webhooks : Screen("webhooks/{owner}/{repo}") {
+        fun createRoute(owner: String, repo: String) = "webhooks/${encodeArg(owner)}/${encodeArg(repo)}"
+    }
 }
 
 private fun encodeArg(value: String): String = URLEncoder.encode(value, "UTF-8")
