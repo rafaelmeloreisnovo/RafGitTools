@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rafgittools.data.auth.AuthRepository
 import com.rafgittools.data.auth.AuthTokenCache
+import com.rafgittools.data.cache.LocalRepositoryDao
 import com.rafgittools.data.git.JGitService
 import com.rafgittools.data.github.GithubDataRepository
 import com.rafgittools.domain.model.github.GithubUser
@@ -21,7 +22,8 @@ class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val githubRepository: GithubDataRepository,
     private val authTokenCache: AuthTokenCache,
-    private val jGitService: JGitService
+    private val jGitService: JGitService,
+    private val localRepositoryDao: LocalRepositoryDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -92,19 +94,12 @@ class HomeViewModel @Inject constructor(
     private fun loadLocalRepositories() {
         viewModelScope.launch {
             val localRepos = mutableListOf<LocalRepoSummary>()
-            val searchRoots = listOf(
-                File("/sdcard/RafGitTools"),
-                File("/sdcard/git"),
-                File("/storage/emulated/0/RafGitTools")
-            )
-            searchRoots.forEach { root ->
-                if (root.exists() && root.isDirectory) {
-                    root.listFiles()?.forEach { dir ->
-                        if (dir.isDirectory && File(dir, ".git").exists()) {
-                            buildLocalRepoSummary(dir)?.let { localRepos.add(it) }
-                        }
-                    }
-                }
+            val knownEntities = localRepositoryDao.loadAll()
+            val knownFiles = knownEntities
+                .map { File(it.path) }
+                .filter { it.exists() && it.isDirectory }
+            knownFiles.forEach { dir ->
+                buildLocalRepoSummary(dir)?.let { localRepos.add(it) }
             }
             _localRepositories.value = localRepos
             if (_uiState.value == HomeUiState.Loading && !_isAuthenticated.value) {

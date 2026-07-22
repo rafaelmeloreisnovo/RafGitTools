@@ -3,6 +3,8 @@ package com.rafgittools.offline
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.rafgittools.di.SyncOperationEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 import java.io.File
 
 /**
@@ -21,9 +23,18 @@ class SyncWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
-        val queue = buildQueue(applicationContext)
-        val allSucceeded = BackgroundSyncManager.sync(queue)
-        return if (allSucceeded) Result.success() else Result.retry()
+        val ep = EntryPointAccessors.fromApplication(
+            applicationContext,
+            SyncOperationEntryPoint::class.java
+        )
+        SyncOperation.inject(ep.jGitService(), ep.githubApiService())
+        return try {
+            val queue = buildQueue(applicationContext)
+            val allSucceeded = BackgroundSyncManager.sync(queue)
+            if (allSucceeded) Result.success() else Result.retry()
+        } finally {
+            SyncOperation.clearInjection()
+        }
     }
 
     companion object {

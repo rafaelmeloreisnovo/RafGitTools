@@ -1472,15 +1472,27 @@ class JGitService @Inject constructor(
                     oldPath = if (diffEntry.oldPath != "/dev/null") diffEntry.oldPath else null,
                     newPath = if (diffEntry.newPath != "/dev/null") diffEntry.newPath else null,
                     changeType = changeType,
-                    oldContent = null, // Would need to load from repository
-                    newContent = null,
+                    oldContent = runCatching {
+                        val oid = diffEntry.oldId.toObjectId()
+                        if (oid != org.eclipse.jgit.lib.ObjectId.zeroId())
+                            git.repository.open(oid).bytes().toString(Charsets.UTF_8)
+                                .takeUnless { s -> s.take(512).any { c -> c == '\u0000' } }
+                        else null
+                    }.getOrNull(),
+                    newContent = runCatching {
+                        val oid = diffEntry.newId.toObjectId()
+                        if (oid != org.eclipse.jgit.lib.ObjectId.zeroId())
+                            git.repository.open(oid).bytes().toString(Charsets.UTF_8)
+                                .takeUnless { s -> s.take(512).any { c -> c == '\u0000' } }
+                        else null
+                    }.getOrNull(),
                     hunks = hunks
                 )
             }
         }
     }
     }
-    
+
     /**
      * Get diff between two commits
      */
@@ -1531,15 +1543,27 @@ class JGitService @Inject constructor(
                     oldPath = if (diffEntry.oldPath != "/dev/null") diffEntry.oldPath else null,
                     newPath = if (diffEntry.newPath != "/dev/null") diffEntry.newPath else null,
                     changeType = changeType,
-                    oldContent = null,
-                    newContent = null,
+                    oldContent = runCatching {
+                        val oid = diffEntry.oldId.toObjectId()
+                        if (oid != org.eclipse.jgit.lib.ObjectId.zeroId())
+                            git.repository.open(oid).bytes().toString(Charsets.UTF_8)
+                                .takeUnless { s -> s.take(512).any { c -> c == '\u0000' } }
+                        else null
+                    }.getOrNull(),
+                    newContent = runCatching {
+                        val oid = diffEntry.newId.toObjectId()
+                        if (oid != org.eclipse.jgit.lib.ObjectId.zeroId())
+                            git.repository.open(oid).bytes().toString(Charsets.UTF_8)
+                                .takeUnless { s -> s.take(512).any { c -> c == '\u0000' } }
+                        else null
+                    }.getOrNull(),
                     hunks = hunks
                 )
             }
         }
     }
     }
-    
+
     /**
      * Parse diff content into hunks
      */

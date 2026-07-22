@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -31,7 +32,17 @@ fun SettingsScreen(
     val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
     val currentLanguage by viewModel.currentLanguage.collectAsStateWithLifecycle()
     val gitConfig by viewModel.gitConfig.collectAsStateWithLifecycle()
-    
+
+    val uriHandler = LocalUriHandler.current
+    LaunchedEffect(viewModel) {
+        viewModel.navEvent.collect { event ->
+            when (event) {
+                is SettingsNavEvent.OpenUrl -> uriHandler.openUri(event.url)
+                is SettingsNavEvent.OpenLicenses -> { /* Licenses screen not yet built */ }
+            }
+        }
+    }
+
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showGitConfigDialog by remember { mutableStateOf(false) }
     var showCacheDialog by remember { mutableStateOf(false) }

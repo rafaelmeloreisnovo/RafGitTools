@@ -85,7 +85,8 @@ object CacheModule {
             .addMigrations(
                 CacheDatabase.MIGRATION_1_2,
                 CacheDatabase.MIGRATION_2_3,
-                CacheDatabase.MIGRATION_3_4
+                CacheDatabase.MIGRATION_3_4,
+                CacheDatabase.MIGRATION_4_5
             )
             .build()
 
