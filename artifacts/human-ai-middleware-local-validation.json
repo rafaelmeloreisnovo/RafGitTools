@@ -1,0 +1,26 @@
+{
+  "F_gap": [
+    "target runtime operation not executed"
+  ],
+  "F_next": [
+    "execute only after human approval and preserve an immutable runtime receipt"
+  ],
+  "F_ok": [
+    "canonical request parsed",
+    "semantic policy evaluated"
+  ],
+  "adapter_count": 8,
+  "adapter_findings": [],
+  "claim_allowed": false,
+  "exact_git_checkout_execution": "TOKEN_VAZIO",
+  "execution_scope": "LOCAL_EQUIVALENT_SOURCE_POC",
+  "request_findings": [],
+  "request_id": "HAM-20260722-POC001",
+  "request_sha256": "d14c671f509da62bc22a9524593d8fd89ec03fa05e580616c7392c87b3ba10a6",
+  "result": "PASS",
+  "runtime_execution": "TOKEN_VAZIO",
+  "schema": "raf.human-ai.validation-receipt.v1",
+  "source_identity": "TOKEN_VAZIO_UNTIL_EXACT_CHECKOUT_RUN",
+  "tests_observed": "16/16 PASS",
+  "validator_version": "1.0.0"
+}
