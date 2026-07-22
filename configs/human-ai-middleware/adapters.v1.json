@@ -1,0 +1,165 @@
+{
+  "adapters": [
+    {
+      "allowed_effects": ["READ_ONLY", "NETWORK_READ", "LOCAL_WRITE", "GIT_WRITE"],
+      "allowed_inputs": ["intent", "consent", "risk", "evidence"],
+      "allowed_outputs": ["authorized_job", "decision_receipt", "audit_entry"],
+      "contract": {
+        "commit_pin": "fd184197f72b1669102fc76be771d52e02fc3902",
+        "path": "contracts/human-ai-middleware-v1.schema.json",
+        "repository": "rafaelmeloreisnovo/RafGitTools",
+        "version": "1.0.0"
+      },
+      "default_branch": "main",
+      "evidence": {"claim_allowed": false, "implementation_state": "IMPLEMENTED", "runtime_state": "TOKEN_VAZIO"},
+      "forbidden_effects": ["SENSOR_READ", "PUBLIC_WRITE"],
+      "human_control": {"appeal": true, "approval_for_sensitive_data": true, "approval_for_write": true, "revocation": true},
+      "privacy": {"minimization_required": true, "mode": "PRIVATE_FIRST", "public_private_data_allowed": false, "raw_secrets_allowed": false},
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "role": "CONTROL_PLANE",
+      "schema": "raf.human-ai.adapter.v1",
+      "token_vazio": {"loop_budget_enforced": true, "preserved": true, "requires_next_step": true, "requires_reason": true}
+    },
+    {
+      "allowed_effects": ["READ_ONLY", "LOCAL_WRITE"],
+      "allowed_inputs": ["authorized_job", "bounded_source"],
+      "allowed_outputs": ["segments", "validation_report", "runtime_receipt"],
+      "contract": {
+        "commit_pin": "fd184197f72b1669102fc76be771d52e02fc3902",
+        "path": "contracts/human-ai-middleware-v1.schema.json",
+        "repository": "rafaelmeloreisnovo/RafGitTools",
+        "version": "1.0.0"
+      },
+      "default_branch": "main",
+      "evidence": {"claim_allowed": false, "implementation_state": "IMPLEMENTED", "runtime_state": "TOKEN_VAZIO"},
+      "forbidden_effects": ["SENSOR_READ", "GIT_WRITE", "NETWORK_WRITE", "PUBLIC_WRITE"],
+      "human_control": {"appeal": true, "approval_for_sensitive_data": true, "approval_for_write": true, "revocation": true},
+      "privacy": {"minimization_required": true, "mode": "LOCAL_FIRST", "public_private_data_allowed": false, "raw_secrets_allowed": false},
+      "repository": "rafaelmeloreisnovo/RafPolimata",
+      "role": "DETERMINISTIC_STRUCTURER",
+      "schema": "raf.human-ai.adapter.v1",
+      "token_vazio": {"loop_budget_enforced": true, "preserved": true, "requires_next_step": true, "requires_reason": true}
+    },
+    {
+      "allowed_effects": ["READ_ONLY", "LOCAL_WRITE"],
+      "allowed_inputs": ["bounded_filesystem_view", "policy"],
+      "allowed_outputs": ["manifest", "delta", "hash_report"],
+      "contract": {
+        "commit_pin": "fd184197f72b1669102fc76be771d52e02fc3902",
+        "path": "contracts/human-ai-middleware-v1.schema.json",
+        "repository": "rafaelmeloreisnovo/RafGitTools",
+        "version": "1.0.0"
+      },
+      "default_branch": "main",
+      "evidence": {"claim_allowed": false, "implementation_state": "PARTIAL", "runtime_state": "TOKEN_VAZIO"},
+      "forbidden_effects": ["SENSOR_READ", "GIT_WRITE", "NETWORK_WRITE", "PUBLIC_WRITE"],
+      "human_control": {"appeal": true, "approval_for_sensitive_data": true, "approval_for_write": true, "revocation": true},
+      "privacy": {"minimization_required": true, "mode": "LOCAL_FIRST", "public_private_data_allowed": false, "raw_secrets_allowed": false},
+      "repository": "rafaelmeloreisnovo/GAIA_phi",
+      "role": "SENSOR_MANIFEST",
+      "schema": "raf.human-ai.adapter.v1",
+      "token_vazio": {"loop_budget_enforced": true, "preserved": true, "requires_next_step": true, "requires_reason": true}
+    },
+    {
+      "allowed_effects": ["READ_ONLY", "LOCAL_WRITE"],
+      "allowed_inputs": ["bounded_artifacts", "retention_policy"],
+      "allowed_outputs": ["sealed_archive", "content_manifest", "integrity_report"],
+      "contract": {
+        "commit_pin": "fd184197f72b1669102fc76be771d52e02fc3902",
+        "path": "contracts/human-ai-middleware-v1.schema.json",
+        "repository": "rafaelmeloreisnovo/RafGitTools",
+        "version": "1.0.0"
+      },
+      "default_branch": "main",
+      "evidence": {"claim_allowed": false, "implementation_state": "PARTIAL", "runtime_state": "TOKEN_VAZIO"},
+      "forbidden_effects": ["SENSOR_READ", "GIT_WRITE", "NETWORK_WRITE", "PUBLIC_WRITE"],
+      "human_control": {"appeal": true, "approval_for_sensitive_data": true, "approval_for_write": true, "revocation": true},
+      "privacy": {"minimization_required": true, "mode": "PRIVATE_FIRST", "public_private_data_allowed": false, "raw_secrets_allowed": false},
+      "repository": "rafaelmeloreisnovo/ZIPRAF_OMEGA_FULL",
+      "role": "ARCHIVE_INTEGRITY",
+      "schema": "raf.human-ai.adapter.v1",
+      "token_vazio": {"loop_budget_enforced": true, "preserved": true, "requires_next_step": true, "requires_reason": true}
+    },
+    {
+      "allowed_effects": ["READ_ONLY"],
+      "allowed_inputs": ["redacted_segments", "provenance", "question"],
+      "allowed_outputs": ["candidate_relations", "summary", "uncertainty"],
+      "contract": {
+        "commit_pin": "fd184197f72b1669102fc76be771d52e02fc3902",
+        "path": "contracts/human-ai-middleware-v1.schema.json",
+        "repository": "rafaelmeloreisnovo/RafGitTools",
+        "version": "1.0.0"
+      },
+      "default_branch": "master",
+      "evidence": {"claim_allowed": false, "implementation_state": "PARTIAL", "runtime_state": "TOKEN_VAZIO"},
+      "forbidden_effects": ["SENSOR_READ", "LOCAL_WRITE", "GIT_WRITE", "NETWORK_WRITE", "PUBLIC_WRITE"],
+      "human_control": {"appeal": true, "approval_for_sensitive_data": true, "approval_for_write": true, "revocation": true},
+      "privacy": {"minimization_required": true, "mode": "SEGMENTS_ONLY", "public_private_data_allowed": false, "raw_secrets_allowed": false},
+      "repository": "rafaelmeloreisnovo/llamaRafaelia",
+      "role": "SEMANTIC_INTERPRETER",
+      "schema": "raf.human-ai.adapter.v1",
+      "token_vazio": {"loop_budget_enforced": true, "preserved": true, "requires_next_step": true, "requires_reason": true}
+    },
+    {
+      "allowed_effects": ["READ_ONLY", "LOCAL_WRITE"],
+      "allowed_inputs": ["consent_record", "retention_policy", "private_receipt"],
+      "allowed_outputs": ["policy_decision", "revocation_record", "audit_index"],
+      "contract": {
+        "commit_pin": "fd184197f72b1669102fc76be771d52e02fc3902",
+        "path": "contracts/human-ai-middleware-v1.schema.json",
+        "repository": "rafaelmeloreisnovo/RafGitTools",
+        "version": "1.0.0"
+      },
+      "default_branch": "main",
+      "evidence": {"claim_allowed": false, "implementation_state": "PARTIAL", "runtime_state": "TOKEN_VAZIO"},
+      "forbidden_effects": ["SENSOR_READ", "GIT_WRITE", "NETWORK_WRITE", "PUBLIC_WRITE"],
+      "human_control": {"appeal": true, "approval_for_sensitive_data": true, "approval_for_write": true, "revocation": true},
+      "privacy": {"minimization_required": true, "mode": "PRIVATE_FIRST", "public_private_data_allowed": false, "raw_secrets_allowed": false},
+      "repository": "rafaelmeloreisnovo/Rafaelia_Private",
+      "role": "PRIVATE_POLICY_VAULT",
+      "schema": "raf.human-ai.adapter.v1",
+      "token_vazio": {"loop_budget_enforced": true, "preserved": true, "requires_next_step": true, "requires_reason": true}
+    },
+    {
+      "allowed_effects": ["READ_ONLY", "NETWORK_READ", "LOCAL_WRITE", "GIT_WRITE", "NETWORK_WRITE"],
+      "allowed_inputs": ["authorized_job", "adapter_policy"],
+      "allowed_outputs": ["execution_receipt", "stdout_hash", "stderr_hash"],
+      "contract": {
+        "commit_pin": "fd184197f72b1669102fc76be771d52e02fc3902",
+        "path": "contracts/human-ai-middleware-v1.schema.json",
+        "repository": "rafaelmeloreisnovo/RafGitTools",
+        "version": "1.0.0"
+      },
+      "default_branch": "master",
+      "evidence": {"claim_allowed": false, "implementation_state": "PARTIAL", "runtime_state": "TOKEN_VAZIO"},
+      "forbidden_effects": ["SENSOR_READ", "PUBLIC_WRITE"],
+      "human_control": {"appeal": true, "approval_for_sensitive_data": true, "approval_for_write": true, "revocation": true},
+      "privacy": {"minimization_required": true, "mode": "LOCAL_FIRST", "public_private_data_allowed": false, "raw_secrets_allowed": false},
+      "repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "role": "LOCAL_RUNTIME_BROKER",
+      "schema": "raf.human-ai.adapter.v1",
+      "token_vazio": {"loop_budget_enforced": true, "preserved": true, "requires_next_step": true, "requires_reason": true}
+    },
+    {
+      "allowed_effects": ["READ_ONLY", "SENSOR_READ", "LOCAL_WRITE"],
+      "allowed_inputs": ["authorized_capability_request", "consent_record"],
+      "allowed_outputs": ["bounded_sensor_result", "capability_receipt"],
+      "contract": {
+        "commit_pin": "fd184197f72b1669102fc76be771d52e02fc3902",
+        "path": "contracts/human-ai-middleware-v1.schema.json",
+        "repository": "rafaelmeloreisnovo/RafGitTools",
+        "version": "1.0.0"
+      },
+      "default_branch": "master",
+      "evidence": {"claim_allowed": false, "implementation_state": "PARTIAL", "runtime_state": "TOKEN_VAZIO"},
+      "forbidden_effects": ["GIT_WRITE", "NETWORK_WRITE", "PUBLIC_WRITE"],
+      "human_control": {"appeal": true, "approval_for_sensitive_data": true, "approval_for_write": true, "revocation": true},
+      "privacy": {"minimization_required": true, "mode": "CONSENT_PER_CAPABILITY", "public_private_data_allowed": false, "raw_secrets_allowed": false},
+      "repository": "rafaelmeloreisnovo/termux-api_rafcodephi",
+      "role": "ANDROID_CAPABILITY_ADAPTER",
+      "schema": "raf.human-ai.adapter.v1",
+      "token_vazio": {"loop_budget_enforced": true, "preserved": true, "requires_next_step": true, "requires_reason": true}
+    }
+  ],
+  "schema": "raf.human-ai.adapter-registry.v1"
+}
