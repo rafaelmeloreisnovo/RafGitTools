@@ -368,7 +368,13 @@ class PrivacyManager(
                 ?.map { repoDir ->
                     RepositoryExport(
                         name = repoDir.name,
-                        url = "", // Would need to read from .git/config
+                        url = runCatching {
+                            org.eclipse.jgit.storage.file.FileRepositoryBuilder()
+                                .setGitDir(File(repoDir, ".git"))
+                                .readEnvironment()
+                                .build()
+                                .use { repo -> repo.config.getString("remote", "origin", "url") ?: "" }
+                        }.getOrDefault("")
                         localPath = repoDir.absolutePath,
                         createdDate = Date(repoDir.lastModified()),
                         lastAccessed = Date(repoDir.lastModified()),

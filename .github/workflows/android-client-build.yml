@@ -18,8 +18,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GITHUB_CLIENT_ID_DEV: ${{ vars.GITHUB_CLIENT_ID_DEV }}
-  GITHUB_CLIENT_ID_PRODUCTION: ${{ vars.GITHUB_CLIENT_ID_PRODUCTION }}
+  APP_CLIENT_ID_DEV: ${{ vars.APP_CLIENT_ID_DEV }}
+  APP_CLIENT_ID_PRODUCTION: ${{ vars.APP_CLIENT_ID_PRODUCTION }}
   GRADLE_OPTS: -Dorg.gradle.daemon=false -Dkotlin.incremental=false
 
 jobs:
@@ -49,8 +49,8 @@ jobs:
         run: |
           java -version
           ./gradlew --version
-          echo "OAuth dev client configured: ${{ vars.GITHUB_CLIENT_ID_DEV != '' }}"
-          echo "OAuth production client configured: ${{ vars.GITHUB_CLIENT_ID_PRODUCTION != '' }}"
+          echo "OAuth dev client configured: ${{ vars.APP_CLIENT_ID_DEV != '' }}"
+          echo "OAuth production client configured: ${{ vars.APP_CLIENT_ID_PRODUCTION != '' }}"
 
       - name: Run authentication unit tests
         run: ./gradlew --no-daemon testDevDebugUnitTest --tests 'com.rafgittools.ui.screens.auth.*' --stacktrace

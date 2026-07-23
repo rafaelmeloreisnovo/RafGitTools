@@ -42,7 +42,7 @@ CC   := riscv64-linux-gnu-gcc
 AS   := $(CC)
 LD   := $(CC)
 OUT  := raf_client_riscv64
-DEFS := -march=rv64gc -mabi=lp64d
+DEFS := -D__riscv -D__riscv_xlen=64 -march=rv64gc -mabi=lp64d
 endif
 
 SRC  := raf_client.c raf_client_start.S

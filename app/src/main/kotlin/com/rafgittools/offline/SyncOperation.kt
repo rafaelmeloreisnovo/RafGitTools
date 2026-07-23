@@ -49,13 +49,52 @@ sealed class SyncOperation : BackgroundSyncManager.QueueItem {
         val method: String,
         val bodyJson: String,
     ) : SyncOperation() {
+        @Suppress("UNCHECKED_CAST")
         override fun execute(): Result<Unit> {
-            githubApiService ?: return Result.failure(
+            val svc = githubApiService ?: return Result.failure(
                 IllegalStateException("GithubApiService not injected — call SyncOperation.inject() before sync")
             )
-            // Queued GitHub API calls are fire-and-forget; actual dispatch requires
-            // a typed dispatcher keyed on endpoint. Currently acknowledged as queued.
-            return Result.success(Unit)
+            return runBlocking {
+                runCatching {
+                    val parts = endpoint.trimStart('/').split('/')
+                    when {
+                        method == "GET" && endpoint.trimStart('/') == "user" ->
+                            svc.getAuthenticatedUser()
+                        method == "GET" && endpoint.trimStart('/') == "user/repos" ->
+                            svc.getUserRepositories()
+                        method == "GET" && parts.size == 2 && parts[0] == "users" ->
+                            svc.getUser(parts[1])
+                        method == "GET" && parts.size >= 4 && parts[2] == "issues" ->
+                            svc.getIssues(parts[0], parts[1])
+                        method == "GET" && parts.size >= 4 && parts[2] == "pulls" ->
+                            svc.getPullRequests(parts[0], parts[1])
+                        method == "POST" && parts.size == 4 && parts[2] == "issues" -> {
+                            val body = gson.fromJson(bodyJson, Map::class.java) as Map<String, Any>
+                            svc.createIssue(
+                                owner = parts[0], repo = parts[1],
+                                issue = com.rafgittools.data.github.CreateIssueRequest(
+                                    title = body["title"] as? String ?: "",
+                                    body = body["body"] as? String,
+                                    labels = (body["labels"] as? List<*>)?.filterIsInstance<String>(),
+                                    assignees = (body["assignees"] as? List<*>)?.filterIsInstance<String>()
+                                )
+                            )
+                        }
+                        method == "POST" && parts.size == 5 && parts[2] == "issues" && parts[4] == "comments" -> {
+                            val body = gson.fromJson(bodyJson, Map::class.java) as Map<String, Any>
+                            svc.createIssueComment(
+                                owner = parts[0], repo = parts[1],
+                                issueNumber = parts[3].toInt(),
+                                comment = com.rafgittools.data.github.CreateCommentRequest(
+                                    body = body["body"] as? String ?: ""
+                                )
+                            )
+                        }
+                        else -> throw UnsupportedOperationException("No typed handler for $method $endpoint")
+                    }
+                    Unit
+                }
+            }
         }
     }
 
