@@ -22,8 +22,8 @@ on:
         type: string
 
 env:
-  GITHUB_CLIENT_ID_DEV: ${{ vars.GITHUB_CLIENT_ID_DEV || 'local-dev-client-id' }}
-  GITHUB_CLIENT_ID_PRODUCTION: ${{ vars.GITHUB_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
+  APP_CLIENT_ID_DEV: ${{ vars.APP_CLIENT_ID_DEV || 'local-dev-client-id' }}
+  APP_CLIENT_ID_PRODUCTION: ${{ vars.APP_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
   ALLOW_UNSIGNED_RELEASE: "false"
 
 jobs:
@@ -125,4 +125,4 @@ jobs:
           echo "- Build oficial exige assinatura obrigatória (ALLOW_UNSIGNED_RELEASE=false)." >> "$GITHUB_STEP_SUMMARY"
           echo "- Segredos obrigatórios: RELEASE_STORE_FILE_BASE64, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD." >> "$GITHUB_STEP_SUMMARY"
           echo "- Para validação unsigned, use o workflow interno internal-validation.yml." >> "$GITHUB_STEP_SUMMARY"
-          echo "- Variáveis recomendadas: vars.GITHUB_CLIENT_ID_DEV e vars.GITHUB_CLIENT_ID_PRODUCTION." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Variáveis recomendadas: vars.APP_CLIENT_ID_DEV e vars.APP_CLIENT_ID_PRODUCTION." >> "$GITHUB_STEP_SUMMARY"

@@ -20,8 +20,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GITHUB_CLIENT_ID_DEV: ${{ vars.GITHUB_CLIENT_ID_DEV }}
-  GITHUB_CLIENT_ID_PRODUCTION: ${{ vars.GITHUB_CLIENT_ID_PRODUCTION }}
+  APP_CLIENT_ID_DEV: ${{ vars.APP_CLIENT_ID_DEV }}
+  APP_CLIENT_ID_PRODUCTION: ${{ vars.APP_CLIENT_ID_PRODUCTION }}
 
 jobs:
   android-client:
