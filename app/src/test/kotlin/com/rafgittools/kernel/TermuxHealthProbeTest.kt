@@ -7,6 +7,7 @@ import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
+import java.net.URI
 import java.net.URL
 
 class TermuxHealthProbeTest {
@@ -39,7 +40,7 @@ class TermuxHealthProbeTest {
     @Test
     fun probe_returnsPassForSuccessfulBoundedResponse() {
         val connection = FakeConnection(
-            url = URL("http://127.0.0.1:8765/health"),
+            url = URI("http://127.0.0.1:8765/health").toURL(),
             code = 200,
             payload = "{\"status\":\"ok\"}".toByteArray(),
         )
@@ -63,7 +64,7 @@ class TermuxHealthProbeTest {
     @Test
     fun probe_returnsFailWhenRuntimeAnswersUnhealthy() {
         val connection = FakeConnection(
-            url = URL("http://127.0.0.1:8765/health"),
+            url = URI("http://127.0.0.1:8765/health").toURL(),
             code = 503,
             payload = "degraded".toByteArray(),
         )
@@ -83,7 +84,7 @@ class TermuxHealthProbeTest {
     @Test
     fun probe_preservesUnreachableRuntimeAsTokenVazio() {
         val connection = FakeConnection(
-            url = URL("http://127.0.0.1:8765/health"),
+            url = URI("http://127.0.0.1:8765/health").toURL(),
             code = 0,
             payload = byteArrayOf(),
             responseFailure = IOException("connection refused"),
@@ -122,7 +123,7 @@ class TermuxHealthProbeTest {
     fun responseBodyIsBoundedToFourKilobytes() {
         val payload = ByteArray(TermuxHealthProbe.MAX_BODY_BYTES + 512) { 'x'.code.toByte() }
         val connection = FakeConnection(
-            url = URL("http://127.0.0.1:8765/health"),
+            url = URI("http://127.0.0.1:8765/health").toURL(),
             code = 200,
             payload = payload,
         )
