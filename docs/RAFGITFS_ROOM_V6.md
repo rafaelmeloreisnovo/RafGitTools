@@ -149,11 +149,18 @@ Os testes Android cobrem:
 
 ## 8. Evidência remota observada
 
-No HEAD do Prompt 2, os workflows foram criados e encerrados como `failure`, porém os jobs centrais retornaram:
+Workflow: `RafGitFS Room V6 Validation`
 
 ```yaml
-steps: null
-logs_url: null
+run_id: 30157418563
+conclusion: failure
+android_room_compile:
+  job_id: 89677446212
+  steps: []
+structural_gates:
+  job_id: 89677446229
+  steps: []
+logs: BlobNotFound
 classification: ZERO_STEP_NO_LOGS
 remote_pass: false
 code_failure_demonstrated: false
