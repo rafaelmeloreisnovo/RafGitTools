@@ -1,6 +1,13 @@
 package com.rafgittools.rafgitfs.sync
 
 object RafGitFsDiffPlanner {
+    private val branchActions = setOf(
+        RafGitFsPlannedAction.CREATE_BRANCH,
+        RafGitFsPlannedAction.CREATE_COMMIT,
+        RafGitFsPlannedAction.PUSH_BRANCH,
+        RafGitFsPlannedAction.OPEN_PULL_REQUEST
+    )
+
     fun diff(observed: List<RafGitFsObservedFile>): List<RafGitFsDiffItem> = observed
         .distinctBy { it.path }
         .sortedBy { it.path }
@@ -31,75 +38,70 @@ object RafGitFsDiffPlanner {
         generatedAt: Long = System.currentTimeMillis(),
         workspaceId: String? = null
     ): RafGitFsSyncPlan {
-        val steps = diffs.sortedBy { it.path }.mapIndexed { index, diff ->
-            toStep(index + 1, diff, requestedAction, workspaceId)
-        }.ifEmpty {
-            listOf(
+        val conflicts = diffs.filter { it.conflict }
+        val steps = when {
+            requestedAction in branchActions -> remoteSequence(baseCommitSha, workspaceId)
+            diffs.isEmpty() -> listOf(
                 RafGitFsPlanStep(
                     1, RafGitFsPlannedAction.NO_OP, null, RafGitFsOperationRisk.READ_ONLY,
                     baseCommitSha, baseCommitSha, false, true, "NO_DIFFERENCE_OBSERVED"
                 )
             )
+            else -> diffs.sortedBy { it.path }.mapIndexed { index, item ->
+                localStep(index + 1, item, requestedAction)
+            }
         }
-        val conflicts = diffs.filter { it.conflict }
         val payload = RafGitFsCanonical.planPayload(
             requestId, profileId, repositoryFullName, refName,
             baseCommitSha, steps, conflicts, generatedAt, workspaceId
         )
         return RafGitFsSyncPlan(
-            requestId = requestId,
-            profileId = profileId,
-            repositoryFullName = repositoryFullName,
-            refName = refName,
-            baseCommitSha = baseCommitSha,
-            steps = steps,
-            conflicts = conflicts,
-            generatedAt = generatedAt,
-            planHash = RafGitFsCanonical.sha256(payload),
-            workspaceId = workspaceId,
-            claimAllowed = false
+            requestId, profileId, repositoryFullName, refName, baseCommitSha,
+            steps, conflicts, generatedAt, RafGitFsCanonical.sha256(payload), workspaceId, false
         )
     }
 
-    private fun toStep(
-        order: Int,
-        diff: RafGitFsDiffItem,
-        requestedAction: RafGitFsPlannedAction,
-        workspaceId: String?
-    ): RafGitFsPlanStep {
-        if (diff.conflict) {
-            return RafGitFsPlanStep(
-                order, requestedAction, diff.path, riskFor(requestedAction),
-                diff.localSha, diff.remoteSha, true, false, "CONFLICT_${diff.kind.name}"
-            )
-        }
-        val risk = riskFor(requestedAction)
-        val local = requestedAction in setOf(
-            RafGitFsPlannedAction.NO_OP,
-            RafGitFsPlannedAction.CACHE_DOWNLOAD,
-            RafGitFsPlannedAction.PIN_OFFLINE,
-            RafGitFsPlannedAction.REMOVE_LOCAL_CACHE,
-            RafGitFsPlannedAction.CREATE_WORKSPACE,
-            RafGitFsPlannedAction.WRITE_WORKSPACE_FILE
-        )
-        val branchWrite = requestedAction in setOf(
+    private fun remoteSequence(baseCommitSha: String?, workspaceId: String?): List<RafGitFsPlanStep> {
+        val executable = workspaceId != null && !baseCommitSha.isNullOrBlank()
+        val reason = if (executable) "GOVERNED_BRANCH_CAPABILITY_AVAILABLE" else "WORKSPACE_AND_BASE_SHA_REQUIRED"
+        return listOf(
             RafGitFsPlannedAction.CREATE_BRANCH,
             RafGitFsPlannedAction.CREATE_COMMIT,
             RafGitFsPlannedAction.PUSH_BRANCH,
             RafGitFsPlannedAction.OPEN_PULL_REQUEST
-        )
-        val executable = local || (branchWrite && workspaceId != null)
+        ).mapIndexed { index, action ->
+            RafGitFsPlanStep(
+                order = index + 1,
+                action = action,
+                path = null,
+                risk = RafGitFsOperationRisk.REMOTE_BRANCH_WRITE,
+                baseSha = baseCommitSha,
+                observedSha = baseCommitSha,
+                requiresApproval = true,
+                executableNow = executable,
+                reason = reason
+            )
+        }
+    }
+
+    private fun localStep(
+        order: Int,
+        diff: RafGitFsDiffItem,
+        action: RafGitFsPlannedAction
+    ): RafGitFsPlanStep {
+        if (diff.conflict) {
+            return RafGitFsPlanStep(
+                order, action, diff.path, riskFor(action), diff.localSha, diff.remoteSha,
+                true, false, "CONFLICT_${diff.kind.name}"
+            )
+        }
+        val risk = riskFor(action)
+        val executable = action != RafGitFsPlannedAction.DELETE_REMOTE
         return RafGitFsPlanStep(
-            order, requestedAction, diff.path, risk, diff.localSha, diff.remoteSha,
+            order, action, diff.path, risk, diff.localSha, diff.remoteSha,
             requiresApproval = risk != RafGitFsOperationRisk.READ_ONLY,
             executableNow = executable,
-            reason = when {
-                requestedAction == RafGitFsPlannedAction.NO_OP -> "OBSERVED_EQUAL"
-                local -> "LOCAL_CAPABILITY_AVAILABLE"
-                branchWrite && workspaceId != null -> "GOVERNED_BRANCH_CAPABILITY_AVAILABLE"
-                branchWrite -> "WORKSPACE_REQUIRED"
-                else -> "DESTRUCTIVE_REMOTE_PERMANENTLY_BLOCKED"
-            }
+            reason = if (executable) "LOCAL_CAPABILITY_AVAILABLE" else "DESTRUCTIVE_REMOTE_PERMANENTLY_BLOCKED"
         )
     }
 
@@ -110,10 +112,7 @@ object RafGitFsDiffPlanner {
         RafGitFsPlannedAction.REMOVE_LOCAL_CACHE,
         RafGitFsPlannedAction.CREATE_WORKSPACE,
         RafGitFsPlannedAction.WRITE_WORKSPACE_FILE -> RafGitFsOperationRisk.LOCAL_MUTATION
-        RafGitFsPlannedAction.CREATE_BRANCH,
-        RafGitFsPlannedAction.CREATE_COMMIT,
-        RafGitFsPlannedAction.PUSH_BRANCH,
-        RafGitFsPlannedAction.OPEN_PULL_REQUEST -> RafGitFsOperationRisk.REMOTE_BRANCH_WRITE
+        in branchActions -> RafGitFsOperationRisk.REMOTE_BRANCH_WRITE
         RafGitFsPlannedAction.DELETE_REMOTE -> RafGitFsOperationRisk.DESTRUCTIVE_REMOTE
     }
 }
