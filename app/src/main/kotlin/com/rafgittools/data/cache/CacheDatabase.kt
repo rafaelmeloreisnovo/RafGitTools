@@ -112,7 +112,6 @@ abstract class CacheDatabase : RoomDatabase() {
             RafGitFsRoomV6.TO_VERSION
         ) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("PRAGMA foreign_keys=ON")
                 RafGitFsRoomV6.createStatements.forEach(database::execSQL)
             }
         }
