@@ -3,8 +3,7 @@ name: RafGitFS Validation
 on:
   workflow_dispatch:
   push:
-    branches:
-      - 'feature/rafgitfs-*'
+    branches: ['feature/rafgitfs-*']
     paths:
       - 'app/src/main/kotlin/com/rafgittools/rafgitfs/**'
       - 'app/src/main/kotlin/com/rafgittools/ui/screens/rafgitfs/**'
@@ -46,43 +45,37 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
+        with: { persist-credentials: false }
       - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
+        with: { python-version: '3.12' }
       - name: Validate Prompt 1 foundation
         run: python3 scripts/validate_rafgitfs_foundation.py
-
       - name: Test Prompt 1 foundation
         run: python3 -m unittest tests/test_validate_rafgitfs_foundation.py -v
-
       - name: Validate Room v6
         run: python3 scripts/validate_rafgitfs_room_v6.py --write-report artifacts/rafgitfs-room-v6-validation.json
-
       - name: Test Room v6 adversarial gate
         run: python3 -m unittest tests/test_validate_rafgitfs_room_v6.py -v
-
       - name: Validate Prompt 3 GitHub engine
         run: python3 scripts/validate_rafgitfs_github_engine.py --write-report artifacts/rafgitfs-github-engine-validation.json
-
       - name: Test Prompt 3 adversarial gate
         run: python3 -m unittest tests/test_validate_rafgitfs_github_engine.py -v
-
       - name: Validate Prompt 4 Compose UI
         run: python3 scripts/validate_rafgitfs_ui.py --write-report artifacts/rafgitfs-ui-validation.json
-
       - name: Test Prompt 4 adversarial gate
         run: python3 -m unittest tests/test_validate_rafgitfs_ui.py -v
-
       - name: Validate Prompt 5 cache and offline
         run: python3 scripts/validate_rafgitfs_cache_offline.py --write-report artifacts/rafgitfs-cache-offline-validation.json
-
       - name: Test Prompt 5 adversarial gate
         run: python3 -m unittest tests/test_validate_rafgitfs_cache_offline.py -v
-
+      - name: Validate Prompt 6 governed sync
+        run: python3 scripts/validate_rafgitfs_governed_sync.py --write-report artifacts/rafgitfs-governed-sync-validation.json
+      - name: Test Prompt 6 adversarial gate
+        run: python3 -m unittest tests/test_validate_rafgitfs_governed_sync.py -v
+      - name: Validate Prompt 7 governed Git write
+        run: python3 scripts/validate_rafgitfs_git_write.py --write-report artifacts/rafgitfs-git-write-validation.json
+      - name: Test Prompt 7 adversarial gate
+        run: python3 -m unittest tests/test_validate_rafgitfs_git_write.py -v
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -96,24 +89,19 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
+        with: { persist-credentials: false }
       - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
+        with: { distribution: temurin, java-version: '17' }
       - uses: gradle/actions/setup-gradle@v4
-
       - name: Compile devDebug Kotlin, Compose and Room KSP
         run: ./gradlew --no-daemon :app:compileDevDebugKotlin
-
       - name: Test Prompt 3 JVM engine
         run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsGithubEngineTest*'
-
       - name: Test Prompt 4 UI path invariants
         run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsUiPathsTest*'
-
       - name: Test Prompt 5 cache core
         run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsCacheCoreTest*'
+      - name: Test Prompt 6 governed sync
+        run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsGovernedSyncTest*'
+      - name: Test Prompt 7 write contracts
+        run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsWriteContractsTest*'
