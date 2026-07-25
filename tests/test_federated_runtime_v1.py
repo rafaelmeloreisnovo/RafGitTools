@@ -39,6 +39,12 @@ class FederatedRuntimeContractTest(unittest.TestCase):
         with self.assertRaises(MODULE.ContractError):
             MODULE.validate_contract(data)
 
+    def test_receipt_field_removal_is_rejected(self):
+        data = self.load_contract()
+        data["required_receipt_fields"].remove("output_sha256")
+        with self.assertRaises(MODULE.ContractError):
+            MODULE.validate_contract(data)
+
 
 if __name__ == "__main__":
     unittest.main()
