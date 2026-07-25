@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafgittools.local/contracts/rafgitfs-operation-receipt-v1.schema.json",
+  "title": "RafGitFS Operation Receipt V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "request_id",
+    "profile_id",
+    "operation",
+    "terminal_phase",
+    "success",
+    "risk_level",
+    "request_sha256",
+    "f_ok",
+    "f_gap",
+    "f_next",
+    "epistemic_state",
+    "claim_allowed",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "receipt_id": { "type": "string", "minLength": 3, "maxLength": 128 },
+    "request_id": { "type": "string", "minLength": 3, "maxLength": 128 },
+    "profile_id": { "type": "string", "minLength": 3, "maxLength": 64 },
+    "operation": {
+      "enum": [
+        "LIST_REPOSITORIES",
+        "LIST_REFS",
+        "LIST_TREE",
+        "READ_CONTENT",
+        "CACHE_CONTENT",
+        "PIN_OFFLINE",
+        "CREATE_WORKSPACE",
+        "STAGE_CHANGE",
+        "CREATE_BRANCH",
+        "COMMIT",
+        "PUSH",
+        "OPEN_PULL_REQUEST",
+        "DELETE"
+      ]
+    },
+    "terminal_phase": { "enum": ["RECEIPT"] },
+    "success": { "type": "boolean" },
+    "risk_level": { "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
+    "request_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "result_sha256": {
+      "oneOf": [
+        { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        { "type": "null" }
+      ]
+    },
+    "remote_before_sha": { "type": ["string", "null"] },
+    "remote_after_sha": { "type": ["string", "null"] },
+    "f_ok": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "f_gap": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "f_next": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "epistemic_state": { "enum": ["OBSERVED", "CONVENTION", "HYPOTHESIS", "TOKEN_VAZIO"] },
+    "claim_allowed": { "const": false },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "success": { "const": true } } },
+      "then": {
+        "required": ["result_sha256"],
+        "properties": { "result_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" } }
+      }
+    },
+    {
+      "if": { "properties": { "epistemic_state": { "const": "TOKEN_VAZIO" } } },
+      "then": {
+        "properties": {
+          "f_gap": { "minItems": 1 },
+          "f_next": { "minItems": 1 }
+        }
+      }
+    }
+  ]
+}
