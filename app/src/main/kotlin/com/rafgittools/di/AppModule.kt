@@ -2,20 +2,29 @@ package com.rafgittools.di
 
 import android.content.Context
 import androidx.room.Room
-import com.google.gson.GsonBuilder
 import com.google.gson.FieldNamingPolicy
+import com.google.gson.GsonBuilder
 import com.rafgittools.BuildConfig
 import com.rafgittools.data.auth.AuthInterceptor
 import com.rafgittools.data.cache.CacheDao
 import com.rafgittools.data.cache.CacheDatabase
+import com.rafgittools.data.cache.LocalRepositoryDao
 import com.rafgittools.data.cache.RepositoryNameCacheDao
 import com.rafgittools.data.cache.UserCacheDao
-import com.rafgittools.data.cache.LocalRepositoryDao
-import com.rafgittools.offline.OfflineOperationDao
-import com.rafgittools.offline.RoomOfflineQueueStorage
 import com.rafgittools.data.github.GithubApiService
 import com.rafgittools.data.repository.GitRepositoryImpl
 import com.rafgittools.domain.repository.GitRepository
+import com.rafgittools.offline.OfflineOperationDao
+import com.rafgittools.offline.RoomOfflineQueueStorage
+import com.rafgittools.rafgitfs.data.ContentCacheDao
+import com.rafgittools.rafgitfs.data.OperationReceiptDao
+import com.rafgittools.rafgitfs.data.RepositoryRefDao
+import com.rafgittools.rafgitfs.data.StagedOperationDao
+import com.rafgittools.rafgitfs.data.StorageProfileDao
+import com.rafgittools.rafgitfs.data.SyncConflictDao
+import com.rafgittools.rafgitfs.data.TransferJobDao
+import com.rafgittools.rafgitfs.data.VirtualTreeDao
+import com.rafgittools.rafgitfs.data.WorkspaceDao
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -86,7 +95,8 @@ object CacheModule {
                 CacheDatabase.MIGRATION_1_2,
                 CacheDatabase.MIGRATION_2_3,
                 CacheDatabase.MIGRATION_3_4,
-                CacheDatabase.MIGRATION_4_5
+                CacheDatabase.MIGRATION_4_5,
+                CacheDatabase.MIGRATION_5_6
             )
             .build()
 
@@ -108,6 +118,33 @@ object CacheModule {
 
     @Provides @Singleton
     fun provideLocalRepositoryDao(db: CacheDatabase): LocalRepositoryDao = db.localRepositoryDao()
+
+    @Provides @Singleton
+    fun provideStorageProfileDao(db: CacheDatabase): StorageProfileDao = db.storageProfileDao()
+
+    @Provides @Singleton
+    fun provideRepositoryRefDao(db: CacheDatabase): RepositoryRefDao = db.repositoryRefDao()
+
+    @Provides @Singleton
+    fun provideVirtualTreeDao(db: CacheDatabase): VirtualTreeDao = db.virtualTreeDao()
+
+    @Provides @Singleton
+    fun provideContentCacheDao(db: CacheDatabase): ContentCacheDao = db.contentCacheDao()
+
+    @Provides @Singleton
+    fun provideWorkspaceDao(db: CacheDatabase): WorkspaceDao = db.workspaceDao()
+
+    @Provides @Singleton
+    fun provideTransferJobDao(db: CacheDatabase): TransferJobDao = db.transferJobDao()
+
+    @Provides @Singleton
+    fun provideStagedOperationDao(db: CacheDatabase): StagedOperationDao = db.stagedOperationDao()
+
+    @Provides @Singleton
+    fun provideSyncConflictDao(db: CacheDatabase): SyncConflictDao = db.syncConflictDao()
+
+    @Provides @Singleton
+    fun provideOperationReceiptDao(db: CacheDatabase): OperationReceiptDao = db.operationReceiptDao()
 }
 
 @Module

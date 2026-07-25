@@ -6,12 +6,31 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.rafgittools.offline.OfflineOperationDao
 import com.rafgittools.offline.OfflineOperationEntity
+import com.rafgittools.rafgitfs.data.ContentCacheDao
+import com.rafgittools.rafgitfs.data.ContentCacheEntity
+import com.rafgittools.rafgitfs.data.OperationReceiptDao
+import com.rafgittools.rafgitfs.data.OperationReceiptEntity
+import com.rafgittools.rafgitfs.data.RafGitFsRoomV6
+import com.rafgittools.rafgitfs.data.RepositoryRefDao
+import com.rafgittools.rafgitfs.data.RepositoryRefEntity
+import com.rafgittools.rafgitfs.data.StagedOperationDao
+import com.rafgittools.rafgitfs.data.StagedOperationEntity
+import com.rafgittools.rafgitfs.data.StorageProfileDao
+import com.rafgittools.rafgitfs.data.StorageProfileEntity
+import com.rafgittools.rafgitfs.data.SyncConflictDao
+import com.rafgittools.rafgitfs.data.SyncConflictEntity
+import com.rafgittools.rafgitfs.data.TransferJobDao
+import com.rafgittools.rafgitfs.data.TransferJobEntity
+import com.rafgittools.rafgitfs.data.VirtualTreeDao
+import com.rafgittools.rafgitfs.data.VirtualTreeEntryEntity
+import com.rafgittools.rafgitfs.data.WorkspaceDao
+import com.rafgittools.rafgitfs.data.WorkspaceEntity
 
 /**
- * Room database for caching
+ * Room database for caching and RafGitFS local metadata.
  *
- * Contains tables for caching repository names, user data, generic content,
- * durable offline operations, and local repository sync state.
+ * GitHub remains the remote authority. Room is a reconstructible local index,
+ * bounded content-cache registry, operation queue and append-only receipt store.
  */
 @Database(
     entities = [
@@ -19,9 +38,18 @@ import com.rafgittools.offline.OfflineOperationEntity
         RepositoryNameCache::class,
         UserCache::class,
         OfflineOperationEntity::class,
-        LocalRepositoryEntity::class
+        LocalRepositoryEntity::class,
+        StorageProfileEntity::class,
+        RepositoryRefEntity::class,
+        VirtualTreeEntryEntity::class,
+        ContentCacheEntity::class,
+        WorkspaceEntity::class,
+        TransferJobEntity::class,
+        StagedOperationEntity::class,
+        SyncConflictEntity::class,
+        OperationReceiptEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class CacheDatabase : RoomDatabase() {
@@ -78,6 +106,15 @@ abstract class CacheDatabase : RoomDatabase() {
                 database.execSQL("ALTER TABLE repository_name_cache ADD COLUMN updatedAtGh TEXT NOT NULL DEFAULT ''")
             }
         }
+
+        val MIGRATION_5_6 = object : Migration(
+            RafGitFsRoomV6.FROM_VERSION,
+            RafGitFsRoomV6.TO_VERSION
+        ) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                RafGitFsRoomV6.createStatements.forEach(database::execSQL)
+            }
+        }
     }
 
     abstract fun cacheDao(): CacheDao
@@ -85,4 +122,14 @@ abstract class CacheDatabase : RoomDatabase() {
     abstract fun userCacheDao(): UserCacheDao
     abstract fun offlineOperationDao(): OfflineOperationDao
     abstract fun localRepositoryDao(): LocalRepositoryDao
+
+    abstract fun storageProfileDao(): StorageProfileDao
+    abstract fun repositoryRefDao(): RepositoryRefDao
+    abstract fun virtualTreeDao(): VirtualTreeDao
+    abstract fun contentCacheDao(): ContentCacheDao
+    abstract fun workspaceDao(): WorkspaceDao
+    abstract fun transferJobDao(): TransferJobDao
+    abstract fun stagedOperationDao(): StagedOperationDao
+    abstract fun syncConflictDao(): SyncConflictDao
+    abstract fun operationReceiptDao(): OperationReceiptDao
 }
