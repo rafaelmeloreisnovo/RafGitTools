@@ -10,14 +10,8 @@ import retrofit2.http.Headers
 import retrofit2.http.Path
 import retrofit2.http.Query
 
-/**
- * Dedicated read-only GitHub surface for RafGitFS.
- *
- * Keeping this interface separate from [com.rafgittools.data.github.GithubApiService]
- * prevents the virtual-storage engine from receiving mutation endpoints by accident.
- */
+/** Dedicated read-only GitHub surface for RafGitFS. */
 interface RafGitFsGithubApiService {
-
     @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
     @GET("user/repos")
     suspend fun listRepositories(
@@ -51,7 +45,7 @@ interface RafGitFsGithubApiService {
     suspend fun resolveCommit(
         @Path("owner") owner: String,
         @Path("repo") repo: String,
-        @Path("ref", encoded = true) ref: String
+        @Path("ref") ref: String
     ): Response<RafGitFsCommitDto>
 
     @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
@@ -71,10 +65,7 @@ interface RafGitFsGithubApiService {
         @Path("blobSha") blobSha: String
     ): Response<RafGitFsBlobDto>
 
-    @Headers(
-        "Accept: application/vnd.github.text-match+json",
-        "X-GitHub-Api-Version: 2022-11-28"
-    )
+    @Headers("Accept: application/vnd.github.text-match+json", "X-GitHub-Api-Version: 2022-11-28")
     @GET("search/code")
     suspend fun searchCode(
         @Query("q") query: String,
