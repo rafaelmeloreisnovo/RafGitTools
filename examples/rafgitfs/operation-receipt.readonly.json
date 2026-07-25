@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "receipt_id": "rafgitfs-receipt-fixture-001",
+  "request_id": "rafgitfs-request-fixture-001",
+  "profile_id": "rafgitfs-default-readonly",
+  "operation": "LIST_REPOSITORIES",
+  "terminal_phase": "RECEIPT",
+  "success": true,
+  "risk_level": "LOW",
+  "request_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "result_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "remote_before_sha": null,
+  "remote_after_sha": null,
+  "f_ok": [
+    "Read-only repository metadata fixture represented."
+  ],
+  "f_gap": [
+    "No live GitHub request is claimed by this fixture."
+  ],
+  "f_next": [
+    "Prompt 3 will connect the contract to the existing GitHub API adapter."
+  ],
+  "epistemic_state": "CONVENTION",
+  "claim_allowed": false,
+  "created_at": "2026-07-25T12:00:00Z"
+}
