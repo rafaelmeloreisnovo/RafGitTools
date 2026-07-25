@@ -11,7 +11,7 @@
     "5": "PR_303_OPEN",
     "6": "PR_304_OPEN",
     "7": "PR_305_OPEN",
-    "8": "IMPLEMENTED_SOURCE_PR_PENDING"
+    "8": "PR_306_OPEN"
   },
   "f_ok": [
     "architecture_contracts",
@@ -54,5 +54,5 @@
   "production_ready": false,
   "certification_claim": false,
   "claim_allowed": false,
-  "canonical_sha256": "73005c5d45790e93f7dfa78d8922d6b20a7bc1293f8b53b020bf008faad2bc55"
+  "canonical_sha256": "73e73a9696ecf3e448fc098aa9a691151c9ceacf315fcdf9b622663bb55b1f25"
 }
