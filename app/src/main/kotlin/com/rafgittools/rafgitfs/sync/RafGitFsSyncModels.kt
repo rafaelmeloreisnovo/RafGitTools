@@ -1,50 +1,20 @@
 package com.rafgittools.rafgitfs.sync
 
-enum class RafGitFsSyncPhase {
-    SCAN,
-    DIFF,
-    PLAN,
-    DRY_RUN,
-    APPROVE,
-    EXECUTE,
-    RECEIPT
-}
+enum class RafGitFsSyncPhase { SCAN, DIFF, PLAN, DRY_RUN, APPROVE, EXECUTE, RECEIPT }
 
 enum class RafGitFsJobState {
-    CREATED,
-    SCANNING,
-    DIFF_READY,
-    PLAN_READY,
-    APPROVAL_REQUIRED,
-    APPROVED,
-    EXECUTING,
-    PAUSED,
-    CANCELLED,
-    COMPLETE,
-    FAILED,
-    TOKEN_VAZIO
+    CREATED, SCANNING, DIFF_READY, PLAN_READY, APPROVAL_REQUIRED, APPROVED,
+    EXECUTING, PAUSED, CANCELLED, COMPLETE, FAILED, TOKEN_VAZIO
 }
 
 enum class RafGitFsOperationRisk {
-    READ_ONLY,
-    LOCAL_MUTATION,
-    REMOTE_BRANCH_WRITE,
-    PROTECTED_BRANCH_WRITE,
-    DESTRUCTIVE_REMOTE
+    READ_ONLY, LOCAL_MUTATION, REMOTE_BRANCH_WRITE, PROTECTED_BRANCH_WRITE, DESTRUCTIVE_REMOTE
 }
 
 enum class RafGitFsPlannedAction {
-    NO_OP,
-    CACHE_DOWNLOAD,
-    PIN_OFFLINE,
-    REMOVE_LOCAL_CACHE,
-    CREATE_WORKSPACE,
-    WRITE_WORKSPACE_FILE,
-    CREATE_BRANCH,
-    CREATE_COMMIT,
-    PUSH_BRANCH,
-    OPEN_PULL_REQUEST,
-    DELETE_REMOTE
+    NO_OP, CACHE_DOWNLOAD, PIN_OFFLINE, REMOVE_LOCAL_CACHE,
+    CREATE_WORKSPACE, WRITE_WORKSPACE_FILE, CREATE_BRANCH, CREATE_COMMIT,
+    PUSH_BRANCH, OPEN_PULL_REQUEST, DELETE_REMOTE
 }
 
 data class RafGitFsObservedFile(
@@ -64,15 +34,7 @@ data class RafGitFsDiffItem(
     val conflict: Boolean,
     val evidenceState: String
 ) {
-    enum class Kind {
-        EQUAL,
-        LOCAL_ONLY,
-        REMOTE_ONLY,
-        LOCAL_CHANGED,
-        REMOTE_CHANGED,
-        BOTH_CHANGED,
-        UNKNOWN
-    }
+    enum class Kind { EQUAL, LOCAL_ONLY, REMOTE_ONLY, LOCAL_CHANGED, REMOTE_CHANGED, BOTH_CHANGED, UNKNOWN }
 }
 
 data class RafGitFsPlanStep(
@@ -97,6 +59,7 @@ data class RafGitFsSyncPlan(
     val conflicts: List<RafGitFsDiffItem>,
     val generatedAt: Long,
     val planHash: String,
+    val workspaceId: String? = null,
     val claimAllowed: Boolean = false
 ) {
     val requiresApproval: Boolean get() = steps.any { it.requiresApproval }
