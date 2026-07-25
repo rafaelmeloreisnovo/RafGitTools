@@ -25,13 +25,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun RafGitFsReadOnlyBadge(modifier: Modifier = Modifier) {
     AssistChip(
-        modifier = modifier,
+        modifier = modifier.semantics {
+            contentDescription = "RafGitFS read-only mode. Remote mutation is unavailable here."
+        },
         onClick = {},
         enabled = false,
         label = { Text("Read only") },
@@ -54,7 +60,23 @@ fun RafGitFsStatusBanner(
         RafGitFsUiEvidence.ERROR -> Icons.Default.Error
         RafGitFsUiEvidence.IDLE -> Icons.Default.Info
     }
-    Card(modifier = modifier.fillMaxWidth()) {
+    val announcement = buildString {
+        append(status.evidence.name.replace('_', ' '))
+        append(". ")
+        append(status.title)
+        status.detail?.takeIf { it.isNotBlank() }?.let {
+            append(". ")
+            append(it)
+        }
+    }
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics {
+                liveRegion = LiveRegionMode.Polite
+                contentDescription = announcement
+            }
+    ) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.Top
@@ -86,13 +108,19 @@ fun RafGitFsBreadcrumbBar(
         modifier = modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .semantics {
+                contentDescription = "Repository path: ${path.ifBlank { "root" }}"
+            },
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RafGitFsUiPaths.breadcrumbs(path).forEachIndexed { index, item ->
             if (index > 0) Text("/", color = MaterialTheme.colorScheme.onSurfaceVariant)
             AssistChip(
+                modifier = Modifier.semantics {
+                    contentDescription = "Navigate to ${item.path.ifBlank { "repository root" }}"
+                },
                 onClick = { onNavigate(item.path) },
                 label = {
                     Text(
@@ -113,7 +141,9 @@ fun RafGitFsEmptyState(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.padding(32.dp),
+        modifier = modifier
+            .padding(32.dp)
+            .semantics { contentDescription = "$title. $detail" },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(Icons.Default.Info, contentDescription = null)
