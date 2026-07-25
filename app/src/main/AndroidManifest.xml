@@ -70,6 +70,26 @@
             </intent-filter>
         </activity>
 
+        <!-- Read-only GitHub virtual storage surface. Separate launcher entry keeps
+             Prompt 4 independent from the existing MainActivity navigation graph. -->
+        <activity
+            android:name=".RafGitFsActivity"
+            android:exported="true"
+            android:label="RafGitFS"
+            android:theme="@style/Theme.RafGitTools"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="rafgittools" android:host="storage" />
+            </intent-filter>
+        </activity>
+
         <!-- Direct Java control surface for Kiwi <-> APK <-> local model. -->
         <activity
             android:name=".bridge.RafBridgeActivity"

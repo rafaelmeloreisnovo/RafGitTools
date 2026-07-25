@@ -25,6 +25,7 @@ import com.rafgittools.rafgitfs.data.SyncConflictDao
 import com.rafgittools.rafgitfs.data.TransferJobDao
 import com.rafgittools.rafgitfs.data.VirtualTreeDao
 import com.rafgittools.rafgitfs.data.WorkspaceDao
+import com.rafgittools.rafgitfs.remote.RafGitFsGithubApiService
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -81,6 +82,11 @@ object NetworkModule {
     @Singleton
     fun provideGithubApiService(retrofit: Retrofit): GithubApiService =
         retrofit.create(GithubApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideRafGitFsGithubApiService(retrofit: Retrofit): RafGitFsGithubApiService =
+        retrofit.create(RafGitFsGithubApiService::class.java)
 }
 
 @Module
