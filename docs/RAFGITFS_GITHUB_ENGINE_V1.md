@@ -2,9 +2,7 @@
 
 Estado: `IMPLEMENTED_SOURCE / READ_ONLY / CLAIM_ALLOWED=false`
 
-## 1. Finalidade
-
-O Prompt 3 conecta a fundação e o Room v6 ao GitHub sem transformar o navegador virtual em executor Git.
+## 1. Fluxo
 
 ```text
 perfil local
@@ -17,145 +15,121 @@ perfil local
 → blob por SHA
 ```
 
-GitHub permanece a autoridade de conteúdo e versão. Room continua sendo índice reconstruível.
+GitHub permanece a autoridade. Room é índice reconstruível.
 
-## 2. Superfície remota isolada
+## 2. API isolada
 
 `RafGitFsGithubApiService` contém somente `GET`:
 
 - `user/repos`;
-- `repos/{owner}/{repo}/branches`;
-- `repos/{owner}/{repo}/tags`;
-- `repos/{owner}/{repo}/commits/{ref}`;
-- `repos/{owner}/{repo}/git/trees/{treeSha}`;
-- `repos/{owner}/{repo}/git/blobs/{blobSha}`;
-- `search/code`.
+- branches e tags;
+- resolução de commit;
+- Git Trees;
+- Git Blobs;
+- busca de código.
 
-Não existem `POST`, `PUT`, `PATCH` ou `DELETE` na interface RafGitFS.
+Não existem `POST`, `PUT`, `PATCH` ou `DELETE`. A API GitHub geral do aplicativo não é injetada no indexador RafGitFS.
 
-A interface GitHub geral do aplicativo continua separada e não é injetada no indexador.
-
-## 3. Estados de resposta
+## 3. Estados
 
 ```text
-Observed       resposta completa observada
-NotModified    SHA remoto igual ao índice local
-TokenVazio     evidência parcial ou ausente, com razão explícita
-RateLimited    orçamento GitHub esgotado ou Retry-After
+Observed       resposta completa
+NotModified    snapshot completo do mesmo commit já indexado
+TokenVazio     evidência parcial/ausente, com razão
+RateLimited    orçamento remoto esgotado
 Failure        erro HTTP/rede classificado
 ```
 
-`TokenVazio` pode carregar um valor parcial. Esse valor não pode ser promovido a árvore completa.
+Um `TokenVazio` pode transportar dados parciais, mas nunca recebe `complete=true`.
 
-## 4. Paginação
+## 4. Paginação e rate limit
 
-A paginação:
-
-- lê o cabeçalho `Link` e a relação `rel="next"`;
-- usa até 100 itens por página;
-- possui orçamento máximo de páginas;
-- encerra normalmente quando não existe próximo link;
-- retorna `PAGE_BUDGET_EXHAUSTED` quando a resposta excede o limite configurado.
+- até 100 itens por página;
+- cabeçalho `Link` com `rel="next"`;
+- orçamento máximo de páginas;
+- `PAGE_BUDGET_EXHAUSTED` quando o limite local é alcançado;
+- leitura de `X-RateLimit-*`, `Retry-After`, `X-GitHub-Request-Id` e `ETag`;
+- HTTP 403 com `remaining=0` e HTTP 429 tornam-se `RateLimited`.
 
 Nenhum loop remoto é ilimitado.
 
-## 5. Rate limit
-
-São preservados:
-
-- `X-RateLimit-Limit`;
-- `X-RateLimit-Remaining`;
-- `X-RateLimit-Used`;
-- `X-RateLimit-Reset`;
-- `X-RateLimit-Resource`;
-- `Retry-After`;
-- `X-GitHub-Request-Id`;
-- `ETag`.
-
-HTTP 403 com `remaining=0` e HTTP 429 viram `RateLimited`, não erro genérico.
-
-## 6. Repositórios e refs
-
-`refreshRepositories(profileId)` pagina os repositórios autenticados e atualiza o catálogo já existente `repository_name_cache`.
-
-`refreshRefs(profileId, repo)` combina:
+## 5. Repositórios e refs
 
 ```text
-branches + tags → repository_refs
+refreshRepositories → repository_name_cache
+refreshRefs          → repository_refs
 ```
 
-A limpeza de refs antigas é delimitada por:
+Branches e tags são combinadas. A remoção de refs antigas só ocorre quando ambas as listas são completas e é delimitada por `profileId + repositoryFullName`.
+
+## 6. Snapshot completo da árvore
+
+`repository_refs.gitSha` representa a cabeça remota observada. Ele não prova, sozinho, que a árvore daquele commit foi indexada completamente.
+
+Para separar esses fatos, o Room mantém uma entrada interna escondida:
 
 ```text
-profileId + repositoryFullName + lastIndexedAt
+virtual_tree_entries.path = ""
+gitSha = commit completamente indexado
+mimeType = application/x-rafgitfs-index-snapshot
 ```
 
-Uma atualização de um repositório não apaga refs de outro.
+Consultas de navegação e busca excluem `path=''`.
 
-## 7. Indexação incremental
-
-`refreshTree` executa:
+Fluxo incremental:
 
 ```text
-ref
-→ resolve commit
-→ observar commit SHA
-→ comparar com repository_refs.gitSha
-→ se igual e árvore local existe: NotModified
-→ se diferente: buscar tree SHA recursiva
-→ mapear entradas
-→ preservar favoritos
-→ upsert Room
-→ remover somente entradas antigas do mesmo repo/ref
+resolver commit remoto
+→ ler getIndexedCommitSha()
+→ se igual: NotModified
+→ se diferente: buscar tree SHA
+→ mapear árvore
+→ se completa:
+     gravar snapshot interno
+     remover registros antigos
+     atualizar ref
+→ se truncada:
+     preservar registros anteriores
+     não atualizar snapshot
+     não limpar dados ausentes
+     TOKEN_VAZIO
 ```
 
-Tipos:
+Isso impede que uma árvore parcial ou uma simples atualização de refs gere falso `NotModified`.
+
+## 7. Tipos
 
 | Git | RafGitFS |
 |---|---|
-| `tree` / modo `040000` | `DIRECTORY` |
+| `tree` / `040000` | `DIRECTORY` |
 | `blob` | `FILE` |
-| modo `120000` | `SYMLINK` |
-| `commit` / modo `160000` | `SUBMODULE` |
+| `120000` | `SYMLINK` |
+| `commit` / `160000` | `SUBMODULE` |
 
-Se a API retornar `truncated=true`, as entradas parciais podem ser indexadas, porém o resultado permanece `TOKEN_VAZIO` e `complete=false`.
+Favoritos são preservados durante reindexação.
 
 ## 8. Navegação e busca
 
-A árvore Room permite:
-
-- observar filhos por `profile/repo/ref/parentPath`;
-- procurar uma entrada exata;
-- contar entradas por ref;
-- preservar caminhos favoritos;
-- busca local por nome ou caminho;
-- busca remota de código limitada ao repositório.
-
-A busca remota respeita `incomplete_results`. Quando verdadeiro, o resultado é parcial e não conclusivo.
+- filhos por `profile/repo/ref/parentPath`;
+- entrada exata por caminho;
+- contagem de entradas reais, excluindo o marcador interno;
+- busca local por nome/caminho;
+- busca remota limitada a um repositório;
+- `incomplete_results=true` vira `TOKEN_VAZIO` parcial.
 
 ## 9. Conteúdo
 
-A leitura usa:
-
 ```text
-virtual_tree_entries.gitSha
+arquivo indexado
+→ blob SHA
 → Git Blob API
 → base64
 → limite de memória
-→ verificação SHA declarado/observado
-→ verificação de tamanho
+→ verificação SHA e tamanho
 → snapshot em memória
 ```
 
-Limite padrão:
-
-```text
-5 MiB por leitura em memória
-```
-
-O máximo configurável nesta camada é 50 MiB. Downloads físicos, retomada e arquivos grandes pertencem ao Prompt 5.
-
-Conteúdo binário permanece em bytes. Texto UTF-8 só é produzido quando a amostra não apresenta sinais fortes de binário.
+Limite padrão: **5 MiB**. Limite máximo desta camada: **50 MiB**. Download físico, retomada e arquivos grandes ficam para o Prompt 5.
 
 ## 10. Invariantes
 
@@ -165,45 +139,24 @@ Room = índice reconstruível
 remote write = false
 main write = false
 truncated tree != complete tree
-incomplete search != complete search
+remote ref head != indexed tree snapshot
 missing SHA = TOKEN_VAZIO
-same commit SHA + indexed tree = NotModified
-blob over memory budget = TOKEN_VAZIO
+blob over budget = TOKEN_VAZIO
 claim_allowed=false
 ```
 
 ## 11. Gates
 
-### Estrutural
-
 ```bash
 python3 scripts/validate_rafgitfs_github_engine.py
 python3 -m unittest tests/test_validate_rafgitfs_github_engine.py -v
-```
-
-### JVM
-
-```bash
 ./gradlew testDevDebugUnitTest --tests '*RafGitFsGithubEngineTest*'
-```
-
-### Build
-
-```bash
 ./gradlew assembleDevDebug
 ```
 
-## 12. Limites atuais
+## 12. Limites
 
-Ainda não existem:
-
-- telas Compose RafGitFS;
-- download físico e cache de bytes;
-- pin offline funcional;
-- worker de sincronização;
-- edição e workspace operacional;
-- branch, commit, push ou Pull Request via RafGitFS;
-- recibo de execução em dispositivo Android.
+Ainda não existem telas Compose, download físico, pin offline funcional, worker de sincronização, edição, branch, commit, push ou Pull Request pelo RafGitFS. Execução Android permanece `TOKEN_VAZIO` até recibo observável.
 
 ## 13. Estado
 
@@ -212,8 +165,8 @@ prompt: 3/8
 read_only_api: IMPLEMENTED_SOURCE
 repository_pagination: IMPLEMENTED_SOURCE
 branch_tag_index: IMPLEMENTED_SOURCE
-incremental_tree_by_sha: IMPLEMENTED_SOURCE
-room_navigation: IMPLEMENTED_SOURCE
+complete_snapshot_sha: IMPLEMENTED_SOURCE
+truncated_tree_fail_closed: IMPLEMENTED_SOURCE
 bounded_blob_read: IMPLEMENTED_SOURCE
 remote_write_enabled: false
 claim_allowed: false
@@ -231,5 +184,3 @@ StorageProfilesScreen
 → VirtualFileViewerScreen
 → StorageSettingsScreen
 ```
-
-A interface deverá consumir `Flow` do Room e mostrar claramente `Observed`, `NotModified`, `RateLimited` e `TOKEN_VAZIO`.
