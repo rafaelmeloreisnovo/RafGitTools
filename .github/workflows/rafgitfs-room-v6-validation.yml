@@ -77,6 +77,12 @@ jobs:
       - name: Test Prompt 4 adversarial gate
         run: python3 -m unittest tests/test_validate_rafgitfs_ui.py -v
 
+      - name: Validate Prompt 5 cache and offline
+        run: python3 scripts/validate_rafgitfs_cache_offline.py --write-report artifacts/rafgitfs-cache-offline-validation.json
+
+      - name: Test Prompt 5 adversarial gate
+        run: python3 -m unittest tests/test_validate_rafgitfs_cache_offline.py -v
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -108,3 +114,6 @@ jobs:
 
       - name: Test Prompt 4 UI path invariants
         run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsUiPathsTest*'
+
+      - name: Test Prompt 5 cache core
+        run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsCacheCoreTest*'
