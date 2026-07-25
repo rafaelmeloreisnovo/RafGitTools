@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CallSplit
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Link
@@ -57,6 +58,7 @@ fun VirtualFileBrowserScreen(
     onNavigateBack: () -> Unit,
     onOpenFile: (profileId: String, repository: String, ref: String, path: String) -> Unit,
     onOpenSettings: (String) -> Unit,
+    onOpenWorkspace: (profileId: String, repository: String, ref: String) -> Unit,
     viewModel: VirtualFileBrowserViewModel = hiltViewModel()
 ) {
     val entries by viewModel.visibleEntries.collectAsStateWithLifecycle()
@@ -95,6 +97,18 @@ fun VirtualFileBrowserScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = {
+                            onOpenWorkspace(
+                                viewModel.profileId,
+                                viewModel.repositoryFullName,
+                                currentRef
+                            )
+                        },
+                        enabled = currentRef.isNotBlank()
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = "Open governed Git workspace")
+                    }
                     IconButton(onClick = viewModel::refreshTree) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh tree")
                     }
