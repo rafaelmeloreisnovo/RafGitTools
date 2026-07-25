@@ -50,12 +50,14 @@ class RafGitFsOfflineCacheManager @Inject constructor(
             maxCacheBytes = profile.maxCacheBytes,
             maxSingleFileBytes = minOf(profile.maxCacheBytes, MAX_SINGLE_FILE_BYTES)
         )
+        var effectivePinAfterDownload = pinAfterDownload
 
         markOlderGenerationsStale(identity)
         cacheDao.getByIdentity(profileId, repositoryFullName, refName, normalizedPath, blobSha)?.let { cached ->
+            if (cached.pinned) effectivePinAfterDownload = true
             val local = readVerified(cached, policy.maxSingleFileBytes)
             if (local is RafGitFsCacheResult.Success) {
-                return if (pinAfterDownload && !local.value.pinned) {
+                return if (effectivePinAfterDownload && !local.value.pinned) {
                     setPinned(cached.cacheKey, true)
                 } else local
             }
@@ -77,7 +79,7 @@ class RafGitFsOfflineCacheManager @Inject constructor(
         return when (val remote = indexer.readContent(
             profileId, repositoryFullName, refName, normalizedPath, policy.maxSingleFileBytes
         )) {
-            is RafGitFsRemoteResult.Observed -> persistObserved(identity, remote.value, policy, pinAfterDownload)
+            is RafGitFsRemoteResult.Observed -> persistObserved(identity, remote.value, policy, effectivePinAfterDownload)
             is RafGitFsRemoteResult.TokenVazio -> RafGitFsCacheResult.TokenVazio(
                 reason = remote.reason,
                 partialValue = null
