@@ -14,19 +14,28 @@ class RafGitFsCacheMaintenance @Inject constructor(
     private val treeDao: VirtualTreeDao,
     private val fileStore: RafGitFsAtomicFileStore
 ) {
-    suspend fun ensureCapacity(profileId: String, incomingBytes: Long): Boolean {
+    suspend fun ensureCapacity(
+        profileId: String,
+        incomingBytes: Long,
+        replacingCacheKey: String? = null
+    ): Boolean {
         val profile = profileDao.getById(profileId) ?: return false
         if (incomingBytes < 0L || incomingBytes > profile.maxCacheBytes) return false
         reconcile(profileId)
-        var total = cacheDao.totalBytes(profileId)
-        if (total + incomingBytes <= profile.maxCacheBytes) return true
+        val replacedBytes = replacingCacheKey
+            ?.let { cacheDao.getByKey(it)?.sizeBytes }
+            ?: 0L
+        var effectiveTotal = (cacheDao.totalBytes(profileId) - replacedBytes).coerceAtLeast(0L)
+        if (effectiveTotal + incomingBytes <= profile.maxCacheBytes) return true
         val candidates = cacheDao.evictionCandidates(profileId, limit = 512)
+            .filterNot { it.cacheKey == replacingCacheKey }
         for (entry in candidates) {
-            removeUnpinned(entry)
-            total = (total - entry.sizeBytes).coerceAtLeast(0L)
-            if (total + incomingBytes <= profile.maxCacheBytes) return true
+            if (removeUnpinned(entry)) {
+                effectiveTotal = (effectiveTotal - entry.sizeBytes).coerceAtLeast(0L)
+            }
+            if (effectiveTotal + incomingBytes <= profile.maxCacheBytes) return true
         }
-        return total + incomingBytes <= profile.maxCacheBytes
+        return effectiveTotal + incomingBytes <= profile.maxCacheBytes
     }
 
     suspend fun reconcile(profileId: String, now: Long = System.currentTimeMillis()): RafGitFsCacheMaintenanceReport {
