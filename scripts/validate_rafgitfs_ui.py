@@ -109,7 +109,7 @@ def validate(root: Path) -> dict[str, Any]:
     ):
         if route not in activity:
             raise ValidationError(f"navigation route missing: {route}")
-    if "RafGitFsActivity" not in manifest or 'android:host="storage"' not in manifest:
+    if 'android:name=".RafGitFsActivity"' not in manifest or 'android:host="storage"' not in manifest:
         raise ValidationError("RafGitFS activity/deep link is not registered")
     if 'android:exported="true"' not in manifest:
         raise ValidationError("RafGitFS launcher must declare exported explicitly")
