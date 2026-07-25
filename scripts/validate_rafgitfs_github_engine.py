@@ -27,6 +27,8 @@ REQUIRED_GET_ROUTES = {
     "repos/{owner}/{repo}/commits/{ref}", "repos/{owner}/{repo}/git/trees/{treeSha}",
     "repos/{owner}/{repo}/git/blobs/{blobSha}", "search/code",
 }
+MUTATION_ANNOTATION = re.compile(r"@(?:retrofit2\.http\.)?(POST|PUT|PATCH|DELETE)\b")
+MUTATION_CALL = re.compile(r"\b(createPullRequest|push|commit)\s*\(")
 
 class ValidationError(ValueError):
     pass
@@ -49,7 +51,7 @@ def validate(root: Path) -> dict[str, Any]:
     api, result, pagination, rate = source[FILES[0]], source[FILES[2]], source[FILES[3]], source[FILES[4]]
     remote, indexer, decoder, daos, module = source[FILES[5]], source[FILES[6]], source[FILES[8]], source[FILES[9]], source[FILES[10]]
 
-    if any(x in api for x in ("@POST", "@PUT", "@PATCH", "@DELETE")):
+    if MUTATION_ANNOTATION.search(api):
         raise ValidationError("RafGitFS API must remain read-only")
     routes = set(re.findall(r'@GET\("([^"]+)"\)', api))
     if REQUIRED_GET_ROUTES - routes:
@@ -90,8 +92,8 @@ def validate(root: Path) -> dict[str, Any]:
     if "provideRafGitFsGithubApiService" not in module:
         raise ValidationError("Hilt provider for read-only API missing")
 
-    forbidden = re.findall(r"@(POST|PUT|PATCH|DELETE)|createPullRequest\(|push\(|commit\(", "\n".join(source[p] for p in FILES[:9]))
-    if forbidden:
+    remote_index_sources = "\n".join(source[path] for path in FILES[:9])
+    if MUTATION_ANNOTATION.search(remote_index_sources) or MUTATION_CALL.search(remote_index_sources):
         raise ValidationError("remote/index layer contains a mutation capability")
 
     return {
