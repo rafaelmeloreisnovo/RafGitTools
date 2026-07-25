@@ -6,22 +6,24 @@
 client_probe: IMPLEMENTED
 tool_router_wiring: IMPLEMENTED
 unit_tests: IMPLEMENTED
-workflow_execution: TOKEN_VAZIO
-termux_server_endpoint: TOKEN_VAZIO
+kotlin_isolated_compile: PASS
+local_client_server_loopback: PASS
+workflow_execution: TOKEN_VAZIO_STARTUP
+termux_server_endpoint: IMPLEMENTED_IN_PR_308
 android_device_runtime: TOKEN_VAZIO
 mutating_commands: false
 ```
 
 O tool `termux.health` deixou de ser um handler inexistente e passou a possuir um transporte cliente real, limitado e somente leitura.
 
-Isso não significa que o servidor Termux já expõe `/health`. A distinção obrigatória é:
+A distinção obrigatória continua:
 
 ```text
 cliente capaz de sondar
 !=
-servidor disponível
+servidor disponível em device
 !=
-runtime saudável
+runtime saudável em produção
 ```
 
 ## Fluxo
@@ -98,9 +100,7 @@ Isso preserva a regra:
 ausência de resposta != falha comprovada do runtime
 ```
 
-## Resposta esperada do servidor futuro
-
-O cliente aceita qualquer corpo limitado, mas o servidor recomendado deve produzir:
+## Resposta do servidor Termux PR #308
 
 ```json
 {
@@ -111,13 +111,13 @@ O cliente aceita qualquer corpo limitado, mas o servidor recomendado deve produz
   "pid": 1234,
   "uptime_ms": 42000,
   "capabilities": [
-    "job.submit.readonly",
-    "artifact.inspect",
-    "rafpolimata.status"
+    "health.readonly"
   ],
   "commit": "git-sha-or-TOKEN_VAZIO"
 }
 ```
+
+Somente `health.readonly` é anunciado. Capacidade futura não pode aparecer antes do respectivo handler e teste.
 
 Nenhum token, caminho privado, variável de ambiente ou credencial deve atravessar esse endpoint.
 
@@ -134,32 +134,32 @@ Nenhum token, caminho privado, variável de ambiente ou credencial deve atravess
 7. limite de corpo em 4096 bytes;
 8. GET, sem redirect e sem output.
 
-## Próximo lado da ponte
+A compilação Kotlin isolada encontrou inicialmente a warning `URL(String) is deprecated`. Ela foi corrigida com `URI.toURL()` e a recompilação terminou sem warning.
 
-O próximo PR deve ficar no `termux-app-rafacodephi` e implementar somente:
+A ponte local foi executada:
 
 ```text
-GET /health
-→ snapshot sanitizado
-→ JSON determinístico
-→ nenhum comando mutável
+PASS termux-health-end-to-end-local code=200 state=PASS bytes=176
 ```
 
-Gates:
+Isso é evidência host/local, não execução Android.
+
+## Gates
 
 ```yaml
-T0_CLIENT_UNIT_TESTS: TOKEN_VAZIO_UNTIL_RUN
-T1_SERVER_CONTRACT: TOKEN_VAZIO
-T2_LOOPBACK_INTEGRATION: TOKEN_VAZIO
-T3_ANDROID_ARM32_DEVICE: TOKEN_VAZIO
-T4_ANDROID_ARM64_DEVICE: TOKEN_VAZIO
-T5_LATENCY_P50_P95_P99: TOKEN_VAZIO
+T0_KOTLIN_ISOLATED_COMPILE: PASS
+T1_PYTHON_SERVER_SMOKE: PASS
+T2_LOOPBACK_INTEGRATION: PASS
+T3_GRADLE_JUNIT: TOKEN_VAZIO_STARTUP
+T4_ANDROID_ARM32_DEVICE: TOKEN_VAZIO
+T5_ANDROID_ARM64_DEVICE: TOKEN_VAZIO
+T6_LATENCY_P50_P95_P99: TOKEN_VAZIO
 ```
 
 ## Retroalimentação
 
 ```text
-F_ok   = cliente real, governança, SSRF boundary e testes implementados
-F_gap  = servidor Termux e integração em device
-F_next = endpoint /health read-only no Termux, depois teste ponta a ponta
+F_ok   = cliente, servidor e loopback local executados com fronteira SSRF/read-only
+F_gap  = Gradle/JUnit e integração nos devices
+F_next = executar em ARM32/ARM64 e decidir lifecycle/autostart
 ```
