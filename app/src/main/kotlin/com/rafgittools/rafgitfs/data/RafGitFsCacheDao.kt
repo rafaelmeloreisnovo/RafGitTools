@@ -27,6 +27,19 @@ interface ContentCacheDao {
         gitSha: String
     ): ContentCacheEntity?
 
+    @Query(
+        """SELECT * FROM content_cache
+           WHERE profileId=:profileId AND repositoryFullName=:repositoryFullName
+             AND refName=:refName AND path=:path
+           ORDER BY createdAt DESC"""
+    )
+    suspend fun listForPath(
+        profileId: String,
+        repositoryFullName: String,
+        refName: String,
+        path: String
+    ): List<ContentCacheEntity>
+
     @Query("SELECT * FROM content_cache WHERE cacheKey = :cacheKey LIMIT 1")
     fun observeByKey(cacheKey: String): Flow<ContentCacheEntity?>
 
