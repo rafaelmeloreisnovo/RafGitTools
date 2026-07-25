@@ -46,7 +46,10 @@ object RafGitFsCanonical {
         .joinToString("") { byte -> (byte.toInt() and 0xff).toString(16).padStart(2, '0') }
 
     fun sanitize(value: String?): String? = value
-        ?.replace(Regex("(?i)(token|authorization|password|secret|cookie)\\s*[:=]\\s*[^\\s,;]+"), "$1=[REDACTED]")
+        ?.replace(
+            Regex("(?i)(token|authorization|password|secret|cookie)\\s*[:=]\\s*[^\\s,;]+"),
+            "\$1=[REDACTED]"
+        )
         ?.replace(Regex("gh[pousr]_[A-Za-z0-9_]{20,}"), "[REDACTED_GITHUB_TOKEN]")
         ?.take(512)
 
