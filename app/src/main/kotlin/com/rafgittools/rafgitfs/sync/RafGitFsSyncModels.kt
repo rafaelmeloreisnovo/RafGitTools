@@ -23,7 +23,8 @@ data class RafGitFsObservedFile(
     val localSha: String?,
     val localExists: Boolean,
     val remoteExists: Boolean,
-    val pinned: Boolean = false
+    val pinned: Boolean = false,
+    val baseSha: String? = null
 )
 
 data class RafGitFsDiffItem(
