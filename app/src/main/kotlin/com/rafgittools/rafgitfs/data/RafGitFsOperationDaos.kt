@@ -127,6 +127,9 @@ interface SyncConflictDao {
     @Query("SELECT * FROM sync_conflicts WHERE jobId=:jobId ORDER BY detectedAt ASC")
     suspend fun listForJob(jobId: String): List<SyncConflictEntity>
 
+    @Query("SELECT * FROM sync_conflicts WHERE workspaceId=:workspaceId ORDER BY detectedAt ASC")
+    suspend fun getByWorkspace(workspaceId: String): List<SyncConflictEntity>
+
     @Query(
         """SELECT * FROM sync_conflicts
            WHERE workspaceId=:workspaceId AND resolvedAt IS NULL
