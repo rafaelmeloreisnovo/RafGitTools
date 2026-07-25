@@ -1,6 +1,6 @@
 # RafGitFS — Persistência Room V6
 
-Estado: `IMPLEMENTED_SOURCE / EXECUTION_TOKEN_VAZIO / CLAIM_ALLOWED=false`
+Estado: `IMPLEMENTED_SOURCE / REMOTE_CI_ZERO_STEP_NO_LOGS / CLAIM_ALLOWED=false`
 
 ## 1. Finalidade
 
@@ -147,7 +147,21 @@ Os testes Android cobrem:
 - comportamento LRU;
 - preservação de recibo após exclusão de perfil.
 
-## 8. Limites
+## 8. Evidência remota observada
+
+No HEAD do Prompt 2, os workflows foram criados e encerrados como `failure`, porém os jobs centrais retornaram:
+
+```yaml
+steps: null
+logs_url: null
+classification: ZERO_STEP_NO_LOGS
+remote_pass: false
+code_failure_demonstrated: false
+```
+
+Isso não é convertido em PASS e também não demonstra defeito na migração Room. O gate exato continua pendente até execução com passos e logs observáveis.
+
+## 9. Limites
 
 Ainda não existem nesta onda:
 
@@ -162,7 +176,7 @@ Ainda não existem nesta onda:
 
 Esses limites permanecem `TOKEN_VAZIO` até execução observável.
 
-## 9. Estado
+## 10. Estado
 
 ```yaml
 prompt: 2/8
@@ -173,10 +187,11 @@ dao_interfaces: 9
 remote_write_enabled: false
 receipt_mutation_enabled: false
 claim_allowed: false
+remote_ci: ZERO_STEP_NO_LOGS
 android_execution: TOKEN_VAZIO
 ```
 
-## 10. Próximo passo
+## 11. Próximo passo
 
 Prompt 3:
 
