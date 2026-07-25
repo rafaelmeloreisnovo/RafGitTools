@@ -121,8 +121,14 @@ interface SyncConflictDao {
     @Upsert suspend fun upsert(conflict: SyncConflictEntity)
     @Upsert suspend fun upsertAll(conflicts: List<SyncConflictEntity>)
 
+    @Query("SELECT * FROM sync_conflicts WHERE conflictId=:conflictId LIMIT 1")
+    suspend fun getById(conflictId: String): SyncConflictEntity?
+
     @Query("SELECT * FROM sync_conflicts WHERE jobId=:jobId ORDER BY detectedAt ASC")
     suspend fun listForJob(jobId: String): List<SyncConflictEntity>
+
+    @Query("SELECT * FROM sync_conflicts WHERE workspaceId=:workspaceId ORDER BY detectedAt ASC")
+    suspend fun getByWorkspace(workspaceId: String): List<SyncConflictEntity>
 
     @Query(
         """SELECT * FROM sync_conflicts

@@ -72,6 +72,10 @@ jobs:
         run: python3 scripts/validate_rafgitfs_governed_sync.py --write-report artifacts/rafgitfs-governed-sync-validation.json
       - name: Test Prompt 6 adversarial gate
         run: python3 -m unittest tests/test_validate_rafgitfs_governed_sync.py -v
+      - name: Validate Prompt 7 governed Git write
+        run: python3 scripts/validate_rafgitfs_git_write.py --write-report artifacts/rafgitfs-git-write-validation.json
+      - name: Test Prompt 7 adversarial gate
+        run: python3 -m unittest tests/test_validate_rafgitfs_git_write.py -v
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -99,3 +103,5 @@ jobs:
         run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsCacheCoreTest*'
       - name: Test Prompt 6 governed sync
         run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsGovernedSyncTest*'
+      - name: Test Prompt 7 write contracts
+        run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsWriteContractsTest*'

@@ -37,7 +37,7 @@ def validate(root: Path) -> dict:
         if marker not in models: raise ValidationError(f"model invariant missing: {marker}")
     for marker in ("SHA-256", "REDACTED", "MessageDigest", "MAX_EVENTS"):
         if marker not in canonical: raise ValidationError(f"canonical/log invariant missing: {marker}")
-    for marker in ("TOKEN_VAZIO_CAPABILITY_PROMPT_7", "DESTRUCTIVE_REMOTE_PERMANENTLY_BLOCKED"):
+    for marker in ("DESTRUCTIVE_REMOTE_PERMANENTLY_BLOCKED",):
         if marker not in executor: raise ValidationError(f"executor block missing: {marker}")
     for marker in ("validateApproval", "PLAN_HASH_MISMATCH", "APPROVAL_REQUIRED", "UNRESOLVED_CONFLICTS", "RETRY_LIMIT_REACHED", "receiptDao.append"):
         if marker not in engine: raise ValidationError(f"engine gate missing: {marker}")
@@ -49,8 +49,10 @@ def validate(root: Path) -> dict:
         raise ValidationError("append-only receipt insert missing")
     if re.search(r"claimAllowed\s*=\s*true", "\n".join(src.values())):
         raise ValidationError("claim promotion detected")
-    if "RafGitFsBlockedRemoteWriteCapability" not in module:
-        raise ValidationError("Prompt 6 must bind blocked remote writer")
+    blocked = "RafGitFsBlockedRemoteWriteCapability" in module
+    governed = "RafGitFsGithubBranchWriter" in module
+    if blocked == governed:
+        raise ValidationError("exactly one remote-write capability binding is required")
     for marker in ("validate_rafgitfs_governed_sync.py", "test_validate_rafgitfs_governed_sync.py", "RafGitFsGovernedSyncTest"):
         if marker not in workflow: raise ValidationError(f"workflow gate missing: {marker}")
     digest = hashlib.sha256()
@@ -58,7 +60,8 @@ def validate(root: Path) -> dict:
     return {
         "status":"PASS", "prompt":"6/8", "phases":list(PHASES),
         "persistent_jobs":True, "immutable_receipts":True, "sanitized_logs":True,
-        "remote_write_enabled":False, "claim_allowed":False,
+        "remote_write_binding":"GOVERNED_PROMPT_7" if governed else "BLOCKED_PROMPT_6",
+        "claim_allowed":False,
         "sha256":digest.hexdigest(),
     }
 

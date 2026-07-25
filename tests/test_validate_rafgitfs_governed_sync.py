@@ -29,15 +29,19 @@ class GovernedSyncGateTest(unittest.TestCase):
         self.assertEqual("PASS", validate(self.root)["status"])
 
     def test_claim_promotion_is_rejected(self):
-        self.mutate(FILES[5], "claimAllowed = false", "claimAllowed = true")
+        self.mutate(FILES[0], "claimAllowed: Boolean = false", "claimAllowed: Boolean = true")
         with self.assertRaises(ValidationError): validate(self.root)
 
     def test_approval_gate_removal_is_rejected(self):
         self.mutate(FILES[5], "APPROVAL_REQUIRED", "APPROVAL_OPTIONAL")
         with self.assertRaises(ValidationError): validate(self.root)
 
-    def test_remote_writer_must_remain_blocked(self):
-        self.mutate(FILES[6], "RafGitFsBlockedRemoteWriteCapability", "UnsafeRemoteWriter")
+    def test_remote_writer_binding_is_required(self):
+        module = self.root / FILES[6]
+        text = module.read_text(encoding="utf-8")
+        marker = "RafGitFsGithubBranchWriter" if "RafGitFsGithubBranchWriter" in text else "RafGitFsBlockedRemoteWriteCapability"
+        self.assertIn(marker, text)
+        module.write_text(text.replace(marker, "UnsafeRemoteWriter"), encoding="utf-8")
         with self.assertRaises(ValidationError): validate(self.root)
 
     def test_receipt_append_only_is_required(self):
