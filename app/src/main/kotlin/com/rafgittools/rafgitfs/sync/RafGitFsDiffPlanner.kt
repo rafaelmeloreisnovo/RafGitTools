@@ -14,10 +14,7 @@ object RafGitFsDiffPlanner {
                 else -> RafGitFsDiffItem.Kind.BOTH_CHANGED
             }
             RafGitFsDiffItem(
-                path = file.path,
-                kind = kind,
-                localSha = file.localSha,
-                remoteSha = file.remoteSha,
+                file.path, kind, file.localSha, file.remoteSha,
                 conflict = kind == RafGitFsDiffItem.Kind.BOTH_CHANGED || kind == RafGitFsDiffItem.Kind.UNKNOWN,
                 evidenceState = if (kind == RafGitFsDiffItem.Kind.UNKNOWN) "TOKEN_VAZIO" else "OBSERVED"
             )
@@ -31,29 +28,23 @@ object RafGitFsDiffPlanner {
         baseCommitSha: String?,
         diffs: List<RafGitFsDiffItem>,
         requestedAction: RafGitFsPlannedAction,
-        generatedAt: Long = System.currentTimeMillis()
+        generatedAt: Long = System.currentTimeMillis(),
+        workspaceId: String? = null
     ): RafGitFsSyncPlan {
         val steps = diffs.sortedBy { it.path }.mapIndexed { index, diff ->
-            toStep(index + 1, diff, requestedAction)
+            toStep(index + 1, diff, requestedAction, workspaceId)
         }.ifEmpty {
             listOf(
                 RafGitFsPlanStep(
-                    order = 1,
-                    action = RafGitFsPlannedAction.NO_OP,
-                    path = null,
-                    risk = RafGitFsOperationRisk.READ_ONLY,
-                    baseSha = baseCommitSha,
-                    observedSha = baseCommitSha,
-                    requiresApproval = false,
-                    executableNow = true,
-                    reason = "NO_DIFFERENCE_OBSERVED"
+                    1, RafGitFsPlannedAction.NO_OP, null, RafGitFsOperationRisk.READ_ONLY,
+                    baseCommitSha, baseCommitSha, false, true, "NO_DIFFERENCE_OBSERVED"
                 )
             )
         }
         val conflicts = diffs.filter { it.conflict }
         val payload = RafGitFsCanonical.planPayload(
             requestId, profileId, repositoryFullName, refName,
-            baseCommitSha, steps, conflicts, generatedAt
+            baseCommitSha, steps, conflicts, generatedAt, workspaceId
         )
         return RafGitFsSyncPlan(
             requestId = requestId,
@@ -65,6 +56,7 @@ object RafGitFsDiffPlanner {
             conflicts = conflicts,
             generatedAt = generatedAt,
             planHash = RafGitFsCanonical.sha256(payload),
+            workspaceId = workspaceId,
             claimAllowed = false
         )
     }
@@ -72,37 +64,41 @@ object RafGitFsDiffPlanner {
     private fun toStep(
         order: Int,
         diff: RafGitFsDiffItem,
-        requestedAction: RafGitFsPlannedAction
+        requestedAction: RafGitFsPlannedAction,
+        workspaceId: String?
     ): RafGitFsPlanStep {
         if (diff.conflict) {
             return RafGitFsPlanStep(
-                order, requestedAction, diff.path,
-                riskFor(requestedAction), diff.localSha, diff.remoteSha,
-                requiresApproval = true,
-                executableNow = false,
-                reason = "CONFLICT_${diff.kind.name}"
+                order, requestedAction, diff.path, riskFor(requestedAction),
+                diff.localSha, diff.remoteSha, true, false, "CONFLICT_${diff.kind.name}"
             )
         }
         val risk = riskFor(requestedAction)
-        val executable = requestedAction in setOf(
+        val local = requestedAction in setOf(
             RafGitFsPlannedAction.NO_OP,
             RafGitFsPlannedAction.CACHE_DOWNLOAD,
             RafGitFsPlannedAction.PIN_OFFLINE,
-            RafGitFsPlannedAction.REMOVE_LOCAL_CACHE
+            RafGitFsPlannedAction.REMOVE_LOCAL_CACHE,
+            RafGitFsPlannedAction.CREATE_WORKSPACE,
+            RafGitFsPlannedAction.WRITE_WORKSPACE_FILE
         )
+        val branchWrite = requestedAction in setOf(
+            RafGitFsPlannedAction.CREATE_BRANCH,
+            RafGitFsPlannedAction.CREATE_COMMIT,
+            RafGitFsPlannedAction.PUSH_BRANCH,
+            RafGitFsPlannedAction.OPEN_PULL_REQUEST
+        )
+        val executable = local || (branchWrite && workspaceId != null)
         return RafGitFsPlanStep(
-            order = order,
-            action = requestedAction,
-            path = diff.path,
-            risk = risk,
-            baseSha = diff.localSha,
-            observedSha = diff.remoteSha,
+            order, requestedAction, diff.path, risk, diff.localSha, diff.remoteSha,
             requiresApproval = risk != RafGitFsOperationRisk.READ_ONLY,
             executableNow = executable,
             reason = when {
                 requestedAction == RafGitFsPlannedAction.NO_OP -> "OBSERVED_EQUAL"
-                executable -> "LOCAL_CAPABILITY_AVAILABLE"
-                else -> "TOKEN_VAZIO_CAPABILITY_PROMPT_7"
+                local -> "LOCAL_CAPABILITY_AVAILABLE"
+                branchWrite && workspaceId != null -> "GOVERNED_BRANCH_CAPABILITY_AVAILABLE"
+                branchWrite -> "WORKSPACE_REQUIRED"
+                else -> "DESTRUCTIVE_REMOTE_PERMANENTLY_BLOCKED"
             }
         )
     }
