@@ -1,5 +1,7 @@
 package com.rafgittools.rafgitfs.sync
 
+import com.rafgittools.rafgitfs.assurance.RafGitFsRuntimeSecurityGate
+import com.rafgittools.rafgitfs.assurance.RafGitFsSecurityDecision
 import com.rafgittools.rafgitfs.cache.RafGitFsCacheResult
 import com.rafgittools.rafgitfs.cache.RafGitFsOfflineCacheManager
 import javax.inject.Inject
@@ -9,7 +11,7 @@ interface RafGitFsRemoteWriteCapability {
     suspend fun execute(plan: RafGitFsSyncPlan, step: RafGitFsPlanStep): RafGitFsExecutionOutcome
 }
 
-/** Prompt 6 has no remote-write implementation. Prompt 7 replaces this binding. */
+/** Prompt 6 fallback; Prompt 7+ replaces the Hilt binding with a governed writer. */
 @Singleton
 class RafGitFsBlockedRemoteWriteCapability @Inject constructor() : RafGitFsRemoteWriteCapability {
     override suspend fun execute(
@@ -27,12 +29,14 @@ class RafGitFsBlockedRemoteWriteCapability @Inject constructor() : RafGitFsRemot
 @Singleton
 class RafGitFsStepExecutor @Inject constructor(
     private val cacheManager: RafGitFsOfflineCacheManager,
-    private val remoteWrite: RafGitFsRemoteWriteCapability
+    private val remoteWrite: RafGitFsRemoteWriteCapability,
+    private val securityGate: RafGitFsRuntimeSecurityGate
 ) {
-    suspend fun execute(plan: RafGitFsSyncPlan, step: RafGitFsPlanStep): RafGitFsExecutionOutcome {
-        if (!step.executableNow && step.risk != RafGitFsOperationRisk.REMOTE_BRANCH_WRITE) {
-            return blocked(step, "STEP_NOT_EXECUTABLE")
-        }
+    suspend fun execute(
+        plan: RafGitFsSyncPlan,
+        step: RafGitFsPlanStep
+    ): RafGitFsExecutionOutcome {
+        if (!step.executableNow) return blocked(step, "STEP_NOT_EXECUTABLE")
         return when (step.action) {
             RafGitFsPlannedAction.NO_OP -> RafGitFsExecutionOutcome(
                 step, "NO_OP", "OBSERVED", observedSha = step.observedSha
@@ -44,13 +48,34 @@ class RafGitFsStepExecutor @Inject constructor(
                 "CACHE_KEY_REQUIRED_FOR_EXPLICIT_DELETE"
             )
             RafGitFsPlannedAction.CREATE_WORKSPACE,
-            RafGitFsPlannedAction.WRITE_WORKSPACE_FILE -> blocked(step, "TOKEN_VAZIO_CAPABILITY_PROMPT_7")
+            RafGitFsPlannedAction.WRITE_WORKSPACE_FILE -> blocked(
+                step,
+                "LOCAL_WORKSPACE_UI_CAPABILITY_ONLY"
+            )
             RafGitFsPlannedAction.CREATE_BRANCH,
             RafGitFsPlannedAction.CREATE_COMMIT,
             RafGitFsPlannedAction.PUSH_BRANCH,
-            RafGitFsPlannedAction.OPEN_PULL_REQUEST -> remoteWrite.execute(plan, step)
-            RafGitFsPlannedAction.DELETE_REMOTE -> blocked(step, "DESTRUCTIVE_REMOTE_PERMANENTLY_BLOCKED")
+            RafGitFsPlannedAction.OPEN_PULL_REQUEST -> executeRemote(plan, step)
+            RafGitFsPlannedAction.DELETE_REMOTE -> blocked(
+                step,
+                "DESTRUCTIVE_REMOTE_PERMANENTLY_BLOCKED"
+            )
         }
+    }
+
+    private suspend fun executeRemote(
+        plan: RafGitFsSyncPlan,
+        step: RafGitFsPlanStep
+    ): RafGitFsExecutionOutcome {
+        val assessment = securityGate.assessAfterExactApproval(plan)
+        if (assessment.decision != RafGitFsSecurityDecision.ALLOW) {
+            val detail = (assessment.blockingCodes + assessment.tokenVazioCodes)
+                .distinct()
+                .joinToString(",")
+                .ifBlank { "SECURITY_ASSESSMENT_NOT_ALLOW" }
+            return blocked(step, detail)
+        }
+        return remoteWrite.execute(plan, step)
     }
 
     private suspend fun cache(
@@ -75,11 +100,17 @@ class RafGitFsStepExecutor @Inject constructor(
                 detail = result.value.checksumSha256.take(16)
             )
             is RafGitFsCacheResult.TokenVazio -> RafGitFsExecutionOutcome(
-                step, "TOKEN_VAZIO", "TOKEN_VAZIO", retryable = true,
+                step,
+                "TOKEN_VAZIO",
+                "TOKEN_VAZIO",
+                retryable = true,
                 detail = RafGitFsCanonical.sanitize(result.reason)
             )
             is RafGitFsCacheResult.Failure -> RafGitFsExecutionOutcome(
-                step, "FAILED", "ERROR", retryable = result.retryable,
+                step,
+                "FAILED",
+                "ERROR",
+                retryable = result.retryable,
                 detail = RafGitFsCanonical.sanitize("${result.code}:${result.message}")
             )
         }
