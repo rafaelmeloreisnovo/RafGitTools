@@ -243,7 +243,14 @@ class RafGitFsGovernedSyncEngine @Inject constructor(
             0, RafGitFsPlannedAction.NO_OP, null, RafGitFsOperationRisk.READ_ONLY,
             null, null, false, false, code
         )
-        return RafGitFsExecutionOutcome(step, "BLOCKED", "TOKEN_VAZIO", false, false, code)
+        return RafGitFsExecutionOutcome(
+            step = step,
+            result = "BLOCKED",
+            evidenceState = "TOKEN_VAZIO",
+            observedSha = null,
+            retryable = false,
+            detail = code
+        )
     }
 
     private fun event(
