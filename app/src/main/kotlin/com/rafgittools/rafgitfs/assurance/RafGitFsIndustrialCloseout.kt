@@ -39,6 +39,7 @@ object RafGitFsIndustrialCloseout {
             implemented("selective_cache_offline", "PR_303"),
             implemented("governed_sync_jobs", "PR_304"),
             implemented("workspace_branch_commit_draft_pr", "PR_305"),
+            implemented("industrial_security_tests_closeout", "PR_306"),
             blocked("direct_protected_branch_write", "BLOCKED_BY_DEFAULT"),
             blocked("remote_delete", "PERMANENT_POLICY_BLOCK"),
             tokenVazio("github_actions_pass", "Run workflows with observable steps and logs"),
@@ -63,7 +64,9 @@ object RafGitFsIndustrialCloseout {
             generatedAt = generatedAt,
             capabilities = capabilities,
             securityControls = 11,
-            unresolvedTokenVazio = capabilities.count { it.evidence == RafGitFsEvidenceLevel.TOKEN_VAZIO },
+            unresolvedTokenVazio = capabilities.count {
+                it.evidence == RafGitFsEvidenceLevel.TOKEN_VAZIO
+            },
             closeoutHash = RafGitFsCanonical.sha256(canonical),
             claimAllowed = false
         )
