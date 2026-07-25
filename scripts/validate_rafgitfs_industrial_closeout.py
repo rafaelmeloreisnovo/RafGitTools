@@ -37,10 +37,7 @@ def read(root: Path, relative: str) -> str:
 def validate(root: Path) -> dict:
     src = {p: read(root, p) for p in FILES}
     policy, runtime, budget, closeout, executor, components, security_test, closeout_test, android_test, threat, status, roadmap, matrix_text, receipt_text, workflow = [src[p] for p in FILES]
-    production_text = "\n".join(
-        src[p] for p in FILES
-        if "/src/test/" not in p and "/src/androidTest/" not in p and not p.startswith("tests/")
-    )
+    production_text = "\n".join(src[p] for p in FILES[:6] + FILES[12:14])
 
     controls = set(re.findall(r'"(SEC-[A-Z]+-\d{3})"', policy))
     if len(controls) != 11:
