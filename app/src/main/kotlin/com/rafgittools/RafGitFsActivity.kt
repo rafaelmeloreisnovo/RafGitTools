@@ -4,9 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -20,6 +20,7 @@ import com.rafgittools.ui.screens.rafgitfs.VirtualFileBrowserScreen
 import com.rafgittools.ui.screens.rafgitfs.VirtualFileViewerScreen
 import com.rafgittools.ui.theme.RafGitToolsTheme
 import dagger.hilt.android.AndroidEntryPoint
+import java.net.URLDecoder
 import java.net.URLEncoder
 
 @AndroidEntryPoint
@@ -49,13 +50,14 @@ class RafGitFsActivity : ComponentActivity() {
                         composable(
                             route = RafGitFsRoute.Repositories.route,
                             arguments = listOf(navArgument("profileId") { type = NavType.StringType })
-                        ) {
+                        ) { backStackEntry ->
+                            val profileId = decode(backStackEntry.arguments?.getString("profileId"))
                             RepositoryStorageScreen(
                                 onNavigateBack = { navController.popBackStack() },
                                 onOpenRepository = { repository ->
                                     navController.navigate(
                                         RafGitFsRoute.Browser.create(
-                                            profileId = it.arguments?.getString("profileId").orEmpty(),
+                                            profileId = profileId,
                                             repository = repository.fullName,
                                             ref = repository.defaultBranch,
                                             path = ""
@@ -136,3 +138,4 @@ private sealed class RafGitFsRoute(val route: String) {
 }
 
 private fun encode(value: String): String = URLEncoder.encode(value, "UTF-8")
+private fun decode(value: String?): String = value?.let { URLDecoder.decode(it, "UTF-8") }.orEmpty()
