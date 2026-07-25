@@ -16,6 +16,8 @@ on:
       - 'app/src/androidTest/kotlin/com/rafgittools/rafgitfs/**'
       - 'scripts/validate_rafgitfs_*.py'
       - 'tests/test_validate_rafgitfs_*.py'
+      - 'docs/RAFGITFS_*.md'
+      - 'artifacts/rafgitfs-*.json'
       - '.github/workflows/rafgitfs-room-v6-validation.yml'
   pull_request:
     paths:
@@ -30,6 +32,8 @@ on:
       - 'app/src/androidTest/kotlin/com/rafgittools/rafgitfs/**'
       - 'scripts/validate_rafgitfs_*.py'
       - 'tests/test_validate_rafgitfs_*.py'
+      - 'docs/RAFGITFS_*.md'
+      - 'artifacts/rafgitfs-*.json'
       - '.github/workflows/rafgitfs-room-v6-validation.yml'
 
 permissions:
@@ -42,7 +46,7 @@ concurrency:
 jobs:
   structural-gates:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with: { persist-credentials: false }
@@ -76,6 +80,10 @@ jobs:
         run: python3 scripts/validate_rafgitfs_git_write.py --write-report artifacts/rafgitfs-git-write-validation.json
       - name: Test Prompt 7 adversarial gate
         run: python3 -m unittest tests/test_validate_rafgitfs_git_write.py -v
+      - name: Validate Prompt 8 industrial closeout
+        run: python3 scripts/validate_rafgitfs_industrial_closeout.py --write-report artifacts/rafgitfs-industrial-closeout-validation.json
+      - name: Test Prompt 8 adversarial gate
+        run: python3 -m unittest tests/test_validate_rafgitfs_industrial_closeout.py -v
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -86,7 +94,7 @@ jobs:
 
   android-room-compile:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with: { persist-credentials: false }
@@ -95,6 +103,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Compile devDebug Kotlin, Compose and Room KSP
         run: ./gradlew --no-daemon :app:compileDevDebugKotlin
+      - name: Compile Android instrumented test sources
+        run: ./gradlew --no-daemon :app:compileDevDebugAndroidTestKotlin
       - name: Test Prompt 3 JVM engine
         run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsGithubEngineTest*'
       - name: Test Prompt 4 UI path invariants
@@ -105,3 +115,5 @@ jobs:
         run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsGovernedSyncTest*'
       - name: Test Prompt 7 write contracts
         run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsWriteContractsTest*'
+      - name: Test Prompt 8 assurance
+        run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsSecurityPolicyTest*' --tests '*RafGitFsCloseoutTest*'
