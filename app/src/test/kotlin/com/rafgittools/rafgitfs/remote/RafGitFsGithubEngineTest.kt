@@ -47,10 +47,13 @@ class RafGitFsGithubEngineTest {
             ),
             favoritePaths = setOf("docs/readme.md"),
             observedAt = 1L
-        )
-        assertEquals(listOf("DIRECTORY", "SYMLINK", "FILE", "SUBMODULE"), mapped.map { it.entryType })
-        assertTrue(mapped.first { it.path == "docs/readme.md" }.isFavorite)
-        assertEquals("docs", mapped.first { it.path == "docs/readme.md" }.parentPath)
+        ).associateBy { it.path }
+        assertEquals("DIRECTORY", mapped.getValue("docs").entryType)
+        assertEquals("FILE", mapped.getValue("docs/readme.md").entryType)
+        assertEquals("SYMLINK", mapped.getValue("current").entryType)
+        assertEquals("SUBMODULE", mapped.getValue("vendor/lib").entryType)
+        assertTrue(mapped.getValue("docs/readme.md").isFavorite)
+        assertEquals("docs", mapped.getValue("docs/readme.md").parentPath)
     }
 
     @Test
