@@ -1,0 +1,78 @@
+{
+  "schema_version": "raf.federated-runtime-contract.v1",
+  "generated_at": "2026-07-25T00:00:00-03:00",
+  "control_plane": "rafaelmeloreisnovo/RafGitTools",
+  "invariant": "authorization -> typed job -> bounded execution -> receipt -> evidence -> decision -> rollback",
+  "claim_allowed": false,
+  "participants": {
+    "control": {
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "role": "authorize-route-and-record",
+      "may_execute": false
+    },
+    "executor": {
+      "repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "role": "bounded-local-execution",
+      "may_invent_authorization": false
+    },
+    "evidence": {
+      "repository": "rafaelmeloreisnovo/RafPolimata",
+      "role": "validate-and-compile-evidence",
+      "may_promote_without_receipt": false
+    },
+    "vm": {
+      "repository": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "role": "vm-lifecycle-only-when-requested",
+      "default_state": "vm-stopped-no-image-mutation"
+    }
+  },
+  "android_ipc": {
+    "protocol_version": 2,
+    "discovery_action": "com.vectras.vm.ACTION_QUERY_INTEGRATION",
+    "response_action": "com.vectras.vm.ACTION_INTEGRATION_RESPONSE",
+    "termux_package": "com.termux.rafacodephi",
+    "vectras_package": "com.rafacodephi.app",
+    "run_command_permission": "com.termux.rafacodephi.permission.RUN_COMMAND",
+    "run_command_service": "com.termux.app.RunCommandService",
+    "execution_mode": "run_command_service",
+    "private_paths_exposed": false,
+    "allowed_qemu_binaries": [
+      "qemu-system-x86_64",
+      "qemu-system-x86_64-rafaelia",
+      "qemu-system-x86_64-rafacodephi",
+      "qemu-system-aarch64",
+      "qemu-system-aarch64-rafaelia",
+      "qemu-system-i386"
+    ]
+  },
+  "required_receipt_fields": [
+    "schema",
+    "transaction_id",
+    "producer",
+    "producer_commit",
+    "termux_commit",
+    "protocol_version",
+    "binary_name",
+    "input_sha256",
+    "output_sha256",
+    "status",
+    "dispatch_state",
+    "execution_exit_code",
+    "guest_boot_artifact_sha256",
+    "private_paths_exposed",
+    "effects_observed",
+    "safe_state",
+    "rollback_anchor",
+    "claim_allowed",
+    "F_ok",
+    "F_gap",
+    "F_next"
+  ],
+  "promotion_gates": {
+    "dispatch_is_not_execution": true,
+    "path_discovery_is_not_execution": true,
+    "device_runtime_requires_receipt": true,
+    "vm_start_requires_vm_required_true": true,
+    "missing_evidence_state": "TOKEN_VAZIO"
+  }
+}
