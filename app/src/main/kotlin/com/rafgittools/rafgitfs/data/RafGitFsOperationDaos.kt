@@ -9,28 +9,23 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WorkspaceDao {
-    @Upsert
-    suspend fun upsert(workspace: WorkspaceEntity)
-
+    @Upsert suspend fun upsert(workspace: WorkspaceEntity)
     @Query("SELECT * FROM workspaces WHERE profileId = :profileId ORDER BY updatedAt DESC")
     fun observeAll(profileId: String): Flow<List<WorkspaceEntity>>
-
     @Query("SELECT * FROM workspaces WHERE workspaceId = :workspaceId LIMIT 1")
     suspend fun getById(workspaceId: String): WorkspaceEntity?
-
     @Query("DELETE FROM workspaces WHERE workspaceId = :workspaceId")
     suspend fun deleteLocalWorkspace(workspaceId: String): Int
 }
 
 @Dao
 interface TransferJobDao {
-    @Upsert
-    suspend fun upsert(job: TransferJobEntity)
+    @Upsert suspend fun upsert(job: TransferJobEntity)
 
     @Query(
         """SELECT * FROM transfer_jobs
            WHERE profileId = :profileId
-             AND syncState IN ('SCANNING','DIFF_READY','PLAN_READY','APPROVAL_REQUIRED','EXECUTING','PAUSED')
+             AND syncState IN ('CREATED','SCANNING','DIFF_READY','PLAN_READY','APPROVAL_REQUIRED','APPROVED','EXECUTING','PAUSED','TOKEN_VAZIO')
            ORDER BY updatedAt DESC"""
     )
     fun observeActive(profileId: String): Flow<List<TransferJobEntity>>
@@ -41,31 +36,49 @@ interface TransferJobDao {
              AND operationType IN ('CACHE_DOWNLOAD','PIN_OFFLINE')
              AND syncState IN ('PAUSED','FAILED')
              AND retryCount < maxRetries
-           ORDER BY createdAt ASC
-           LIMIT :limit"""
+           ORDER BY createdAt ASC LIMIT :limit"""
     )
     suspend fun listResumableCacheJobs(profileId: String, limit: Int): List<TransferJobEntity>
 
     @Query("SELECT * FROM transfer_jobs WHERE jobId = :jobId LIMIT 1")
     suspend fun getById(jobId: String): TransferJobEntity?
 
+    @Query("SELECT * FROM transfer_jobs WHERE requestId = :requestId LIMIT 1")
+    suspend fun getByRequestId(requestId: String): TransferJobEntity?
+
     @Query(
         """UPDATE transfer_jobs
-           SET bytesCompleted = :bytesCompleted, bytesTotal = :bytesTotal, updatedAt = :updatedAt
-           WHERE jobId = :jobId"""
+           SET bytesCompleted=:bytesCompleted, bytesTotal=:bytesTotal, updatedAt=:updatedAt
+           WHERE jobId=:jobId AND syncState NOT IN ('CANCELLED','COMPLETE')"""
     )
     suspend fun updateProgress(
         jobId: String,
         bytesCompleted: Long,
         bytesTotal: Long?,
         updatedAt: Long = System.currentTimeMillis()
-    )
+    ): Int
 
     @Query(
         """UPDATE transfer_jobs
-           SET phase = :phase, syncState = :syncState, lastErrorCode = :lastErrorCode,
-               retryCount = :retryCount, updatedAt = :updatedAt
-           WHERE jobId = :jobId"""
+           SET phase=:phase, syncState=:newState, lastErrorCode=:lastErrorCode,
+               retryCount=:retryCount, updatedAt=:updatedAt
+           WHERE jobId=:jobId AND syncState=:expectedState"""
+    )
+    suspend fun compareAndSetState(
+        jobId: String,
+        expectedState: String,
+        phase: String,
+        newState: String,
+        retryCount: Int,
+        lastErrorCode: String?,
+        updatedAt: Long = System.currentTimeMillis()
+    ): Int
+
+    @Query(
+        """UPDATE transfer_jobs
+           SET phase=:phase, syncState=:syncState, lastErrorCode=:lastErrorCode,
+               retryCount=:retryCount, updatedAt=:updatedAt
+           WHERE jobId=:jobId AND syncState NOT IN ('CANCELLED','COMPLETE')"""
     )
     suspend fun updateState(
         jobId: String,
@@ -74,42 +87,59 @@ interface TransferJobDao {
         retryCount: Int,
         lastErrorCode: String?,
         updatedAt: Long = System.currentTimeMillis()
+    ): Int
+
+    @Query(
+        """UPDATE transfer_jobs SET phase='EXECUTE', syncState='PAUSED',
+           lastErrorCode=:reason, updatedAt=:updatedAt
+           WHERE jobId=:jobId AND syncState='EXECUTING'"""
     )
+    suspend fun pause(jobId: String, reason: String, updatedAt: Long = System.currentTimeMillis()): Int
+
+    @Query(
+        """UPDATE transfer_jobs SET phase='RECEIPT', syncState='CANCELLED',
+           lastErrorCode=:reason, updatedAt=:updatedAt
+           WHERE jobId=:jobId AND syncState NOT IN ('COMPLETE','CANCELLED')"""
+    )
+    suspend fun cancel(jobId: String, reason: String, updatedAt: Long = System.currentTimeMillis()): Int
 }
 
 @Dao
 interface StagedOperationDao {
-    @Upsert
-    suspend fun upsert(operation: StagedOperationEntity)
-
+    @Upsert suspend fun upsert(operation: StagedOperationEntity)
+    @Upsert suspend fun upsertAll(operations: List<StagedOperationEntity>)
     @Query("SELECT * FROM staged_operations WHERE workspaceId = :workspaceId ORDER BY createdAt ASC")
     suspend fun listForWorkspace(workspaceId: String): List<StagedOperationEntity>
-
     @Query("SELECT * FROM staged_operations WHERE jobId = :jobId ORDER BY createdAt ASC")
     suspend fun listForJob(jobId: String): List<StagedOperationEntity>
-
     @Query("DELETE FROM staged_operations WHERE operationId = :operationId")
     suspend fun delete(operationId: String): Int
 }
 
 @Dao
 interface SyncConflictDao {
-    @Upsert
-    suspend fun upsert(conflict: SyncConflictEntity)
+    @Upsert suspend fun upsert(conflict: SyncConflictEntity)
+    @Upsert suspend fun upsertAll(conflicts: List<SyncConflictEntity>)
+
+    @Query("SELECT * FROM sync_conflicts WHERE jobId=:jobId ORDER BY detectedAt ASC")
+    suspend fun listForJob(jobId: String): List<SyncConflictEntity>
 
     @Query(
         """SELECT * FROM sync_conflicts
-           WHERE workspaceId = :workspaceId AND resolvedAt IS NULL
+           WHERE workspaceId=:workspaceId AND resolvedAt IS NULL
            ORDER BY detectedAt ASC"""
     )
     fun observeUnresolved(workspaceId: String): Flow<List<SyncConflictEntity>>
 
     @Query(
-        """UPDATE sync_conflicts
-           SET resolution = :resolution, resolvedAt = :resolvedAt
-           WHERE conflictId = :conflictId AND resolvedAt IS NULL"""
+        """UPDATE sync_conflicts SET resolution=:resolution, resolvedAt=:resolvedAt
+           WHERE conflictId=:conflictId AND resolvedAt IS NULL"""
     )
-    suspend fun resolve(conflictId: String, resolution: String, resolvedAt: Long = System.currentTimeMillis()): Int
+    suspend fun resolve(
+        conflictId: String,
+        resolution: String,
+        resolvedAt: Long = System.currentTimeMillis()
+    ): Int
 }
 
 /** Append-only API: insert and read are exposed; update/delete are intentionally absent. */
@@ -117,15 +147,11 @@ interface SyncConflictDao {
 interface OperationReceiptDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun append(receipt: OperationReceiptEntity)
-
     @Query("SELECT * FROM operation_receipts WHERE requestId = :requestId LIMIT 1")
     suspend fun getByRequestId(requestId: String): OperationReceiptEntity?
-
     @Query(
-        """SELECT * FROM operation_receipts
-           WHERE profileId = :profileId
-           ORDER BY createdAt DESC
-           LIMIT :limit"""
+        """SELECT * FROM operation_receipts WHERE profileId=:profileId
+           ORDER BY createdAt DESC LIMIT :limit"""
     )
     fun observeRecent(profileId: String, limit: Int = 100): Flow<List<OperationReceiptEntity>>
 }
