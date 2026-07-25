@@ -11,13 +11,15 @@ object RafGitFsCanonical {
         baseCommitSha: String?,
         steps: List<RafGitFsPlanStep>,
         conflicts: List<RafGitFsDiffItem>,
-        generatedAt: Long
+        generatedAt: Long,
+        workspaceId: String? = null
     ): String = buildString {
         append("requestId=").append(escape(requestId)).append('\n')
         append("profileId=").append(escape(profileId)).append('\n')
         append("repository=").append(escape(repositoryFullName)).append('\n')
         append("ref=").append(escape(refName)).append('\n')
         append("base=").append(baseCommitSha.orEmpty().lowercase()).append('\n')
+        append("workspace=").append(escape(workspaceId.orEmpty())).append('\n')
         append("generatedAt=").append(generatedAt).append('\n')
         steps.sortedBy { it.order }.forEach { step ->
             append("step=")
@@ -80,7 +82,5 @@ class RafGitFsSanitizedLog {
     @Synchronized
     fun snapshot(): List<RafGitFsLogEvent> = events.toList()
 
-    companion object {
-        private const val MAX_EVENTS = 256
-    }
+    companion object { private const val MAX_EVENTS = 256 }
 }
