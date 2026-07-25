@@ -35,6 +35,17 @@ interface TransferJobDao {
     )
     fun observeActive(profileId: String): Flow<List<TransferJobEntity>>
 
+    @Query(
+        """SELECT * FROM transfer_jobs
+           WHERE profileId=:profileId
+             AND operationType IN ('CACHE_DOWNLOAD','PIN_OFFLINE')
+             AND syncState IN ('PAUSED','FAILED')
+             AND retryCount < maxRetries
+           ORDER BY createdAt ASC
+           LIMIT :limit"""
+    )
+    suspend fun listResumableCacheJobs(profileId: String, limit: Int): List<TransferJobEntity>
+
     @Query("SELECT * FROM transfer_jobs WHERE jobId = :jobId LIMIT 1")
     suspend fun getById(jobId: String): TransferJobEntity?
 
@@ -101,9 +112,7 @@ interface SyncConflictDao {
     suspend fun resolve(conflictId: String, resolution: String, resolvedAt: Long = System.currentTimeMillis()): Int
 }
 
-/**
- * Append-only API: insert and read are exposed; update/delete are intentionally absent.
- */
+/** Append-only API: insert and read are exposed; update/delete are intentionally absent. */
 @Dao
 interface OperationReceiptDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
