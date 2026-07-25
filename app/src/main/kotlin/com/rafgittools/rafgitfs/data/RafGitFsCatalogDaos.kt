@@ -49,8 +49,17 @@ interface RepositoryRefDao {
         refName: String
     ): RepositoryRefEntity?
 
-    @Query("DELETE FROM repository_refs WHERE profileId = :profileId AND lastIndexedAt < :indexedBefore")
-    suspend fun deleteStale(profileId: String, indexedBefore: Long): Int
+    @Query(
+        """DELETE FROM repository_refs
+           WHERE profileId = :profileId
+             AND repositoryFullName = :repositoryFullName
+             AND lastIndexedAt < :indexedBefore"""
+    )
+    suspend fun deleteStale(
+        profileId: String,
+        repositoryFullName: String,
+        indexedBefore: Long
+    ): Int
 }
 
 @Dao
@@ -87,6 +96,31 @@ interface VirtualTreeDao {
         refName: String,
         path: String
     ): VirtualTreeEntryEntity?
+
+    @Query(
+        """SELECT COUNT(*) FROM virtual_tree_entries
+           WHERE profileId = :profileId
+             AND repositoryFullName = :repositoryFullName
+             AND refName = :refName"""
+    )
+    suspend fun countForRef(
+        profileId: String,
+        repositoryFullName: String,
+        refName: String
+    ): Int
+
+    @Query(
+        """SELECT path FROM virtual_tree_entries
+           WHERE profileId = :profileId
+             AND repositoryFullName = :repositoryFullName
+             AND refName = :refName
+             AND isFavorite = 1"""
+    )
+    suspend fun listFavoritePaths(
+        profileId: String,
+        repositoryFullName: String,
+        refName: String
+    ): List<String>
 
     @Query(
         """SELECT * FROM virtual_tree_entries
