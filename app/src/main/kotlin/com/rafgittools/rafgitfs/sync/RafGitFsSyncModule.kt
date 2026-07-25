@@ -1,5 +1,6 @@
 package com.rafgittools.rafgitfs.sync
 
+import com.rafgittools.rafgitfs.write.RafGitFsGithubBranchWriter
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -12,6 +13,6 @@ abstract class RafGitFsSyncModule {
     @Binds
     @Singleton
     abstract fun bindRemoteWriteCapability(
-        implementation: RafGitFsBlockedRemoteWriteCapability
+        implementation: RafGitFsGithubBranchWriter
     ): RafGitFsRemoteWriteCapability
 }
