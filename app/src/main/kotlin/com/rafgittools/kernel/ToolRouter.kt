@@ -14,6 +14,7 @@ class ToolRouter @Inject constructor(
     private val jGitService: JGitService,
 ) {
     private val TAG = "RafToolRouter"
+    private val termuxHealthProbe = TermuxHealthProbe()
 
     fun route(toolCallJson: String, userAuthenticated: Boolean = false): String {
         val call = runCatching { JSONObject(toolCallJson) }.getOrElse {
@@ -33,7 +34,7 @@ class ToolRouter @Inject constructor(
         return when (tool) {
             "git.status"    -> handleGitStatus(call)
             "git.diff"      -> handleGitDiff(call)
-            "termux.health" -> tokenVazio(tool, "runtime_transport_not_installed")
+            "termux.health" -> handleTermuxHealth(call)
             else            -> tokenVazio(tool, "handler_not_implemented")
         }
     }
@@ -98,6 +99,23 @@ class ToolRouter @Inject constructor(
                 }
             )
         }
+    }
+
+    private fun handleTermuxHealth(call: JSONObject): String {
+        val endpoint = call.optString("endpoint", TermuxHealthProbe.DEFAULT_ENDPOINT)
+        val timeoutMs = call.optInt("timeout_ms", TermuxHealthProbe.DEFAULT_TIMEOUT_MS)
+        val result = termuxHealthProbe.probe(endpoint, timeoutMs)
+
+        return JSONObject().apply {
+            put("tool", "termux.health")
+            put("status", result.state.name)
+            put("transport", result.transport)
+            put("endpoint", result.endpoint)
+            result.responseCode?.let { put("response_code", it) }
+            result.latencyMs?.let { put("latency_ms", it) }
+            result.body?.let { put("body", it) }
+            result.reason?.let { put("reason", it) }
+        }.toString()
     }
 
     private fun tokenVazio(tool: String, reason: String): String =
