@@ -1,0 +1,82 @@
+name: RafGitFS Room V6 Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/rafgitfs-foundation-v1-20260725
+    paths:
+      - 'app/src/main/kotlin/com/rafgittools/rafgitfs/**'
+      - 'app/src/main/kotlin/com/rafgittools/data/cache/CacheDatabase.kt'
+      - 'app/src/main/kotlin/com/rafgittools/di/AppModule.kt'
+      - 'app/src/androidTest/kotlin/com/rafgittools/rafgitfs/**'
+      - 'scripts/validate_rafgitfs_*.py'
+      - 'tests/test_validate_rafgitfs_*.py'
+      - '.github/workflows/rafgitfs-room-v6-validation.yml'
+  pull_request:
+    paths:
+      - 'app/src/main/kotlin/com/rafgittools/rafgitfs/**'
+      - 'app/src/main/kotlin/com/rafgittools/data/cache/CacheDatabase.kt'
+      - 'app/src/main/kotlin/com/rafgittools/di/AppModule.kt'
+      - 'app/src/androidTest/kotlin/com/rafgittools/rafgitfs/**'
+      - 'scripts/validate_rafgitfs_*.py'
+      - 'tests/test_validate_rafgitfs_*.py'
+      - '.github/workflows/rafgitfs-room-v6-validation.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rafgitfs-room-v6-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  structural-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate Prompt 1 foundation
+        run: python3 scripts/validate_rafgitfs_foundation.py
+
+      - name: Test Prompt 1 foundation
+        run: python3 -m unittest tests/test_validate_rafgitfs_foundation.py -v
+
+      - name: Validate Room v6
+        run: python3 scripts/validate_rafgitfs_room_v6.py --write-report artifacts/rafgitfs-room-v6-validation.json
+
+      - name: Test Room v6 adversarial gate
+        run: python3 -m unittest tests/test_validate_rafgitfs_room_v6.py -v
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rafgitfs-room-v6-structural-report
+          path: artifacts/rafgitfs-room-v6-validation.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  android-room-compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Compile devDebug Kotlin and Room KSP
+        run: ./gradlew --no-daemon :app:compileDevDebugKotlin
