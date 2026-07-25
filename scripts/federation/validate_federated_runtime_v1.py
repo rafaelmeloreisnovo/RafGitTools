@@ -17,6 +17,13 @@ EXPECTED_ROUTE = {
     "vm": "rafaelmeloreisnovo/Vectras-VM-Android",
 }
 EXPECTED_PERMISSION = "com.termux.rafacodephi.permission.RUN_COMMAND"
+EXPECTED_RECEIPT_FIELDS = {
+    "schema", "transaction_id", "producer", "producer_commit", "termux_commit",
+    "protocol_version", "binary_name", "input_sha256", "output_sha256", "status",
+    "dispatch_state", "execution_exit_code", "guest_boot_artifact_sha256",
+    "private_paths_exposed", "effects_observed", "safe_state", "rollback_anchor",
+    "claim_allowed", "F_ok", "F_gap", "F_next",
+}
 
 
 class ContractError(ValueError):
@@ -65,6 +72,10 @@ def validate_contract(data: dict[str, Any]) -> dict[str, Any]:
         errors.append("allowed_qemu_binaries")
     elif any(not isinstance(item, str) or not item.startswith("qemu-system-") for item in binaries):
         errors.append("allowed_qemu_binary_name")
+
+    receipt_fields = data.get("required_receipt_fields")
+    if not isinstance(receipt_fields, list) or set(receipt_fields) != EXPECTED_RECEIPT_FIELDS:
+        errors.append("required_receipt_fields")
 
     gates = data.get("promotion_gates")
     if not isinstance(gates, dict):
