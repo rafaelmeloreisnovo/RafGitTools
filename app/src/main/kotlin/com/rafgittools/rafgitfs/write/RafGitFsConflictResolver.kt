@@ -18,12 +18,13 @@ class RafGitFsConflictResolver @Inject constructor(
         confirmation: String
     ): Boolean {
         if (confirmation != "RESOLVE ${conflictId.takeLast(12)} ${resolution.name}") return false
-        val conflict = conflictDao.listForJob(conflictId.substringBefore(':')).firstOrNull { it.conflictId == conflictId }
-            ?: return false
+        val conflict = conflictDao.getById(conflictId) ?: return false
+        if (conflict.resolvedAt != null) return false
         if (conflict.workspaceId != null && conflict.workspaceId != workspaceId) return false
         when (resolution) {
             Resolution.USE_REMOTE -> {
-                val operation = stagedDao.listForWorkspace(workspaceId).firstOrNull { it.path == conflict.path }
+                val operation = stagedDao.listForWorkspace(workspaceId)
+                    .firstOrNull { it.path == conflict.path && it.operationType.startsWith("UPSERT_FILE:") }
                 if (operation != null && !workspaceStore.rollbackFile(workspaceId, operation.operationId)) return false
             }
             Resolution.USE_LOCAL,
