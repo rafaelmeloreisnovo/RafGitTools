@@ -14,7 +14,7 @@ Regra: `claim_allowed=false` até execução observável e revisão externa.
 | 5 | cache físico e offline | `PR #303` | dispositivo/pressão de armazenamento `TOKEN_VAZIO` |
 | 6 | jobs e sincronização governada | `PR #304` | CI observável `TOKEN_VAZIO` |
 | 7 | workspace, branch, commit, push e PR draft | `PR #305` | execução Git real `TOKEN_VAZIO` |
-| 8 | segurança, acessibilidade, testes e fechamento | `IMPLEMENTED_SOURCE` | revisão externa `TOKEN_VAZIO` |
+| 8 | segurança, acessibilidade, testes e fechamento | `PR #306` | revisão externa `TOKEN_VAZIO` |
 
 ## Capacidades implementadas em fonte
 
@@ -89,6 +89,13 @@ A V1 poderá mudar de `IMPLEMENTED_SOURCE` para `VALIDATED_V1` somente quando ex
 10. recibo de assinatura/release;
 11. baseline de desempenho declarado;
 12. revisão de segurança independente.
+
+## Recibo canônico
+
+```yaml
+prompt_8_receipt: PR_306_OPEN
+canonical_sha256: 73e73a9696ecf3e448fc098aa9a691151c9ceacf315fcdf9b622663bb55b1f25
+```
 
 ## Veredito
 
