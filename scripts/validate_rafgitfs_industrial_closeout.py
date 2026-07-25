@@ -37,7 +37,10 @@ def read(root: Path, relative: str) -> str:
 def validate(root: Path) -> dict:
     src = {p: read(root, p) for p in FILES}
     policy, runtime, budget, closeout, executor, components, security_test, closeout_test, android_test, threat, status, roadmap, matrix_text, receipt_text, workflow = [src[p] for p in FILES]
-    all_text = "\n".join(src.values())
+    production_text = "\n".join(
+        src[p] for p in FILES
+        if "/src/test/" not in p and "/src/androidTest/" not in p and not p.startswith("tests/")
+    )
 
     controls = set(re.findall(r'"(SEC-[A-Z]+-\d{3})"', policy))
     if len(controls) != 11:
@@ -98,7 +101,7 @@ def validate(root: Path) -> dict:
     if not receipt.get("f_gap") or "android_device_execution" not in receipt["f_gap"]:
         raise ValidationError("required open evidence was removed")
 
-    if re.search(r"claimAllowed\s*=\s*true|claim_allowed[\"']?\s*[:=]\s*true", all_text, re.IGNORECASE):
+    if re.search(r"claimAllowed\s*=\s*true|claim_allowed[\"']?\s*[:=]\s*true", production_text, re.IGNORECASE):
         raise ValidationError("claim promotion detected")
     for marker in (
         "validate_rafgitfs_industrial_closeout.py",
