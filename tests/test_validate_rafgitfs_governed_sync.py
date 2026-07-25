@@ -29,7 +29,7 @@ class GovernedSyncGateTest(unittest.TestCase):
         self.assertEqual("PASS", validate(self.root)["status"])
 
     def test_claim_promotion_is_rejected(self):
-        self.mutate(FILES[5], "claimAllowed = false", "claimAllowed = true")
+        self.mutate(FILES[0], "claimAllowed: Boolean = false", "claimAllowed: Boolean = true")
         with self.assertRaises(ValidationError): validate(self.root)
 
     def test_approval_gate_removal_is_rejected(self):
