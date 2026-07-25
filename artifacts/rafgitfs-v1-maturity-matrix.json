@@ -10,7 +10,7 @@
     {"prompt": 5, "capability": "cache_offline", "source_state": "IMPLEMENTED_SOURCE", "receipt": "PR_303", "execution_state": "TOKEN_VAZIO"},
     {"prompt": 6, "capability": "governed_sync", "source_state": "IMPLEMENTED_SOURCE", "receipt": "PR_304", "execution_state": "TOKEN_VAZIO"},
     {"prompt": 7, "capability": "governed_git_write", "source_state": "IMPLEMENTED_SOURCE", "receipt": "PR_305", "execution_state": "TOKEN_VAZIO"},
-    {"prompt": 8, "capability": "industrial_closeout", "source_state": "IMPLEMENTED_SOURCE", "receipt": "TOKEN_VAZIO_PR_PENDING", "execution_state": "TOKEN_VAZIO"}
+    {"prompt": 8, "capability": "industrial_closeout", "source_state": "IMPLEMENTED_SOURCE", "receipt": "PR_306", "execution_state": "TOKEN_VAZIO"}
   ],
   "blocked_by_policy": [
     "direct_protected_branch_write",
