@@ -1,0 +1,38 @@
+name: Federated Runtime Contract v1
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "contracts/rafaelia-federated-runtime-v1.json"
+      - "scripts/federation/validate_federated_runtime_v1.py"
+      - "tests/test_federated_runtime_v1.py"
+      - "docs/federation/RAFAELIA_FEDERATED_RUNTIME_INVARIANT_V1.md"
+      - ".github/workflows/federated-runtime-contract-v1.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Validate canonical contract
+        run: |
+          python3 scripts/federation/validate_federated_runtime_v1.py \
+            contracts/rafaelia-federated-runtime-v1.json \
+            --report artifacts/federated-runtime-validation.json
+      - name: Run negative tests
+        run: python3 -m unittest tests.test_federated_runtime_v1
+      - name: Upload bounded evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: federated-runtime-contract-v1
+          if-no-files-found: error
+          path: artifacts/federated-runtime-validation.json
