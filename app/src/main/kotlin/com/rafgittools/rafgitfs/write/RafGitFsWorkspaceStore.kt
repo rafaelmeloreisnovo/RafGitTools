@@ -1,6 +1,7 @@
 package com.rafgittools.rafgitfs.write
 
 import android.content.Context
+import com.rafgittools.rafgitfs.cache.RafGitFsChecksums
 import com.rafgittools.rafgitfs.data.StagedOperationDao
 import com.rafgittools.rafgitfs.data.StagedOperationEntity
 import com.rafgittools.rafgitfs.data.WorkspaceDao
@@ -56,7 +57,11 @@ class RafGitFsWorkspaceStore @Inject constructor(
         content: String,
         baseSha: String?
     ): StagedOperationEntity = stageBytes(
-        workspaceId, path, content.toByteArray(Charsets.UTF_8), baseSha, "100644"
+        workspaceId,
+        path,
+        content.toByteArray(Charsets.UTF_8),
+        baseSha,
+        "100644"
     )
 
     suspend fun stageBytes(
@@ -75,7 +80,7 @@ class RafGitFsWorkspaceStore @Inject constructor(
         val target = safeFile(workspaceId, normalized)
         writeAtomic(target, content)
         val now = System.currentTimeMillis()
-        val payloadHash = RafGitFsCanonical.sha256(content.toString(Charsets.ISO_8859_1))
+        val payloadHash = RafGitFsChecksums.sha256(content)
         val operation = StagedOperationEntity(
             operationId = "$workspaceId:${RafGitFsCanonical.sha256(normalized).take(20)}",
             jobId = null,
@@ -91,22 +96,26 @@ class RafGitFsWorkspaceStore @Inject constructor(
             createdAt = now
         )
         stagedDao.upsert(operation)
-        workspaceDao.upsert(workspace.copy(state = "STAGED", updatedAt = now, claimAllowed = false))
+        workspaceDao.upsert(
+            workspace.copy(state = "STAGED", updatedAt = now, claimAllowed = false)
+        )
         return operation
     }
 
     suspend fun rollbackFile(workspaceId: String, operationId: String): Boolean {
-        val operation = stagedDao.listForWorkspace(workspaceId).firstOrNull { it.operationId == operationId }
+        val operation = stagedDao.listForWorkspace(workspaceId)
+            .firstOrNull { it.operationId == operationId && it.operationType.startsWith("UPSERT_FILE:") }
             ?: return false
         val path = operation.path ?: return false
         val deleted = safeFile(workspaceId, path).let { !it.exists() || it.delete() }
         if (!deleted) return false
         stagedDao.delete(operationId)
         val workspace = workspaceDao.getById(workspaceId) ?: return true
-        val remaining = stagedDao.listForWorkspace(workspaceId)
+        val remainingFiles = stagedDao.listForWorkspace(workspaceId)
+            .count { it.operationType.startsWith("UPSERT_FILE:") }
         workspaceDao.upsert(
             workspace.copy(
-                state = if (remaining.isEmpty()) "OPEN" else "STAGED",
+                state = if (remainingFiles == 0) "OPEN" else "STAGED",
                 updatedAt = System.currentTimeMillis(),
                 claimAllowed = false
             )
@@ -123,12 +132,19 @@ class RafGitFsWorkspaceStore @Inject constructor(
                 if (!file.isFile || file.length() > MAX_WORKSPACE_FILE_BYTES) {
                     throw IOException("STAGED_FILE_MISSING_OR_OVERSIZED:$path")
                 }
+                val bytes = file.readBytes()
+                val expected = operation.payloadHash
+                    ?: throw IllegalStateException("PAYLOAD_HASH_MISSING:$path")
+                val observed = RafGitFsChecksums.sha256(bytes)
+                if (!RafGitFsChecksums.constantTimeEquals(expected, observed)) {
+                    throw IOException("STAGED_PAYLOAD_HASH_MISMATCH:$path")
+                }
                 RafGitFsWorkspaceFile(
                     path = path,
-                    bytes = file.readBytes(),
+                    bytes = bytes,
                     mode = operation.operationType.substringAfter(':', "100644"),
                     baseSha = operation.baseSha,
-                    payloadHash = operation.payloadHash ?: throw IllegalStateException("PAYLOAD_HASH_MISSING")
+                    payloadHash = expected
                 )
             }
 
@@ -146,7 +162,13 @@ class RafGitFsWorkspaceStore @Inject constructor(
 
     suspend fun setConflict(workspaceId: String) {
         val workspace = workspaceDao.getById(workspaceId) ?: return
-        workspaceDao.upsert(workspace.copy(state = "CONFLICT", updatedAt = System.currentTimeMillis(), claimAllowed = false))
+        workspaceDao.upsert(
+            workspace.copy(
+                state = "CONFLICT",
+                updatedAt = System.currentTimeMillis(),
+                claimAllowed = false
+            )
+        )
     }
 
     private fun safeWorkspaceRoot(workspaceId: String): File {
@@ -167,7 +189,9 @@ class RafGitFsWorkspaceStore @Inject constructor(
         require(normalized.isNotBlank()) { "EMPTY_PATH" }
         require(normalized.length <= 512) { "PATH_TOO_LONG" }
         require(normalized.split('/').none { it.isBlank() || it == "." || it == ".." }) { "UNSAFE_PATH" }
-        require(!normalized.startsWith(".git/", ignoreCase = true) && normalized != ".git") { "GIT_INTERNAL_PATH_BLOCKED" }
+        require(!normalized.startsWith(".git/", ignoreCase = true) && normalized != ".git") {
+            "GIT_INTERNAL_PATH_BLOCKED"
+        }
         return normalized
     }
 
