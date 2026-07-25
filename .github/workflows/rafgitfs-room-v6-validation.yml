@@ -1,14 +1,15 @@
-name: RafGitFS Room V6 Validation
+name: RafGitFS Validation
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - feature/rafgitfs-foundation-v1-20260725
+      - 'feature/rafgitfs-*'
     paths:
       - 'app/src/main/kotlin/com/rafgittools/rafgitfs/**'
       - 'app/src/main/kotlin/com/rafgittools/data/cache/CacheDatabase.kt'
       - 'app/src/main/kotlin/com/rafgittools/di/AppModule.kt'
+      - 'app/src/test/kotlin/com/rafgittools/rafgitfs/**'
       - 'app/src/androidTest/kotlin/com/rafgittools/rafgitfs/**'
       - 'scripts/validate_rafgitfs_*.py'
       - 'tests/test_validate_rafgitfs_*.py'
@@ -18,6 +19,7 @@ on:
       - 'app/src/main/kotlin/com/rafgittools/rafgitfs/**'
       - 'app/src/main/kotlin/com/rafgittools/data/cache/CacheDatabase.kt'
       - 'app/src/main/kotlin/com/rafgittools/di/AppModule.kt'
+      - 'app/src/test/kotlin/com/rafgittools/rafgitfs/**'
       - 'app/src/androidTest/kotlin/com/rafgittools/rafgitfs/**'
       - 'scripts/validate_rafgitfs_*.py'
       - 'tests/test_validate_rafgitfs_*.py'
@@ -27,7 +29,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: rafgitfs-room-v6-${{ github.ref }}
+  group: rafgitfs-validation-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -55,11 +57,17 @@ jobs:
       - name: Test Room v6 adversarial gate
         run: python3 -m unittest tests/test_validate_rafgitfs_room_v6.py -v
 
+      - name: Validate Prompt 3 GitHub engine
+        run: python3 scripts/validate_rafgitfs_github_engine.py --write-report artifacts/rafgitfs-github-engine-validation.json
+
+      - name: Test Prompt 3 adversarial gate
+        run: python3 -m unittest tests/test_validate_rafgitfs_github_engine.py -v
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: rafgitfs-room-v6-structural-report
-          path: artifacts/rafgitfs-room-v6-validation.json
+          name: rafgitfs-structural-reports
+          path: artifacts/rafgitfs-*-validation.json
           if-no-files-found: warn
           retention-days: 30
 
@@ -80,3 +88,6 @@ jobs:
 
       - name: Compile devDebug Kotlin and Room KSP
         run: ./gradlew --no-daemon :app:compileDevDebugKotlin
+
+      - name: Test Prompt 3 JVM engine
+        run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsGithubEngineTest*'
