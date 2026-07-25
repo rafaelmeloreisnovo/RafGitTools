@@ -68,7 +68,7 @@ class TermuxHealthProbe(
         var connection: HttpURLConnection? = null
 
         return try {
-            connection = connectionFactory.open(URL(normalized)).apply {
+            connection = connectionFactory.open(URI(normalized).toURL()).apply {
                 requestMethod = "GET"
                 instanceFollowRedirects = false
                 useCaches = false
