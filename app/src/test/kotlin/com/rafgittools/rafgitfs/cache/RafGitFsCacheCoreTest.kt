@@ -46,7 +46,7 @@ class RafGitFsCacheCoreTest {
                 "REMOTE_ONLY", "METADATA_CACHED", "PARTIAL", "CONTENT_CACHED",
                 "PINNED_OFFLINE", "STALE", "CORRUPTED"
             ),
-            RafGitFsCacheState.entries.map { it.name }.toSet()
+            RafGitFsCacheState.values().map { it.name }.toSet()
         )
     }
 }
