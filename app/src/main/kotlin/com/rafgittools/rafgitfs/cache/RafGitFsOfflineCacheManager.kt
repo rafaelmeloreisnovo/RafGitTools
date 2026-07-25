@@ -148,11 +148,12 @@ class RafGitFsOfflineCacheManager @Inject constructor(
         if (!RafGitFsChecksums.verifyGitBlob(snapshot.bytes, identity.blobSha)) {
             return corruption(identity, "GIT_BLOB_HASH_MISMATCH")
         }
-        if (!maintenance.ensureCapacity(identity.profileId, snapshot.sizeBytes)) {
+
+        val cacheKey = RafGitFsCacheKeys.key(identity)
+        if (!maintenance.ensureCapacity(identity.profileId, snapshot.sizeBytes, cacheKey)) {
             return RafGitFsCacheResult.TokenVazio("CACHE_BUDGET_EXHAUSTED")
         }
 
-        val cacheKey = RafGitFsCacheKeys.key(identity)
         val now = System.currentTimeMillis()
         val partialPath = fileStore.partial(cacheKey).absolutePath
         cacheDao.upsert(
