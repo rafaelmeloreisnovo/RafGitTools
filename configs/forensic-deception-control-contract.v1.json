@@ -1,0 +1,99 @@
+{
+  "schema_version": "forensic-deception-control-contract.v1",
+  "status": "REFERENCE",
+  "claim_allowed": false,
+  "defaults": {
+    "dry_run": true,
+    "destructive": false,
+    "production_data": false,
+    "synthetic_only": true,
+    "automatic_attribution": false,
+    "automatic_retaliation": false
+  },
+  "job_types": [
+    "FD_INVENTORY",
+    "FD_VALIDATE_SCHEMA",
+    "FD_GENERATE_SYNTHETIC_DATASET",
+    "FD_BUILD_PROJECTION",
+    "FD_VALIDATE_BUSINESS_INVARIANTS",
+    "FD_VALIDATE_DECOY_ISOLATION",
+    "FD_SIMULATE_SUBSET_ATTACK",
+    "FD_SIMULATE_STRIP_ATTACK",
+    "FD_SIMULATE_CORRELATION_ATTACK",
+    "FD_SIMULATE_COLLUSION",
+    "FD_ROTATE_EPOCH",
+    "FD_DETECT_SOURCE_CANDIDATES",
+    "FD_ARCHIVE_EVIDENCE",
+    "FD_ROLLBACK_EPOCH"
+  ],
+  "states": [
+    "DRAFT",
+    "POLICY_CHECKED",
+    "APPROVED",
+    "QUEUED",
+    "RUNNING",
+    "PASS",
+    "FAIL",
+    "TOKEN_VAZIO",
+    "ARCHIVED",
+    "CANCELLED",
+    "ROLLED_BACK",
+    "BLOCKED_POLICY",
+    "BLOCKED_OVERCLAIM"
+  ],
+  "required_evidence_for_pass": [
+    "repository",
+    "commit_sha",
+    "environment",
+    "command",
+    "started_at",
+    "finished_at",
+    "exit_code",
+    "stdout_or_hash",
+    "stderr_or_hash",
+    "artifact_hashes",
+    "gate_id",
+    "limitations"
+  ],
+  "production_approvals": [
+    "DATA_OWNER_APPROVAL",
+    "SECURITY_APPROVAL",
+    "PRIVACY_OR_LEGAL_REVIEW",
+    "ROLLBACK_VERIFIED",
+    "SNAPSHOT_VERIFIED"
+  ],
+  "epoch_rotation_requirements": [
+    "PREVIOUS_EPOCH_MANIFEST",
+    "NEW_EPOCH_PLAN",
+    "MAPPING_CUSTODY",
+    "BUSINESS_QUERY_BASELINE"
+  ],
+  "hard_blocks": [
+    {
+      "condition": "production_data == true and approvals_incomplete",
+      "state": "BLOCKED_POLICY"
+    },
+    {
+      "condition": "deception_can_write_canonical == true",
+      "state": "FAIL"
+    },
+    {
+      "condition": "automatic_attribution == true",
+      "state": "BLOCKED_OVERCLAIM"
+    },
+    {
+      "condition": "automatic_retaliation == true",
+      "state": "BLOCKED_POLICY"
+    },
+    {
+      "condition": "run_evidence_missing",
+      "state": "TOKEN_VAZIO"
+    }
+  ],
+  "federated_authority": {
+    "ontology_and_state": "rafaelmeloreisnovo/Mapa",
+    "research_claims": "rafaelmeloreisnovo/papers",
+    "evidence_producer": "rafaelmeloreisnovo/RafPolimata",
+    "control_plane": "rafaelmeloreisnovo/RafGitTools"
+  }
+}
