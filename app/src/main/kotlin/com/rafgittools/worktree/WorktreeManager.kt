@@ -2,6 +2,11 @@ package com.rafgittools.worktree
 
 import java.io.File
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 
 /**
  * WorktreeManager — Git worktree management via the system `git` binary.
@@ -20,6 +25,7 @@ import java.util.concurrent.TimeUnit
 object WorktreeManager {
 
     private const val GIT_TIMEOUT_SECS = 30L
+    private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // ─── Internal helpers ──────────────────────────────────────────────────
 
@@ -27,19 +33,19 @@ object WorktreeManager {
 
     private fun runGit(repoPath: String, vararg args: String): GitResult {
         return try {
-            val pb = ProcessBuilder(listOf("git") + args.toList())
+            val process = ProcessBuilder(listOf("git") + args.toList())
                 .directory(File(repoPath))
-            val process = pb.start()
+                .redirectErrorStream(true)
+                .start()
+            val outputFuture = ioScope.async { process.inputStream.bufferedReader().readText() }
             val finished = process.waitFor(GIT_TIMEOUT_SECS, TimeUnit.SECONDS)
+            val output = runBlocking { outputFuture.await() }
             if (!finished) {
                 process.destroyForcibly()
+                process.waitFor()
                 return GitResult(-1, "", "git worktree timed out after ${GIT_TIMEOUT_SECS}s")
             }
-            GitResult(
-                exitCode = process.exitValue(),
-                stdout = process.inputStream.bufferedReader().readText().trimEnd(),
-                stderr = process.errorStream.bufferedReader().readText().trimEnd()
-            )
+            GitResult(exitCode = process.exitValue(), stdout = output.trimEnd(), stderr = "")
         } catch (e: Exception) {
             GitResult(-1, "", "Failed to run git: ${e.message}")
         }

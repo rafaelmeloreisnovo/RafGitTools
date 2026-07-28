@@ -9,7 +9,6 @@ import com.rafgittools.data.auth.AuthTokenCache
 import com.rafgittools.data.auth.DeviceFlowState
 import com.rafgittools.data.auth.GhCliAuthImporter
 import com.rafgittools.data.auth.OAuthDeviceFlowManager
-import com.rafgittools.data.github.GithubDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +20,6 @@ import javax.inject.Inject
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    @Suppress("UNUSED_PARAMETER") private val githubRepository: GithubDataRepository,
     private val authTokenCache: AuthTokenCache,
     private val deviceFlowManager: OAuthDeviceFlowManager,
     private val ghCliAuthImporter: GhCliAuthImporter,

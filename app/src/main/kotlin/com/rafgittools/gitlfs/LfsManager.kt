@@ -2,6 +2,11 @@ package com.rafgittools.gitlfs
 
 import java.io.File
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 
 /**
  * LfsManager — Git LFS operations via the system `git-lfs` binary.
@@ -18,6 +23,7 @@ object LfsManager {
     private const val LFS_TIMEOUT_SECS = 60L
     private const val LFS_NOT_FOUND_MSG =
         "git-lfs not found. On Termux run: pkg install git-lfs"
+    private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // ─── Internal helpers ──────────────────────────────────────────────────
 
@@ -32,19 +38,19 @@ object LfsManager {
 
     private fun runLfs(repoPath: String, vararg args: String): CmdResult {
         return try {
-            val pb = ProcessBuilder(listOf("git", "lfs") + args.toList())
+            val process = ProcessBuilder(listOf("git", "lfs") + args.toList())
                 .directory(File(repoPath))
-            val process = pb.start()
+                .redirectErrorStream(true)
+                .start()
+            val outputFuture = ioScope.async { process.inputStream.bufferedReader().readText() }
             val finished = process.waitFor(LFS_TIMEOUT_SECS, TimeUnit.SECONDS)
+            val output = runBlocking { outputFuture.await() }
             if (!finished) {
                 process.destroyForcibly()
+                process.waitFor()
                 return CmdResult(-1, "", "git lfs timed out after ${LFS_TIMEOUT_SECS}s")
             }
-            CmdResult(
-                exitCode = process.exitValue(),
-                stdout = process.inputStream.bufferedReader().readText().trimEnd(),
-                stderr = process.errorStream.bufferedReader().readText().trimEnd()
-            )
+            CmdResult(exitCode = process.exitValue(), stdout = output.trimEnd(), stderr = "")
         } catch (e: Exception) {
             CmdResult(-1, "", "Failed to run git lfs: ${e.message}")
         }
