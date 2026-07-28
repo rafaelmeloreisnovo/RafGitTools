@@ -36,7 +36,12 @@ fun RepositoryDetailScreen(
     onNavigateToBranches: (String) -> Unit = {},
     onNavigateToLfs: (String) -> Unit = {},
     onNavigateToWorktree: (String) -> Unit = {},
-    onNavigateToBisect: (String) -> Unit = {}
+    onNavigateToBisect: (String) -> Unit = {},
+    onNavigateToTerminal: (String) -> Unit = {},
+    onNavigateToFileBrowser: (String) -> Unit = {},
+    onNavigateToDiff: (String) -> Unit = {},
+    onNavigateToStash: (String) -> Unit = {},
+    onNavigateToTagList: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val status by viewModel.status.collectAsStateWithLifecycle()
@@ -116,6 +121,46 @@ fun RepositoryDetailScreen(
                             onClick = {
                                 showOverflowMenu = false
                                 onNavigateToBisect(repoPath)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Terminal") },
+                            leadingIcon = { Icon(Icons.Default.Terminal, contentDescription = null) },
+                            onClick = {
+                                showOverflowMenu = false
+                                onNavigateToTerminal(repoPath)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Files") },
+                            leadingIcon = { Icon(Icons.Default.Folder, contentDescription = null) },
+                            onClick = {
+                                showOverflowMenu = false
+                                onNavigateToFileBrowser(repoPath)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Diff") },
+                            leadingIcon = { Icon(Icons.Default.Code, contentDescription = null) },
+                            onClick = {
+                                showOverflowMenu = false
+                                onNavigateToDiff(repoPath)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Stash") },
+                            leadingIcon = { Icon(Icons.Default.Archive, contentDescription = null) },
+                            onClick = {
+                                showOverflowMenu = false
+                                onNavigateToStash(repoPath)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Tags") },
+                            leadingIcon = { Icon(Icons.Default.Label, contentDescription = null) },
+                            onClick = {
+                                showOverflowMenu = false
+                                onNavigateToTagList(repoPath)
                             }
                         )
                     }
