@@ -27,7 +27,15 @@ object BisectManager {
 
     private data class GitResult(val exitCode: Int, val stdout: String, val stderr: String)
 
+    private fun checkGitAvailable(): Boolean = runCatching {
+        val p = ProcessBuilder("git", "--version").start()
+        p.waitFor(5, TimeUnit.SECONDS) && p.exitValue() == 0
+    }.getOrDefault(false)
+
     private fun runGit(repoPath: String, vararg args: String): GitResult {
+        if (!checkGitAvailable()) {
+            return GitResult(-1, "", "git not found — install Termux and run: pkg install git")
+        }
         return try {
             val pb = ProcessBuilder(listOf("git") + args.toList())
                 .directory(File(repoPath))

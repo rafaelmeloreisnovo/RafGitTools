@@ -27,12 +27,18 @@ import com.rafgittools.domain.model.github.GithubUser
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     onNavigateToAuth: () -> Unit = {},
-    onNavigateToRepository: (GithubRepository) -> Unit = {}
+    onNavigateToRepository: (GithubRepository) -> Unit = {},
+    onNavigateToLocalRepo: (String) -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
+    onNavigateToSearch: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
     val user by viewModel.user.collectAsStateWithLifecycle()
-    val repositories by viewModel.repositories.collectAsStateWithLifecycle()
+    val remoteRepositories by viewModel.remoteRepositories.collectAsStateWithLifecycle()
+    val localRepositories by viewModel.localRepositories.collectAsStateWithLifecycle()
+    val activeTab by viewModel.activeTab.collectAsStateWithLifecycle()
     
     var showMenu by remember { mutableStateOf(false) }
     
@@ -52,6 +58,15 @@ fun HomeScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 actions = {
+                    IconButton(onClick = onNavigateToSearch) {
+                        Icon(Icons.Default.Search, contentDescription = "Search")
+                    }
+                    IconButton(onClick = onNavigateToNotifications) {
+                        Icon(Icons.Default.Notifications, contentDescription = "Notifications")
+                    }
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    }
                     if (isAuthenticated) {
                         // User avatar and menu
                         Box {
@@ -166,10 +181,31 @@ fun HomeScreen(
                 }
                 
                 is HomeUiState.Success -> {
-                    RepositoryList(
-                        repositories = repositories,
-                        onRepositoryClick = onNavigateToRepository
-                    )
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        TabRow(selectedTabIndex = activeTab.ordinal) {
+                            Tab(
+                                selected = activeTab == HomeViewModel.HomeTab.REMOTE,
+                                onClick = { viewModel.setActiveTab(HomeViewModel.HomeTab.REMOTE) },
+                                text = { Text("Remote (${remoteRepositories.size})") }
+                            )
+                            Tab(
+                                selected = activeTab == HomeViewModel.HomeTab.LOCAL,
+                                onClick = { viewModel.setActiveTab(HomeViewModel.HomeTab.LOCAL) },
+                                text = { Text("Local (${localRepositories.size})") }
+                            )
+                        }
+                        if (activeTab == HomeViewModel.HomeTab.REMOTE) {
+                            RepositoryList(
+                                repositories = remoteRepositories,
+                                onRepositoryClick = onNavigateToRepository
+                            )
+                        } else {
+                            LocalRepositoryList(
+                                repositories = localRepositories,
+                                onRepositoryClick = onNavigateToLocalRepo
+                            )
+                        }
+                    }
                 }
                 
                 is HomeUiState.Error -> {
@@ -450,6 +486,92 @@ private fun ErrorContent(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text("Retry")
+        }
+    }
+}
+
+@Composable
+private fun LocalRepositoryList(
+    repositories: List<LocalRepoSummary>,
+    onRepositoryClick: (String) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            Text(
+                text = "Local Repositories (${repositories.size})",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
+        items(repositories, key = { it.path }) { repo ->
+            LocalRepositoryCard(
+                repository = repo,
+                onClick = { onRepositoryClick(repo.path) }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LocalRepositoryCard(
+    repository: LocalRepoSummary,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Folder,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = repository.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.AccountTree,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = repository.currentBranch,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (repository.lastCommitMessage.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = repository.lastCommitMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }

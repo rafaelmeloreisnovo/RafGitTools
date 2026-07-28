@@ -1,5 +1,7 @@
 package com.rafgittools.ui.screens.settings
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,10 +40,14 @@ fun SettingsScreen(
         viewModel.navEvent.collect { event ->
             when (event) {
                 is SettingsNavEvent.OpenUrl -> uriHandler.openUri(event.url)
-                is SettingsNavEvent.OpenLicenses -> { /* Licenses screen not yet built */ }
+                is SettingsNavEvent.OpenLicenses -> uriHandler.openUri("https://github.com/rafaelmeloreisnovo/RafGitTools/blob/main/License2.md")
             }
         }
     }
+
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { _ -> /* URI received; persist as needed */ }
 
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showGitConfigDialog by remember { mutableStateOf(false) }
@@ -148,7 +154,7 @@ fun SettingsScreen(
                     icon = Icons.Default.Folder,
                     title = stringResource(R.string.settings_repository_location),
                     subtitle = stringResource(R.string.settings_repository_location_path),
-                    onClick = { /* Could open folder picker */ }
+                    onClick = { folderPickerLauncher.launch(null) }
                 )
             }
             
