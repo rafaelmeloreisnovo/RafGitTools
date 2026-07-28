@@ -2,6 +2,7 @@
 
 ## Build
 - Primary dev build: `./scripts/gradlew_with_java17.sh assembleDevDebug`
+- Hermetic native fallback: `sh scripts/termux/build_apkc_hermetic.sh --abi both` (NativeActivity only; it does not build the full Compose app).
 - Install dev build: `./scripts/gradlew_with_java17.sh installDevDebug`
 - Internal unsigned release validation: `ALLOW_UNSIGNED_RELEASE=true ./scripts/gradlew_with_java17.sh assembleProductionRelease`
 

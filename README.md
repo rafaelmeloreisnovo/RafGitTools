@@ -123,29 +123,34 @@ All while respecting the licenses of these amazing open-source projects and addi
 > **Status semantics used in this README**: `implemented` = código existente e uso direto no app; `partial` = código existente sem cobertura/fechamento total; `planned` = roadmap; `experimental` = material ainda não integrado oficialmente.
 
 ### ✅ Implementado no código (evidência atual)
-- **Integração com GitHub API (Retrofit/OkHttp)**: base das telas e fluxos de autenticação, repos, issues e PRs em evolução.  
-- **Operações Git locais via JGit**: base para clone/commit/branch/push/pull em desenvolvimento contínuo.  
-- **Arquitetura e base do app**: Clean Architecture + MVVM + Hilt com Jetpack Compose e Room.  
+- **Integração com GitHub API (Retrofit/OkHttp)**: autenticação, repos, issues, PRs, releases, notificações, code search, reações, starring, SSH keys.
+- **Multi-platform**: GitHub, GitLab, Bitbucket, Gitea/Forgejo, Azure DevOps — todos os cinco providers em `MultiPlatformManager`.
+- **Operações Git locais via JGit** (25+ operações): clone, commit, amend, push, pull, pull-with-rebase, force-push-with-lease, branch CRUD, merge (com estratégias ours/theirs/no-FF), diff, log, stash, cherry-pick, revert, clean, reset (soft/mixed/hard), reflog, blame, config get/set/list, file search.
+- **Git LFS**: install, track, listTracked, fetch, pull, env — UI completa em `LfsScreen`.
+- **Autenticação**: PAT, OAuth Device Flow (RFC 8628), SSH (Ed25519/RSA/ECDSA), gh CLI import, offline mode. Rotação de chaves SSH + detecção de expiração de PAT.
+- **Offline-first**: `OfflineQueue` persistido em Room; `RepositorySyncWorker` (15 min) com `BranchTrackingStatus` → `SyncState` (SYNCED/BEHIND/AHEAD/DIVERGED/CONFLICT).
+- **rafaelia JNI bridge**: `librafaelia.so` compilado via CMake; 5 native methods em `RafaeliaCore.kt`.
+- **Arquitetura e base do app**: Clean Architecture + MVVM + Hilt com Jetpack Compose e Room (v4).
 
 ### 🚧 Parcial / cobertura incompleta
-- **Cobertura de testes** (meta > 80%) e automação de CI/CD.  
-- **Autenticação SSH** (chaves/agent) e base de GPG.  
-- **UI/UX incremental** com Compose (telas principais e fluxos críticos).  
+- **Cobertura de testes** (meta > 80%; atual ~20%) e automação de CI/CD.
+- **SSH agent integration** e GPG.
+- **UI/UX incremental** com Compose (telas principais e fluxos críticos).
 
 ### 🧩 Somente estrutura/stub
 Os blocos abaixo estão em **estrutura inicial/stub** ou ainda sem implementação funcional completa.
 
 **Blocos planejados (alto nível):**
-- Terminal embutido (shell/CLI Git).
-- Multi‑plataforma (GitLab/Bitbucket/Gitea/Azure DevOps/etc.).
+- Terminal PTY real (requer Termux `terminal-view`; atual é allowlist `ProcessBuilder`).
+- LLaMA kernel JNI (blocked em `llama.h` de build externo).
 - IA/ML (assistentes de commit/review, sugestões, etc.).
 - DevOps/CI, Analytics, Enterprise, Mobile extras, Acessibilidade, Observabilidade, etc.
 
 **Tarefas de implementação (a abrir):**
-- [ ] Abrir épico **Terminal** e decompor em issues por feature (ver [docs/ROADMAP.md](docs/ROADMAP.md)).  
-- [ ] Abrir épico **Multi‑plataforma** e decompor integrações por provedor (ver [docs/ROADMAP.md](docs/ROADMAP.md)).  
-- [ ] Abrir épico **IA/ML** com milestones por capacidade (ver [docs/ROADMAP.md](docs/ROADMAP.md)).  
-- [ ] Abrir épicos de suporte (**DevOps/CI**, **Analytics**, **Enterprise**, **Acessibilidade**) alinhados ao cronograma (ver [docs/ROADMAP.md](docs/ROADMAP.md)).  
+- [ ] Abrir épico **Terminal PTY** (ver [docs/ROADMAP.md](docs/ROADMAP.md)).
+- [ ] Adicionar llama.cpp como submódulo para desbloquear `LLaMA kernel JNI`.
+- [ ] Abrir épico **IA/ML** com milestones por capacidade (ver [docs/ROADMAP.md](docs/ROADMAP.md)).
+- [ ] Abrir épicos de suporte (**DevOps/CI**, **Analytics**, **Enterprise**, **Acessibilidade**) alinhados ao cronograma (ver [docs/ROADMAP.md](docs/ROADMAP.md)).
 
 > O detalhamento completo permanece no [docs/ROADMAP.md](docs/ROADMAP.md) e no [docs/STATUS_REPORT.md](docs/STATUS_REPORT.md).
 
@@ -318,14 +323,14 @@ See the complete [Status Report](docs/STATUS_REPORT.md) for detailed progress in
 ## 📏 Unified Status Metrics
 
 **Source of truth**: [`docs/STATUS_REPORT.md`](docs/STATUS_REPORT.md)  
-**Last updated**: 2026-02-24
+**Last updated**: 2026-07-21
 
 | Métrica | Valor |
 |---|---:|
 | Total de features | 288 |
-| Concluídas | 115 |
+| Concluídas | 130 |
 | Em progresso | 35 |
-| Pendentes | 138 |
+| Pendentes | 123 |
 | Arquivos Kotlin | 168 |
 | Arquivos de teste (.kt em `test`/`androidTest`) | 11 |
 | Arquivos de documentação (`docs/**/*.md`) | 36 |
@@ -334,10 +339,15 @@ See the complete [Status Report](docs/STATUS_REPORT.md) for detailed progress in
 
 - [x] Project structure and Clean Architecture (100%)
 - [x] MVVM + Hilt dependency injection (100%)
-- [x] Core Git operations via JGit (80% - 25+ operations)
+- [x] Core Git operations via JGit (80% - 25+ operations including amend, rebase-pull, force-push-with-lease, reflog, blame, cherry-pick)
 - [x] GitHub API integration via Retrofit (80% - 50+ endpoints)
+- [x] Multi-platform support: GitHub, GitLab, Bitbucket, Gitea/Forgejo, Azure DevOps (100%)
+- [x] Git LFS UI — tracked patterns, track, install, fetch, pull, env (100%)
 - [x] UI implementation with Jetpack Compose (80% - 15+ screens)
 - [x] Security & Privacy framework (100% - GDPR/CCPA compliant)
+- [x] SSH key rotation (Ed25519) + PAT expiry detection (100%)
+- [x] Offline queue persistence (Room DB v4) + repository sync state worker (100%)
+- [x] rafaelia JNI bridge wired into Android build system (librafaelia.so)
 - [x] Localization (3 languages: EN, PT-BR, ES)
 - [x] Documentation (36 files)
 
@@ -345,17 +355,16 @@ See the complete [Status Report](docs/STATUS_REPORT.md) for detailed progress in
 
 - [ ] Unit test coverage > 80% (currently ~20%)
 - [ ] CI/CD pipeline for automated testing
-- [ ] SSH key authentication
+- [ ] SSH key authentication (agent integration)
 
 #### Pending (🔴)
 
-- [ ] Terminal emulation
+- [ ] Terminal emulation (PTY — requires Termux terminal-view)
 - [ ] GPG key management
-- [ ] Multi-platform support (GitLab, Bitbucket)
-- [ ] Git LFS support
+- [ ] LLaMA kernel JNI (blocked on llama.h from external build)
 - [ ] Release preparation for Play Store
 
-**Progress**: 115/288 features complete (40%), 35 in progress (12%), 138 pending (48%)
+**Progress**: 130/288 features complete (45%), 35 in progress (12%), 123 pending (43%)
 
 ### How to Contribute
 
@@ -491,26 +500,26 @@ The `fazer/` directory contains earlier draft versions of source files that pred
 | 20 | Git clone (shallow) | 🔴 L1 | Git Protocol v2 | Git Engine Lead | 📋 |
 | 21 | Git clone (single branch) | 🔴 L1 | Git Protocol v2 | Git Engine Lead | 📋 |
 | 22 | Git clone (with submodules) | 🔴 L1 | Git Protocol v2 | Git Engine Lead | 📋 |
-| 23 | Git commit (standard) | 🟠 L2 | DCO 1.1, Git | Git Engine Lead | 🚧 |
+| 23 | Git commit (standard) | 🟡 L3 | DCO 1.1, Git | Git Engine Lead | 🚧 |
 | 24 | Git commit (amend) | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
 | 25 | Interactive staging | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
-| 26 | Git push | 🟠 L2 | Git Protocol v2 | Git Engine Lead | 🚧 |
-| 27 | Git pull | 🟠 L2 | Git Protocol v2 | Git Engine Lead | 🚧 |
-| 28 | Git fetch | 🟠 L2 | Git Protocol v2 | Git Engine Lead | 🚧 |
+| 26 | Git push | 🟡 L3 | Git Protocol v2 | Git Engine Lead | 🚧 |
+| 27 | Git pull | 🟡 L3 | Git Protocol v2 | Git Engine Lead | 🚧 |
+| 28 | Git fetch | 🟡 L3 | Git Protocol v2 | Git Engine Lead | 🚧 |
 | 29 | Force push with lease | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
 | 30 | Pull with rebase | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
-| 31 | Branch create | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
-| 32 | Branch delete | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
+| 31 | Branch create | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 32 | Branch delete | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
 | 33 | Branch rename | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
-| 34 | Branch checkout | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
-| 35 | Branch merge | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
-| 36 | Merge strategies | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
-| 37 | Git status | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
-| 38 | Git log | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
-| 39 | Git diff | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
-| 40 | Stash operations | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
-| 41 | Remote management | 🟠 L2 | Git Protocol v2 | Git Engine Lead | 🚧 |
-| 42 | Git config management | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 34 | Branch checkout | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 35 | Branch merge | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 36 | Merge strategies (ours/theirs/recursive/no-FF) | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 37 | Git status | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 38 | Git log / reflog | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 39 | Git diff | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 40 | Stash operations | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 41 | Remote management | 🟡 L3 | Git Protocol v2 | Git Engine Lead | 🚧 |
+| 42 | Git config get/set/list | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
 
 **Standards Coverage**: Git Protocol v2, DCO 1.1, RFC 4880 (GPG), SSH RFC 4251/4252
 </details>
@@ -523,14 +532,14 @@ The `fazer/` directory contains earlier draft versions of source files that pred
 | 43 | File tree view | 🟠 L2 | W3C WCAG 2.1, Material Design 3 | UI/UX Lead | 🚧 |
 | 44 | File list view | 🟠 L2 | W3C WCAG 2.1 | UI/UX Lead | 🚧 |
 | 45 | File content viewer | 🟠 L2 | W3C WCAG 2.1 | UI/UX Lead | 🚧 |
-| 46 | Syntax highlighting | 🔴 L1 | TextMate Grammar | UI/UX Lead | 📋 |
+| 46 | Syntax highlighting | 🟡 L3 | TextMate Grammar | UI/UX Lead | 🚧 |
 | 47 | Line numbers | 🔴 L1 | W3C WCAG 2.1 | UI/UX Lead | 📋 |
-| 48 | File search | 🟡 L3 | W3C WCAG 2.1 | UI/UX Lead | 🚧 |
-| 49 | Directory navigation | 🟠 L2 | W3C WCAG 2.1 | UI/UX Lead | 🚧 |
+| 48 | File search (name + content) | 🟡 L3 | W3C WCAG 2.1 | UI/UX Lead | 🚧 |
+| 49 | Directory navigation | 🟡 L3 | W3C WCAG 2.1 | UI/UX Lead | 🚧 |
 | 50 | Breadcrumb navigation | 🔴 L1 | W3C WCAG 2.1 | UI/UX Lead | 📋 |
 | 51 | File type icons | 🔴 L1 | Material Icons | UI/UX Lead | 📋 |
 | 52 | File size display | 🔴 L1 | SI Units, IEC 60027-2 | UI/UX Lead | 📋 |
-| 53 | Last modified date | 🟡 L3 | ISO 8601 | UI/UX Lead | 🚧 |
+| 53 | Last modified date (getFileLastModified) | 🟡 L3 | ISO 8601 | UI/UX Lead | 🚧 |
 | 54 | Commit info display | 🔴 L1 | Git Protocol | UI/UX Lead | 📋 |
 | 55 | Branch selector | 🔴 L1 | W3C WCAG 2.1 | UI/UX Lead | 📋 |
 | 56 | Tag selector | 🔴 L1 | W3C WCAG 2.1 | UI/UX Lead | 📋 |
@@ -545,19 +554,19 @@ The `fazer/` directory contains earlier draft versions of source files that pred
 | # | Feature | Level | Standards | Responsible | Status |
 |---|---------|-------|-----------|-------------|--------|
 | 58 | OAuth 2.0 flow | 🟠 L2 | RFC 6749, RFC 7636 (PKCE) | Security Lead | 🚧 |
-| 59 | Device authorization flow | 🔴 L1 | RFC 8628 | Security Lead | 📋 |
-| 60 | Personal Access Token | 🟠 L2 | OAuth 2.0 Bearer Token | Security Lead | 🚧 |
+| 59 | Device authorization flow | 🟡 L3 | RFC 8628 | Security Lead | 🚧 |
+| 60 | Personal Access Token | 🟡 L3 | OAuth 2.0 Bearer Token | Security Lead | 🚧 |
 | 61 | Fine-grained PAT support | 🔴 L1 | GitHub API v4 | Security Lead | 📋 |
 | 62 | Token secure storage | 🟡 L3 | NIST SP 800-57, Android Keystore | Security Lead | 🚧 |
-| 63 | Token refresh mechanism | 🔴 L1 | RFC 6749 | Security Lead | 📋 |
-| 64 | SSH key generation | 🔴 L1 | RFC 4253, RFC 8709 (Ed25519) | Security Lead | 📋 |
-| 65 | SSH key management | 🔴 L1 | RFC 4251/4252 | Security Lead | 📋 |
+| 63 | Token refresh / PAT expiry detection | 🟡 L3 | RFC 6749 | Security Lead | 🚧 |
+| 64 | SSH key generation (Ed25519) | 🟡 L3 | RFC 4253, RFC 8709 (Ed25519) | Security Lead | 🚧 |
+| 65 | SSH key rotation (GitHub API) | 🟡 L3 | RFC 4251/4252 | Security Lead | 🚧 |
 | 66 | SSH agent integration | 🔴 L1 | SSH Agent Protocol | Security Lead | 📋 |
 | 67 | Biometric authentication | 🔴 L1 | FIDO2/WebAuthn, Android BiometricPrompt | Security Lead | 📋 |
 | 68 | Multi-account support | 🔴 L1 | ISO 27001 A.9 | Security Lead | 📋 |
 | 69 | Account switching | 🔴 L1 | ISO 27001 A.9 | Security Lead | 📋 |
 | 70 | Session management | 🔴 L1 | NIST SP 800-63B | Security Lead | 📋 |
-| 71 | Secure logout | 🔴 L1 | OWASP ASVS | Security Lead | 📋 |
+| 71 | Secure logout | 🟡 L3 | OWASP ASVS | Security Lead | 🚧 |
 | 72 | Credential encryption | 🟡 L3 | AES-256-GCM, NIST SP 800-38D | Security Lead | 🚧 |
 
 **Standards Coverage**: RFC 6749/7636/8628/4251/4252/4253/8709, NIST SP 800-57/800-63B/800-38D, FIDO2, WebAuthn, ISO 27001, OWASP ASVS/MASVS
@@ -572,21 +581,21 @@ The `fazer/` directory contains earlier draft versions of source files that pred
 
 | # | Feature | Level | Standards | Responsible | Status |
 |---|---------|-------|-----------|-------------|--------|
-| 73 | REST API v3 client | 🔴 L1 | RFC 7231, OpenAPI 3.0 | API Lead | 📋 |
+| 73 | REST API v3 client (50+ endpoints) | 🟡 L3 | RFC 7231, OpenAPI 3.0 | API Lead | 🚧 |
 | 74 | GraphQL API v4 client | 🔴 L1 | GraphQL Spec, RFC 7231 | API Lead | 📋 |
-| 75 | Rate limiting handling | 🔴 L1 | RFC 6585, GitHub API | API Lead | 📋 |
-| 76 | Pagination support | 🔴 L1 | RFC 5988 | API Lead | 📋 |
-| 77 | Error handling | 🔴 L1 | RFC 7807 | API Lead | 📋 |
+| 75 | Rate limiting handling (X-RateLimit) | 🟡 L3 | RFC 6585, GitHub API | API Lead | 🚧 |
+| 76 | Pagination support | 🟡 L3 | RFC 5988 | API Lead | 🚧 |
+| 77 | Error handling | 🟡 L3 | RFC 7807 | API Lead | 🚧 |
 | 78 | Retry mechanisms | 🔴 L1 | RFC 7231 | API Lead | 📋 |
 | 79 | Request caching | 🔴 L1 | RFC 7234 | API Lead | 📋 |
 | 80 | ETag support | 🔴 L1 | RFC 7232 | API Lead | 📋 |
 | 81 | Conditional requests | 🔴 L1 | RFC 7232 | API Lead | 📋 |
 | 82 | Webhook handling | 🔴 L1 | RFC 7231, HMAC-SHA256 | API Lead | 📋 |
-| 83 | API versioning | 🔴 L1 | Semantic Versioning 2.0 | API Lead | 📋 |
+| 83 | API versioning header (2022-11-28) | 🟡 L3 | Semantic Versioning 2.0 | API Lead | 🚧 |
 | 84 | Request signing | 🔴 L1 | HMAC-SHA256 | Security Lead | 📋 |
 | 85 | Response validation | 🔴 L1 | JSON Schema | API Lead | 📋 |
-| 86 | Offline queue | 🔴 L1 | IEEE 802.11 offline spec | API Lead | 📋 |
-| 87 | Background sync | 🔴 L1 | W3C Background Sync | API Lead | 📋 |
+| 86 | Offline queue (Room-backed) | 🟡 L3 | IEEE 802.11 offline spec | API Lead | 🚧 |
+| 87 | Background sync (RepositorySyncWorker) | 🟡 L3 | W3C Background Sync | API Lead | 🚧 |
 | 88 | Network state handling | 🔴 L1 | Android NetworkCallback | API Lead | 📋 |
 | 89 | Certificate pinning | 🔴 L1 | RFC 7469, OWASP | Security Lead | 📋 |
 | 90 | API analytics | 🔴 L1 | OpenTelemetry | DevOps Lead | 📋 |
@@ -599,19 +608,19 @@ The `fazer/` directory contains earlier draft versions of source files that pred
 
 | # | Feature | Level | Standards | Responsible | Status |
 |---|---------|-------|-----------|-------------|--------|
-| 91 | Issue listing | 🔴 L1 | GitHub API, W3C WCAG 2.1 | Feature Lead | 📋 |
-| 92 | Issue detail view | 🔴 L1 | W3C WCAG 2.1 | Feature Lead | 📋 |
-| 93 | Issue creation | 🔴 L1 | GitHub API, Markdown | Feature Lead | 📋 |
-| 94 | Issue editing | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 95 | Issue commenting | 🔴 L1 | GitHub API, Markdown | Feature Lead | 📋 |
-| 96 | Issue reactions | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 97 | Issue labels | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 98 | Issue milestones | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 99 | Issue assignments | 🔴 L1 | GitHub API | Feature Lead | 📋 |
+| 91 | Issue listing | 🟡 L3 | GitHub API, W3C WCAG 2.1 | Feature Lead | 🚧 |
+| 92 | Issue detail view | 🟡 L3 | W3C WCAG 2.1 | Feature Lead | 🚧 |
+| 93 | Issue creation | 🟡 L3 | GitHub API, Markdown | Feature Lead | 🚧 |
+| 94 | Issue editing (updateIssue) | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
+| 95 | Issue commenting | 🟡 L3 | GitHub API, Markdown | Feature Lead | 🚧 |
+| 96 | Issue reactions | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
+| 97 | Issue labels | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
+| 98 | Issue milestones | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
+| 99 | Issue assignments | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
 | 100 | Issue templates | 🔴 L1 | YAML 1.2, Markdown | Feature Lead | 📋 |
-| 101 | Issue search | 🔴 L1 | GitHub Search Syntax | Feature Lead | 📋 |
-| 102 | Issue filters | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 103 | Issue sorting | 🔴 L1 | GitHub API | Feature Lead | 📋 |
+| 101 | Issue search (searchIssues) | 🟡 L3 | GitHub Search Syntax | Feature Lead | 🚧 |
+| 102 | Issue filters | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
+| 103 | Issue sorting | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
 | 104 | Issue pinning | 🔴 L1 | GitHub API | Feature Lead | 📋 |
 | 105 | Issue locking | 🔴 L1 | GitHub API | Feature Lead | 📋 |
 | 106 | Issue transfer | 🔴 L1 | GitHub API | Feature Lead | 📋 |
@@ -626,22 +635,22 @@ The `fazer/` directory contains earlier draft versions of source files that pred
 
 | # | Feature | Level | Standards | Responsible | Status |
 |---|---------|-------|-----------|-------------|--------|
-| 109 | PR listing | 🔴 L1 | GitHub API, W3C WCAG 2.1 | Feature Lead | 📋 |
-| 110 | PR detail view | 🔴 L1 | W3C WCAG 2.1 | Feature Lead | 📋 |
-| 111 | PR creation | 🔴 L1 | GitHub API | Feature Lead | 📋 |
+| 109 | PR listing | 🟡 L3 | GitHub API, W3C WCAG 2.1 | Feature Lead | 🚧 |
+| 110 | PR detail view | 🟡 L3 | W3C WCAG 2.1 | Feature Lead | 🚧 |
+| 111 | PR creation | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
 | 112 | PR editing | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 113 | PR merge (merge commit) | 🔴 L1 | GitHub API, Git Protocol | Feature Lead | 📋 |
-| 114 | PR merge (squash) | 🔴 L1 | GitHub API, Git Protocol | Feature Lead | 📋 |
-| 115 | PR merge (rebase) | 🔴 L1 | GitHub API, Git Protocol | Feature Lead | 📋 |
-| 116 | PR draft mode | 🔴 L1 | GitHub API | Feature Lead | 📋 |
+| 113 | PR merge (merge commit) | 🟡 L3 | GitHub API, Git Protocol | Feature Lead | 🚧 |
+| 114 | PR merge (squash) | 🟡 L3 | GitHub API, Git Protocol | Feature Lead | 🚧 |
+| 115 | PR merge (rebase) | 🟡 L3 | GitHub API, Git Protocol | Feature Lead | 🚧 |
+| 116 | PR draft mode | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
 | 117 | PR auto-merge | 🔴 L1 | GitHub API | Feature Lead | 📋 |
 | 118 | PR templates | 🔴 L1 | YAML 1.2, Markdown | Feature Lead | 📋 |
 | 119 | PR checks status | 🔴 L1 | GitHub Checks API | Feature Lead | 📋 |
 | 120 | PR required reviews | 🔴 L1 | GitHub API | Feature Lead | 📋 |
 | 121 | PR review requests | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 122 | PR file changes | 🔴 L1 | GitHub API, Diff format | Feature Lead | 📋 |
-| 123 | PR commits view | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 124 | PR conversation | 🔴 L1 | GitHub API | Feature Lead | 📋 |
+| 122 | PR file changes (getPullRequestFiles) | 🟡 L3 | GitHub API, Diff format | Feature Lead | 🚧 |
+| 123 | PR commits view (getPullRequestCommits) | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
+| 124 | PR conversation (comments) | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
 | 125 | PR conflict detection | 🔴 L1 | GitHub API, Git Protocol | Feature Lead | 📋 |
 | 126 | PR linked issues | 🔴 L1 | GitHub API | Feature Lead | 📋 |
 
@@ -653,24 +662,24 @@ The `fazer/` directory contains earlier draft versions of source files that pred
 
 | # | Feature | Level | Standards | Responsible | Status |
 |---|---------|-------|-----------|-------------|--------|
-| 127 | Inline comments | 🔴 L1 | GitHub API, W3C WCAG 2.1 | Feature Lead | 📋 |
+| 127 | Inline comments (createReview) | 🟡 L3 | GitHub API, W3C WCAG 2.1 | Feature Lead | 🚧 |
 | 128 | Review suggestions | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 129 | Review approval | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 130 | Changes requested | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 131 | Multi-line comments | 🔴 L1 | GitHub API | Feature Lead | 📋 |
+| 129 | Review approval (APPROVE event) | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
+| 130 | Changes requested (REQUEST_CHANGES) | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
+| 131 | Multi-line comments | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
 | 132 | Suggested changes | 🔴 L1 | GitHub API | Feature Lead | 📋 |
 | 133 | Batch comments | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 134 | Review threads | 🔴 L1 | GitHub API | Feature Lead | 📋 |
+| 134 | Review threads (getPullRequestReviews) | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
 | 135 | Push notifications | 🔴 L1 | FCM, APNS, W3C Push API | Notifications Lead | 📋 |
-| 136 | In-app notifications | 🔴 L1 | GitHub API, W3C WCAG 2.1 | Notifications Lead | 📋 |
-| 137 | Notification filters | 🔴 L1 | GitHub API | Notifications Lead | 📋 |
+| 136 | In-app notifications (getNotifications) | 🟡 L3 | GitHub API, W3C WCAG 2.1 | Notifications Lead | 🚧 |
+| 137 | Notification filters | 🟡 L3 | GitHub API | Notifications Lead | 🚧 |
 | 138 | Notification grouping | 🔴 L1 | Android Notification Channels | Notifications Lead | 📋 |
-| 139 | Notification threads | 🔴 L1 | GitHub API | Notifications Lead | 📋 |
+| 139 | Notification mark-read (threads) | 🟡 L3 | GitHub API | Notifications Lead | 🚧 |
 | 140 | Notification muting | 🔴 L1 | GitHub API | Notifications Lead | 📋 |
 | 141 | Custom notification rules | 🔴 L1 | Custom Implementation | Notifications Lead | 📋 |
 | 142 | Notification scheduling | 🔴 L1 | Android AlarmManager | Notifications Lead | 📋 |
 | 143 | Do not disturb | 🔴 L1 | Android DND API | Notifications Lead | 📋 |
-| 144 | Read/unread tracking | 🔴 L1 | GitHub API | Notifications Lead | 📋 |
+| 144 | Read/unread tracking (markAllNotificationsRead) | 🟡 L3 | GitHub API | Notifications Lead | 🚧 |
 
 **Standards Coverage**: GitHub API, W3C Push API, W3C WCAG 2.1, FCM/APNS, Android Notification Channels
 </details>

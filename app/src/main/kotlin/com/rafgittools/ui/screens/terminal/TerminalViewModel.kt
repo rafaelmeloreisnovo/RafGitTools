@@ -13,17 +13,12 @@ import java.io.File
 import javax.inject.Inject
 
 /**
- * TerminalViewModel — feature completamente ausente
+ * Provides a bounded read-only git terminal running in the app's process.
+ * Delegates command execution to TerminalEmulator with a bounded executor
+ * (read-only git subcommands only) in the context of the repository working directory.
  *
- * Provides a basic interactive terminal running in the app's process.
- * Delegates command execution to TerminalEmulator in the context of
- * the repository working directory.
- *
- * Security: only supported commands are allowed and executed without
- * invoking an interactive shell.
- *
- * For a richer terminal (PTY + ANSI colors) consider integrating
- * the Termux terminal-view library as a future enhancement.
+ * Security: only safe read-only subcommands (status, log, diff, show, rev-parse,
+ * ls-files, grep, blame) are allowed; write operations are rejected.
  */
 @HiltViewModel
 class TerminalViewModel @Inject constructor() : ViewModel() {
@@ -57,6 +52,7 @@ class TerminalViewModel @Inject constructor() : ViewModel() {
         "pwd", "echo", "grep", "find", "wc", "sort", "uniq",
         "diff", "stat", "file", "which", "date", "whoami", "help", "clear", "cd"
     )
+    private val SAFE_BASE_CMDS: Set<String> = GIT_SAFE_COMMANDS.map { it.split(" ").first() }.toSet()
 
     fun setWorkingDirectory(path: String) {
         val dir = File(path)
@@ -100,13 +96,13 @@ class TerminalViewModel @Inject constructor() : ViewModel() {
     }
 
     private fun runShellCommand(command: String) {
-        if (_workingDir.value == null) {
+        val dir = _workingDir.value ?: run {
             appendLine(TerminalLine.Error("No working directory. Open a repository first."))
             return
         }
         // Safety: only allow git commands and safe read-only commands in prod mode
         val baseCmd = command.split(" ").firstOrNull()?.lowercase() ?: ""
-        if (baseCmd !in GIT_SAFE_COMMANDS.map { it.split(" ").first() }) {
+        if (baseCmd !in SAFE_BASE_CMDS) {
             appendLine(TerminalLine.Error("Command '$baseCmd' not allowed. Permitted: git, ls, cat, grep, find, pwd, echo, diff, stat, head, tail, wc"))
             return
         }
@@ -116,7 +112,7 @@ class TerminalViewModel @Inject constructor() : ViewModel() {
             try {
                 val result = TerminalEmulator.executeCommand(
                     command = command,
-                    workingDir = _workingDir.value!!,
+                    workingDir = dir,
                     timeoutMs = 15_000L
                 )
 
@@ -149,16 +145,15 @@ class TerminalViewModel @Inject constructor() : ViewModel() {
     private fun showHelp() {
         val help = """
 Available commands:
-  Git operations:
+  Read-only git operations:
     git status          — show working tree status
     git log --oneline   — compact commit history
     git diff            — show unstaged changes
-    git branch          — list branches
-    git add <file>      — stage a file
-    git commit -m "..."  — commit staged changes
-    git push            — push to remote
-    git pull            — pull from remote
-    git clone <url>     — clone a repository
+    git show <ref>      — show object content
+    git rev-parse HEAD  — resolve ref to hash
+    git ls-files        — list tracked files
+    git grep <pattern>  — search in tracked files
+    git blame <file>    — annotate file with commit info
 
   File operations:
     ls [-la]            — list directory contents

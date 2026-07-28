@@ -52,7 +52,13 @@ class AsyncCacheManager @Inject constructor(
                     stargazersCount = repo.stargazersCount,
                     forksCount = repo.forksCount,
                     isPrivate = repo.isPrivate,
-                    updatedAt = System.currentTimeMillis()
+                    updatedAt = System.currentTimeMillis(),
+                    watchersCount = repo.watchersCount,
+                    openIssuesCount = repo.openIssuesCount,
+                    isFork = repo.isFork,
+                    defaultBranch = repo.defaultBranch,
+                    createdAtGh = repo.createdAt,
+                    updatedAtGh = repo.updatedAt
                 )
             }
             repositoryNameCacheDao.insertRepositories(cacheEntries)

@@ -13,6 +13,7 @@ import com.rafgittools.data.preferences.PreferencesRepository
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.rafgittools.offline.RepositorySyncWorker
 import com.rafgittools.offline.SyncWorker
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -72,6 +73,7 @@ class RafGitToolsApplication : Application() {
         }
 
         schedulePeriodicSync()
+        scheduleRepositorySync()
     }
 
     private fun schedulePeriodicSync() {
@@ -81,6 +83,18 @@ class RafGitToolsApplication : Application() {
         ).build()
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             SyncWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request,
+        )
+    }
+
+    private fun scheduleRepositorySync() {
+        val request = PeriodicWorkRequestBuilder<RepositorySyncWorker>(
+            repeatInterval = 15,
+            repeatIntervalTimeUnit = TimeUnit.MINUTES,
+        ).build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            RepositorySyncWorker.WORK_NAME,
             ExistingPeriodicWorkPolicy.KEEP,
             request,
         )

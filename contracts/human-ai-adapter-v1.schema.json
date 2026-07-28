@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafcode.local/contracts/human-ai-adapter-v1.schema.json",
+  "title": "RAFAELIA Human-AI Repository Adapter v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "repository", "default_branch", "role", "contract", "allowed_inputs", "allowed_outputs", "allowed_effects", "forbidden_effects", "privacy", "human_control", "token_vazio", "evidence"],
+  "properties": {
+    "schema": {"const": "raf.human-ai.adapter.v1"},
+    "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+    "default_branch": {"type": "string", "minLength": 1},
+    "role": {"enum": ["CONTROL_PLANE", "DETERMINISTIC_STRUCTURER", "SENSOR_MANIFEST", "ARCHIVE_INTEGRITY", "SEMANTIC_INTERPRETER", "PRIVATE_POLICY_VAULT", "LOCAL_RUNTIME_BROKER", "ANDROID_CAPABILITY_ADAPTER"]},
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "path", "version", "commit_pin"],
+      "properties": {
+        "repository": {"const": "rafaelmeloreisnovo/RafGitTools"},
+        "path": {"const": "contracts/human-ai-middleware-v1.schema.json"},
+        "version": {"const": "1.0.0"},
+        "commit_pin": {"type": "string", "pattern": "^[a-f0-9]{40}$"}
+      }
+    },
+    "allowed_inputs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "allowed_outputs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "allowed_effects": {"type": "array", "uniqueItems": true, "items": {"enum": ["READ_ONLY", "NETWORK_READ", "SENSOR_READ", "LOCAL_WRITE", "GIT_WRITE", "NETWORK_WRITE", "PUBLIC_WRITE"]}},
+    "forbidden_effects": {"type": "array", "uniqueItems": true, "items": {"enum": ["READ_ONLY", "NETWORK_READ", "SENSOR_READ", "LOCAL_WRITE", "GIT_WRITE", "NETWORK_WRITE", "PUBLIC_WRITE"]}},
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "raw_secrets_allowed", "public_private_data_allowed", "minimization_required"],
+      "properties": {
+        "mode": {"enum": ["PUBLIC_SAFE", "PRIVATE_FIRST", "LOCAL_FIRST", "SEGMENTS_ONLY", "CONSENT_PER_CAPABILITY"]},
+        "raw_secrets_allowed": {"const": false},
+        "public_private_data_allowed": {"const": false},
+        "minimization_required": {"const": true}
+      }
+    },
+    "human_control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approval_for_write", "approval_for_sensitive_data", "revocation", "appeal"],
+      "properties": {
+        "approval_for_write": {"const": true},
+        "approval_for_sensitive_data": {"const": true},
+        "revocation": {"const": true},
+        "appeal": {"const": true}
+      }
+    },
+    "token_vazio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["preserved", "requires_reason", "requires_next_step", "loop_budget_enforced"],
+      "properties": {
+        "preserved": {"const": true},
+        "requires_reason": {"const": true},
+        "requires_next_step": {"const": true},
+        "loop_budget_enforced": {"const": true}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["implementation_state", "runtime_state", "claim_allowed"],
+      "properties": {
+        "implementation_state": {"enum": ["IMPLEMENTED", "PARTIAL", "DECLARED", "TOKEN_VAZIO"]},
+        "runtime_state": {"enum": ["VERIFIED", "TOKEN_VAZIO", "BLOCKED", "NOT_APPLICABLE"]},
+        "claim_allowed": {"const": false}
+      }
+    }
+  }
+}

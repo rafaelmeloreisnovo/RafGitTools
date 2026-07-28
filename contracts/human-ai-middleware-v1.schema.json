@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafcode.local/contracts/human-ai-middleware-v1.schema.json",
+  "title": "RAFAELIA Human-AI Bivalent Middleware Request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "request_id", "created_at", "intent", "people", "data_boundary",
+    "risk", "ai_lane", "human_lane", "execution", "evidence", "friction"
+  ],
+  "properties": {
+    "schema": {"const": "raf.human-ai.middleware.v1"},
+    "request_id": {"type": "string", "pattern": "^HAM-[0-9]{8}-[A-Za-z0-9._-]{4,64}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objective", "expected_usefulness_target", "measured_usefulness", "scope"],
+      "properties": {
+        "objective": {"type": "string", "minLength": 8, "maxLength": 2048},
+        "expected_usefulness_target": {"type": "number", "minimum": 0, "maximum": 1},
+        "measured_usefulness": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "scope": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "people": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requester_role", "affected_people", "human_final_decision", "appeal_path"],
+      "properties": {
+        "requester_role": {"enum": ["DATA_SUBJECT", "OPERATOR", "CONTROLLER", "RESEARCHER", "DEVELOPER"]},
+        "affected_people": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["category", "count", "minor", "consent_required"],
+            "properties": {
+              "category": {"enum": ["DATA_SUBJECT", "BYSTANDER", "DEPENDENT", "WORKER", "PUBLIC"]},
+              "count": {"type": "integer", "minimum": 0},
+              "minor": {"type": "boolean"},
+              "consent_required": {"type": "boolean"}
+            }
+          }
+        },
+        "human_final_decision": {"const": true},
+        "appeal_path": {"type": "string", "minLength": 3, "maxLength": 512}
+      }
+    },
+    "data_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classification", "categories", "minimized_fields", "excluded_fields", "retention_seconds", "destination_visibility", "raw_data_export"],
+      "properties": {
+        "classification": {"enum": ["PUBLIC", "INTERNAL", "PRIVATE", "SENSITIVE", "SECRET"]},
+        "categories": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["SOURCE_CODE", "DOCUMENT", "CONVERSATION_TEXT", "VOICE", "IMAGE", "LOCATION", "HEALTH", "BIOMETRIC", "CONTACTS", "CALL_LOG", "SMS", "SENSOR", "CREDENTIAL_METADATA", "OTHER"]}},
+        "minimized_fields": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "excluded_fields": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "retention_seconds": {"type": "integer", "minimum": 0, "maximum": 31536000},
+        "destination_visibility": {"enum": ["LOCAL_ONLY", "PRIVATE", "INTERNAL", "PUBLIC"]},
+        "raw_data_export": {"type": "boolean"}
+      }
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "privacy", "security", "rights", "uncertainty"],
+      "properties": {
+        "level": {"enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]},
+        "privacy": {"enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]},
+        "security": {"enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]},
+        "rights": {"enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]},
+        "uncertainty": {"enum": ["BOUNDED", "DECLARED", "TOKEN_VAZIO", "CONTRADICTION"]}
+      }
+    },
+    "ai_lane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["duties", "may_finalize", "may_expand_scope", "may_execute"],
+      "properties": {
+        "duties": {"type": "array", "minItems": 3, "uniqueItems": true, "items": {"enum": ["IDENTIFY_RISK", "MINIMIZE_DATA", "EXPLAIN_LIMITS", "PRESERVE_PROVENANCE", "ABSTAIN_WHEN_UNCERTAIN", "PROPOSE_OPTIONS", "DETECT_CONTRADICTION"]}},
+        "may_finalize": {"const": false},
+        "may_expand_scope": {"const": false},
+        "may_execute": {"const": false}
+      }
+    },
+    "human_lane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["consent_state", "decision", "reviewers", "revocation_supported"],
+      "properties": {
+        "consent_state": {"enum": ["NOT_REQUIRED", "PENDING", "APPROVED", "DENIED", "REVOKED", "TOKEN_VAZIO"]},
+        "decision": {"enum": ["REJECT", "APPROVE_BOUNDED", "APPROVE_TWO_STEP", "PAUSE", "TOKEN_VAZIO"]},
+        "reviewers": {"type": "array", "uniqueItems": true, "items": {"enum": ["OPERATOR", "DOMAIN_REVIEWER", "PRIVACY_REVIEWER", "SECURITY_REVIEWER", "RIGHTS_REVIEWER", "AUDITOR"]}},
+        "revocation_supported": {"type": "boolean"}
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target_repository", "operation", "effect_class", "dry_run_first", "irreversible", "idempotency_key", "limits", "rollback"],
+      "properties": {
+        "target_repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+        "operation": {"type": "string", "pattern": "^[A-Z0-9_]{3,128}$"},
+        "effect_class": {"enum": ["READ_ONLY", "NETWORK_READ", "SENSOR_READ", "LOCAL_WRITE", "GIT_WRITE", "NETWORK_WRITE", "PUBLIC_WRITE"]},
+        "dry_run_first": {"type": "boolean"},
+        "irreversible": {"type": "boolean"},
+        "idempotency_key": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{16,256}$"},
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_bytes", "timeout_seconds", "max_attempts"],
+          "properties": {
+            "max_bytes": {"type": "integer", "minimum": 1, "maximum": 1099511627776},
+            "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 86400},
+            "max_attempts": {"type": "integer", "minimum": 1, "maximum": 20}
+          }
+        },
+        "rollback": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["available", "strategy"],
+          "properties": {
+            "available": {"type": "boolean"},
+            "strategy": {"type": ["string", "null"], "maxLength": 1024}
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["F_ok", "F_gap", "F_next", "state", "claim_allowed", "refs"],
+      "properties": {
+        "F_ok": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "F_gap": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "F_next": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "state": {"enum": ["VERIFIED", "DECLARED_BY_AUTHOR", "TOKEN_VAZIO", "CONTRADICTION", "BLOCKED", "REVOKED"]},
+        "claim_allowed": {"type": "boolean"},
+        "refs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 4096}}
+      }
+    },
+    "friction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["loop_budget", "current_loop", "stop_on_no_new_evidence", "token_vazio_reason"],
+      "properties": {
+        "loop_budget": {"type": "integer", "minimum": 0, "maximum": 10},
+        "current_loop": {"type": "integer", "minimum": 0, "maximum": 10},
+        "stop_on_no_new_evidence": {"const": true},
+        "token_vazio_reason": {"type": ["string", "null"], "maxLength": 1024}
+      }
+    }
+  }
+}

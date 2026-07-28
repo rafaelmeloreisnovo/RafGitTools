@@ -120,6 +120,8 @@ AI s32 READ(s32 f,void*b,u32 n){return(s32)_sc3(63u,(u64)f,(u64)(usize)b,(u64)n)
 AI s32 WR  (u32 f,const void*b,u32 n){return(s32)_sc3(64u,(u64)f,(u64)(usize)b,(u64)n);}
 AI s32 CLOSE(s32 f){return(s32)_sc1(57u,(u64)f);}
 NR void EX(s32 c){_sc1(94u,(u64)c);__builtin_unreachable();}
+#else
+#error "unsupported architecture: add syscall wrappers for this target"
 #endif
 
 /* ── CRC32C (Castagnoli, poly 0x82F63B78) branchless ────────────────── */

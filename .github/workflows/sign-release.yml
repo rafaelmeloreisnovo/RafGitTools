@@ -25,6 +25,8 @@ jobs:
           java-version: '17'
           cache: gradle
 
+      - uses: android-actions/setup-android@v3
+
       # Decode keystore — written outside workspace to avoid accidental inclusion
       - name: Decode release keystore
         run: printf '%s' "$KEYSTORE_B64" | base64 -d > /tmp/release.jks
@@ -37,7 +39,7 @@ jobs:
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: ./gradlew app:assembleRelease
+        run: ./gradlew app:assembleDevRelease
 
       - name: Upload signed APK (artifact)
         uses: actions/upload-artifact@v4

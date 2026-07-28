@@ -1,11 +1,10 @@
 package com.rafgittools.offline
 
 /**
- * BackgroundSyncManager stub.
+ * WorkManager-backed sync dispatcher.
  *
- * Provides placeholder functionality for syncing queued operations
- * in the background. Real implementation would leverage WorkManager
- * or Android Job APIs to schedule periodic sync tasks.
+ * Drains the OfflineQueue, calls execute() on each SyncOperation,
+ * and re-enqueues items that fail with a transient error.
  */
 object BackgroundSyncManager {
     interface QueueItem {

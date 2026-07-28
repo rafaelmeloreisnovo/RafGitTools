@@ -147,6 +147,7 @@ typedef struct PK {
     (ctx).shnum=0u;(ctx).etype=0u;(ctx).flags=0u; \
     if(_l<52u||!ELF_MAGIC_OK(_p))break; \
     (ctx).cl=(u8)(_p[4]); \
+    if((ctx).cl!=1u&&(ctx).cl!=2u){(ctx).cl=0u;break;} \
     if((ctx).cl==2u&&_l<64u){(ctx).cl=0u;break;} \
     (ctx).mach=ELF_MACHINE(_p); \
     (ctx).phnum=(u16)ELF_PHNUM(_p); \
@@ -161,7 +162,7 @@ AI const char* ELF_MACH_STR(u16 m){
     if(m==EM_AA64)  return "arm64";
     if(m==EM_X86_64)return "x86-64";
     if(m==EM_386)   return "x86-32";
-    if(m==EM_RISCV) return "riscv64";
+    if(m==EM_RISCV) return "riscv";
     return "unk";
 }
 

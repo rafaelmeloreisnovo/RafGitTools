@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unittest
 from pathlib import Path
 
@@ -7,6 +8,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 BROWSER_MAIN = ROOT / "BrowserRaf" / "internal" / "br_main.c"
 TLS_HEADER = ROOT / "BrowserRaf" / "internal" / "br_tls.h"
+ENTROPY_HEADER = ROOT / "BrowserRaf" / "internal" / "br_entropy.h"
+CSPRNG_CONFIG = ROOT / "configs" / "browserraf-csprng.phase2.json"
 
 
 class BrowserCapabilityClaimTests(unittest.TestCase):
@@ -34,6 +37,48 @@ class BrowserCapabilityClaimTests(unittest.TestCase):
             "TLS_UP_RECORD_CRYPT",
         ):
             self.assertIn(symbol, source)
+
+    def test_tls_random_uses_kernel_entropy_without_deterministic_fallback(self) -> None:
+        tls_source = TLS_HEADER.read_text(encoding="utf-8")
+        entropy_source = ENTROPY_HEADER.read_text(encoding="utf-8")
+
+        self.assertIn("BR_RANDOM_FILL(t->random", tls_source)
+        self.assertIn("static s32 TLS_INIT", tls_source)
+        self.assertIn("TLS_ALERT_INTERNAL_ERROR", tls_source)
+        self.assertNotIn("0xDEADBEEF", tls_source)
+        self.assertNotIn("AI u32 PRNG", tls_source)
+        self.assertNotIn("LFSR + PHI64", tls_source)
+
+        for syscall_number in ("384u", "278u", "318u"):
+            self.assertIn(f"BR_NR_GETRANDOM {syscall_number}", entropy_source)
+        self.assertIn("if(got==-(s32)BR_EINTR)continue", entropy_source)
+        self.assertGreaterEqual(entropy_source.count("MC0(p,n)"), 2)
+        self.assertIn("return-1", entropy_source)
+
+    def test_csprng_manifest_preserves_fail_closed_claim_boundary(self) -> None:
+        manifest = json.loads(CSPRNG_CONFIG.read_text(encoding="utf-8"))
+
+        self.assertFalse(manifest["policy"]["claim_allowed"])
+        self.assertFalse(manifest["policy"]["https_enabled"])
+        self.assertFalse(manifest["policy"]["tls_certified"])
+        self.assertFalse(manifest["policy"]["deterministic_fallback_allowed"])
+        self.assertEqual(manifest["implementation"]["entropy_source"], "linux_getrandom")
+        self.assertEqual(manifest["implementation"]["fallback"], "none")
+        self.assertEqual(manifest["status"]["https"], "FAIL_CLOSED")
+        self.assertEqual(manifest["status"]["cross_abi_compile"], "PASS_LIMITED")
+        self.assertEqual(
+            manifest["status"]["canonical_runner_execution"], "TOKEN_VAZIO"
+        )
+        self.assertEqual(manifest["status"]["device_runtime"], "TOKEN_VAZIO")
+
+        evidence = {item["kind"]: item for item in manifest["evidence"]}
+        self.assertEqual(evidence["CROSS_ABI_VERIFIER"]["status"], "PRESENT")
+        self.assertEqual(
+            evidence["INDEPENDENT_CROSS_ABI_COMPILE"]["status"], "PASS_LIMITED"
+        )
+        self.assertEqual(
+            evidence["CANONICAL_RUNNER_EXECUTION"]["status"], "TOKEN_VAZIO"
+        )
 
 
 if __name__ == "__main__":

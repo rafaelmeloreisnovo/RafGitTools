@@ -1,5 +1,7 @@
 package com.rafgittools.ui.screens.settings
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -31,7 +34,21 @@ fun SettingsScreen(
     val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
     val currentLanguage by viewModel.currentLanguage.collectAsStateWithLifecycle()
     val gitConfig by viewModel.gitConfig.collectAsStateWithLifecycle()
-    
+
+    val uriHandler = LocalUriHandler.current
+    LaunchedEffect(viewModel) {
+        viewModel.navEvent.collect { event ->
+            when (event) {
+                is SettingsNavEvent.OpenUrl -> uriHandler.openUri(event.url)
+                is SettingsNavEvent.OpenLicenses -> uriHandler.openUri("https://github.com/rafaelmeloreisnovo/RafGitTools/blob/main/License2.md")
+            }
+        }
+    }
+
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { _ -> /* URI received; persist as needed */ }
+
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showGitConfigDialog by remember { mutableStateOf(false) }
     var showCacheDialog by remember { mutableStateOf(false) }
@@ -137,7 +154,7 @@ fun SettingsScreen(
                     icon = Icons.Default.Folder,
                     title = stringResource(R.string.settings_repository_location),
                     subtitle = stringResource(R.string.settings_repository_location_path),
-                    onClick = { /* Could open folder picker */ }
+                    onClick = { folderPickerLauncher.launch(null) }
                 )
             }
             

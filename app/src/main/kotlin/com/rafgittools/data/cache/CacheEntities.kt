@@ -37,7 +37,13 @@ data class RepositoryNameCache(
     val stargazersCount: Int,
     val forksCount: Int,
     val isPrivate: Boolean,
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    val watchersCount: Int = 0,
+    val openIssuesCount: Int = 0,
+    val isFork: Boolean = false,
+    val defaultBranch: String = "main",
+    val createdAtGh: String = "",
+    val updatedAtGh: String = ""
 )
 
 /**

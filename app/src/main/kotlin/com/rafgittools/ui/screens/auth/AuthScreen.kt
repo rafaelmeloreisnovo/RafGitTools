@@ -86,9 +86,10 @@ fun AuthScreen(
         }
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
+            val currentUsername = username
             when {
-                isAuthenticated && username != null -> AuthenticatedContent(
-                    username = username!!,
+                isAuthenticated && currentUsername != null -> AuthenticatedContent(
+                    username = currentUsername,
                     onLogout = viewModel::logout
                 )
 

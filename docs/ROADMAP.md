@@ -34,34 +34,40 @@ This document provides a comprehensive, detailed roadmap for RafGitTools develop
 
 ## 📊 Phase Summary
 
-> **Note**: Updated January 2026. See [STATUS_REPORT.md](STATUS_REPORT.md) for detailed implementation status.
+> **Note**: Updated 2026-07-21. See [STATUS_REPORT.md](STATUS_REPORT.md) and [EVOLUTIONARY_PROCESS.md](EVOLUTIONARY_PROCESS.md) for detailed implementation status.
 
 | Phase | Duration | Features | Complete | In Progress | Planned |
 |-------|----------|----------|----------|-------------|---------|
-| Phase 1: Foundation | Weeks 1-4 | 72 | 48 (67%) | 20 (28%) | 4 (6%) |
-| Phase 2: GitHub Integration | Weeks 5-8 | 72 | 45 (63%) | 10 (14%) | 17 (23%) |
-| Phase 3: Advanced Features | Weeks 9-12 | 72 | 10 (14%) | 8 (11%) | 54 (75%) |
-| Phase 4: Polish & Release | Weeks 13-16 | 72 | 5 (7%) | 3 (4%) | 64 (89%) |
-| **Total** | **16 weeks** | **288** | **108 (38%)** | **41 (14%)** | **139 (48%)** |
+| Phase 1: Foundation | Weeks 1-4 | 72 | 55 (76%) | 13 (18%) | 4 (6%) |
+| Phase 2: GitHub Integration | Weeks 5-8 | 72 | 52 (72%) | 10 (14%) | 10 (14%) |
+| Phase 3: Advanced Features | Weeks 9-12 | 72 | 15 (21%) | 8 (11%) | 49 (68%) |
+| Phase 4: Polish & Release | Weeks 13-16 | 72 | 8 (11%) | 3 (4%) | 61 (85%) |
+| **Total** | **16 weeks** | **288** | **130 (45%)** | **34 (12%)** | **124 (43%)** |
 
 ### Implementation Highlights
 
 **✅ Highly Implemented (80-100%)**:
-- Project Architecture & Setup
-- Core Git Operations (via JGit - 1,549 lines)
-- GitHub API Integration (via Retrofit - 50+ endpoints)
-- UI Implementation (15+ screens)
+- Project Architecture & Setup (Clean Architecture + MVVM + Hilt + Room v4)
+- Core Git Operations (JGit: 25+ operations incl. amend, rebase-pull, force-push-with-lease, cherry-pick, reflog, blame, config, file-search)
+- GitHub API Integration (Retrofit: 50+ endpoints — issues, PRs, reviews, reactions, notifications, search, releases, SSH keys)
+- Multi-platform: GitHub + GitLab + Bitbucket + Gitea/Forgejo + Azure DevOps
+- Git LFS: install, track, listTracked, fetch, pull, env — full UI screen
+- SSH key rotation (Ed25519) + PAT expiry detection
+- UI Implementation (15+ screens — Compose Material 3)
 - Security & Privacy (GDPR/CCPA compliant)
-- Localization (3 languages)
+- rafaelia JNI bridge wired into Android CMake build (librafaelia.so)
+- Offline queue (Room) + Repository sync state worker (15-min interval)
+- Localization (3 languages: EN, PT-BR, ES)
 
 **🟡 Partially Implemented (20-50%)**:
-- Testing Infrastructure (7 unit tests)
+- Testing Infrastructure (~20% coverage, goal >80%)
 - CI/CD Pipeline
+- SSH agent integration + GPG
 
 **🔴 Not Started (0%)**:
-- Terminal Emulation
-- Multi-platform Support (GitLab, Bitbucket)
-- Release Preparation
+- Terminal PTY (requires Termux `terminal-view`; current impl is ProcessBuilder allowlist)
+- LLaMA kernel JNI wiring (blocked on external `llama.h`)
+- Release Preparation (Play Store)
 
 ---
 

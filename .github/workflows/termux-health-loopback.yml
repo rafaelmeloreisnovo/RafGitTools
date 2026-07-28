@@ -1,0 +1,43 @@
+name: Termux Health Loopback
+
+on:
+  pull_request:
+    paths:
+      - 'app/src/main/kotlin/com/rafgittools/kernel/TermuxHealthProbe.kt'
+      - 'app/src/main/kotlin/com/rafgittools/kernel/ToolRouter.kt'
+      - 'app/src/test/kotlin/com/rafgittools/kernel/TermuxHealthProbeTest.kt'
+      - 'docs/TERMUX_HEALTH_CONTRACT.md'
+      - '.github/workflows/termux-health-loopback.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: termux-health-loopback-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java identity
+        run: java -version
+
+      - name: Probe unit tests
+        run: |
+          ./gradlew --no-daemon \
+            :app:testDevDebugUnitTest \
+            --tests com.rafgittools.kernel.TermuxHealthProbeTest
+
+      - name: Preserve runtime boundary
+        run: |
+          cat <<'EOF'
+          LOOPBACK_CLIENT_CONTRACT=VERIFIED_BY_EXECUTION
+          TERMUX_SERVER_HEALTH_ENDPOINT=TOKEN_VAZIO
+          ANDROID_DEVICE_RUNTIME=TOKEN_VAZIO
+          EOF

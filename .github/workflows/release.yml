@@ -22,8 +22,8 @@ on:
         type: string
 
 env:
-  GITHUB_CLIENT_ID_DEV: ${{ vars.GITHUB_CLIENT_ID_DEV || 'local-dev-client-id' }}
-  GITHUB_CLIENT_ID_PRODUCTION: ${{ vars.GITHUB_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
+  APP_CLIENT_ID_DEV: ${{ vars.APP_CLIENT_ID_DEV || 'local-dev-client-id' }}
+  APP_CLIENT_ID_PRODUCTION: ${{ vars.APP_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
   ALLOW_UNSIGNED_RELEASE: "false"
 
 jobs:
@@ -33,10 +33,10 @@ jobs:
     timeout-minutes: 45
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
@@ -100,7 +100,7 @@ jobs:
       - id: changelog
         run: |
           git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 2>/dev/null || echo HEAD~10)..HEAD > CHANGELOG.md
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v4
         with:
           name: release-apk
           path: |
@@ -125,4 +125,4 @@ jobs:
           echo "- Build oficial exige assinatura obrigatória (ALLOW_UNSIGNED_RELEASE=false)." >> "$GITHUB_STEP_SUMMARY"
           echo "- Segredos obrigatórios: RELEASE_STORE_FILE_BASE64, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD." >> "$GITHUB_STEP_SUMMARY"
           echo "- Para validação unsigned, use o workflow interno internal-validation.yml." >> "$GITHUB_STEP_SUMMARY"
-          echo "- Variáveis recomendadas: vars.GITHUB_CLIENT_ID_DEV e vars.GITHUB_CLIENT_ID_PRODUCTION." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Variáveis recomendadas: vars.APP_CLIENT_ID_DEV e vars.APP_CLIENT_ID_PRODUCTION." >> "$GITHUB_STEP_SUMMARY"

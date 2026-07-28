@@ -1,0 +1,57 @@
+{
+  "schema": "rafaelia.toroidal-research-cycle-manifest.v1",
+  "manifest_id": "TRC-EXAMPLE-20260720",
+  "title": "Toroidal sine-reference research governance example",
+  "observed_at": "2026-07-20T12:00:00Z",
+  "declared_scope": "Operational governance demonstration; not a physical validation of universal toroidal stabilization.",
+  "claim_allowed": false,
+  "repositories": [
+    {"id": "R-GOV", "repository_full_name": "rafaelmeloreisnovo/RafGitTools", "role": "GOVERNANCE", "state": "ACTIVE"},
+    {"id": "R-MAP", "repository_full_name": "rafaelmeloreisnovo/Mapa", "role": "MAP", "state": "ACTIVE"},
+    {"id": "R-SCI", "repository_full_name": "instituto-Rafael/relativity-living-light", "role": "SCIENCE", "state": "ACTIVE"},
+    {"id": "R-ORCH", "repository_full_name": "rafaelmeloreisnovo/RafPolimata", "role": "ORCHESTRATION", "state": "ADAPTER_PLANNED"}
+  ],
+  "cycle": {
+    "phases": ["VOID", "QUERY", "SOURCE", "CLAIM", "FORMULA", "TEST", "EVIDENCE", "RESIDUAL", "NEW_VOID", "FEEDBACK"],
+    "transitions": [["VOID", "QUERY"], ["QUERY", "SOURCE"], ["SOURCE", "CLAIM"], ["CLAIM", "FORMULA"], ["FORMULA", "TEST"], ["TEST", "EVIDENCE"], ["EVIDENCE", "RESIDUAL"], ["RESIDUAL", "NEW_VOID"], ["NEW_VOID", "FEEDBACK"], ["FEEDBACK", "VOID"]],
+    "coordinates": {"theta_rad": 0.0, "phi_rad": 0.0}
+  },
+  "sine_reference": {
+    "purpose": "regression_fixture",
+    "amplitude": 1.0,
+    "amplitude_unit": "normalized",
+    "frequency_hz": 1.0,
+    "phase_rad": 0.0,
+    "feedback_model": "bounded phase-error feedback with no autonomous write action",
+    "boundedness_model": "finite samples, finite amplitude, explicit timeout and saturation",
+    "universal_stabilizer_claim": false
+  },
+  "queries": [
+    {"id": "Q-001", "question": "Which bounded observables distinguish a toroidal recurrence model from a generic periodic loop?", "domain": "research_governance", "repository_ref": "R-GOV"}
+  ],
+  "sources": [
+    {"id": "S-001", "class": "SOURCE_CODE", "title": "RafGitTools content validity contract", "locator": "configs/content_validity_contract.json", "observed_at": "2026-07-20T12:00:00Z", "verification_status": "repository file observed", "query_refs": ["Q-001"], "repository_ref": "R-GOV"},
+    {"id": "S-002", "class": "SOURCE_CODE", "title": "RLL magnetorotational bridge", "locator": "data/contracts/magnetorotational_jet_bridge.v1.json", "observed_at": "2026-07-20T12:00:00Z", "verification_status": "repository file declared by prior merged integration", "query_refs": ["Q-001"], "repository_ref": "R-SCI"}
+  ],
+  "claims": [
+    {"id": "C-001", "text": "A toroidal cycle is useful as an operational recurrence model when phase, residuals and feedback are explicit.", "scope": "research governance only", "state": "SUPPORTED_LIMITED", "source_refs": ["S-001"], "formula_refs": ["F-001"], "test_refs": ["T-001"], "evidence_refs": ["E-001"], "residual_refs": ["RES-001"], "authority_repository_ref": "R-GOV", "baseline": "linear pipeline without explicit feedback edge", "falsifier": "cycle graph missing required edge or deterministic summary changes for identical input", "uncertainty_model": "structural validation only; no physical uncertainty inferred"},
+    {"id": "C-002", "text": "A pure sine universally stabilizes every physical and computational system.", "scope": "universal physical claim", "state": "TOKEN_VAZIO", "source_refs": [], "formula_refs": [], "test_refs": [], "evidence_refs": [], "residual_refs": ["RES-002"], "authority_repository_ref": "R-SCI", "baseline": "bounded control systems with damping and feedback", "falsifier": "a single unstable or nonresponsive system under pure-sine forcing", "uncertainty_model": "not established"}
+  ],
+  "formulas": [
+    {"id": "F-001", "expression": "s(t)=A*sin(2*pi*f*t+phi)", "declared_domain": "reference signal", "unit_contract": "A carries observable units; f is Hz; phase is rad", "state": "TESTED_LIMITED", "source_refs": ["S-001"], "test_refs": ["T-001"]}
+  ],
+  "tests": [
+    {"id": "T-001", "method": "dependency-free validator and deterministic summary", "environment": "Python standard library", "expected_observable": "closed cycle accepted; universal sine claim remains blocked", "state": "EXECUTED_PASS", "formula_refs": ["F-001"], "claim_refs": ["C-001"], "execution_receipt": "local unit-test receipt embedded in repository CI gate"}
+  ],
+  "evidence": [
+    {"id": "E-001", "source_ref": "S-001", "test_ref": "T-001", "kind": "VALIDATION_RECEIPT", "locator": "tests/test_toroidal_research_cycle.py", "observed_at": "2026-07-20T12:00:00Z", "digest": "TOKEN_VAZIO_UNTIL_COMMIT"}
+  ],
+  "residuals": [
+    {"id": "RES-001", "claim_refs": ["C-001"], "description": "Cross-repository adapters are not all materialized yet.", "severity": "LIMITING", "state": "OPEN", "next_action": "materialize domain adapters without copying governance logic"},
+    {"id": "RES-002", "claim_refs": ["C-002"], "description": "No universal physical stabilization proof exists.", "severity": "HARD_BLOCK", "state": "OPEN", "next_action": "keep universal claim blocked and test only source-specific bounded systems"}
+  ],
+  "token_vazio_ledger": [
+    {"id": "V-001", "field": "claims.C-002", "reason": "universal claim lacks a valid domain, evidence and falsifiable bounded model", "owner": "R-SCI", "next_action": "replace universal claim with source-specific hypotheses", "exit_criteria": "primary source, bounded equations, baseline, falsifier and execution evidence"},
+    {"id": "V-002", "field": "evidence.E-001.digest", "reason": "example cannot know its future committed blob or artifact digest", "owner": "R-GOV", "next_action": "replace in generated receipts after commit or CI artifact creation", "exit_criteria": "SHA-256 or repository blob digest recorded"}
+  ]
+}

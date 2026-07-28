@@ -1,0 +1,59 @@
+{
+  "schema": "rafgittools.compliance-evidence-boundary-local-validation.v1",
+  "generated_at": "2026-07-20T18:00:00Z",
+  "execution_scope": "LOCAL_RECONSTRUCTION_AND_SOURCE_REVIEW",
+  "claim_allowed": false,
+  "certification_claimed": false,
+  "kotlin": {
+    "compiler": "kotlinc",
+    "warnings_as_errors": true,
+    "status": "PASS",
+    "harness": {
+      "standards_covered": 9,
+      "default_levels": "NOT_ASSESSED",
+      "default_assessment_state": "TOKEN_VAZIO",
+      "default_claim_allowed": false,
+      "valid_evidence_percentage": 80,
+      "valid_evidence_level": "SUBSTANTIALLY_COMPLIANT",
+      "malformed_evidence_fallback": "NOT_ASSESSED/TOKEN_VAZIO"
+    },
+    "boundary": "Logical harness reconstructed from the branch source; Android Gradle compilation remains separate evidence."
+  },
+  "block1": {
+    "compiler": "cc",
+    "flags": "-std=c11 -Wall -Wextra -Wpedantic -O2 -fno-builtin",
+    "static_library": "PASS",
+    "demo_build": "PASS",
+    "make_check": "PASS",
+    "observed_output": [
+      "H=0.525772  C=0.450241  phi=0.213516  coh=0.610001",
+      "tick=42 attractor=HOMO"
+    ],
+    "warnings_observed": 0
+  },
+  "source_blobs": {
+    "ComplianceManager.kt": "9320e1a65afc6449a1caa8d3bdef5acd45225df9",
+    "Makefile": "b3e94663d277a6234aef36a3ea02a0e5f80f1358",
+    "validator": "ff2a54eb60f8169579edaf787c4128554536f423",
+    "tests": "dd50366c599b721f98f740ee6c3d5651613f2765",
+    "canonical_gate": "9df4edae8587f2a838d8f15c347652d25f44634d",
+    "raf_geom.c": "389de351a5bfccd6d2a8cf6db3cef0ea629396ae",
+    "raf_geom.h": "6422af09bb6d65bff3a989169ad3fa7602028c80",
+    "raf_geom_demo.c": "62ed58347e3e66f174df79b5b897edb3a66cfb3b"
+  },
+  "remote_observation": {
+    "classification": "ZERO_STEP_NO_LOGS",
+    "internal_validation_run": 29765330785,
+    "block1_run": 29765330883,
+    "remote_PASS": false,
+    "code_failure_demonstrated": false
+  },
+  "not_proven": [
+    "final-head Android Gradle build",
+    "final-head repository Python gate execution by GitHub Actions",
+    "runtime UI rendering",
+    "independent compliance assessment",
+    "ISO, NIST, OWASP or privacy conformity",
+    "external certification"
+  ]
+}

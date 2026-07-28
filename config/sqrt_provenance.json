@@ -1,0 +1,133 @@
+{
+  "schema": "rafaelia.sqrt.provenance/v1",
+  "policy": "LICENSES/SQRT_REFERENCES_AND_CHILD_PROTECTION.md",
+  "academic_reference_id": "RJ-RPM107-2023",
+  "protected_identity_token": "ESTUDANTE_MENOR_PROTEGIDA_RJ",
+  "allowed_classifications": [
+    "rafaelia_original",
+    "standard_math",
+    "regression_julia_reference",
+    "third_party",
+    "derived_with_changes",
+    "needs_review",
+    "excluded_generated"
+  ],
+  "strict_forbidden_classifications": [
+    "needs_review"
+  ],
+  "ignore_directories": [
+    ".git",
+    ".gradle",
+    ".idea",
+    "build",
+    "dist",
+    "node_modules",
+    "vendor",
+    "target"
+  ],
+  "rules": [
+    {
+      "pattern": "LICENSES/SQRT_REFERENCES_AND_CHILD_PROTECTION.md",
+      "classification": "regression_julia_reference",
+      "reference": "RJ-RPM107-2023",
+      "origin": "RafGitTools governance"
+    },
+    {
+      "pattern": "docs/provenance/RAFAELIA_SQRT_AUTHORIAL_MAP.yaml",
+      "classification": "regression_julia_reference",
+      "reference": "RJ-RPM107-2023",
+      "origin": "RafGitTools provenance map"
+    },
+    {
+      "pattern": "docs/provenance/SQRT_CROSS_REPO_INVENTORY_2026-07-21.md",
+      "classification": "standard_math",
+      "origin": "RafGitTools cross-repository provenance inventory"
+    },
+    {
+      "pattern": "docs/rafaelia_reference/sqrt3_2_kernel.md",
+      "classification": "rafaelia_original",
+      "origin": "rafaelmeloreisnovo/Vectras-VM-Android@6ab34fcfbbaa7fa3536507d9c42d066d2fe94365:docs/rafaelia_reference/sqrt3_2_kernel.md",
+      "sole_author": null
+    },
+    {
+      "pattern": "rafaelia/matrix/raf_matrix_q16.h",
+      "classification": "rafaelia_original",
+      "origin": "rafaelmeloreisnovo/Vectras-VM-Android@6ab34fcfbbaa7fa3536507d9c42d066d2fe94365:.ci/matrixbitraf.c#blob=8fb9960fb821a26eef1538ca9a4270dadd5d3a6d",
+      "sole_author": null
+    },
+    {
+      "pattern": "rafaelia/matrix/tests/test_raf_matrix_q16.c",
+      "classification": "standard_math",
+      "origin": "RafGitTools tests for promoted RAFAELIA matrix module"
+    },
+    {
+      "pattern": "rafaelia/block1/raf_geom.h",
+      "classification": "rafaelia_original",
+      "origin": "RafGitTools RAFAELIA block1",
+      "sole_author": null
+    },
+    {
+      "pattern": "rafaelia/block1/raf_geom.c",
+      "classification": "rafaelia_original",
+      "origin": "RafGitTools RAFAELIA block1",
+      "sole_author": null
+    },
+    {
+      "pattern": "_incoming/repo_mvp_puro.s",
+      "classification": "rafaelia_original",
+      "origin": "rafaelmeloreisnovo/termux-app-rafacodephi@0940da1c6017910d2ccd7951b63b6480df606b5b:mvp/rafaelia_mvp_puro.s",
+      "sole_author": null
+    },
+    {
+      "pattern": "docs/RAFAELIA_TRACEABILITY_MATRIX.md",
+      "classification": "rafaelia_original",
+      "origin": "RafGitTools traceability matrix",
+      "sole_author": null
+    },
+    {
+      "pattern": "scripts/audit_sqrt_provenance.py",
+      "classification": "standard_math",
+      "origin": "RafGitTools audit utility"
+    },
+    {
+      "pattern": "tests/test_audit_sqrt_provenance.py",
+      "classification": "standard_math",
+      "origin": "RafGitTools audit tests"
+    },
+    {
+      "pattern": "rafaelia/**",
+      "classification": "needs_review",
+      "origin": "RAFAELIA tree pending file-level genealogy"
+    },
+    {
+      "pattern": "_incoming/**",
+      "classification": "needs_review",
+      "origin": "incoming material pending promotion audit"
+    },
+    {
+      "pattern": "Livro/**",
+      "classification": "needs_review",
+      "origin": "corpus/documentation pending source separation"
+    },
+    {
+      "pattern": "app/**",
+      "classification": "needs_review",
+      "origin": "Android application tree pending file-level classification"
+    },
+    {
+      "pattern": "*.md",
+      "classification": "needs_review",
+      "origin": "root documentation pending source separation"
+    },
+    {
+      "pattern": "*.txt",
+      "classification": "needs_review",
+      "origin": "root text corpus pending source separation"
+    },
+    {
+      "pattern": "**/build/**",
+      "classification": "excluded_generated",
+      "origin": "generated build output"
+    }
+  ]
+}

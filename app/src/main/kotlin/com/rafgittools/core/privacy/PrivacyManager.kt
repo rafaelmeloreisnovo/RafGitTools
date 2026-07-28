@@ -279,18 +279,22 @@ class PrivacyManager(
     }
     
     private suspend fun getCredentialsCount(): Int {
-        // Implementation would count stored credentials
-        return 0
+        return try {
+            val ks = java.security.KeyStore.getInstance("AndroidKeyStore")
+            ks.load(null)
+            ks.aliases().toList().size
+        } catch (_: Exception) { 0 }
     }
-    
+
     private suspend fun getRepositoriesCount(): Int {
-        // Implementation would count cloned repositories
-        return 0
+        return context.filesDir.resolve("repositories")
+            .takeIf { it.isDirectory }?.listFiles()?.count { it.isDirectory } ?: 0
     }
-    
+
     private suspend fun getSettingsCount(): Int {
-        // Implementation would count settings entries
-        return 0
+        return try {
+            context.dataStore.data.first().asMap().size
+        } catch (_: Exception) { 0 }
     }
     
     private suspend fun getCacheSize(): Long {
@@ -359,7 +363,13 @@ class PrivacyManager(
                 ?.map { repoDir ->
                     RepositoryExport(
                         name = repoDir.name,
-                        url = "", // Would need to read from .git/config
+                        url = runCatching {
+                            org.eclipse.jgit.storage.file.FileRepositoryBuilder()
+                                .setGitDir(File(repoDir, ".git"))
+                                .readEnvironment()
+                                .build()
+                                .use { repo -> repo.config.getString("remote", "origin", "url") ?: "" }
+                        }.getOrDefault("")
                         localPath = repoDir.absolutePath,
                         createdDate = Date(repoDir.lastModified()),
                         lastAccessed = Date(repoDir.lastModified()),

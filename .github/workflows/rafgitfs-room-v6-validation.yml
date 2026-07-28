@@ -1,0 +1,110 @@
+name: RafGitFS Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'feature/rafgitfs-*'
+    paths:
+      - 'app/src/main/kotlin/com/rafgittools/rafgitfs/**'
+      - 'app/src/main/kotlin/com/rafgittools/ui/screens/rafgitfs/**'
+      - 'app/src/main/kotlin/com/rafgittools/RafGitFsActivity.kt'
+      - 'app/src/main/AndroidManifest.xml'
+      - 'app/src/main/kotlin/com/rafgittools/data/cache/CacheDatabase.kt'
+      - 'app/src/main/kotlin/com/rafgittools/di/AppModule.kt'
+      - 'app/src/test/kotlin/com/rafgittools/rafgitfs/**'
+      - 'app/src/test/kotlin/com/rafgittools/ui/screens/rafgitfs/**'
+      - 'app/src/androidTest/kotlin/com/rafgittools/rafgitfs/**'
+      - 'scripts/validate_rafgitfs_*.py'
+      - 'tests/test_validate_rafgitfs_*.py'
+      - '.github/workflows/rafgitfs-room-v6-validation.yml'
+  pull_request:
+    paths:
+      - 'app/src/main/kotlin/com/rafgittools/rafgitfs/**'
+      - 'app/src/main/kotlin/com/rafgittools/ui/screens/rafgitfs/**'
+      - 'app/src/main/kotlin/com/rafgittools/RafGitFsActivity.kt'
+      - 'app/src/main/AndroidManifest.xml'
+      - 'app/src/main/kotlin/com/rafgittools/data/cache/CacheDatabase.kt'
+      - 'app/src/main/kotlin/com/rafgittools/di/AppModule.kt'
+      - 'app/src/test/kotlin/com/rafgittools/rafgitfs/**'
+      - 'app/src/test/kotlin/com/rafgittools/ui/screens/rafgitfs/**'
+      - 'app/src/androidTest/kotlin/com/rafgittools/rafgitfs/**'
+      - 'scripts/validate_rafgitfs_*.py'
+      - 'tests/test_validate_rafgitfs_*.py'
+      - '.github/workflows/rafgitfs-room-v6-validation.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rafgitfs-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  structural-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate Prompt 1 foundation
+        run: python3 scripts/validate_rafgitfs_foundation.py
+
+      - name: Test Prompt 1 foundation
+        run: python3 -m unittest tests/test_validate_rafgitfs_foundation.py -v
+
+      - name: Validate Room v6
+        run: python3 scripts/validate_rafgitfs_room_v6.py --write-report artifacts/rafgitfs-room-v6-validation.json
+
+      - name: Test Room v6 adversarial gate
+        run: python3 -m unittest tests/test_validate_rafgitfs_room_v6.py -v
+
+      - name: Validate Prompt 3 GitHub engine
+        run: python3 scripts/validate_rafgitfs_github_engine.py --write-report artifacts/rafgitfs-github-engine-validation.json
+
+      - name: Test Prompt 3 adversarial gate
+        run: python3 -m unittest tests/test_validate_rafgitfs_github_engine.py -v
+
+      - name: Validate Prompt 4 Compose UI
+        run: python3 scripts/validate_rafgitfs_ui.py --write-report artifacts/rafgitfs-ui-validation.json
+
+      - name: Test Prompt 4 adversarial gate
+        run: python3 -m unittest tests/test_validate_rafgitfs_ui.py -v
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rafgitfs-structural-reports
+          path: artifacts/rafgitfs-*-validation.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  android-room-compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Compile devDebug Kotlin, Compose and Room KSP
+        run: ./gradlew --no-daemon :app:compileDevDebugKotlin
+
+      - name: Test Prompt 3 JVM engine
+        run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsGithubEngineTest*'
+
+      - name: Test Prompt 4 UI path invariants
+        run: ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsUiPathsTest*'

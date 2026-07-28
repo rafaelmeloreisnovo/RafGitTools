@@ -369,6 +369,44 @@ interface GithubApiService {
         @Path("repo") repo: String,
         @Body fork: ForkRepositoryRequest? = null
     ): GithubRepository
+
+    // SSH Keys
+    @GET("user/keys")
+    suspend fun getSshKeys(): List<GithubSshKey>
+
+    @POST("user/keys")
+    suspend fun addSshKey(@Body key: AddSshKeyRequest): GithubSshKey
+
+    @DELETE("user/keys/{keyId}")
+    suspend fun deleteSshKey(@Path("keyId") keyId: Long)
+
+    // Webhooks
+    @GET("repos/{owner}/{repo}/hooks")
+    suspend fun getWebhooks(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String
+    ): List<GithubWebhook>
+
+    @POST("repos/{owner}/{repo}/hooks")
+    suspend fun createWebhook(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Body webhook: CreateWebhookRequest
+    ): GithubWebhook
+
+    @DELETE("repos/{owner}/{repo}/hooks/{hookId}")
+    suspend fun deleteWebhook(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("hookId") hookId: Long
+    )
+
+    @POST("repos/{owner}/{repo}/hooks/{hookId}/pings")
+    suspend fun pingWebhook(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("hookId") hookId: Long
+    )
 }
 
 /**
@@ -522,4 +560,53 @@ data class ForkRepositoryRequest(
     val organization: String? = null,
     val name: String? = null,
     val default_branch_only: Boolean = false
+)
+
+/**
+ * GitHub SSH key as returned by the API
+ */
+data class GithubSshKey(
+    val id: Long,
+    val key: String,
+    val title: String,
+    @SerializedName("created_at") val createdAt: String? = null
+)
+
+/**
+ * Request body for adding a new SSH key
+ */
+data class AddSshKeyRequest(
+    val title: String,
+    val key: String
+)
+
+data class GithubWebhook(
+    val id: Long,
+    val type: String,
+    val name: String,
+    val active: Boolean,
+    val events: List<String>,
+    val config: WebhookConfig,
+    @SerializedName("created_at") val createdAt: String,
+    @SerializedName("updated_at") val updatedAt: String,
+    @SerializedName("last_response") val lastResponse: WebhookLastResponse? = null
+)
+
+data class WebhookConfig(
+    val url: String?,
+    @SerializedName("content_type") val contentType: String? = "json",
+    @SerializedName("insecure_ssl") val insecureSsl: String? = "0"
+)
+
+data class WebhookLastResponse(
+    val code: Int?,
+    val status: String?,
+    val message: String?
+)
+
+data class CreateWebhookRequest(
+    val name: String = "web",
+    val active: Boolean = true,
+    val events: List<String>,
+    val config: WebhookConfig
 )
