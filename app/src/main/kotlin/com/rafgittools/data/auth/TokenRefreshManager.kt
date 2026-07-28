@@ -1,7 +1,5 @@
 package com.rafgittools.data.auth
 
-import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,7 +20,6 @@ import javax.inject.Singleton
  */
 @Singleton
 class TokenRefreshManager @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val authRepository: AuthRepository
 ) {
     companion object {

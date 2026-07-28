@@ -1,8 +1,6 @@
 package com.rafgittools.data.auth
 
-import android.content.Context
 import com.rafgittools.BuildConfig
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -45,7 +43,6 @@ internal fun isConfiguredClientId(value: String): Boolean {
  */
 @Singleton
 class OAuthDeviceFlowManager @Inject constructor(
-    @Suppress("UNUSED_PARAMETER") @ApplicationContext private val context: Context,
     private val authRepository: AuthRepository
 ) {
     companion object {
@@ -66,6 +63,13 @@ class OAuthDeviceFlowManager @Inject constructor(
             .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
             .build()
             .create(GitHubOAuthApi::class.java)
+    }
+
+    private val sharedUserHttpClient: okhttp3.OkHttpClient by lazy {
+        okhttp3.OkHttpClient.Builder()
+            .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
     }
 
     /**
@@ -199,22 +203,21 @@ class OAuthDeviceFlowManager @Inject constructor(
 
     private suspend fun fetchUsername(token: String): String? {
         return try {
+            val authedClient = sharedUserHttpClient.newBuilder()
+                .addInterceptor { chain ->
+                    chain.proceed(
+                        chain.request().newBuilder()
+                            .header("Authorization", "Bearer $token")
+                            .header("Accept", "application/vnd.github+json")
+                            .header("X-GitHub-Api-Version", "2022-11-28")
+                            .build()
+                    )
+                }
+                .build()
             val userApi = Retrofit.Builder()
                 .baseUrl("https://api.github.com/")
                 .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
-                .client(
-                    okhttp3.OkHttpClient.Builder()
-                        .addInterceptor { chain ->
-                            chain.proceed(
-                                chain.request().newBuilder()
-                                    .header("Authorization", "Bearer $token")
-                                    .header("Accept", "application/vnd.github+json")
-                                    .header("X-GitHub-Api-Version", "2022-11-28")
-                                    .build()
-                            )
-                        }
-                        .build()
-                )
+                .client(authedClient)
                 .build()
                 .create(GitHubUserApi::class.java)
             userApi.getAuthenticatedUser().login
