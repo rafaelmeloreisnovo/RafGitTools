@@ -4,6 +4,7 @@ import com.rafgittools.data.auth.AuthRepository
 import com.rafgittools.data.cache.AsyncCacheManager
 import com.rafgittools.data.cache.RepositoryNameCache
 import com.rafgittools.domain.error.toAppError
+import com.rafgittools.domain.model.github.GithubEvent
 import com.rafgittools.domain.model.github.GithubIssue
 import com.rafgittools.domain.model.github.GithubSearchIssue
 import com.rafgittools.domain.model.github.GithubRepository as GithubRepoModel
@@ -257,6 +258,30 @@ class GithubDataRepository @Inject constructor(
         }
     }
     
+    suspend fun getUserRepositoriesByUsername(username: String, page: Int = 1, perPage: Int = 30): Result<List<GithubRepoModel>> {
+        return try {
+            Result.success(githubApiService.getUserRepositoriesByUsername(username, page, perPage))
+        } catch (e: Exception) {
+            Result.failure(e.toAppError())
+        }
+    }
+
+    suspend fun getUserStarred(username: String, page: Int = 1, perPage: Int = 30): Result<List<GithubRepoModel>> {
+        return try {
+            Result.success(githubApiService.getUserStarred(username, page, perPage))
+        } catch (e: Exception) {
+            Result.failure(e.toAppError())
+        }
+    }
+
+    suspend fun getUserEvents(username: String, page: Int = 1, perPage: Int = 30): Result<List<GithubEvent>> {
+        return try {
+            Result.success(githubApiService.getUserEvents(username, page, perPage))
+        } catch (e: Exception) {
+            Result.failure(e.toAppError())
+        }
+    }
+
     /**
      * Clear all cached data
      */
