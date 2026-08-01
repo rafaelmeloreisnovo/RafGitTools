@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafaelia.example/contracts/living-book-ir-bundle-v1.schema.json",
+  "title": "RAFAELIA Living Book IR Transport Bundle V1",
+  "type": "object",
+  "required": ["schema", "bundle_id", "state", "source", "payload", "policy", "integrity"],
+  "properties": {
+    "schema": {"const": "rafgittools.living-book-ir-bundle/v1"},
+    "bundle_id": {"type": "string", "pattern": "^LBB-[A-Z0-9_-]+-[0-9]{4}$"},
+    "state": {"const": "READY_FOR_REVIEW_NOT_DISPATCHED"},
+    "source": {"type": "object"},
+    "payload": {"type": "object"},
+    "policy": {"type": "object"},
+    "integrity": {"type": "object"}
+  },
+  "additionalProperties": false
+}
