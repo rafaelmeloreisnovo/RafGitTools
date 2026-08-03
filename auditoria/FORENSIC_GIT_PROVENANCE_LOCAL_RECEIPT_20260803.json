@@ -1,0 +1,46 @@
+{
+  "base_commit": "dbcd0894a1584e9510dabeb8f027e2238b200efa",
+  "claim_allowed": false,
+  "execution": {
+    "android_runtime": "TOKEN_VAZIO_NOT_RUN",
+    "git": "git version 2.47.3",
+    "json_parse": "PASS",
+    "platform": "Linux-6.12.13-x86_64-with-glibc2.41",
+    "py_compile": "PASS",
+    "python": "3.13.5",
+    "remote_ci": "TOKEN_VAZIO_NOT_RUN",
+    "target_repository_collection": "TOKEN_VAZIO_NOT_RUN",
+    "unit_tests": {
+      "command": "python3 -m unittest discover -s tests -p test_*.py -v",
+      "failed": 0,
+      "passed": 6,
+      "status": "PASS"
+    }
+  },
+  "f_gap": "Remote CI, Android integration, GitHub platform enrichment and physical BLAKE3 case run remain TOKEN_VAZIO.",
+  "f_next": "Write exact sources to isolated branch and open draft PR; then enrich with platform snapshot adapter.",
+  "f_ok": "6/6 local tests PASS; exact source hashes recorded.",
+  "files_sha256": {
+    "configs/forensic-git-provenance-contract.v1.json": "580016b3e3ced1769f9805fff5f0b327ee63bbf94eeb2217227eae1251140b91",
+    "docs/FORENSIC_GIT_PROVENANCE_MODE_V1.md": "5f7efa7dde1c83505401d09ee83dba25edadfdf064b7bce6f900337c2949ee5e",
+    "examples/forensic-git-agent-empty-commit.synthetic.json": "3058f0ac54b8e41ab8dab9ec24d53377b60257e4d650a4869814aefdda8a75d9",
+    "schemas/forensic-git-evidence-run-v1.schema.json": "abb5c82acd41a913cf37d86665a85f17ed1ae86e3393dc9b5fc0b600116b3d76",
+    "tests/test_forensic_git_provenance.py": "1b8aeb4a48c9f59669c0279199ba912a3f274212497366c0f522c17bf31a2ad9",
+    "tools/forensic_git_provenance/forensic_git.py": "279bbcdd24ec146efd7a3978173d3c8b494b5ca5172cee6d4c611d61e74ce144"
+  },
+  "invariants_verified": [
+    "LOCAL_COLLECTION_USES_READ_ONLY_GIT_COMMANDS",
+    "GIT_NO_REPLACE_OBJECTS_ENABLED",
+    "NO_NETWORK_CALLS_IN_COLLECTOR",
+    "NO_SHELL_TRUE_SUBPROCESS",
+    "RAW_EMAIL_NOT_EXPORTED",
+    "TOKEN_VAZIO_WEIGHT_ZERO",
+    "ANOMALY_NOT_PROMOTED_TO_INTENT",
+    "HASH_CHAIN_TAMPER_TEST_PASS",
+    "WORKING_TREE_UNCHANGED_IN_TEMP_REPOSITORY_TEST"
+  ],
+  "receipt_version": "rafgittools.forensic-git-provenance-local-receipt/v1",
+  "scope": "LOCALLY_GENERATED_EXACT_SOURCE_BEFORE_GITHUB_WRITE",
+  "source_status": "IMPLEMENTED",
+  "timestamp_utc": "2026-08-03T13:30:00Z"
+}
