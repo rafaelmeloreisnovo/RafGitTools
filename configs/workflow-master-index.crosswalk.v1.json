@@ -1,0 +1,225 @@
+{
+  "schema_version": "rafaelia.workflow-master-index-crosswalk/v1",
+  "generated_at": "2026-08-03T00:35:24-03:00",
+  "claim_allowed": false,
+  "profiles": {
+    "semantic_v1": {
+      "path": "workflow-master-index.json",
+      "schema_field": "schema",
+      "schema_value": "rafaelia.workflow-master-index.v1",
+      "authority": [
+        "meaning",
+        "module coverage",
+        "claims",
+        "support layers"
+      ],
+      "exclusions": [
+        "runtime evidence",
+        "temporal ownership",
+        "rollback",
+        "supply chain"
+      ]
+    },
+    "control_v2": {
+      "path": "configs/workflow-master-index.json",
+      "schema_field": "schema_version",
+      "schema_value": "2.0.0",
+      "authority": [
+        "execution routing",
+        "temporal state",
+        "owner",
+        "runtime evidence",
+        "rollback",
+        "supply chain"
+      ],
+      "exclusions": [
+        "symbolic meaning",
+        "semantic module coverage"
+      ]
+    }
+  },
+  "selection_rules": [
+    {
+      "intent": "INTERPRET",
+      "required_profiles": [
+        "semantic_v1"
+      ],
+      "decision": "SEMANTIC_AUTHORITY"
+    },
+    {
+      "intent": "COVERAGE",
+      "required_profiles": [
+        "semantic_v1"
+      ],
+      "decision": "SEMANTIC_AUTHORITY"
+    },
+    {
+      "intent": "EXECUTE",
+      "required_profiles": [
+        "control_v2"
+      ],
+      "decision": "CONTROL_AUTHORITY"
+    },
+    {
+      "intent": "AUTHORIZE",
+      "required_profiles": [
+        "control_v2"
+      ],
+      "decision": "CONTROL_AUTHORITY"
+    },
+    {
+      "intent": "ROLLBACK",
+      "required_profiles": [
+        "control_v2"
+      ],
+      "decision": "CONTROL_AUTHORITY"
+    },
+    {
+      "intent": "CROSS_SOURCE",
+      "required_profiles": [
+        "semantic_v1",
+        "control_v2"
+      ],
+      "decision": "BOTH_REQUIRED"
+    },
+    {
+      "intent": "UNKNOWN",
+      "required_profiles": [
+        "semantic_v1",
+        "control_v2"
+      ],
+      "decision": "BLOCKED_UNTIL_CLASSIFIED"
+    }
+  ],
+  "cycle_routes": [
+    {
+      "cycle_state": "PSI_INTENT",
+      "semantic_layers": [
+        "S01",
+        "S02",
+        "S03",
+        "S04",
+        "S05"
+      ],
+      "control_paths": [
+        "policies.default_change_mode",
+        "policies.automatic_merge"
+      ]
+    },
+    {
+      "cycle_state": "CHI_OBSERVE",
+      "semantic_layers": [
+        "S06",
+        "S07",
+        "S08",
+        "S09",
+        "S10"
+      ],
+      "control_paths": [
+        "ontology.node_types",
+        "ontology.state_axes"
+      ]
+    },
+    {
+      "cycle_state": "RHO_NOISE",
+      "semantic_layers": [
+        "S11",
+        "S12",
+        "S13",
+        "S23"
+      ],
+      "control_paths": [
+        "policies.negative_results_are_assets",
+        "policies.documentation_is_not_runtime_evidence"
+      ]
+    },
+    {
+      "cycle_state": "DELTA_TRANSFORM",
+      "semantic_layers": [
+        "S14",
+        "S15",
+        "S16",
+        "S17",
+        "S18",
+        "S30"
+      ],
+      "control_paths": [
+        "defaults.runtime_evidence",
+        "policies.hash_is_not_scientific_validation"
+      ]
+    },
+    {
+      "cycle_state": "SIGMA_CUSTODY",
+      "semantic_layers": [
+        "S19",
+        "S20",
+        "S21",
+        "S22",
+        "S24"
+      ],
+      "control_paths": [
+        "defaults.supply_chain",
+        "policies.token_vazio_is_valid"
+      ]
+    },
+    {
+      "cycle_state": "OMEGA_CLOSE",
+      "semantic_layers": [
+        "S25",
+        "S26",
+        "S27"
+      ],
+      "control_paths": [
+        "nodes",
+        "relations"
+      ]
+    },
+    {
+      "cycle_state": "PSI_REOPEN",
+      "semantic_layers": [
+        "S28",
+        "S29"
+      ],
+      "control_paths": [
+        "defaults.recovery",
+        "policies.rollback_must_be_drilled"
+      ]
+    }
+  ],
+  "conflict_policy": {
+    "default_state": "BLOCKED",
+    "silent_precedence": false,
+    "required_record": "CONTRADICTION",
+    "owner": "rafaelmeloreisnovo",
+    "exit_criteria": "Fix both source versions and record an explicit reconciliation or supersession."
+  },
+  "directive_policy": {
+    "record_type": "DIRECTIVE_EVENT",
+    "authoritative_schema": "rafaelmeloreisnovo/Mapa:schemas/directive-event.schema.json",
+    "allowed_effects": [
+      "INTERPRET",
+      "ROUTE",
+      "WRITE",
+      "BLOCK"
+    ],
+    "forbidden_effects": [
+      "PROMOTE"
+    ],
+    "retroactive_default": false,
+    "automatic_merge": false,
+    "claim_promotion": false
+  },
+  "normative_reference_registry": {
+    "path": "configs/normative-reference-registry.v1.json",
+    "adoption_state": "REFERENCE_ONLY",
+    "validator": "scripts/federation/validate_normative_reference_registry.py"
+  },
+  "invariants": [
+    "same_name_does_not_imply_same_authority",
+    "documentation_is_not_runtime_evidence",
+    "directive_does_not_imply_claim_promotion",
+    "no_retroactive_effect_without_explicit_supersession",
+    "automatic_merge_is_false",
+    "conflict_is_fail_closed"
+  ]
+}

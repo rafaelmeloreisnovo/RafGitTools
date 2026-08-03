@@ -4,6 +4,40 @@
 
 RafGitTools is committed to meeting international standards for quality, security, and compliance. This document details our compliance with ISO standards, regulatory requirements, and industry best practices.
 
+## Evidence boundary — 2026-08-03
+
+This document contains legacy declarations, targets and alignment statements. Unless a
+statement resolves to a scoped control, test, dated receipt and independent assessment
+where required, it is **not** evidence of conformity or certification.
+
+```text
+reference ≠ implementation
+implementation ≠ operating effectiveness
+internal test ≠ independent audit
+target metric ≠ observed metric
+control mapping ≠ certification
+```
+
+Current editions and official source URLs are governed by
+`configs/normative-reference-registry.v1.json`. Its state is
+`REFERENCE_ONLY / claim_allowed=false`; every implementation receipt remains
+`TOKEN_VAZIO` in that registry. The evidence-backed compliance gate, not this prose,
+decides which narrower claims may be supported.
+
+Specific corrections:
+
+- ISO 9000:2026 is the current vocabulary reference.
+- ISO 9001:2015 with Amendment 1:2024 remains the current requirements reference while
+  ISO reports a replacement expected in September 2026.
+- ISO/IEC 27001:2022 with Amendment 1:2024 and ISO/IEC 27002:2022 are the current
+  security references in this registry.
+- IEEE 1012-2024 supersedes IEEE 1012-2016.
+- IEEE 730-2026 supersedes IEEE 730-2014; the official page title is preserved as
+  “Approved Draft Standard” even though its status is shown as active.
+- ISO/IEC/IEEE 29148:2018 is included as the requirements-engineering reference.
+- W3C PROV-O remains a structural interoperability mapping, not a formal-conformance
+  claim.
+
 ## ISO Standards Compliance
 
 ### ISO 8000 - Data Quality and Governance
@@ -478,7 +512,7 @@ Readiness for:
 
 ## Development Standards
 
-### IEEE 730 - Software Quality Assurance Plan
+### IEEE 730-2026 - Software Quality Assurance Processes (Reference)
 
 **SQAP Components**
 1. Purpose and scope
@@ -523,7 +557,7 @@ Readiness for:
 - Test incident report
 - Test summary report
 
-### IEEE 1012 - Software Verification and Validation
+### IEEE 1012-2024 - System, Software, and Hardware Verification and Validation (Reference)
 
 **V&V Activities**
 - Management review

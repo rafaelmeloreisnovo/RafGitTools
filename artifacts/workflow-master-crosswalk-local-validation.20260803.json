@@ -1,0 +1,48 @@
+{
+  "schema_version": "rafaelia.workflow-crosswalk-local-validation/v1",
+  "observed_at": "2026-08-03T00:35:24-03:00",
+  "source_ref": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "commit": "daff5d5b3092819fc2c8215508a4a83d42cca02f",
+    "semantic_blob": "43a9e813521e6c00faa2381c514f08343d72f9e8",
+    "control_blob": "bc7ad055ae2e89bf474e5dc9eaf4de45489717e0"
+  },
+  "validation": {
+    "environment": "ChatGPT Work sandbox; Python standard library",
+    "unit_tests": {
+      "crosswalk": "7/7 PASS",
+      "normative_registry": "6/6 PASS",
+      "total": "13/13 PASS"
+    },
+    "json_syntax": "4/4 PASS",
+    "shell_syntax": "PASS",
+    "yaml_parse": "PASS",
+    "crosswalk_report": {
+      "status": "PASS",
+      "semantic_modules": 13,
+      "semantic_layers": 30,
+      "control_nodes": 15,
+      "cycle_routes": 7,
+      "semantic_digest": "ccb7b06c0185909a977b2a41f09f71747085821fdc128e2c53be2e0628169670",
+      "control_digest": "9daaa15d3622d4e62fa0523bf488b12bbb93abe79754733a6d1299985b7c34c5",
+      "crosswalk_digest": "34808cc4fd34e9edc464af60874ad6beaf718212c1b2a5dc45729bc10f2296ee"
+    },
+    "normative_report": {
+      "status": "PASS",
+      "reference_count": 8,
+      "semantic_digest": "d1e1816700581e546c5120d56b5ccd4c8de11562a474f3fc5f102d174f450849"
+    }
+  },
+  "file_sha256": {
+    "configs/workflow-master-index.crosswalk.v1.json": "937b8bf39f2e349774eaa31d92d2f1b0fe1ecd64ac8a089724512f74b7669b1b",
+    "configs/normative-reference-registry.v1.json": "5787a4c58f0e2fdaa522db73e8e23c7d8ea95eb09748a221f84a946abf116829",
+    "scripts/federation/validate_workflow_master_crosswalk.py": "6e6f423c16f288812046b569d10384cca0adc77b14f806bfcf5abfecd5d840e7",
+    "scripts/federation/validate_normative_reference_registry.py": "40bf37c66e2624bd3911a7e87833d97737cd930a020ef5eec2876a27ae02dc7c"
+  },
+  "remote_ci": "TOKEN_VAZIO_NOT_RUN",
+  "physical_runtime": "NOT_APPLICABLE_FOR_STATIC_CONTROL_CONTRACT",
+  "conformance_claim": false,
+  "certification_claim": false,
+  "claim_allowed": false,
+  "boundary": "Local contract tests do not establish GitHub Actions execution, standards conformity, certification, or scientific truth."
+}

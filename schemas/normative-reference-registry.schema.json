@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rafaelmeloreisnovo/RafGitTools/schemas/normative-reference-registry.schema.json",
+  "title": "RAFAELIA Normative Reference Registry v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "observed_at",
+    "adoption_state",
+    "claim_allowed",
+    "standards",
+    "boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "rafaelia.normative-reference-registry/v1"
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "adoption_state": {
+      "const": "REFERENCE_ONLY"
+    },
+    "claim_allowed": {
+      "const": false
+    },
+    "standards": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "edition_state",
+          "official_url",
+          "mapping_purpose",
+          "supersedes",
+          "conformance_claim",
+          "certification_claim",
+          "implementation_receipt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 3
+          },
+          "title": {
+            "type": "string",
+            "minLength": 3
+          },
+          "edition_state": {
+            "type": "string",
+            "minLength": 3
+          },
+          "official_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "mapping_purpose": {
+            "type": "string",
+            "minLength": 3
+          },
+          "supersedes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "conformance_claim": {
+            "const": false
+          },
+          "certification_claim": {
+            "const": false
+          },
+          "implementation_receipt": {
+            "const": "TOKEN_VAZIO"
+          }
+        }
+      }
+    },
+    "boundaries": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 3
+      }
+    }
+  }
+}

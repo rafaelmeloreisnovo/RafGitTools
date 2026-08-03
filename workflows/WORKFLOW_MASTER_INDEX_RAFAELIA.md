@@ -23,6 +23,8 @@ expressão
 
 - `configs/rafaelia-federation.json`: topologia e failover federado v1.
 - `configs/workflow-master-index.json`: responsabilidade, tempo, runtime, supply chain e recuperação v2.
+- `configs/workflow-master-index.crosswalk.v1.json`: roteamento explícito entre autoridade semântica v1 e autoridade operacional v2.
+- `configs/normative-reference-registry.v1.json`: edições normativas observadas, sempre em modo `REFERENCE_ONLY`.
 - `schemas/workflow-master-index.schema.json`: contrato estrutural.
 - `scripts/federation/validate_master_index.py`: gate sem inferência remota.
 - `scripts/federation/recovery_drill.py`: restauração local real e simulação limitada dos outros nós.
@@ -31,8 +33,16 @@ expressão
 - `schemas/epistemic-provenance-interop.schema.json`: schema público do perfil.
 - `scripts/federation/epistemic_interop.py`: projeções determinísticas PROV, OpenLineage, SLSA, SPDX e NIST AI RMF.
 - `docs/federation/RAFAELIA_EPISTEMIC_PROVENANCE_INTEROP_V1.md`: interpretação humana e limites.
+- `docs/federation/WORKFLOW_MASTER_INDEX_CROSSWALK_V1.md`: regra humana de seleção e conflito.
+- `docs/federation/NORMATIVE_REFERENCE_STATUS_V1.md`: estado editorial das referências e fronteira de conformidade.
 
 ## Condições estruturais implantadas
+
+### 0. Dois perfis, duas autoridades
+
+`/workflow-master-index.json` é o perfil semântico v1. Este control plane é o perfil
+operacional v2. Questões cross-source exigem ambos; conflito produz `BLOCKED` e
+`CONTRADICTION`, nunca seleção silenciosa.
 
 ### 1. Índice mestre canônico
 
