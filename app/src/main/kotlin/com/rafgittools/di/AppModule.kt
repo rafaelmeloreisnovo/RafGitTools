@@ -26,6 +26,7 @@ import com.rafgittools.rafgitfs.data.TransferJobDao
 import com.rafgittools.rafgitfs.data.VirtualTreeDao
 import com.rafgittools.rafgitfs.data.WorkspaceDao
 import com.rafgittools.rafgitfs.remote.RafGitFsGithubApiService
+import com.rafgittools.kernel.GovernanceGate
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -158,4 +159,13 @@ object CacheModule {
 abstract class RepositoryModule {
     @Binds @Singleton
     abstract fun bindGitRepository(impl: GitRepositoryImpl): GitRepository
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+object KernelModule {
+    @Provides
+    @Singleton
+    fun provideGovernanceGate(@ApplicationContext context: Context): GovernanceGate =
+        GovernanceGate(context)
 }
