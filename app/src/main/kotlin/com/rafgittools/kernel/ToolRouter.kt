@@ -79,7 +79,12 @@ class ToolRouter @Inject constructor(
         if (repoPath.isBlank()) return errorJson("missing_repoPath")
         val commitHash = call.optString("commitHash", "").ifBlank { null }
         return runBlocking {
-            jGitService.getDiff(repoPath, commitHash).fold(
+            val diffResult = if (commitHash != null) {
+                jGitService.getDiffBetweenCommits(repoPath, "$commitHash^", commitHash)
+            } else {
+                jGitService.getDiff(repoPath)
+            }
+            diffResult.fold(
                 onSuccess = { diffs ->
                     JSONObject().apply {
                         put("tool", "git.diff")

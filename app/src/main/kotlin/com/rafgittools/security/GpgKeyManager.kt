@@ -163,6 +163,31 @@ object GpgKeyManager {
     }
 
     /**
+     * Verify a detached binary signature over [data].
+     *
+     * The signer's public key must already be present in the local keyring
+     * (imported via [importKey]).  Returns `true` when gpg exits 0 (good
+     * signature), `false` when the signature is invalid or the key is not
+     * trusted.  Returns `Result.failure` only for I/O or process errors.
+     *
+     * @param data           original data that was signed
+     * @param signatureBytes raw bytes of the detached .sig file
+     */
+    fun verifySignature(data: ByteArray, signatureBytes: ByteArray): Result<Boolean> = runCatching {
+        val tmpData = File.createTempFile("raf_gpg_data_", ".bin")
+        val tmpSig = File.createTempFile("raf_gpg_sig_", ".sig")
+        try {
+            tmpData.writeBytes(data)
+            tmpSig.writeBytes(signatureBytes)
+            val r = runGpg("--batch", "--verify", tmpSig.absolutePath, tmpData.absolutePath)
+            r.exitCode == 0
+        } finally {
+            tmpData.delete()
+            tmpSig.delete()
+        }
+    }
+
+    /**
      * Check whether a gpg binary is available on this device.
      */
     fun isGpgAvailable(): Boolean = findGpg() != null
