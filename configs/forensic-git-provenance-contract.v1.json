@@ -1,0 +1,68 @@
+{
+  "authority": {
+    "control_plane": "rafaelmeloreisnovo/RafGitTools",
+    "ontology_and_state": "rafaelmeloreisnovo/Mapa",
+    "scientific_or_legal_claims": "external_human_review_required"
+  },
+  "claim_allowed": false,
+  "commands": {
+    "audit": {
+      "automatic_attribution": false,
+      "automatic_retaliation": false,
+      "repository_mutation": false
+    },
+    "collect": {
+      "network": false,
+      "replacement_refs_disabled": true,
+      "repository_mutation": false
+    },
+    "verify": {
+      "recomputes_hash_chain": true
+    }
+  },
+  "epistemic_states": [
+    "PROVADO",
+    "EVIDENCIADO",
+    "HIPOTESE",
+    "REFUTADO",
+    "TOKEN_VAZIO"
+  ],
+  "four_clocks": [
+    "author",
+    "committer",
+    "platform_first_seen",
+    "external_receipt"
+  ],
+  "hard_invariants": [
+    "ANOMALY_IS_NOT_INTENT",
+    "GIT_DATE_IS_NOT_PHYSICAL_RECEIPT",
+    "CURRENT_REFS_ARE_NOT_COMPLETE_HISTORY",
+    "TOKEN_VAZIO_DOES_NOT_ADD_ANOMALY_SCORE",
+    "NO_AUTOMATIC_FRAUD_PLAGIARISM_CENSORSHIP_OR_MALICE_CLAIM",
+    "NO_REPOSITORY_WRITE",
+    "NO_NETWORK_IN_LOCAL_COLLECTOR",
+    "NO_RAW_EMAIL_EXPORT"
+  ],
+  "mode": "READ_ONLY_NO_NETWORK_BY_DEFAULT",
+  "next_external_enrichment": [
+    "push_events_and_pusher",
+    "pull_request_and_review_events",
+    "comment_edit_history",
+    "workflow_runs_jobs_logs_artifacts",
+    "release_assets_and_attestations",
+    "fork_graph_and_deleted_refs",
+    "independent_receipts",
+    "ai_task_receipts_bound_to_sha"
+  ],
+  "schema_version": "rafgittools.forensic-git-provenance-contract/v1",
+  "status": "IMPLEMENTED_SOURCE_LOCAL_TESTED",
+  "vectors": {
+    "A": "authorship_and_provenance",
+    "C": "conversation_contradiction",
+    "E": "evidence_gaps",
+    "F": "fork_patch_recurrence",
+    "G": "graph_and_refs",
+    "T": "temporal",
+    "X": "execution_and_ci"
+  }
+}
