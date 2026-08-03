@@ -27,12 +27,18 @@ target_link_libraries(rafcore ${log-lib})
 
 # ---------------------------------------------------------------------------
 # RAFAELIA engine JNI bridge — 7D toroidal EMA, CRC32C, hardware profile.
-# No external deps: only jni.h, standard C11, and android/log. Always built.
+# B7 adds caller-owned triple buffers, 16 deterministic lanes and optional
+# Vulkan/OpenCL callbacks. GPU claims remain disabled until a device receipt.
 # ---------------------------------------------------------------------------
 set(RAFAELIA_NATIVE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../kernel/native")
 
 add_library(rafaelia SHARED
     "${RAFAELIA_NATIVE_DIR}/rafaelia_jni.c"
+    raf_b7_orchestrator.c
+)
+target_include_directories(rafaelia PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${RAFAELIA_NATIVE_DIR}
 )
 target_compile_options(rafaelia PRIVATE -Wall -Wextra -O2 -ffunction-sections -fdata-sections)
 target_link_libraries(rafaelia PRIVATE ${log-lib})
