@@ -1,0 +1,14 @@
+{
+  "canonical_sha256": "241473eaeb9802e636888a4e10aa3eb1629f64fc67cbcaf3669acbe8fad912c6",
+  "claim_allowed": false,
+  "compiler": "rafymlc/1.0.0",
+  "header_sha256": "f649d6ca79ca43d2015fc2c1aca63ad5316ccb649724c7a1a4b948da417273cc",
+  "input": "examples/rafyml/config.yml",
+  "input_sha256": "9b7224237421fc80d1f2df16c6941c34c0e7266efb88b07f0d9e5b6c54b7d07f",
+  "node_count": 15,
+  "profile": "RAFYML-FREESTANDING-V1",
+  "root_index": 0,
+  "source_sha256": "b1edac6067bc17c0653079972082815a9bf3bb454a147120c068b01bbc906fcf",
+  "state": "GENERATED_REQUIRES_COMPILE_GATE",
+  "string_bytes": 141
+}

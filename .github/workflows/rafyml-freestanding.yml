@@ -1,0 +1,35 @@
+name: RAFYML Freestanding Gate
+
+on:
+  push:
+    paths:
+      - "tools/rafymlc/**"
+      - "include/rafyml_runtime.h"
+      - "src/rafyml_runtime.c"
+      - "examples/rafyml/**"
+      - "tests/test_rafymlc.py"
+      - "scripts/ci/validate_rafyml_freestanding.py"
+      - ".github/workflows/rafyml-freestanding.yml"
+  pull_request:
+    paths:
+      - "tools/rafymlc/**"
+      - "include/rafyml_runtime.h"
+      - "src/rafyml_runtime.c"
+      - "examples/rafyml/**"
+      - "tests/test_rafymlc.py"
+      - "scripts/ci/validate_rafyml_freestanding.py"
+      - ".github/workflows/rafyml-freestanding.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run deterministic freestanding gate
+        run: python3 scripts/ci/validate_rafyml_freestanding.py

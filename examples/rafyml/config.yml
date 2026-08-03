@@ -1,0 +1,14 @@
+app:
+  name: "RafGitTools"
+  workers: 16
+  safe: true
+architectures:
+  - armeabi-v7a
+  - arm64-v8a
+limits:
+  max_nodes: 4096
+  max_string_bytes: 1048576
+runtime:
+  mode: freestanding
+  heap: false
+  libc: false
