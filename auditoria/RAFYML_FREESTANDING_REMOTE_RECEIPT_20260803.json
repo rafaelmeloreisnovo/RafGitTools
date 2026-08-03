@@ -1,0 +1,27 @@
+{
+  "schema": "rafgittools.rafyml-remote-receipt/v1",
+  "observed_at": "2026-08-03T16:22:04Z",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "pull_request": 328,
+  "head_sha": "68095be6f42f5dde8f2e39ef2f1e30c86d432d55",
+  "workflow": {
+    "name": "RAFYML Freestanding Gate",
+    "run_id": 30831790832,
+    "job_id": 91747274308,
+    "status": "completed",
+    "conclusion": "failure",
+    "steps_observed": 0,
+    "logs_available": false
+  },
+  "cross_check": {
+    "workflow": "Internal Validation",
+    "run_id": 30831791674,
+    "job_id": 91747277027,
+    "steps_observed": 0,
+    "logs_available": false
+  },
+  "state": "BLOCKED_EXTERNAL_NO_STEPS",
+  "claim_allowed": false,
+  "interpretation": "The platform created jobs but exposed no executed steps. This receipt does not classify the RAFYML implementation as a code failure.",
+  "f_next": "Restore GitHub Actions runner or quota availability, rerun the focal workflow, then preserve its step-level receipt."
+}
