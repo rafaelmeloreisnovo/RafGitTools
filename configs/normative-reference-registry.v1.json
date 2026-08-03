@@ -1,0 +1,103 @@
+{
+  "schema_version": "rafaelia.normative-reference-registry/v1",
+  "observed_at": "2026-08-03T00:35:24-03:00",
+  "adoption_state": "REFERENCE_ONLY",
+  "claim_allowed": false,
+  "standards": [
+    {
+      "id": "ISO-9000-2026",
+      "title": "Quality management — Fundamentals and vocabulary",
+      "edition_state": "PUBLISHED_CURRENT_VOCABULARY",
+      "official_url": "https://www.iso.org/standard/9000",
+      "mapping_purpose": "quality vocabulary",
+      "supersedes": "ISO-9000-2015",
+      "conformance_claim": false,
+      "certification_claim": false,
+      "implementation_receipt": "TOKEN_VAZIO"
+    },
+    {
+      "id": "ISO-9001-2015-AMD1-2024",
+      "title": "Quality management systems — Requirements — Amendment 1",
+      "edition_state": "CURRENT_REQUIREMENTS_PENDING_EXPECTED_2026_REPLACEMENT",
+      "official_url": "https://www.iso.org/standard/62085.html",
+      "mapping_purpose": "quality management requirements reference",
+      "supersedes": null,
+      "conformance_claim": false,
+      "certification_claim": false,
+      "implementation_receipt": "TOKEN_VAZIO"
+    },
+    {
+      "id": "ISO-IEC-27001-2022-AMD1-2024",
+      "title": "Information security management systems — Requirements",
+      "edition_state": "PUBLISHED_CURRENT_WITH_AMENDMENT",
+      "official_url": "https://www.iso.org/standard/27001",
+      "mapping_purpose": "ISMS requirements reference",
+      "supersedes": "ISO-IEC-27001-2013",
+      "conformance_claim": false,
+      "certification_claim": false,
+      "implementation_receipt": "TOKEN_VAZIO"
+    },
+    {
+      "id": "ISO-IEC-27002-2022",
+      "title": "Information security controls",
+      "edition_state": "PUBLISHED_GUIDANCE",
+      "official_url": "https://www.iso.org/standard/75652.html",
+      "mapping_purpose": "security control guidance",
+      "supersedes": "ISO-IEC-27002-2013",
+      "conformance_claim": false,
+      "certification_claim": false,
+      "implementation_receipt": "TOKEN_VAZIO"
+    },
+    {
+      "id": "IEEE-1012-2024",
+      "title": "System, Software, and Hardware Verification and Validation",
+      "edition_state": "ACTIVE_SUPERSEDES_2016",
+      "official_url": "https://standards.ieee.org/ieee/1012/7324/",
+      "mapping_purpose": "verification and validation process reference",
+      "supersedes": "IEEE-1012-2016",
+      "conformance_claim": false,
+      "certification_claim": false,
+      "implementation_receipt": "TOKEN_VAZIO"
+    },
+    {
+      "id": "IEEE-730-2026",
+      "title": "Software Quality Assurance Processes",
+      "edition_state": "ACTIVE_PAGE_APPROVED_DRAFT_TITLE_SUPERSEDES_2014",
+      "official_url": "https://standards.ieee.org/ieee/730/10854/",
+      "mapping_purpose": "software quality assurance process reference",
+      "supersedes": "IEEE-730-2014",
+      "conformance_claim": false,
+      "certification_claim": false,
+      "implementation_receipt": "TOKEN_VAZIO"
+    },
+    {
+      "id": "ISO-IEC-IEEE-29148-2018",
+      "title": "Life cycle processes — Requirements engineering",
+      "edition_state": "PUBLISHED_REFERENCE",
+      "official_url": "https://standards.ieee.org/standard/29148-2018.html",
+      "mapping_purpose": "requirements engineering reference",
+      "supersedes": null,
+      "conformance_claim": false,
+      "certification_claim": false,
+      "implementation_receipt": "TOKEN_VAZIO"
+    },
+    {
+      "id": "W3C-PROV-O-2013",
+      "title": "The PROV Ontology",
+      "edition_state": "W3C_RECOMMENDATION_STRUCTURAL_MAPPING_ONLY",
+      "official_url": "https://www.w3.org/TR/prov-o/",
+      "mapping_purpose": "provenance interoperability mapping",
+      "supersedes": null,
+      "conformance_claim": false,
+      "certification_claim": false,
+      "implementation_receipt": "TOKEN_VAZIO"
+    }
+  ],
+  "boundaries": [
+    "reference_presence_is_not_implementation",
+    "control_mapping_is_not_conformance",
+    "internal_test_is_not_independent_audit",
+    "certification_requires_accredited_scope_and_evidence",
+    "future_or_expected_editions_are_not_current_requirements"
+  ]
+}
