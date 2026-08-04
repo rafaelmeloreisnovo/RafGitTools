@@ -1,6 +1,6 @@
 {
   "schema": "rafaelia.runtime-lock.v1",
-  "generated_at": "2026-07-13T09:23:27Z",
+  "generated_at": "2026-08-04T10:48:00Z",
   "release_state": "SOURCE_LOCKED_ARTIFACT_HASH_PENDING",
   "integration_repository": {
     "name": "rafaelmeloreisnovo/RafGitTools",
@@ -13,7 +13,7 @@
       "name": "rafaelmeloreisnovo/termux-app-rafacodephi",
       "url": "https://github.com/rafaelmeloreisnovo/termux-app-rafacodephi.git",
       "branch": "master",
-      "commit": "459c8114adfd63b00b17cb26cb6eea0bd9f87fa6",
+      "commit": "0e4330273375344042eba8ff17de47c5bc8af573",
       "expected_hashes": {
         "manifest_sha256": "TOKEN_VAZIO",
         "bundle_sha256": "TOKEN_VAZIO"
@@ -23,7 +23,7 @@
       "name": "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE",
       "url": "https://github.com/rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE.git",
       "branch": "main",
-      "commit": "8753c1152f2399e258387d5b6e26e00090d1478e",
+      "commit": "628105046620ae9e92d625e85def2bf728edfac8",
       "expected_hashes": {
         "manifest_sha256": "TOKEN_VAZIO",
         "bundle_sha256": "TOKEN_VAZIO"
@@ -33,7 +33,7 @@
       "name": "rafaelmeloreisnovo/llamaRafaelia",
       "url": "https://github.com/rafaelmeloreisnovo/llamaRafaelia.git",
       "branch": "master",
-      "commit": "40f3e72bcb0d63b5acc9af6ff7b3f6a38307d763",
+      "commit": "ceacf4be5ccf3889b864288423258dbf823a07ad",
       "expected_hashes": {
         "manifest_sha256": "TOKEN_VAZIO",
         "bundle_sha256": "TOKEN_VAZIO"
@@ -43,7 +43,7 @@
       "name": "rafaelmeloreisnovo/RafPolimata",
       "url": "https://github.com/rafaelmeloreisnovo/RafPolimata.git",
       "branch": "main",
-      "commit": "543852ecf47da66984c8c7152fcb0917c21b82a4",
+      "commit": "dbd104e69e0b627d0a5c37a1d03b8bbabdb9f69e",
       "expected_hashes": {
         "manifest_sha256": "TOKEN_VAZIO",
         "bundle_sha256": "TOKEN_VAZIO"

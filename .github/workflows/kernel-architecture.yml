@@ -11,8 +11,11 @@ on:
       - 'app/src/main/assets/kernel/**'
       - 'scripts/build_llama_kernel.sh'
       - 'scripts/generate_runtime_manifest.sh'
+      - 'scripts/termux_runtime_handoff.sh'
       - 'scripts/runtime_lock_contract.py'
       - 'tests/test_runtime_lock_contract.py'
+      - 'tests/test_runtime_manifest_generator.py'
+      - 'tests/test_termux_runtime_handoff.py'
       - '.github/workflows/kernel-architecture.yml'
   pull_request:
     branches: ['main']
@@ -24,8 +27,11 @@ on:
       - 'app/src/main/assets/kernel/**'
       - 'scripts/build_llama_kernel.sh'
       - 'scripts/generate_runtime_manifest.sh'
+      - 'scripts/termux_runtime_handoff.sh'
       - 'scripts/runtime_lock_contract.py'
       - 'tests/test_runtime_lock_contract.py'
+      - 'tests/test_runtime_manifest_generator.py'
+      - 'tests/test_termux_runtime_handoff.py'
       - '.github/workflows/kernel-architecture.yml'
   workflow_dispatch:
 
@@ -43,8 +49,8 @@ jobs:
       - name: Checkout RafGitTools
         uses: actions/checkout@v4
 
-      - name: Test runtime-lock contract
-        run: python3 -m unittest discover -s tests -p 'test_runtime_lock_contract.py' -v
+      - name: Test runtime contracts
+        run: python3 -m unittest discover -s tests -p 'test_*runtime*.py' -v
 
       - name: Validate and parse runtime-lock.json
         id: lock
@@ -132,6 +138,26 @@ jobs:
             echo "[OK] $ENTRY"
           done
 
+      - name: Validate runtime manifest promotion boundary
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(Path('RUNTIME_MANIFEST.json').read_text(encoding='utf-8'))
+          if manifest.get('artifact_state') != 'ARTIFACTS_PRESENT':
+              raise SystemExit('runtime manifest did not record ARTIFACTS_PRESENT')
+          if manifest.get('artifact_verification_state') != 'HASHED_NOT_PROMOTED':
+              raise SystemExit('unexpected artifact verification state')
+          if int(manifest.get('artifact_count', 0)) < 2:
+              raise SystemExit('runtime manifest must contain at least two ABI artifacts')
+          if manifest.get('claim_allowed') is not False:
+              raise SystemExit('claim_allowed must remain false before device evidence')
+          if not Path('RUNTIME_MANIFEST.json.sha256').is_file():
+              raise SystemExit('runtime manifest SHA-256 sidecar is missing')
+          print('[OK] runtime manifest artifact boundary')
+          PY
+
       - name: Upload validated kernel APK
         uses: actions/upload-artifact@v4
         with:
@@ -144,5 +170,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: runtime-manifest-${{ github.run_id }}
-          path: RUNTIME_MANIFEST.json
+          path: |
+            RUNTIME_MANIFEST.json
+            RUNTIME_MANIFEST.json.sha256
           if-no-files-found: warn

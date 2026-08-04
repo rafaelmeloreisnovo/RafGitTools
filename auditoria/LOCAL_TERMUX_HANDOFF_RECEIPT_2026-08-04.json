@@ -1,0 +1,67 @@
+{
+  "schema": "rafaelia.local-termux-handoff-matrix.v1",
+  "event_id": "LOCAL-TERMUX-HANDOFF-MATRIX-20260804T110200Z",
+  "recorded_at": "2026-08-04T11:02:00Z",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "branch": "ops/runtime-lock-refresh-20260804",
+  "tested_commits": {
+    "handoff_script": "d172b01e2ffa52a8adb14141d89b8958f83691cb",
+    "handoff_tests": "10c04c84120d9351526ffd806ee711f5ac861203",
+    "workflow_integration": "d124fa642146d35e3e419e8e0e74b6e91cd0621b"
+  },
+  "environment": {
+    "device_class": "NON_ANDROID_LOCAL",
+    "kernel": "Linux 6.12.13",
+    "architecture": "x86_64",
+    "android_hardware": false
+  },
+  "matrix": [
+    {
+      "case": "source_only",
+      "command": "termux_runtime_handoff.sh runtime-lock.json empty-build receipts",
+      "exit_code": 0,
+      "artifact_state": "SOURCE_ONLY",
+      "artifact_count": 0,
+      "manifest_sidecar_verified": true,
+      "receipt_sidecar_verified": true,
+      "device_class": "NON_ANDROID_LOCAL",
+      "claim_allowed": false,
+      "result": "PASS"
+    },
+    {
+      "case": "empty_promotion",
+      "command": "termux_runtime_handoff.sh runtime-lock.json empty-build receipts --require-artifacts",
+      "exit_code": 3,
+      "expected_failure_message": true,
+      "receipts_written": 0,
+      "result": "PASS_FAIL_CLOSED"
+    },
+    {
+      "case": "synthetic_artifact",
+      "command": "termux_runtime_handoff.sh runtime-lock.json build-artifacts receipts --require-artifacts",
+      "exit_code": 0,
+      "artifact_state": "ARTIFACTS_PRESENT",
+      "artifact_count": 1,
+      "artifact_path": "arm64-v8a/librafaelia_fixture.so",
+      "artifact_sha256": "6f78303cffdd87aac0b2c0907c47ad6f75639e1ba17ba14cdfa23657666f56c7",
+      "manifest_sidecar_verified": true,
+      "receipt_sidecar_verified": true,
+      "shared_library_execution": "TOKEN_VAZIO_NOT_EXECUTED",
+      "claim_allowed": false,
+      "result": "PASS_LOCAL_SYNTHETIC"
+    }
+  ],
+  "classification": {
+    "one_command_handoff": "PASS_LOCAL",
+    "append_only_receipts": "PASS_LOCAL",
+    "hash_verification": "PASS_LOCAL",
+    "empty_artifact_promotion": "REJECTED_AS_REQUIRED",
+    "termux_android_execution": "TOKEN_VAZIO",
+    "armv7_device_execution": "TOKEN_VAZIO",
+    "arm64_device_execution": "TOKEN_VAZIO",
+    "claim_allowed": false
+  },
+  "F_ok": "the one-command handoff creates and verifies typed manifests and append-only receipts while rejecting empty promotion",
+  "F_gap": "the same script has not yet been executed inside com.termux.rafacodephi on ARMv7 or ARM64",
+  "F_next": "run scripts/termux_runtime_handoff.sh against the smallest real B7 build directory on Termux and append the produced receipt without modification"
+}
