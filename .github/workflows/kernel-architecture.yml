@@ -11,9 +11,11 @@ on:
       - 'app/src/main/assets/kernel/**'
       - 'scripts/build_llama_kernel.sh'
       - 'scripts/generate_runtime_manifest.sh'
+      - 'scripts/termux_runtime_handoff.sh'
       - 'scripts/runtime_lock_contract.py'
       - 'tests/test_runtime_lock_contract.py'
       - 'tests/test_runtime_manifest_generator.py'
+      - 'tests/test_termux_runtime_handoff.py'
       - '.github/workflows/kernel-architecture.yml'
   pull_request:
     branches: ['main']
@@ -25,9 +27,11 @@ on:
       - 'app/src/main/assets/kernel/**'
       - 'scripts/build_llama_kernel.sh'
       - 'scripts/generate_runtime_manifest.sh'
+      - 'scripts/termux_runtime_handoff.sh'
       - 'scripts/runtime_lock_contract.py'
       - 'tests/test_runtime_lock_contract.py'
       - 'tests/test_runtime_manifest_generator.py'
+      - 'tests/test_termux_runtime_handoff.py'
       - '.github/workflows/kernel-architecture.yml'
   workflow_dispatch:
 
@@ -46,7 +50,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Test runtime contracts
-        run: python3 -m unittest discover -s tests -p 'test_runtime_*.py' -v
+        run: python3 -m unittest discover -s tests -p 'test_*runtime*.py' -v
 
       - name: Validate and parse runtime-lock.json
         id: lock
