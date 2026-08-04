@@ -1,0 +1,32 @@
+{
+  "schema": "rafaelia.microtest-receipt.v1",
+  "event_id": "D-RAFGITTOOLS-CI-20260804T111200Z",
+  "recorded_at": "2026-08-04T11:12:00Z",
+  "stage": 4,
+  "microtest": {
+    "id": "D-005",
+    "type": "safe_ci_observation",
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "branch": "ops/runtime-lock-refresh-20260804",
+    "commit": "0e25f4daf8266ff7e0df575f61548b9fafc1c245",
+    "fixture_class": "PUBLIC_SAFE_AND_SYNTHETIC_ONLY"
+  },
+  "runs": {
+    "total_observed": 10,
+    "completed_failure": 10,
+    "kernel_run_id": 30903136051,
+    "kernel_job_id": 91971888601,
+    "kernel_job_name": "Assemble RAF Kernel APK",
+    "kernel_steps_observed": 0,
+    "kernel_logs_available": false,
+    "runner_started": false
+  },
+  "commands": [],
+  "exit_codes": [],
+  "artifacts": [],
+  "classification": "TOKEN_VAZIO_RUNNER",
+  "claim_allowed": false,
+  "F_ok": "ten concrete workflow run identifiers and the kernel job identifier were captured for the current branch head",
+  "F_gap": "no runner steps, command output, exit code, logs or artifacts exist; failure cannot be attributed to code",
+  "F_next": "consume a physical Termux B7 receipt and compare CRC32C plus source hashes against the locked commit"
+}
