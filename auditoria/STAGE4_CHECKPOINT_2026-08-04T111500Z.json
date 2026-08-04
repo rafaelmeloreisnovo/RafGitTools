@@ -1,0 +1,98 @@
+{
+  "schema": "rafaelia.stage4-checkpoint.v1",
+  "event_id": "STAGE4-CHECKPOINT-20260804T111500Z",
+  "recorded_at": "2026-08-04T11:15:00Z",
+  "cursor": {
+    "initial": "RafGitTools#330@0e25f4daf8266ff7e0df575f61548b9fafc1c245",
+    "final": "RafGitTools#330@ca38c40d48de792d1bcecc083590506f16cb33b9 + termux-app-rafacodephi#327@585436aaf6c2af1ed3c45b1bc979ab421a5562dd"
+  },
+  "privacy": {
+    "inputs": "PUBLIC_SAFE_OR_SYNTHETIC_FIXTURE_ONLY",
+    "private_corpus_read": false,
+    "private_identifiers_published": false,
+    "claim_allowed": false
+  },
+  "microtests": [
+    {
+      "id": "D-001",
+      "type": "schema_and_source_lock",
+      "status": "PASS_LOCAL_RECORDED",
+      "receipt": "auditoria/RUNTIME_LOCK_REFRESH_2026-08-04.json"
+    },
+    {
+      "id": "D-002",
+      "type": "manifest_hash_and_empty_promotion_gate",
+      "status": "PASS_LOCAL_SYNTHETIC_RECORDED",
+      "receipt": "auditoria/LOCAL_RUNTIME_MANIFEST_RECEIPT_2026-08-04.json"
+    },
+    {
+      "id": "D-003",
+      "type": "termux_handoff_round_trip_and_sidecars",
+      "status": "PASS_LOCAL_SYNTHETIC_RECORDED",
+      "receipt": "auditoria/LOCAL_TERMUX_HANDOFF_RECEIPT_2026-08-04.json"
+    },
+    {
+      "id": "D-004",
+      "type": "isolated_b7_safe_ci",
+      "status": "TOKEN_VAZIO_RUNNER",
+      "repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "commit": "9d30b54f4325a35701add2b7d9ec2d03468312ea",
+      "receipt": "reports/receipts/B7_CI_TRIGGER_RECEIPT_2026-08-04.json"
+    },
+    {
+      "id": "D-005",
+      "type": "rafgittools_current_head_ci_observation",
+      "status": "TOKEN_VAZIO_RUNNER",
+      "receipt": "auditoria/STAGE4_CI_CHECKPOINT_2026-08-04.json"
+    }
+  ],
+  "totals": {
+    "microtests": 5,
+    "local_pass_recorded": 3,
+    "token_vazio_runner": 2,
+    "commits_created_this_stage_continuation": 4,
+    "pull_requests_updated": 2,
+    "workflow_runs_observed": 10,
+    "workflow_jobs_observed": 1,
+    "workflow_steps_observed": 0,
+    "remote_commands_observed": 0,
+    "remote_exit_codes_observed": 0,
+    "remote_artifacts_observed": 0
+  },
+  "commands_and_exit_codes": [
+    {
+      "command": "bash -n scripts/generate_runtime_manifest.sh",
+      "exit_code": 0,
+      "source": "auditoria/LOCAL_RUNTIME_MANIFEST_RECEIPT_2026-08-04.json"
+    },
+    {
+      "command": "generate_runtime_manifest.sh runtime-lock.json empty-build RUNTIME_MANIFEST.json",
+      "exit_code": 0,
+      "source": "auditoria/LOCAL_RUNTIME_MANIFEST_RECEIPT_2026-08-04.json"
+    },
+    {
+      "command": "generate_runtime_manifest.sh runtime-lock.json empty-build RUNTIME_MANIFEST.json --require-artifacts",
+      "exit_code": 3,
+      "source": "auditoria/LOCAL_RUNTIME_MANIFEST_RECEIPT_2026-08-04.json"
+    },
+    {
+      "command": "termux_runtime_handoff.sh runtime-lock.json empty-build receipts",
+      "exit_code": 0,
+      "source": "auditoria/LOCAL_TERMUX_HANDOFF_RECEIPT_2026-08-04.json"
+    },
+    {
+      "command": "termux_runtime_handoff.sh runtime-lock.json empty-build receipts --require-artifacts",
+      "exit_code": 3,
+      "source": "auditoria/LOCAL_TERMUX_HANDOFF_RECEIPT_2026-08-04.json"
+    }
+  ],
+  "hash_anchors": {
+    "runtime_lock_sha256": "c24ac441951726da18e298365900425a9495f229333c2685b339005a085c526f",
+    "synthetic_b7_artifact_sha256": "6f78303cffdd87aac0b2c0907c47ad6f75639e1ba17ba14cdfa23657666f56c7",
+    "rafgittools_head": "ca38c40d48de792d1bcecc083590506f16cb33b9",
+    "termux_head": "585436aaf6c2af1ed3c45b1bc979ab421a5562dd"
+  },
+  "F_ok": "five independent microtest objects were checkpointed; three local public/synthetic gates passed and two remote gates were truthfully classified TOKEN_VAZIO_RUNNER",
+  "F_gap": "no GitHub runner steps or physical ARMv7/ARM64 Termux receipt exists for the current branches",
+  "F_next": "consume one physical receipt from scripts/run_raf_b7_selftest_receipt.sh and compare its source hashes and CRC32C with the locked Termux commit"
+}
