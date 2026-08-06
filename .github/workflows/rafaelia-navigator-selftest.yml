@@ -27,3 +27,6 @@ jobs:
       - name: Run set-based FTS gate
         working-directory: tools/rafaelia_navigator
         run: python rafaelia_navigator_bulk_v1.py selftest
+      - name: Run deterministic committed-state publication gate
+        working-directory: tools/rafaelia_navigator
+        run: python rafaelia_navigator_publish_v1.py selftest
