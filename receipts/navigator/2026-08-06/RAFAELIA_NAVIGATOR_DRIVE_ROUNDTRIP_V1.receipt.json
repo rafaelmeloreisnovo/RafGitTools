@@ -1,0 +1,30 @@
+{
+  "schema": "RAFAELIA_NAVIGATOR_DRIVE_ROUNDTRIP_RECEIPT_V1",
+  "timestamp_utc": "2026-08-06T10:55:00Z",
+  "drive_folder": "RAFAELIA_DATA_NAVIGATOR/03_NAVIGATOR/BOOTSTRAP_V1",
+  "objects": 3,
+  "roundtrip_pass": 3,
+  "byte_identical": true,
+  "files": [
+    {
+      "name": "NAVIGATOR_BOOTSTRAP_V1.json",
+      "bytes": 911,
+      "sha256": "80fc99e0c8d55b880ceb10bbfde92e9b21e869181e95e0b9144f9958c016563b"
+    },
+    {
+      "name": "NAVIGATOR_BOOTSTRAP_README.txt",
+      "bytes": 1000,
+      "sha256": "351c3086420e43698c9a70896ca75b9b3c66f8d1a137fd392c6215ff8931750d"
+    },
+    {
+      "name": "CHECKPOINT_BOOTSTRAP_V1.json",
+      "bytes": 938,
+      "sha256": "e50b7ab7817ae4f953e007cfeb45f0d064ffabff7c2aad95846dac14196686c9"
+    }
+  ],
+  "claim_allowed": false,
+  "training_executed": false,
+  "F_ok": "bootstrap control files uploaded, downloaded and verified byte-identical",
+  "F_gap": "real NOVOexport indexing outputs are not yet present in 03_NAVIGATOR",
+  "F_next": "run the three-file Termux gate against NOVOexport and publish compact private outputs"
+}

@@ -1,0 +1,26 @@
+{
+  "schema": "RAFAELIA_NAVIGATOR_BOOTSTRAP_RECEIPT_V1",
+  "timestamp_utc": "2026-08-06T10:46:00Z",
+  "branch": "feature/rafaelia-navigator-private-v1-20260806",
+  "privacy_class": "PUBLIC_SAFE_SYNTHETIC_ONLY",
+  "claim_allowed": false,
+  "training_executed": false,
+  "command": "python tools/rafaelia_navigator/rafaelia_navigator.py selftest",
+  "exit_code": 0,
+  "result": "SELFTEST_PASS",
+  "covered": [
+    "conversation parser",
+    "message parent edge",
+    "Codex fields",
+    "asset manifest",
+    "SQLite index",
+    "Drive-search JSONL segments",
+    "append-only checkpoint chain",
+    "resume without duplicate processing"
+  ],
+  "bootstrap_sha256": "c895c431b99fcf9b866c70e21ab1ae56936e6df8c1af8c431d95f9dce8e22ca3",
+  "private_corpus_used": false,
+  "F_ok": "bootstrap passed synthetic local gate and was versioned on an auditable private branch",
+  "F_gap": "real NOVOexport execution and Drive publication have not yet been performed by this receipt",
+  "F_next": "run the three-file gate in Termux against the existing NOVOexport and publish only compact private outputs"
+}
