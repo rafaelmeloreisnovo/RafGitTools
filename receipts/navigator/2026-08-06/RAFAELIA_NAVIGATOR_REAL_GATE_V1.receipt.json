@@ -1,0 +1,57 @@
+{
+  "schema": "RAFAELIA_NAVIGATOR_REAL_GATE_RECEIPT_V1",
+  "timestamp_utc": "2026-08-06T11:05:00Z",
+  "privacy_class": "PRIVATE_METADATA_NO_RAW_CORPUS",
+  "claim_allowed": false,
+  "training_executed": false,
+  "source_scope": [
+    "one conversations shard",
+    "one Codex shard",
+    "asset filename manifest"
+  ],
+  "commands": [
+    "python rafaelia_navigator_integrity_v1.py build SOURCE OUTPUT --segment-records 5000",
+    "python rafaelia_navigator_integrity_v1.py build SOURCE OUTPUT --segment-records 5000"
+  ],
+  "exit_codes": [0, 0],
+  "counts": {
+    "files": 3,
+    "conversations": 100,
+    "nodes": 9533,
+    "messages": 9433,
+    "codex": 100,
+    "assets": 14973,
+    "duplicates_exact_candidates": 528,
+    "empty_messages_preserved": 251,
+    "orphans": 0,
+    "errors": 0
+  },
+  "retrieval_checks": {
+    "termux_hits": 260,
+    "gaia_hits": 3,
+    "null_message_ids": 0,
+    "resume_skip_unchanged": true
+  },
+  "source_sha256": {
+    "conversation_shard": "8544e29a071bfa80a21ebc25719ec5d0462cff289d8ce27f9dbed778e7fefc38",
+    "codex_shard": "55a1b805405232b7390d5d9847b78d9e7dbfb75f9800e56d8f41737333edbcd3",
+    "asset_manifest": "f7215a530d69b913d23e66306f677e7514fef14ff0d193c3dac23123bff0681b"
+  },
+  "artifact_sha256": {
+    "manifest": "74d292810762e53e55b52e2b074c3d89d9b7056bfb2734326e0a88e360973b1a",
+    "coverage": "2be5cdf2eb68ede584072bcc629ff5c4b4ab8c5486cdb3119d3b3315773ecebe",
+    "checkpoints": "ed72a4a11a25d0f4d667a1198691f80d8794e195c6054dbda016322e51a3ed91",
+    "messages_00001": "9c2b5f648119d51ecac59132feef5baf7a17623bfcfb6bdd974a41ae8feb67e0",
+    "messages_00002": "3f8f5cc7a3a2d285be54286b822d70895f891f9e7d4a0263d077d715ab2eac91",
+    "codex_00001": "4aeedcc6acbcf64bc189f43204dcd8e3349ad1b5700dce09006a3af71588fc63",
+    "sources_00001": "c9a41790788252eca930f0819640b03464939042e4df900e9fa4c0d1c0c85152",
+    "sqlite": "93cf07c7ced46e832fba201ba696f7d31192783ff68461f08c722552f3550ae5"
+  },
+  "drive_roundtrip": {
+    "objects_checked": 9,
+    "byte_identical_pass": 9
+  },
+  "F_ok": "first real vertical gate indexed, resumed and returned byte-identical from private Drive storage",
+  "F_gap": "the gate covers only one conversation shard and one Codex shard; remaining structural corpus is not yet indexed by Navigator",
+  "F_next": "extend the immutable incremental index across the next eligible structural shards"
+}
