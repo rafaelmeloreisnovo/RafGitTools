@@ -1,4 +1,4 @@
-# RAFAELIA Navigator Private — Bootstrap V1
+# RAFAELIA Navigator Private — Bootstrap V1.1
 
 Camada local-first para indexar os JSONs estruturais já existentes no `NOVOexport` sem reler o corpus inteiro a cada pergunta.
 
@@ -6,21 +6,28 @@ Camada local-first para indexar os JSONs estruturais já existentes no `NOVOexpo
 
 - fontes originais são somente leitura e nunca são movidas, renomeadas ou sobrescritas;
 - cada arquivo-fonte fecha uma transação e um checkpoint append-only;
+- preserva todos os nós do `mapping`, inclusive nós sem mensagem;
 - preserva `conversation_id`, `message_id`, `node_id`, parent edges, papéis, datas, content types, assets e erros;
 - para Codex preserva tarefa, repositório, branch, commit, PR, path e hash do diff quando presentes;
+- fonte previamente indexada com hash diferente é bloqueada como alteração da origem imutável;
 - todos os artefatos são `PRIVATE_DEFAULT_DENY` e `claim_allowed=false`;
 - não há treino, gradiente, atualização de peso ou checkpoint de modelo.
 
-## Auto teste sintético
+## Auto testes sintéticos
 
 ```sh
 python tools/rafaelia_navigator/rafaelia_navigator.py selftest
+cd tools/rafaelia_navigator
+python rafaelia_navigator_integrity_v1.py selftest
 ```
 
-## Execução no Termux
+## Execução canônica no Termux
+
+Use o overlay de integridade V1.1:
 
 ```sh
-python tools/rafaelia_navigator/rafaelia_navigator.py build \
+cd "$HOME/RafGitTools/tools/rafaelia_navigator"
+python rafaelia_navigator_integrity_v1.py build \
   "$HOME/storage/shared/NOVOexport" \
   "$HOME/rafaelia-navigator-output"
 ```
@@ -28,13 +35,13 @@ python tools/rafaelia_navigator/rafaelia_navigator.py build \
 Gate pequeno:
 
 ```sh
-python tools/rafaelia_navigator/rafaelia_navigator.py build SOURCE OUTPUT --max-files 3
+python rafaelia_navigator_integrity_v1.py build SOURCE OUTPUT --max-files 3
 ```
 
 ## Consulta local
 
 ```sh
-python tools/rafaelia_navigator/rafaelia_navigator.py query \
+python rafaelia_navigator_integrity_v1.py query \
   OUTPUT/RAFAELIA_NAVIGATOR.sqlite3 \
   '"termux" OR "rafcodephi"'
 ```
@@ -50,4 +57,4 @@ python tools/rafaelia_navigator/rafaelia_navigator.py query \
 - `DRIVE_SEARCH_INDEX/SOURCES-*.jsonl.txt`
 - `RECEIPTS/CHECKPOINTS.jsonl`
 
-Os segmentos `*.jsonl.txt` são a ponte de navegação rápida pelo Drive. O SQLite é o índice veloz para Termux, GAIA_phi e Rafaelia_Private.
+Os segmentos `*.jsonl.txt` são a ponte de navegação rápida pelo Drive. O SQLite é o índice veloz para Termux, GAIA_phi e Rafaelia_Private. O Drive recebe somente saídas privadas e compactas; o GitHub recebe código, testes e receipts sem corpos privados.
