@@ -11,6 +11,7 @@ Camada local-first para indexar os JSONs estruturais já existentes no `NOVOexpo
 - para Codex preserva tarefa, repositório, branch, commit, PR, path e hash do diff quando presentes;
 - fonte previamente indexada com hash diferente é bloqueada como alteração da origem imutável;
 - FTS é populado em lote por shard, não por mensagem;
+- a publicação no Drive é reconstruída somente das tabelas SQLite commitadas, em diretório novo e vazio;
 - todos os artefatos são `PRIVATE_DEFAULT_DENY` e `claim_allowed=false`;
 - não há treino, gradiente, atualização de peso ou checkpoint de modelo.
 
@@ -21,6 +22,7 @@ python tools/rafaelia_navigator/rafaelia_navigator.py selftest
 cd tools/rafaelia_navigator
 python rafaelia_navigator_integrity_v1.py selftest
 python rafaelia_navigator_bulk_v1.py selftest
+python rafaelia_navigator_publish_v1.py selftest
 ```
 
 ## Execução canônica no Termux
@@ -40,6 +42,18 @@ Gate pequeno:
 python rafaelia_navigator_bulk_v1.py build SOURCE OUTPUT --max-files 3
 ```
 
+## Publicação privada e determinística
+
+Nunca publique diretamente os segmentos provisórios produzidos durante a ingestão. Reconstrua uma fotografia limpa a partir do banco commitado:
+
+```sh
+python rafaelia_navigator_publish_v1.py publish \
+  "$HOME/rafaelia-navigator-output/RAFAELIA_NAVIGATOR.sqlite3" \
+  "$HOME/rafaelia-navigator-publication-v1"
+```
+
+O destino precisa estar vazio. A saída inclui `SOURCES`, `CONVERSATIONS`, `NODES`, `MESSAGES`, `CODEX`, `ASSETS`, manifesto, hashes e Merkle root.
+
 ## Consulta local
 
 ```sh
@@ -58,5 +72,6 @@ python rafaelia_navigator_bulk_v1.py query \
 - `DRIVE_SEARCH_INDEX/CODEX-*.jsonl.txt`
 - `DRIVE_SEARCH_INDEX/SOURCES-*.jsonl.txt`
 - `RECEIPTS/CHECKPOINTS.jsonl`
+- publicação limpa: `SOURCES`, `CONVERSATIONS`, `NODES`, `MESSAGES`, `CODEX`, `ASSETS` e `PUBLICATION_MANIFEST.json`.
 
 Os segmentos `*.jsonl.txt` são a ponte de navegação rápida pelo Drive. O SQLite é o índice veloz para Termux, GAIA_phi e Rafaelia_Private. O Drive recebe somente saídas privadas e compactas; o GitHub recebe código, testes e receipts sem corpos privados.
