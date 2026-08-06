@@ -19,5 +19,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Run synthetic private-safe gate
+      - name: Run base synthetic private-safe gate
         run: python tools/rafaelia_navigator/rafaelia_navigator.py selftest
+      - name: Run full-node integrity and resume gate
+        working-directory: tools/rafaelia_navigator
+        run: python rafaelia_navigator_integrity_v1.py selftest
