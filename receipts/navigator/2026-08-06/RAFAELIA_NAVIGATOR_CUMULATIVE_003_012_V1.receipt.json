@@ -37,7 +37,8 @@
     "segments": 44,
     "total_bytes": 236411881,
     "merkle_root": "e9f2e6b96d4fc4f9e8f5b06fcaabda88c8f86fbc565383763eda4fb530e1901b",
-    "source_database_sha256": "e84c395b36ffde9e65f59a2147047a37373ce70b14a044ec7d0e33c9deab5bbe",
+    "source_database_sha256": "d9046be003f4c1c5f5d8e19e2b314905f4b0fe84ec1a45320f0c1cab429ebfda",
+    "source_database_bytes": 520232960,
     "deterministic_regenerations": 2,
     "regenerations_byte_identical": true,
     "conversation_segment_alias": true
@@ -52,6 +53,10 @@
     "jobs_with_steps": 0,
     "runner_started": false,
     "state": "TOKEN_VAZIO_RUNNER"
+  },
+  "correction": {
+    "reason": "replace incorrectly transcribed source database hash with the value read from the deterministic publication manifest",
+    "previous_incorrect_hash": "e84c395b36ffde9e65f59a2147047a37373ce70b14a044ec7d0e33c9deab5bbe"
   },
   "F_ok": "conversations-003 through 012, codex-000 and asset manifest form a deterministic private Navigator snapshot with 45 size-matched objects and 10/10 stratified byte-identical round-trip",
   "F_gap": "Navigator still lacks conversations-000 through 002, conversations-013 through 050, Codex-001 through 020, physical asset byte hashes/MIME joins, and graph-memory reconciliation for this new snapshot",
