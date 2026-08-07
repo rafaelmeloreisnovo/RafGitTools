@@ -1,0 +1,32 @@
+{
+  "schema": "RAFAELIA_ORCHESTRATOR_REMOTE_RECEIPT_V1",
+  "date": "2026-08-07",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "pull_request": 332,
+  "workflow": "RAFAELIA Ω Orchestrator V1",
+  "workflow_run_id": 31207928370,
+  "source_head_sha": "ea4d23d0b2c6a4417f1411adcf4fbe2de9f683d3",
+  "preflight_job_id": 92963475873,
+  "observed_jobs": {
+    "preflight": "failure",
+    "navigator": "skipped",
+    "private_corpus": "skipped",
+    "cross_repo_preflight": "skipped",
+    "cross_repo": "skipped",
+    "reconcile": "failure"
+  },
+  "preflight_steps": 0,
+  "runner_started": false,
+  "classification": "TOKEN_VAZIO_RUNNER",
+  "workflow_graph_materialized": true,
+  "yaml_accepted_by_github": true,
+  "code_defect_established": false,
+  "claim_allowed": false,
+  "release_allowed": false,
+  "training_executed": false,
+  "automatic_merge": false,
+  "f_ok": "workflow registrado pelo GitHub e grafo de jobs criado",
+  "f_gap": "nenhuma etapa do preflight foi observada em execução",
+  "f_next": "reexecutar quando houver runner com steps observáveis e anexar successor receipt",
+  "append_only": true
+}
