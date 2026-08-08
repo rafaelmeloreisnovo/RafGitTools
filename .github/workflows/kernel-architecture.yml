@@ -66,7 +66,8 @@ jobs:
           repository: rafaelmeloreisnovo/llamaRafaelia
           ref: ${{ steps.lock.outputs.llama_commit }}
           path: runtime-src/llama-rafaelia
-          token: ${{ secrets.RAF_CROSS_REPO_TOKEN }}
+          token: ${{ secrets.RAF_CROSS_REPO_TOKEN || github.token }}
+          persist-credentials: false
 
       - name: Checkout RafPolimata @ locked commit
         uses: actions/checkout@v4
@@ -74,7 +75,8 @@ jobs:
           repository: rafaelmeloreisnovo/RafPolimata
           ref: ${{ steps.lock.outputs.rafpolimata_commit }}
           path: runtime-src/rafpolimata
-          token: ${{ secrets.RAF_CROSS_REPO_TOKEN }}
+          token: ${{ secrets.RAF_CROSS_REPO_TOKEN || github.token }}
+          persist-credentials: false
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
