@@ -1,6 +1,6 @@
 {
   "schema": "rafaelia.runtime-lock.v1",
-  "generated_at": "2026-08-08T22:11:54Z",
+  "generated_at": "2026-08-08T22:17:32Z",
   "release_state": "RAFCODEPHI_STACK_SOURCE_LOCKED_RUNTIME_PROOF_PENDING",
   "integration_repository": {
     "name": "rafaelmeloreisnovo/RafGitTools",
@@ -23,7 +23,7 @@
       "name": "rafaelmeloreisnovo/termux-api_rafcodephi",
       "url": "https://github.com/rafaelmeloreisnovo/termux-api_rafcodephi.git",
       "branch": "master",
-      "commit": "6d7bbc21331fd85b8e5997fab5ec17bffd5f80ec",
+      "commit": "51a6ec2763719e82a91e74478e2862146fff7a47",
       "expected_hashes": {
         "manifest_sha256": "TOKEN_VAZIO",
         "bundle_sha256": "TOKEN_VAZIO"
