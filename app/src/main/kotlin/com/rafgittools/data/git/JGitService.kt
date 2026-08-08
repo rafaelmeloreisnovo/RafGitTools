@@ -1475,14 +1475,14 @@ class JGitService @Inject constructor(
                     oldContent = runCatching {
                         val oid = diffEntry.oldId.toObjectId()
                         if (oid != org.eclipse.jgit.lib.ObjectId.zeroId())
-                            git.repository.open(oid).bytes().toString(Charsets.UTF_8)
+                            git.repository.open(oid).bytes.toString(Charsets.UTF_8)
                                 .takeUnless { s -> s.take(512).any { c -> c == '\u0000' } }
                         else null
                     }.getOrNull(),
                     newContent = runCatching {
                         val oid = diffEntry.newId.toObjectId()
                         if (oid != org.eclipse.jgit.lib.ObjectId.zeroId())
-                            git.repository.open(oid).bytes().toString(Charsets.UTF_8)
+                            git.repository.open(oid).bytes.toString(Charsets.UTF_8)
                                 .takeUnless { s -> s.take(512).any { c -> c == '\u0000' } }
                         else null
                     }.getOrNull(),
@@ -1546,14 +1546,14 @@ class JGitService @Inject constructor(
                     oldContent = runCatching {
                         val oid = diffEntry.oldId.toObjectId()
                         if (oid != org.eclipse.jgit.lib.ObjectId.zeroId())
-                            git.repository.open(oid).bytes().toString(Charsets.UTF_8)
+                            git.repository.open(oid).bytes.toString(Charsets.UTF_8)
                                 .takeUnless { s -> s.take(512).any { c -> c == '\u0000' } }
                         else null
                     }.getOrNull(),
                     newContent = runCatching {
                         val oid = diffEntry.newId.toObjectId()
                         if (oid != org.eclipse.jgit.lib.ObjectId.zeroId())
-                            git.repository.open(oid).bytes().toString(Charsets.UTF_8)
+                            git.repository.open(oid).bytes.toString(Charsets.UTF_8)
                                 .takeUnless { s -> s.take(512).any { c -> c == '\u0000' } }
                         else null
                     }.getOrNull(),

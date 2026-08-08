@@ -293,7 +293,7 @@ class PrivacyManager(
 
     private suspend fun getSettingsCount(): Int {
         return try {
-            context.dataStore.data.first().asMap().size
+            storage.getStoredEntryCount()
         } catch (_: Exception) { 0 }
     }
     
