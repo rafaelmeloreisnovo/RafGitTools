@@ -83,6 +83,11 @@ class EncryptedPrivacyStorage @Inject constructor(
     suspend fun getPrivacySettings(): PrivacySettings {
         return privacySettingsFlow.first()
     }
+
+    /** Number of persisted privacy preference entries. */
+    suspend fun getStoredEntryCount(): Int {
+        return dataStore.data.first().asMap().size
+    }
     
     /**
      * Log a privacy event to encrypted audit trail

@@ -293,7 +293,7 @@ class PrivacyManager(
 
     private suspend fun getSettingsCount(): Int {
         return try {
-            context.dataStore.data.first().asMap().size
+            storage.getStoredEntryCount()
         } catch (_: Exception) { 0 }
     }
     
@@ -369,7 +369,7 @@ class PrivacyManager(
                                 .readEnvironment()
                                 .build()
                                 .use { repo -> repo.config.getString("remote", "origin", "url") ?: "" }
-                        }.getOrDefault("")
+                        }.getOrDefault(""),
                         localPath = repoDir.absolutePath,
                         createdDate = Date(repoDir.lastModified()),
                         lastAccessed = Date(repoDir.lastModified()),

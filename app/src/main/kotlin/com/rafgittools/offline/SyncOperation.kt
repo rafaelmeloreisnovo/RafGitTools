@@ -84,7 +84,7 @@ sealed class SyncOperation : BackgroundSyncManager.QueueItem {
                             val body = gson.fromJson(bodyJson, Map::class.java) as Map<String, Any>
                             svc.createIssueComment(
                                 owner = parts[0], repo = parts[1],
-                                issueNumber = parts[3].toInt(),
+                                number = parts[3].toInt(),
                                 comment = com.rafgittools.data.github.CreateCommentRequest(
                                     body = body["body"] as? String ?: ""
                                 )

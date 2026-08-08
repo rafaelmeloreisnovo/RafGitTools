@@ -15,6 +15,7 @@ on:
       - 'scripts/runtime_lock_contract.py'
       - 'tests/test_runtime_lock_contract.py'
       - 'tests/test_runtime_manifest_generator.py'
+      - 'tests/test_kernel_runtime_workflow.py'
       - 'tests/test_termux_runtime_handoff.py'
       - '.github/workflows/kernel-architecture.yml'
   pull_request:
@@ -31,6 +32,7 @@ on:
       - 'scripts/runtime_lock_contract.py'
       - 'tests/test_runtime_lock_contract.py'
       - 'tests/test_runtime_manifest_generator.py'
+      - 'tests/test_kernel_runtime_workflow.py'
       - 'tests/test_termux_runtime_handoff.py'
       - '.github/workflows/kernel-architecture.yml'
   workflow_dispatch:
@@ -66,7 +68,8 @@ jobs:
           repository: rafaelmeloreisnovo/llamaRafaelia
           ref: ${{ steps.lock.outputs.llama_commit }}
           path: runtime-src/llama-rafaelia
-          token: ${{ secrets.RAF_CROSS_REPO_TOKEN }}
+          token: ${{ secrets.RAF_CROSS_REPO_TOKEN || github.token }}
+          persist-credentials: false
 
       - name: Checkout RafPolimata @ locked commit
         uses: actions/checkout@v4
@@ -74,7 +77,19 @@ jobs:
           repository: rafaelmeloreisnovo/RafPolimata
           ref: ${{ steps.lock.outputs.rafpolimata_commit }}
           path: runtime-src/rafpolimata
-          token: ${{ secrets.RAF_CROSS_REPO_TOKEN }}
+          token: ${{ secrets.RAF_CROSS_REPO_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Verify locked native source checkouts
+        env:
+          LLAMA_COMMIT: ${{ steps.lock.outputs.llama_commit }}
+          RAFPOLIMATA_COMMIT: ${{ steps.lock.outputs.rafpolimata_commit }}
+        run: |
+          set -euo pipefail
+          test -f runtime-src/llama-rafaelia/CMakeLists.txt
+          test "$(git -C runtime-src/llama-rafaelia rev-parse HEAD)" = "$LLAMA_COMMIT"
+          test "$(git -C runtime-src/rafpolimata rev-parse HEAD)" = "$RAFPOLIMATA_COMMIT"
+          echo '[OK] locked native sources are present at the declared commits'
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -99,7 +114,7 @@ jobs:
         run: |
           bash scripts/generate_runtime_manifest.sh \
             runtime-lock.json \
-            app/.cxx \
+            app \
             RUNTIME_MANIFEST.json
 
       - name: Verify kernel libraries and APK packaging
@@ -116,26 +131,40 @@ jobs:
           echo "APK: $APK ($(du -h "$APK" | cut -f1))"
           sha256sum "$APK"
 
-          mapfile -t KERNEL_LIBS < <(find app/.cxx -type f -name 'libraf_llama_kernel.so' | sort)
-          if [ "${#KERNEL_LIBS[@]}" -lt 2 ]; then
-            echo "[FALHA] esperadas bibliotecas do kernel para duas ABIs; encontradas: ${#KERNEL_LIBS[@]}" >&2
-            printf '%s\n' "${KERNEL_LIBS[@]:-}"
-            exit 1
-          fi
-
-          for lib in "${KERNEL_LIBS[@]}"; do
-            file "$lib"
-            sha256sum "$lib"
-          done
-
           APK_ENTRIES=$(unzip -Z1 "$APK")
+          REQUIRED_LIBS=(
+            libraf_llama_kernel.so
+            libllama.so
+            libggml.so
+            libggml-base.so
+            libggml-cpu.so
+          )
+
           for ABI in armeabi-v7a arm64-v8a; do
-            ENTRY="lib/${ABI}/libraf_llama_kernel.so"
-            if ! grep -Fxq "$ENTRY" <<< "$APK_ENTRIES"; then
-              echo "[FALHA] biblioteca obrigatória ausente do APK: $ENTRY" >&2
+            mapfile -t KERNEL_LIBS < <(
+              find app/build/intermediates/cxx \
+                -type f \
+                -path "*/obj/${ABI}/libraf_llama_kernel.so" \
+                | sort -u
+            )
+            if [ "${#KERNEL_LIBS[@]}" -lt 1 ]; then
+              echo "[FALHA] wrapper JNI do kernel ausente para ${ABI}." >&2
               exit 1
             fi
-            echo "[OK] $ENTRY"
+
+            for lib in "${KERNEL_LIBS[@]}"; do
+              file "$lib"
+              sha256sum "$lib"
+            done
+
+            for REQUIRED_LIB in "${REQUIRED_LIBS[@]}"; do
+              ENTRY="lib/${ABI}/${REQUIRED_LIB}"
+              if ! grep -Fxq "$ENTRY" <<< "$APK_ENTRIES"; then
+                echo "[FALHA] biblioteca obrigatória ausente do APK: $ENTRY" >&2
+                exit 1
+              fi
+              echo "[OK] $ENTRY"
+            done
           done
 
       - name: Validate runtime manifest promotion boundary
@@ -151,6 +180,15 @@ jobs:
               raise SystemExit('unexpected artifact verification state')
           if int(manifest.get('artifact_count', 0)) < 2:
               raise SystemExit('runtime manifest must contain at least two ABI artifacts')
+          artifact_paths = {
+              artifact.get('path', '') for artifact in manifest.get('artifacts', [])
+          }
+          for abi in ('armeabi-v7a', 'arm64-v8a'):
+              expected_suffix = f'/{abi}/libraf_llama_kernel.so'
+              if not any(path.endswith(expected_suffix) for path in artifact_paths):
+                  raise SystemExit(
+                      f'runtime manifest is missing the kernel wrapper for {abi}'
+                  )
           if manifest.get('claim_allowed') is not False:
               raise SystemExit('claim_allowed must remain false before device evidence')
           if not Path('RUNTIME_MANIFEST.json.sha256').is_file():
