@@ -369,7 +369,7 @@ class PrivacyManager(
                                 .readEnvironment()
                                 .build()
                                 .use { repo -> repo.config.getString("remote", "origin", "url") ?: "" }
-                        }.getOrDefault("")
+                        }.getOrDefault(""),
                         localPath = repoDir.absolutePath,
                         createdDate = Date(repoDir.lastModified()),
                         lastAccessed = Date(repoDir.lastModified()),
