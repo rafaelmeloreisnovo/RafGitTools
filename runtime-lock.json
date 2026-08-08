@@ -1,7 +1,7 @@
 {
   "schema": "rafaelia.runtime-lock.v1",
-  "generated_at": "2026-08-04T10:48:00Z",
-  "release_state": "SOURCE_LOCKED_ARTIFACT_HASH_PENDING",
+  "generated_at": "2026-08-08T21:52:20Z",
+  "release_state": "RAFCODEPHI_STACK_SOURCE_LOCKED_RUNTIME_PROOF_PENDING",
   "integration_repository": {
     "name": "rafaelmeloreisnovo/RafGitTools",
     "url": "https://github.com/rafaelmeloreisnovo/RafGitTools.git",
@@ -13,7 +13,27 @@
       "name": "rafaelmeloreisnovo/termux-app-rafacodephi",
       "url": "https://github.com/rafaelmeloreisnovo/termux-app-rafacodephi.git",
       "branch": "master",
-      "commit": "0e4330273375344042eba8ff17de47c5bc8af573",
+      "commit": "823cae36ca9b10970fee41750fb20dc4dcbadb73",
+      "expected_hashes": {
+        "manifest_sha256": "TOKEN_VAZIO",
+        "bundle_sha256": "TOKEN_VAZIO"
+      }
+    },
+    {
+      "name": "rafaelmeloreisnovo/termux-api_rafcodephi",
+      "url": "https://github.com/rafaelmeloreisnovo/termux-api_rafcodephi.git",
+      "branch": "master",
+      "commit": "7fecc768cf977434fa5a9e8817b728b6a08cbc2c",
+      "expected_hashes": {
+        "manifest_sha256": "TOKEN_VAZIO",
+        "bundle_sha256": "TOKEN_VAZIO"
+      }
+    },
+    {
+      "name": "rafaelmeloreisnovo/termux-packages",
+      "url": "https://github.com/rafaelmeloreisnovo/termux-packages.git",
+      "branch": "main",
+      "commit": "eddb81b63c35ae18d98278a73475127d0fd2c5fc",
       "expected_hashes": {
         "manifest_sha256": "TOKEN_VAZIO",
         "bundle_sha256": "TOKEN_VAZIO"
@@ -43,7 +63,7 @@
       "name": "rafaelmeloreisnovo/RafPolimata",
       "url": "https://github.com/rafaelmeloreisnovo/RafPolimata.git",
       "branch": "main",
-      "commit": "dbd104e69e0b627d0a5c37a1d03b8bbabdb9f69e",
+      "commit": "ce4debb982d18bd678758a511a8a09abc6f47428",
       "expected_hashes": {
         "manifest_sha256": "TOKEN_VAZIO",
         "bundle_sha256": "TOKEN_VAZIO"

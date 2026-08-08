@@ -1,0 +1,300 @@
+name: RAFCODEPHI Usable Runtime Pair
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rafcodephi-usable-runtime-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  RAFCODEPHI_PACKAGE: com.termux.rafacodephi
+  RAFCODEPHI_API_PACKAGE: com.termux.rafacodephi.api
+  CLAIM_ALLOWED: 'false'
+  RELEASE_ALLOWED: 'false'
+
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    outputs:
+      termux_commit: ${{ steps.lock.outputs.termux_commit }}
+      termux_api_commit: ${{ steps.lock.outputs.termux_api_commit }}
+      termux_packages_commit: ${{ steps.lock.outputs.termux_packages_commit }}
+      rafpolimata_commit: ${{ steps.lock.outputs.rafpolimata_commit }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: lock
+        run: |
+          python3 scripts/runtime_lock_contract.py validate \
+            runtime-lock.json \
+            --github-output "$GITHUB_OUTPUT"
+
+  source_bootstrap:
+    needs: lock
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      CI: 'true'
+      TERMUX_DOCKER_USE_SUDO: '1'
+      RAFCODEPHI_PACKAGE_NAME: com.termux.rafacodephi
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/termux-packages
+          ref: ${{ needs.lock.outputs.termux_packages_commit }}
+          token: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN || github.token }}
+          persist-credentials: false
+      - name: Materialize custom package/prefix contract
+        run: |
+          python3 scripts/apply-rafcodephi-build-properties.py \
+            --receipt artifacts/rafcodephi-build-properties.json
+          bash scripts/validate-rafcodephi-build-properties.sh
+          python3 scripts/tests/test_rafcodephi_termux_api_contract.py
+      - name: Source-build ARM32 and ARM64 bootstraps
+        run: |
+          chmod +x scripts/run-docker.sh scripts/build-rafcodephi-real-bootstrap.sh
+          ./scripts/run-docker.sh \
+            ./scripts/build-rafcodephi-real-bootstrap.sh \
+            --architectures arm,aarch64
+      - name: Validate complete source artifact set
+        run: |
+          set -euo pipefail
+          manifest=artifacts/rafcodephi-bootstrap/RAFCODEPHI_REAL_BOOTSTRAP_MANIFEST.txt
+          test -s "$manifest"
+          test -s artifacts/rafcodephi-bootstrap/rafcodephi-bootstrap-arm.zip
+          test -s artifacts/rafcodephi-bootstrap/rafcodephi-bootstrap-aarch64.zip
+          grep -Fx 'termux_api_cli=EMBEDDED' "$manifest"
+          grep -Fx 'api_access_control=SIGNATURE_PERMISSION_NO_SHARED_UID' "$manifest"
+          grep -Fx 'package_repo_runtime_state=BLOCKED_CUSTOM_REPOSITORY_NOT_PUBLISHED' "$manifest"
+          grep -Fx 'apt_update_guard=RAFCODEPHI_PACKAGE_REPOSITORY_NOT_PUBLISHED' "$manifest"
+          grep -Fx 'device_runtime_proof=TOKEN_VAZIO' "$manifest"
+          for arch in arm aarch64; do
+            zip="artifacts/rafcodephi-bootstrap/rafcodephi-bootstrap-${arch}.zip"
+            unzip -p "$zip" etc/apt/sources.list.d/termux.sources | grep -Fx 'Enabled: no'
+            unzip -p "$zip" etc/apt/sources.list.d/termux.sources | grep -Fq 'packages.rafcodephi.invalid'
+            unzip -p "$zip" etc/apt/apt.conf.d/00rafcodephi-repository-block | grep -Fq 'RAFCODEPHI_PACKAGE_REPOSITORY_NOT_PUBLISHED'
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rafcodephi-source-bootstrap-${{ needs.lock.outputs.termux_packages_commit }}
+          path: |
+            artifacts/rafcodephi-bootstrap/
+            artifacts/rafcodephi-build-properties.json
+          if-no-files-found: error
+          retention-days: 30
+
+  paired_apks:
+    needs: [lock, source_bootstrap]
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout control plane
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout locked app
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/termux-app-rafacodephi
+          ref: ${{ needs.lock.outputs.termux_commit }}
+          token: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN || github.token }}
+          persist-credentials: false
+          path: stack/app
+      - name: Checkout locked API plugin
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/termux-api_rafcodephi
+          ref: ${{ needs.lock.outputs.termux_api_commit }}
+          token: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN || github.token }}
+          persist-credentials: false
+          path: stack/api
+      - name: Checkout locked evidence adapter
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/RafPolimata
+          ref: ${{ needs.lock.outputs.rafpolimata_commit }}
+          token: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN || github.token }}
+          persist-credentials: false
+          path: stack/polimata
+      - uses: actions/download-artifact@v4
+        with:
+          name: rafcodephi-source-bootstrap-${{ needs.lock.outputs.termux_packages_commit }}
+          path: stack/source
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+      - name: Generate one untrusted validation signing identity for both APKs
+        run: |
+          set -euo pipefail
+          key_path="$RUNNER_TEMP/rafcodephi-paired-validation.jks"
+          keytool -genkeypair -v \
+            -keystore "$key_path" \
+            -storepass changeit \
+            -keypass changeit \
+            -alias rafcodephi-validation \
+            -keyalg RSA \
+            -keysize 3072 \
+            -validity 3650 \
+            -dname 'CN=RAFCODEPHI Validation, OU=CI, O=Untrusted Test Build, C=BR'
+          echo "RAFCODEPHI_PAIRED_KEYSTORE_FILE=$key_path" >> "$GITHUB_ENV"
+          echo 'RAFCODEPHI_PAIRED_KEYSTORE_PASSWORD=changeit' >> "$GITHUB_ENV"
+          echo 'RAFCODEPHI_PAIRED_KEY_ALIAS=rafcodephi-validation' >> "$GITHUB_ENV"
+          echo 'RAFCODEPHI_PAIRED_KEY_PASSWORD=changeit' >> "$GITHUB_ENV"
+      - name: Prepare Android toolchain and exact source-built bootstrap pair
+        working-directory: stack/app
+        env:
+          TERMUX_SKIP_BOOTSTRAP_PREPARE: '1'
+          RAF_BOOTSTRAP_SOURCE: source-built-real
+          RAF_REAL_BOOTSTRAP_ZIP_ARM: ${{ github.workspace }}/stack/source/rafcodephi-bootstrap/rafcodephi-bootstrap-arm.zip
+          RAF_REAL_BOOTSTRAP_ZIP_AARCH64: ${{ github.workspace }}/stack/source/rafcodephi-bootstrap/rafcodephi-bootstrap-aarch64.zip
+          RAF_REAL_BOOTSTRAP_MANIFEST: ${{ github.workspace }}/stack/source/rafcodephi-bootstrap/RAFCODEPHI_REAL_BOOTSTRAP_MANIFEST.txt
+        run: |
+          ./scripts/ci_android_preflight.sh
+          ./scripts/prepare_bootstrap_env.sh --github-env --skip-android-preflight
+      - name: Build paired Termux app APKs
+        working-directory: stack/app
+        env:
+          RAF_BOOTSTRAP_SOURCE: source-built-real
+          TERMUX_SPLIT_APKS_FOR_DEBUG_BUILDS: '1'
+          TERMUX_APK_VERSION_TAG: paired-${{ github.run_id }}
+        run: ./gradlew :app:assembleDebug --no-daemon
+      - name: Publish exact forked termux-shared locally
+        working-directory: stack/app
+        run: ./gradlew publishReleasePublicationToMavenLocal --no-daemon
+      - name: Validate and build paired API APKs
+        working-directory: stack/api
+        env:
+          RAFCODEPHI_TERMUX_SHARED_MODE: maven-local
+          TERMUX_API_APP__BUILD__APK_VERSION_TAG: paired-${{ github.run_id }}
+        run: |
+          python3 scripts/validate-package-identity.py
+          ./gradlew :app:assembleDebug --no-daemon
+      - name: Validate APK identities, ABIs and identical certificate
+        id: apk_validation
+        run: |
+          set -euo pipefail
+          build_tools="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n1)"
+          aapt="$build_tools/aapt"
+          apksigner="$build_tools/apksigner"
+          mkdir -p dist/app dist/api dist/evidence
+          cp stack/app/app/build/outputs/apk/debug/*.apk dist/app/
+          cp stack/api/app/build/outputs/apk/debug/*.apk dist/api/
+          mapfile -t app_apks < <(find dist/app -type f -name '*.apk' | sort)
+          mapfile -t api_apks < <(find dist/api -type f -name '*.apk' | sort)
+          test "${#app_apks[@]}" -ge 2
+          test "${#api_apks[@]}" -eq 2
+          cert=''
+          for apk in "${app_apks[@]}"; do
+            test "$("$aapt" dump badging "$apk" | sed -n "s/^package: name='\([^']*\)'.*/\1/p" | head -n1)" = "$RAFCODEPHI_PACKAGE"
+            current="$("$apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n1)"
+            test -n "$current"
+            if [[ -z "$cert" ]]; then cert="$current"; else test "$current" = "$cert"; fi
+          done
+          for apk in "${api_apks[@]}"; do
+            test "$("$aapt" dump badging "$apk" | sed -n "s/^package: name='\([^']*\)'.*/\1/p" | head -n1)" = "$RAFCODEPHI_API_PACKAGE"
+            manifest_tree="$("$aapt" dump xmltree "$apk" AndroidManifest.xml)"
+            grep -Fq 'com.termux.api.TermuxApiReceiver' <<<"$manifest_tree"
+            grep -Fq 'com.termux.rafacodephi.permission.TERMUX_API' <<<"$manifest_tree"
+            current="$("$apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n1)"
+            test "$current" = "$cert"
+          done
+          for abi in armeabi-v7a arm64-v8a; do
+            app_matches=0
+            api_matches=0
+            for apk in "${app_apks[@]}"; do
+              "$aapt" dump badging "$apk" | grep -Eq "^native-code:.*'$abi'" && app_matches=$((app_matches + 1)) || true
+            done
+            for apk in "${api_apks[@]}"; do
+              "$aapt" dump badging "$apk" | grep -Eq "^native-code:.*'$abi'" && api_matches=$((api_matches + 1)) || true
+            done
+            test "$app_matches" -ge 1
+            test "$api_matches" -ge 1
+          done
+          printf '%s\n' "$cert" > dist/evidence/paired-certificate-sha256.txt
+          echo "certificate_sha256=$cert" >> "$GITHUB_OUTPUT"
+      - name: Generate fail-closed paired bundle receipt
+        env:
+          PAIRED_CERT_SHA256: ${{ steps.apk_validation.outputs.certificate_sha256 }}
+          APP_COMMIT: ${{ needs.lock.outputs.termux_commit }}
+          API_COMMIT: ${{ needs.lock.outputs.termux_api_commit }}
+          PACKAGES_COMMIT: ${{ needs.lock.outputs.termux_packages_commit }}
+          POLIMATA_COMMIT: ${{ needs.lock.outputs.rafpolimata_commit }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+
+          def sha(path):
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          artifacts = []
+          for role in ('app', 'api'):
+              for path in sorted((Path('dist') / role).glob('*.apk')):
+                  artifacts.append({
+                      'role': role,
+                      'path': str(path),
+                      'bytes': path.stat().st_size,
+                      'sha256': sha(path),
+                  })
+          manifest = Path('stack/source/rafcodephi-bootstrap/RAFCODEPHI_REAL_BOOTSTRAP_MANIFEST.txt')
+          matrix = Path('stack/app/build/reports/rafcodephi-real-bootstrap-import-matrix.json')
+          receipt = {
+              'schema': 'rafcodephi.usable-runtime-pair/v1',
+              'state': 'PAIRED_APKS_BUILT_NOT_DEVICE_INSTALLED',
+              'packages': {
+                  'app': 'com.termux.rafacodephi',
+                  'api': 'com.termux.rafacodephi.api',
+                  'api_receiver_component': 'com.termux.rafacodephi.api/com.termux.api.TermuxApiReceiver',
+                  'api_access_control': 'SIGNATURE_PERMISSION_NO_SHARED_UID',
+              },
+              'locked_commits': {
+                  'app': os.environ['APP_COMMIT'],
+                  'api': os.environ['API_COMMIT'],
+                  'packages': os.environ['PACKAGES_COMMIT'],
+                  'polimata': os.environ['POLIMATA_COMMIT'],
+              },
+              'paired_certificate_sha256': os.environ['PAIRED_CERT_SHA256'],
+              'source_bootstrap_manifest_sha256': sha(manifest),
+              'import_matrix_sha256': sha(matrix),
+              'artifacts': artifacts,
+              'embedded_tools': ['bash', 'pkg', 'apt', 'apt-get', 'dpkg', 'busybox', 'proot', 'termux-api'],
+              'package_repo_runtime_state': 'BLOCKED_CUSTOM_REPOSITORY_NOT_PUBLISHED',
+              'apt_update_guard': 'RAFCODEPHI_PACKAGE_REPOSITORY_NOT_PUBLISHED',
+              'arm32_device_state': 'TOKEN_VAZIO',
+              'arm64_device_state': 'TOKEN_VAZIO',
+              'paired_install_state': 'TOKEN_VAZIO',
+              'termux_api_call_state': 'TOKEN_VAZIO',
+              'claim_allowed': False,
+              'release_allowed': False,
+          }
+          output = Path('dist/evidence/RAFCODEPHI_USABLE_RUNTIME_PAIR.json')
+          output.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          Path(str(output) + '.sha256').write_text(f"{sha(output)}  {output.name}\n", encoding='utf-8')
+          PY
+          cp stack/source/rafcodephi-bootstrap/RAFCODEPHI_REAL_BOOTSTRAP_MANIFEST.txt dist/evidence/
+          cp stack/app/build/reports/rafcodephi-real-bootstrap-import-*.json dist/evidence/
+      - name: Publish installation guidance
+        run: |
+          {
+            echo '## RAFCODEPHI paired validation bundle'
+            echo
+            echo 'Use the app/API APKs for the same ABI. Install the main app first, then the API plugin.'
+            echo 'These are untrusted validation builds; a new workflow run uses a new key and may require uninstalling the previous pair.'
+            echo
+            echo '`pkg`, `apt`, `bash`, `proot` and the `termux-api` CLI are embedded.'
+            echo '`pkg update/install` remains blocked until the custom binary repository is published.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rafcodephi-usable-runtime-pair-${{ github.run_id }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30

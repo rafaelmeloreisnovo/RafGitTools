@@ -28,6 +28,11 @@ on:
   pull_request:
     paths:
       - ".github/workflows/rafaelia-orchestrator-v1.yml"
+      - "runtime-lock.json"
+      - "contracts/rafcodephi-runtime-stack.v1.schema.json"
+      - "scripts/runtime_lock_contract.py"
+      - "scripts/validate_rafcodephi_stack_contract.py"
+      - "tests/test_rafcodephi_stack_contract.py"
       - "tools/rafaelia_navigator/**"
 
 permissions:
@@ -50,6 +55,11 @@ jobs:
     name: "00 · Preflight / invariantes"
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      termux_commit: ${{ steps.lock.outputs.termux_commit }}
+      termux_api_commit: ${{ steps.lock.outputs.termux_api_commit }}
+      termux_packages_commit: ${{ steps.lock.outputs.termux_packages_commit }}
+      rafpolimata_commit: ${{ steps.lock.outputs.rafpolimata_commit }}
     steps:
       - name: Checkout control plane
         uses: actions/checkout@v4
@@ -67,6 +77,8 @@ jobs:
           test -f tools/rafaelia_navigator/rafaelia_navigator_integrity_v1.py
           test -f tools/rafaelia_navigator/rafaelia_navigator_bulk_v1.py
           test -f tools/rafaelia_navigator/rafaelia_navigator_publish_v1.py
+          test -f scripts/runtime_lock_contract.py
+          test -f scripts/validate_rafcodephi_stack_contract.py
           mkdir -p _orchestration
           python - <<'PY'
           import json, os
@@ -88,6 +100,13 @@ jobs:
               json.dump(receipt, f, ensure_ascii=False, indent=2, sort_keys=True)
               f.write("\n")
           PY
+      - name: Validate RAFCODEPHI source lock
+        id: lock
+        run: |
+          python3 scripts/runtime_lock_contract.py validate \
+            runtime-lock.json \
+            --github-output "$GITHUB_OUTPUT"
+          python3 -m unittest tests.test_rafcodephi_stack_contract -v
       - name: Upload preflight receipt
         if: always()
         uses: actions/upload-artifact@v4
@@ -271,19 +290,23 @@ jobs:
           - id: rafpolimata-operators
             repository: rafaelmeloreisnovo/RafPolimata
             ref: main
-            command: python tests/test_cognitive_operator_reference.py && python tests/test_cognitive_operators_runtime_index.py
+            command: python tests/test_cognitive_operator_reference.py && python tests/test_cognitive_operators_runtime_index.py && python -m pip install --disable-pip-version-check pytest && python -m pytest -q tests/test_rafcodephi_bootstrap_evidence.py
           - id: gaia-stage4
             repository: rafaelmeloreisnovo/GAIA_phi
             ref: main
             command: python tests/test_manifest_lineage_tail_recovery.py && python tests/test_manifest_lineage_tail_corruption.py && python tests/test_stage4_rmralpha_precedence_123.py && python tests/test_stage4_rmralpha_precedence_124.py && python tests/test_stage4_rmralpha_precedence_125.py
-          - id: termux-packages-core
+          - id: termux-packages-bootstrap
             repository: rafaelmeloreisnovo/termux-packages
             ref: main
-            command: make -C core clean all && make -C core test
+            command: python scripts/tests/test_rafcodephi_termux_api_contract.py && python core/tests/test_rafcodephi_prefix_contract.py && bash -n scripts/build-rafcodephi-real-bootstrap.sh
           - id: termux-app-contract
             repository: rafaelmeloreisnovo/termux-app-rafacodephi
             ref: master
-            command: python -m json.tool runtime-lock.json >/dev/null && sh -n scripts/verify_ndk_r26_installation.sh && sh -n scripts/environment_identity_failsafe.sh && sh -n scripts/capture_installed_apk_receipt.sh && sh -n scripts/link_receipt_to_commit.sh
+            command: python -m pip install --disable-pip-version-check pytest && python -m pytest -q tests/test_source_built_real_bootstrap.py tests/test_bootstrap_package_install_contract.py && bash -n scripts/prepare_bootstrap_env.sh
+          - id: termux-api-identity
+            repository: rafaelmeloreisnovo/termux-api_rafcodephi
+            ref: master
+            command: python scripts/validate-package-identity.py && bash -n scripts/*.sh api.sh
           - id: rll-governance
             repository: instituto-Rafael/relativity-living-light
             ref: main
@@ -298,7 +321,7 @@ jobs:
         with:
           repository: ${{ matrix.repository }}
           ref: ${{ matrix.ref }}
-          token: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN }}
+          token: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN || github.token }}
           persist-credentials: false
           path: target
       - name: Setup Python
@@ -347,9 +370,84 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  rafcodephi_stack:
+    name: "03c · RAFCODEPHI / contrato vertical"
+    needs: [preflight, navigator, cross_repo_preflight]
+    if: needs.cross_repo_preflight.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout control plane
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout locked Termux app
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/termux-app-rafacodephi
+          ref: ${{ needs.preflight.outputs.termux_commit }}
+          token: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN || github.token }}
+          persist-credentials: false
+          path: _stack/termux-app-rafacodephi
+      - name: Checkout locked Termux API
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/termux-api_rafcodephi
+          ref: ${{ needs.preflight.outputs.termux_api_commit }}
+          token: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN || github.token }}
+          persist-credentials: false
+          path: _stack/termux-api_rafcodephi
+      - name: Checkout locked Termux packages
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/termux-packages
+          ref: ${{ needs.preflight.outputs.termux_packages_commit }}
+          token: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN || github.token }}
+          persist-credentials: false
+          path: _stack/termux-packages
+      - name: Checkout locked RafPolimata
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/RafPolimata
+          ref: ${{ needs.preflight.outputs.rafpolimata_commit }}
+          token: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN || github.token }}
+          persist-credentials: false
+          path: _stack/RafPolimata
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run focused repository contracts
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check pytest
+          python -m pytest -q \
+            _stack/termux-app-rafacodephi/tests/test_source_built_real_bootstrap.py \
+            _stack/termux-app-rafacodephi/tests/test_bootstrap_package_install_contract.py
+          python _stack/termux-api_rafcodephi/scripts/validate-package-identity.py
+          python _stack/termux-packages/scripts/tests/test_rafcodephi_termux_api_contract.py
+          python _stack/termux-packages/core/tests/test_rafcodephi_prefix_contract.py
+          python -m pytest -q _stack/RafPolimata/tests/test_rafcodephi_bootstrap_evidence.py
+      - name: Cross-check locked identities and routes
+        run: |
+          python3 scripts/validate_rafcodephi_stack_contract.py \
+            --app _stack/termux-app-rafacodephi \
+            --api _stack/termux-api_rafcodephi \
+            --packages _stack/termux-packages \
+            --polimata _stack/RafPolimata \
+            --output _orchestration/03c-rafcodephi-runtime-stack.json
+      - name: Upload stack receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: receipt-03c-rafcodephi-stack-${{ github.run_id }}
+          path: _orchestration/03c-rafcodephi-runtime-stack.json
+          if-no-files-found: error
+          retention-days: 30
+
   reconcile:
     name: "04 · Reconciliação Ω / receipt final"
-    needs: [preflight, navigator, private_corpus, cross_repo_preflight, cross_repo]
+    needs: [preflight, navigator, private_corpus, cross_repo_preflight, cross_repo, rafcodephi_stack]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -359,6 +457,7 @@ jobs:
       RESULT_PRIVATE: ${{ needs.private_corpus.result }}
       RESULT_CROSS_PREFLIGHT: ${{ needs.cross_repo_preflight.result }}
       RESULT_CROSS: ${{ needs.cross_repo.result }}
+      RESULT_RAFCODEPHI_STACK: ${{ needs.rafcodephi_stack.result }}
       CROSS_STATE: ${{ needs.cross_repo_preflight.outputs.state }}
       FAIL_ON_TOKEN_VAZIO: ${{ github.event_name == 'workflow_dispatch' && inputs.fail_on_token_vazio || false }}
     steps:
@@ -375,17 +474,26 @@ jobs:
               "private_corpus": os.environ.get("RESULT_PRIVATE", "skipped"),
               "cross_repo_preflight": os.environ.get("RESULT_CROSS_PREFLIGHT", "skipped"),
               "cross_repo": os.environ.get("RESULT_CROSS", "skipped"),
+              "rafcodephi_stack": os.environ.get("RESULT_RAFCODEPHI_STACK", "skipped"),
           }
           cross_state = os.environ.get("CROSS_STATE") or "TOKEN_VAZIO_CROSS_REPO_UNOBSERVED"
           hard_fail = any(v in {"failure", "cancelled"} for k, v in results.items() if k not in {"private_corpus", "cross_repo"})
-          if results["cross_repo"] == "failure" or results["private_corpus"] == "failure":
+          if results["cross_repo"] == "failure" or results["private_corpus"] == "failure" or results["rafcodephi_stack"] == "failure":
               hard_fail = True
           token_vazio = []
           if results["private_corpus"] == "skipped":
               token_vazio.append("TOKEN_VAZIO_PRIVATE_CORPUS_EXECUTION")
           if results["cross_repo"] == "skipped":
               token_vazio.append(cross_state)
-          token_vazio.extend(["TOKEN_VAZIO_PHYSICAL_TERMUX_EXECUTION", "TOKEN_VAZIO_INDEPENDENT_REPLICATION"])
+          token_vazio.extend([
+              "TOKEN_VAZIO_PHYSICAL_TERMUX_EXECUTION",
+              "TOKEN_VAZIO_ARM32_DEVICE_BOOTSTRAP",
+              "TOKEN_VAZIO_ARM64_DEVICE_BOOTSTRAP",
+              "TOKEN_VAZIO_PAIRED_APK_DEVICE_INSTALL",
+              "TOKEN_VAZIO_TERMUX_API_DEVICE_CALL",
+              "TOKEN_VAZIO_CUSTOM_BINARY_REPOSITORY",
+              "TOKEN_VAZIO_INDEPENDENT_REPLICATION",
+          ])
           state = "FAIL" if hard_fail else ("PASS_GOVERNED_WITH_TOKEN_VAZIO" if token_vazio else "PASS")
           receipt = {
               "schema": os.environ["ORCHESTRATOR_SCHEMA"],

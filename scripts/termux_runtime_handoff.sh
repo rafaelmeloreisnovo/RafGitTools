@@ -33,8 +33,8 @@ for command in bash python3 sha256sum find sort awk stat uname; do
   fi
 done
 
-if [ ! -x "${GENERATOR}" ]; then
-  echo "[FALHA] gerador não executável: ${GENERATOR}" >&2
+if [ ! -f "${GENERATOR}" ]; then
+  echo "[FALHA] gerador ausente: ${GENERATOR}" >&2
   exit 2
 fi
 if [ ! -f "${LOCK_TOOL}" ]; then
