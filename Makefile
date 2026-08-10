@@ -1,6 +1,9 @@
-.PHONY: clean all audit-validate
+.PHONY: clean all audit-validate runtime-receipt runtime-receipt-tests
 
 SDK_DIR := $(firstword $(ANDROID_SDK_ROOT) $(ANDROID_HOME) $(wildcard $(HOME)/Android/Sdk) $(wildcard $(HOME)/android-sdk) $(wildcard /usr/local/lib/android/sdk))
+RUNTIME_APK ?=
+RUNTIME_RECEIPT ?= app/build/reports/runtime/android-runtime-receipt.json
+RUNTIME_RECEIPT_ARGS ?=
 
 local.properties:
 	@if [ -n "$(SDK_DIR)" ]; then \
@@ -20,3 +23,14 @@ all: local.properties
 
 audit-validate:
 	python3 scripts/validate_bug_report.py --input BUG_REPORT.md --output BUG_REPORT_VALIDATED.md --threshold 0.05
+
+runtime-receipt:
+	@test -n "$(RUNTIME_APK)" || (echo "Set RUNTIME_APK=/path/to.apk" >&2; exit 2)
+	python3 scripts/runtime/capture_android_runtime_receipt.py \
+		--apk "$(RUNTIME_APK)" \
+		--output "$(RUNTIME_RECEIPT)" \
+		--expected-commit "$$(git rev-parse HEAD)" \
+		$(RUNTIME_RECEIPT_ARGS)
+
+runtime-receipt-tests:
+	python3 -m unittest discover -s tests -p 'test_android_runtime_receipt.py' -v
