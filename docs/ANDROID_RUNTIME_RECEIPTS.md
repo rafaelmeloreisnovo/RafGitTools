@@ -46,9 +46,13 @@ SHA-256 of the device serial rather than the serial itself.
 1. repository commit matches the expected commit;
 2. APK is a valid ZIP and contains both `armeabi-v7a` and `arm64-v8a` native ABIs;
 3. `apksigner verify --verbose` returns success;
-4. ADB reports a connected device;
+4. ADB reports a connected physical/emulated Android target whose primary ABI is `armeabi-v7a` or `arm64-v8a`;
 5. explicit installation returns `Success`;
 6. explicit activity launch returns without an Android error/exception.
+
+A receipt proves only the observed target. Coverage of ARM32 **and** ARM64
+requires independent receipts from targets whose primary ABIs are respectively
+`armeabi-v7a` and `arm64-v8a`; one device never silently proves both.
 
 The invariant is:
 
