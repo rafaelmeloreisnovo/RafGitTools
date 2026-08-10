@@ -164,6 +164,7 @@ def build_receipt(args: argparse.Namespace) -> dict[str, Any]:
     adb, device = _adb_probe(args.adb)
     install = _adb_install(adb, apk, args.install)
     launch = _adb_launch(adb, args.package, args.activity, args.launch)
+    device_abi_gate = PASS if device.get("primary_abi") in SUPPORTED_ABIS else (TOKEN_VAZIO if device.get("state") != PASS else FAIL)
 
     runtime_prereqs = [
         commit_gate,
@@ -171,6 +172,7 @@ def build_receipt(args: argparse.Namespace) -> dict[str, Any]:
         apk_info["dual_abi_gate"],
         signature["state"],
         device["state"],
+        device_abi_gate,
         install["state"],
         launch["state"],
     ]
@@ -192,12 +194,13 @@ def build_receipt(args: argparse.Namespace) -> dict[str, Any]:
             "dual_abi": apk_info["dual_abi_gate"],
             "signature": signature["state"],
             "device": device["state"],
+            "device_abi": device_abi_gate,
             "install": install["state"],
             "launch": launch["state"],
             "runtime": runtime_gate,
         },
         "invariant": "CUSTODY_PASS_DOES_NOT_PROMOTE_RUNTIME",
-        "falsifier": "Any commit/APK hash mismatch, signature failure, ABI omission, install failure, or launch failure invalidates runtime promotion.",
+        "falsifier": "Any commit/APK hash mismatch, signature failure, APK/device ABI mismatch, install failure, or launch failure invalidates runtime promotion.",
     }
 
 
