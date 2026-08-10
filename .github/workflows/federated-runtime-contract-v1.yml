@@ -1,7 +1,15 @@
 name: Federated Runtime Contract v1
 
+run-name: "TORRE / RafGitTools / ${{ inputs.torre_correlation_id || github.run_id }}"
+
 on:
   workflow_dispatch:
+    inputs:
+      torre_correlation_id:
+        description: Correlation ID supplied by the TORRE controller
+        required: false
+        default: ""
+        type: string
   pull_request:
     paths:
       - "contracts/rafaelia-federated-runtime-v1.json"
@@ -12,6 +20,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: torre-unit-rafgittools-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   contract:
