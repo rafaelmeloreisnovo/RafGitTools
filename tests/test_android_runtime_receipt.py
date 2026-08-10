@@ -99,6 +99,27 @@ esac\n''')
         self.assertTrue(r["claim_allowed"])
         self.assertEqual("16384", r["device"]["page_size"])
 
+    def test_x86_device_cannot_promote_arm_runtime(self):
+        apksigner = self.bin / "apksigner"
+        adb = self.bin / "adb"
+        write_exe(apksigner, 'exit 0\n')
+        write_exe(adb, '''case "$*" in
+"get-state") echo device ;;
+"get-serialno") echo X86SERIAL ;;
+"shell getprop ro.product.cpu.abi") echo x86_64 ;;
+"shell getprop ro.product.cpu.abilist") echo x86_64,x86 ;;
+"shell getprop ro.build.version.sdk") echo 35 ;;
+"shell getprop ro.build.version.release") echo 15 ;;
+"shell getconf PAGESIZE") echo 4096 ;;
+install*) echo Success ;;
+"shell am start -W -n org.rafaelia/.MainActivity") echo Status: ok ;;
+*) exit 9 ;;
+esac\n''')
+        r = mod.build_receipt(self.args(adb=str(adb), apksigner=str(apksigner), package="org.rafaelia", activity=".MainActivity", install=True, launch=True))
+        self.assertEqual(mod.FAIL, r["gates"]["device_abi"])
+        self.assertEqual(mod.BLOCKED, r["gates"]["runtime"])
+        self.assertFalse(r["claim_allowed"])
+
     def test_signature_failure_blocks_promotion(self):
         apksigner = self.bin / "apksigner"
         adb = self.bin / "adb"
