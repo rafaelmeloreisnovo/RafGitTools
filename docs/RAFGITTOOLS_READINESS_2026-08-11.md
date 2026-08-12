@@ -117,9 +117,9 @@ not as source PASS and not as source FAIL.
 
 The canonical fallback is the local readiness gate, which intentionally uses the already configured local toolchain and never downloads an Android SDK silently on Termux.
 
-## 6. Privacy-manager hardening tracked separately
+## 6. Privacy-manager hardening integrated; runtime still gated
 
-The repository-visibility manager is developed in the isolated branch/PR for bulk privacy operations. Its P0 safety invariants are:
+The fail-closed repository-visibility manager from PR #337 is now present on `main`. Its source-level P0 safety invariants are:
 
 - live repository preflight immediately before mutation;
 - `permissions.admin=true` required;
@@ -128,7 +128,7 @@ The repository-visibility manager is developed in the isolated branch/PR for bul
 - no token/header/repository content in receipts;
 - explicit high-impact confirmation on device.
 
-It must remain isolated until its own build/device gates close.
+The merge establishes source integration, **not** Android/runtime proof. Bulk visibility execution, authenticated organization behavior and physical-device receipts remain separate evidence gates until exercised on the reviewed build.
 
 ## 7. Residual TOKEN_VAZIO policy
 
@@ -158,7 +158,7 @@ No documentation sentence may promote absence of those artifacts to PASS.
 ### P1 — operational hardening
 
 1. authenticated GitHub regression (personal + organization repository inventory);
-2. private/public visibility flow using the separate fail-closed privacy PR;
+2. exercise the integrated fail-closed private/public visibility flow on a controlled repository set;
 3. clone/fetch/pull/push regression on disposable repositories;
 4. credential/log redaction regression.
 

@@ -11,6 +11,9 @@ import javax.inject.Inject
  * 
  * This use case encapsulates the business logic for cloning a repository
  * from a remote URL to a local path, handling authentication and validation.
+ *
+ * For GitHub HTTPS, pass the PAT/OAuth token as the password and a non-empty
+ * username; do not embed credential material in the remote URL.
  * 
  * Example usage:
  * ```
@@ -18,7 +21,7 @@ import javax.inject.Inject
  *     CloneRepositoryParams(
  *         url = "https://github.com/user/repo.git",
  *         localPath = "/storage/repos/repo",
- *         credentials = Credentials.Token("ghp_xxx")
+ *         credentials = Credentials.UsernamePassword("user", "YOUR-PAT")
  *     )
  * )
  * ```
