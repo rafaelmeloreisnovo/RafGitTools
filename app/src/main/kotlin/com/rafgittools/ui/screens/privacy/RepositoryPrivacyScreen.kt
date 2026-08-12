@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rafgittools.data.privacy.PrivacyProvenanceState
 import com.rafgittools.data.privacy.RepositoryPrivacyCandidate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -114,7 +115,8 @@ private fun PrivacyInventory(
                     Text("Personal + organization repositories", style = MaterialTheme.typography.titleMedium)
                     Text("inventory=${state.candidates.size} eligible=$eligible private=$privateCount blocked=$blocked")
                     Text(
-                        "Only GitHub-confirmed admin repositories are eligible. Forks are always blocked.",
+                        "Only GitHub-confirmed admin repositories are eligible. Forks are always blocked. " +
+                            "Every PATCH is preceded by a fresh live preflight and durable receipt checkpoint.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -153,15 +155,24 @@ private fun PrivacyInventory(
 
         state.lastResult?.let { result ->
             item {
+                val provenanceHealthy = result.provenanceState == PrivacyProvenanceState.DURABLE ||
+                    result.provenanceState == PrivacyProvenanceState.DURABLE_RECOVERED
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text("Last receipt", fontWeight = FontWeight.SemiBold)
                         Text(
-                            "updated=${result.receipt.updated} failed=${result.receipt.failed} " +
-                                "skipped=${result.receipt.skipped} not_attempted=${result.receipt.notAttempted}"
+                            "phase=${result.receipt.phase} updated=${result.receipt.updated} " +
+                                "failed=${result.receipt.failed} skipped=${result.receipt.skipped} " +
+                                "not_attempted=${result.receipt.notAttempted} attempting=${result.receipt.attempting}"
                         )
                         Text(
-                            result.receiptPath ?: "TOKEN_VAZIO: receipt persistence failed",
+                            "provenance=${result.provenanceState}: ${result.provenanceMessage}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (provenanceHealthy) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.error
+                        )
+                        Text(
+                            result.receiptPath ?: "TOKEN_VAZIO: no durable receipt checkpoint available",
                             style = MaterialTheme.typography.bodySmall,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
@@ -258,6 +269,7 @@ private fun PrivacyConfirmationDialog(
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text("impact: pages=$pages stars/watchers=$social forks=$forks")
+                Text("A live GitHub preflight and durable journal checkpoint run before each PATCH.")
                 Text("Type exactly: $phrase", fontWeight = FontWeight.SemiBold)
                 OutlinedTextField(
                     value = confirmation,
