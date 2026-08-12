@@ -2,14 +2,19 @@ package com.rafgittools.data.privacy
 
 import kotlinx.coroutines.delay
 import retrofit2.HttpException
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Fail-closed bulk repository visibility manager.
  *
- * It never changes forks, archived/disabled repositories, already-private repositories,
- * or repositories where GitHub did not explicitly report admin permission.
+ * Invariants:
+ * - no fork/archived/disabled/already-private repository is mutated;
+ * - GitHub must explicitly report admin permission;
+ * - stale inventory never authorizes a mutation: every repository is re-read live;
+ * - a durable append-only receipt checkpoint exists before every PATCH;
+ * - if provenance persistence is unavailable, remaining mutations stop.
  */
 @Singleton
 class RepositoryPrivacyManager @Inject constructor(
@@ -20,6 +25,9 @@ class RepositoryPrivacyManager @Inject constructor(
         val all = mutableListOf<PrivacyRepositoryDto>()
         var page = 1
         while (true) {
+            check(page <= MAX_INVENTORY_PAGES) {
+                "Repository inventory exceeded the defensive pagination limit; refusing partial inventory"
+            }
             val batch = api.listRepositories(
                 visibility = "all",
                 affiliation = "owner,organization_member",
@@ -39,22 +47,154 @@ class RepositoryPrivacyManager @Inject constructor(
 
     suspend fun makePrivate(selected: Collection<RepositoryPrivacyCandidate>): RepositoryPrivacyBulkResult {
         val ordered = selected.distinctBy { it.id }.sortedBy { it.fullName.lowercase() }
-        val mutations = mutableListOf<RepositoryPrivacyMutation>()
+        val createdAt = System.currentTimeMillis()
+        val operationId = "visibility-$createdAt-${UUID.randomUUID()}"
+        val mutations = ordered.map {
+            it.mutation(
+                PrivacyMutationStatus.NOT_ATTEMPTED,
+                "Planned; no mutation attempted yet"
+            )
+        }.toMutableList()
+
+        var checkpointSequence = 0
+        var lastReceiptPath: String? = null
+        var lastPersistedReceipt: RepositoryPrivacyReceipt? = null
+        var provenanceState = PrivacyProvenanceState.DURABLE
+        var provenanceMessage = "Append-only receipt journal initialized"
         var abortReason: String? = null
 
+        fun buildReceipt(phase: PrivacyReceiptPhase): RepositoryPrivacyReceipt = RepositoryPrivacyReceipt(
+            operationId = operationId,
+            createdAtEpochMs = createdAt,
+            checkpointSequence = checkpointSequence,
+            phase = phase,
+            requested = ordered.size,
+            updated = mutations.count { it.status == PrivacyMutationStatus.UPDATED },
+            failed = mutations.count { it.status == PrivacyMutationStatus.FAILED },
+            skipped = mutations.count { it.status == PrivacyMutationStatus.SKIPPED },
+            notAttempted = mutations.count { it.status == PrivacyMutationStatus.NOT_ATTEMPTED },
+            attempting = mutations.count { it.status == PrivacyMutationStatus.ATTEMPTING },
+            mutations = mutations.toList()
+        )
+
+        fun persistCheckpoint(phase: PrivacyReceiptPhase): Boolean {
+            val receipt = buildReceipt(phase)
+            val saved = receiptStore.save(receipt)
+            if (saved.isSuccess) {
+                lastReceiptPath = saved.getOrNull()
+                lastPersistedReceipt = receipt
+                checkpointSequence++
+                return true
+            }
+            return false
+        }
+
+        // P0 provenance gate: no repository mutation is allowed unless the operation
+        // intent itself is already durable in app-private storage.
+        if (!persistCheckpoint(PrivacyReceiptPhase.PLANNED)) {
+            val aborted = buildReceipt(PrivacyReceiptPhase.ABORTED)
+            return RepositoryPrivacyBulkResult(
+                receipt = aborted,
+                receiptPath = null,
+                provenanceState = PrivacyProvenanceState.FAILED_BEFORE_MUTATION,
+                provenanceMessage = "Receipt journal could not be initialized; zero GitHub mutations attempted"
+            )
+        }
+
         ordered.forEachIndexed { index, candidate ->
-            if (candidate.blockReason != null) {
-                mutations += candidate.mutation(
-                    PrivacyMutationStatus.SKIPPED,
-                    candidate.blockReason
+            if (abortReason != null) {
+                mutations[index] = candidate.mutation(
+                    PrivacyMutationStatus.NOT_ATTEMPTED,
+                    abortReason!!
                 )
                 return@forEachIndexed
             }
-            if (abortReason != null) {
-                mutations += candidate.mutation(
-                    PrivacyMutationStatus.NOT_ATTEMPTED,
-                    abortReason
+
+            if (candidate.blockReason != null) {
+                mutations[index] = candidate.mutation(
+                    PrivacyMutationStatus.SKIPPED,
+                    candidate.blockReason
                 )
+                if (!persistCheckpoint(PrivacyReceiptPhase.MUTATING)) {
+                    provenanceState = PrivacyProvenanceState.PARTIAL_DURABILITY_LOSS
+                    provenanceMessage = "Receipt checkpoint failed; remaining mutations aborted"
+                    abortReason = provenanceMessage
+                }
+                return@forEachIndexed
+            }
+
+            // Live TOCTOU preflight. The inventory selected by the user is informative;
+            // this fresh GitHub response is the authority used immediately before PATCH.
+            val liveCandidate = try {
+                api.getRepository(candidate.ownerLogin, candidate.name).toCandidate()
+            } catch (error: HttpException) {
+                val message = safeHttpMessage(error.code(), "preflight")
+                mutations[index] = candidate.mutation(
+                    PrivacyMutationStatus.FAILED,
+                    message,
+                    error.code()
+                )
+                if (error.code() == 401) abortReason = message
+                if (!persistCheckpoint(PrivacyReceiptPhase.MUTATING)) {
+                    provenanceState = PrivacyProvenanceState.PARTIAL_DURABILITY_LOSS
+                    provenanceMessage = "Receipt checkpoint failed after preflight error; remaining mutations aborted"
+                    abortReason = provenanceMessage
+                }
+                return@forEachIndexed
+            } catch (_: Exception) {
+                mutations[index] = candidate.mutation(
+                    PrivacyMutationStatus.FAILED,
+                    "GitHub preflight failed due to a network/runtime error"
+                )
+                if (!persistCheckpoint(PrivacyReceiptPhase.MUTATING)) {
+                    provenanceState = PrivacyProvenanceState.PARTIAL_DURABILITY_LOSS
+                    provenanceMessage = "Receipt checkpoint failed after preflight error; remaining mutations aborted"
+                    abortReason = provenanceMessage
+                }
+                return@forEachIndexed
+            }
+
+            if (liveCandidate.id != candidate.id) {
+                mutations[index] = candidate.mutation(
+                    PrivacyMutationStatus.SKIPPED,
+                    "Live preflight repository identity changed; mutation blocked fail-closed"
+                )
+                if (!persistCheckpoint(PrivacyReceiptPhase.MUTATING)) {
+                    provenanceState = PrivacyProvenanceState.PARTIAL_DURABILITY_LOSS
+                    provenanceMessage = "Receipt checkpoint failed; remaining mutations aborted"
+                    abortReason = provenanceMessage
+                }
+                return@forEachIndexed
+            }
+
+            if (!liveCandidate.eligible) {
+                mutations[index] = candidate.mutation(
+                    PrivacyMutationStatus.SKIPPED,
+                    "Live preflight blocked: ${liveCandidate.blockReason ?: "repository is no longer eligible"}"
+                )
+                if (!persistCheckpoint(PrivacyReceiptPhase.MUTATING)) {
+                    provenanceState = PrivacyProvenanceState.PARTIAL_DURABILITY_LOSS
+                    provenanceMessage = "Receipt checkpoint failed; remaining mutations aborted"
+                    abortReason = provenanceMessage
+                }
+                return@forEachIndexed
+            }
+
+            // The ATTEMPTING checkpoint is intentionally durable before the PATCH.
+            // If the process dies after GitHub accepts the request, reconciliation can
+            // identify the exact repository whose result was not yet confirmed locally.
+            mutations[index] = candidate.mutation(
+                PrivacyMutationStatus.ATTEMPTING,
+                "Live preflight passed; visibility PATCH is the next external action"
+            )
+            if (!persistCheckpoint(PrivacyReceiptPhase.MUTATING)) {
+                mutations[index] = candidate.mutation(
+                    PrivacyMutationStatus.NOT_ATTEMPTED,
+                    "Pre-mutation receipt checkpoint failed; PATCH was not sent"
+                )
+                provenanceState = PrivacyProvenanceState.PARTIAL_DURABILITY_LOSS
+                provenanceMessage = "Provenance persistence failed before PATCH; remaining mutations aborted"
+                abortReason = provenanceMessage
                 return@forEachIndexed
             }
 
@@ -64,61 +204,97 @@ class RepositoryPrivacyManager @Inject constructor(
                     candidate.name,
                     VisibilityPatchRequest("private")
                 )
-                if (updated.isPrivate || updated.visibility == "private") {
-                    mutations += candidate.mutation(
+                mutations[index] = if (
+                    updated.id == candidate.id &&
+                    (updated.isPrivate || updated.visibility == "private")
+                ) {
+                    candidate.mutation(
                         PrivacyMutationStatus.UPDATED,
-                        "Visibility confirmed private"
+                        "GitHub response confirmed private visibility"
                     )
                 } else {
-                    mutations += candidate.mutation(
+                    candidate.mutation(
                         PrivacyMutationStatus.FAILED,
-                        "GitHub response did not confirm private visibility"
+                        "GitHub response did not confirm the expected repository as private"
                     )
                 }
-            } catch (e: HttpException) {
-                val safeMessage = when (e.code()) {
-                    401 -> "Authentication rejected; remaining mutations aborted"
-                    403 -> "Forbidden: token permission, admin authority, SSO, or organization policy"
-                    404 -> "Repository not found or token cannot access it"
-                    422 -> "Visibility change rejected; organization policy may restrict this operation"
-                    else -> "GitHub HTTP ${e.code()} rejected visibility change"
-                }
-                mutations += candidate.mutation(
+            } catch (error: HttpException) {
+                val message = safeHttpMessage(error.code(), "mutation")
+                mutations[index] = candidate.mutation(
                     PrivacyMutationStatus.FAILED,
-                    safeMessage,
-                    e.code()
+                    message,
+                    error.code()
                 )
-                if (e.code() == 401) abortReason = safeMessage
-            } catch (e: Exception) {
-                mutations += candidate.mutation(
+                if (error.code() == 401) abortReason = message
+            } catch (_: Exception) {
+                mutations[index] = candidate.mutation(
                     PrivacyMutationStatus.FAILED,
-                    e.message?.take(MAX_MESSAGE) ?: "Unexpected network/runtime error"
+                    "GitHub visibility mutation failed due to a network/runtime error"
                 )
+            }
+
+            if (!persistCheckpoint(PrivacyReceiptPhase.MUTATING)) {
+                provenanceState = PrivacyProvenanceState.PARTIAL_DURABILITY_LOSS
+                provenanceMessage =
+                    "Post-mutation receipt checkpoint failed; durable journal remains at ATTEMPTING and remaining mutations were aborted"
+                abortReason = provenanceMessage
             }
 
             if (index != ordered.lastIndex && abortReason == null) delay(MUTATION_DELAY_MS)
         }
 
-        val receipt = RepositoryPrivacyReceipt(
-            createdAtEpochMs = System.currentTimeMillis(),
-            requested = ordered.size,
-            updated = mutations.count { it.status == PrivacyMutationStatus.UPDATED },
-            failed = mutations.count { it.status == PrivacyMutationStatus.FAILED },
-            skipped = mutations.count { it.status == PrivacyMutationStatus.SKIPPED },
-            notAttempted = mutations.count { it.status == PrivacyMutationStatus.NOT_ATTEMPTED },
-            mutations = mutations
-        )
+        // Persist explicit NOT_ATTEMPTED states for items skipped after an abort.
+        if (abortReason != null) {
+            ordered.indices.forEach { index ->
+                if (mutations[index].status == PrivacyMutationStatus.NOT_ATTEMPTED &&
+                    mutations[index].message == "Planned; no mutation attempted yet"
+                ) {
+                    mutations[index] = ordered[index].mutation(
+                        PrivacyMutationStatus.NOT_ATTEMPTED,
+                        abortReason!!
+                    )
+                }
+            }
+        }
+
+        val finalPhase = if (abortReason == null) PrivacyReceiptPhase.COMPLETED else PrivacyReceiptPhase.ABORTED
+        val finalSaved = persistCheckpoint(finalPhase)
+        if (finalSaved && provenanceState == PrivacyProvenanceState.PARTIAL_DURABILITY_LOSS) {
+            provenanceState = PrivacyProvenanceState.DURABLE_RECOVERED
+            provenanceMessage = "A transient checkpoint failure occurred; final append-only receipt recovered the complete in-memory outcome"
+        } else if (!finalSaved && provenanceState == PrivacyProvenanceState.DURABLE) {
+            provenanceState = PrivacyProvenanceState.PARTIAL_DURABILITY_LOSS
+            provenanceMessage = "Final receipt checkpoint failed; use the latest durable checkpoint for reconciliation"
+        }
+
+        val finalReceipt = if (finalSaved) {
+            lastPersistedReceipt!!
+        } else {
+            buildReceipt(finalPhase)
+        }
+
         return RepositoryPrivacyBulkResult(
-            receipt = receipt,
-            receiptPath = receiptStore.save(receipt).getOrNull()
+            receipt = finalReceipt,
+            receiptPath = lastReceiptPath,
+            provenanceState = provenanceState,
+            provenanceMessage = provenanceMessage
         )
     }
 
     companion object {
         const val PAGE_SIZE = 100
         const val MUTATION_DELAY_MS = 250L
-        private const val MAX_MESSAGE = 240
+        const val MAX_INVENTORY_PAGES = 1_000
     }
+}
+
+private fun safeHttpMessage(code: Int, stage: String): String = when (code) {
+    401 -> "Authentication rejected during $stage; remaining mutations aborted"
+    403 -> "Forbidden during $stage: token permission, admin authority, SSO, rate limit, or organization policy"
+    404 -> "Repository not found during $stage or token cannot access it"
+    422 -> "GitHub rejected $stage; repository or organization policy may restrict the operation"
+    429 -> "GitHub rate limit rejected $stage"
+    else -> "GitHub HTTP $code rejected $stage"
 }
 
 internal fun PrivacyRepositoryDto.toCandidate(): RepositoryPrivacyCandidate {
@@ -188,7 +364,16 @@ data class RepositoryPrivacyCandidate(
     val hasPublicImpactWarning: Boolean get() = hasPages || stars > 0 || watchers > 0 || forks > 0
 }
 
-enum class PrivacyMutationStatus { UPDATED, FAILED, SKIPPED, NOT_ATTEMPTED }
+enum class PrivacyMutationStatus { UPDATED, FAILED, SKIPPED, NOT_ATTEMPTED, ATTEMPTING }
+
+enum class PrivacyReceiptPhase { PLANNED, MUTATING, COMPLETED, ABORTED }
+
+enum class PrivacyProvenanceState {
+    DURABLE,
+    DURABLE_RECOVERED,
+    FAILED_BEFORE_MUTATION,
+    PARTIAL_DURABILITY_LOSS
+}
 
 data class RepositoryPrivacyMutation(
     val repositoryId: Long,
@@ -202,17 +387,23 @@ data class RepositoryPrivacyMutation(
 )
 
 data class RepositoryPrivacyReceipt(
-    val schema: String = "RAFGITTOOLS_REPOSITORY_PRIVACY_RECEIPT_V1",
+    val schema: String = "RAFGITTOOLS_REPOSITORY_PRIVACY_RECEIPT_V2",
+    val operationId: String,
     val createdAtEpochMs: Long,
+    val checkpointSequence: Int,
+    val phase: PrivacyReceiptPhase,
     val requested: Int,
     val updated: Int,
     val failed: Int,
     val skipped: Int,
     val notAttempted: Int,
+    val attempting: Int,
     val mutations: List<RepositoryPrivacyMutation>
 )
 
 data class RepositoryPrivacyBulkResult(
     val receipt: RepositoryPrivacyReceipt,
-    val receiptPath: String?
+    val receiptPath: String?,
+    val provenanceState: PrivacyProvenanceState,
+    val provenanceMessage: String
 )
