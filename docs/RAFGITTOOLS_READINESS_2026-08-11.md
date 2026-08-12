@@ -53,6 +53,17 @@ It writes an append-only local evidence receipt under:
 
 The directory is intentionally gitignored because receipts may contain local paths, device serials and environment metadata. A curated/sanitized receipt may be copied into a dedicated evidence location only by an explicit action.
 
+### Verify access to the private RafGitTools repository from Termux
+
+This check proves that the local `gh` credential can authenticate and read repository metadata **without printing or persisting the token**:
+
+```bash
+chmod +x scripts/rafgittools_private_auth_check.sh
+./scripts/rafgittools_private_auth_check.sh
+```
+
+It records only authenticated login and non-secret repository permission booleans (`pull/push/admin`) in a local hashed receipt. It never calls `gh auth token`, never prints an Authorization header and never stores the credential.
+
 ### Optional physical-device smoke
 
 The gate **never installs an APK by surprise**. To explicitly permit install/start:
@@ -69,7 +80,7 @@ This requires a previously authorized `adb` device and a successfully built `dev
 |---|---|---|---|---|
 | R01 | Source/contracts | PRESENT | yes | local gate G0/G1 |
 | R02 | PAT login | IMPLEMENTED | yes | runtime authentication on device |
-| R03 | `gh` CLI import | IMPLEMENTED | no | runtime test in Termux |
+| R03 | `gh` CLI import | IMPLEMENTED | no | `scripts/rafgittools_private_auth_check.sh` + app import smoke |
 | R04 | OAuth Device Flow | IMPLEMENTED / CONFIG_REQUIRED | no, PAT/gh remain valid | configure public GitHub OAuth Client ID; never invent/store a client secret in APK |
 | R05 | GitHub API | PARTIAL_ADVANCED | yes | regression on authenticated device |
 | R06 | JGit local operations | PARTIAL_ADVANCED | yes | local/device regression fixtures |
@@ -89,6 +100,8 @@ This requires a previously authorized `adb` device and a successfully built `dev
 OAuth Client ID is **not a secret**, but it is installation/application configuration and must come from a real GitHub OAuth App. `TOKEN_VAZIO` is the correct state when it has not been configured.
 
 RafGitTools remains usable without OAuth Device Flow through PAT and the existing `gh` CLI import path. Therefore an absent OAuth Client ID must not be misclassified as "app cannot authenticate".
+
+For a private repository, credential validity and repository accessibility are separate evidence gates. `rafgittools_private_auth_check.sh` checks both using the GitHub CLI while deliberately excluding token material from output and receipts.
 
 Never place a GitHub OAuth client secret, PAT, fine-grained token, SSH private key, keystore password or authorization header in source, logs or receipts.
 
@@ -125,6 +138,7 @@ A `TOKEN_VAZIO` is closed only by a corresponding artifact/evidence pair. Exampl
 APK             -> file + SHA-256 + build command + exit status
 physical device -> serial/ABI/SDK + install/start transcript
 OAuth config    -> non-placeholder Client ID + successful device flow
+private auth    -> authenticated login + private repo read permission, no token output
 GPG             -> tool version + signed fixture + positive/negative verification
 LFS             -> git-lfs version + fixture repo + push/pull transcript
 ```
@@ -136,9 +150,10 @@ No documentation sentence may promote absence of those artifacts to PASS.
 ### P0 — required before calling Android runtime verified
 
 1. local readiness gate G0-G8;
-2. produce and hash `devDebug` APK;
-3. physical-device G9/G10;
-4. record sanitized receipt for the exact reviewed commit.
+2. prove private-repository authentication locally where relevant;
+3. produce and hash `devDebug` APK;
+4. physical-device G9/G10;
+5. record sanitized receipt for the exact reviewed commit.
 
 ### P1 — operational hardening
 
