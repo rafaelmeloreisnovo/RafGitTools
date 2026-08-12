@@ -1,9 +1,9 @@
 {
   "schema": "raf.ecosystem-runtime-state.v1",
-  "observed_at": "2026-08-12T03:15:00Z",
+  "observed_at": "2026-08-12T04:35:17Z",
   "ci_execution": {
     "state": "BLOCKED_INFRA",
-    "reason": "Recent pull-request-triggered jobs in this private repository were observed terminating before executable steps/logs were available. The exact hosted-runner/account cause remains TOKEN_VAZIO; this is infrastructure evidence, not a Kotlin/Gradle code failure and not a PASS."
+    "reason": "GitHub Actions check 94011180319 for PR #342/head fb09c9cc0b68455711e20bb047abb19c68628b07 was not started: GitHub annotation states that recent account payments failed or the spending limit needs to be increased. Job evidence: steps=[], runner_id=0, runner_name=''. Therefore no Kotlin/Gradle test/build step executed; this is infrastructure/billing evidence, not FAIL_CODE and not PASS."
   },
   "components": [
     {
@@ -16,13 +16,14 @@
         "Kotlin/Compose/Hilt/Room sources are integrated",
         "GitHub API and JGit implementations are present",
         "authentication source paths and unit-test sources are present",
-        "P33 backlog records 32/33 features at functional-or-better coverage"
+        "P33 backlog records 33/33 features as source-functional on the interactive-staging integration branch"
       ],
       "gaps": [
+        "GitHub Actions cannot currently execute because the account billing/spending gate prevents runner allocation",
         "No devDebug APK + SHA-256 is recorded for the current reviewed head",
         "No explicit physical-device install/start smoke receipt is recorded for the current reviewed head"
       ],
-      "next_action": "Run scripts/rafgittools_readiness_gate.sh with an already configured JDK17/Android SDK; then explicitly enable RAFGITTOOLS_DEVICE_SMOKE=1 only when a device and APK are available.",
+      "next_action": "Use scripts/rafgittools_readiness_gate.sh with an already configured JDK17/Android SDK; then explicitly enable RAFGITTOOLS_DEVICE_SMOKE=1 only when a device and APK are available. Hosted Actions require the account billing/spending gate to be resolved before they can provide execution evidence.",
       "commit": "37f6121ade1b34579267efc8282d27bd2c3d772b"
     },
     {
@@ -34,14 +35,15 @@
       "evidence": [
         "PAT authentication source path is present",
         "OAuth Device Flow source path is present with placeholder rejection",
-        "gh CLI token import source path is present",
-        "secure auth repository source path is present"
+        "gh CLI token import source path is present and validates process exit/hostname",
+        "secure auth repository source path is present",
+        "GitHub HTTPS UI and JGit transport map token material to password rather than username"
       ],
       "gaps": [
         "OAuth Device Flow requires a real public GitHub OAuth Client ID at build/runtime configuration",
         "Authenticated app-level device smoke remains TOKEN_VAZIO"
       ],
-      "next_action": "Use PAT or gh import immediately; configure a real OAuth Client ID separately and prove the selected login path on device without logging credential material.",
+      "next_action": "Use PAT as the primary bootstrap path; configure a real OAuth Client ID separately and prove the selected login path on device without logging credential material.",
       "commit": "37f6121ade1b34579267efc8282d27bd2c3d772b"
     },
     {
@@ -77,8 +79,31 @@
         "Gate execution on the target Termux/device remains TOKEN_VAZIO",
         "Full VERIFIED_DEVICE requires APK build/hash and explicit device smoke in one evidence chain"
       ],
-      "next_action": "Execute the local gate from the reviewed checkout and use its receipt as the next evidence source instead of hosted Actions when CI is blocked.",
+      "next_action": "Execute the local gate from the reviewed checkout; while hosted Actions are billing-blocked, its receipt is the canonical executable evidence source.",
       "commit": "789dd3e79994a2073e129820ed3b51b2e15c63be"
+    },
+    {
+      "id": "rafgittools.interactive-staging",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/src/main/kotlin/com/rafgittools/data/git/InteractiveStagingService.kt",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence": [
+        "Per-hunk stage and unstage source paths exist",
+        "Mutation is index-only and never rewrites the working tree",
+        "Selected hunk, HEAD and index object are revalidated before mutation",
+        "DirCache is locked and DirCacheEditor commit is used for publication",
+        "DirCache unlock is unconditional in finally and safe after successful commit because JGit unlock is idempotent",
+        "Working-tree bytes are compared bit-identically during stage",
+        "Binary/non-UTF8/missing-final-newline/unmerged inputs fail closed",
+        "DiffViewer exposes explicit Stage hunk / Unstage hunk controls",
+        "Source tests cover selective stage, selective unstage, stale rejection, missing-final-newline rejection and cancellation"
+      ],
+      "gaps": [
+        "Gradle/Kotlin execution of the current head is not observed because GitHub Actions did not allocate a runner",
+        "Physical Android interactive-staging smoke remains TOKEN_VAZIO"
+      ],
+      "next_action": "Run local readiness/unit-test gate, then exercise two-hunk stage/unstage on the Android build and preserve receipt/hash evidence."
     },
     {
       "id": "rafgittools.offline-queue",
