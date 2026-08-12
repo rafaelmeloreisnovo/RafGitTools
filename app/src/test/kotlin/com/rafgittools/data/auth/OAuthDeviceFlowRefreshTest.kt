@@ -26,6 +26,7 @@ class OAuthDeviceFlowRefreshTest {
 
     @Test
     fun `stored device-flow refresh token rotates access and refresh credentials`() = runTest {
+        coEvery { authRepository.getPat() } returns Result.success(OLD_ACCESS_TOKEN)
         coEvery { authRepository.getRefreshToken() } returns Result.success(OLD_REFRESH_TOKEN)
         coEvery { authRepository.getRefreshTokenExpiresAt() } returns System.currentTimeMillis() + 60_000L
         coEvery { authRepository.getUsername() } returns "rafael"
