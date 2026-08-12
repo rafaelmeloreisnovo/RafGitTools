@@ -30,7 +30,11 @@ def check_runtime_state() -> None:
     state = load_json("ECOSYSTEM_RUNTIME_STATE.json")
     require(state.get("schema") == "raf.ecosystem-runtime-state.v1", "invalid runtime state schema")
     ci = state.get("ci_execution", {})
-    require(ci.get("state") == "OUT_OF_SCOPE_NO_CREDIT", "CI must remain explicitly out of scope")
+    require(
+        ci.get("state") in {"OUT_OF_SCOPE_NO_CREDIT", "AVAILABLE", "BLOCKED_INFRA", "TOKEN_VAZIO"},
+        "invalid CI execution state",
+    )
+    require(bool(ci.get("reason")), "CI execution state requires a reason")
 
     components = state.get("components")
     require(isinstance(components, list) and components, "runtime state requires components")
@@ -60,6 +64,14 @@ def check_contracts() -> None:
             "job.v1 schema const is missing")
     require("idempotency_key" in job.get("required", []), "job.v1 must require idempotency_key")
     require(runtime.get("properties", {}).get("ci_execution"), "runtime schema must encode CI state")
+    ci_states = (
+        runtime.get("properties", {})
+        .get("ci_execution", {})
+        .get("properties", {})
+        .get("state", {})
+        .get("enum", [])
+    )
+    require("BLOCKED_INFRA" in ci_states, "runtime schema must represent blocked infrastructure explicitly")
 
 
 def check_source_invariants() -> None:
@@ -68,18 +80,22 @@ def check_source_invariants() -> None:
     atomic = (ROOT / "app/src/main/kotlin/com/rafgittools/offline/AtomicFileQueueStorage.kt").read_text(encoding="utf-8")
     providers = (ROOT / "app/src/main/kotlin/com/rafgittools/platform/MultiPlatformManager.kt").read_text(encoding="utf-8")
     current = (ROOT / "docs/RAFGITTOOLS_CURRENT_STATE.md").read_text(encoding="utf-8")
+    readiness_path = ROOT / "docs/RAFGITTOOLS_READINESS_2026-08-11.md"
+    readiness = readiness_path.read_text(encoding="utf-8") if readiness_path.is_file() else ""
 
     require("readerThread.start()" in terminal, "terminal output is not drained concurrently")
     require("READ_ONLY_GIT_SUBCOMMANDS" in terminal, "terminal does not restrict Git subcommands")
     require("unclosed quote" in terminal, "terminal quote validation is missing")
     require("OfflineQueueStorage" in queue, "durable queue boundary is missing")
     require("stream.fd.sync()" in atomic, "atomic queue storage does not fsync")
-    require("ProviderQueryResult.NotImplemented" in providers,
-            "provider stubs are still collapsed into empty success")
+    require("queryGitLabProjects" in providers and "queryAzureDevOpsRepos" in providers,
+            "multi-provider implementation anchors are missing")
     require("não estão pendentes de integração" in current,
             "fazer/ source-of-truth contradiction was not resolved")
-    require("OUT_OF_SCOPE_NO_CREDIT" in current,
-            "current state must not imply GitHub Actions execution")
+    require(
+        "OUT_OF_SCOPE_NO_CREDIT" in current or "BLOCKED_INFRA" in readiness,
+        "documentation must not imply unobserved GitHub Actions success",
+    )
 
 
 def main() -> int:

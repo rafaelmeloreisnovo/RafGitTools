@@ -1,9 +1,9 @@
 {
   "schema": "raf.ecosystem-runtime-state.v1",
-  "observed_at": "2026-07-18T18:43:58-03:00",
+  "observed_at": "2026-08-12T03:15:00Z",
   "ci_execution": {
-    "state": "OUT_OF_SCOPE_NO_CREDIT",
-    "reason": "GitHub Actions execution is intentionally excluded from this activity because the account currently has no Actions credit. No workflow result is promoted to PASS."
+    "state": "BLOCKED_INFRA",
+    "reason": "Recent pull-request-triggered jobs in this private repository were observed terminating before executable steps/logs were available. The exact hosted-runner/account cause remains TOKEN_VAZIO; this is infrastructure evidence, not a Kotlin/Gradle code failure and not a PASS."
   },
   "components": [
     {
@@ -15,14 +15,70 @@
       "evidence": [
         "Kotlin/Compose/Hilt/Room sources are integrated",
         "GitHub API and JGit implementations are present",
-        "authentication source and unit tests are present"
+        "authentication source paths and unit-test sources are present",
+        "P33 backlog records 32/33 features at functional-or-better coverage"
       ],
       "gaps": [
-        "No APK produced in this activity",
-        "No device smoke transcript in this activity"
+        "No devDebug APK + SHA-256 is recorded for the current reviewed head",
+        "No explicit physical-device install/start smoke receipt is recorded for the current reviewed head"
       ],
-      "next_action": "Run scripts/validate_runtime_truth.py locally, then build and test on ARM32/ARM64 when a local Android SDK/device is available.",
-      "commit": "75b422a815e7a58f9cd191e0ae012e2216adb67f"
+      "next_action": "Run scripts/rafgittools_readiness_gate.sh with an already configured JDK17/Android SDK; then explicitly enable RAFGITTOOLS_DEVICE_SMOKE=1 only when a device and APK are available.",
+      "commit": "37f6121ade1b34579267efc8282d27bd2c3d772b"
+    },
+    {
+      "id": "rafgittools.auth",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/src/main/kotlin/com/rafgittools/data/auth/",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence": [
+        "PAT authentication source path is present",
+        "OAuth Device Flow source path is present with placeholder rejection",
+        "gh CLI token import source path is present",
+        "secure auth repository source path is present"
+      ],
+      "gaps": [
+        "OAuth Device Flow requires a real public GitHub OAuth Client ID at build/runtime configuration",
+        "Authenticated app-level device smoke remains TOKEN_VAZIO"
+      ],
+      "next_action": "Use PAT or gh import immediately; configure a real OAuth Client ID separately and prove the selected login path on device without logging credential material.",
+      "commit": "37f6121ade1b34579267efc8282d27bd2c3d772b"
+    },
+    {
+      "id": "rafgittools.private-auth-check",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "scripts/rafgittools_private_auth_check.sh",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence": [
+        "Script verifies gh authentication and private repository metadata access",
+        "Script does not call gh auth token and does not persist Authorization material",
+        "Local receipt is hashed and ignored by Git by default"
+      ],
+      "gaps": [
+        "Execution result on the user's Termux installation remains TOKEN_VAZIO until the script is run there"
+      ],
+      "next_action": "Run scripts/rafgittools_private_auth_check.sh in authenticated Termux and preserve the local receipt hash.",
+      "commit": "789dd3e79994a2073e129820ed3b51b2e15c63be"
+    },
+    {
+      "id": "rafgittools.readiness-gate",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "scripts/rafgittools_readiness_gate.sh",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence": [
+        "Local gate separates PASS, FAIL, TOKEN_VAZIO and SKIP",
+        "Gate checks source anchors, runtime truth, auth surface, Termux host, JDK17, Android SDK, unit tests, APK build/hash and device presence",
+        "Physical install/start smoke is explicit opt-in and never runs by surprise",
+        "Receipts are local, timestamped and SHA-256 hashed when sha256sum is available"
+      ],
+      "gaps": [
+        "Gate execution on the target Termux/device remains TOKEN_VAZIO",
+        "Full VERIFIED_DEVICE requires APK build/hash and explicit device smoke in one evidence chain"
+      ],
+      "next_action": "Execute the local gate from the reviewed checkout and use its receipt as the next evidence source instead of hosted Actions when CI is blocked.",
+      "commit": "789dd3e79994a2073e129820ed3b51b2e15c63be"
     },
     {
       "id": "rafgittools.offline-queue",
@@ -31,15 +87,15 @@
       "implementation_state": "IMPLEMENTED",
       "evidence_state": "DECLARED_BY_AUTHOR",
       "evidence": [
-        "OfflineQueue supports a synchronous durable storage boundary",
-        "AtomicFileQueueStorage uses bounded length-prefixed records, fsync and same-directory rename",
-        "Unit tests cover reload and rollback on persistence failure"
+        "OfflineQueue has a durable storage boundary",
+        "AtomicFileQueueStorage uses bounded records, fsync and same-directory publication",
+        "Repository sync worker and Room-backed state are present in the current source tree"
       ],
       "gaps": [
-        "Production operation codec and WorkManager scheduling remain to be connected"
+        "Production scheduling and recovery still require physical-device regression evidence"
       ],
-      "next_action": "Bind a typed OfflineOperation codec and WorkManager worker without changing the persistence format silently.",
-      "commit": "ed271de758c51cd9377258e5d1e937f7710326d0"
+      "next_action": "Exercise enqueue/restart/recovery and WorkManager behavior on device and record a receipt before promoting runtime evidence.",
+      "commit": "37f6121ade1b34579267efc8282d27bd2c3d772b"
     },
     {
       "id": "rafgittools.terminal-bounded-executor",
@@ -50,30 +106,53 @@
       "evidence": [
         "Output is drained concurrently to prevent pipe deadlock",
         "Unclosed quotes and incomplete escapes are rejected",
-        "Git is restricted to read-only subcommands",
-        "find execution and deletion actions are rejected"
+        "Git commands are restricted to read-only subcommands",
+        "Writable operations remain outside the generic terminal surface"
       ],
       "gaps": [
-        "This remains a bounded executor, not PTY/VT100"
+        "This is intentionally a bounded executor, not PTY/VT100"
       ],
-      "next_action": "Route writable operations through typed jobs and GovernanceGate instead of expanding the command allowlist.",
-      "commit": "607a9f6e5f4e2d1fadfe36496ad17a48c62a3932"
+      "next_action": "Keep writable operations routed through typed/governed actions rather than widening the generic command allowlist.",
+      "commit": "37f6121ade1b34579267efc8282d27bd2c3d772b"
     },
     {
       "id": "rafgittools.multi-provider",
       "repository": "rafaelmeloreisnovo/RafGitTools",
       "path": "app/src/main/kotlin/com/rafgittools/platform/MultiPlatformManager.kt",
-      "implementation_state": "STUB",
+      "implementation_state": "IMPLEMENTED",
       "evidence_state": "DECLARED_BY_AUTHOR",
       "evidence": [
-        "GitLab, Bitbucket, Gitea and Azure DevOps return typed NotConfigured or NotImplemented states in the branch source"
+        "GitLab v4 adapter is implemented",
+        "Bitbucket v2 adapter is implemented",
+        "Gitea/Forgejo v1 adapter is implemented",
+        "Azure DevOps REST adapter is implemented",
+        "Typed Success/NotConfigured/AuthenticationError/NetworkError states are present"
       ],
       "gaps": [
-        "Provider HTTP adapters are not implemented",
-        "Kotlin tests were added but not executed in this activity"
+        "Provider credentials and real remote regressions are not recorded in the current evidence chain"
       ],
-      "next_action": "Run the local unit suite, then implement one provider adapter at a time behind ProviderQueryResult.",
-      "commit": "6aa9b59c34de228e496ae7958c4f96f659c8e2fe"
+      "next_action": "Validate each provider independently with disposable credentials/repositories; never collapse untested remote behavior into PASS.",
+      "commit": "37f6121ade1b34579267efc8282d27bd2c3d772b"
+    },
+    {
+      "id": "rafgittools.advanced-external-runtime",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/src/main/",
+      "implementation_state": "PARTIAL",
+      "evidence_state": "TOKEN_VAZIO",
+      "evidence": [
+        "Adapters/UI exist for GPG, Git LFS, worktree and bisect",
+        "LLaMA JNI bridge source exists but requires external llama headers/runtime"
+      ],
+      "gaps": [
+        "GPG runtime fixture not executed",
+        "Git LFS remote fixture not executed",
+        "Worktree filesystem/device matrix not executed",
+        "Bisect controlled regression fixture not executed",
+        "LLaMA external dependency/runtime not pinned and proven in this evidence chain"
+      ],
+      "next_action": "Treat these as P2 non-blocking capabilities and close each TOKEN_VAZIO with its own isolated fixture/evidence chain after core Git/GitHub runtime is verified.",
+      "commit": "37f6121ade1b34579267efc8282d27bd2c3d772b"
     },
     {
       "id": "rafpolimata.segment-runtime",
@@ -82,13 +161,13 @@
       "implementation_state": "EXPERIMENTAL",
       "evidence_state": "DECLARED_BY_AUTHOR",
       "evidence": [
-        "Paired RafPolimata branch contains the frozen segment v1 header codec"
+        "Paired RafPolimata source contains the frozen segment v1 header codec"
       ],
       "gaps": [
-        "Cross-repository consumption is not verified in this activity",
-        "NativeActivity runtime proof remains absent"
+        "Cross-repository consumption is not verified in this RafGitTools evidence chain",
+        "NativeActivity runtime proof remains absent here"
       ],
-      "next_action": "Pin the reviewed RafPolimata PR head and consume only after its local contract checks pass.",
+      "next_action": "Keep cross-repository integration isolated from core RafGitTools readiness until its own contract checks and runtime proof exist.",
       "commit": "00d4fbf9896eaaec68c7a17f871de4171dbe21a2"
     }
   ]
