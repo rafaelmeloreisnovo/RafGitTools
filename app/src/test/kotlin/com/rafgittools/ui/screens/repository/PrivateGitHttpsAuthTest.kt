@@ -119,6 +119,6 @@ class PrivateGitHttpsAuthTest {
     }
 
     companion object {
-        private const val TEST_PAT = "github_pat_TEST_VALUE_NOT_A_REAL_TOKEN_1234567890"
+        private const val TEST_PAT = "TEST_CREDENTIAL_VALUE_NOT_A_REAL_TOKEN_1234567890"
     }
 }
