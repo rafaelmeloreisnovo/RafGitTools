@@ -14,7 +14,7 @@ class GhCliAuthImporter @Inject constructor() {
                 val process = ProcessBuilder("gh", "--version")
                     .redirectErrorStream(true)
                     .start()
-                process.inputStream.close()
+                process.inputStream.bufferedReader().use { it.readText() }
                 process.waitFor() == 0
             }.getOrDefault(false)
         } ?: false
