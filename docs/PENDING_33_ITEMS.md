@@ -46,14 +46,14 @@ A origem adotada para os **33 lugares** é o recorte dos **primeiros 33 itens ma
 | P33-22 | 57 | Repository metadata | 🆕✅ | HomeScreen mostra private/public, stars, forks, language |
 | P33-23 | 59 | Device authorization flow | ✅ | `OAuthDeviceFlowManager`; Client ID real continua CONFIG_REQUIRED |
 | P33-24 | 61 | Fine-grained PAT support | ✅ | `PATScopeInspector` + validação remota |
-| P33-25 | 63 | Token refresh mechanism | ✅ | `TokenRefreshManager` observa expiry header |
+| P33-25 | 63 | Token refresh mechanism | ✅ | contrato real = lifecycle/invalidation: `AuthInterceptor` + `TokenRefreshManager` invalidam sessão em 401, distinguem rate-limit 403 por headers e exigem reautenticação; nenhum refresh-token/client-secret é falsamente alegado para PAT/OAuth App atual |
 | P33-26 | 64 | SSH key generation | ✅ | `SshKeyManager.generateKeyPair()` |
 | P33-27 | 65 | SSH key management | ✅ | `SshKeyManager` |
 | P33-28 | 66 | SSH agent integration | ✅ | transporte SSH JGit integrado; servidor/chave real = runtime evidence |
 | P33-29 | 67 | Biometric authentication | ✅ | `BiometricAuthManager` |
 | P33-30 | 68 | Multi-account support | ✅ | `MultiAccountManager` |
 | P33-31 | 69 | Account switching | ✅ | `MultiAccountManager.switchAccount()` |
-| P33-32 | 70 | Session management | ✅ | estado persistido + expiração/401-403 tratados |
+| P33-32 | 70 | Session management | ✅ | estado persistido + 401/403 lifecycle integrado |
 | P33-33 | 71 | Secure logout | ✅ | `AuthRepository.clearAuthState()` / `logout()` |
 
 ## Resumo não sobreposto
@@ -85,12 +85,28 @@ Interactive staging está implementado em fonte para o caso que o modelo de diff
 
 Esses limites não são `TOKEN_VAZIO`: são **contrato explícito de representação/safety**. Ampliar para binários, add/delete/rename ou arquivos sem newline exige enriquecer o modelo de patch antes de alterar o índice.
 
+## P33-25 — boundary de autenticação
+
+O nome histórico “Token refresh mechanism” não autoriza inventar um refresh-token que o método de autenticação atual não fornece.
+
+O contrato implementado é:
+
+```text
+credential valid      -> sessão permanece
+HTTP 401              -> cache em memória invalidado + limpeza persistente tentada + reautenticação necessária
+HTTP 403 + remaining=0 -> rate-limit; credencial preservada
+HTTP 403 normal       -> forbidden; credencial preservada
+PAT/OAuth App atual   -> nenhum client secret ou refresh token armazenado/forjado no APK
+```
+
+O antigo método `refreshOAuthToken(clientId, clientSecret, refreshToken)` que sempre falhava era um **stub**, não uma feature. Ele foi removido da fonte compilada. Se futuramente houver migração explícita para um fluxo que entregue refresh tokens, isso deve entrar como novo contrato/versionamento, com armazenamento e testes próprios.
+
 ## Evidência ainda não promovida
 
 O fechamento 33/33 é de **fonte**. O seguinte permanece separado:
 
 ```text
-unit tests do head revisado      = TOKEN_VAZIO / BLOCKED_INFRA remoto
+unit tests do head revisado      = TOKEN_VAZIO / BLOCKED_INFRA_BILLING remoto
 APK do head + SHA-256            = TOKEN_VAZIO
 physical-device install/start    = TOKEN_VAZIO
 private remote fixtures          = TOKEN_VAZIO_RUNTIME
