@@ -1,4 +1,4 @@
-# RafGitTools — Canonical Readiness Gate — 2026-08-11
+# RafGitTools — Canonical Readiness Gate — 2026-08-12
 
 Status: **IMPLEMENTED_ADVANCED / VERIFIED_LIMITED**  
 Claim boundary: **`claim_allowed=false` until APK hash + physical-device smoke exist for the reviewed head**.
@@ -82,20 +82,36 @@ This requires a previously authorized `adb` device and a successfully built `dev
 | R02 | PAT login | IMPLEMENTED | yes | runtime authentication on device |
 | R03 | `gh` CLI import | IMPLEMENTED | no | `scripts/rafgittools_private_auth_check.sh` + app import smoke |
 | R04 | OAuth Device Flow | IMPLEMENTED / CONFIG_REQUIRED | no, PAT/gh remain valid | configure public GitHub OAuth Client ID; never invent/store a client secret in APK |
-| R05 | GitHub API | PARTIAL_ADVANCED | yes | regression on authenticated device |
-| R06 | JGit local operations | PARTIAL_ADVANCED | yes | local/device regression fixtures |
+| R05 | GitHub API | PARTIAL_ADVANCED / RUNTIME_GATED | yes | authenticated device regression |
+| R06 | JGit local operations | IMPLEMENTED_ADVANCED / RUNTIME_GATED | yes | local/device regression fixtures |
 | R07 | APK build | TOKEN_VAZIO for current reviewed head | yes for Android runtime claim | local configured SDK/JDK or available CI |
 | R08 | APK SHA-256 | TOKEN_VAZIO until R07 | yes for runtime claim | readiness gate G8 |
 | R09 | physical-device smoke | TOKEN_VAZIO | yes for `VERIFIED_DEVICE` | explicit `RAFGITTOOLS_DEVICE_SMOKE=1` |
-| R10 | GitHub Actions | BLOCKED/OUT_OF_SCOPE when private-repo quota/runner unavailable | **no** | local gate is canonical fallback; CI is supplementary evidence |
-| R11 | interactive staging by hunk P33-05 | PARTIAL | no | dedicated diff/index implementation; do not risk core staging for a non-blocker |
+| R10 | GitHub Actions | BLOCKED_INFRA when hosted runner is not allocated | **no** | local gate is canonical fallback; CI is supplementary evidence |
+| R11 | interactive staging by hunk P33-05 | IMPLEMENTED / RUNTIME_GATED | no | source: stage+unstage per hunk, stale validation, index lock/atomic commit; Android execution remains separate evidence |
 | R12 | GPG external runtime | TOKEN_VAZIO_RUNTIME | no | authorized `gpg` binary + fixture |
 | R13 | Git LFS external runtime | TOKEN_VAZIO_RUNTIME | no | `git-lfs` + real repo fixture |
 | R14 | Worktree runtime matrix | TOKEN_VAZIO_RUNTIME | no | filesystem/device fixtures |
 | R15 | Bisect runtime matrix | TOKEN_VAZIO_RUNTIME | no | controlled regression fixture |
 | R16 | LLaMA JNI external `llama.h` | BLOCKED_EXTERNAL | no | pin reviewed llama.cpp dependency separately |
 
-## 4. Authentication truth
+## 4. Interactive staging truth boundary
+
+P33-05 is no longer a source gap. The implementation is deliberately bounded to a representation the current diff model can reproduce losslessly:
+
+- tracked `MODIFY` files;
+- strict UTF-8 text up to 2 MiB;
+- final newline present;
+- one hunk staged/unstaged per operation;
+- exact stale-hunk revalidation;
+- HEAD and index object revalidation;
+- `lockDirCache` + `DirCacheEditor.commit()`;
+- working tree is never rewritten;
+- binary, non-UTF-8, unmerged/multi-stage and missing-final-newline inputs fail closed.
+
+Those rejected cases are **contract boundaries**, not `TOKEN_VAZIO`. Extending them requires a richer patch/diff representation and its own evidence chain.
+
+## 5. Authentication truth
 
 OAuth Client ID is **not a secret**, but it is installation/application configuration and must come from a real GitHub OAuth App. `TOKEN_VAZIO` is the correct state when it has not been configured.
 
@@ -105,21 +121,21 @@ For a private repository, credential validity and repository accessibility are s
 
 Never place a GitHub OAuth client secret, PAT, fine-grained token, SSH private key, keystore password or authorization header in source, logs or receipts.
 
-## 5. Private repository / CI boundary
+## 6. Private repository / CI boundary
 
-A private repository does not invalidate the code. If hosted Actions cannot execute because of account quota, billing, runner availability or repository policy, classify the evidence as:
+A private repository does not invalidate the code. If hosted Actions cannot execute because a runner is not allocated or because of account/repository infrastructure, classify the evidence as:
 
 ```text
-BLOCKED_INFRA / OUT_OF_SCOPE
+BLOCKED_INFRA
 ```
 
 not as source PASS and not as source FAIL.
 
 The canonical fallback is the local readiness gate, which intentionally uses the already configured local toolchain and never downloads an Android SDK silently on Termux.
 
-## 6. Privacy-manager hardening integrated; runtime still gated
+## 7. Privacy-manager hardening integrated; runtime still gated
 
-The fail-closed repository-visibility manager from PR #337 is now present on `main`. Its source-level P0 safety invariants are:
+The fail-closed repository-visibility manager from PR #337 is present on `main`. Its source-level P0 safety invariants are:
 
 - live repository preflight immediately before mutation;
 - `permissions.admin=true` required;
@@ -130,7 +146,7 @@ The fail-closed repository-visibility manager from PR #337 is now present on `ma
 
 The merge establishes source integration, **not** Android/runtime proof. Bulk visibility execution, authenticated organization behavior and physical-device receipts remain separate evidence gates until exercised on the reviewed build.
 
-## 7. Residual TOKEN_VAZIO policy
+## 8. Residual TOKEN_VAZIO policy
 
 A `TOKEN_VAZIO` is closed only by a corresponding artifact/evidence pair. Examples:
 
@@ -145,7 +161,7 @@ LFS             -> git-lfs version + fixture repo + push/pull transcript
 
 No documentation sentence may promote absence of those artifacts to PASS.
 
-## 8. Priority
+## 9. Priority
 
 ### P0 — required before calling Android runtime verified
 
@@ -159,14 +175,15 @@ No documentation sentence may promote absence of those artifacts to PASS.
 
 1. authenticated GitHub regression (personal + organization repository inventory);
 2. exercise the integrated fail-closed private/public visibility flow on a controlled repository set;
-3. clone/fetch/pull/push regression on disposable repositories;
-4. credential/log redaction regression.
+3. clone/fetch/pull/push/force-with-lease regression on disposable repositories;
+4. interactive hunk stage/unstage regression on Android;
+5. credential/log redaction regression.
 
-### P2 — non-blocking advanced features
+### P2 — external/non-core runtime capabilities
 
-Interactive hunk staging, GPG, LFS, worktree, bisect and LLaMA external runtime.
+GPG, LFS, worktree, bisect and LLaMA external runtime.
 
-## 9. Invariant
+## 10. Invariant
 
 ```text
 source exists
