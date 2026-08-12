@@ -2,8 +2,8 @@
 """Local evidence validator for RafGitTools.
 
 This validator intentionally does not invoke GitHub Actions or claim Android
-runtime success. It checks contracts, state semantics and the source-level
-invariants introduced by the audit using only Python's standard library.
+runtime success. It checks contracts, state semantics and source-level
+invariants using only Python's standard library.
 """
 
 from __future__ import annotations
@@ -79,6 +79,7 @@ def check_source_invariants() -> None:
     queue = (ROOT / "app/src/main/kotlin/com/rafgittools/offline/OfflineQueue.kt").read_text(encoding="utf-8")
     atomic = (ROOT / "app/src/main/kotlin/com/rafgittools/offline/AtomicFileQueueStorage.kt").read_text(encoding="utf-8")
     providers = (ROOT / "app/src/main/kotlin/com/rafgittools/platform/MultiPlatformManager.kt").read_text(encoding="utf-8")
+    jgit = (ROOT / "app/src/main/kotlin/com/rafgittools/data/git/JGitService.kt").read_text(encoding="utf-8")
     current = (ROOT / "docs/RAFGITTOOLS_CURRENT_STATE.md").read_text(encoding="utf-8")
     readiness_path = ROOT / "docs/RAFGITTOOLS_READINESS_2026-08-11.md"
     readiness = readiness_path.read_text(encoding="utf-8") if readiness_path.is_file() else ""
@@ -90,6 +91,32 @@ def check_source_invariants() -> None:
     require("stream.fd.sync()" in atomic, "atomic queue storage does not fsync")
     require("queryGitLabProjects" in providers and "queryAzureDevOpsRepos" in providers,
             "multi-provider implementation anchors are missing")
+
+    # GitHub HTTPS/JGit invariants. A bare Credentials.Token must never be placed
+    # in the HTTP username field with an empty password.
+    require('private const val TOKEN_USERNAME = "x-access-token"' in jgit,
+            "JGit token username marker is missing")
+    require('UsernamePasswordCredentialsProvider(it.token, "")' not in jgit,
+            "JGit still places token in username with empty password")
+    require('UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token)' in jgit,
+            "JGit token-as-password mapping is missing")
+
+    # Force-with-lease must authenticate its preflight and protect the destination
+    # ref itself, not the full src:dst refspec. These are source-level gates; the
+    # actual remote/device result remains a separate runtime evidence layer.
+    require("val lsRemoteCommand = git.lsRemote()" in jgit,
+            "force-with-lease does not have an explicit lsRemote preflight")
+    require("lsRemoteCommand.setCredentialsProvider" in jgit,
+            "force-with-lease lsRemote preflight does not receive HTTPS credentials")
+    require("lsRemoteCommand.setTransportConfigCallback" in jgit,
+            "force-with-lease lsRemote preflight does not receive SSH transport")
+    require(".setRefLeaseSpecs(RefLeaseSpec(branchRef, expectedOldObjectId))" in jgit,
+            "force-with-lease must protect the destination branch ref")
+    require(".setRefLeaseSpecs(RefLeaseSpec(refSpec, expectedOldObjectId))" not in jgit,
+            "force-with-lease still protects a src:dst refspec instead of destination ref")
+    require('Regex("^[0-9a-fA-F]{40}$")' in jgit,
+            "force-with-lease expected object id validation is missing")
+
     require("não estão pendentes de integração" in current,
             "fazer/ source-of-truth contradiction was not resolved")
     require(
