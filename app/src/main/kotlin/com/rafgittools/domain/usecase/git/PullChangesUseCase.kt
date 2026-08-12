@@ -10,6 +10,9 @@ import javax.inject.Inject
  * 
  * This use case handles pulling commits from a remote repository
  * and merging them into the current branch.
+ *
+ * For GitHub HTTPS, pass the PAT/OAuth token as the password and a non-empty
+ * username. Do not put the token in the remote URL or username field.
  * 
  * Example usage:
  * ```
@@ -17,7 +20,7 @@ import javax.inject.Inject
  *     PullChangesParams(
  *         repoPath = "/path/to/repo",
  *         remote = "origin",
- *         credentials = Credentials.Token("ghp_xxx")
+ *         credentials = Credentials.UsernamePassword("user", "YOUR-PAT")
  *     )
  * )
  * result.onSuccess {
