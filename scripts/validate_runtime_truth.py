@@ -80,6 +80,8 @@ def check_source_invariants() -> None:
     atomic = (ROOT / "app/src/main/kotlin/com/rafgittools/offline/AtomicFileQueueStorage.kt").read_text(encoding="utf-8")
     providers = (ROOT / "app/src/main/kotlin/com/rafgittools/platform/MultiPlatformManager.kt").read_text(encoding="utf-8")
     jgit = (ROOT / "app/src/main/kotlin/com/rafgittools/data/git/JGitService.kt").read_text(encoding="utf-8")
+    token_lifecycle = (ROOT / "app/src/main/kotlin/com/rafgittools/data/auth/TokenRefreshManager.kt").read_text(encoding="utf-8")
+    auth_interceptor = (ROOT / "app/src/main/kotlin/com/rafgittools/data/auth/AuthInterceptor.kt").read_text(encoding="utf-8")
     interactive_path = ROOT / "app/src/main/kotlin/com/rafgittools/data/git/InteractiveStagingService.kt"
     interactive = interactive_path.read_text(encoding="utf-8") if interactive_path.is_file() else ""
     diff_screen = (ROOT / "app/src/main/kotlin/com/rafgittools/ui/screens/diff/DiffViewerScreen.kt").read_text(encoding="utf-8")
@@ -96,8 +98,7 @@ def check_source_invariants() -> None:
     require("queryGitLabProjects" in providers and "queryAzureDevOpsRepos" in providers,
             "multi-provider implementation anchors are missing")
 
-    # GitHub HTTPS/JGit invariants. A bare Credentials.Token must never be placed
-    # in the HTTP username field with an empty password.
+    # GitHub HTTPS/JGit invariants.
     require('private const val TOKEN_USERNAME = "x-access-token"' in jgit,
             "JGit token username marker is missing")
     require('UsernamePasswordCredentialsProvider(it.token, "")' not in jgit,
@@ -105,9 +106,7 @@ def check_source_invariants() -> None:
     require('UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token)' in jgit,
             "JGit token-as-password mapping is missing")
 
-    # Force-with-lease must authenticate its preflight and protect the destination
-    # ref itself, not the full src:dst refspec. These are source-level gates; the
-    # actual remote/device result remains a separate runtime evidence layer.
+    # Force-with-lease invariants.
     require("val lsRemoteCommand = git.lsRemote()" in jgit,
             "force-with-lease does not have an explicit lsRemote preflight")
     require("lsRemoteCommand.setCredentialsProvider" in jgit,
@@ -121,9 +120,38 @@ def check_source_invariants() -> None:
     require('Regex("^[0-9a-fA-F]{40}$")' in jgit,
             "force-with-lease expected object id validation is missing")
 
-    # Interactive hunk staging is an index-only operation. It must revalidate the
-    # selected diff, acquire the DirCache lock, atomically commit the editor, and
-    # expose explicit stage/unstage controls. It must never rewrite the work tree.
+    # Token lifecycle is invalidation + re-authentication for the auth methods
+    # currently modeled by the app. Ban the former always-failing refresh stub,
+    # undocumented PAT-expiry header assumption, and Android client-secret path.
+    for forbidden in (
+        "refreshOAuthToken(",
+        "GitHub-Authentication-Token-Expiry",
+        "clientSecret: String",
+        "refreshToken: String",
+    ):
+        require(forbidden not in token_lifecycle,
+                f"token lifecycle contains unsupported refresh contract: {forbidden}")
+    for anchor in (
+        "suspend fun handleHttpResponse(",
+        "TokenState.InvalidCredential",
+        "TokenState.RateLimited",
+        "TokenState.Forbidden",
+        "authRepository.clearAuthState().isSuccess",
+        "fun parseScopesFromHeader(",
+    ):
+        require(anchor in token_lifecycle, f"token lifecycle invariant missing: {anchor}")
+    require("private val tokenRefreshManager: TokenRefreshManager" in auth_interceptor,
+            "AuthInterceptor is not integrated with TokenRefreshManager")
+    require("tokenRefreshManager.handleHttpResponse(" in auth_interceptor,
+            "AuthInterceptor does not dispatch 401/403 lifecycle handling")
+    require("response.code == 401 || response.code == 403" in auth_interceptor,
+            "AuthInterceptor lifecycle response gate is missing")
+    require("authTokenCache.token = null" in auth_interceptor,
+            "AuthInterceptor does not fail closed in memory after 401")
+    require('response.header("X-RateLimit-Remaining")' in auth_interceptor,
+            "AuthInterceptor does not pass rate-limit evidence")
+
+    # Interactive hunk staging invariants.
     require(interactive_path.is_file(), "interactive hunk staging service is missing")
     for anchor in (
         "suspend fun stageHunk(",
@@ -151,12 +179,12 @@ def check_source_invariants() -> None:
             "interactiveStagingService.unstageHunk" in diff_view_model,
             "DiffViewerViewModel is not wired to both hunk mutations")
 
-    require("não estão pendentes de integração" in current,
-            "fazer/ source-of-truth contradiction was not resolved")
-    require(
-        "OUT_OF_SCOPE_NO_CREDIT" in current or "BLOCKED_INFRA" in readiness,
-        "documentation must not imply unobserved GitHub Actions success",
-    )
+    require("não é fonte de verdade" in current,
+            "fazer/ source-of-truth boundary is missing")
+    require("BLOCKED_INFRA_BILLING" in current,
+            "current-state documentation must preserve exact CI infrastructure classification")
+    require("BLOCKED_INFRA" in readiness,
+            "readiness documentation must not imply unobserved GitHub Actions success")
 
 
 def main() -> int:
