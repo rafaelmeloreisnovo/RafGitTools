@@ -2,6 +2,7 @@ package com.rafgittools.data.auth
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Interceptor
 import okhttp3.Response
 import javax.inject.Inject
@@ -13,7 +14,8 @@ import javax.inject.Singleton
  * The interceptor owns the in-memory fail-closed boundary: once GitHub returns
  * 401 for a request that carried the current credential, that credential is
  * removed from [AuthTokenCache] before this method returns. Persistent cleanup
- * is delegated to [TokenRefreshManager] in the same request cycle.
+ * is delegated to [TokenRefreshManager] in the same request cycle, but bounded
+ * so a storage stall cannot block the OkHttp worker indefinitely.
  */
 @Singleton
 class AuthInterceptor @Inject constructor(
@@ -35,21 +37,33 @@ class AuthInterceptor @Inject constructor(
 
         if (response.code == 401 || response.code == 403) {
             val state = runBlocking(Dispatchers.IO) {
-                tokenRefreshManager.handleHttpResponse(
-                    responseCode = response.code,
-                    rateLimitRemaining = response.header("X-RateLimit-Remaining"),
-                    rateLimitReset = response.header("X-RateLimit-Reset")
-                )
+                withTimeoutOrNull(LIFECYCLE_TIMEOUT_MS) {
+                    tokenRefreshManager.handleHttpResponse(
+                        responseCode = response.code,
+                        rateLimitRemaining = response.header("X-RateLimit-Remaining"),
+                        rateLimitReset = response.header("X-RateLimit-Reset")
+                    )
+                } ?: if (response.code == 401) {
+                    TokenRefreshManager.TokenState.InvalidCredential(
+                        persistentStateCleared = false
+                    )
+                } else {
+                    TokenRefreshManager.TokenState.Forbidden
+                }
             }
 
             if (state is TokenRefreshManager.TokenState.InvalidCredential) {
                 // Memory invalidation is unconditional. Even if DataStore cleanup
-                // reports failure, this process will not reuse a credential that
+                // fails or times out, this process will not reuse a credential that
                 // GitHub just rejected.
                 authTokenCache.token = null
             }
         }
 
         return response
+    }
+
+    companion object {
+        private const val LIFECYCLE_TIMEOUT_MS = 1_500L
     }
 }
