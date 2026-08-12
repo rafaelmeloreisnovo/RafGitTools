@@ -31,6 +31,8 @@ import javax.inject.Singleton
  * - rejects unmerged entries, binary/non-UTF-8 data and missing-final-newline text,
  *   because the current DiffHunk model cannot represent those cases losslessly;
  * - uses DirCacheEditor.commit(), which atomically publishes the index lock file;
+ * - always calls DirCache.unlock() in finally; after a successful commit this is a no-op,
+ *   and after a validation/runtime exception it prevents a zombie index.lock;
  * - invalidates cached index stat metadata after a partial edit so status must
  *   re-check the working tree instead of trusting stale size/mtime values.
  */
@@ -128,7 +130,6 @@ class InteractiveStagingService @Inject constructor(
                 }
 
                 val cache = repository.lockDirCache()
-                var commitAttempted = false
                 try {
                     val lockedSnapshot = snapshotIndexEntry(cache, filePath)
                     require(lockedSnapshot == indexBefore) {
@@ -180,15 +181,12 @@ class InteractiveStagingService @Inject constructor(
                             }
                         })
 
-                        commitAttempted = true
                         check(editor.commit()) { "Failed to atomically commit index update" }
                     }
                 } finally {
-                    // BaseDirCacheEditor.commit() releases the lock on both success and failure.
-                    // We unlock ourselves only if no commit attempt was made.
-                    if (!commitAttempted) {
-                        cache.unlock()
-                    }
+                    // DirCache.unlock() is idempotent: after a successful commit myLock is
+                    // already null; after an exception it aborts/removes any surviving lock.
+                    cache.unlock()
                 }
             }
         }
