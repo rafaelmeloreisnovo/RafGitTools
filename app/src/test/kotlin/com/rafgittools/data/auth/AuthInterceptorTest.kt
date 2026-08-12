@@ -20,7 +20,7 @@ class AuthInterceptorTest {
     fun `401 without refresh clears rejected credential from memory`() {
         val cache = AuthTokenCache().apply { token = TEST_CREDENTIAL }
         coEvery {
-            tokenRefreshManager.handleHttpResponse(401, null, null)
+            tokenRefreshManager.handleHttpResponse(401, null, null, TEST_CREDENTIAL)
         } returns TokenRefreshManager.TokenState.InvalidCredential(persistentStateCleared = true)
 
         val original = Request.Builder().url("https://api.github.com/user").build()
@@ -42,14 +42,16 @@ class AuthInterceptorTest {
         assertThat(requestSlot.captured.header("Authorization")).isEqualTo("Bearer $TEST_CREDENTIAL")
         assertThat(requestSlot.captured.header("Accept")).isEqualTo("application/vnd.github+json")
         assertThat(requestSlot.captured.header("X-GitHub-Api-Version")).isEqualTo("2022-11-28")
-        coVerify(exactly = 1) { tokenRefreshManager.handleHttpResponse(401, null, null) }
+        coVerify(exactly = 1) {
+            tokenRefreshManager.handleHttpResponse(401, null, null, TEST_CREDENTIAL)
+        }
     }
 
     @Test
     fun `successful refresh retries original request exactly once with rotated token`() {
         val cache = AuthTokenCache().apply { token = TEST_CREDENTIAL }
         coEvery {
-            tokenRefreshManager.handleHttpResponse(401, null, null)
+            tokenRefreshManager.handleHttpResponse(401, null, null, TEST_CREDENTIAL)
         } returns TokenRefreshManager.TokenState.Refreshed(ROTATED_CREDENTIAL)
 
         val original = Request.Builder().url("https://api.github.com/user/repos").build()
@@ -75,7 +77,9 @@ class AuthInterceptorTest {
         assertThat(requests[0].header("Authorization")).isEqualTo("Bearer $TEST_CREDENTIAL")
         assertThat(requests[1].header("Authorization")).isEqualTo("Bearer $ROTATED_CREDENTIAL")
         verify(exactly = 1) { firstResponse.close() }
-        coVerify(exactly = 1) { tokenRefreshManager.handleHttpResponse(401, null, null) }
+        coVerify(exactly = 1) {
+            tokenRefreshManager.handleHttpResponse(401, null, null, TEST_CREDENTIAL)
+        }
         coVerify(exactly = 0) { tokenRefreshManager.invalidateSession() }
     }
 
@@ -83,7 +87,7 @@ class AuthInterceptorTest {
     fun `second 401 after successful refresh invalidates session without refreshing again`() {
         val cache = AuthTokenCache().apply { token = TEST_CREDENTIAL }
         coEvery {
-            tokenRefreshManager.handleHttpResponse(401, null, null)
+            tokenRefreshManager.handleHttpResponse(401, null, null, TEST_CREDENTIAL)
         } returns TokenRefreshManager.TokenState.Refreshed(ROTATED_CREDENTIAL)
         coEvery { tokenRefreshManager.invalidateSession() } returns
             TokenRefreshManager.TokenState.InvalidCredential(persistentStateCleared = true)
@@ -108,7 +112,9 @@ class AuthInterceptorTest {
         assertThat(returned).isSameInstanceAs(retryResponse)
         assertThat(cache.token).isNull()
         assertThat(requests).hasSize(2)
-        coVerify(exactly = 1) { tokenRefreshManager.handleHttpResponse(401, null, null) }
+        coVerify(exactly = 1) {
+            tokenRefreshManager.handleHttpResponse(401, null, null, TEST_CREDENTIAL)
+        }
         coVerify(exactly = 1) { tokenRefreshManager.invalidateSession() }
     }
 
@@ -116,7 +122,7 @@ class AuthInterceptorTest {
     fun `rate limited 403 preserves credential in memory`() {
         val cache = AuthTokenCache().apply { token = TEST_CREDENTIAL }
         coEvery {
-            tokenRefreshManager.handleHttpResponse(403, "0", "1999999999")
+            tokenRefreshManager.handleHttpResponse(403, "0", "1999999999", null)
         } returns TokenRefreshManager.TokenState.RateLimited(1999999999L)
 
         val original = Request.Builder().url("https://api.github.com/user/repos").build()
@@ -134,7 +140,7 @@ class AuthInterceptorTest {
 
         assertThat(cache.token).isEqualTo(TEST_CREDENTIAL)
         coVerify(exactly = 1) {
-            tokenRefreshManager.handleHttpResponse(403, "0", "1999999999")
+            tokenRefreshManager.handleHttpResponse(403, "0", "1999999999", null)
         }
     }
 
@@ -152,7 +158,7 @@ class AuthInterceptorTest {
         AuthInterceptor(cache, tokenRefreshManager).intercept(chain)
 
         assertThat(requestSlot.captured.header("Authorization")).isNull()
-        coVerify(exactly = 0) { tokenRefreshManager.handleHttpResponse(any(), any(), any()) }
+        coVerify(exactly = 0) { tokenRefreshManager.handleHttpResponse(any(), any(), any(), any()) }
         coVerify(exactly = 0) { tokenRefreshManager.invalidateSession() }
         verify(exactly = 1) { chain.proceed(original) }
     }
