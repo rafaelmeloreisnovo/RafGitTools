@@ -9,7 +9,8 @@ import javax.inject.Singleton
  * Credential classes are handled by capability, not by wishful inference:
  * - PAT / OAuth App access token: no stored refresh token -> 401 invalidates session;
  * - GitHub App user token produced by Device Flow with expiring-token support:
- *   stored refresh token -> one rotation attempt -> refreshed session or invalidation;
+ *   stored refresh token -> one serialized rotation attempt -> refreshed session or invalidation;
+ * - concurrent 401s for the same rejected token coalesce on the already-rotated access token;
  * - 403 rate-limit/forbidden never destroys a still-valid credential.
  */
 @Singleton
@@ -24,11 +25,6 @@ class TokenRefreshManager @Inject constructor(
             val accessToken: String
         ) : TokenState()
 
-        /**
-         * GitHub rejected the attached credential and no usable refresh path
-         * recovered it. HTTP 401 does not prove whether the credential expired,
-         * was revoked, deleted or became invalid for another reason.
-         */
         data class InvalidCredential(
             val persistentStateCleared: Boolean
         ) : TokenState()
@@ -43,18 +39,19 @@ class TokenRefreshManager @Inject constructor(
     /**
      * Interpret one GitHub API response.
      *
-     * On 401, try exactly one stored Device-Flow refresh capability. If no
-     * refresh token exists or rotation fails, invalidate the persistent session.
-     * The interceptor independently clears the in-memory token fail-closed.
+     * [rejectedAccessToken] is the exact token attached to the request that got
+     * 401. Passing it into the refresh layer prevents a second concurrent request
+     * from consuming a refresh token that another request has already rotated.
      */
     suspend fun handleHttpResponse(
         responseCode: Int,
         rateLimitRemaining: String?,
-        rateLimitReset: String?
+        rateLimitReset: String?,
+        rejectedAccessToken: String? = null
     ): TokenState {
         return when (responseCode) {
             401 -> {
-                oauthDeviceFlowManager.refreshStoredSession()
+                oauthDeviceFlowManager.refreshStoredSession(rejectedAccessToken)
                     .fold(
                         onSuccess = { TokenState.Refreshed(it.accessToken) },
                         onFailure = { invalidateSession() }
@@ -84,7 +81,6 @@ class TokenRefreshManager @Inject constructor(
         )
     }
 
-    /** Parse GitHub's OAuth scope response header when present. */
     fun parseScopesFromHeader(headerValue: String?): Set<String> {
         if (headerValue.isNullOrBlank()) return emptySet()
         return headerValue
