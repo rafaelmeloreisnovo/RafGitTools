@@ -6,28 +6,28 @@ import javax.inject.Singleton
 /**
  * Token lifecycle manager — P33-25.
  *
- * RafGitTools currently authenticates GitHub API requests with PATs or an OAuth
- * App Device Flow access token. Neither path exposes a refresh-token contract in
- * the current app model. Therefore this class does not pretend to "refresh" a
- * token or accept a client secret inside the Android application.
- *
- * Its real responsibility is deterministic session lifecycle handling:
- * - an authenticated 401 invalidates the local session and requires re-auth;
- * - a proven rate-limit 403 is reported without destroying credentials;
- * - a non-rate-limit 403 is reported as forbidden;
- * - OAuth scope response metadata can be parsed when GitHub provides it.
+ * Credential classes are handled by capability, not by wishful inference:
+ * - PAT / OAuth App access token: no stored refresh token -> 401 invalidates session;
+ * - GitHub App user token produced by Device Flow with expiring-token support:
+ *   stored refresh token -> one rotation attempt -> refreshed session or invalidation;
+ * - 403 rate-limit/forbidden never destroys a still-valid credential.
  */
 @Singleton
 class TokenRefreshManager @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val oauthDeviceFlowManager: OAuthDeviceFlowManager
 ) {
     sealed class TokenState {
         object Valid : TokenState()
 
+        data class Refreshed(
+            val accessToken: String
+        ) : TokenState()
+
         /**
-         * GitHub rejected the attached credential. HTTP 401 does not prove
-         * whether it was expired, revoked, deleted or otherwise invalid, so the
-         * app deliberately does not invent a more specific cause.
+         * GitHub rejected the attached credential and no usable refresh path
+         * recovered it. HTTP 401 does not prove whether the credential expired,
+         * was revoked, deleted or became invalid for another reason.
          */
         data class InvalidCredential(
             val persistentStateCleared: Boolean
@@ -41,11 +41,11 @@ class TokenRefreshManager @Inject constructor(
     }
 
     /**
-     * Interpret one GitHub API response using only stable HTTP/header evidence.
+     * Interpret one GitHub API response.
      *
-     * On 401 the persisted auth state is cleared immediately. The in-memory
-     * cache is cleared by [AuthInterceptor] in the same request cycle, regardless
-     * of whether persistent cleanup succeeds.
+     * On 401, try exactly one stored Device-Flow refresh capability. If no
+     * refresh token exists or rotation fails, invalidate the persistent session.
+     * The interceptor independently clears the in-memory token fail-closed.
      */
     suspend fun handleHttpResponse(
         responseCode: Int,
@@ -53,9 +53,13 @@ class TokenRefreshManager @Inject constructor(
         rateLimitReset: String?
     ): TokenState {
         return when (responseCode) {
-            401 -> TokenState.InvalidCredential(
-                persistentStateCleared = authRepository.clearAuthState().isSuccess
-            )
+            401 -> {
+                oauthDeviceFlowManager.refreshStoredSession()
+                    .fold(
+                        onSuccess = { TokenState.Refreshed(it.accessToken) },
+                        onFailure = { invalidateSession() }
+                    )
+            }
 
             403 -> {
                 val remaining = rateLimitRemaining?.toLongOrNull()
@@ -71,10 +75,16 @@ class TokenRefreshManager @Inject constructor(
     }
 
     /**
-     * Parses GitHub's OAuth-scope response header when present.
-     * Fine-grained PATs may not expose classic OAuth scopes, so absence is not
-     * treated as authentication failure.
+     * Explicit invalidation used after a refreshed request is rejected again.
+     * This method never attempts a second refresh.
      */
+    suspend fun invalidateSession(): TokenState.InvalidCredential {
+        return TokenState.InvalidCredential(
+            persistentStateCleared = authRepository.clearAuthState().isSuccess
+        )
+    }
+
+    /** Parse GitHub's OAuth scope response header when present. */
     fun parseScopesFromHeader(headerValue: String?): Set<String> {
         if (headerValue.isNullOrBlank()) return emptySet()
         return headerValue
