@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Interceptor
+import okhttp3.Request
 import okhttp3.Response
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -11,11 +12,10 @@ import javax.inject.Singleton
 /**
  * OkHttp interceptor for authenticated GitHub API requests.
  *
- * The interceptor owns the in-memory fail-closed boundary: once GitHub returns
- * 401 for a request that carried the current credential, that credential is
- * removed from [AuthTokenCache] before this method returns. Persistent cleanup
- * is delegated to [TokenRefreshManager] in the same request cycle, but bounded
- * so a storage stall cannot block the OkHttp worker indefinitely.
+ * A 401 may trigger exactly one refresh attempt when the current session owns a
+ * Device-Flow refresh token. Successful rotation retries the original request
+ * once with the new access token. A second 401 invalidates the session without
+ * attempting another refresh, preventing retry loops.
  */
 @Singleton
 class AuthInterceptor @Inject constructor(
@@ -27,40 +27,78 @@ class AuthInterceptor @Inject constructor(
         val originalRequest = chain.request()
         val token = authTokenCache.token ?: return chain.proceed(originalRequest)
 
-        val authenticatedRequest = originalRequest.newBuilder()
+        val firstResponse = chain.proceed(authenticatedRequest(originalRequest, token))
+        if (firstResponse.code != 401 && firstResponse.code != 403) {
+            return firstResponse
+        }
+
+        val firstState = boundedLifecycle(firstResponse)
+        if (firstState is TokenRefreshManager.TokenState.Refreshed) {
+            authTokenCache.token = firstState.accessToken
+            firstResponse.close()
+
+            val retryResponse = chain.proceed(
+                authenticatedRequest(originalRequest, firstState.accessToken)
+            )
+
+            when (retryResponse.code) {
+                401 -> {
+                    // The newly rotated token was also rejected. Never refresh twice
+                    // in one call chain: invalidate persistent + in-memory session.
+                    boundedInvalidation()
+                    authTokenCache.token = null
+                }
+
+                403 -> {
+                    // Preserve the refreshed token; classify rate-limit/forbidden
+                    // without attempting another refresh.
+                    boundedLifecycle(retryResponse)
+                }
+            }
+            return retryResponse
+        }
+
+        if (firstState is TokenRefreshManager.TokenState.InvalidCredential) {
+            // Memory invalidation is unconditional. Even if persistence cleanup
+            // failed or timed out, this process cannot reuse the rejected token.
+            authTokenCache.token = null
+        }
+
+        return firstResponse
+    }
+
+    private fun authenticatedRequest(original: Request, token: String): Request {
+        return original.newBuilder()
             .header("Authorization", "Bearer $token")
             .header("Accept", "application/vnd.github+json")
             .header("X-GitHub-Api-Version", "2022-11-28")
             .build()
+    }
 
-        val response = chain.proceed(authenticatedRequest)
-
-        if (response.code == 401 || response.code == 403) {
-            val state = runBlocking(Dispatchers.IO) {
-                withTimeoutOrNull(LIFECYCLE_TIMEOUT_MS) {
-                    tokenRefreshManager.handleHttpResponse(
-                        responseCode = response.code,
-                        rateLimitRemaining = response.header("X-RateLimit-Remaining"),
-                        rateLimitReset = response.header("X-RateLimit-Reset")
-                    )
-                } ?: if (response.code == 401) {
-                    TokenRefreshManager.TokenState.InvalidCredential(
-                        persistentStateCleared = false
-                    )
-                } else {
-                    TokenRefreshManager.TokenState.Forbidden
-                }
-            }
-
-            if (state is TokenRefreshManager.TokenState.InvalidCredential) {
-                // Memory invalidation is unconditional. Even if DataStore cleanup
-                // fails or times out, this process will not reuse a credential that
-                // GitHub just rejected.
-                authTokenCache.token = null
+    private fun boundedLifecycle(response: Response): TokenRefreshManager.TokenState {
+        return runBlocking(Dispatchers.IO) {
+            withTimeoutOrNull(LIFECYCLE_TIMEOUT_MS) {
+                tokenRefreshManager.handleHttpResponse(
+                    responseCode = response.code,
+                    rateLimitRemaining = response.header("X-RateLimit-Remaining"),
+                    rateLimitReset = response.header("X-RateLimit-Reset")
+                )
+            } ?: if (response.code == 401) {
+                TokenRefreshManager.TokenState.InvalidCredential(
+                    persistentStateCleared = false
+                )
+            } else {
+                TokenRefreshManager.TokenState.Forbidden
             }
         }
+    }
 
-        return response
+    private fun boundedInvalidation() {
+        runBlocking(Dispatchers.IO) {
+            withTimeoutOrNull(LIFECYCLE_TIMEOUT_MS) {
+                tokenRefreshManager.invalidateSession()
+            }
+        }
     }
 
     companion object {
