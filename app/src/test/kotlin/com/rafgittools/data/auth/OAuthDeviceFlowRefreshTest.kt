@@ -48,7 +48,7 @@ class OAuthDeviceFlowRefreshTest {
             )
         } returns Result.success(Unit)
 
-        val result = manager.refreshStoredSession()
+        val result = manager.refreshStoredSession(OLD_ACCESS_TOKEN)
 
         assertThat(result.getOrNull()).isEqualTo(RefreshedSession(NEW_ACCESS_TOKEN, "rafael"))
         coVerify(exactly = 1) {
@@ -63,6 +63,19 @@ class OAuthDeviceFlowRefreshTest {
                 15_897_600L
             )
         }
+    }
+
+    @Test
+    fun `concurrent stale 401 reuses token already rotated by another request`() = runTest {
+        coEvery { authRepository.getPat() } returns Result.success(NEW_ACCESS_TOKEN)
+        coEvery { authRepository.getUsername() } returns "rafael"
+
+        val result = manager.refreshStoredSession(OLD_ACCESS_TOKEN)
+
+        assertThat(result.getOrNull()).isEqualTo(RefreshedSession(NEW_ACCESS_TOKEN, "rafael"))
+        coVerify(exactly = 0) { authRepository.getRefreshToken() }
+        coVerify(exactly = 0) { api.refreshToken(any(), any(), any()) }
+        coVerify(exactly = 0) { authRepository.saveOAuthSession(any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -134,6 +147,7 @@ class OAuthDeviceFlowRefreshTest {
 
     companion object {
         private const val TEST_CLIENT_ID = "Iv1.TEST_CLIENT_ID_NOT_REAL"
+        private const val OLD_ACCESS_TOKEN = "ghu_OLD_ACCESS_VALUE_NOT_REAL_1234567890"
         private const val OLD_REFRESH_TOKEN = "ghr_TEST_REFRESH_VALUE_NOT_REAL_1234567890"
         private const val NEW_REFRESH_TOKEN = "ghr_ROTATED_REFRESH_VALUE_NOT_REAL_1234567890"
         private const val NEW_ACCESS_TOKEN = "ghu_ROTATED_ACCESS_VALUE_NOT_REAL_1234567890"
