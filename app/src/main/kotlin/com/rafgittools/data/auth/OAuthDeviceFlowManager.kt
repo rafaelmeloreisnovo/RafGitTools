@@ -31,15 +31,12 @@ internal fun isConfiguredClientId(value: String): Boolean {
 }
 
 /**
- * OAuth Device Flow Manager — P33-23
+ * OAuth Device Flow Manager — P33-23/P33-25.
  *
- * Implements GitHub OAuth Device Authorization Grant (RFC 8628).
- * Allows users to authenticate without typing their GitHub password in the app:
- * 1. App requests device_code from GitHub
- * 2. User visits github.com/login/device and enters user_code
- * 3. App polls until authorized or expired
- *
- * Docs: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#device-flow
+ * The same GitHub device endpoints can authorize OAuth Apps and GitHub Apps.
+ * OAuth Apps typically return an access token only. GitHub Apps configured for
+ * expiring user access tokens can additionally return access-token expiry and a
+ * rotating refresh token. Those optional fields are preserved when present.
  */
 @Singleton
 class OAuthDeviceFlowManager @Inject constructor(
@@ -72,10 +69,7 @@ class OAuthDeviceFlowManager @Inject constructor(
             .build()
     }
 
-    /**
-     * Validates an access token directly against GitHub's `/user` endpoint.
-     * No cached user is accepted as proof of a valid token.
-     */
+    /** Validate an access token directly against GitHub `/user`. */
     suspend fun validateToken(token: String): Result<String> {
         val normalized = token.trim()
         if (normalized.isBlank()) {
@@ -92,10 +86,7 @@ class OAuthDeviceFlowManager @Inject constructor(
         return Result.success(username)
     }
 
-    /**
-     * Emits [DeviceFlowState] events through the full OAuth device flow.
-     * Collect this Flow in your ViewModel; cancel to abort polling.
-     */
+    /** Emits states for the full OAuth/GitHub App device flow. */
     fun startDeviceFlow(): Flow<DeviceFlowState> = flow {
         val clientId = try {
             requireClientId()
@@ -148,7 +139,13 @@ class OAuthDeviceFlowManager @Inject constructor(
                         emit(DeviceFlowState.Error(error.message ?: "Não foi possível validar a identidade no GitHub."))
                         return@flow
                     }
-                    authRepository.savePat(token, username).onFailure { error ->
+                    authRepository.saveOAuthSession(
+                        accessToken = token,
+                        username = username,
+                        refreshToken = tokenResponse.refresh_token,
+                        accessExpiresInSeconds = tokenResponse.expires_in,
+                        refreshExpiresInSeconds = tokenResponse.refresh_token_expires_in
+                    ).onFailure { error ->
                         emit(DeviceFlowState.Error("Falha ao proteger a credencial no aparelho: ${error.message}"))
                         return@flow
                     }
@@ -156,9 +153,8 @@ class OAuthDeviceFlowManager @Inject constructor(
                     return@flow
                 }
 
-                "authorization_pending" -> {
+                "authorization_pending" ->
                     emit(DeviceFlowState.Polling(attempt = polls, max = MAX_POLLS))
-                }
 
                 "slow_down" -> {
                     intervalMs += SLOW_DOWN_INCREMENT_MS
@@ -176,7 +172,7 @@ class OAuthDeviceFlowManager @Inject constructor(
                 }
 
                 "device_flow_disabled" -> {
-                    emit(DeviceFlowState.Error("O Device Flow não está habilitado no OAuth App configurado."))
+                    emit(DeviceFlowState.Error("O Device Flow não está habilitado no app GitHub configurado."))
                     return@flow
                 }
 
@@ -191,6 +187,49 @@ class OAuthDeviceFlowManager @Inject constructor(
             }
         }
         emit(DeviceFlowState.Error("Tempo esgotado aguardando a autorização."))
+    }
+
+    /**
+     * Rotate a stored GitHub App user token when Device Flow supplied a refresh
+     * token. No client secret is sent: GitHub documents that it is not required
+     * for user tokens originally generated using Device Flow.
+     *
+     * OAuth App/PAT sessions have no stored refresh token and fail immediately,
+     * allowing the caller to invalidate the session and request reauthentication.
+     */
+    suspend fun refreshStoredSession(): Result<RefreshedSession> = runCatching {
+        val refreshToken = authRepository.getRefreshToken().getOrThrow()
+        val refreshExpiresAt = authRepository.getRefreshTokenExpiresAt()
+        if (refreshExpiresAt != null && System.currentTimeMillis() >= refreshExpiresAt) {
+            throw IllegalStateException("Stored refresh token has expired")
+        }
+
+        val clientId = requireClientId()
+        val response = oauthApi.refreshToken(
+            clientId = clientId,
+            grantType = "refresh_token",
+            refreshToken = refreshToken
+        )
+
+        if (response.error != null) {
+            throw IllegalStateException(
+                response.error_description ?: "GitHub refresh failed: ${response.error}"
+            )
+        }
+
+        val accessToken = response.access_token
+            ?: throw IllegalStateException("GitHub refresh response did not include an access token")
+        val username = validateToken(accessToken).getOrThrow()
+
+        authRepository.saveOAuthSession(
+            accessToken = accessToken,
+            username = username,
+            refreshToken = response.refresh_token,
+            accessExpiresInSeconds = response.expires_in,
+            refreshExpiresInSeconds = response.refresh_token_expires_in
+        ).getOrThrow()
+
+        RefreshedSession(accessToken = accessToken, username = username)
     }
 
     private fun requireClientId(): String {
@@ -227,7 +266,6 @@ class OAuthDeviceFlowManager @Inject constructor(
     }
 }
 
-/** Retrofit interface for GitHub OAuth endpoints (no auth required). */
 interface GitHubOAuthApi {
     @FormUrlEncoded
     @POST("login/device/code")
@@ -245,9 +283,17 @@ interface GitHubOAuthApi {
         @Field("device_code") deviceCode: String,
         @Field("grant_type") grantType: String
     ): TokenPollResponse
+
+    @FormUrlEncoded
+    @POST("login/oauth/access_token")
+    @Headers("Accept: application/json")
+    suspend fun refreshToken(
+        @Field("client_id") clientId: String,
+        @Field("grant_type") grantType: String,
+        @Field("refresh_token") refreshToken: String
+    ): TokenPollResponse
 }
 
-/** Retrofit interface to fetch the username after receiving a token. */
 interface GitHubUserApi {
     @GET("user")
     suspend fun getAuthenticatedUser(): UserLoginResponse
@@ -263,6 +309,9 @@ data class DeviceCodeResponse(
 
 data class TokenPollResponse(
     val access_token: String? = null,
+    val expires_in: Long? = null,
+    val refresh_token: String? = null,
+    val refresh_token_expires_in: Long? = null,
     val token_type: String? = null,
     val scope: String? = null,
     val error: String? = null,
@@ -270,6 +319,11 @@ data class TokenPollResponse(
 )
 
 data class UserLoginResponse(val login: String)
+
+data class RefreshedSession(
+    val accessToken: String,
+    val username: String
+)
 
 sealed class DeviceFlowState {
     object Requesting : DeviceFlowState()
