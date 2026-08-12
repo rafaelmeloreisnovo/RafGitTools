@@ -26,6 +26,12 @@ def load_json(relative: str) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def read_text(relative: str) -> str:
+    path = ROOT / relative
+    require(path.is_file(), f"missing required source file: {relative}")
+    return path.read_text(encoding="utf-8")
+
+
 def check_runtime_state() -> None:
     state = load_json("ECOSYSTEM_RUNTIME_STATE.json")
     require(state.get("schema") == "raf.ecosystem-runtime-state.v1", "invalid runtime state schema")
@@ -75,20 +81,20 @@ def check_contracts() -> None:
 
 
 def check_source_invariants() -> None:
-    terminal = (ROOT / "app/src/main/kotlin/com/rafgittools/terminal/TerminalEmulator.kt").read_text(encoding="utf-8")
-    queue = (ROOT / "app/src/main/kotlin/com/rafgittools/offline/OfflineQueue.kt").read_text(encoding="utf-8")
-    atomic = (ROOT / "app/src/main/kotlin/com/rafgittools/offline/AtomicFileQueueStorage.kt").read_text(encoding="utf-8")
-    providers = (ROOT / "app/src/main/kotlin/com/rafgittools/platform/MultiPlatformManager.kt").read_text(encoding="utf-8")
-    jgit = (ROOT / "app/src/main/kotlin/com/rafgittools/data/git/JGitService.kt").read_text(encoding="utf-8")
-    token_lifecycle = (ROOT / "app/src/main/kotlin/com/rafgittools/data/auth/TokenRefreshManager.kt").read_text(encoding="utf-8")
-    auth_interceptor = (ROOT / "app/src/main/kotlin/com/rafgittools/data/auth/AuthInterceptor.kt").read_text(encoding="utf-8")
-    interactive_path = ROOT / "app/src/main/kotlin/com/rafgittools/data/git/InteractiveStagingService.kt"
-    interactive = interactive_path.read_text(encoding="utf-8") if interactive_path.is_file() else ""
-    diff_screen = (ROOT / "app/src/main/kotlin/com/rafgittools/ui/screens/diff/DiffViewerScreen.kt").read_text(encoding="utf-8")
-    diff_view_model = (ROOT / "app/src/main/kotlin/com/rafgittools/ui/screens/diff/DiffViewerViewModel.kt").read_text(encoding="utf-8")
-    current = (ROOT / "docs/RAFGITTOOLS_CURRENT_STATE.md").read_text(encoding="utf-8")
-    readiness_path = ROOT / "docs/RAFGITTOOLS_READINESS_2026-08-11.md"
-    readiness = readiness_path.read_text(encoding="utf-8") if readiness_path.is_file() else ""
+    terminal = read_text("app/src/main/kotlin/com/rafgittools/terminal/TerminalEmulator.kt")
+    queue = read_text("app/src/main/kotlin/com/rafgittools/offline/OfflineQueue.kt")
+    atomic = read_text("app/src/main/kotlin/com/rafgittools/offline/AtomicFileQueueStorage.kt")
+    providers = read_text("app/src/main/kotlin/com/rafgittools/platform/MultiPlatformManager.kt")
+    jgit = read_text("app/src/main/kotlin/com/rafgittools/data/git/JGitService.kt")
+    auth_repository = read_text("app/src/main/kotlin/com/rafgittools/data/auth/AuthRepository.kt")
+    oauth_flow = read_text("app/src/main/kotlin/com/rafgittools/data/auth/OAuthDeviceFlowManager.kt")
+    token_lifecycle = read_text("app/src/main/kotlin/com/rafgittools/data/auth/TokenRefreshManager.kt")
+    auth_interceptor = read_text("app/src/main/kotlin/com/rafgittools/data/auth/AuthInterceptor.kt")
+    interactive = read_text("app/src/main/kotlin/com/rafgittools/data/git/InteractiveStagingService.kt")
+    diff_screen = read_text("app/src/main/kotlin/com/rafgittools/ui/screens/diff/DiffViewerScreen.kt")
+    diff_view_model = read_text("app/src/main/kotlin/com/rafgittools/ui/screens/diff/DiffViewerViewModel.kt")
+    current = read_text("docs/RAFGITTOOLS_CURRENT_STATE.md")
+    readiness = read_text("docs/RAFGITTOOLS_READINESS_2026-08-11.md")
 
     require("readerThread.start()" in terminal, "terminal output is not drained concurrently")
     require("READ_ONLY_GIT_SUBCOMMANDS" in terminal, "terminal does not restrict Git subcommands")
@@ -120,39 +126,87 @@ def check_source_invariants() -> None:
     require('Regex("^[0-9a-fA-F]{40}$")' in jgit,
             "force-with-lease expected object id validation is missing")
 
-    # Token lifecycle is invalidation + re-authentication for the auth methods
-    # currently modeled by the app. Ban the former always-failing refresh stub,
-    # undocumented PAT-expiry header assumption, and Android client-secret path.
-    for forbidden in (
-        "refreshOAuthToken(",
-        "GitHub-Authentication-Token-Expiry",
-        "clientSecret: String",
-        "refreshToken: String",
-    ):
-        require(forbidden not in token_lifecycle,
-                f"token lifecycle contains unsupported refresh contract: {forbidden}")
+    # Credential persistence must keep refresh state separate and erase it when
+    # switching to a non-refreshable PAT/OAuth access token.
     for anchor in (
-        "suspend fun handleHttpResponse(",
+        'stringPreferencesKey("encrypted_refresh_token")',
+        'longPreferencesKey("access_token_expires_at_ms")',
+        'longPreferencesKey("refresh_token_expires_at_ms")',
+        'private const val REFRESH_TOKEN_KEY_ALIAS = "github_refresh_token"',
+        "suspend fun saveOAuthSession(",
+        "suspend fun getRefreshToken()",
+        "suspend fun getRefreshTokenExpiresAt()",
+        "preferences.remove(ENCRYPTED_REFRESH_TOKEN_KEY)",
+        "preferences.remove(REFRESH_TOKEN_EXPIRES_AT_KEY)",
+    ):
+        require(anchor in auth_repository, f"refresh credential persistence invariant missing: {anchor}")
+    require(auth_repository.count("preferences.remove(ENCRYPTED_REFRESH_TOKEN_KEY)") >= 2,
+            "refresh token must be removed both on non-refreshable credential save and logout/clear")
+
+    # Device Flow refresh is capability-aware. The refresh endpoint may use
+    # client_id + refresh_token, but never embeds or accepts a client secret.
+    for forbidden in (
+        '@Field("client_secret")',
+        "clientSecret: String",
+        "client_secret",
+        "GitHub-Authentication-Token-Expiry",
+    ):
+        require(forbidden not in oauth_flow,
+                f"OAuth flow contains unsupported/unsafe contract: {forbidden}")
+    for anchor in (
+        "class GitHubOAuthApiClient",
+        "class GitHubOAuthConfig",
+        "private val refreshMutex = Mutex()",
+        "suspend fun refreshStoredSession(",
+        "rejectedAccessToken: String? = null",
+        "currentAccess != rejectedAccessToken",
+        'grantType = "refresh_token"',
+        "authRepository.saveOAuthSession(",
+        '@Field("refresh_token") refreshToken: String',
+        "val refresh_token: String? = null",
+        "val refresh_token_expires_in: Long? = null",
+    ):
+        require(anchor in oauth_flow, f"Device Flow refresh invariant missing: {anchor}")
+
+    # Ban the old always-failing fake refresh API and require the serialized
+    # refresh->decision->invalidation recovery transaction.
+    require("refreshOAuthToken(" not in token_lifecycle,
+            "legacy always-failing refreshOAuthToken stub returned")
+    require("GitHub-Authentication-Token-Expiry" not in token_lifecycle,
+            "token lifecycle still relies on an unsupported PAT-expiry header")
+    require("private val recoveryMutex = Mutex()" in token_lifecycle,
+            "token lifecycle recovery transaction is not serialized")
+    for anchor in (
+        "TokenState.Refreshed",
         "TokenState.InvalidCredential",
         "TokenState.RateLimited",
         "TokenState.Forbidden",
+        "refreshStoredSession(rejectedAccessToken)",
+        "recoveryMutex.withLock",
+        "invalidateSessionUnlocked()",
         "authRepository.clearAuthState().isSuccess",
-        "fun parseScopesFromHeader(",
     ):
         require(anchor in token_lifecycle, f"token lifecycle invariant missing: {anchor}")
-    require("private val tokenRefreshManager: TokenRefreshManager" in auth_interceptor,
-            "AuthInterceptor is not integrated with TokenRefreshManager")
-    require("tokenRefreshManager.handleHttpResponse(" in auth_interceptor,
-            "AuthInterceptor does not dispatch 401/403 lifecycle handling")
-    require("response.code == 401 || response.code == 403" in auth_interceptor,
-            "AuthInterceptor lifecycle response gate is missing")
-    require("authTokenCache.token = null" in auth_interceptor,
-            "AuthInterceptor does not fail closed in memory after 401")
-    require('response.header("X-RateLimit-Remaining")' in auth_interceptor,
-            "AuthInterceptor does not pass rate-limit evidence")
+
+    # Interceptor must retry exactly once after successful rotation, close the
+    # superseded response, and invalidate on the second 401 without refresh loop.
+    for anchor in (
+        "private val tokenRefreshManager: TokenRefreshManager",
+        "rejectedAccessToken = if (firstResponse.code == 401) token else null",
+        "firstState is TokenRefreshManager.TokenState.Refreshed",
+        "authTokenCache.token = firstState.accessToken",
+        "firstResponse.close()",
+        "val retryResponse = chain.proceed(",
+        "boundedInvalidation()",
+        "authTokenCache.token = null",
+        'response.header("X-RateLimit-Remaining")',
+        "withTimeoutOrNull(LIFECYCLE_TIMEOUT_MS)",
+    ):
+        require(anchor in auth_interceptor, f"AuthInterceptor lifecycle invariant missing: {anchor}")
+    require(auth_interceptor.count("tokenRefreshManager.handleHttpResponse(") == 1,
+            "interceptor must have one refresh decision point per request chain")
 
     # Interactive hunk staging invariants.
-    require(interactive_path.is_file(), "interactive hunk staging service is missing")
     for anchor in (
         "suspend fun stageHunk(",
         "suspend fun unstageHunk(",
