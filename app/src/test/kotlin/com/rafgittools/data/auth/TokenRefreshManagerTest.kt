@@ -15,7 +15,7 @@ class TokenRefreshManagerTest {
 
     @Test
     fun `401 with refresh capability returns rotated access token without invalidating session`() = runTest {
-        coEvery { oauthDeviceFlowManager.refreshStoredSession() } returns
+        coEvery { oauthDeviceFlowManager.refreshStoredSession(null) } returns
             Result.success(RefreshedSession("NEW_ACCESS_TOKEN_12345678901234567890", "rafael"))
 
         val state = manager.handleHttpResponse(
@@ -27,13 +27,13 @@ class TokenRefreshManagerTest {
         assertThat(state).isEqualTo(
             TokenRefreshManager.TokenState.Refreshed("NEW_ACCESS_TOKEN_12345678901234567890")
         )
-        coVerify(exactly = 1) { oauthDeviceFlowManager.refreshStoredSession() }
+        coVerify(exactly = 1) { oauthDeviceFlowManager.refreshStoredSession(null) }
         coVerify(exactly = 0) { authRepository.clearAuthState() }
     }
 
     @Test
     fun `401 without usable refresh capability invalidates persistent auth state`() = runTest {
-        coEvery { oauthDeviceFlowManager.refreshStoredSession() } returns
+        coEvery { oauthDeviceFlowManager.refreshStoredSession(null) } returns
             Result.failure(Exception("No refresh token stored"))
         coEvery { authRepository.clearAuthState() } returns Result.success(Unit)
 
@@ -46,13 +46,13 @@ class TokenRefreshManagerTest {
         assertThat(state).isEqualTo(
             TokenRefreshManager.TokenState.InvalidCredential(persistentStateCleared = true)
         )
-        coVerify(exactly = 1) { oauthDeviceFlowManager.refreshStoredSession() }
+        coVerify(exactly = 1) { oauthDeviceFlowManager.refreshStoredSession(null) }
         coVerify(exactly = 1) { authRepository.clearAuthState() }
     }
 
     @Test
     fun `failed refresh still reports invalid credential when persistent cleanup fails`() = runTest {
-        coEvery { oauthDeviceFlowManager.refreshStoredSession() } returns
+        coEvery { oauthDeviceFlowManager.refreshStoredSession(null) } returns
             Result.failure(Exception("bad_refresh_token"))
         coEvery { authRepository.clearAuthState() } returns Result.failure(Exception("storage unavailable"))
 
@@ -77,7 +77,7 @@ class TokenRefreshManagerTest {
         assertThat(state).isEqualTo(
             TokenRefreshManager.TokenState.InvalidCredential(persistentStateCleared = true)
         )
-        coVerify(exactly = 0) { oauthDeviceFlowManager.refreshStoredSession() }
+        coVerify(exactly = 0) { oauthDeviceFlowManager.refreshStoredSession(any()) }
         coVerify(exactly = 1) { authRepository.clearAuthState() }
     }
 
@@ -90,7 +90,7 @@ class TokenRefreshManagerTest {
         )
 
         assertThat(state).isEqualTo(TokenRefreshManager.TokenState.RateLimited(1999999999L))
-        coVerify(exactly = 0) { oauthDeviceFlowManager.refreshStoredSession() }
+        coVerify(exactly = 0) { oauthDeviceFlowManager.refreshStoredSession(any()) }
         coVerify(exactly = 0) { authRepository.clearAuthState() }
     }
 
@@ -103,7 +103,7 @@ class TokenRefreshManagerTest {
         )
 
         assertThat(state).isEqualTo(TokenRefreshManager.TokenState.Forbidden)
-        coVerify(exactly = 0) { oauthDeviceFlowManager.refreshStoredSession() }
+        coVerify(exactly = 0) { oauthDeviceFlowManager.refreshStoredSession(any()) }
         coVerify(exactly = 0) { authRepository.clearAuthState() }
     }
 
@@ -116,7 +116,7 @@ class TokenRefreshManagerTest {
         )
 
         assertThat(state).isEqualTo(TokenRefreshManager.TokenState.Valid)
-        coVerify(exactly = 0) { oauthDeviceFlowManager.refreshStoredSession() }
+        coVerify(exactly = 0) { oauthDeviceFlowManager.refreshStoredSession(any()) }
         coVerify(exactly = 0) { authRepository.clearAuthState() }
     }
 
