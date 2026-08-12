@@ -19,3 +19,5 @@ out/
 *.log
 # CI-populated dependency sources — never committed
 runtime-src/
+# Local readiness/provenance receipts — device evidence stays local unless explicitly curated
+.rafgittools/
