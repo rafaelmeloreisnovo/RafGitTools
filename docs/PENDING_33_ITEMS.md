@@ -6,55 +6,54 @@ A origem adotada para os **33 lugares** é o recorte dos **primeiros 33 itens ma
 
 - Arquivo-fonte: `docs/ROADMAP.md`
 - Critério: linhas de tabela no formato `| <id> | <feature> | 🔴 L1 | ... |`
-- Objetivo: transformar lacunas de implementação em backlog rastreável com ID único.
 - Regra de evidência: `source-functional != tests executed != APK built != device verified`.
 
-## Legenda de status
+## Legenda
 
 | Símbolo | Significado |
 |---|---|
-| ✅ | Implementado em fonte/integrado ao fluxo correspondente |
+| ✅ | Implementado em fonte/integrado |
 | 🔶 | Parcial em fonte |
 | 🔴 | Não iniciado |
-| 🆕 | Marcador histórico de item implementado na execução de 2026-08-03; não é categoria aditiva |
+| 🆕 | Marcador histórico de 2026-08-03; subconjunto, não categoria aditiva |
 
 ## Lista rastreável
 
-| Item ID | Feature ID | Feature (ROADMAP) | Status | Evidência / limite |
+| Item ID | Feature ID | Feature | Status | Evidência / limite |
 |---|---:|---|---|---|
 | P33-01 | 20 | Git clone (shallow) | ✅ | `JGitService.cloneShallow()` |
 | P33-02 | 21 | Git clone (single branch) | ✅ | `JGitService.cloneSingleBranch()` |
-| P33-03 | 22 | Git clone (with submodules) | ✅ | `setCloneSubmodules(true)`; transporte herdado pelo JGit child command |
-| P33-04 | 24 | Git commit (amend) | ✅ | `JGitService.commitAmend()` + interface + impl |
-| P33-05 | 25 | Interactive staging | ✅ | `InteractiveStagingService` + DiffViewer: stage/unstage por hunk, index-only, stale-check, DirCache lock/atomic commit; runtime Android ainda é evidência separada |
-| P33-06 | 29 | Force push with lease | ✅ | destination-ref lease + authenticated `lsRemote` + fail-closed; fixture GitHub privada real ainda é runtime evidence |
-| P33-07 | 30 | Pull with rebase | ✅ | `JGitService.pullWithRebase()` integrado ao fluxo pull |
-| P33-08 | 33 | Branch rename | ✅ | implementação JGit integrada |
-| P33-09 | 36 | Merge strategies | ✅ | `JGitService.mergeWithStrategy()`; sem promover estratégia não testada a runtime PASS |
+| P33-03 | 22 | Git clone (with submodules) | ✅ | `setCloneSubmodules(true)`; transporte herdado pelo child command JGit |
+| P33-04 | 24 | Git commit (amend) | ✅ | `JGitService.commitAmend()` |
+| P33-05 | 25 | Interactive staging | ✅ | index-only stage/unstage por hunk + stale/HEAD/index gates |
+| P33-06 | 29 | Force push with lease | ✅ | destination-ref lease + authenticated `lsRemote` + fail-closed |
+| P33-07 | 30 | Pull with rebase | ✅ | `JGitService.pullWithRebase()` |
+| P33-08 | 33 | Branch rename | ✅ | JGit integrado |
+| P33-09 | 36 | Merge strategies | ✅ | `JGitService.mergeWithStrategy()`; contrato semântico ainda auditado separadamente |
 | P33-10 | 40 | Stash operations | ✅ | operações stash integradas |
-| P33-11 | 42 | Git config management | ✅ | `getGitConfig`, `setGitConfig`, `listGitConfig` |
-| P33-12 | 46 | Syntax highlighting | 🆕✅ | `SyntaxHighlighter.kt` + FileViewer |
-| P33-13 | 47 | Line numbers | 🆕✅ | gutter no FileViewer |
+| P33-11 | 42 | Git config management | ✅ | get/set/list config |
+| P33-12 | 46 | Syntax highlighting | 🆕✅ | FileViewer |
+| P33-13 | 47 | Line numbers | 🆕✅ | FileViewer gutter |
 | P33-14 | 48 | File search | ✅ | `JGitService.searchFiles()` |
-| P33-15 | 50 | Breadcrumb navigation | 🆕✅ | `BreadcrumbBar` em FileBrowserScreen |
-| P33-16 | 51 | File type icons | 🆕✅ | `getFileIcon()` + `getFileIconColor()` |
-| P33-17 | 52 | File size display | ✅ | `GitFile.size` + formatter |
-| P33-18 | 53 | Last modified date | ✅ | `GitFile.lastModified`, `getFileLastModified()` |
-| P33-19 | 54 | Commit info display | ✅ | `getCommits()` retorna autor + data |
-| P33-20 | 55 | Branch selector | 🆕✅ | branch selector em FileBrowserScreen |
-| P33-21 | 56 | Tag selector | 🆕✅ | tags no selector do FileBrowserScreen |
-| P33-22 | 57 | Repository metadata | 🆕✅ | HomeScreen mostra private/public, stars, forks, language |
-| P33-23 | 59 | Device authorization flow | ✅ | `OAuthDeviceFlowManager`; Client ID real continua CONFIG_REQUIRED |
-| P33-24 | 61 | Fine-grained PAT support | ✅ | `PATScopeInspector` + validação remota |
-| P33-25 | 63 | Token refresh mechanism | ✅ | `TokenRefreshManager` observa expiry header |
+| P33-15 | 50 | Breadcrumb navigation | 🆕✅ | FileBrowser |
+| P33-16 | 51 | File type icons | 🆕✅ | FileBrowser |
+| P33-17 | 52 | File size display | ✅ | `GitFile.size` |
+| P33-18 | 53 | Last modified date | ✅ | `getFileLastModified()` |
+| P33-19 | 54 | Commit info display | ✅ | autor/data em commits |
+| P33-20 | 55 | Branch selector | 🆕✅ | FileBrowser |
+| P33-21 | 56 | Tag selector | 🆕✅ | FileBrowser |
+| P33-22 | 57 | Repository metadata | 🆕✅ | HomeScreen |
+| P33-23 | 59 | Device authorization flow | ✅ | `OAuthDeviceFlowManager`; Client ID real = CONFIG_REQUIRED |
+| P33-24 | 61 | Fine-grained PAT support | ✅ | validação remota / scope inspection |
+| P33-25 | 63 | Token refresh mechanism | ✅ | capability-aware: PAT/OAuth App sem refresh -> reauth; GitHub App Device Flow com `refresh_token` -> rotação cifrada, concorrência serializada, retry único, zero client secret |
 | P33-26 | 64 | SSH key generation | ✅ | `SshKeyManager.generateKeyPair()` |
 | P33-27 | 65 | SSH key management | ✅ | `SshKeyManager` |
-| P33-28 | 66 | SSH agent integration | ✅ | transporte SSH JGit integrado; servidor/chave real = runtime evidence |
+| P33-28 | 66 | SSH agent integration | ✅ | transporte SSH JGit; fixture real = runtime evidence |
 | P33-29 | 67 | Biometric authentication | ✅ | `BiometricAuthManager` |
 | P33-30 | 68 | Multi-account support | ✅ | `MultiAccountManager` |
-| P33-31 | 69 | Account switching | ✅ | `MultiAccountManager.switchAccount()` |
-| P33-32 | 70 | Session management | ✅ | estado persistido + expiração/401-403 tratados |
-| P33-33 | 71 | Secure logout | ✅ | `AuthRepository.clearAuthState()` / `logout()` |
+| P33-31 | 69 | Account switching | ✅ | `switchAccount()` |
+| P33-32 | 70 | Session management | ✅ | persistência + lifecycle 401/403 + refresh capability |
+| P33-33 | 71 | Secure logout | ✅ | `clearAuthState()` remove access/refresh/expiry |
 
 ## Resumo não sobreposto
 
@@ -65,39 +64,50 @@ A origem adotada para os **33 lugares** é o recorte dos **primeiros 33 itens ma
 | 🔴 Não iniciado | 0 |
 | **Total** | **33** |
 
-**Cobertura funcional de fonte P33: 33/33 (100%).**
-
-Os 8 itens com marcador `🆕` são um **subconjunto histórico** desses 33, implementados na execução de 2026-08-03; não devem ser somados novamente ao total.
+**Cobertura funcional de fonte P33: 33/33 (100%).** Os 8 itens `🆕` são subconjunto histórico e não são somados novamente.
 
 ## P33-05 — boundary de segurança
 
-Interactive staging está implementado em fonte para o caso que o modelo de diff representa de forma lossless:
+Interactive staging é lossless somente para tracked `MODIFY`, UTF-8 <= 2 MiB e newline final. Stage/unstage é de um hunk; working tree não é reescrito; hunk/HEAD/index são revalidados; conflitos/multi-stage, binário, non-UTF8 e missing-final-newline falham fechado; publicação usa `DirCacheEditor.commit()` sob lock. Esses limites são contrato, não `TOKEN_VAZIO`.
 
-- arquivo rastreado `MODIFY`;
-- texto UTF-8 de até 2 MiB;
-- newline final preservado;
-- stage e unstage de um hunk por vez;
-- working tree nunca é reescrito;
-- hunk é revalidado contra o diff atual;
-- HEAD e object-id do index são revalidados antes do lock/commit;
-- conflitos/multi-stage, binário, non-UTF-8 e missing-final-newline falham fechado;
-- `DirCacheEditor.commit()` publica a alteração do index sob lock.
+## P33-25 — boundary de autenticação
 
-Esses limites não são `TOKEN_VAZIO`: são **contrato explícito de representação/safety**. Ampliar para binários, add/delete/rename ou arquivos sem newline exige enriquecer o modelo de patch antes de alterar o índice.
+O nome histórico “Token refresh mechanism” não autoriza fingir que toda credencial possui refresh. A fonte agora implementa por capacidade:
+
+```text
+PAT / OAuth App sem refresh_token
+  401 -> refresh indisponível -> clearAuthState + cache=null -> reautenticação
+
+GitHub App Device Flow com refresh_token
+  -> refresh token cifrado em alias separado
+  -> expiries persistidos
+  -> 401 entra em recoveryMutex/refreshMutex
+  -> request concorrente reutiliza access token já rotacionado se outro 401 venceu
+  -> POST refresh envia client_id + grant_type=refresh_token + refresh_token
+  -> nunca envia client_secret
+  -> access + refresh rotacionados substituem os anteriores
+  -> resposta 401 original é fechada
+  -> request repetida uma única vez
+  -> segundo 401 invalida sessão sem segundo refresh
+
+403 + remaining=0 -> rate-limit, sessão preservada
+outro 403         -> forbidden, sessão preservada
+```
+
+`savePat()` apaga refresh state de sessão anterior e `clearAuthState()` apaga access/refresh/expiries. O antigo método sempre-falhando `refreshOAuthToken(clientId, clientSecret, refreshToken)` foi removido; não é mais confundido com feature.
 
 ## Evidência ainda não promovida
 
-O fechamento 33/33 é de **fonte**. O seguinte permanece separado:
-
 ```text
-unit tests do head revisado      = TOKEN_VAZIO / BLOCKED_INFRA remoto
-APK do head + SHA-256            = TOKEN_VAZIO
-physical-device install/start    = TOKEN_VAZIO
-private remote fixtures          = TOKEN_VAZIO_RUNTIME
-claim_allowed                    = false
+unit tests do head              = TOKEN_VAZIO / BLOCKED_INFRA_BILLING remoto
+APK + SHA-256                   = TOKEN_VAZIO
+physical-device install/start   = TOKEN_VAZIO
+private remote fixtures         = TOKEN_VAZIO_RUNTIME
+GitHub App refresh real         = CONFIG_REQUIRED / TOKEN_VAZIO_RUNTIME
+claim_allowed                   = false
 ```
 
-Nenhuma frase neste documento transforma ausência de execução em PASS.
+O 33/33 é **fonte**, não runtime PASS.
 
 ## Regra para próximos commits
 
