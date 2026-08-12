@@ -80,6 +80,10 @@ def check_source_invariants() -> None:
     atomic = (ROOT / "app/src/main/kotlin/com/rafgittools/offline/AtomicFileQueueStorage.kt").read_text(encoding="utf-8")
     providers = (ROOT / "app/src/main/kotlin/com/rafgittools/platform/MultiPlatformManager.kt").read_text(encoding="utf-8")
     jgit = (ROOT / "app/src/main/kotlin/com/rafgittools/data/git/JGitService.kt").read_text(encoding="utf-8")
+    interactive_path = ROOT / "app/src/main/kotlin/com/rafgittools/data/git/InteractiveStagingService.kt"
+    interactive = interactive_path.read_text(encoding="utf-8") if interactive_path.is_file() else ""
+    diff_screen = (ROOT / "app/src/main/kotlin/com/rafgittools/ui/screens/diff/DiffViewerScreen.kt").read_text(encoding="utf-8")
+    diff_view_model = (ROOT / "app/src/main/kotlin/com/rafgittools/ui/screens/diff/DiffViewerViewModel.kt").read_text(encoding="utf-8")
     current = (ROOT / "docs/RAFGITTOOLS_CURRENT_STATE.md").read_text(encoding="utf-8")
     readiness_path = ROOT / "docs/RAFGITTOOLS_READINESS_2026-08-11.md"
     readiness = readiness_path.read_text(encoding="utf-8") if readiness_path.is_file() else ""
@@ -116,6 +120,36 @@ def check_source_invariants() -> None:
             "force-with-lease still protects a src:dst refspec instead of destination ref")
     require('Regex("^[0-9a-fA-F]{40}$")' in jgit,
             "force-with-lease expected object id validation is missing")
+
+    # Interactive hunk staging is an index-only operation. It must revalidate the
+    # selected diff, acquire the DirCache lock, atomically commit the editor, and
+    # expose explicit stage/unstage controls. It must never rewrite the work tree.
+    require(interactive_path.is_file(), "interactive hunk staging service is missing")
+    for anchor in (
+        "suspend fun stageHunk(",
+        "suspend fun unstageHunk(",
+        "Selected hunk is stale",
+        "repository.lockDirCache()",
+        "DirCacheEditor.PathEdit",
+        "editor.commit()",
+        "contentEquals(workBytesBefore)",
+        "setUpdateNeeded(true)",
+        "CancellationException",
+    ):
+        require(anchor in interactive, f"interactive staging invariant missing: {anchor}")
+    require("writeText(" not in interactive and "writeBytes(" not in interactive,
+            "interactive staging service must not rewrite the working tree")
+    require("DiffChangeType.MODIFY" in interactive,
+            "interactive staging must preserve tracked-MODIFY scope boundary")
+    require("Missing-final-newline" in interactive and "Binary file cannot" in interactive,
+            "interactive staging must fail closed on non-lossless text representations")
+    require('"Stage hunk ${index + 1}"' in diff_screen,
+            "DiffViewer does not expose explicit per-hunk stage control")
+    require('"Unstage hunk ${index + 1}"' in diff_screen,
+            "DiffViewer does not expose explicit per-hunk unstage control")
+    require("interactiveStagingService.stageHunk" in diff_view_model and
+            "interactiveStagingService.unstageHunk" in diff_view_model,
+            "DiffViewerViewModel is not wired to both hunk mutations")
 
     require("não estão pendentes de integração" in current,
             "fazer/ source-of-truth contradiction was not resolved")
