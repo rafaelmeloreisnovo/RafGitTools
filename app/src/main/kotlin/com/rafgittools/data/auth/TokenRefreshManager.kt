@@ -1,16 +1,20 @@
 package com.rafgittools.data.auth
 
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Token lifecycle manager — P33-25.
  *
- * Credential classes are handled by capability, not by wishful inference:
+ * Credential classes are handled by capability:
  * - PAT / OAuth App access token: no stored refresh token -> 401 invalidates session;
  * - GitHub App user token produced by Device Flow with expiring-token support:
  *   stored refresh token -> one serialized rotation attempt -> refreshed session or invalidation;
- * - concurrent 401s for the same rejected token coalesce on the already-rotated access token;
+ * - concurrent 401s coalesce safely;
+ * - refresh failure and persistent invalidation are serialized in the same
+ *   recovery transaction so a late clear cannot erase a newly rotated session;
  * - 403 rate-limit/forbidden never destroys a still-valid credential.
  */
 @Singleton
@@ -18,6 +22,8 @@ class TokenRefreshManager @Inject constructor(
     private val authRepository: AuthRepository,
     private val oauthDeviceFlowManager: OAuthDeviceFlowManager
 ) {
+    private val recoveryMutex = Mutex()
+
     sealed class TokenState {
         object Valid : TokenState()
 
@@ -36,13 +42,6 @@ class TokenRefreshManager @Inject constructor(
         object Forbidden : TokenState()
     }
 
-    /**
-     * Interpret one GitHub API response.
-     *
-     * [rejectedAccessToken] is the exact token attached to the request that got
-     * 401. Passing it into the refresh layer prevents a second concurrent request
-     * from consuming a refresh token that another request has already rotated.
-     */
     suspend fun handleHttpResponse(
         responseCode: Int,
         rateLimitRemaining: String?,
@@ -50,11 +49,11 @@ class TokenRefreshManager @Inject constructor(
         rejectedAccessToken: String? = null
     ): TokenState {
         return when (responseCode) {
-            401 -> {
+            401 -> recoveryMutex.withLock {
                 oauthDeviceFlowManager.refreshStoredSession(rejectedAccessToken)
                     .fold(
                         onSuccess = { TokenState.Refreshed(it.accessToken) },
-                        onFailure = { invalidateSession() }
+                        onFailure = { invalidateSessionUnlocked() }
                     )
             }
 
@@ -73,9 +72,14 @@ class TokenRefreshManager @Inject constructor(
 
     /**
      * Explicit invalidation used after a refreshed request is rejected again.
-     * This method never attempts a second refresh.
+     * It shares the recovery lock with refresh, so it cannot race a successful
+     * rotation from another request.
      */
-    suspend fun invalidateSession(): TokenState.InvalidCredential {
+    suspend fun invalidateSession(): TokenState.InvalidCredential = recoveryMutex.withLock {
+        invalidateSessionUnlocked()
+    }
+
+    private suspend fun invalidateSessionUnlocked(): TokenState.InvalidCredential {
         return TokenState.InvalidCredential(
             persistentStateCleared = authRepository.clearAuthState().isSuccess
         )
