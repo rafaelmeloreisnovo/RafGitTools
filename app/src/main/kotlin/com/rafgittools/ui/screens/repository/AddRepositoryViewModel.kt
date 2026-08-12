@@ -30,19 +30,32 @@ class AddRepositoryViewModel @Inject constructor(
     fun onRemoteUrlChanged(value: String) {
         _uiState.update { current ->
             val derivedName = deriveRepoName(value)
-            val nextRepoName = if (!repoNameEditedManually) derivedName else current.repoName
-            current.copy(remoteUrl = value, repoName = nextRepoName, errorMessage = null, isSuccess = false)
+            val nextRepoName = if (!repoNameEditedManually) {
+                derivedName
+            } else {
+                current.repoName
+            }
+
+            current.copy(
+                remoteUrl = value,
+                repoName = nextRepoName,
+                errorMessage = null,
+                isSuccess = false
+            )
         }
     }
 
     fun onRepoNameChanged(value: String) {
         repoNameEditedManually = value.isNotBlank()
-        _uiState.update { it.copy(repoName = value, errorMessage = null, isSuccess = false) }
+        _uiState.update {
+            it.copy(repoName = value, errorMessage = null, isSuccess = false)
+        }
     }
 
     fun cloneRepository() {
         val current = _uiState.value
         val remoteUrl = current.remoteUrl.trim()
+
         if (remoteUrl.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Remote URL is required") }
             return
@@ -51,6 +64,7 @@ class AddRepositoryViewModel @Inject constructor(
         viewModelScope.launch {
             val derivedRepoName = deriveRepoName(remoteUrl)
             val repoName = current.repoName.trim().ifBlank { derivedRepoName }
+
             if (repoName.isBlank()) {
                 _uiState.update { it.copy(errorMessage = "Repository name is required") }
                 return@launch
@@ -58,13 +72,21 @@ class AddRepositoryViewModel @Inject constructor(
 
             val localPath = File(repoStorage.baseDir, repoName).absolutePath
             val credentials = githubHttpsCredentials()
+
             _uiState.update {
-                it.copy(repoName = repoName, isLoading = true, errorMessage = null, isSuccess = false)
+                it.copy(
+                    repoName = repoName,
+                    isLoading = true,
+                    errorMessage = null,
+                    isSuccess = false
+                )
             }
 
             gitRepository.cloneRepository(remoteUrl, localPath, credentials)
                 .onSuccess {
-                    _uiState.update { it.copy(isLoading = false, errorMessage = null, isSuccess = true) }
+                    _uiState.update {
+                        it.copy(isLoading = false, errorMessage = null, isSuccess = true)
+                    }
                 }
                 .onFailure { error ->
                     _uiState.update {
@@ -80,7 +102,7 @@ class AddRepositoryViewModel @Inject constructor(
 
     /**
      * GitHub HTTPS expects a non-empty username and the PAT/OAuth token in the
-     * password field. Never put credential material into the URL/username.
+     * password field. Keep credential material out of the remote URL/username.
      */
     private suspend fun githubHttpsCredentials(): Credentials? {
         val token = authRepository.getPat().getOrNull() ?: return null
@@ -91,7 +113,9 @@ class AddRepositoryViewModel @Inject constructor(
     private fun deriveRepoName(url: String): String {
         val trimmed = url.trim().trimEnd('/')
         if (trimmed.isBlank()) return ""
-        return trimmed.substringAfterLast('/').substringAfterLast(':').removeSuffix(".git")
+
+        val candidate = trimmed.substringAfterLast('/').substringAfterLast(':')
+        return candidate.removeSuffix(".git")
     }
 }
 
