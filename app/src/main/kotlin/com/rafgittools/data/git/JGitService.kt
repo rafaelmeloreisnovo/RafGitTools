@@ -39,7 +39,7 @@ class JGitService @Inject constructor(
 ) {
     
     companion object {
-        // SSH authentication is now implemented
+        private const val TOKEN_USERNAME = "x-access-token"
     }
     
     /**
@@ -68,7 +68,7 @@ class JGitService @Inject constructor(
                 }
                 is Credentials.Token -> {
                     cloneCommand.setCredentialsProvider(
-                        UsernamePasswordCredentialsProvider(it.token, "")
+                        UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token)
                     )
                 }
                 is Credentials.SshKey -> {
@@ -242,7 +242,7 @@ class JGitService @Inject constructor(
                 }
                 is Credentials.Token -> {
                     cloneCommand.setCredentialsProvider(
-                        UsernamePasswordCredentialsProvider(it.token, "")
+                        UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token)
                     )
                 }
                 is Credentials.SshKey -> {
@@ -362,6 +362,7 @@ class JGitService @Inject constructor(
                         isRemote = true
                     ))
                 }
+            }
             
             branches
         }
@@ -557,7 +558,7 @@ class JGitService @Inject constructor(
                     }
                     is Credentials.Token -> {
                         command.setCredentialsProvider(
-                            UsernamePasswordCredentialsProvider(it.token, "")
+                            UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token)
                         )
                     }
                     is Credentials.SshKey -> {
@@ -581,6 +582,11 @@ class JGitService @Inject constructor(
     /**
      * Force push with lease (safe force-push)
      * Feature #29 from roadmap (P33-06)
+     *
+     * The explicit remote preflight gives a useful local error when the caller's
+     * expected object id is already stale. The JGit RefLeaseSpec remains the
+     * authoritative atomic gate during push, so a remote change after preflight
+     * is still rejected rather than falling back to an unconditional force push.
      */
     suspend fun forcePushWithLease(
         repoPath: String,
@@ -594,10 +600,40 @@ class JGitService @Inject constructor(
             val branchRef = "refs/heads/$branch"
             val refSpec = "$branchRef:$branchRef"
             val absentObjectId = "0000000000000000000000000000000000000000"
-            val actualOldObjectId = git.lsRemote()
+            require(expectedOldObjectId.matches(Regex("^[0-9a-fA-F]{40}$"))) {
+                "Invalid expected object id for force-with-lease"
+            }
+
+            val lsRemoteCommand = git.lsRemote()
                 .setRemote(remote)
                 .setHeads(true)
-                .call()
+
+            credentials?.let {
+                when (it) {
+                    is Credentials.UsernamePassword -> {
+                        lsRemoteCommand.setCredentialsProvider(
+                            UsernamePasswordCredentialsProvider(it.username, it.password)
+                        )
+                    }
+                    is Credentials.Token -> {
+                        lsRemoteCommand.setCredentialsProvider(
+                            UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token)
+                        )
+                    }
+                    is Credentials.SshKey -> {
+                        val sshSessionFactory = if (it.passphrase != null) {
+                            SshSessionFactory.createWithPassphrase(it.privateKeyPath, it.passphrase)
+                        } else {
+                            SshSessionFactory.create(it.privateKeyPath)
+                        }
+                        lsRemoteCommand.setTransportConfigCallback(
+                            createSshTransportCallback(sshSessionFactory)
+                        )
+                    }
+                }
+            }
+
+            val actualOldObjectId = lsRemoteCommand.call()
                 .firstOrNull { it.name == branchRef }
                 ?.objectId
                 ?.name
@@ -612,7 +648,7 @@ class JGitService @Inject constructor(
                 .setRemote(remote)
                 .setForce(true)
                 .setRefSpecs(org.eclipse.jgit.transport.RefSpec(refSpec))
-                .setRefLeaseSpecs(RefLeaseSpec(refSpec, expectedOldObjectId))
+                .setRefLeaseSpecs(RefLeaseSpec(branchRef, expectedOldObjectId))
 
             credentials?.let {
                 when (it) {
@@ -623,7 +659,7 @@ class JGitService @Inject constructor(
                     }
                     is Credentials.Token -> {
                         command.setCredentialsProvider(
-                            UsernamePasswordCredentialsProvider(it.token, "")
+                            UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token)
                         )
                     }
                     is Credentials.SshKey -> {
@@ -679,7 +715,7 @@ class JGitService @Inject constructor(
                     }
                     is Credentials.Token -> {
                         command.setCredentialsProvider(
-                            UsernamePasswordCredentialsProvider(it.token, "")
+                            UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token)
                         )
                     }
                     is Credentials.SshKey -> {
@@ -725,7 +761,7 @@ class JGitService @Inject constructor(
                             UsernamePasswordCredentialsProvider(it.username, it.password))
                     is Credentials.Token ->
                         command.setCredentialsProvider(
-                            UsernamePasswordCredentialsProvider(it.token, ""))
+                            UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token))
                     is Credentials.SshKey -> {
                         val factory = if (it.passphrase != null)
                             SshSessionFactory.createWithPassphrase(it.privateKeyPath, it.passphrase)
@@ -775,7 +811,7 @@ class JGitService @Inject constructor(
                     }
                     is Credentials.Token -> {
                         command.setCredentialsProvider(
-                            UsernamePasswordCredentialsProvider(it.token, "")
+                            UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token)
                         )
                     }
                     is Credentials.SshKey -> {
