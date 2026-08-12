@@ -4,6 +4,8 @@ import com.rafgittools.BuildConfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.http.Field
@@ -54,9 +56,9 @@ class GitHubOAuthConfig @Inject constructor() {
 class GitHubOAuthApiClient @Inject constructor() {
     val api: GitHubOAuthApi by lazy {
         val client = OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
             .build()
         Retrofit.Builder()
             .baseUrl("https://github.com/")
@@ -87,6 +89,9 @@ class OAuthDeviceFlowManager @Inject constructor(
         private const val SLOW_DOWN_INCREMENT_MS = 5_000L
         private const val MAX_POLLS = 60
     }
+
+    /** Refresh tokens rotate, therefore all refresh consumption is serialized. */
+    private val refreshMutex = Mutex()
 
     private val sharedUserHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
@@ -217,43 +222,64 @@ class OAuthDeviceFlowManager @Inject constructor(
 
     /**
      * Rotate a stored GitHub App user token when Device Flow supplied a refresh
-     * token. No client secret is sent. OAuth App/PAT sessions have no stored
-     * refresh token and therefore fail immediately into the re-auth path.
+     * token. [rejectedAccessToken] identifies the credential that triggered 401.
+     *
+     * Concurrent 401s are serialized. After acquiring the lock, if another call
+     * already replaced the rejected access token, this call reuses the newly
+     * persisted token instead of consuming the rotating refresh token again.
      */
-    suspend fun refreshStoredSession(): Result<RefreshedSession> = runCatching {
-        val refreshToken = authRepository.getRefreshToken().getOrThrow()
-        val refreshExpiresAt = authRepository.getRefreshTokenExpiresAt()
-        if (refreshExpiresAt != null && System.currentTimeMillis() >= refreshExpiresAt) {
-            throw IllegalStateException("Stored refresh token has expired")
-        }
+    suspend fun refreshStoredSession(
+        rejectedAccessToken: String? = null
+    ): Result<RefreshedSession> = refreshMutex.withLock {
+        runCatching {
+            if (!rejectedAccessToken.isNullOrBlank()) {
+                val currentAccess = authRepository.getPat().getOrNull()
+                if (!currentAccess.isNullOrBlank() && currentAccess != rejectedAccessToken) {
+                    val username = authRepository.getUsername()
+                        ?: throw IllegalStateException(
+                            "Authenticated username is missing after concurrent token rotation"
+                        )
+                    return@runCatching RefreshedSession(
+                        accessToken = currentAccess,
+                        username = username
+                    )
+                }
+            }
 
-        val clientId = oauthConfig.requireClientId()
-        val response = oauthApiClient.api.refreshToken(
-            clientId = clientId,
-            grantType = "refresh_token",
-            refreshToken = refreshToken
-        )
+            val refreshToken = authRepository.getRefreshToken().getOrThrow()
+            val refreshExpiresAt = authRepository.getRefreshTokenExpiresAt()
+            if (refreshExpiresAt != null && System.currentTimeMillis() >= refreshExpiresAt) {
+                throw IllegalStateException("Stored refresh token has expired")
+            }
 
-        if (response.error != null) {
-            throw IllegalStateException(
-                response.error_description ?: "GitHub refresh failed: ${response.error}"
+            val clientId = oauthConfig.requireClientId()
+            val response = oauthApiClient.api.refreshToken(
+                clientId = clientId,
+                grantType = "refresh_token",
+                refreshToken = refreshToken
             )
+
+            if (response.error != null) {
+                throw IllegalStateException(
+                    response.error_description ?: "GitHub refresh failed: ${response.error}"
+                )
+            }
+
+            val accessToken = response.access_token
+                ?: throw IllegalStateException("GitHub refresh response did not include an access token")
+            val username = authRepository.getUsername()
+                ?: throw IllegalStateException("Authenticated username is missing during token rotation")
+
+            authRepository.saveOAuthSession(
+                accessToken = accessToken,
+                username = username,
+                refreshToken = response.refresh_token,
+                accessExpiresInSeconds = response.expires_in,
+                refreshExpiresInSeconds = response.refresh_token_expires_in
+            ).getOrThrow()
+
+            RefreshedSession(accessToken = accessToken, username = username)
         }
-
-        val accessToken = response.access_token
-            ?: throw IllegalStateException("GitHub refresh response did not include an access token")
-        val username = authRepository.getUsername()
-            ?: throw IllegalStateException("Authenticated username is missing during token rotation")
-
-        authRepository.saveOAuthSession(
-            accessToken = accessToken,
-            username = username,
-            refreshToken = response.refresh_token,
-            accessExpiresInSeconds = response.expires_in,
-            refreshExpiresInSeconds = response.refresh_token_expires_in
-        ).getOrThrow()
-
-        RefreshedSession(accessToken = accessToken, username = username)
     }
 
     private suspend fun fetchUsername(token: String): String? {
