@@ -90,6 +90,20 @@
             </intent-filter>
         </activity>
 
+        <!-- Fail-closed GitHub repository privacy control plane. Separate launcher keeps
+             this high-impact operation isolated from normal repository browsing. -->
+        <activity
+            android:name=".RepositoryPrivacyActivity"
+            android:exported="true"
+            android:label="Raf Privacy"
+            android:theme="@style/Theme.RafGitTools"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <!-- Direct Java control surface for Kiwi <-> APK <-> local model. -->
         <activity
             android:name=".bridge.RafBridgeActivity"

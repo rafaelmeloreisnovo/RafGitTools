@@ -51,7 +51,7 @@ class OAuthDeviceFlowManager @Inject constructor(
         private const val CLIENT_ID_ERROR_MESSAGE =
             "GitHub OAuth não está configurado nesta compilação. Defina GITHUB_CLIENT_ID_DEV ou " +
                 "GITHUB_CLIENT_ID_PRODUCTION e gere o APK novamente. Você ainda pode usar um token de acesso."
-        private const val SCOPE = "repo read:user notifications"
+        private const val SCOPE = "repo read:user read:org notifications"
         private const val DEFAULT_POLL_INTERVAL_MS = 5_000L
         private const val SLOW_DOWN_INCREMENT_MS = 5_000L
         private const val MAX_POLLS = 60
