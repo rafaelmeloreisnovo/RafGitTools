@@ -47,8 +47,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
-        // FIX L4: log body only in debug builds — PATs/tokens must never appear in prod logs
+        // Debug HTTP tracing is useful, but credentials must never enter logs.
         val loggingInterceptor = HttpLoggingInterceptor().apply {
+            redactHeader("Authorization")
+            redactHeader("Proxy-Authorization")
             level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
                     else HttpLoggingInterceptor.Level.NONE
         }
