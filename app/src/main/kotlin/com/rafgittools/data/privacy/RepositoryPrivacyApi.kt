@@ -21,6 +21,18 @@ interface RepositoryPrivacyApi {
         @Query("per_page") perPage: Int = 100
     ): List<PrivacyRepositoryDto>
 
+    /**
+     * Re-read the repository immediately before a destructive visibility mutation.
+     * The returned permissions and repository state are the live preflight authority;
+     * stale inventory data is never enough to authorize a PATCH.
+     */
+    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
+    @GET("repos/{owner}/{repo}")
+    suspend fun getRepository(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String
+    ): PrivacyRepositoryDto
+
     @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
     @PATCH("repos/{owner}/{repo}")
     suspend fun updateVisibility(
