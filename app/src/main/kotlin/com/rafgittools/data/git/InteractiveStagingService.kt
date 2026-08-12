@@ -4,6 +4,7 @@ import com.rafgittools.domain.model.DiffChangeType
 import com.rafgittools.domain.model.DiffHunk
 import com.rafgittools.domain.model.DiffLineType
 import com.rafgittools.domain.model.GitDiff
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.eclipse.jgit.dircache.DirCache
@@ -14,6 +15,7 @@ import java.io.File
 import java.nio.ByteBuffer
 import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,7 +30,9 @@ import javax.inject.Singleton
  * - for staging, verifies working-tree bytes stayed bit-identical during the operation;
  * - rejects unmerged entries, binary/non-UTF-8 data and missing-final-newline text,
  *   because the current DiffHunk model cannot represent those cases losslessly;
- * - uses DirCacheEditor.commit(), which atomically publishes the index lock file.
+ * - uses DirCacheEditor.commit(), which atomically publishes the index lock file;
+ * - invalidates cached index stat metadata after a partial edit so status must
+ *   re-check the working tree instead of trusting stale size/mtime values.
  */
 @Singleton
 class InteractiveStagingService @Inject constructor(
@@ -63,7 +67,7 @@ class InteractiveStagingService @Inject constructor(
         requestedHunk: DiffHunk,
         direction: Direction
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
+        resultPreservingCancellation {
             require(requestedDiff.changeType == DiffChangeType.MODIFY) {
                 "Interactive hunk staging currently supports tracked MODIFY entries only"
             }
@@ -76,7 +80,7 @@ class InteractiveStagingService @Inject constructor(
             }
             require(workFile.isFile) { "Working-tree file is missing: $filePath" }
             require(workFile.length() <= MAX_TEXT_BYTES) {
-                "Interactive staging file exceeds ${MAX_TEXT_BYTES} bytes"
+                "Interactive staging file exceeds $MAX_TEXT_BYTES bytes"
             }
 
             val workBytesBefore = if (direction == Direction.STAGE) {
@@ -166,7 +170,11 @@ class InteractiveStagingService @Inject constructor(
                                     "Index entry became unmerged during hunk staging"
                                 }
                                 ent.setObjectId(blobId)
-                                ent.setLength(newIndexBytes.size.toLong())
+                                // DirCache length/mtime describe the working-tree stat cache,
+                                // not the blob. Smudge them so JGit must re-check content.
+                                ent.setLength(0)
+                                ent.setLastModified(Instant.EPOCH)
+                                ent.setUpdateNeeded(true)
                             }
                         })
 
@@ -250,7 +258,8 @@ class InteractiveStagingService @Inject constructor(
         val cursorStart = if (start == 0) 0 else start - 1
         require(cursorStart in 0..sourceLines.size) { "Hunk start is outside current index content" }
 
-        val result = ArrayList<String>(sourceLines.size + hunk.newLines - hunk.oldLines)
+        val estimatedSize = maxOf(0, sourceLines.size + expectedProduced - expectedConsumed)
+        val result = ArrayList<String>(estimatedSize)
         result.addAll(sourceLines.subList(0, cursorStart))
 
         var cursor = cursorStart
@@ -314,7 +323,7 @@ class InteractiveStagingService @Inject constructor(
     }
 
     private fun validateSourceText(bytes: ByteArray) {
-        require(bytes.size <= MAX_TEXT_BYTES) { "Index blob exceeds interactive staging limit" }
+        require(bytes.size.toLong() <= MAX_TEXT_BYTES) { "Index blob exceeds interactive staging limit" }
         if (bytes.isEmpty()) return
         require(bytes.none { it == 0.toByte() }) { "Binary file cannot be interactively staged" }
         val text = decodeUtf8Strict(bytes)
@@ -324,7 +333,7 @@ class InteractiveStagingService @Inject constructor(
     }
 
     private fun validateTargetText(bytes: ByteArray) {
-        require(bytes.size <= MAX_TEXT_BYTES) { "Target text exceeds interactive staging limit" }
+        require(bytes.size.toLong() <= MAX_TEXT_BYTES) { "Target text exceeds interactive staging limit" }
         if (bytes.isEmpty()) return
         require(bytes.none { it == 0.toByte() }) { "Binary file cannot be interactively staged" }
         val text = decodeUtf8Strict(bytes)
@@ -346,6 +355,18 @@ class InteractiveStagingService @Inject constructor(
             "Missing-final-newline files require a richer diff model before hunk staging"
         }
         return text.dropLast(1).split('\n')
+    }
+
+    private suspend inline fun <T> resultPreservingCancellation(
+        crossinline block: suspend () -> T
+    ): Result<T> {
+        return try {
+            Result.success(block())
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            Result.failure(error)
+        }
     }
 
     private data class IndexSnapshot(
