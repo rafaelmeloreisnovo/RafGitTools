@@ -4,12 +4,14 @@ import com.rafgittools.BuildConfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.POST
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,6 +32,41 @@ internal fun isConfiguredClientId(value: String): Boolean {
     return normalized.lowercase() !in CLIENT_ID_PLACEHOLDERS
 }
 
+@Singleton
+class GitHubOAuthConfig @Inject constructor() {
+    fun requireClientId(): String {
+        val clientId = BuildConfig.GITHUB_CLIENT_ID.trim()
+        if (!isConfiguredClientId(clientId)) {
+            throw IllegalStateException(CLIENT_ID_ERROR_MESSAGE)
+        }
+        return clientId
+    }
+
+    companion object {
+        const val CLIENT_ID_ERROR_MESSAGE =
+            "GitHub OAuth não está configurado nesta compilação. Defina GITHUB_CLIENT_ID_DEV ou " +
+                "GITHUB_CLIENT_ID_PRODUCTION e gere o APK novamente. Você ainda pode usar um token de acesso."
+    }
+}
+
+/** OAuth transport intentionally independent from the authenticated API client. */
+@Singleton
+class GitHubOAuthApiClient @Inject constructor() {
+    val api: GitHubOAuthApi by lazy {
+        val client = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+        Retrofit.Builder()
+            .baseUrl("https://github.com/")
+            .client(client)
+            .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
+            .build()
+            .create(GitHubOAuthApi::class.java)
+    }
+}
+
 /**
  * OAuth Device Flow Manager — P33-23/P33-25.
  *
@@ -40,32 +77,21 @@ internal fun isConfiguredClientId(value: String): Boolean {
  */
 @Singleton
 class OAuthDeviceFlowManager @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val oauthApiClient: GitHubOAuthApiClient,
+    private val oauthConfig: GitHubOAuthConfig
 ) {
     companion object {
-        private const val GITHUB_OAUTH_URL = "https://github.com/"
-        private val CLIENT_ID get() = BuildConfig.GITHUB_CLIENT_ID
-        private const val CLIENT_ID_ERROR_MESSAGE =
-            "GitHub OAuth não está configurado nesta compilação. Defina GITHUB_CLIENT_ID_DEV ou " +
-                "GITHUB_CLIENT_ID_PRODUCTION e gere o APK novamente. Você ainda pode usar um token de acesso."
         private const val SCOPE = "repo read:user read:org notifications"
         private const val DEFAULT_POLL_INTERVAL_MS = 5_000L
         private const val SLOW_DOWN_INCREMENT_MS = 5_000L
         private const val MAX_POLLS = 60
     }
 
-    private val oauthApi: GitHubOAuthApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(GITHUB_OAUTH_URL)
-            .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
-            .build()
-            .create(GitHubOAuthApi::class.java)
-    }
-
-    private val sharedUserHttpClient: okhttp3.OkHttpClient by lazy {
-        okhttp3.OkHttpClient.Builder()
-            .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+    private val sharedUserHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
             .build()
     }
 
@@ -89,15 +115,15 @@ class OAuthDeviceFlowManager @Inject constructor(
     /** Emits states for the full OAuth/GitHub App device flow. */
     fun startDeviceFlow(): Flow<DeviceFlowState> = flow {
         val clientId = try {
-            requireClientId()
-        } catch (_: IllegalStateException) {
-            emit(DeviceFlowState.Error(CLIENT_ID_ERROR_MESSAGE))
+            oauthConfig.requireClientId()
+        } catch (error: IllegalStateException) {
+            emit(DeviceFlowState.Error(error.message ?: GitHubOAuthConfig.CLIENT_ID_ERROR_MESSAGE))
             return@flow
         }
         emit(DeviceFlowState.Requesting)
 
         val codeResponse = try {
-            oauthApi.requestDeviceCode(clientId = clientId, scope = SCOPE)
+            oauthApiClient.api.requestDeviceCode(clientId = clientId, scope = SCOPE)
         } catch (e: Exception) {
             emit(DeviceFlowState.Error("Não foi possível iniciar o login no GitHub: ${e.message}"))
             return@flow
@@ -119,7 +145,7 @@ class OAuthDeviceFlowManager @Inject constructor(
             polls++
 
             val tokenResponse = try {
-                oauthApi.pollForToken(
+                oauthApiClient.api.pollForToken(
                     clientId = clientId,
                     deviceCode = codeResponse.device_code,
                     grantType = "urn:ietf:params:oauth:grant-type:device_code"
@@ -191,11 +217,8 @@ class OAuthDeviceFlowManager @Inject constructor(
 
     /**
      * Rotate a stored GitHub App user token when Device Flow supplied a refresh
-     * token. No client secret is sent: GitHub documents that it is not required
-     * for user tokens originally generated using Device Flow.
-     *
-     * OAuth App/PAT sessions have no stored refresh token and fail immediately,
-     * allowing the caller to invalidate the session and request reauthentication.
+     * token. No client secret is sent. OAuth App/PAT sessions have no stored
+     * refresh token and therefore fail immediately into the re-auth path.
      */
     suspend fun refreshStoredSession(): Result<RefreshedSession> = runCatching {
         val refreshToken = authRepository.getRefreshToken().getOrThrow()
@@ -204,8 +227,8 @@ class OAuthDeviceFlowManager @Inject constructor(
             throw IllegalStateException("Stored refresh token has expired")
         }
 
-        val clientId = requireClientId()
-        val response = oauthApi.refreshToken(
+        val clientId = oauthConfig.requireClientId()
+        val response = oauthApiClient.api.refreshToken(
             clientId = clientId,
             grantType = "refresh_token",
             refreshToken = refreshToken
@@ -219,7 +242,8 @@ class OAuthDeviceFlowManager @Inject constructor(
 
         val accessToken = response.access_token
             ?: throw IllegalStateException("GitHub refresh response did not include an access token")
-        val username = validateToken(accessToken).getOrThrow()
+        val username = authRepository.getUsername()
+            ?: throw IllegalStateException("Authenticated username is missing during token rotation")
 
         authRepository.saveOAuthSession(
             accessToken = accessToken,
@@ -230,14 +254,6 @@ class OAuthDeviceFlowManager @Inject constructor(
         ).getOrThrow()
 
         RefreshedSession(accessToken = accessToken, username = username)
-    }
-
-    private fun requireClientId(): String {
-        val clientId = CLIENT_ID
-        if (!isConfiguredClientId(clientId)) {
-            throw IllegalStateException(CLIENT_ID_ERROR_MESSAGE)
-        }
-        return clientId
     }
 
     private suspend fun fetchUsername(token: String): String? {
