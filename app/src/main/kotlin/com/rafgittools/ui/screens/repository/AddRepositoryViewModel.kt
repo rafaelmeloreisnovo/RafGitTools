@@ -71,7 +71,7 @@ class AddRepositoryViewModel @Inject constructor(
             }
 
             val localPath = File(repoStorage.baseDir, repoName).absolutePath
-            val credentials = authRepository.getPat().getOrNull()?.let { Credentials.Token(it) }
+            val credentials = githubHttpsCredentials()
 
             _uiState.update {
                 it.copy(
@@ -98,6 +98,19 @@ class AddRepositoryViewModel @Inject constructor(
                     }
                 }
         }
+    }
+
+    /**
+     * GitHub HTTPS expects a non-empty username and the PAT/OAuth token in the
+     * password field. The username itself is not the authentication secret.
+     *
+     * Never place the token in the URL or username field: doing so can leak it
+     * through remote URLs, logs and error messages.
+     */
+    private suspend fun githubHttpsCredentials(): Credentials? {
+        val token = authRepository.getPat().getOrNull() ?: return null
+        val username = authRepository.getUsername()?.takeIf { it.isNotBlank() } ?: "x-access-token"
+        return Credentials.UsernamePassword(username = username, password = token)
     }
 
     private fun deriveRepoName(url: String): String {
