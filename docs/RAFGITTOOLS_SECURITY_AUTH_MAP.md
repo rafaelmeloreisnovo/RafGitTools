@@ -17,22 +17,42 @@
 
 ## GitHub privado por HTTPS
 
-O caminho de UI para GitHub privado deve construir credenciais Git como:
+O caminho de UI para GitHub privado constrói credenciais Git como:
 
 ```text
 username = login GitHub (fallback não secreto: x-access-token)
 password = PAT/OAuth token
 ```
 
+A camada JGit também normaliza `Credentials.Token` para:
+
+```text
+username = x-access-token
+password = token
+```
+
+Assim chamadas diretas/avançadas — clone normal, shallow, single-branch, submodules, pull, pull-rebase, fetch, push e force-with-lease — não recaem no contrato antigo `username=token/password=vazio`.
+
 O token **não** deve entrar no remote URL nem no campo de username.
 
-Rotas cobertas pela correção dedicada:
-
-- clone (`AddRepositoryViewModel`);
-- pull/push/fetch (`RepositoryDetailViewModel`);
-- testes de regressão de construção da credencial.
-
 A execução física autenticada continua sendo evidência separada e só pode sair de `TOKEN_VAZIO` com transcript/receipt real.
+
+## Force-with-lease
+
+O caminho de fonte implementa dois gates complementares:
+
+1. `lsRemote` autenticado lê o OID remoto esperado e falha cedo quando o lease já está stale;
+2. `RefLeaseSpec(refs/heads/<branch>, expectedOldObjectId)` permanece no push como gate atômico, cobrindo mudança remota entre preflight e mutation.
+
+Invariantes:
+
+- o lease protege o **destination ref**, nunca o refspec `src:dst` completo;
+- HTTPS e SSH são aplicados também ao `lsRemote`;
+- OID esperado deve ter 40 dígitos hexadecimais;
+- stale/invalid lease nunca cai para force-push incondicional;
+- status diferente de `OK`/`UP_TO_DATE` é falha.
+
+Testes locais de JGit cobrem lease correspondente, stale sem mutação e OID inválido. A execução contra GitHub privado real permanece `TOKEN_VAZIO_RUNTIME` até fixture autenticada.
 
 ## Controles ativos
 
@@ -43,16 +63,17 @@ A execução física autenticada continua sendo evidência separada e só pode s
 5. Interceptor HTTP redige `Authorization`/`Proxy-Authorization` em logs.
 6. `GhCliAuthImporter` usa hostname explícito, exit code fail-closed e não converte stderr em token.
 7. `scripts/rafgittools_private_auth_check.sh` prova acesso ao repositório privado sem imprimir token.
+8. `scripts/validate_runtime_truth.py` rejeita regressões de token-as-username e do destination-ref lease.
 
 ## Lacunas reais restantes
 
 | Gap | Estado | Fecha com |
 |---|---|---|
 | build/test Android do head revisado | TOKEN_VAZIO / BLOCKED_INFRA remoto | readiness gate local com JDK17 + SDK |
-| clone/pull/push/fetch privado em aparelho | TOKEN_VAZIO | repo descartável/privado + transcript + resultado |
+| clone/pull/push/fetch privado em aparelho | TOKEN_VAZIO_RUNTIME | repo descartável/privado + transcript + resultado |
+| force-with-lease contra GitHub privado real | TOKEN_VAZIO_RUNTIME | fixture privada descartável + lease positivo/stale + receipt |
 | OAuth Device Flow configurado | CONFIG_REQUIRED | Client ID público real + fluxo autorizado |
 | `gh` executável dentro do processo Android | TOKEN_VAZIO_RUNTIME | smoke explícito; PAT permanece fallback primário |
 | SSH remoto | TOKEN_VAZIO_RUNTIME | matriz de chave/host/clone/push em aparelho |
-| force-with-lease privado | GAP_TRACKED | corrigir destination ref + credentialed `lsRemote` com testes dedicados |
 
 Nenhuma dessas ausências deve ser promovida a PASS por documentação.
