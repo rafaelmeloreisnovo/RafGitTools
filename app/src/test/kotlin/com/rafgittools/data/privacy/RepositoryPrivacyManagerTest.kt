@@ -7,6 +7,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -38,10 +39,12 @@ class RepositoryPrivacyManagerTest {
     }
 
     @Test
-    fun `bulk PATCH is only sent for eligible repositories`() = runTest {
+    fun `bulk PATCH is only sent after live eligible preflight`() = runTest {
         val eligibleDto = repo(1, "one")
         val eligible = eligibleDto.toCandidate()
         val blocked = repo(2, "fork", isFork = true).toCandidate()
+
+        coEvery { api.getRepository("rafael", "one") } returns eligibleDto
         coEvery { api.updateVisibility("rafael", "one", any()) } returns eligibleDto.copy(
             isPrivate = true,
             visibility = "private"
@@ -49,11 +52,63 @@ class RepositoryPrivacyManagerTest {
         every { receiptStore.save(any()) } returns Result.success("/private/receipt.json")
 
         val result = manager.makePrivate(listOf(eligible, blocked))
+
         assertEquals(1, result.receipt.updated)
         assertEquals(1, result.receipt.skipped)
         assertEquals(0, result.receipt.failed)
+        assertEquals(PrivacyProvenanceState.DURABLE, result.provenanceState)
+        coVerify(exactly = 1) { api.getRepository("rafael", "one") }
         coVerify(exactly = 1) { api.updateVisibility("rafael", "one", any()) }
         coVerify(exactly = 0) { api.updateVisibility("rafael", "fork", any()) }
+    }
+
+    @Test
+    fun `receipt journal initialization failure blocks every GitHub mutation`() = runTest {
+        val eligible = repo(1, "one").toCandidate()
+        every { receiptStore.save(any()) } returns Result.failure(IllegalStateException("disk unavailable"))
+
+        val result = manager.makePrivate(listOf(eligible))
+
+        assertEquals(PrivacyProvenanceState.FAILED_BEFORE_MUTATION, result.provenanceState)
+        assertEquals(1, result.receipt.notAttempted)
+        assertEquals(0, result.receipt.updated)
+        assertNull(result.receiptPath)
+        coVerify(exactly = 0) { api.getRepository(any(), any()) }
+        coVerify(exactly = 0) { api.updateVisibility(any(), any(), any()) }
+    }
+
+    @Test
+    fun `stale inventory cannot authorize PATCH when live admin permission disappears`() = runTest {
+        val selectedDto = repo(1, "one", admin = true)
+        val selected = selectedDto.toCandidate()
+        val liveWithoutAdmin = selectedDto.copy(
+            permissions = PrivacyRepositoryPermissionsDto(admin = false)
+        )
+
+        coEvery { api.getRepository("rafael", "one") } returns liveWithoutAdmin
+        every { receiptStore.save(any()) } returns Result.success("/private/checkpoint.json")
+
+        val result = manager.makePrivate(listOf(selected))
+
+        assertEquals(0, result.receipt.updated)
+        assertEquals(1, result.receipt.skipped)
+        assertTrue(result.receipt.mutations.single().message.contains("Live preflight blocked"))
+        coVerify(exactly = 1) { api.getRepository("rafael", "one") }
+        coVerify(exactly = 0) { api.updateVisibility(any(), any(), any()) }
+    }
+
+    @Test
+    fun `repository identity mismatch is blocked before PATCH`() = runTest {
+        val selectedDto = repo(1, "one", admin = true)
+        val selected = selectedDto.toCandidate()
+        coEvery { api.getRepository("rafael", "one") } returns selectedDto.copy(id = 999)
+        every { receiptStore.save(any()) } returns Result.success("/private/checkpoint.json")
+
+        val result = manager.makePrivate(listOf(selected))
+
+        assertEquals(1, result.receipt.skipped)
+        assertTrue(result.receipt.mutations.single().message.contains("identity changed"))
+        coVerify(exactly = 0) { api.updateVisibility(any(), any(), any()) }
     }
 
     private fun repo(
