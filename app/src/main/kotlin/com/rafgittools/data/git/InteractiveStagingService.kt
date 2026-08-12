@@ -83,7 +83,7 @@ class InteractiveStagingService @Inject constructor(
                 "Interactive staging file exceeds $MAX_TEXT_BYTES bytes"
             }
 
-            val workBytesBefore = if (direction == Direction.STAGE) {
+            val workBytesBefore: ByteArray? = if (direction == Direction.STAGE) {
                 workFile.readBytes().also(::validateTargetText)
             } else {
                 null
@@ -113,8 +113,9 @@ class InteractiveStagingService @Inject constructor(
                 }
 
                 if (direction == Direction.STAGE) {
+                    val expectedWorkBytes = requireNotNull(workBytesBefore)
                     val workBytesAfterDiff = workFile.readBytes()
-                    require(workBytesAfterDiff.contentEquals(workBytesBefore)) {
+                    require(workBytesAfterDiff.contentEquals(expectedWorkBytes)) {
                         "Working tree changed while validating selected hunk"
                     }
                 } else {
@@ -153,8 +154,9 @@ class InteractiveStagingService @Inject constructor(
                     }
 
                     if (direction == Direction.STAGE) {
+                        val expectedWorkBytes = requireNotNull(workBytesBefore)
                         val workBytesBeforeCommit = workFile.readBytes()
-                        require(workBytesBeforeCommit.contentEquals(workBytesBefore)) {
+                        require(workBytesBeforeCommit.contentEquals(expectedWorkBytes)) {
                             "Working tree changed before index commit"
                         }
                     }
