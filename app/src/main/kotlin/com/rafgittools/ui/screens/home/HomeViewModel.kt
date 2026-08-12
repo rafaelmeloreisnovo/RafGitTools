@@ -59,7 +59,18 @@ class HomeViewModel @Inject constructor(
                 return@launch
             }
             if (_isAuthenticated.value) {
-                loadUserData()
+                // Application-level cache hydration is asynchronous. Rehydrate here before
+                // the first authenticated API call so a valid persisted session cannot race
+                // the AuthInterceptor and accidentally send an unauthenticated request.
+                val token = authRepository.getPat().getOrNull()
+                if (token.isNullOrBlank()) {
+                    authTokenCache.token = null
+                    _isAuthenticated.value = false
+                    _uiState.value = HomeUiState.NotAuthenticated
+                } else {
+                    authTokenCache.token = token
+                    loadUserData()
+                }
             } else {
                 _uiState.value = HomeUiState.NotAuthenticated
             }
@@ -71,10 +82,10 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = HomeUiState.Loading
 
-            githubRepository.getAuthenticatedUserSync() // FIX L7
+            githubRepository.getAuthenticatedUserSync()
                 .onSuccess { user -> _user.value = user }
 
-            githubRepository.getUserRepositoriesSync() // FIX L9
+            githubRepository.getUserRepositoriesSync()
                 .onSuccess { repos ->
                     _remoteRepositories.value = repos
                     _uiState.value = if (repos.isEmpty() && _localRepositories.value.isEmpty()) {
