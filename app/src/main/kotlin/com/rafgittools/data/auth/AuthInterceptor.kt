@@ -32,7 +32,10 @@ class AuthInterceptor @Inject constructor(
             return firstResponse
         }
 
-        val firstState = boundedLifecycle(firstResponse)
+        val firstState = boundedLifecycle(
+            response = firstResponse,
+            rejectedAccessToken = if (firstResponse.code == 401) token else null
+        )
         if (firstState is TokenRefreshManager.TokenState.Refreshed) {
             authTokenCache.token = firstState.accessToken
             firstResponse.close()
@@ -52,7 +55,7 @@ class AuthInterceptor @Inject constructor(
                 403 -> {
                     // Preserve the refreshed token; classify rate-limit/forbidden
                     // without attempting another refresh.
-                    boundedLifecycle(retryResponse)
+                    boundedLifecycle(retryResponse, rejectedAccessToken = null)
                 }
             }
             return retryResponse
@@ -75,13 +78,17 @@ class AuthInterceptor @Inject constructor(
             .build()
     }
 
-    private fun boundedLifecycle(response: Response): TokenRefreshManager.TokenState {
+    private fun boundedLifecycle(
+        response: Response,
+        rejectedAccessToken: String?
+    ): TokenRefreshManager.TokenState {
         return runBlocking(Dispatchers.IO) {
             withTimeoutOrNull(LIFECYCLE_TIMEOUT_MS) {
                 tokenRefreshManager.handleHttpResponse(
                     responseCode = response.code,
                     rateLimitRemaining = response.header("X-RateLimit-Remaining"),
-                    rateLimitReset = response.header("X-RateLimit-Reset")
+                    rateLimitReset = response.header("X-RateLimit-Reset"),
+                    rejectedAccessToken = rejectedAccessToken
                 )
             } ?: if (response.code == 401) {
                 TokenRefreshManager.TokenState.InvalidCredential(
@@ -102,6 +109,8 @@ class AuthInterceptor @Inject constructor(
     }
 
     companion object {
-        private const val LIFECYCLE_TIMEOUT_MS = 1_500L
+        // Long enough for one mobile-network refresh round trip; still bounded so
+        // a storage/network stall cannot hold the OkHttp worker indefinitely.
+        private const val LIFECYCLE_TIMEOUT_MS = 15_000L
     }
 }
