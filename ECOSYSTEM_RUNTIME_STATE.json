@@ -1,11 +1,49 @@
 {
   "schema": "raf.ecosystem-runtime-state.v1",
-  "observed_at": "2026-08-14T17:02:11Z",
+  "observed_at": "2026-08-14T17:30:22Z",
   "ci_execution": {
     "state": "AVAILABLE",
-    "reason": "Android Client Build run 31821491676 executed on runner 1000132315 for commit bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa and completed successfully. Custody/structural tests, authentication tests, full dev unit tests, Android lint, assembleDevDebug, APK verification/build receipt and artifact upload all passed. Earlier billing-blocked runs remain historical and do not describe this observed cut."
+    "reason": "Hosted runners are available. The last commit-bound verified Android build remains run 31821491676 for bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa. For current PR #347 head d69922fc1e1616d87a3afe5c811a3f9de53f2721, Android Client Build run 31824266729 and companion workflows were queued at the observation cut; therefore no current-head PASS is inferred."
   },
   "components": [
+    {
+      "id": "rafgittools.current-head-gate",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": ".",
+      "implementation_state": "REFERENCE",
+      "evidence_state": "TOKEN_VAZIO",
+      "evidence": [
+        "PR #347 is open, draft and mergeable=true at the observation cut",
+        "Current head is d69922fc1e1616d87a3afe5c811a3f9de53f2721",
+        "Android Client Build run 31824266729 was queued for the exact current head",
+        "CI, Source Gap Audit, Documentation, Internal Validation, Security, CodeQL and other companion workflows were also queued for the exact current head"
+      ],
+      "gaps": [
+        "No completed current-head test/lint/build result exists at this observation cut",
+        "No current-head APK SHA-256/build receipt exists yet",
+        "Physical-device receipt remains TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED"
+      ],
+      "next_action": "Accept BUILD_VERIFIED for the current head only after its own structural tests, auth tests, full unit tests, lint, assemble, APK verification and build receipt all pass; then use that exact artifact for physical closure.",
+      "commit": "d69922fc1e1616d87a3afe5c811a3f9de53f2721"
+    },
+    {
+      "id": "rafgittools.ci-pr-binding",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": ".github/workflows/ci.yml",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence": [
+        "Historical hardcoded target issues/236/comments was removed from the successor branch",
+        "PR comment target is now bound to github.event.pull_request.number",
+        "PR_NUMBER is validated before the API write",
+        "tests/test_workflow_pr_binding.py rejects a numeric hardcoded issue/PR comment target",
+        "android-client-build.yml includes the new regression in the custody/structural test gate"
+      ],
+      "gaps": [
+        "The new regression and workflow binding are not VERIFIED until the exact current-head CI run executes and passes"
+      ],
+      "next_action": "Observe the current-head structural gate and CI publish step; promote this component to VERIFIED only after PASS."
+    },
     {
       "id": "rafgittools.android-client",
       "repository": "rafaelmeloreisnovo/RafGitTools",
@@ -24,10 +62,11 @@
         "APK verification confirmed armeabi-v7a and arm64-v8a"
       ],
       "gaps": [
-        "Physical-device install/start receipt for the exact APK remains TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED",
+        "This VERIFIED evidence is commit-bound to bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa and is not silently inherited by PR #347 head",
+        "Physical-device install/start receipt remains TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED",
         "Release signing and release acceptance remain outside this verified build cut"
       ],
-      "next_action": "Install and launch the exact hash-bound APK on a supported physical ARM device and close the runtime receipt without changing commit or APK bytes.",
+      "next_action": "First close the current-head build gate. Then install and launch the exact current-head hash-bound APK on a supported physical ARM device and close the runtime receipt.",
       "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
     },
     {
@@ -45,10 +84,11 @@
         "Full dev unit test suite also passed in the same run"
       ],
       "gaps": [
+        "Verification is anchored to bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa",
         "Real OAuth/GitHub App Client ID configuration is not present in this evidence chain",
         "Authenticated Android device smoke remains TOKEN_VAZIO_RUNTIME"
       ],
-      "next_action": "Use a disposable real credential fixture on the physical device after the compile-run triangle closes, without logging credential material.",
+      "next_action": "After current-head BUILD and device smoke, exercise disposable real credential fixtures without logging credential material.",
       "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
     },
     {
@@ -68,10 +108,11 @@
         "Authentication tests and full dev unit tests passed in run 31821491676"
       ],
       "gaps": [
+        "Verification is anchored to bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa",
         "Real GitHub App Device Flow refresh rotation remains CONFIG_REQUIRED / TOKEN_VAZIO_RUNTIME",
         "PAT/OAuth 401 reauthentication behavior on physical Android remains TOKEN_VAZIO_RUNTIME"
       ],
-      "next_action": "After device build smoke, prove both a non-refreshable 401 path and a refresh-capable GitHub App rotation on disposable authenticated fixtures.",
+      "next_action": "After current-head BUILD/device smoke, prove a non-refreshable 401 path and a refresh-capable GitHub App rotation on disposable fixtures.",
       "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
     },
     {
@@ -99,12 +140,13 @@
         "Gate separates PASS, FAIL, TOKEN_VAZIO and SKIP",
         "Gate checks source anchors, JDK17, Android SDK, unit tests, APK/hash and device presence",
         "Physical install/start is explicit opt-in",
-        "The hosted build pipeline independently proved tests, lint, APK build, APK hash/ABI verification and build receipt for the current candidate"
+        "A hosted build independently proved tests, lint, APK build, APK hash/ABI verification and build receipt for the bbdb556 anchor"
       ],
       "gaps": [
-        "VERIFIED_DEVICE still requires APK hash and physical smoke in one evidence chain"
+        "Current-head BUILD verification is pending",
+        "VERIFIED_DEVICE requires current-head APK hash and physical smoke in one evidence chain"
       ],
-      "next_action": "Use the physical closure gate with the exact APK SHA-256 already emitted by the successful hosted build."
+      "next_action": "Use the exact APK/build receipt emitted by the successful current-head pipeline once it exists; do not reuse the bbdb556 artifact as a d69922fc receipt."
     },
     {
       "id": "rafgittools.interactive-staging",
@@ -121,9 +163,10 @@
         "Full dev unit tests passed in run 31821491676"
       ],
       "gaps": [
+        "Verification is anchored to bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa",
         "Physical Android interactive-staging smoke remains TOKEN_VAZIO_RUNTIME"
       ],
-      "next_action": "Run a two-hunk stage/unstage physical Android fixture after installing the hash-bound APK.",
+      "next_action": "After current-head BUILD/device install, run a two-hunk stage/unstage physical Android fixture.",
       "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
     },
     {
@@ -140,7 +183,7 @@
       "gaps": [
         "Production scheduling/restart recovery requires device regression"
       ],
-      "next_action": "Exercise enqueue/restart/recovery on device and record a receipt."
+      "next_action": "Exercise enqueue/restart/recovery on the current candidate device build and record a receipt."
     },
     {
       "id": "rafgittools.terminal-bounded-executor",
@@ -172,9 +215,10 @@
         "Full dev unit tests passed in run 31821491676"
       ],
       "gaps": [
+        "Verification is anchored to bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa",
         "Real provider credentials/endpoints are not exercised in this evidence chain"
       ],
-      "next_action": "Validate each provider independently with disposable credentials and repositories.",
+      "next_action": "After current-head BUILD/device smoke, validate each provider independently with disposable credentials and repositories.",
       "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
     },
     {
@@ -188,10 +232,11 @@
         "The generated APK passed verification with native libraries for armeabi-v7a and arm64-v8a in run 31821491676"
       ],
       "gaps": [
+        "Verification is anchored to bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa",
         "Native library presence in the APK does not by itself prove every native method on physical hardware",
         "Experimental RAFAELIA kernels remain outside this promotion"
       ],
-      "next_action": "Add a physical JNI health receipt after the exact APK is installed.",
+      "next_action": "After current-head BUILD/device install, add a physical JNI health receipt.",
       "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
     },
     {
