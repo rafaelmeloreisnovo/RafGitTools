@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: android-client-${{ github.workflow }}-${{ github.ref }}
@@ -32,6 +32,24 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+
+      - name: Apply one-shot JGit working-tree diff repair
+        if: github.ref == 'refs/heads/hardening/first-compile-run-triangle-20260814'
+        run: |
+          set -euo pipefail
+          python3 scripts/repair_jgit_getdiff_once.py
+          if git diff --quiet -- app/src/main/kotlin/com/rafgittools/data/git/JGitService.kt; then
+            echo 'No JGitService repair required.'
+          else
+            git diff --check
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add app/src/main/kotlin/com/rafgittools/data/git/JGitService.kt
+            git commit -m 'fix(git): format working-tree diffs from live iterator'
+            git push origin HEAD:hardening/first-compile-run-triangle-20260814
+            echo 'Repair committed. Stop this run so the committed tree is validated next.'
+            exit 78
+          fi
 
       - name: Configure Java 17
         uses: actions/setup-java@v4
