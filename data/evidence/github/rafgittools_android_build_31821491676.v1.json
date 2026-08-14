@@ -1,0 +1,55 @@
+{
+  "schema": "rafgittools.github-actions-build-evidence.v1",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "observed_at": "2026-08-14T17:02:11Z",
+  "branch": "hardening/first-compile-run-triangle-20260814",
+  "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa",
+  "pull_request": 346,
+  "workflow": {
+    "name": "Android Client Build",
+    "run_id": 31821491676,
+    "job_id": 94835531838,
+    "runner_id": 1000132315,
+    "conclusion": "success",
+    "passed_gates": [
+      "custody_structural_unit_tests",
+      "authentication_unit_tests",
+      "full_dev_unit_tests",
+      "android_lint",
+      "assembleDevDebug",
+      "apk_verification",
+      "build_receipt",
+      "artifact_upload"
+    ]
+  },
+  "artifact": {
+    "name": "RafGitTools-devDebug",
+    "id": 9227343409,
+    "archive_digest": "sha256:2f92034fc4a4a1c9242453798c8eae6e1d68b134e8ff39b46ea4c283c976eb09",
+    "expired_at_observation": false,
+    "expires_at": "2026-09-13T17:02:07Z"
+  },
+  "apk": {
+    "file": "app-dev-debug.apk",
+    "bytes": 24672130,
+    "sha256": "115b9cb1e71f53f16b2648924a09549b8e5e0b9e453280cab2e7f183a411ebf6",
+    "zip_crc": "PASS",
+    "abis": [
+      "armeabi-v7a",
+      "arm64-v8a"
+    ],
+    "dual_abi_gate": "PASS"
+  },
+  "build_receipt": {
+    "schema": "rafgittools.android-build-receipt.v1",
+    "sha256": "f124ac18a9f1e158aa764a12b49a25dbf54cc870cca8359e0355416bee5219a5",
+    "artifact_gate": "PASS"
+  },
+  "runtime": {
+    "physical_device": "TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED",
+    "triangle_closure": "TOKEN_VAZIO",
+    "claim_allowed": false,
+    "release_allowed": false
+  },
+  "boundary": "This evidence proves source-bound tests/lint/build/APK identity for the exact commit. It does not prove physical-device runtime or release readiness."
+}
