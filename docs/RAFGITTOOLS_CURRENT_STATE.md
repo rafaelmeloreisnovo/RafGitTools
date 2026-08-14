@@ -1,141 +1,162 @@
 # RAFGITTOOLS_CURRENT_STATE
 
-- Status: **ATIVO — source-functional avançado / runtime ainda gated**
-- Estado observado: **2026-08-12**
-- Fonte de verdade: `app/src/`, testes, contratos, `docs/PENDING_33_ITEMS.md`, `ECOSYSTEM_RUNTIME_STATE.json` e receipts executáveis.
-- GitHub Actions: **BLOCKED_INFRA_BILLING** — checks recentes registram `steps=[]`, `runner_id=0` e annotation de pagamento/spending limit. Ausência de execução não é PASS nem FAIL_CODE.
-- Claim boundary: **`claim_allowed=false`** até build/test executado + APK/SHA-256 + device smoke do head revisado.
+- Status: **ATIVO — source-functional avançado + BUILD verificado / DEVICE ainda gated**
+- Estado observado: **2026-08-14**
+- Branch observada: `hardening/first-compile-run-triangle-20260814`
+- Commit executado: `bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa`
+- PR de reconciliação: **#346 (draft, mergeable na observação)**
+- Base `main` na observação: `d62bb58f33624ecad888f86e9f95e33deb2f91be`
+- Fonte de verdade operacional: `app/src/` + testes + contratos + `ECOSYSTEM_RUNTIME_STATE.json` + workflow/receipts observados.
+- Claim boundary: **`claim_allowed=false`** e **`release_allowed=false`** até o smoke físico do mesmo APK/commit e gates posteriores de release.
 
-## Núcleo Android/Git/GitHub
+## Regra canônica de evidência
 
-| Componente | Estado de fonte | Limite atual |
+```text
+ideia != fonte integrada != teste executado != APK produzido != device executado != release
+```
+
+Roadmap, README histórico ou contagem de features **não podem rebaixar nem promover** estado técnico sem reconciliação com fonte e evidência executável.
+
+## Evidência executável atual
+
+### GitHub Actions — Android Client Build
+
+- run: `31821491676`
+- job: `94835531838`
+- conclusão: `success`
+- runner alocado e executado: sim
+- Java 17: PASS
+- Android SDK: PASS
+- custody/structural tests: PASS
+- authentication unit tests: PASS
+- full dev unit tests: PASS
+- Android lint: PASS
+- `assembleDevDebug`: PASS
+- APK verification/build receipt: PASS
+- artifact upload: PASS
+
+O estado histórico `BLOCKED_INFRA_BILLING` deixa de descrever o corte atual: houve execução completa e bem-sucedida para o commit acima. Falhas antigas permanecem história, não fonte de verdade atual.
+
+### Artefato observado
+
+- Actions artifact: `RafGitTools-devDebug`
+- artifact id: `9227343409`
+- archive digest GitHub: `sha256:2f92034fc4a4a1c9242453798c8eae6e1d68b134e8ff39b46ea4c283c976eb09`
+- APK interno: `app-dev-debug.apk`
+- APK size: `24,672,130` bytes
+- APK SHA-256: `115b9cb1e71f53f16b2648924a09549b8e5e0b9e453280cab2e7f183a411ebf6`
+- ZIP CRC: PASS
+- `armeabi-v7a`: PRESENT
+- `arm64-v8a`: PRESENT
+- dual ABI gate: PASS
+- build receipt schema: `rafgittools.android-build-receipt.v1`
+- build receipt SHA-256: `f124ac18a9f1e158aa764a12b49a25dbf54cc870cca8359e0355416bee5219a5`
+
+### Triângulo compile-run
+
+```text
+SOURCE  = PASS  (commit exato)
+BUILD   = PASS  (tests + lint + APK + SHA + ABI + receipt)
+DEVICE  = TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED
+RELEASE = BLOCKED_BY_DEVICE_AND_RELEASE_GATES
+```
+
+O fechamento válido continua exigindo que **os mesmos bytes** do APK sejam instalados/iniciados no aparelho físico e o runtime receipt revalide commit + APK SHA-256.
+
+## Núcleo Android / Git / GitHub
+
+| Componente | Estado atual | Evidência / limite |
 |---|---|---|
-| Android / Compose / Hilt / Room | `IMPLEMENTED_ADVANCED` | build/test do head e device smoke não comprovados |
-| P33 roadmap L1 | `33/33 SOURCE_FUNCTIONAL` | não equivale a runtime PASS |
-| PAT + armazenamento seguro | `IMPLEMENTED` | device regression pendente |
-| Token lifecycle P33-25 | `IMPLEMENTED / INTEGRATED / CAPABILITY_AWARE` | PAT/OAuth App reautenticam; GitHub App Device Flow pode rotacionar refresh token quando a capacidade existe; runtime real pendente |
-| OAuth Device Flow | `IMPLEMENTED / CONFIG_REQUIRED` | exige Client ID público real |
-| GitHub privado HTTPS | `IMPLEMENTED / RUNTIME_GATED` | token usado como password, nunca como URL/username |
-| Force-with-lease | `IMPLEMENTED / RUNTIME_GATED` | destination-ref lease + authenticated `lsRemote`; fixture privada real pendente |
-| Interactive hunk staging | `IMPLEMENTED / RUNTIME_GATED` | index-only stage/unstage; Android smoke pendente |
-| API GitHub | `PARTIAL_ADVANCED / RUNTIME_GATED` | falta matriz end-to-end completa |
-| Git local via JGit | `IMPLEMENTED_ADVANCED / RUNTIME_GATED` | rede, credenciais e conflitos exigem regressão real |
-| SSH auth | `PARTIAL / RUNTIME_GATED` | depende de chave/servidor real |
-| GPG | `ADAPTER_IMPLEMENTED / TOKEN_VAZIO_RUNTIME` | exige `gpg` autorizado |
-| Git LFS | `IMPLEMENTED / TOKEN_VAZIO_RUNTIME` | exige `git-lfs` + fixture |
-| Worktree | `IMPLEMENTED / TOKEN_VAZIO_RUNTIME` | falta matriz filesystem/device |
-| Bisect | `IMPLEMENTED / TOKEN_VAZIO_RUNTIME` | falta cenário regressivo controlado |
-| Terminal | `BOUNDED_EXECUTOR` | não é PTY/VT100; Git gravável fica fora da allowlist genérica |
-| Multi-provider | `IMPLEMENTED` | GitLab/Bitbucket/Gitea-Forgejo/Azure DevOps requerem credenciais/fixtures reais |
-| Offline queue | `IMPLEMENTED` | recovery/scheduling em device ainda requer evidence |
-| LLaMA kernel JNI | `BRIDGE_IMPLEMENTED / BLOCKED_EXTERNAL` | `llama.h`/runtime externo não pinado/provado |
+| Android / Compose / Hilt / Room | `IMPLEMENTED_ADVANCED + BUILD_VERIFIED` | full unit tests, lint e assemble PASS; device pendente |
+| P33 roadmap L1 | `33/33 SOURCE_FUNCTIONAL` | fonte completa; runtime por feature continua granular |
+| PAT + armazenamento seguro | `IMPLEMENTED + TESTS_EXECUTED` | authentication tests PASS; device regression pendente |
+| Token lifecycle P33-25 | `IMPLEMENTED / CAPABILITY_AWARE + TESTS_EXECUTED` | testes executados; refresh real GitHub App exige configuração/fixture |
+| OAuth Device Flow | `IMPLEMENTED / CONFIG_REQUIRED` | Client ID real e device flow real ainda necessários |
+| GitHub privado HTTPS | `IMPLEMENTED / RUNTIME_GATED` | fixture privada real pendente |
+| Force-with-lease | `IMPLEMENTED / RUNTIME_GATED` | contrato fail-closed em fonte; remote fixture pendente |
+| Interactive hunk staging | `IMPLEMENTED + UNIT_TESTS_EXECUTED / DEVICE_GATED` | regressão unitária executada; smoke Android pendente |
+| API GitHub | `PARTIAL_ADVANCED / RUNTIME_GATED` | fonte extensa; falta matriz end-to-end real |
+| Git local via JGit | `IMPLEMENTED_ADVANCED + BUILD_VERIFIED / RUNTIME_GATED` | fonte compilou/testou; rede/credenciais/conflitos reais pedem regressão |
+| SSH auth | `PARTIAL / RUNTIME_GATED` | chave/servidor reais pendentes |
+| GPG | `ADAPTER_IMPLEMENTED / TOKEN_VAZIO_RUNTIME` | exige `gpg` autorizado e fixture |
+| Git LFS | `IMPLEMENTED / TOKEN_VAZIO_RUNTIME` | exige `git-lfs` + repositório real |
+| Worktree | `IMPLEMENTED / TOKEN_VAZIO_RUNTIME` | matriz filesystem/device pendente |
+| Bisect | `IMPLEMENTED / TOKEN_VAZIO_RUNTIME` | cenário regressivo controlado pendente |
+| Terminal | `BOUNDED_EXECUTOR` | deliberadamente não é PTY/VT100 |
+| Multi-provider | `IMPLEMENTED / FIXTURE_GATED` | GitLab/Bitbucket/Gitea-Forgejo/Azure DevOps em fonte; credenciais/fixtures reais pendentes |
+| Offline queue | `IMPLEMENTED / DEVICE_GATED` | durability em fonte; restart/recovery físico pendente |
+| rafaelia JNI | `BRIDGE_IMPLEMENTED + BUILD_VERIFIED` | camada nativa participa do build; sem promover kernel experimental |
+| LLaMA kernel JNI | `BRIDGE_IMPLEMENTED / BLOCKED_EXTERNAL` | `llama.h`/runtime externo ainda não pinado/provado |
+
+## Correções de documentação deste corte
+
+1. `GitHub Actions = BLOCKED_INFRA_BILLING` era estado histórico; **o run 31821491676 executou e passou**.
+2. `APK devDebug = TOKEN_VAZIO` era histórico; agora há APK hash-bound e dual ABI verificado no BUILD.
+3. `Multi-provider = STUB_TYPED` está obsoleto para a fonte atual; adapters estão implementados, embora fixtures reais permaneçam pendentes.
+4. `OfflineQueue codec/WorkManager pendentes` não representa a fonte atual; existem armazenamento durável/workers, com evidence física ainda aberta.
+5. P33 permanece `33/33 SOURCE_FUNCTIONAL`, sem confundir isso com `33/33 DEVICE_VERIFIED`.
+6. Percentuais antigos do roadmap permanecem **baseline de planejamento**, não medição automática do estado atual do código.
 
 ## Autenticação — contrato canônico
 
-### Persistência
+- Access token cifrado com Android Keystore/AES-GCM.
+- Refresh token, quando fornecido por Device Flow, usa alias separado.
+- `savePat()` elimina refresh state incompatível de sessão anterior.
+- `clearAuthState()` remove access/refresh/expiries/identidade de sessão.
+- PAT/OAuth sem refresh capability: 401 -> fail-closed -> reautenticação.
+- GitHub App Device Flow com refresh capability: rotação serializada, sem `client_secret`, retry único.
+- 403 rate-limit não é confundido com invalid credential.
 
-- Access token é cifrado com Android Keystore/AES-GCM.
-- Refresh token, quando o Device Flow realmente o fornece, usa alias Keystore separado.
-- `savePat()` remove refresh token e expiries anteriores; troca de credencial não herda capacidade de outra sessão.
-- `saveOAuthSession()` grava access + refresh opcional + expiries numa única edição de DataStore.
-- `clearAuthState()` remove access, refresh, expiries, username e método.
-- `AuthTokenCache` mantém somente a cópia em memória usada pelo interceptor.
-- nenhum client secret faz parte do contrato Android.
+A regressão de autenticação do head observado foi executada com sucesso no run `31821491676`; **serviços reais/credenciais reais continuam um gate separado**.
 
-### Ciclo de vida capability-aware
+## Interactive staging — boundary
 
-```text
-request autenticado
-  -> 2xx/3xx: sessão permanece
+P33-05 permanece limitado a tracked `MODIFY`, UTF-8 <= 2 MiB e newline final. Stage/unstage é index-only, revalida hunk/HEAD/index e falha fechado para inputs fora do contrato. O corte de 2026-08-14 também corrigiu a regressão `MissingObjectException` mantendo scan + format no mesmo `DiffFormatter`; os unit tests completos do `devDebug` passaram.
 
-  -> 401 com PAT/OAuth App sem refresh_token:
-       refresh capability ausente
-       -> clearAuthState
-       -> AuthTokenCache = null
-       -> reautenticação
+## Fonte de verdade ordenada
 
-  -> 401 com GitHub App Device Flow + refresh_token:
-       recoveryMutex
-       -> refreshMutex
-       -> se outro request já rotacionou o token rejeitado: reutiliza token novo
-       -> senão refresh(client_id, grant_type=refresh_token, refresh_token)
-       -> NÃO envia client_secret
-       -> persiste access+refresh rotacionados
-       -> atualiza cache
-       -> fecha resposta 401 anterior
-       -> retry exatamente uma vez
-       -> segundo 401: invalida, sem segundo refresh
+1. commit/branch exatos observados;
+2. código compilado em `app/src/`;
+3. testes e lint efetivamente executados;
+4. APK + SHA-256 + ABI + build receipt;
+5. `ECOSYSTEM_RUNTIME_STATE.json`;
+6. receipts de device quando existirem;
+7. documentos de estado atual;
+8. roadmap e documentação histórica.
 
-  -> 403 + X-RateLimit-Remaining=0: RateLimited; sessão preservada
-  -> outro 403: Forbidden; sessão preservada
-```
-
-O antigo `refreshOAuthToken(clientId, clientSecret, refreshToken)` que sempre falhava foi removido. A implementação atual só ativa refresh quando existe uma capacidade real persistida pelo Device Flow.
-
-### Concorrência
-
-Dois 401 simultâneos não podem consumir o mesmo refresh token rotativo duas vezes. O fluxo compara o access token rejeitado com o access token persistido **dentro do mutex**: se já mudou, reutiliza a sessão nova. Além disso, refresh + decisão + eventual `clearAuthState()` passam pelo mesmo `recoveryMutex`, impedindo uma limpeza atrasada apagar uma rotação bem-sucedida.
-
-## Git privado — contrato canônico
+## TOKEN_VAZIO preservado
 
 ```text
-UI GitHub HTTPS:
-username = login GitHub ou x-access-token
-password = PAT/OAuth token
-
-JGit Credentials.Token:
-username = x-access-token
-password = token
+physical-device install/start       = TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED
+physical runtime receipt same APK   = TOKEN_VAZIO
+private Git remote fixtures         = TOKEN_VAZIO_RUNTIME
+PAT/OAuth real device regression    = TOKEN_VAZIO_RUNTIME
+GitHub App refresh real             = CONFIG_REQUIRED / TOKEN_VAZIO_RUNTIME
+SSH provider matrix                 = TOKEN_VAZIO_RUNTIME
+GPG/LFS/worktree/bisect fixtures    = TOKEN_VAZIO_RUNTIME
+release signing/release acceptance  = TOKEN_VAZIO_RELEASE
+claim_allowed                       = false
+release_allowed                     = false
 ```
 
-Esse mapeamento cobre clone normal/shallow/single-branch/submodules, fetch, pull, pull-rebase, push e force-with-lease.
+## Próximo gate
 
-Force-with-lease usa:
+Executar o APK de SHA-256 `115b9cb1e71f53f16b2648924a09549b8e5e0b9e453280cab2e7f183a411ebf6` em aparelho físico ARM suportado e produzir runtime receipt que vincule:
 
 ```text
-authenticated lsRemote preflight
-+ exact expected 40-hex OID
-+ RefLeaseSpec(refs/heads/<branch>, expected)
-+ no fallback to unconditional force
+commit bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa
++ APK SHA-256
++ package/application id observado
++ ABI/device
++ install result
++ launch result
++ timestamp
 ```
 
-## Interactive staging — contrato canônico
+Somente depois fechar `triangle_closure=PASS`.
 
-P33-05 está implementado para tracked `MODIFY`, UTF-8 <= 2 MiB e newline final. A operação é index-only, revalida hunk/HEAD/index, usa `lockDirCache + DirCacheEditor.commit()`, libera lock em `finally` e rejeita binário/non-UTF8/no-final-newline/unmerged fail-closed. Esses limites são contrato, não `TOKEN_VAZIO`.
+## Retroalimentar[4] — 2026-08-14
 
-## Executor / fila / providers
-
-`TerminalEmulator` é bounded executor de leitura; operações graváveis passam por ações tipadas. A fila offline possui armazenamento durável/workers, mas device recovery ainda requer evidence. Multi-provider possui fonte para GitHub, GitLab, Bitbucket, Gitea/Forgejo e Azure DevOps; adapters não substituem fixtures reais.
-
-## Diretório `fazer/`
-
-`fazer/` permanece histórico/não compilado e **não é fonte de verdade**. Implementações compiladas vivem em `app/src/`.
-
-## Contratos locais
-
-- `contracts/job-v1.schema.json`
-- `contracts/ecosystem-runtime-state.schema.json`
-- `ECOSYSTEM_RUNTIME_STATE.json`
-- `scripts/validate_runtime_truth.py`
-- `scripts/rafgittools_private_auth_check.sh`
-- `scripts/rafgittools_readiness_gate.sh`
-
-## Evidência ainda pendente
-
-```text
-GitHub Actions execution       = BLOCKED_INFRA_BILLING
-local Gradle/Kotlin tests      = TOKEN_VAZIO até executar gate local
-APK devDebug + SHA-256         = TOKEN_VAZIO
-physical device install/start  = TOKEN_VAZIO
-private Git remote fixtures    = TOKEN_VAZIO_RUNTIME
-PAT/OAuth reauth device flow   = TOKEN_VAZIO_RUNTIME
-GitHub App refresh rotation    = CONFIG_REQUIRED / TOKEN_VAZIO_RUNTIME
-GPG/LFS/worktree/bisect        = TOKEN_VAZIO_RUNTIME
-claim_allowed                  = false
-```
-
-## Retroalimentar[4] — 2026-08-12
-
-- **F_ok:** P33 33/33 em fonte; Privacy Manager, Readiness Gate, HTTPS privado, force-with-lease, hunk staging e token lifecycle possuem contratos fail-closed e regressões de fonte.
-- **F_gap:** Gradle/APK/device não foram executados porque hosted runner está billing-blocked e o gate local ainda não foi executado; GitHub App refresh real exige Client ID/configuração e sessão real.
-- **F_next:** continuar eliminando contradições de fonte; runtime fecha por `readiness gate -> tests -> APK/SHA -> device smoke -> fixtures privadas/OAuth`.
+- **F_ok:** source + testes + lint + APK + SHA + dual ABI + build receipt estão materialmente provados no candidato.
+- **F_gap:** device físico, fixtures externas e release continuam sem prova.
+- **F_next:** fechar DEVICE usando exatamente o APK hash-bound; depois integrar #346 sem regredir a cadeia de custódia.

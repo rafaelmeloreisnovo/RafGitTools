@@ -49,6 +49,7 @@ class AuthViewModel @Inject constructor(
             val offline = authRepository.isOfflineMode()
             val method = authRepository.getAuthMethod().getOrNull()
             val token = authRepository.getPat().getOrNull()
+            val username = authRepository.getUsername()
 
             val tokenRequired = method in setOf(
                 AuthMethod.PAT,
@@ -56,8 +57,13 @@ class AuthViewModel @Inject constructor(
                 AuthMethod.OAUTH_WEB,
                 AuthMethod.GH_CLI_IMPORT
             )
+            val incompleteOnlineIdentity = authenticated && !offline && (
+                method == null ||
+                    username.isNullOrBlank() ||
+                    (tokenRequired && token.isNullOrBlank())
+                )
 
-            if (authenticated && tokenRequired && token.isNullOrBlank()) {
+            if (incompleteOnlineIdentity) {
                 authRepository.clearAuthState()
                 authTokenCache.token = null
                 _isAuthenticated.value = false
@@ -68,7 +74,7 @@ class AuthViewModel @Inject constructor(
             }
 
             _isAuthenticated.value = authenticated
-            _username.value = authRepository.getUsername()
+            _username.value = username
             authTokenCache.token = token
             _selectedMethod.value = method
 

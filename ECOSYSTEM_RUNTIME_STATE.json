@@ -1,71 +1,78 @@
 {
   "schema": "raf.ecosystem-runtime-state.v1",
-  "observed_at": "2026-08-12T04:50:00Z",
+  "observed_at": "2026-08-14T17:02:11Z",
   "ci_execution": {
-    "state": "BLOCKED_INFRA",
-    "reason": "GitHub Actions is billing/spending blocked before runner allocation. On the reviewed interactive-staging head, GitHub recorded steps=[], runner_id=0 and an annotation that the job was not started because recent account payments failed or the spending limit must be increased. Therefore no Gradle/Kotlin/APK execution is inferred from hosted CI."
+    "state": "AVAILABLE",
+    "reason": "Android Client Build run 31821491676 executed on runner 1000132315 for commit bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa and completed successfully. Custody/structural tests, authentication tests, full dev unit tests, Android lint, assembleDevDebug, APK verification/build receipt and artifact upload all passed. Earlier billing-blocked runs remain historical and do not describe this observed cut."
   },
   "components": [
     {
       "id": "rafgittools.android-client",
       "repository": "rafaelmeloreisnovo/RafGitTools",
       "path": "app/",
-      "implementation_state": "PARTIAL",
-      "evidence_state": "DECLARED_BY_AUTHOR",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "VERIFIED",
       "evidence": [
         "Kotlin/Compose/Hilt/Room source is integrated",
         "P33 backlog is 33/33 source-functional",
-        "GitHub API and JGit source paths are integrated"
+        "GitHub API and JGit source paths are integrated",
+        "Android Client Build run 31821491676 completed successfully for commit bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa",
+        "Full dev unit tests and Android lint passed",
+        "assembleDevDebug passed",
+        "Artifact RafGitTools-devDebug id 9227343409 was uploaded",
+        "APK app-dev-debug.apk is hash-bound as SHA-256 115b9cb1e71f53f16b2648924a09549b8e5e0b9e453280cab2e7f183a411ebf6",
+        "APK verification confirmed armeabi-v7a and arm64-v8a"
       ],
       "gaps": [
-        "Hosted Gradle/Kotlin tests cannot run while Actions billing/spending blocks runner allocation",
-        "No devDebug APK + SHA-256 exists for the current reviewed head",
-        "No current physical-device install/start receipt exists"
+        "Physical-device install/start receipt for the exact APK remains TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED",
+        "Release signing and release acceptance remain outside this verified build cut"
       ],
-      "next_action": "Run scripts/rafgittools_readiness_gate.sh with a configured local JDK17/Android SDK, then record APK hash and explicit device smoke."
+      "next_action": "Install and launch the exact hash-bound APK on a supported physical ARM device and close the runtime receipt without changing commit or APK bytes.",
+      "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
     },
     {
       "id": "rafgittools.auth",
       "repository": "rafaelmeloreisnovo/RafGitTools",
       "path": "app/src/main/kotlin/com/rafgittools/data/auth/",
       "implementation_state": "IMPLEMENTED",
-      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence_state": "VERIFIED",
       "evidence": [
         "PAT validation and encrypted persistence exist",
         "OAuth Device Flow exists with placeholder Client ID rejection",
         "gh CLI import validates hostname/exit code and separates stderr",
-        "GitHub HTTPS UI/JGit use token material as password rather than URL/username"
+        "GitHub HTTPS UI/JGit use token material as password rather than URL/username",
+        "Authentication unit tests passed in Android Client Build run 31821491676",
+        "Full dev unit test suite also passed in the same run"
       ],
       "gaps": [
         "Real OAuth/GitHub App Client ID configuration is not present in this evidence chain",
-        "Authenticated Android smoke remains TOKEN_VAZIO_RUNTIME"
+        "Authenticated Android device smoke remains TOKEN_VAZIO_RUNTIME"
       ],
-      "next_action": "Use PAT for bootstrap; separately configure a real Client ID and prove the selected login path on device without logging credential material."
+      "next_action": "Use a disposable real credential fixture on the physical device after the compile-run triangle closes, without logging credential material.",
+      "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
     },
     {
       "id": "rafgittools.token-lifecycle",
       "repository": "rafaelmeloreisnovo/RafGitTools",
       "path": "app/src/main/kotlin/com/rafgittools/data/auth/TokenRefreshManager.kt",
       "implementation_state": "IMPLEMENTED",
-      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence_state": "VERIFIED",
       "evidence": [
         "PAT/OAuth sessions without refresh capability fall back to fail-closed reauthentication on 401",
         "Device Flow token responses preserve optional access expiry, refresh token and refresh expiry",
         "Refresh token is encrypted under a separate Android Keystore alias",
         "savePat removes stale refresh state and clearAuthState removes access+refresh+expiries",
         "GitHub App refresh request uses client_id + grant_type=refresh_token + refresh_token and no client secret",
-        "refreshMutex serializes rotating refresh-token consumption",
-        "recoveryMutex serializes refresh decision and session invalidation",
-        "Concurrent stale 401s reuse an access token already rotated by another request",
-        "AuthInterceptor retries exactly once after successful rotation and invalidates on the second 401",
-        "Unit-test source covers refresh-capable, non-refreshable, expired/bad refresh, concurrent-coalescing and retry-loop cases"
+        "refreshMutex and recoveryMutex serialize rotating refresh and invalidation decisions",
+        "AuthInterceptor retries exactly once after successful rotation and invalidates on a second 401",
+        "Authentication tests and full dev unit tests passed in run 31821491676"
       ],
       "gaps": [
-        "Gradle/Kotlin execution of the token-lifecycle tests is unobserved because hosted runner allocation is blocked",
         "Real GitHub App Device Flow refresh rotation remains CONFIG_REQUIRED / TOKEN_VAZIO_RUNTIME",
         "PAT/OAuth 401 reauthentication behavior on physical Android remains TOKEN_VAZIO_RUNTIME"
       ],
-      "next_action": "Execute local unit tests; then prove both a non-refreshable 401 path and a refresh-capable GitHub App rotation on a disposable authenticated Android fixture."
+      "next_action": "After device build smoke, prove both a non-refreshable 401 path and a refresh-capable GitHub App rotation on disposable authenticated fixtures.",
+      "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
     },
     {
       "id": "rafgittools.private-auth-check",
@@ -78,7 +85,7 @@
         "Receipt stores only non-secret account/permission metadata and SHA-256"
       ],
       "gaps": [
-        "Execution on the target Termux installation remains TOKEN_VAZIO"
+        "Execution on the target authenticated Termux installation remains TOKEN_VAZIO"
       ],
       "next_action": "Run the private-auth check in authenticated Termux and preserve the receipt hash."
     },
@@ -92,32 +99,32 @@
         "Gate separates PASS, FAIL, TOKEN_VAZIO and SKIP",
         "Gate checks source anchors, JDK17, Android SDK, unit tests, APK/hash and device presence",
         "Physical install/start is explicit opt-in",
-        "Local receipts are timestamped and SHA-256 hashed when available"
+        "The hosted build pipeline independently proved tests, lint, APK build, APK hash/ABI verification and build receipt for the current candidate"
       ],
       "gaps": [
-        "Gate has not yet been executed on the current target checkout",
-        "VERIFIED_DEVICE requires APK hash and physical smoke in one evidence chain"
+        "VERIFIED_DEVICE still requires APK hash and physical smoke in one evidence chain"
       ],
-      "next_action": "Use the local gate as canonical executable evidence while hosted Actions is billing-blocked."
+      "next_action": "Use the physical closure gate with the exact APK SHA-256 already emitted by the successful hosted build."
     },
     {
       "id": "rafgittools.interactive-staging",
       "repository": "rafaelmeloreisnovo/RafGitTools",
       "path": "app/src/main/kotlin/com/rafgittools/data/git/InteractiveStagingService.kt",
       "implementation_state": "IMPLEMENTED",
-      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence_state": "VERIFIED",
       "evidence": [
         "Per-hunk stage and unstage source paths exist",
         "Mutation is index-only with stale hunk/HEAD/index validation",
         "DirCache lock + editor commit + unconditional idempotent unlock are present",
         "Binary/non-UTF8/missing-final-newline/unmerged inputs fail closed",
-        "DiffViewer exposes explicit Stage hunk / Unstage hunk controls"
+        "The MissingObjectException regression was repaired by keeping scan and format on the same DiffFormatter",
+        "Full dev unit tests passed in run 31821491676"
       ],
       "gaps": [
-        "Unit-test execution is unobserved because hosted runner allocation is blocked",
         "Physical Android interactive-staging smoke remains TOKEN_VAZIO_RUNTIME"
       ],
-      "next_action": "Run local tests and a two-hunk stage/unstage Android fixture."
+      "next_action": "Run a two-hunk stage/unstage physical Android fixture after installing the hash-bound APK.",
+      "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
     },
     {
       "id": "rafgittools.offline-queue",
@@ -127,7 +134,8 @@
       "evidence_state": "DECLARED_BY_AUTHOR",
       "evidence": [
         "Durable queue storage and workers exist",
-        "AtomicFile queue storage uses bounded records, fsync and same-directory publication"
+        "AtomicFile queue storage uses bounded records, fsync and same-directory publication",
+        "The app source compiled successfully in run 31821491676"
       ],
       "gaps": [
         "Production scheduling/restart recovery requires device regression"
@@ -143,27 +151,48 @@
       "evidence": [
         "Output is drained concurrently",
         "Malformed quoting is rejected",
-        "Generic Git terminal surface is restricted to read-only subcommands"
+        "Generic Git terminal surface is restricted to read-only subcommands",
+        "The containing app source compiled successfully in run 31821491676"
       ],
       "gaps": [
         "This is intentionally a bounded executor, not PTY/VT100"
       ],
-      "next_action": "Keep writable operations routed through typed/governed actions."
+      "next_action": "Keep writable operations routed through typed/governed actions; treat PTY as a separate future capability."
     },
     {
       "id": "rafgittools.multi-provider",
       "repository": "rafaelmeloreisnovo/RafGitTools",
       "path": "app/src/main/kotlin/com/rafgittools/platform/MultiPlatformManager.kt",
       "implementation_state": "IMPLEMENTED",
-      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence_state": "VERIFIED",
       "evidence": [
         "GitLab, Bitbucket, Gitea/Forgejo and Azure DevOps adapters exist",
-        "Typed Success/NotConfigured/AuthenticationError/NetworkError states exist"
+        "Typed success/configuration/authentication/network states exist",
+        "MultiPlatformManager test expectations were reconciled with the implemented GitLab adapter",
+        "Full dev unit tests passed in run 31821491676"
       ],
       "gaps": [
         "Real provider credentials/endpoints are not exercised in this evidence chain"
       ],
-      "next_action": "Validate each provider independently with disposable credentials/repositories."
+      "next_action": "Validate each provider independently with disposable credentials and repositories.",
+      "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
+    },
+    {
+      "id": "rafgittools.rafaelia-jni",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/src/main/cpp/",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "VERIFIED",
+      "evidence": [
+        "Rafaelia JNI bridge is wired through the Android/CMake build",
+        "The generated APK passed verification with native libraries for armeabi-v7a and arm64-v8a in run 31821491676"
+      ],
+      "gaps": [
+        "Native library presence in the APK does not by itself prove every native method on physical hardware",
+        "Experimental RAFAELIA kernels remain outside this promotion"
+      ],
+      "next_action": "Add a physical JNI health receipt after the exact APK is installed.",
+      "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
     },
     {
       "id": "rafgittools.advanced-external-runtime",
@@ -182,7 +211,7 @@
         "Bisect controlled regression fixture not executed",
         "LLaMA external dependency/runtime not pinned and proven"
       ],
-      "next_action": "Close each external TOKEN_VAZIO with its own isolated fixture/evidence chain after core runtime verification."
+      "next_action": "Close each external TOKEN_VAZIO with an isolated fixture/evidence chain after core physical runtime verification."
     }
   ]
 }

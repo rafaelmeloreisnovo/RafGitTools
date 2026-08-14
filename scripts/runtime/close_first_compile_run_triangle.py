@@ -214,7 +214,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--repo", default=".")
     p.add_argument("--adb")
     p.add_argument("--apksigner")
-    p.add_argument("--package", default="com.rafgittools.dev")
+    # devDebug combines the dev flavor suffix (.dev) with the debug build-type
+    # suffix (.debug): applicationId = com.rafgittools.dev.debug.
+    p.add_argument("--package", default="com.rafgittools.dev.debug")
     p.add_argument("--activity", default="com.rafgittools.MainActivity")
     p.add_argument("--install", action="store_true")
     p.add_argument("--launch", action="store_true")

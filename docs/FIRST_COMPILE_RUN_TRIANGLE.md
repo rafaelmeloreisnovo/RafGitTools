@@ -68,6 +68,8 @@ RafGitTools-devDebug/
 
 Use a host with `adb`, `apksigner`, the exact source checkout, the downloaded APK and its `BUILD_RECEIPT.json`.
 
+`devDebug` combines the `dev` flavor suffix (`.dev`) with the `debug` build-type suffix (`.debug`), so its exact application ID is `com.rafgittools.dev.debug`.
+
 ```bash
 python3 scripts/runtime/close_first_compile_run_triangle.py \
   --build-receipt /path/BUILD_RECEIPT.json \
@@ -75,7 +77,7 @@ python3 scripts/runtime/close_first_compile_run_triangle.py \
   --repo . \
   --runtime-output .rafgittools/receipts/runtime-device.json \
   --triangle-output .rafgittools/receipts/first-compile-run-triangle.json \
-  --package com.rafgittools.dev \
+  --package com.rafgittools.dev.debug \
   --activity com.rafgittools.MainActivity \
   --install \
   --launch \
