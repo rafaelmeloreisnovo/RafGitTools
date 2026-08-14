@@ -59,6 +59,7 @@ jobs:
             tests.test_android_runtime_receipt \
             tests.test_first_compile_run_triangle \
             tests.test_jgitservice_scope \
+            tests.test_workflow_pr_binding \
             -v
 
       - name: Run authentication unit tests
