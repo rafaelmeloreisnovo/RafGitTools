@@ -100,7 +100,7 @@ This directory contains comprehensive GitHub Actions workflows for the RafGitToo
 - **CodeQL Analysis**: Static code analysis for security vulnerabilities
 - **Dependency Scan**: Checks dependencies for known vulnerabilities using Trivy
 - **Secret Scan**: Scans for exposed secrets using TruffleHog
-- **License Check**: Verifies license compliance
+- **License Check**: Verifies declared license metadata and policy rules
 
 ---
 
@@ -309,7 +309,7 @@ All workflows support manual triggering via `workflow_dispatch`. To run manually
 ### Security Reports
 - CodeQL SARIF files
 - Trivy vulnerability reports
-- License compliance reports
+- License metadata/policy reports
 
 ### Performance Reports
 - APK size analysis

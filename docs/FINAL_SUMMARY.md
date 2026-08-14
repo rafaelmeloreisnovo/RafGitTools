@@ -2,6 +2,8 @@
 
 > **⚠️ NOTE**: This is a historical document from January 9, 2026.  
 > **📊 For current status, see [STATUS_REPORT.md](STATUS_REPORT.md)**
+> **Evidence correction:** `claim_allowed=false`; this dated report is not a release,
+> device-runtime or normative-attainment statement.
 
 **Date**: January 9, 2026  
 **Status**: ✅ **COMPLETE**  
@@ -215,7 +217,7 @@ The task was to implement ("ativar") the missing points for RafGitTools:
 - Initial issues: 2
 - After fixes: All critical issues resolved
 - Final nitpicks: 7 (all minor, mostly localization)
-- **Status:** Production ready ✅
+- **Status:** Historical source review; deployment evidence was not established here
 
 ### Best Practices Applied
 ✅ Clean Architecture  
@@ -315,7 +317,7 @@ The RafGitTools project now has:
 - ✅ **Full GitHub API** integration with Retrofit
 - ✅ **Modern UI** with Compose and Material 3
 - ✅ **Testing infrastructure** with JUnit and MockK
-- ✅ **Production-ready code** with proper error handling
+- ⚪ **Source-level code** with error-handling paths; runtime validation remains required
 - ✅ **Clean architecture** following best practices
 - ✅ **Comprehensive documentation** for future development
 
@@ -325,12 +327,12 @@ The implementation is:
 - **Tested:** Unit tests for critical components
 - **Documented:** Comprehensive inline and external documentation
 - **Integrated:** Works seamlessly with existing codebase
-- **Production-Ready:** Ready for further development and deployment
+- **Next state:** Further development can proceed; deployment requires separate evidence
 
 ---
 
 **Task Status:** ✅ COMPLETE  
-**Quality Level:** Production Ready  
+**Quality Level:** Historical author assessment; current evidence is scoped elsewhere  
 **Next Steps:** Continue with Phase 2 features or deploy foundation
 
 ---

@@ -159,7 +159,7 @@ For a complete feature comparison with industry-leading Git clients, see [FEATUR
 - Multi-language static analysis
 - Complexity metrics and technical debt tracking
 - Vulnerability scanning
-- License compliance checking
+- License metadata/policy checking
 - Performance profiling
 - Code style enforcement
 - Smart dependency updates
@@ -313,7 +313,7 @@ app/
 5. **Performance**: Optimized for mobile constraints
 6. **Offline-First**: Work without internet when possible
 
-## License Compliance
+## License Metadata and Policy Review
 
 This project respects all source licenses:
 

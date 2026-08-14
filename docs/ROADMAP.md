@@ -54,7 +54,7 @@ This document provides a comprehensive, detailed roadmap for RafGitTools develop
 - Git LFS: install, track, listTracked, fetch, pull, env — full UI screen
 - SSH key rotation (Ed25519) + PAT expiry detection
 - UI Implementation (15+ screens — Compose Material 3)
-- Security & Privacy (GDPR/CCPA compliant)
+- Security & Privacy design references (legal and runtime assessment pending)
 - rafaelia JNI bridge wired into Android CMake build (librafaelia.so)
 - Offline queue (Room) + Repository sync state worker (15-min interval)
 - Localization (3 languages: EN, PT-BR, ES)
@@ -96,7 +96,7 @@ This document provides a comprehensive, detailed roadmap for RafGitTools develop
 | 10 | CI/CD pipeline setup | 🟡 L3 | P1 | NIST SP 800-53 CM | DevOps Lead | #4, #5, #7 |
 | 11 | Code quality gates | 🟡 L3 | P1 | ISO 9001, IEEE 730 | QA Lead | #10 |
 | 12 | Documentation structure | 🟢 L4 | P1 | IEEE 1063 | Documentation Lead | - |
-| 13 | License compliance framework | 🟢 L4 | P1 | ISO/IEC 19770, SPDX | Legal/Compliance | - |
+| 13 | License metadata review framework | 🟢 L4 | P1 | ISO/IEC 19770, SPDX | Legal/Compliance | - |
 | 14 | Logging framework | 🟡 L3 | P1 | NIST SP 800-92 | Architecture Lead | #1 |
 | 15 | Error handling framework | 🟡 L3 | P1 | IEEE 1044 | Architecture Lead | #1, #14 |
 | 16 | Network layer setup | 🟡 L3 | P1 | RFC 7231, TLS 1.3 | Backend Lead | #1, #3 |

@@ -550,7 +550,7 @@ Comparison of features across source projects and RafGitTools implementation pla
 | Technical debt tracking | ❌ | ❌ | ❌ | ❌ | ⭐ |
 | Code coverage visualization | ❌ | ❌ | ❌ | ❌ | ⭐ |
 | Dependency vulnerability scan | ❌ | ❌ | ❌ | ❌ | ⭐ |
-| License compliance check | ❌ | ❌ | ❌ | ❌ | ⭐ |
+| License metadata/policy check | ❌ | ❌ | ❌ | ❌ | ⭐ |
 | Code duplication detection | ❌ | ❌ | ❌ | ❌ | ⭐ |
 | Performance profiling | ❌ | ❌ | ❌ | ❌ | ⭐ |
 | Code style enforcement | ❌ | ❌ | ❌ | ❌ | ⭐ |
@@ -1412,7 +1412,7 @@ Comparison of features across source projects and RafGitTools implementation pla
 - **Static Analysis**: Multi-language static code analysis with vulnerability detection
 - **Security Scanning**: Continuous security vulnerability and dependency scanning
 - **Code Metrics**: Comprehensive code quality metrics and technical debt tracking
-- **License Compliance**: Automatic license compatibility checking and alerts
+- **License metadata review**: Planned compatibility metadata checking and alerts
 - **Performance Profiling**: Real-time performance analysis and optimization suggestions
 - **Code Standards**: Customizable code style enforcement with auto-formatting
 - **Dependency Management**: Smart dependency updates with compatibility checking
@@ -1492,7 +1492,7 @@ Comparison of features across source projects and RafGitTools implementation pla
 - 🚧 Static code analysis (ESLint, Pylint, etc.)
 - 🚧 Security vulnerability scanning
 - 🚧 Code complexity and quality metrics
-- 🚧 License compliance checking
+- 🚧 License metadata/policy checking
 - 🚧 Dependency management and updates
 
 ### Phase 5: AI & Machine Learning - Weeks 17-20 🚧
@@ -1653,7 +1653,7 @@ RafGitTools aims to be:
 | **Git Platforms** | 1-3 | **9+ platforms** (GitHub, GitLab, Bitbucket, Gitea, Gogs, Azure DevOps, AWS CodeCommit, Google Cloud Source, Custom) |
 | **AI Features** | 0-2 basic | **10+ advanced** (Commit suggestions, code review, bug detection, refactoring, test generation) |
 | **DevOps Integration** | 1-2 native | **12+ comprehensive** (GitHub Actions, GitLab CI, Jenkins, CircleCI, Docker, Kubernetes, Terraform) |
-| **Code Quality Tools** | 0-3 basic | **10+ professional** (Static analysis, complexity metrics, vulnerability scanning, license compliance) |
+| **Code Quality Tools** | 0-3 basic | **10+ professional** (Static analysis, complexity metrics, vulnerability scanning, license metadata review) |
 | **Collaboration Tools** | Basic | **12+ advanced** (Real-time editing, video, whiteboard, presence, team dashboards) |
 | **Analytics & Insights** | Basic stats | **12+ comprehensive** (Predictive analytics, custom dashboards, BI export, team metrics) |
 | **Enterprise Features** | Limited | **12+ complete** (LDAP, SAML, SSO, RBAC, audit, compliance, self-hosted, SLA) |

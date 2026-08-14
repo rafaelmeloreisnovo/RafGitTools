@@ -136,7 +136,7 @@ RafGitTools/
 ├── docs/                       # Documentation
 │   ├── PROJECT_OVERVIEW.md    # Detailed project overview
 │   ├── ARCHITECTURE.md        # Architecture documentation
-│   ├── LICENSE_INFO.md        # License compliance info
+│   ├── LICENSE_INFO.md        # License metadata and attribution
 │   └── FEATURE_MATRIX.md      # Feature comparison matrix
 ├── build.gradle                # Root build config
 ├── settings.gradle            # Project settings
@@ -234,12 +234,13 @@ Consulte [docs/BUILD.md](docs/BUILD.md) para o fluxo completo (local + CI, inclu
 - [Feature Matrix](docs/FEATURE_MATRIX.md) - Feature comparison with source projects
 - [Mapa código → documentação](docs/CODE_TO_DOC_MAP.md) - Relação entre módulos e documentação
 
-### 🔐 Security & Compliance
+### 🔐 Security, Privacy & Reference Alignment
 
 - [Privacy Policy](docs/PRIVACY.md) - Privacy practices and data protection
 - [Security Policy](docs/SECURITY.md) - Security standards and practices
-- [Compliance Guide](docs/COMPLIANCE.md) - ISO, NIST, IEEE standards compliance
-- [License Information](docs/LICENSE_INFO.md) - License compliance and attribution
+- [Normative Reference Guide](docs/COMPLIANCE.md) - Evidence boundary and reference alignment
+- [Claim Language Policy](docs/CLAIM_LANGUAGE_POLICY.md) - Wording and evidence gate
+- [License Information](docs/LICENSE_INFO.md) - License metadata and attribution
 
 ### 🔄 Pull Request & Workflow Guides
 
@@ -281,7 +282,7 @@ See the complete [Status Report](docs/STATUS_REPORT.md) for detailed progress in
 - [x] Multi-platform support: GitHub, GitLab, Bitbucket, Gitea/Forgejo, Azure DevOps (100%)
 - [x] Git LFS UI — tracked patterns, track, install, fetch, pull, env (100%)
 - [x] UI implementation with Jetpack Compose (80% - 15+ screens)
-- [x] Security & Privacy framework (100% - GDPR/CCPA compliant)
+- [x] Security & Privacy source framework (runtime and legal assessment pending)
 - [x] SSH key rotation (Ed25519) + PAT expiry detection (100%)
 - [x] Offline queue persistence (Room DB v4) + repository sync state worker (100%)
 - [x] rafaelia JNI bridge wired into Android build system (librafaelia.so)
@@ -418,7 +419,7 @@ The `fazer/` directory contains earlier draft versions of source files that pred
 | 10 | CI/CD pipeline setup | 🟡 L3 | NIST SP 800-53 CM | DevOps Lead | 🚧 |
 | 11 | Code quality gates | 🟡 L3 | ISO 9001, IEEE 730 | QA Lead | 🚧 |
 | 12 | Documentation structure | 🟢 L4 | IEEE 1063 | Documentation Lead | ✅ |
-| 13 | License compliance framework | 🟢 L4 | ISO/IEC 19770 | Legal/Compliance | ✅ |
+| 13 | License metadata review framework | 🟢 L4 | ISO/IEC 19770 | Legal/Compliance | ✅ |
 | 14 | Logging framework | 🟡 L3 | NIST SP 800-92 | Architecture Lead | 🚧 |
 | 15 | Error handling framework | 🟡 L3 | IEEE 1044 | Architecture Lead | 🚧 |
 | 16 | Network layer setup | 🟡 L3 | RFC 7231, TLS 1.3 | Backend Lead | 🚧 |
@@ -871,7 +872,7 @@ The `fazer/` directory contains earlier draft versions of source files that pred
 | ISO 31000:2018 | Risk Management | Security Risk Assessment |
 | ISO/IEC 27017:2015 | Cloud Security Controls | Cloud Integration |
 | ISO/IEC 27018:2019 | Cloud Privacy | Cloud Data Protection |
-| ISO/IEC 19770 | Software Asset Management | License Compliance |
+| ISO/IEC 19770 | Software Asset Management | License metadata review |
 | ISO 8601 | Date/Time Formats | All timestamps |
 | ISO 6429 | ANSI Escape Codes | Terminal Emulation |
 </details>
@@ -938,7 +939,7 @@ The `fazer/` directory contains earlier draft versions of source files that pred
 </details>
 
 <details>
-<summary><b>Legal & Regulatory Compliance</b></summary>
+<summary><b>Legal & Regulatory References</b></summary>
 
 | Regulation | Description | Application Area |
 |------------|-------------|------------------|

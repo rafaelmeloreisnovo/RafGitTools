@@ -456,7 +456,7 @@ core:security/
 - Security threat detection (root, debugger)
 - Secure random number generation
 
-**Standards Compliance:**
+**Normative Reference Alignment:**
 - NIST SP 800-53 (Security Controls)
 - OWASP MASVS Level 2
 - FIPS 140-2 (Cryptographic algorithms)
@@ -481,14 +481,14 @@ core:privacy/
 - Privacy audit logging
 - Analytics data anonymization
 
-**Regulatory Compliance:**
+**Regulatory Reference Considerations:**
 - GDPR (General Data Protection Regulation)
 - CCPA (California Consumer Privacy Act)
 - ISO/IEC 27701 (Privacy Information Management)
 - LGPD (Brazilian Data Protection Law)
 
 #### ComplianceManager
-Standards and regulatory compliance tracking.
+Reference and evidence tracking; not a conformity or certification result.
 
 ```kotlin
 core:compliance/
@@ -722,7 +722,7 @@ val sanitized = securityManager.sanitizeInput(gitUrl, InputValidationType.GIT_UR
 For detailed compliance information, see:
 - [PRIVACY.md](PRIVACY.md) - Privacy policy and data protection
 - [SECURITY.md](SECURITY.md) - Security standards and practices
-- [COMPLIANCE.md](COMPLIANCE.md) - Regulatory and standards compliance
+- [COMPLIANCE.md](COMPLIANCE.md) - Regulatory and standards reference boundary
 
 ---
 

@@ -50,6 +50,11 @@ jobs:
       - name: Validate Android startup contract
         run: python3 -m unittest discover -s tests -p 'test_validate_runtime_truth.py' -v
 
+      - name: Validate documentation claim boundary
+        run: |
+          python3 scripts/validate_documentation_claim_boundary.py --strict
+          python3 -m unittest discover -s tests -p 'test_validate_documentation_claim_boundary.py' -v
+
       - name: Authentication tests
         id: auth_tests
         continue-on-error: true

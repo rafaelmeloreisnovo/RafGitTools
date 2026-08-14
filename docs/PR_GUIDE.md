@@ -104,7 +104,7 @@ When you create a PR, these workflows run automatically:
 - ✅ CodeQL analysis
 - ✅ Dependency vulnerability scan
 - ✅ Secret scanning
-- ✅ License compliance check
+- ✅ License metadata/policy check
 
 #### 4. Code Coverage (`coverage.yml`)
 - ✅ Measures test coverage
