@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - codex/finalize-github-client-login-build
+      - 'hardening/**'
   pull_request:
     branches:
       - main
