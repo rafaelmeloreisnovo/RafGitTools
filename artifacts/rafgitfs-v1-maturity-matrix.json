@@ -1,0 +1,31 @@
+{
+  "schema": "rafgitfs.maturity-matrix.v1",
+  "generated_on": "2026-07-25",
+  "claim_allowed": false,
+  "prompts": [
+    {"prompt": 1, "capability": "architecture_contracts", "source_state": "MERGED", "receipt": "PR_300", "execution_state": "TOKEN_VAZIO"},
+    {"prompt": 2, "capability": "room_v6", "source_state": "MERGED", "receipt": "PR_300", "execution_state": "TOKEN_VAZIO"},
+    {"prompt": 3, "capability": "github_readonly_engine", "source_state": "IMPLEMENTED_SOURCE", "receipt": "PR_301", "execution_state": "TOKEN_VAZIO"},
+    {"prompt": 4, "capability": "compose_virtual_browser", "source_state": "IMPLEMENTED_SOURCE", "receipt": "PR_302", "execution_state": "TOKEN_VAZIO"},
+    {"prompt": 5, "capability": "cache_offline", "source_state": "IMPLEMENTED_SOURCE", "receipt": "PR_303", "execution_state": "TOKEN_VAZIO"},
+    {"prompt": 6, "capability": "governed_sync", "source_state": "IMPLEMENTED_SOURCE", "receipt": "PR_304", "execution_state": "TOKEN_VAZIO"},
+    {"prompt": 7, "capability": "governed_git_write", "source_state": "IMPLEMENTED_SOURCE", "receipt": "PR_305", "execution_state": "TOKEN_VAZIO"},
+    {"prompt": 8, "capability": "industrial_closeout", "source_state": "IMPLEMENTED_SOURCE", "receipt": "PR_306", "execution_state": "TOKEN_VAZIO"}
+  ],
+  "blocked_by_policy": [
+    "direct_protected_branch_write",
+    "force_push",
+    "remote_delete",
+    "auto_merge",
+    "silent_conflict_resolution",
+    "secret_persistence_in_room"
+  ],
+  "open_evidence": [
+    "github_actions_with_steps_and_logs",
+    "android_physical_execution",
+    "production_signing",
+    "external_security_review",
+    "performance_p50_p95_p99",
+    "real_repository_end_to_end"
+  ]
+}

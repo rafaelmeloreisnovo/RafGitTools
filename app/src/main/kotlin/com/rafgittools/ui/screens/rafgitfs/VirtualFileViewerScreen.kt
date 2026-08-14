@@ -1,6 +1,7 @@
 package com.rafgittools.ui.screens.rafgitfs
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,17 +11,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,7 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -67,7 +71,7 @@ fun VirtualFileViewerScreen(
                 },
                 actions = {
                     IconButton(onClick = viewModel::load) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Reload blob")
+                        Icon(Icons.Default.Refresh, contentDescription = "Read or refresh cached blob")
                     }
                 }
             )
@@ -81,16 +85,56 @@ fun VirtualFileViewerScreen(
         ) {
             RafGitFsStatusBanner(state.status)
             Spacer(Modifier.height(10.dp))
+
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp)) {
+                    Text("Local cache", style = MaterialTheme.typography.titleSmall)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        state.cacheState.name,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    state.queueDetail?.let { Text("Queue ${it}", style = MaterialTheme.typography.labelSmall) }
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(onClick = viewModel::load) { Text("Cache now") }
+                        OutlinedButton(onClick = viewModel::loadOfflineOnly) { Text("Read offline") }
+                        if (state.pinnedOffline) {
+                            OutlinedButton(onClick = viewModel::unpin) { Text("Unpin") }
+                        } else {
+                            OutlinedButton(onClick = viewModel::pinOffline) { Text("Pin offline") }
+                        }
+                        TextButton(onClick = viewModel::enqueueOfflinePin) { Text("Queue pin") }
+                        TextButton(onClick = viewModel::resumeOfflineQueue) { Text("Resume queue") }
+                        if (state.cacheKey != null && !state.pinnedOffline) {
+                            TextButton(onClick = viewModel::removeCachedCopy) { Text("Remove local") }
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Downloads are read-only GitHub blobs. Partial retries restart safely; no byte-range claim.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
             snapshot?.let { content ->
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp)) {
                         Text(content.path, style = MaterialTheme.typography.titleSmall)
                         Spacer(Modifier.height(4.dp))
                         Row {
-                            Text("${RafGitFsUiPaths.formatBytes(content.sizeBytes)}")
+                            Text(RafGitFsUiPaths.formatBytes(content.sizeBytes))
                             Spacer(Modifier.width(12.dp))
                             Text(
-                                "SHA ${content.blobSha.take(12)}",
+                                "Git SHA ${content.blobSha.take(12)}",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -127,8 +171,8 @@ fun VirtualFileViewerScreen(
                     }
                 }
             } ?: RafGitFsEmptyState(
-                title = "No content observed",
-                detail = "The file may be too large, unavailable, binary-only, rate-limited or not indexed."
+                title = "No verified content",
+                detail = "The remote blob or a checksum-valid offline copy is not currently available."
             )
         }
     }

@@ -55,6 +55,17 @@ interface VirtualTreeDao {
     @Query("""UPDATE virtual_tree_entries SET isFavorite=:favorite, lastAccessedAt=:updatedAt WHERE profileId=:profileId AND repositoryFullName=:repositoryFullName AND refName=:refName AND path=:path AND path != ''""")
     suspend fun setFavorite(profileId: String, repositoryFullName: String, refName: String, path: String, favorite: Boolean, updatedAt: Long = System.currentTimeMillis())
 
+    @Query("""UPDATE virtual_tree_entries SET cacheState=:cacheState, localPath=:localPath, lastAccessedAt=:updatedAt WHERE profileId=:profileId AND repositoryFullName=:repositoryFullName AND refName=:refName AND path=:path AND path != ''""")
+    suspend fun setCacheState(
+        profileId: String,
+        repositoryFullName: String,
+        refName: String,
+        path: String,
+        cacheState: String,
+        localPath: String?,
+        updatedAt: Long = System.currentTimeMillis()
+    )
+
     @Query("""DELETE FROM virtual_tree_entries WHERE profileId=:profileId AND repositoryFullName=:repositoryFullName AND refName=:refName AND lastIndexedAt < :indexedBefore""")
     suspend fun deleteStale(profileId: String, repositoryFullName: String, refName: String, indexedBefore: Long): Int
 }
