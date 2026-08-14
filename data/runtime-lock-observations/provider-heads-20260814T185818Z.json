@@ -1,0 +1,36 @@
+{
+  "schema": "rafaelia.runtime-lock-observation.v1",
+  "observed_at": "2026-08-14T18:58:18Z",
+  "repositories": [
+    {
+      "name": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "branch": "master",
+      "commit": "e287fc942104e2ed84169f877558b463c86aad88"
+    },
+    {
+      "name": "rafaelmeloreisnovo/termux-api_rafcodephi",
+      "branch": "master",
+      "commit": "4800ea42724f1e83eef602d08c6b9f309b7dbc39"
+    },
+    {
+      "name": "rafaelmeloreisnovo/termux-packages",
+      "branch": "main",
+      "commit": "326ef474a3c3b51aaee252111fa920e71e8cc324"
+    },
+    {
+      "name": "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE",
+      "branch": "main",
+      "commit": "44ca1b8077306694b130532051727d068f32d09c"
+    },
+    {
+      "name": "rafaelmeloreisnovo/llamaRafaelia",
+      "branch": "master",
+      "commit": "e11d1189f2364127805d4a1ff8f21080cde534a6"
+    },
+    {
+      "name": "rafaelmeloreisnovo/RafPolimata",
+      "branch": "main",
+      "commit": "9876f8310e91e2fdf60ac5fa75330d84792e219c"
+    }
+  ]
+}
