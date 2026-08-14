@@ -1,0 +1,40 @@
+name: Contextual Execution Preflight v1
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "contracts/contextual-execution-request.v1.json"
+      - "examples/contextual-execution-request.wine-formula.json"
+      - "scripts/validate_contextual_execution_request.py"
+      - "tests/test_contextual_execution_preflight.py"
+      - "docs/CONTEXTUAL_EXECUTION_PREFLIGHT_V1.md"
+      - ".github/workflows/contextual-execution-preflight-v1.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Run tests
+        run: python3 -m unittest tests.test_contextual_execution_preflight
+      - name: Evaluate blocked fixture
+        run: |
+          mkdir -p artifacts
+          python3 scripts/validate_contextual_execution_request.py \
+            examples/contextual-execution-request.wine-formula.json \
+            --out artifacts/contextual-execution-preflight.json
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contextual-execution-preflight-v1
+          if-no-files-found: error
+          path: artifacts/contextual-execution-preflight.json

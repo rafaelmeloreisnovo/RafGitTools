@@ -37,12 +37,28 @@ fun DiffViewerScreen(
     val diffs by viewModel.diffs.collectAsStateWithLifecycle()
     val viewMode by viewModel.viewMode.collectAsStateWithLifecycle()
     val showStagedOnly by viewModel.showStagedOnly.collectAsStateWithLifecycle()
-    
+    val isMutatingHunk by viewModel.isMutatingHunk.collectAsStateWithLifecycle()
+    val hunkOperation by viewModel.hunkOperation.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
     LaunchedEffect(repoPath) {
         viewModel.loadDiff(repoPath)
     }
+
+    LaunchedEffect(hunkOperation) {
+        val message = when (val operation = hunkOperation) {
+            is HunkOperationState.Success -> operation.message
+            is HunkOperationState.Error -> operation.message
+            HunkOperationState.Idle -> null
+        }
+        if (message != null) {
+            viewModel.clearHunkOperation()
+            snackbarHostState.showSnackbar(message)
+        }
+    }
     
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Changes") },
@@ -60,6 +76,7 @@ fun DiffViewerScreen(
                     FilterChip(
                         selected = showStagedOnly,
                         onClick = { viewModel.toggleStagedFilter() },
+                        enabled = !isMutatingHunk,
                         label = { Text("Staged") },
                         leadingIcon = {
                             if (showStagedOnly) {
@@ -83,7 +100,7 @@ fun DiffViewerScreen(
                         )
                     }
                     
-                    IconButton(onClick = { viewModel.refresh() }) {
+                    IconButton(onClick = { viewModel.refresh() }, enabled = !isMutatingHunk) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                 }
@@ -116,7 +133,10 @@ fun DiffViewerScreen(
                 is DiffViewerUiState.Success -> {
                     DiffList(
                         diffs = diffs,
-                        viewMode = viewMode
+                        viewMode = viewMode,
+                        showStagedOnly = showStagedOnly,
+                        isMutatingHunk = isMutatingHunk,
+                        onMutateHunk = viewModel::mutateHunk
                     )
                 }
             }
@@ -127,7 +147,10 @@ fun DiffViewerScreen(
 @Composable
 private fun DiffList(
     diffs: List<GitDiff>,
-    viewMode: DiffViewMode
+    viewMode: DiffViewMode,
+    showStagedOnly: Boolean,
+    isMutatingHunk: Boolean,
+    onMutateHunk: (GitDiff, DiffHunk) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -141,7 +164,13 @@ private fun DiffList(
         
         // Individual diffs
         items(diffs, key = { it.newPath ?: it.oldPath ?: it.hashCode().toString() }) { diff ->
-            DiffCard(diff = diff, viewMode = viewMode)
+            DiffCard(
+                diff = diff,
+                viewMode = viewMode,
+                showStagedOnly = showStagedOnly,
+                isMutatingHunk = isMutatingHunk,
+                onMutateHunk = onMutateHunk
+            )
         }
     }
 }
@@ -211,7 +240,10 @@ private fun DiffSummaryCard(diffs: List<GitDiff>) {
 @Composable
 private fun DiffCard(
     diff: GitDiff,
-    viewMode: DiffViewMode
+    viewMode: DiffViewMode,
+    showStagedOnly: Boolean,
+    isMutatingHunk: Boolean,
+    onMutateHunk: (GitDiff, DiffHunk) -> Unit
 ) {
     var expanded by remember { mutableStateOf(true) }
     
@@ -294,14 +326,71 @@ private fun DiffCard(
                 }
             }
             
-            // Diff content
             if (expanded) {
+                if (diff.changeType == DiffChangeType.MODIFY && diff.hunks.isNotEmpty()) {
+                    HunkActionPanel(
+                        diff = diff,
+                        showStagedOnly = showStagedOnly,
+                        isMutatingHunk = isMutatingHunk,
+                        onMutateHunk = onMutateHunk
+                    )
+                }
+
+                // Diff content
                 when (viewMode) {
                     DiffViewMode.UNIFIED -> UnifiedDiffView(diff = diff)
                     DiffViewMode.SPLIT -> SplitDiffView(diff = diff)
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun HunkActionPanel(
+    diff: GitDiff,
+    showStagedOnly: Boolean,
+    isMutatingHunk: Boolean,
+    onMutateHunk: (GitDiff, DiffHunk) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        HorizontalDivider()
+        diff.hunks.forEachIndexed { index, hunk ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                TextButton(
+                    onClick = { onMutateHunk(diff, hunk) },
+                    enabled = !isMutatingHunk
+                ) {
+                    if (isMutatingHunk) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(14.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
+                    Text(
+                        if (showStagedOnly) "Unstage hunk ${index + 1}"
+                        else "Stage hunk ${index + 1}"
+                    )
+                }
+            }
+        }
+        HorizontalDivider()
     }
 }
 

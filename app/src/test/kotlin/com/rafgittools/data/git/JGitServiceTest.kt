@@ -3,7 +3,6 @@ package com.rafgittools.data.git
 import com.rafgittools.CoroutineTestRule
 import com.rafgittools.core.logging.DiffAuditLogger
 import com.rafgittools.domain.model.GitAuthor
-import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -13,7 +12,6 @@ import org.eclipse.jgit.api.Git
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -88,40 +86,74 @@ class JGitServiceTest {
         assertFalse(branches.any { it.shortName == "feature/test" && it.isLocal })
     }
 
-
     @Test
-    fun `forcePushWithLease with stale lease should fail`() = runTest {
-        val remoteBare = Files.createTempDirectory("remote-bare").toFile()
-        Git.init().setBare(true).setDirectory(remoteBare).call().close()
+    fun `forcePushWithLease with matching lease should update remote`() = runTest {
+        val fixture = createLeaseFixture("lease-success")
+        val expectedRemoteHead = resolveBareHead(fixture.remoteBare, fixture.branch)
 
-        val seedRepoDir = createRepositoryWithInitialCommit("seed-repo")
-        Git.open(seedRepoDir).use { seedGit ->
-            seedGit.remoteAdd()
-                .setName("origin")
-                .setUri(org.eclipse.jgit.transport.URIish(remoteBare.absolutePath))
-                .call()
-            seedGit.push().setRemote("origin").call()
-        }
-
-        val cloneDir = Files.createTempDirectory("lease-clone").toFile().resolve("repo")
-        jgitService.cloneRepository(remoteBare.absolutePath, cloneDir.absolutePath, null).getOrThrow()
-
-        val branch = Git.open(cloneDir).use { it.repository.branch }
-        File(cloneDir, "lease.txt").writeText("lease-change")
-        jgitService.stageFiles(cloneDir.absolutePath, listOf("lease.txt")).getOrThrow()
-        jgitService.commit(cloneDir.absolutePath, "lease commit", GitAuthor("Tester", "tester@example.com")).getOrThrow()
+        File(fixture.cloneDir, "lease.txt").writeText("lease-change")
+        jgitService.stageFiles(fixture.cloneDir.absolutePath, listOf("lease.txt")).getOrThrow()
+        jgitService.commit(
+            fixture.cloneDir.absolutePath,
+            "lease commit",
+            GitAuthor("Tester", "tester@example.com")
+        ).getOrThrow()
+        val localHead = Git.open(fixture.cloneDir).use { it.repository.resolve("HEAD").name }
 
         val result = jgitService.forcePushWithLease(
-            repoPath = cloneDir.absolutePath,
+            repoPath = fixture.cloneDir.absolutePath,
             remote = "origin",
-            branch = branch,
-            expectedOldObjectId = "0000000000000000000000000000000000000000",
+            branch = fixture.branch,
+            expectedOldObjectId = expectedRemoteHead,
+            credentials = null
+        )
+
+        assertTrue(result.isSuccess)
+        assertEquals(localHead, resolveBareHead(fixture.remoteBare, fixture.branch))
+    }
+
+    @Test
+    fun `forcePushWithLease with stale lease should fail without changing remote`() = runTest {
+        val fixture = createLeaseFixture("lease-stale")
+        val remoteHeadBefore = resolveBareHead(fixture.remoteBare, fixture.branch)
+
+        File(fixture.cloneDir, "lease.txt").writeText("lease-change")
+        jgitService.stageFiles(fixture.cloneDir.absolutePath, listOf("lease.txt")).getOrThrow()
+        jgitService.commit(
+            fixture.cloneDir.absolutePath,
+            "lease commit",
+            GitAuthor("Tester", "tester@example.com")
+        ).getOrThrow()
+
+        val result = jgitService.forcePushWithLease(
+            repoPath = fixture.cloneDir.absolutePath,
+            remote = "origin",
+            branch = fixture.branch,
+            expectedOldObjectId = ZERO_OID,
             credentials = null
         )
 
         assertTrue(result.isFailure)
+        assertEquals(remoteHeadBefore, resolveBareHead(fixture.remoteBare, fixture.branch))
     }
 
+    @Test
+    fun `forcePushWithLease rejects malformed expected object id before mutation`() = runTest {
+        val fixture = createLeaseFixture("lease-invalid-oid")
+        val remoteHeadBefore = resolveBareHead(fixture.remoteBare, fixture.branch)
+
+        val result = jgitService.forcePushWithLease(
+            repoPath = fixture.cloneDir.absolutePath,
+            remote = "origin",
+            branch = fixture.branch,
+            expectedOldObjectId = "not-an-object-id",
+            credentials = null
+        )
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message?.contains("Invalid expected object id") == true)
+        assertEquals(remoteHeadBefore, resolveBareHead(fixture.remoteBare, fixture.branch))
+    }
 
     @Test
     fun `openRepository should propagate cancellation`() = runTest {
@@ -146,6 +178,32 @@ class JGitServiceTest {
         }
     }
 
+    private suspend fun createLeaseFixture(prefix: String): LeaseFixture {
+        val remoteBare = Files.createTempDirectory("$prefix-remote").toFile()
+        Git.init().setBare(true).setDirectory(remoteBare).call().close()
+
+        val seedRepoDir = createRepositoryWithInitialCommit("$prefix-seed")
+        Git.open(seedRepoDir).use { seedGit ->
+            seedGit.remoteAdd()
+                .setName("origin")
+                .setUri(org.eclipse.jgit.transport.URIish(remoteBare.absolutePath))
+                .call()
+            seedGit.push().setRemote("origin").call()
+        }
+
+        val cloneDir = Files.createTempDirectory("$prefix-clone").toFile().resolve("repo")
+        jgitService.cloneRepository(remoteBare.absolutePath, cloneDir.absolutePath, null).getOrThrow()
+        val branch = Git.open(cloneDir).use { it.repository.branch }
+        return LeaseFixture(remoteBare, cloneDir, branch)
+    }
+
+    private fun resolveBareHead(remoteBare: File, branch: String): String {
+        return Git.open(remoteBare).use { git ->
+            git.repository.resolve("refs/heads/$branch")?.name
+                ?: error("Remote branch not found: $branch")
+        }
+    }
+
     private fun createRepositoryWithInitialCommit(prefix: String): File {
         val dir = Files.createTempDirectory(prefix).toFile()
         Git.init().setDirectory(dir).call().use { git ->
@@ -154,5 +212,15 @@ class JGitServiceTest {
             git.commit().setMessage("initial commit").setAuthor("Init", "init@example.com").call()
         }
         return dir
+    }
+
+    private data class LeaseFixture(
+        val remoteBare: File,
+        val cloneDir: File,
+        val branch: String
+    )
+
+    companion object {
+        private const val ZERO_OID = "0000000000000000000000000000000000000000"
     }
 }

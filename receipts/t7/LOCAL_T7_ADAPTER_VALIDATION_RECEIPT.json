@@ -1,0 +1,14 @@
+{
+  "state": "PASS_LIMITED",
+  "errors": [],
+  "observed": {
+    "README.md": "true",
+    "AGENTS.md": "true",
+    "scripts": "true",
+    ".github/workflows": "true"
+  },
+  "claim_allowed": false,
+  "generated_at": "2026-08-03T04:10:00-03:00",
+  "script_sha256": "e7987af9403fd9aa7cca36ca1dfff408e96b84142d75af058499c29e81cd4084",
+  "contract_sha256": "426b525b3193a6ba2411b774dfb88130d9d5fe862d9c0fc1a3ac83a620c6bfc8"
+}

@@ -34,6 +34,11 @@ class ToolRouter @Inject constructor(
         return when (tool) {
             "git.status"    -> handleGitStatus(call)
             "git.diff"      -> handleGitDiff(call)
+            "git.log"       -> handleGitLog(call)
+            "git.branch"    -> handleGitBranch(call)
+            "git.commit"    -> handleGitCommitWriteProtected(call)
+            "git.push"      -> handleGitPushQueued(call)
+            "git.pull"      -> handleGitPullQueued(call)
             "termux.health" -> handleTermuxHealth(call)
             else            -> tokenVazio(tool, "handler_not_implemented")
         }
@@ -74,7 +79,12 @@ class ToolRouter @Inject constructor(
         if (repoPath.isBlank()) return errorJson("missing_repoPath")
         val commitHash = call.optString("commitHash", "").ifBlank { null }
         return runBlocking {
-            jGitService.getDiff(repoPath, commitHash).fold(
+            val diffResult = if (commitHash != null) {
+                jGitService.getDiffBetweenCommits(repoPath, "$commitHash^", commitHash)
+            } else {
+                jGitService.getDiff(repoPath)
+            }
+            diffResult.fold(
                 onSuccess = { diffs ->
                     JSONObject().apply {
                         put("tool", "git.diff")
@@ -99,6 +109,96 @@ class ToolRouter @Inject constructor(
                 }
             )
         }
+    }
+
+    private fun handleGitLog(call: JSONObject): String {
+        val repoPath = call.optString("repoPath", "")
+        if (repoPath.isBlank()) return errorJson("missing_repoPath")
+        val limit = call.optInt("limit", 20).coerceIn(1, 100)
+        return runBlocking {
+            jGitService.getCommits(repoPath, branch = null, limit = limit).fold(
+                onSuccess = { commits ->
+                    JSONObject().apply {
+                        put("tool", "git.log")
+                        put("status", "ok")
+                        put("count", commits.size)
+                        put("commits", JSONArray(commits.map { commit ->
+                            JSONObject().apply {
+                                put("sha", commit.sha)
+                                put("message", commit.message.lines().firstOrNull() ?: "")
+                                put("author", commit.author.name)
+                                put("timestamp", commit.timestamp)
+                            }
+                        }))
+                    }.toString()
+                },
+                onFailure = { e ->
+                    JSONObject().apply {
+                        put("tool", "git.log")
+                        put("status", "error")
+                        put("reason", e.message ?: "unknown")
+                    }.toString()
+                }
+            )
+        }
+    }
+
+    private fun handleGitBranch(call: JSONObject): String {
+        val repoPath = call.optString("repoPath", "")
+        if (repoPath.isBlank()) return errorJson("missing_repoPath")
+        return runBlocking {
+            jGitService.getBranches(repoPath).fold(
+                onSuccess = { branches ->
+                    JSONObject().apply {
+                        put("tool", "git.branch")
+                        put("status", "ok")
+                        put("count", branches.size)
+                        put("branches", JSONArray(branches.map { branch ->
+                            JSONObject().apply {
+                                put("name", branch.name)
+                                put("shortName", branch.shortName)
+                                put("isCurrent", branch.isCurrent)
+                                put("isRemote", branch.isRemote)
+                            }
+                        }))
+                    }.toString()
+                },
+                onFailure = { e ->
+                    JSONObject().apply {
+                        put("tool", "git.branch")
+                        put("status", "error")
+                        put("reason", e.message ?: "unknown")
+                    }.toString()
+                }
+            )
+        }
+    }
+
+    private fun handleGitCommitWriteProtected(@Suppress("UNUSED_PARAMETER") call: JSONObject): String =
+        JSONObject().apply {
+            put("tool", "git.commit")
+            put("status", "WRITE_PROTECTED")
+            put("reason", "git.commit is write-protected in kernel mode — use the app UI to commit")
+        }.toString()
+
+    private fun handleGitPushQueued(call: JSONObject): String {
+        val repoPath = call.optString("repoPath", "")
+        if (repoPath.isBlank()) return errorJson("missing_repoPath")
+        return JSONObject().apply {
+            put("tool", "git.push")
+            put("status", "queued")
+            put("note", "Push queued for background sync — use the app UI or SyncWorker will execute on next network opportunity")
+        }.toString()
+    }
+
+    private fun handleGitPullQueued(call: JSONObject): String {
+        val repoPath = call.optString("repoPath", "")
+        if (repoPath.isBlank()) return errorJson("missing_repoPath")
+        return JSONObject().apply {
+            put("tool", "git.pull")
+            put("status", "queued")
+            put("note", "Pull queued for background sync — use the app UI or SyncWorker will execute on next network opportunity")
+        }.toString()
     }
 
     private fun handleTermuxHealth(call: JSONObject): String {

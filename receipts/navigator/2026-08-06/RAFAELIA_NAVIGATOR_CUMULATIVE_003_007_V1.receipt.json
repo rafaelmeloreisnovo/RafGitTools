@@ -1,0 +1,45 @@
+{
+  "schema": "RAFAELIA_NAVIGATOR_CUMULATIVE_ROUNDTRIP_RECEIPT_V1",
+  "privacy_class": "PRIVATE_METADATA_NO_RAW_CORPUS",
+  "claim_allowed": false,
+  "training_executed": false,
+  "source_coverage": {
+    "conversation_shards": ["003", "004", "005", "006", "007"],
+    "conversation_shards_count": 5,
+    "conversation_shards_total": 51,
+    "codex_shards": ["000"],
+    "codex_shards_count": 1,
+    "codex_shards_total": 21,
+    "asset_manifest": true
+  },
+  "counts": {
+    "source": 7,
+    "conversation": 500,
+    "node": 58049,
+    "message": 57549,
+    "codex": 100,
+    "asset": 14973
+  },
+  "publication": {
+    "objects_materialized": 31,
+    "size_match": 31,
+    "segment_objects": 30,
+    "total_bytes": 140301256,
+    "merkle_root": "71a33050426bdadb54821ebe893af7400261678ca0b6570d3afb94ba478506ee",
+    "source_database_sha256": "bbfc118196b2f4b1bc232236ef2b1c161db62306d2b5fee97d96df48b326543c"
+  },
+  "roundtrip": {
+    "strategy": "stratified all families with first and last large segments",
+    "objects_checked": 10,
+    "byte_identical_pass": 10
+  },
+  "invariants": {
+    "full_mapping_nodes_preserved": true,
+    "orphans": 0,
+    "resume_skip_unchanged": true,
+    "publication_from_committed_sqlite_only": true
+  },
+  "F_ok": "31-object deterministic private publication materialized; all sizes match and 10 stratified objects passed byte-identical round-trip",
+  "F_gap": "Navigator currently covers 5 of 51 conversation shards and 1 of 21 Codex shards; remaining structural sources and later asset-byte joins are not yet indexed",
+  "F_next": "extend the same immutable SQLite index through conversations-008 to conversations-012 and republish a new cumulative snapshot"
+}

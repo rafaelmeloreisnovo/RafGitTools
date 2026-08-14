@@ -1,0 +1,47 @@
+{
+  "schema_version": "rafaelia.contextual-execution-request/v1",
+  "request_id": "cer:wine-formula-write-v1",
+  "packet_sha256": "dfa60423195b057fb706dc27623db4c9876055ea6477f8bdccaff86b3d0d049c",
+  "semantic_result_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "operation": {
+    "mode": "write",
+    "effect": "CREATE_PR_DRAFT",
+    "target_repository": "rafaelmeloreisnovo/Mapa",
+    "target_ref": "codex/contextual-semantic-gate-v1-20260725"
+  },
+  "semantic_gate": {
+    "answer_allowed": false,
+    "blocking_gaps": [
+      "TV-DEF:origin_not_recovered",
+      "TV-SOURCE:literature_not_observed",
+      "TV-DATA:dataset_absent",
+      "TV-UNIT:units_absent"
+    ]
+  },
+  "sources": [
+    {
+      "source_id": "src:current-user-description",
+      "observed": true,
+      "authorization": "authorized"
+    },
+    {
+      "source_id": "src:project-origin-wine-formula",
+      "observed": false,
+      "authorization": "authorized"
+    }
+  ],
+  "authorization": {
+    "requested_by": "user",
+    "human_review_status": "pending"
+  },
+  "rollback": {
+    "strategy": "isolated_branch_and_draft_pr",
+    "direct_default_branch_write": false
+  },
+  "resource_limits": {
+    "max_files": 12,
+    "max_bytes": 1048576,
+    "timeout_seconds": 900
+  },
+  "claim_allowed": false
+}

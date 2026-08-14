@@ -13,7 +13,14 @@
       "additionalProperties": false,
       "required": ["state", "reason"],
       "properties": {
-        "state": { "enum": ["OUT_OF_SCOPE_NO_CREDIT", "AVAILABLE", "TOKEN_VAZIO"] },
+        "state": {
+          "enum": [
+            "OUT_OF_SCOPE_NO_CREDIT",
+            "AVAILABLE",
+            "BLOCKED_INFRA",
+            "TOKEN_VAZIO"
+          ]
+        },
         "reason": { "type": "string", "minLength": 1 }
       }
     },

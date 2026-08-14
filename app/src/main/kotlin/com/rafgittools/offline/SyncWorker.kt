@@ -43,7 +43,7 @@ class SyncWorker(
         private fun queueFile(context: Context): File =
             File(context.filesDir, "offline_queue/sync_ops.bin")
 
-        fun buildQueue(context: Context): OfflineQueue<BackgroundSyncManager.QueueItem> {
+        fun buildQueue(context: Context): OfflineQueue<SyncOperation> {
             val storage = AtomicFileQueueStorage(
                 file = queueFile(context),
                 encode = { (it as SyncOperation).let(SyncOperation::encode) },

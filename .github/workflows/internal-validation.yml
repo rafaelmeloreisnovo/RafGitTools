@@ -35,6 +35,8 @@ jobs:
       - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh
       - name: Generate local.properties
         run: ./scripts/prepare_local_properties.sh
+      - name: Test fail-closed Android runtime receipt contract
+        run: python3 -m unittest discover -s tests -p 'test_android_runtime_receipt.py' -v
       - name: Build production release (unsigned validation)
         run: ./scripts/gradlew_with_java17.sh assembleProductionRelease ${{ inputs.gradle_args || '--stacktrace --info' }}
       - name: Validate formulas and CI graph consistency

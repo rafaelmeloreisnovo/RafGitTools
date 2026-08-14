@@ -26,6 +26,7 @@ import com.rafgittools.rafgitfs.data.TransferJobDao
 import com.rafgittools.rafgitfs.data.VirtualTreeDao
 import com.rafgittools.rafgitfs.data.WorkspaceDao
 import com.rafgittools.rafgitfs.remote.RafGitFsGithubApiService
+import com.rafgittools.kernel.GovernanceGate
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -46,8 +47,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
-        // FIX L4: log body only in debug builds — PATs/tokens must never appear in prod logs
+        // Debug HTTP tracing is useful, but credentials must never enter logs.
         val loggingInterceptor = HttpLoggingInterceptor().apply {
+            redactHeader("Authorization")
+            redactHeader("Proxy-Authorization")
             level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
                     else HttpLoggingInterceptor.Level.NONE
         }
@@ -158,4 +161,13 @@ object CacheModule {
 abstract class RepositoryModule {
     @Binds @Singleton
     abstract fun bindGitRepository(impl: GitRepositoryImpl): GitRepository
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+object KernelModule {
+    @Provides
+    @Singleton
+    fun provideGovernanceGate(@ApplicationContext context: Context): GovernanceGate =
+        GovernanceGate(context)
 }

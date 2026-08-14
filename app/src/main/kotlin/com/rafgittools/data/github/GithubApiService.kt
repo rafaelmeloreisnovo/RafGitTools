@@ -2,6 +2,7 @@ package com.rafgittools.data.github
 
 import com.google.gson.annotations.SerializedName
 import com.rafgittools.domain.model.github.*
+import com.rafgittools.domain.model.github.GithubEvent
 import retrofit2.http.*
 
 /**
@@ -56,11 +57,34 @@ interface GithubApiService {
     // User
     @GET("user")
     suspend fun getAuthenticatedUser(): GithubUser
-    
+
     @GET("users/{username}")
     suspend fun getUser(
         @Path("username") username: String
     ): GithubUser
+
+    @GET("users/{username}/repos")
+    suspend fun getUserRepositoriesByUsername(
+        @Path("username") username: String,
+        @Query("page") page: Int = 1,
+        @Query("per_page") perPage: Int = 30,
+        @Query("sort") sort: String = "updated",
+        @Query("type") type: String = "all"
+    ): List<GithubRepository>
+
+    @GET("users/{username}/starred")
+    suspend fun getUserStarred(
+        @Path("username") username: String,
+        @Query("page") page: Int = 1,
+        @Query("per_page") perPage: Int = 30
+    ): List<GithubRepository>
+
+    @GET("users/{username}/events")
+    suspend fun getUserEvents(
+        @Path("username") username: String,
+        @Query("page") page: Int = 1,
+        @Query("per_page") perPage: Int = 30
+    ): List<GithubEvent>
     
     // Issues
     @GET("repos/{owner}/{repo}/issues")

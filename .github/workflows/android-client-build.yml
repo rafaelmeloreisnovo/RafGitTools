@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - codex/finalize-github-client-login-build
+      - 'hardening/**'
   pull_request:
     branches:
       - main
@@ -52,6 +53,15 @@ jobs:
           echo "OAuth dev client configured: ${{ vars.APP_CLIENT_ID_DEV != '' }}"
           echo "OAuth production client configured: ${{ vars.APP_CLIENT_ID_PRODUCTION != '' }}"
 
+      - name: Run custody and structural unit tests
+        run: |
+          python3 -m unittest \
+            tests.test_android_runtime_receipt \
+            tests.test_first_compile_run_triangle \
+            tests.test_jgitservice_scope \
+            tests.test_workflow_pr_binding \
+            -v
+
       - name: Run authentication unit tests
         run: ./gradlew --no-daemon testDevDebugUnitTest --tests 'com.rafgittools.ui.screens.auth.*' --stacktrace
 
@@ -64,21 +74,33 @@ jobs:
       - name: Assemble installable APK
         run: ./gradlew --no-daemon assembleDevDebug --stacktrace
 
-      - name: Verify APK exists
+      - name: Verify APK and write build receipt
         run: |
           set -euo pipefail
           APK="$(find app/build/outputs/apk/dev/debug -type f -name '*.apk' -print -quit)"
           test -n "$APK"
           test -s "$APK"
           sha256sum "$APK" | tee app/build/outputs/apk/dev/debug/SHA256SUMS.txt
-          ls -lh "$APK"
+          python3 scripts/runtime/write_android_build_receipt.py \
+            --apk "$APK" \
+            --output app/build/outputs/apk/dev/debug/BUILD_RECEIPT.json \
+            --commit "$GITHUB_SHA" \
+            --variant devDebug \
+            --workflow-run-id "$GITHUB_RUN_ID" \
+            --workflow-run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --require-artifact-pass
+          sha256sum app/build/outputs/apk/dev/debug/BUILD_RECEIPT.json | \
+            tee app/build/outputs/apk/dev/debug/BUILD_RECEIPT.sha256
+          ls -lh "$APK" app/build/outputs/apk/dev/debug/BUILD_RECEIPT.json
 
-      - name: Upload APK and checksum
+      - name: Upload APK, checksums and build receipt
         uses: actions/upload-artifact@v4
         with:
           name: RafGitTools-devDebug
           path: |
             app/build/outputs/apk/dev/debug/*.apk
             app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+            app/build/outputs/apk/dev/debug/BUILD_RECEIPT.json
+            app/build/outputs/apk/dev/debug/BUILD_RECEIPT.sha256
           if-no-files-found: error
           retention-days: 30

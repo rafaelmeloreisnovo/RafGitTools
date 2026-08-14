@@ -1,0 +1,39 @@
+{
+  "schema_version": "explorar-visual-emergence-v1",
+  "observed_at": "2026-07-29T04:38:00Z",
+  "mode": "NON_DESTRUCTIVE",
+  "claim_allowed": false,
+  "invariants": {
+    "TOKEN_VAZIO_is_PASS": false,
+    "symbol_or_parable_is_scientific_evidence": false,
+    "negative_result_is_preserved": true,
+    "source_epistemic_operational_claim_gate_separated": true
+  },
+  "sources": [
+    {"id":"IMG-01","sha256":"90a7ba9829dc6d3d10875c3db0cb7a8ce59e141cb1e703f38ae46d7260e84b1e","status":"CONCEPTUAL_MODEL","claim_allowed":false,"requires_correction":false},
+    {"id":"IMG-02","sha256":"4d0b63ba5a3c3fdc6710bf15adc947b409a22f6a57cb069a7c10634fe368f10e","status":"SYMBOLIC_PARABLE","claim_allowed":false,"requires_correction":false},
+    {"id":"IMG-03","sha256":"921e3a60c223f05e92ea97f0b3059929630b056583028890165a4ac1dda70194","status":"ARCHITECTURE_METAPHOR","claim_allowed":false,"requires_correction":false},
+    {"id":"IMG-04","sha256":"b493a34605484e664c0751a3989b8a2d2a5ec9c976b2718c040ae13e37c8cf38","status":"RESEARCH_ROUTING_MAP","claim_allowed":false,"requires_correction":false},
+    {"id":"IMG-05","sha256":"9b579bacbdc457f8339f83b19353963aec4b66090b881ad2d4f00802d985e315","status":"CONCEPTUAL_COMPARISON_REQUIRES_CORRECTION","claim_allowed":false,"requires_correction":true},
+    {"id":"IMG-06","sha256":"1c8cbf1770cb6fc805c5977d6410b4e53fc8a8286db3b2502c2d8a145fe6cb5d","status":"OPERATIONAL_METAPHOR_STRONG","claim_allowed":false,"requires_correction":false},
+    {"id":"IMG-07","sha256":"4543f1d20223adbc9d08a9ab9d92352e8b1bc88e4b489b7d08419c5e06c329ff","status":"HYPOTHESIS_IMPLEMENTATION_PENDING","claim_allowed":false,"requires_correction":false},
+    {"id":"IMG-08","sha256":"34e6eb74f00591b8b4f29e6469fad9fc1e1a906a54bb2c5eae88dd00a304424a","status":"CONTRADICTION_REQUIRES_CORRECTION","claim_allowed":false,"requires_correction":true},
+    {"id":"IMG-09","sha256":"642920f96c7d8661517defe4f8c5d00ac49e8d16ce1e5da89b9661594e3ff2e5","status":"VISUAL_SEED_REQUIRES_RECOMPUTATION","claim_allowed":false,"requires_correction":true},
+    {"id":"IMG-10","sha256":"d3c2461ad7b7006d70d59b1e4df6aa02930f053027c86e6ca013bf7d8670d284","status":"MIXED_FORMAL_AND_SYMBOLIC","claim_allowed":false,"requires_correction":true}
+  ],
+  "directions": [
+    {"id":"D1","name":"PROVENIENCIA_E_CUSTODIA","authority":["Mapa","RafGitTools","GAIA_phi"]},
+    {"id":"D2","name":"GEOMETRIA_E_TOPOLOGIA","authority":["Matem-tica-","ChipQuantum"]},
+    {"id":"D3","name":"ALGEBRA_ARITMETICA_TRIGONOMETRIA","authority":["Matem-tica-"]},
+    {"id":"D4","name":"DINAMICA_TEMPO_RECORRENCIA","authority":["ChipQuantum","RafPolimata"]},
+    {"id":"D5","name":"INFORMACAO_REDUNDANCIA_RECONSTRUCAO","authority":["ZIPRAF_OMEGA_FULL","RafGitTools"]},
+    {"id":"D6","name":"OBSERVACAO_EXPERIMENTO_FALSIFICACAO","authority":["relativity-living-light","papers"]},
+    {"id":"D7","name":"ETICA_SIGNIFICADO_COMUNICACAO","authority":["CientiEspiritual","papers","RafPolimata"]}
+  ],
+  "emergence_protocol": ["OBSERVE","ISOLATE","REPLICATE","MEASURE","MODEL","FALSIFY","PROMOTE_OR_PRESERVE"],
+  "emergency_protocol": ["DETECT","FREEZE_CLAIMS","PRESERVE_EVIDENCE","CONTAIN","ROLLBACK","RECOVER","POSTMORTEM"],
+  "drive_pointer": {
+    "document_id": "1Iv81rH7ztlHdtnQzf4wRoalclN_w88Cntxmwoop3tiE",
+    "canonical_source_document_id": "1g3eVD3zLMuwk0jevAwVL3wSmxhEMkKsAUPFQh2wEn88"
+  }
+}

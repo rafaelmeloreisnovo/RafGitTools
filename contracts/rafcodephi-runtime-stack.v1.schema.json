@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafaelia.local/contracts/rafcodephi-runtime-stack.v1.schema.json",
+  "title": "RAFCODEPHI Runtime Stack Structural Receipt V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "locked_commits",
+    "contracts",
+    "runtime_boundaries",
+    "structural_state",
+    "claim_allowed",
+    "release_allowed"
+  ],
+  "properties": {
+    "schema": {"const": "rafcodephi.runtime-stack/v1"},
+    "locked_commits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["app", "api", "packages", "polimata"],
+      "properties": {
+        "app": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "api": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "packages": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "polimata": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+      }
+    },
+    "contracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["app_identity", "api_identity", "cli_route", "arm_pair", "package_repo_guard", "evidence_adapter"],
+      "properties": {
+        "app_identity": {"const": "PASS"},
+        "api_identity": {"const": "PASS"},
+        "cli_route": {"const": "PASS"},
+        "arm_pair": {"const": "PASS"},
+        "package_repo_guard": {"const": "PASS"},
+        "evidence_adapter": {"const": "PASS"}
+      }
+    },
+    "runtime_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["custom_binary_repository", "arm32_device", "arm64_device", "paired_apk_install", "termux_api_call"],
+      "properties": {
+        "custom_binary_repository": {"const": "BLOCKED_CUSTOM_REPOSITORY_NOT_PUBLISHED"},
+        "arm32_device": {"const": "TOKEN_VAZIO"},
+        "arm64_device": {"const": "TOKEN_VAZIO"},
+        "paired_apk_install": {"const": "TOKEN_VAZIO"},
+        "termux_api_call": {"const": "TOKEN_VAZIO"}
+      }
+    },
+    "structural_state": {"const": "PASS"},
+    "claim_allowed": {"const": false},
+    "release_allowed": {"const": false}
+  }
+}

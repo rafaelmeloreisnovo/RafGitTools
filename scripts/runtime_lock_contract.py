@@ -22,6 +22,8 @@ SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 REQUIRED_REPOSITORIES = {
     "rafaelmeloreisnovo/termux-app-rafacodephi": "master",
+    "rafaelmeloreisnovo/termux-api_rafcodephi": "master",
+    "rafaelmeloreisnovo/termux-packages": "main",
     "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE": "main",
     "rafaelmeloreisnovo/llamaRafaelia": "master",
     "rafaelmeloreisnovo/RafPolimata": "main",
@@ -29,6 +31,8 @@ REQUIRED_REPOSITORIES = {
 
 OUTPUT_NAMES = {
     "rafaelmeloreisnovo/termux-app-rafacodephi": "termux_commit",
+    "rafaelmeloreisnovo/termux-api_rafcodephi": "termux_api_commit",
+    "rafaelmeloreisnovo/termux-packages": "termux_packages_commit",
     "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE": "conversations_commit",
     "rafaelmeloreisnovo/llamaRafaelia": "llama_commit",
     "rafaelmeloreisnovo/RafPolimata": "rafpolimata_commit",

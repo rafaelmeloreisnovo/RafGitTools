@@ -14,6 +14,7 @@ on:
 permissions:
   contents: read
   issues: write
+  pull-requests: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -105,10 +106,11 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Publish build result to PR 236
-        if: always() && github.ref == 'refs/heads/main'
+      - name: Publish build result to current PR
+        if: always() && github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           AUTH_RESULT: ${{ steps.auth_tests.outcome }}
           UNIT_RESULT: ${{ steps.unit_tests.outcome }}
           LINT_RESULT: ${{ steps.lint.outcome }}
@@ -117,6 +119,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          test -n "$PR_NUMBER"
+          case "$PR_NUMBER" in
+            *[!0-9]*) echo "invalid PR_NUMBER=$PR_NUMBER" >&2; exit 2 ;;
+          esac
           cat > /tmp/rafgittools-ci.md <<EOF
           ## Resultado automático do fechamento RafGitTools
 
@@ -132,7 +138,7 @@ jobs:
 
           Execução: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
           EOF
-          gh api "repos/${GITHUB_REPOSITORY}/issues/236/comments" \
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
             --method POST \
             --field body="$(cat /tmp/rafgittools-ci.md)"
 

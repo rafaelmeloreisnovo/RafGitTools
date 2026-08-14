@@ -5,7 +5,7 @@ import org.json.JSONObject;
 import java.util.Locale;
 
 /**
- * Moral and operational gate for Kiwi -> APK -> local model messages.
+ * Moral and operational gate for browser client -> APK -> local model messages.
  *
  * Only conversation is accepted. No shell, git write, file write, automation,
  * credential forwarding, or hidden background action is part of this protocol.
@@ -17,6 +17,7 @@ public final class RafBridgeContract {
     }
 
     public static Result validate(JSONObject request, boolean allowSensitive) {
+        String schema = request.optString("schema", "").trim();
         String requestId = request.optString("request_id", "").trim();
         String action = request.optString("action", "").trim();
         String intent = request.optString("intent", "").trim();
@@ -25,6 +26,10 @@ public final class RafBridgeContract {
         String message = request.optString("message", "");
         boolean consent = request.optBoolean("consent", false);
 
+        // Empty schema preserves compatibility with the existing Kiwi v0.1 client.
+        if (!schema.isEmpty() && !"raf.client.envelope.v1".equals(schema)) {
+            return Result.reject("schema de cliente não suportado");
+        }
         if (requestId.isEmpty()) {
             return Result.reject("request_id ausente");
         }
@@ -37,7 +42,7 @@ public final class RafBridgeContract {
         if (!consent) {
             return Result.reject("consent=true é obrigatório para cada envio");
         }
-        if (!"kiwi-extension".equals(source)) {
+        if (!isAllowedSource(source)) {
             return Result.reject("source não autorizado");
         }
         if (!("public".equals(dataClass)
@@ -59,6 +64,11 @@ public final class RafBridgeContract {
         }
 
         return Result.allow(requestId, intent, dataClass, message);
+    }
+
+    private static boolean isAllowedSource(String source) {
+        return "kiwi-extension".equals(source)
+                || "tampermonkey-userscript".equals(source);
     }
 
     private static boolean looksLikeCredential(String message) {

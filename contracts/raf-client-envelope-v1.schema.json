@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafcode.local/contracts/raf-client-envelope-v1.schema.json",
+  "title": "RAFAELIA Client Interoperability Envelope v1",
+  "description": "Minimal consent-first envelope shared by userscript, browser extension, loopback web UI and APK surfaces.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "request_id",
+    "action",
+    "intent",
+    "consent",
+    "consent_at",
+    "data_class",
+    "source",
+    "transport",
+    "message",
+    "retention_request"
+  ],
+  "properties": {
+    "schema": { "const": "raf.client.envelope.v1" },
+    "request_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{16,128}$"
+    },
+    "action": { "const": "chat" },
+    "intent": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "consent": { "const": true },
+    "consent_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "data_class": {
+      "enum": ["public", "private", "sensitive"]
+    },
+    "source": {
+      "enum": [
+        "kiwi-extension",
+        "tampermonkey-userscript",
+        "loopback-web",
+        "android-share-sheet"
+      ]
+    },
+    "transport": {
+      "enum": ["loopback-http", "android-intent", "unix-domain-socket"]
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32768
+    },
+    "selection_only": {
+      "type": "boolean",
+      "default": true
+    },
+    "page_metadata_included": {
+      "type": "boolean",
+      "default": false
+    },
+    "retention_request": {
+      "enum": ["none", "session", "explicit_receipt_only"]
+    },
+    "capabilities_requested": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "LOCAL_CHAT",
+          "READ_SELECTION",
+          "READ_GITHUB_PUBLIC",
+          "READ_GITHUB_AUTHORIZED",
+          "READ_DRIVE_AUTHORIZED",
+          "VALIDATE_ARTIFACT"
+        ]
+      },
+      "default": ["LOCAL_CHAT"]
+    }
+  }
+}

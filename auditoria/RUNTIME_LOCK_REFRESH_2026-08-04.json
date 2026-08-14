@@ -1,0 +1,56 @@
+{
+  "schema": "rafaelia.runtime-lock-refresh-receipt.v1",
+  "event_id": "RUNTIME-LOCK-REFRESH-20260804T104800Z",
+  "recorded_at": "2026-08-04T10:48:00Z",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "branch": "ops/runtime-lock-refresh-20260804",
+  "base_commit": "0de5bb7666a14729eb2960fc84abd44f7151e6a3",
+  "lock_path": "runtime-lock.json",
+  "lock_sha256": "c24ac441951726da18e298365900425a9495f229333c2685b339005a085c526f",
+  "previous_generated_at": "2026-07-13T09:23:27Z",
+  "source_pins": [
+    {
+      "repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "branch": "master",
+      "previous_commit": "459c8114adfd63b00b17cb26cb6eea0bd9f87fa6",
+      "current_commit": "0e4330273375344042eba8ff17de47c5bc8af573"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE",
+      "branch": "main",
+      "previous_commit": "8753c1152f2399e258387d5b6e26e00090d1478e",
+      "current_commit": "628105046620ae9e92d625e85def2bf728edfac8"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/llamaRafaelia",
+      "branch": "master",
+      "previous_commit": "40f3e72bcb0d63b5acc9af6ff7b3f6a38307d763",
+      "current_commit": "ceacf4be5ccf3889b864288423258dbf823a07ad"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/RafPolimata",
+      "branch": "main",
+      "previous_commit": "543852ecf47da66984c8c7152fcb0917c21b82a4",
+      "current_commit": "dbd104e69e0b627d0a5c37a1d03b8bbabdb9f69e"
+    }
+  ],
+  "validation": {
+    "method": "local reproduction of scripts/runtime_lock_contract.py invariants",
+    "schema": "PASS",
+    "required_repositories": "PASS",
+    "branch_contract": "PASS",
+    "commit_sha40": "PASS",
+    "abi_order": "PASS",
+    "artifact_promotion": "TOKEN_VAZIO"
+  },
+  "claims": {
+    "source_locked": true,
+    "artifacts_built": false,
+    "artifacts_verified": false,
+    "device_executed": false,
+    "claim_allowed": false
+  },
+  "F_ok": "four federated repositories pinned to observed concrete commits and lock contract validated structurally",
+  "F_gap": "manifest and bundle SHA-256 values remain TOKEN_VAZIO until reproducible builds produce artifacts",
+  "F_next": "run the source-lock validator and generate the first Termux/RafGitTools runtime manifest from this branch"
+}

@@ -159,3 +159,23 @@ sessão
 ```
 
 Essa cadeia é a invariante de custódia do workflow.
+
+## 10. Autoridade complementar v1 ↔ v2
+
+Este documento e `/workflow-master-index.json` respondem por significado, módulos,
+claims e camadas `S01..S30`. O arquivo
+`/configs/workflow-master-index.json` responde por execução, tempo, responsável,
+runtime, supply chain e rollback.
+
+O roteamento verificável está em
+[`docs/federation/WORKFLOW_MASTER_INDEX_CROSSWALK_V1.md`](federation/WORKFLOW_MASTER_INDEX_CROSSWALK_V1.md)
+e `/configs/workflow-master-index.crosswalk.v1.json`.
+
+```text
+pergunta semântica → v1
+pergunta operacional → v2
+pergunta cross-source → v1 + v2
+conflito → BLOCKED + CONTRADICTION
+```
+
+Não existe precedência silenciosa entre os perfis.

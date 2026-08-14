@@ -325,3 +325,27 @@ data class GithubMilestone(
     @SerializedName("due_on")        val dueOn: String?,
     @SerializedName("closed_at")     val closedAt: String?
 ) : Parcelable
+
+@Parcelize
+data class GithubEvent(
+    val id: String,
+    val type: String?,
+    @SerializedName("created_at") val createdAt: String,
+    val repo: GithubEventRepo,
+    val actor: GithubEventActor
+) : Parcelable
+
+@Parcelize
+data class GithubEventRepo(
+    val id: Long,
+    val name: String,
+    val url: String
+) : Parcelable
+
+@Parcelize
+data class GithubEventActor(
+    val id: Long,
+    val login: String,
+    @SerializedName("display_login") val displayLogin: String?,
+    @SerializedName("avatar_url") val avatarUrl: String
+) : Parcelable

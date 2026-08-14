@@ -1,0 +1,48 @@
+{
+  "schema": "rafaelia.ci-no-step-receipt.v1",
+  "event_id": "CI-NO-STEP-PR330-20260804T105300Z",
+  "recorded_at": "2026-08-04T10:53:00Z",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "pull_request": 330,
+  "head_commit": "589da9757666e1e087e90fba288584beffc4ad95",
+  "classification": "TOKEN_VAZIO_RUNNER",
+  "runs": [
+    {
+      "run_id": 30902563510,
+      "workflow": "CI",
+      "job_id": 91970018551,
+      "job": "Test, lint and assemble devDebug",
+      "status": "completed",
+      "conclusion": "failure",
+      "steps_observed": 0
+    },
+    {
+      "run_id": 30902563474,
+      "workflow": "Android Client Build",
+      "job_id": 91970018341,
+      "job": "Test, lint and build devDebug APK",
+      "status": "completed",
+      "conclusion": "failure",
+      "steps_observed": 0
+    },
+    {
+      "run_id": 30902563557,
+      "workflow": "Kernel Architecture Build",
+      "job_id": 91970019152,
+      "job": "Assemble RAF Kernel APK",
+      "status": "completed",
+      "conclusion": "failure",
+      "steps_observed": 0
+    }
+  ],
+  "inference": {
+    "code_failure_observed": false,
+    "runner_started": false,
+    "logs_available": false,
+    "artifact_produced": false,
+    "claim_allowed": false
+  },
+  "F_ok": "workflow dispatches and concrete run/job identifiers were captured",
+  "F_gap": "no runner steps, command output, logs, tests or artifacts were produced",
+  "F_next": "validate runtime-lock and runtime-manifest generator locally, then preserve exact commands and exit codes"
+}

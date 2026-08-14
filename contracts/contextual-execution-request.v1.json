@@ -1,0 +1,14 @@
+{
+  "schema_version": "rafaelia.contextual-execution-request/v1",
+  "purpose": "Separar capacidade nativa, autorização, semântica, execução e claim.",
+  "mutating_operations": ["write", "execute", "publish"],
+  "rules": {
+    "tool_available_is_not_authorized": true,
+    "semantic_candidate_is_not_execution": true,
+    "write_requires_human_review": true,
+    "write_requires_rollback": true,
+    "blocking_gap_denies_mutation": true,
+    "credentials_to_model": false,
+    "claim_allowed_default": false
+  }
+}

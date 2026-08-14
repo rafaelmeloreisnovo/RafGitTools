@@ -10,18 +10,26 @@ on:
         type: string
   pull_request:
     paths:
+      - "workflow-master-index.json"
       - "configs/rafaelia-federation.json"
       - "configs/workflow-master-index.json"
+      - "configs/workflow-master-index.crosswalk.v1.json"
+      - "configs/normative-reference-registry.v1.json"
       - "configs/epistemic-provenance-interop.json"
       - "configs/knowledge-antiderivative-v1.json"
       - "configs/backfill-stage-1.json"
       - "configs/lineage-stage-2.tsv"
       - "schemas/workflow-master-index.schema.json"
+      - "schemas/workflow-master-index-crosswalk.schema.json"
+      - "schemas/normative-reference-registry.schema.json"
       - "schemas/epistemic-provenance-interop.schema.json"
       - "schemas/knowledge-antiderivative-v1.schema.json"
       - "scripts/federation/**"
       - "tests/federation/**"
       - "docs/federation/**"
+      - "docs/WORKFLOW_MASTER_INDEX_RAFAELIA.md"
+      - "docs/COMPLIANCE.md"
+      - "scripts/validate_rafaelia_workflow.sh"
       - "workflows/WORKFLOW_MASTER_INDEX_RAFAELIA.md"
       - ".github/actions-lock.json"
       - "requirements/federation-audit.lock"
@@ -64,6 +72,20 @@ jobs:
           python3 scripts/federation/validate_master_index.py \
             --index configs/workflow-master-index.json \
             --report artifacts/master-index-report.json
+
+      - name: Validate semantic v1 to control v2 crosswalk
+        run: |
+          python3 scripts/federation/validate_workflow_master_crosswalk.py \
+            --semantic workflow-master-index.json \
+            --control configs/workflow-master-index.json \
+            --crosswalk configs/workflow-master-index.crosswalk.v1.json \
+            --report artifacts/workflow-master-crosswalk-report.json
+
+      - name: Validate normative references without conformity promotion
+        run: |
+          python3 scripts/federation/validate_normative_reference_registry.py \
+            --registry configs/normative-reference-registry.v1.json \
+            --report artifacts/normative-reference-registry-report.json
 
       - name: Project epistemic provenance interoperability v1
         run: |
@@ -122,7 +144,9 @@ jobs:
             tests/federation/test_knowledge_antiderivative.py \
             tests/federation/test_session_lineage.py \
             tests/federation/test_backfill_stage1.py \
-            tests/federation/test_lineage_stage2.py
+            tests/federation/test_lineage_stage2.py \
+            tests/federation/test_workflow_master_crosswalk.py \
+            tests/federation/test_normative_reference_registry.py
 
       - name: Simulate requested failure
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.simulate_failure != '' }}
@@ -136,15 +160,22 @@ jobs:
         if: always()
         run: |
           sha256sum \
+            workflow-master-index.json \
             configs/rafaelia-federation.json \
             configs/workflow-master-index.json \
+            configs/workflow-master-index.crosswalk.v1.json \
+            configs/normative-reference-registry.v1.json \
             configs/epistemic-provenance-interop.json \
             configs/knowledge-antiderivative-v1.json \
             configs/backfill-stage-1.json \
             configs/lineage-stage-2.tsv \
             docs/federation/session-lineage-v1.json \
             docs/federation/BACKFILL_STAGE_1.md \
+            docs/federation/WORKFLOW_MASTER_INDEX_CROSSWALK_V1.md \
+            docs/federation/NORMATIVE_REFERENCE_STATUS_V1.md \
             schemas/workflow-master-index.schema.json \
+            schemas/workflow-master-index-crosswalk.schema.json \
+            schemas/normative-reference-registry.schema.json \
             schemas/epistemic-provenance-interop.schema.json \
             schemas/knowledge-antiderivative-v1.schema.json \
             .github/actions-lock.json \
@@ -181,6 +212,8 @@ jobs:
             'SUPPLY_CHAIN_ATTESTATION=TOKEN_VAZIO' \
             'AUTOMATIC_CROSS_REPO_WRITE=false' \
             'AUTOMATIC_MERGE=false' \
+            'WORKFLOW_INDEX_SILENT_PRECEDENCE=false' \
+            'NORMATIVE_REFERENCE_CONFORMANCE=false' \
             > artifacts/CLAIM_BOUNDARY.txt
 
       - name: Upload audit evidence

@@ -11,7 +11,7 @@ object BackgroundSyncManager {
         fun execute(): Result<Unit>
     }
 
-    fun sync(queue: OfflineQueue<QueueItem>): Boolean {
+    fun <T : QueueItem> sync(queue: OfflineQueue<T>): Boolean {
         // Keep this method pure processing logic so it can be invoked from
         // worker orchestration (e.g. WorkManager) without duplicating behavior.
         val pendingCount = queue.size()

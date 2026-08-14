@@ -2,7 +2,7 @@ package com.rafgittools.rafgitfs.index
 
 import com.rafgittools.data.cache.RepositoryNameCache
 import com.rafgittools.data.cache.RepositoryNameCacheDao
-import com.rafgittools.domain.model.github.GithubCodeSearchItem
+import com.rafgittools.data.github.GithubCodeSearchItem
 import com.rafgittools.domain.model.github.GithubRepository
 import com.rafgittools.rafgitfs.data.RepositoryRefDao
 import com.rafgittools.rafgitfs.data.RepositoryRefEntity

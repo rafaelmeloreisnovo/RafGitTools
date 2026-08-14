@@ -1,0 +1,64 @@
+{
+  "schema": "RAFAELIA_NAVIGATOR_CUMULATIVE_003_012_ROUNDTRIP_V1",
+  "privacy_class": "PRIVATE_METADATA_NO_RAW_CORPUS",
+  "claim_allowed": false,
+  "training_executed": false,
+  "source_coverage": {
+    "conversation_shards": ["003", "004", "005", "006", "007", "008", "009", "010", "011", "012"],
+    "conversation_shards_count": 10,
+    "conversation_shards_total": 51,
+    "codex_shards": ["000"],
+    "codex_shards_count": 1,
+    "codex_shards_total": 21,
+    "asset_manifest": true
+  },
+  "counts": {
+    "source": 12,
+    "conversation": 1000,
+    "node": 92232,
+    "message": 91232,
+    "codex": 100,
+    "asset": 14973
+  },
+  "ingest": {
+    "new_shards": ["008", "009", "010", "011", "012"],
+    "elapsed_seconds": 14.42,
+    "peak_rss_kb": 130596,
+    "resume_elapsed_seconds": 3.92,
+    "resume_all_unchanged": true,
+    "duplicates_exact_candidates": 5851,
+    "empty_messages_preserved": 2018,
+    "orphans": 0,
+    "errors": 0
+  },
+  "publication": {
+    "objects_before_receipt": 45,
+    "size_match": 45,
+    "segments": 44,
+    "total_bytes": 236411881,
+    "merkle_root": "e9f2e6b96d4fc4f9e8f5b06fcaabda88c8f86fbc565383763eda4fb530e1901b",
+    "source_database_sha256": "d9046be003f4c1c5f5d8e19e2b314905f4b0fe84ec1a45320f0c1cab429ebfda",
+    "source_database_bytes": 520232960,
+    "deterministic_regenerations": 2,
+    "regenerations_byte_identical": true,
+    "conversation_segment_alias": true
+  },
+  "roundtrip": {
+    "objects_checked": 10,
+    "byte_identical_pass": 10
+  },
+  "safe_ci": {
+    "run_id": 31097489558,
+    "jobs": 1,
+    "jobs_with_steps": 0,
+    "runner_started": false,
+    "state": "TOKEN_VAZIO_RUNNER"
+  },
+  "correction": {
+    "reason": "replace incorrectly transcribed source database hash with the value read from the deterministic publication manifest",
+    "previous_incorrect_hash": "e84c395b36ffde9e65f59a2147047a37373ce70b14a044ec7d0e33c9deab5bbe"
+  },
+  "F_ok": "conversations-003 through 012, codex-000 and asset manifest form a deterministic private Navigator snapshot with 45 size-matched objects and 10/10 stratified byte-identical round-trip",
+  "F_gap": "Navigator still lacks conversations-000 through 002, conversations-013 through 050, Codex-001 through 020, physical asset byte hashes/MIME joins, and graph-memory reconciliation for this new snapshot",
+  "F_next": "extend the immutable index through conversations-013 to conversations-017 and publish the next cumulative snapshot"
+}

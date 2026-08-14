@@ -1,120 +1,160 @@
 # RAFGITTOOLS_CURRENT_STATE
 
-- Status: **ATIVO — código integrado, validação local pendente**
-- Estado observado: **2026-07-21** (atualizado)
-- Fonte de verdade: código em `app/src/`, testes, contratos e `ECOSYSTEM_RUNTIME_STATE.json`
-- GitHub Actions: **OUT_OF_SCOPE** — workflows falham por `actions/checkout@v6` inexistente (baseline pré-existente); ausência de run não é PASS nem FAIL de código
+- Status: **ATIVO — source-functional avançado / BUILD anchor comprovado / PR #347 em gate CI**
+- Estado observado: **2026-08-14**
+- Branch operacional: `hardening/first-compile-run-triangle-20260814`
+- PR atual: **#347 — draft, mergeable=true na última observação**
+- BUILD anchor comprovado: `bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa`
+- `claim_allowed=false`
+- `release_allowed=false`
 
-## Núcleo Android/Git/GitHub
-
-| Componente | Estado | Limite atual |
-|---|---|---|
-| Android / Compose / Hilt / Room v4 | `IMPLEMENTED` | APK e device smoke não executados nesta atividade |
-| PAT + armazenamento seguro | `IMPLEMENTED` | Resultado end-to-end depende de execução local/device |
-| OAuth Device Flow (RFC 8628) | `IMPLEMENTED / CONFIG_REQUIRED` | Exige Client ID público configurado |
-| SSH key rotation (Ed25519) | `IMPLEMENTED` | Upload/delete via GitHub API — `SshKeyRotationManager` |
-| PAT expiry detection | `IMPLEMENTED` | `TokenRefreshManager.checkPATExpiry()` via `GitHub-Authentication-Token-Expiry` header |
-| API GitHub (50+ endpoints) | `PARTIAL_ADVANCED` | Falta matriz end-to-end completa |
-| Git local via JGit (25+ ops) | `PARTIAL_ADVANCED` | Rede, credenciais e conflitos precisam de regressão real |
-| SSH auth (key use) | `PARTIAL` | Depende de ambiente/chaves e teste em device |
-| GPG | `ADAPTER_IMPLEMENTED / RUNTIME_TOKEN_VAZIO` | Wrapper exige binário `gpg` acessível pelo processo autorizado |
-| Git LFS (UI completo) | `IMPLEMENTED / RUNTIME_TOKEN_VAZIO` | `LfsScreen` + `LfsViewModel` + `LfsManager`; requer `git-lfs` e repositório real para validar |
-| Worktree | `ADAPTER_IMPLEMENTED / RUNTIME_TOKEN_VAZIO` | Falta matriz de filesystem/device |
-| Bisect | `ADAPTER_IMPLEMENTED / RUNTIME_TOKEN_VAZIO` | Falta cenário regressivo controlado |
-| Webhooks (GitHub API) | `IMPLEMENTED` | `WebhooksScreen` + `WebhooksViewModel`; list/create/delete/ping via `GithubApiService` |
-| Worktree (UI) | `IMPLEMENTED` | `WorktreeScreen` + `WorktreeViewModel`; add/list/remove/lock/unlock/prune via `WorktreeManager` |
-| Bisect (UI) | `IMPLEMENTED` | `BisectScreen` + `BisectViewModel`; start/good/bad/skip/reset workflow via `BisectManager` |
-| Terminal | `BOUNDED_EXECUTOR` | Não é PTY/VT100 e não aceita Git gravável (ProcessBuilder allowlist) |
-| Multi-provider (5 providers) | `IMPLEMENTED` | GitHub, GitLab, Bitbucket, Gitea/Forgejo, Azure DevOps — todos via `MultiPlatformManager` |
-| Offline queue (Room) | `IMPLEMENTED` | `RoomOfflineQueueStorage` + `OfflineOperationDao` (DB v3); `SyncWorker` ainda usa AtomicFile |
-| Repository sync state | `IMPLEMENTED` | `RepositorySyncWorker` (15 min) — `BranchTrackingStatus` → `SyncState` (DB v4) |
-| rafaelia JNI bridge | `IMPLEMENTED / BUILD_WIRED` | CMakeLists.txt produz `librafaelia.so`; integração EMA/prefetch pendente |
-| LLaMA kernel JNI | `BRIDGE_IMPLEMENTED / BLOCKED` | `raf_kernel_jni.c` existe; bloqueado em `llama.h` externo |
-
-## Correções estruturais deste corte
-
-### Executor limitado
-
-`TerminalEmulator.kt` agora:
-
-- drena stdout/stderr enquanto o processo executa, evitando bloqueio por pipe cheio;
-- rejeita aspas abertas, escapes incompletos, NUL e múltiplas linhas;
-- permite apenas subcomandos Git de leitura;
-- rejeita ações `find` que executem comandos ou removam/escrevam arquivos;
-- continua explicitamente fora do escopo de PTY/VT100.
-
-Operações graváveis devem seguir:
+## Regra canônica
 
 ```text
-RafGitTools
-→ job.v1 tipado
-→ GovernanceGate
-→ runtime Termux autorizado
-→ resultado estruturado
+SOURCE != TESTED != BUILD_VERIFIED != DEVICE_VERIFIED != RELEASE
 ```
 
-### Fila offline
+### Regra de auto-referência
 
-`OfflineQueue` recebeu fronteira de armazenamento durável. A implementação
-`AtomicFileQueueStorage` usa:
+Este documento mutável **não congela o SHA do próprio head da branch**. Qualquer atualização deste arquivo cria um novo commit e tornaria esse SHA imediatamente obsoleto.
 
-- registros binários length-prefixed;
-- limites de quantidade e tamanho;
-- `fsync` antes da publicação;
-- arquivo temporário no mesmo diretório;
-- rollback da mutação quando a persistência falha.
+Para o head corrente do PR #347, a fonte de verdade é a metadata do próprio PR/GitHub Actions. SHA exato só é congelado aqui quando funciona como **âncora histórica/evidence checkpoint**, como o BUILD `bbdb556...`.
 
-Ainda falta conectar um codec de `OfflineOperation` e WorkManager. Portanto,
-**fila durável disponível** não significa **sincronização de produção concluída**.
+## Genealogia recente
 
-### Multi-plataforma
+1. PR #345 integrou o contrato `source -> build -> device`.
+2. PR #346 integrou correções pós-merge, reconciliação documental e o primeiro BUILD atual comprovado.
+3. PR #346 foi mesclado em `f3396cdea5fbf43ac302de19e7d1e9064ecfa122`.
+4. Deltas produzidos depois do merge foram separados no PR sucessor **#347**.
+5. A branch do #347 foi reconciliada com `main` sem force-push por merge commit não destrutivo.
+6. O #347 permanece draft e deve ser promovido somente após os gates do seu **head exato no momento da execução**.
 
-Todos os cinco providers estão implementados em `MultiPlatformManager`:
+## BUILD anchor comprovado
 
-| Provider | Adapter | Autenticação |
-|---|---|---|
-| GitHub | `GithubApiService` | PAT / OAuth |
-| GitLab | `GitLabApiService` — `GET /api/v4/projects?membership=true` | `Authorization: Bearer token` |
-| Bitbucket | `BitbucketApiService` — `GET /2.0/repositories/{workspace}` | Basic Auth |
-| Gitea/Forgejo | `GiteaApiService` — `GET /api/v1/user/repos` | `Authorization: token token` |
-| Azure DevOps | `AzureDevOpsApiService` — `GET /{org}/{project}/_apis/git/repositories?api-version=7.0` | PAT Basic (`Base64(":token")`) |
+Commit:
 
-As consultas tipadas distinguem `Success`, `NotConfigured`, `AuthenticationError`, `NetworkError`.
+`bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa`
 
-## Diretório `fazer/`
+Workflow `Android Client Build` run `31821491676`, job `94835531838`: **SUCCESS**.
 
-Os 17 arquivos de `fazer/` são rascunhos históricos **não compilados**. A auditoria
-do PR #267 concluiu que foram superados pelas implementações mais completas em
-`app/src/`. Eles **não estão pendentes de integração** e não podem ser usados como
-fonte de verdade.
+PASS observado:
 
-Próxima limpeza dedicada:
+- custody/structural tests;
+- authentication unit tests;
+- full dev unit tests;
+- Android lint;
+- `assembleDevDebug`;
+- APK verification;
+- build receipt;
+- artifact upload.
+
+Artifact:
+
+- `RafGitTools-devDebug` id `9227343409`;
+- APK `app-dev-debug.apk`;
+- size `24,672,130` bytes;
+- SHA-256 `115b9cb1e71f53f16b2648924a09549b8e5e0b9e453280cab2e7f183a411ebf6`;
+- ZIP CRC PASS;
+- `armeabi-v7a` PRESENT;
+- `arm64-v8a` PRESENT;
+- build receipt SHA-256 `f124ac18a9f1e158aa764a12b49a25dbf54cc870cca8359e0355416bee5219a5`.
+
+Esse BUILD continua válido **somente como evidência commit-bound a `bbdb556...`**.
+
+## Delta sucessor — PR #347
+
+O #347 contém:
+
+- remoção do alvo histórico hardcoded `issues/236/comments` de `.github/workflows/ci.yml`;
+- comentário de CI ligado a `github.event.pull_request.number`;
+- validação explícita de `PR_NUMBER`;
+- permissão `pull-requests: write` explícita;
+- `tests/test_workflow_pr_binding.py` para rejeitar regressão a destino numérico hardcoded;
+- inclusão desse teste no gate estrutural do `Android Client Build`;
+- `RAFGITTOOLS_ROADMAP_TRUE.md` atualizado;
+- `RAFGITTOOLS_CURRENT_REPO_MAP_V1.md` append-only;
+- `docs/INDEX.md` reorganizado;
+- `ECOSYSTEM_RUNTIME_STATE.json` separado entre BUILD anchor e fronteira atual.
+
+Como workflow/teste mudaram depois do BUILD anchor, o estado do **head corrente do #347** deve ser lido assim até existir execução conclusiva:
 
 ```text
-fazer/
-→ archive/legacy-drafts/fazer-2026-07/
-ou remoção após comparação final de hashes/diffs
+SOURCE          = PRESENT
+TESTED          = consultar workflow do head exato
+BUILD_VERIFIED  = somente se houver APK + receipt do head exato
+DEVICE_VERIFIED = TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED
+RELEASE         = BLOCKED
 ```
 
-Nenhuma funcionalidade deve ser contabilizada duas vezes por existir em
-`app/src/` e em `fazer/`.
+## Núcleo de fonte atual
 
-## Contratos locais
+| Componente | Estado de fonte | Limite de evidência |
+|---|---|---|
+| Android / Compose / Hilt / Room | `IMPLEMENTED_ADVANCED` | build do candidato final deve ser commit-bound |
+| P33 | `33/33 SOURCE_FUNCTIONAL` | não equivale a 33/33 runtime |
+| Git/JGit | `IMPLEMENTED_ADVANCED` | remotes/conflitos reais continuam granulares |
+| Interactive staging | `IMPLEMENTED` | unit regression comprovada no anchor; device pendente |
+| PAT / auth lifecycle | `IMPLEMENTED / CAPABILITY_AWARE` | real device/Auth fixtures pendentes |
+| OAuth Device Flow | `IMPLEMENTED / CONFIG_REQUIRED` | Client ID/fixture real pendentes |
+| SSH | `PARTIAL_RUNTIME` | chave/servidor real pendentes |
+| GitHub API | `PARTIAL_ADVANCED` | matriz E2E real pendente |
+| Multi-provider | `IMPLEMENTED / FIXTURE_GATED` | credenciais/endpoints reais pendentes |
+| Offline queue/storage/workers | `IMPLEMENTED / DEVICE_GATED` | restart/recovery físico pendente |
+| Terminal | `IMPLEMENTED_BOUNDED_EXECUTOR` | PTY/VT100 = `TOKEN_VAZIO_PTY` |
+| LFS/worktree/bisect/GPG | `IMPLEMENTED_OR_ADAPTER / RUNTIME_GATED` | fixtures externas pendentes |
+| RAFAELIA JNI/native | `BRIDGE_IMPLEMENTED` | BUILD anchor dual-ABI; physical invocation pendente |
+| Local LLM/Kiwi bridge | `SOURCE_PRESENT / RUNTIME_GATED` | modelo/Kiwi real pendentes |
 
-- `contracts/job-v1.schema.json`: handoff tipado e limitado para o runtime;
-- `contracts/ecosystem-runtime-state.schema.json`: estados e evidências;
-- `ECOSYSTEM_RUNTIME_STATE.json`: matriz material desta revisão;
-- `scripts/validate_runtime_truth.py`: validação stdlib, sem GitHub Actions.
+## TOKEN_VAZIO preservado
 
-## Evidência e limitações
+```text
+final-candidate BUILD receipt        = TOKEN_VAZIO até PASS commit-bound
+physical-device install/start        = TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED
+physical runtime receipt             = TOKEN_VAZIO
+private Git remote fixtures          = TOKEN_VAZIO_RUNTIME
+PAT/OAuth real Android regression    = TOKEN_VAZIO_RUNTIME
+GitHub App refresh real              = CONFIG_REQUIRED / TOKEN_VAZIO_RUNTIME
+SSH provider matrix                  = TOKEN_VAZIO_RUNTIME
+GPG/LFS/worktree/bisect fixtures     = TOKEN_VAZIO_RUNTIME
+PTY/VT100                             = TOKEN_VAZIO_PTY
+release acceptance/signing           = TOKEN_VAZIO_RELEASE
+claim_allowed                         = false
+release_allowed                       = false
+```
 
-- Mudanças de código e testes estão presentes na branch de auditoria.
-- GitHub Actions não foi executado por falta momentânea de créditos.
-- APK, device smoke ARM32/ARM64 e integração Termux permanecem `TOKEN_VAZIO` até
-  existirem comando, stdout/stderr, hash e resultado de aparelho.
+## Próxima ordem operacional
 
-## Retroalimentar[4] — 2026-07-21
+```text
+congelar branch do #347
+  -> CI do head exato PASS
+  -> APK + SHA + BUILD_RECEIPT desse mesmo head
+  -> não modificar a branch candidata depois do PASS
+  -> physical ARM install + launch com esses bytes
+  -> runtime receipt commit+APK-bound
+  -> triangle_closure PASS
+  -> Git/Auth/Offline fixtures reais
+  -> providers/external runtimes
+  -> release gate
+```
 
-- **F_ok:** inconsistências foram transformadas em código (multi-platform 5 providers, LFS UI, SSH rotation, PAT expiry, Room offline queue + sync worker, rafaelia build wiring, HomeViewModel local repos, **Webhooks UI**, **Worktree UI**, **Bisect UI** — todos os TOKEN_VAZIO de UI agora têm Screen + ViewModel com navegação completa). Documentação alinhada com código.
-- **F_gap:** build Android em device físico, WorkManager scheduling em device real, ponte Termux PTY e `llama.h` para LLaMA kernel não comprovados. GPG exige binário `gpg` acessível.
-- **F_next:** executar `./gradlew assembleDevDebug` em ambiente com SDK; resolver `actions/checkout@v6` nos workflows para desbloquear CI; adicionar `llama.cpp` como submódulo para desbloquear RafKernelBridge.
+Não usar o APK do BUILD anchor `bbdb556...` como receipt de outro commit.
+
+## Fonte de verdade ordenada
+
+1. metadata do PR/commit exato no GitHub;
+2. `app/src/` e build configuration;
+3. `app/src/test/` + `tests/`;
+4. workflows/gates executados;
+5. APK + SHA-256 + build receipt do commit exato;
+6. device receipt do mesmo APK;
+7. `ECOSYSTEM_RUNTIME_STATE.json`;
+8. `RAFGITTOOLS_CODE_REALITY_MATRIX.md`;
+9. este documento;
+10. `RAFGITTOOLS_ROADMAP_TRUE.md`;
+11. roadmaps/README históricos.
+
+## Retroalimentar[3]
+
+- **F_ok:** #346 integrado; BUILD anchor preservado; #347 isola o hardening pós-merge e remove acoplamento ao PR 236.
+- **F_gap:** o candidato final precisa de BUILD próprio; DEVICE continua físico e commit-bound.
+- **F_next:** congelar a branch, aceitar somente o CI do head exato e então executar o artifact resultante no aparelho físico.

@@ -14,6 +14,20 @@ python3 scripts/workflow_session_contract.py validate-session \
 python3 scripts/workflow_session_contract.py summarize \
   workflow-master-index.json examples/workflow_session.example.json
 
+python3 -m unittest discover -s tests/federation \
+  -p 'test_workflow_master_crosswalk.py' -v
+python3 scripts/federation/validate_workflow_master_crosswalk.py \
+  --semantic workflow-master-index.json \
+  --control configs/workflow-master-index.json \
+  --crosswalk configs/workflow-master-index.crosswalk.v1.json \
+  --report artifacts/workflow-master-crosswalk-report.json
+
+python3 -m unittest discover -s tests/federation \
+  -p 'test_normative_reference_registry.py' -v
+python3 scripts/federation/validate_normative_reference_registry.py \
+  --registry configs/normative-reference-registry.v1.json \
+  --report artifacts/normative-reference-registry-report.json
+
 python3 -m unittest discover -s tests -p 'test_content_validity_contract.py' -v
 python3 scripts/content_validity_contract.py validate-contract \
   configs/content_validity_contract.json

@@ -10,6 +10,9 @@ import javax.inject.Inject
  * 
  * This use case handles pushing local commits to a remote repository,
  * including authentication handling.
+ *
+ * For GitHub HTTPS, pass the PAT/OAuth token as the password and a non-empty
+ * username; do not embed credential material in the remote URL.
  * 
  * Example usage:
  * ```
@@ -18,7 +21,7 @@ import javax.inject.Inject
  *         repoPath = "/path/to/repo",
  *         remote = "origin",
  *         branch = "main",
- *         credentials = Credentials.Token("ghp_xxx")
+ *         credentials = Credentials.UsernamePassword("user", "YOUR-PAT")
  *     )
  * )
  * result.onSuccess {

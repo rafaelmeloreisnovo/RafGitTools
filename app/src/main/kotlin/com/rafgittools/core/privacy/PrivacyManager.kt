@@ -1,24 +1,17 @@
 package com.rafgittools.core.privacy
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Date
 import java.util.UUID
-
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "privacy_datastore")
 
 /**
  * Privacy Manager
@@ -45,14 +38,16 @@ class PrivacyManager(
     private val storage: EncryptedPrivacyStorage
 ) {
     
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     private val _privacySettings = MutableStateFlow(PrivacySettings())
     val privacySettings: StateFlow<PrivacySettings> = _privacySettings.asStateFlow()
 
-    private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
     init {
-        managerScope.launch { _privacySettings.value = storage.getPrivacySettings() }
+        scope.launch { _privacySettings.value = storage.getPrivacySettings() }
     }
+
+    fun close() { scope.cancel() }
     
     /**
      * Export all user data in compliance with GDPR Article 20 (Data Portability)
@@ -298,7 +293,7 @@ class PrivacyManager(
 
     private suspend fun getSettingsCount(): Int {
         return try {
-            context.dataStore.data.first().asMap().size
+            storage.getStoredEntryCount()
         } catch (_: Exception) { 0 }
     }
     
@@ -374,7 +369,7 @@ class PrivacyManager(
                                 .readEnvironment()
                                 .build()
                                 .use { repo -> repo.config.getString("remote", "origin", "url") ?: "" }
-                        }.getOrDefault("")
+                        }.getOrDefault(""),
                         localPath = repoDir.absolutePath,
                         createdDate = Date(repoDir.lastModified()),
                         lastAccessed = Date(repoDir.lastModified()),

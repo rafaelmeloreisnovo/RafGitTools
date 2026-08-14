@@ -242,8 +242,14 @@ class RepositoryDetailViewModel @Inject constructor(
         _operationStatus.value = null
     }
     
+    /**
+     * GitHub HTTPS authentication uses a non-empty username and the PAT/OAuth
+     * token as the password. Keep credential material out of remote URLs/usernames.
+     */
     private suspend fun getCredentials(): Credentials? {
-        return authRepository.getPat().getOrNull()?.let { Credentials.Token(it) }
+        val token = authRepository.getPat().getOrNull() ?: return null
+        val username = authRepository.getUsername()?.takeIf { it.isNotBlank() } ?: "x-access-token"
+        return Credentials.UsernamePassword(username = username, password = token)
     }
 }
 

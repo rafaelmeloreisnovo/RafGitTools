@@ -149,8 +149,19 @@ fun RafGitToolsApp(
                         navController.navigate(Screen.Auth.route)
                     },
                     onNavigateToRepository = { repo ->
-                        // Navigate to GitHub repository issues/PRs
                         navController.navigate(Screen.IssueList.createRoute(repo.owner.login, repo.name))
+                    },
+                    onNavigateToLocalRepo = { path ->
+                        navController.navigate(Screen.RepositoryDetail.createRoute(path))
+                    },
+                    onNavigateToSettings = {
+                        navController.navigate(Screen.Settings.route)
+                    },
+                    onNavigateToSearch = {
+                        navController.navigate(Screen.Search.route)
+                    },
+                    onNavigateToNotifications = {
+                        navController.navigate(Screen.Notifications.route)
                     }
                 )
             }
@@ -216,6 +227,21 @@ fun RafGitToolsApp(
                     },
                     onNavigateToBisect = { path ->
                         navController.navigate(Screen.Bisect.createRoute(path))
+                    },
+                    onNavigateToTerminal = { path ->
+                        navController.navigate(Screen.Terminal.createRoute(path))
+                    },
+                    onNavigateToFileBrowser = { path ->
+                        navController.navigate(Screen.FileBrowser.createRoute(path))
+                    },
+                    onNavigateToDiff = { path ->
+                        navController.navigate(Screen.DiffViewer.createRoute(path))
+                    },
+                    onNavigateToStash = { path ->
+                        navController.navigate(Screen.StashList.createRoute(path))
+                    },
+                    onNavigateToTagList = { path ->
+                        navController.navigate(Screen.TagList.createRoute(path))
                     }
                 )
             }
@@ -327,6 +353,9 @@ fun RafGitToolsApp(
                     onNavigateBack = { navController.popBackStack() },
                     onPullRequestClick = { pr ->
                         navController.navigate(Screen.PullRequestDetail.createRoute(owner, repo, pr.number))
+                    },
+                    onCreatePullRequest = {
+                        navController.navigate(Screen.CreatePullRequest.createRoute(owner, repo))
                     }
                 )
             }

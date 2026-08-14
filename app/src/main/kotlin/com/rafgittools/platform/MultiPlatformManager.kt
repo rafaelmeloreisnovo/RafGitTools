@@ -5,12 +5,16 @@ import com.rafgittools.data.azuredevops.AzureDevOpsApiService
 import com.rafgittools.data.bitbucket.BitbucketApiService
 import com.rafgittools.data.gitea.GiteaApiService
 import com.rafgittools.data.gitlab.GitLabApiService
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 /**
  * Git-hosting provider abstraction layer.
@@ -49,7 +53,7 @@ object MultiPlatformManager {
         data class NetworkError(val provider: Provider, val message: String) : ProviderQueryResult
     }
 
-    fun queryGitLabProjects(
+    suspend fun queryGitLabProjects(
         token: String = "",
         baseUrl: String = "https://gitlab.com"
     ): ProviderQueryResult {
@@ -61,7 +65,7 @@ object MultiPlatformManager {
         }
         return try {
             val service = buildRetrofit(baseUrl).create(GitLabApiService::class.java)
-            val projects = runBlocking { service.getUserProjects(token) }
+            val projects = service.getUserProjects(token)
             ProviderQueryResult.Success(projects.map { p ->
                 HostedRepository(
                     id = p.id.toString(),
@@ -85,7 +89,7 @@ object MultiPlatformManager {
         }
     }
 
-    fun queryBitbucketRepositories(
+    suspend fun queryBitbucketRepositories(
         accessToken: String = "",
         workspace: String = ""
     ): ProviderQueryResult {
@@ -97,12 +101,10 @@ object MultiPlatformManager {
         }
         return try {
             val service = buildRetrofit("https://api.bitbucket.org").create(BitbucketApiService::class.java)
-            val page = runBlocking {
-                service.getWorkspaceRepositories(
-                    authorization = "Bearer $accessToken",
-                    workspace = workspace
-                )
-            }
+            val page = service.getWorkspaceRepositories(
+                authorization = "Bearer $accessToken",
+                workspace = workspace
+            )
             ProviderQueryResult.Success(page.values.map { r ->
                 HostedRepository(
                     id = r.uuid,
@@ -124,6 +126,20 @@ object MultiPlatformManager {
         } catch (e: IOException) {
             ProviderQueryResult.NetworkError(Provider.BITBUCKET, "Bitbucket network error: ${e.message}")
         }
+    }
+
+    suspend fun queryAllProviders(
+        gitLabToken: String = "",
+        bitbucketToken: String = "",
+        gitLabBaseUrl: String = "https://gitlab.com",
+        bitbucketWorkspace: String = ""
+    ): List<ProviderQueryResult> = coroutineScope {
+        val jobs = mutableListOf<Deferred<ProviderQueryResult>>()
+        if (gitLabToken.isNotBlank())
+            jobs += async { queryGitLabProjects(gitLabToken, gitLabBaseUrl) }
+        if (bitbucketToken.isNotBlank() && bitbucketWorkspace.isNotBlank())
+            jobs += async { queryBitbucketRepositories(bitbucketToken, bitbucketWorkspace) }
+        jobs.map { it.await() }
     }
 
     fun queryGiteaRepositories(
@@ -221,11 +237,11 @@ object MultiPlatformManager {
      */
     @Deprecated("Use queryGitLabProjects for typed status")
     fun getGitLabProjects(token: String = "", baseUrl: String = "https://gitlab.com"): List<HostedRepository> =
-        requireSuccess(queryGitLabProjects(token, baseUrl))
+        requireSuccess(runBlocking { queryGitLabProjects(token, baseUrl) })
 
     @Deprecated("Use queryBitbucketRepositories for typed status")
     fun getBitbucketRepositories(accessToken: String = "", workspace: String = ""): List<HostedRepository> =
-        requireSuccess(queryBitbucketRepositories(accessToken, workspace))
+        requireSuccess(runBlocking { queryBitbucketRepositories(accessToken, workspace) })
 
     @Deprecated("Use queryGiteaRepositories for typed status")
     fun getGiteaRepositories(token: String = "", baseUrl: String = ""): List<HostedRepository> =
@@ -258,11 +274,18 @@ object MultiPlatformManager {
         is ProviderQueryResult.NetworkError -> throw IllegalStateException(result.message)
     }
 
+    private val sharedOkClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+
     private fun buildRetrofit(baseUrl: String): Retrofit {
         val normalized = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
         return Retrofit.Builder()
             .baseUrl(normalized)
-            .client(OkHttpClient.Builder().build())
+            .client(sharedOkClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }

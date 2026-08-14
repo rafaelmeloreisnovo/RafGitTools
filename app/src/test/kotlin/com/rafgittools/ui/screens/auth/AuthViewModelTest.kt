@@ -7,8 +7,6 @@ import com.rafgittools.data.auth.AuthRepository
 import com.rafgittools.data.auth.AuthTokenCache
 import com.rafgittools.data.auth.GhCliAuthImporter
 import com.rafgittools.data.auth.OAuthDeviceFlowManager
-import com.rafgittools.data.github.GithubDataRepository
-import io.mockk.any
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -26,7 +24,6 @@ import org.junit.Test
 class AuthViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val authRepository: AuthRepository = mockk(relaxed = true)
-    private val githubRepository: GithubDataRepository = mockk(relaxed = true)
     private val authTokenCache = AuthTokenCache()
     private val deviceFlowManager: OAuthDeviceFlowManager = mockk(relaxed = true)
     private val ghCliAuthImporter: GhCliAuthImporter = mockk(relaxed = true)
@@ -62,7 +59,6 @@ class AuthViewModelTest {
         val vm = createViewModel()
         vm.continueOffline()
         dispatcher.scheduler.advanceUntilIdle()
-        coVerify(exactly = 0) { githubRepository.getAuthenticatedUserSync() }
         assertThat(vm.uiState.value).isEqualTo(AuthUiState.Offline)
     }
 
@@ -134,7 +130,6 @@ class AuthViewModelTest {
 
     private fun createViewModel() = AuthViewModel(
         authRepository,
-        githubRepository,
         authTokenCache,
         deviceFlowManager,
         ghCliAuthImporter,
