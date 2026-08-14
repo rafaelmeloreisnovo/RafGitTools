@@ -362,7 +362,6 @@ class JGitService @Inject constructor(
                         isRemote = true
                     ))
                 }
-            }
             
             branches
         }
