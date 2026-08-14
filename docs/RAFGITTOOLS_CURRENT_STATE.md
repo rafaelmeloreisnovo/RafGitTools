@@ -1,12 +1,10 @@
 # RAFGITTOOLS_CURRENT_STATE
 
-- Status: **ATIVO — source-functional avançado / BUILD anchor comprovado / current head em novo gate CI**
+- Status: **ATIVO — source-functional avançado / BUILD anchor comprovado / PR #347 em gate CI**
 - Estado observado: **2026-08-14**
-- Branch: `hardening/first-compile-run-triangle-20260814`
-- PR atual: **#347 — draft, mergeable=true na observação**
-- Head atual: `654ef8bb921ce47db7c415b4a726d6082a2ef9ea`
-- Base `main`: `f3396cdea5fbf43ac302de19e7d1e9064ecfa122`
-- BUILD anchor anterior: `bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa`
+- Branch operacional: `hardening/first-compile-run-triangle-20260814`
+- PR atual: **#347 — draft, mergeable=true na última observação**
+- BUILD anchor comprovado: `bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa`
 - `claim_allowed=false`
 - `release_allowed=false`
 
@@ -16,15 +14,20 @@
 SOURCE != TESTED != BUILD_VERIFIED != DEVICE_VERIFIED != RELEASE
 ```
 
-O estado atual deve ser lido por commit. Um BUILD PASS de um commit não é automaticamente herdado por outro commit, mesmo quando a árvore de aplicação é equivalente.
+### Regra de auto-referência
+
+Este documento mutável **não congela o SHA do próprio head da branch**. Qualquer atualização deste arquivo cria um novo commit e tornaria esse SHA imediatamente obsoleto.
+
+Para o head corrente do PR #347, a fonte de verdade é a metadata do próprio PR/GitHub Actions. SHA exato só é congelado aqui quando funciona como **âncora histórica/evidence checkpoint**, como o BUILD `bbdb556...`.
 
 ## Genealogia recente
 
-1. PR #345 integrou o contrato source → build → device.
+1. PR #345 integrou o contrato `source -> build -> device`.
 2. PR #346 integrou correções pós-merge, reconciliação documental e o primeiro BUILD atual comprovado.
 3. PR #346 foi mesclado em `f3396cdea5fbf43ac302de19e7d1e9064ecfa122`.
 4. Deltas produzidos depois do merge foram separados no PR sucessor **#347**.
-5. A branch do #347 foi reconciliada com `main` sem force-push pelo merge commit `654ef8bb921ce47db7c415b4a726d6082a2ef9ea`; o PR passou a `mergeable=true`.
+5. A branch do #347 foi reconciliada com `main` sem force-push por merge commit não destrutivo.
+6. O #347 permanece draft e deve ser promovido somente após os gates do seu **head exato no momento da execução**.
 
 ## BUILD anchor comprovado
 
@@ -56,57 +59,56 @@ Artifact:
 - `arm64-v8a` PRESENT;
 - build receipt SHA-256 `f124ac18a9f1e158aa764a12b49a25dbf54cc870cca8359e0355416bee5219a5`.
 
-Esse BUILD continua válido como evidência **commit-bound a `bbdb556...`**.
+Esse BUILD continua válido **somente como evidência commit-bound a `bbdb556...`**.
 
-## Current head — #347
+## Delta sucessor — PR #347
 
-O head `654ef8bb...` contém, além da genealogia já integrada, o seguinte delta sucessor:
+O #347 contém:
 
-- `.github/workflows/ci.yml`: remove alvo hardcoded `issues/236/comments`;
+- remoção do alvo histórico hardcoded `issues/236/comments` de `.github/workflows/ci.yml`;
 - comentário de CI ligado a `github.event.pull_request.number`;
 - validação explícita de `PR_NUMBER`;
 - permissão `pull-requests: write` explícita;
-- `tests/test_workflow_pr_binding.py`: regressão contra alvo numérico hardcoded;
-- `android-client-build.yml`: novo teste incluído no gate estrutural;
-- `RAFGITTOOLS_ROADMAP_TRUE.md`: atualizado para a fronteira real;
-- `RAFGITTOOLS_CURRENT_REPO_MAP_V1.md`: mapa canônico append-only;
-- `docs/INDEX.md`: ordem de leitura operacional atualizada.
+- `tests/test_workflow_pr_binding.py` para rejeitar regressão a destino numérico hardcoded;
+- inclusão desse teste no gate estrutural do `Android Client Build`;
+- `RAFGITTOOLS_ROADMAP_TRUE.md` atualizado;
+- `RAFGITTOOLS_CURRENT_REPO_MAP_V1.md` append-only;
+- `docs/INDEX.md` reorganizado;
+- `ECOSYSTEM_RUNTIME_STATE.json` separado entre BUILD anchor e fronteira atual.
 
-Como **workflow/teste** mudaram depois do BUILD anchor, o head `654ef8bb...` permanece:
+Como workflow/teste mudaram depois do BUILD anchor, o estado do **head corrente do #347** deve ser lido assim até existir execução conclusiva:
 
 ```text
-SOURCE          = PRESENT / REVIEWED_DELTA
-TESTED          = CI_QUEUED_OR_IN_PROGRESS
-BUILD_VERIFIED  = TOKEN_VAZIO_FOR_EXACT_HEAD
+SOURCE          = PRESENT
+TESTED          = consultar workflow do head exato
+BUILD_VERIFIED  = somente se houver APK + receipt do head exato
 DEVICE_VERIFIED = TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED
 RELEASE         = BLOCKED
 ```
-
-Nenhum PASS é inferido enquanto os workflows do head não concluírem.
 
 ## Núcleo de fonte atual
 
 | Componente | Estado de fonte | Limite de evidência |
 |---|---|---|
-| Android / Compose / Hilt / Room | `IMPLEMENTED_ADVANCED` | current-head build em gate |
+| Android / Compose / Hilt / Room | `IMPLEMENTED_ADVANCED` | build do candidato final deve ser commit-bound |
 | P33 | `33/33 SOURCE_FUNCTIONAL` | não equivale a 33/33 runtime |
-| Git/JGit | `IMPLEMENTED_ADVANCED` | remotes/conflitos reais ainda granulares |
-| Interactive staging | `IMPLEMENTED` | unit regression já comprovada no anchor; current-head gate em curso |
+| Git/JGit | `IMPLEMENTED_ADVANCED` | remotes/conflitos reais continuam granulares |
+| Interactive staging | `IMPLEMENTED` | unit regression comprovada no anchor; device pendente |
 | PAT / auth lifecycle | `IMPLEMENTED / CAPABILITY_AWARE` | real device/Auth fixtures pendentes |
 | OAuth Device Flow | `IMPLEMENTED / CONFIG_REQUIRED` | Client ID/fixture real pendentes |
 | SSH | `PARTIAL_RUNTIME` | chave/servidor real pendentes |
 | GitHub API | `PARTIAL_ADVANCED` | matriz E2E real pendente |
-| Multi-provider | `IMPLEMENTED / FIXTURE_GATED` | GitLab/Bitbucket/Gitea-Forgejo/Azure DevOps reais pendentes |
+| Multi-provider | `IMPLEMENTED / FIXTURE_GATED` | credenciais/endpoints reais pendentes |
 | Offline queue/storage/workers | `IMPLEMENTED / DEVICE_GATED` | restart/recovery físico pendente |
 | Terminal | `IMPLEMENTED_BOUNDED_EXECUTOR` | PTY/VT100 = `TOKEN_VAZIO_PTY` |
 | LFS/worktree/bisect/GPG | `IMPLEMENTED_OR_ADAPTER / RUNTIME_GATED` | fixtures externas pendentes |
 | RAFAELIA JNI/native | `BRIDGE_IMPLEMENTED` | BUILD anchor dual-ABI; physical invocation pendente |
 | Local LLM/Kiwi bridge | `SOURCE_PRESENT / RUNTIME_GATED` | modelo/Kiwi real pendentes |
 
-## TOKEN_VAZIO atual
+## TOKEN_VAZIO preservado
 
 ```text
-current-head BUILD receipt           = TOKEN_VAZIO_UNTIL_CI_PASS
+final-candidate BUILD receipt        = TOKEN_VAZIO até PASS commit-bound
 physical-device install/start        = TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED
 physical runtime receipt             = TOKEN_VAZIO
 private Git remote fixtures          = TOKEN_VAZIO_RUNTIME
@@ -123,10 +125,11 @@ release_allowed                       = false
 ## Próxima ordem operacional
 
 ```text
-#347 head CI PASS
-  -> current-head APK + SHA + BUILD_RECEIPT
-  -> selecionar exatamente esse artifact
-  -> physical ARM install + launch
+congelar branch do #347
+  -> CI do head exato PASS
+  -> APK + SHA + BUILD_RECEIPT desse mesmo head
+  -> não modificar a branch candidata depois do PASS
+  -> physical ARM install + launch com esses bytes
   -> runtime receipt commit+APK-bound
   -> triangle_closure PASS
   -> Git/Auth/Offline fixtures reais
@@ -134,11 +137,11 @@ release_allowed                       = false
   -> release gate
 ```
 
-Não usar o APK do BUILD anchor `bbdb556...` como receipt do head `654ef8bb...`.
+Não usar o APK do BUILD anchor `bbdb556...` como receipt de outro commit.
 
 ## Fonte de verdade ordenada
 
-1. commit/branch/PR exatos;
+1. metadata do PR/commit exato no GitHub;
 2. `app/src/` e build configuration;
 3. `app/src/test/` + `tests/`;
 4. workflows/gates executados;
@@ -152,6 +155,6 @@ Não usar o APK do BUILD anchor `bbdb556...` como receipt do head `654ef8bb...`.
 
 ## Retroalimentar[3]
 
-- **F_ok:** #346 integrado; build anchor real preservado; #347 separa corretamente o delta pós-merge e corrigiu o acoplamento ao PR 236.
-- **F_gap:** current-head CI ainda não concluiu; DEVICE permanece físico e commit-bound.
-- **F_next:** promover `BUILD_VERIFIED` somente quando o head do #347 produzir seu próprio APK/receipt PASS; então executar o aparelho físico com esses bytes.
+- **F_ok:** #346 integrado; BUILD anchor preservado; #347 isola o hardening pós-merge e remove acoplamento ao PR 236.
+- **F_gap:** o candidato final precisa de BUILD próprio; DEVICE continua físico e commit-bound.
+- **F_next:** congelar a branch, aceitar somente o CI do head exato e então executar o artifact resultante no aparelho físico.
