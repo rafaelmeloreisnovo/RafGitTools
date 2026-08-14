@@ -47,6 +47,9 @@ jobs:
       - name: Prepare Gradle wrapper
         run: chmod +x gradlew
 
+      - name: Validate Android startup contract
+        run: python3 -m unittest discover -s tests -p 'test_validate_runtime_truth.py' -v
+
       - name: Authentication tests
         id: auth_tests
         continue-on-error: true
