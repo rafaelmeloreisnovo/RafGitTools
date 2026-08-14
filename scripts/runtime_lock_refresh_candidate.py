@@ -127,19 +127,20 @@ def main() -> int:
         if args.candidate.resolve() == args.receipt.resolve():
             raise RefreshError("candidate and receipt outputs must be distinct")
 
+        base_input_bytes = args.base_lock.read_bytes()
+        observation_input_bytes = args.observation.read_bytes()
         base = load_json(args.base_lock)
         observation = load_json(args.observation)
         candidate, changed = build_candidate(base, observation)
 
-        base_bytes = canonical_bytes(base)
-        observation_bytes = canonical_bytes(observation)
         candidate_bytes = canonical_bytes(candidate)
         receipt = {
             "schema": RECEIPT_SCHEMA,
             "observed_at": observation["observed_at"],
-            "base_lock_sha256": sha256_bytes(base_bytes),
-            "observation_sha256": sha256_bytes(observation_bytes),
+            "base_lock_sha256": sha256_bytes(base_input_bytes),
+            "observation_sha256": sha256_bytes(observation_input_bytes),
             "candidate_sha256": sha256_bytes(candidate_bytes),
+            "input_hash_semantics": "EXACT_FILE_BYTES",
             "changed_repositories": changed,
             "changed_count": len(changed),
             "artifact_hashes_preserved": True,
@@ -165,7 +166,7 @@ def main() -> int:
             "claim_allowed": False,
         }, sort_keys=True))
         return 0
-    except (RefreshError, contract.ContractError) as exc:
+    except (RefreshError, contract.ContractError, OSError) as exc:
         print(f"[FALHA] runtime-lock refresh candidate: {exc}", file=sys.stderr)
         return 2
 
