@@ -18,6 +18,7 @@ module = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = module
 SPEC.loader.exec_module(module)
 OBS = ROOT / "data" / "runtime-lock-observations" / "provider-heads-20260814T185818Z.json"
+CANDIDATE = ROOT / "data" / "runtime-lock-candidates" / "provider-heads-20260814T185818Z.candidate.json"
 BASE = ROOT / "runtime-lock.json"
 
 
@@ -32,6 +33,14 @@ class RuntimeLockRefreshCandidateTest(unittest.TestCase):
         self.assertEqual(len(changed), 6)
         self.assertEqual(candidate["generated_at"], self.obs["observed_at"])
         self.assertEqual(candidate["release_state"], "RAFCODEPHI_STACK_REFRESH_CANDIDATE_RUNTIME_PROOF_PENDING")
+
+    def test_frozen_candidate_matches_generator_byte_for_byte(self) -> None:
+        candidate, _ = module.build_candidate(self.base, self.obs)
+        self.assertEqual(module.canonical_bytes(candidate), CANDIDATE.read_bytes())
+        self.assertEqual(
+            module.sha256_bytes(CANDIDATE.read_bytes()),
+            "4086a9abd2d24d8a02c11da3ec51b92576c95155a88f257ef664d383d62dd19a",
+        )
 
     def test_artifact_hashes_are_preserved_exactly(self) -> None:
         candidate, _ = module.build_candidate(self.base, self.obs)
@@ -102,7 +111,10 @@ class RuntimeLockRefreshCandidateTest(unittest.TestCase):
             self.assertFalse(receipt["claim_allowed"])
             self.assertFalse(receipt["canonical_lock_mutated"])
             self.assertTrue(receipt["artifact_hashes_preserved"])
+            self.assertEqual(receipt["input_hash_semantics"], "EXACT_FILE_BYTES")
             self.assertEqual(receipt["candidate_sha256"], module.sha256_bytes(c1.read_bytes()))
+            self.assertEqual(receipt["base_lock_sha256"], module.sha256_bytes(BASE.read_bytes()))
+            self.assertEqual(receipt["observation_sha256"], module.sha256_bytes(OBS.read_bytes()))
 
 
 if __name__ == "__main__":
