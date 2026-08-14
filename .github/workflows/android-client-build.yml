@@ -52,11 +52,12 @@ jobs:
           echo "OAuth dev client configured: ${{ vars.APP_CLIENT_ID_DEV != '' }}"
           echo "OAuth production client configured: ${{ vars.APP_CLIENT_ID_PRODUCTION != '' }}"
 
-      - name: Run custody and triangle unit tests
+      - name: Run custody and structural unit tests
         run: |
           python3 -m unittest \
             tests.test_android_runtime_receipt \
             tests.test_first_compile_run_triangle \
+            tests.test_jgitservice_scope \
             -v
 
       - name: Run authentication unit tests
