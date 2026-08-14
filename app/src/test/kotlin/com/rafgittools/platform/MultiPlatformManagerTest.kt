@@ -14,9 +14,12 @@ class MultiPlatformManagerTest {
     }
 
     @Test
-    fun `configured provider without adapter is explicitly not implemented`() = runTest {
-        assertIs<MultiPlatformManager.ProviderQueryResult.NotImplemented>(
-            MultiPlatformManager.queryGitLabProjects(token = "token")
+    fun `configured provider with invalid endpoint fails closed before network`() = runTest {
+        assertIs<MultiPlatformManager.ProviderQueryResult.NotConfigured>(
+            MultiPlatformManager.queryGitLabProjects(
+                token = "token",
+                baseUrl = "not-a-url"
+            )
         )
     }
 }
