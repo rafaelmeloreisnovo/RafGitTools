@@ -1,10 +1,14 @@
-# Implementation Status - Ready for Delivery
+# Historical implementation inventory — evidence boundary
 
 > **⚠️ NOTE**: This is a historical document from January 9, 2026.  
 > **📊 For current status, see [STATUS_REPORT.md](STATUS_REPORT.md)**
 
 **Date**: January 9, 2026  
-**Status**: ✅ CORE FRAMEWORKS COMPLETE AND FUNCTIONAL
+**Status**: `HISTORICAL_SOURCE_INVENTORY / claim_allowed=false`
+
+> The source and planning statements below are not current runtime, legal or normative
+> evidence. Use [CLAIM_LANGUAGE_POLICY.md](CLAIM_LANGUAGE_POLICY.md) and
+> [STATUS_REPORT.md](STATUS_REPORT.md) for the current bounded state.
 
 ---
 
@@ -193,38 +197,15 @@ These are non-blocking enhancements that don't prevent core functionality:
 
 ---
 
-## 📋 Standards Compliance Implemented
+## 📋 Normative references and proposed control mapping
 
-**GDPR** (Fully Compliant):
-- ✅ Article 15 - Right of Access
-- ✅ Article 17 - Right to Erasure
-- ✅ Article 20 - Data Portability
-- ✅ Article 30 - Records of Processing
-- ✅ Article 32 - Security of Processing
+The listed laws and reference families were used as planning inputs. The list does not show
+that requirements were satisfied or operating effectiveness was assessed.
 
-**CCPA** (Fully Compliant):
-- ✅ Section 1798.100 - Right to Know
-- ✅ Section 1798.105 - Right to Delete
-- ✅ Section 1798.110 - Right to Information
-- ✅ Section 1798.120 - Right to Opt-Out
-
-**ISO/IEC Standards** (Framework Implemented):
-- ✅ ISO/IEC 27001 - Information Security
-- ✅ ISO/IEC 27701 - Privacy Management
-- ✅ ISO 9001 - Quality Management
-
-**NIST** (Framework Implemented):
-- ✅ Cybersecurity Framework
-- ✅ SP 800-53 Security Controls
-- ✅ Privacy Framework
-
-**OWASP** (Implemented):
-- ✅ MASVS Mobile Security
-- ✅ Top 10 Mobile Risks
-
-**IEEE** (Framework Implemented):
-- ✅ IEEE 730 - Software Quality Assurance
-- ✅ IEEE 828 - Configuration Management
+| Reference family | Intended use | Current evidence state |
+|---|---|---|
+| GDPR, CCPA and LGPD | Privacy data-flow and user-control design prompts. | `TOKEN_VAZIO` pending scoped legal and runtime review. |
+| ISO/IEC, NIST, OWASP and IEEE | Engineering, security and quality review prompts. | `TOKEN_VAZIO` pending mapped controls, receipts and applicable independent review. |
 
 ---
 
@@ -311,19 +292,12 @@ These are non-blocking enhancements that don't prevent core functionality:
 
 ## 🎯 Summary
 
-The project has **real, functional code** implementing:
-- Privacy compliance (GDPR/CCPA)
-- Security and encryption
-- Compliance tracking
-- Localization framework
-- Data management
-
-Documentation has been **corrected** to honestly reflect the current state without false claims.
-
-The code is **ready for demonstration and delivery** with working implementations of all critical frameworks.
+The project contains source and documentation concerning privacy, security, localization and
+data-management features. Their end-to-end behavior must be established per reviewed build and
+scope; current broad claim state is `claim_allowed=false`.
 
 ---
 
 **Last Updated**: January 9, 2026  
-**Delivery Status**: ✅ READY  
-**Implementation Quality**: Production-ready frameworks
+**Delivery Status**: `SOURCE_INVENTORY_ONLY`  
+**Implementation Quality**: requires build, device and review evidence

@@ -171,7 +171,7 @@ The implementation reduces risk but does not claim absolute security.
 
 ## Next engineering gate
 
-Before calling the bridge production-ready:
+Before treating the bridge as runtime-verified:
 
 1. compile all Android variants;
 2. install on the target Android device;

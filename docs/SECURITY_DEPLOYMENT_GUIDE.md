@@ -85,7 +85,7 @@ return signatureHash == EXPECTED_RELEASE_SIGNATURE_HASH
 
 **Optional Enhancements**:
 - The validator is functional but could benefit from additional validation types
-- No critical TODOs - current implementation is production-ready
+- The validator is source-present; release and runtime evidence remain required
 
 ## Security Best Practices Checklist
 

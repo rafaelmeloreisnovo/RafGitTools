@@ -78,14 +78,15 @@ Welcome to the RafGitTools documentation! | Bem-vindo à documentação do RafGi
 | **[Build Instructions](BUILD.md)** | How to build the project |
 | **[Feature Matrix](FEATURE_MATRIX.md)** | Feature comparison |
 
-### Security & Compliance / Segurança e Conformidade
+### Security, Privacy & Reference Alignment / Segurança, Privacidade e Referências
 
 | Document | Description |
 |----------|-------------|
-| **[Privacy Policy](PRIVACY.md)** | GDPR/CCPA compliant privacy practices |
-| **[Security Policy](SECURITY.md)** | Security standards (ISO 27001) |
-| **[Compliance Guide](COMPLIANCE.md)** | ISO, NIST, IEEE compliance |
-| **[License Information](LICENSE_INFO.md)** | GPL-3.0 license compliance |
+| **[Privacy Design Notice](PRIVACY.md)** | Design boundary; legal/operational review remains required |
+| **[Security Design References](SECURITY.md)** | Reference-based security review guidance |
+| **[Normative Reference Guide](COMPLIANCE.md)** | Evidence boundary for ISO, NIST and IEEE references |
+| **[Claim Language Policy](CLAIM_LANGUAGE_POLICY.md)** | Repository-wide wording and promotion gate |
+| **[License Information](LICENSE_INFO.md)** | License metadata and attribution |
 
 ### Implementation Details / Detalhes de Implementação
 

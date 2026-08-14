@@ -32,6 +32,32 @@ def read_text(relative: str) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def check_workmanager_startup_contract(manifest: str, application: str) -> None:
+    """Reject a launch-time WorkManager initialization gap.
+
+    WorkManager's default initializer may only be removed when the application
+    supplies a custom configuration or explicitly initializes the singleton.
+    RafGitTools schedules periodic work from Application.onCreate(), so this
+    relationship is a cold-start contract rather than an optional feature.
+    """
+    removes_default_initializer = (
+        "androidx.work.WorkManagerInitializer" in manifest
+        and 'tools:node="remove"' in manifest
+    )
+    provides_alternative_initialization = (
+        "Configuration.Provider" in application
+        or "WorkManager.initialize(" in application
+    )
+    require(
+        not removes_default_initializer or provides_alternative_initialization,
+        "WorkManager default initialization is removed without a replacement; app launch can crash",
+    )
+    require(
+        "WorkManager.getInstance(this).enqueueUniquePeriodicWork" in application,
+        "application startup must keep the explicit periodic-work scheduling contract",
+    )
+
+
 def check_runtime_state() -> None:
     state = load_json("ECOSYSTEM_RUNTIME_STATE.json")
     require(state.get("schema") == "raf.ecosystem-runtime-state.v1", "invalid runtime state schema")
@@ -81,6 +107,8 @@ def check_contracts() -> None:
 
 
 def check_source_invariants() -> None:
+    manifest = read_text("app/src/main/AndroidManifest.xml")
+    application = read_text("app/src/main/kotlin/com/rafgittools/RafGitToolsApplication.kt")
     terminal = read_text("app/src/main/kotlin/com/rafgittools/terminal/TerminalEmulator.kt")
     queue = read_text("app/src/main/kotlin/com/rafgittools/offline/OfflineQueue.kt")
     atomic = read_text("app/src/main/kotlin/com/rafgittools/offline/AtomicFileQueueStorage.kt")
@@ -95,6 +123,8 @@ def check_source_invariants() -> None:
     diff_view_model = read_text("app/src/main/kotlin/com/rafgittools/ui/screens/diff/DiffViewerViewModel.kt")
     current = read_text("docs/RAFGITTOOLS_CURRENT_STATE.md")
     readiness = read_text("docs/RAFGITTOOLS_READINESS_2026-08-11.md")
+
+    check_workmanager_startup_contract(manifest, application)
 
     require("readerThread.start()" in terminal, "terminal output is not drained concurrently")
     require("READ_ONLY_GIT_SUBCOMMANDS" in terminal, "terminal does not restrict Git subcommands")
@@ -214,11 +244,15 @@ def check_source_invariants() -> None:
         "repository.lockDirCache()",
         "DirCacheEditor.PathEdit",
         "editor.commit()",
-        "contentEquals(workBytesBefore)",
         "setUpdateNeeded(true)",
         "CancellationException",
     ):
         require(anchor in interactive, f"interactive staging invariant missing: {anchor}")
+    require(
+        "val expectedWorkBytes = requireNotNull(workBytesBefore)" in interactive
+        and interactive.count("contentEquals(expectedWorkBytes)") >= 2,
+        "interactive staging does not revalidate working-tree bytes before index commit",
+    )
     require("writeText(" not in interactive and "writeBytes(" not in interactive,
             "interactive staging service must not rewrite the working tree")
     require("DiffChangeType.MODIFY" in interactive,
