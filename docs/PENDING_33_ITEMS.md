@@ -1,4 +1,4 @@
-# PENDING 33 ITEMS — Baseline revisado + status 2026-08-12
+# PENDING 33 ITEMS — Baseline revisado + status 2026-08-14
 
 ## Origem dos "33 lugares"
 
@@ -66,13 +66,37 @@ A origem adotada para os **33 lugares** é o recorte dos **primeiros 33 itens ma
 
 **Cobertura funcional de fonte P33: 33/33 (100%).** Os 8 itens `🆕` são subconjunto histórico e não são somados novamente.
 
+## Evidência executada do candidato 2026-08-14
+
+Para o commit `bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa`, o workflow `Android Client Build` run `31821491676` executou e passou:
+
+- custody/structural tests;
+- authentication unit tests;
+- full dev unit tests;
+- Android lint;
+- `assembleDevDebug`;
+- APK verification + build receipt;
+- artifact upload.
+
+APK observado:
+
+- `app-dev-debug.apk`;
+- `24,672,130` bytes;
+- SHA-256 `115b9cb1e71f53f16b2648924a09549b8e5e0b9e453280cab2e7f183a411ebf6`;
+- `armeabi-v7a` + `arm64-v8a` presentes;
+- build receipt SHA-256 `f124ac18a9f1e158aa764a12b49a25dbf54cc870cca8359e0355416bee5219a5`.
+
+Isso promove **tests/build evidence do candidato**, mas não converte automaticamente cada item P33 em `DEVICE_VERIFIED`.
+
 ## P33-05 — boundary de segurança
 
 Interactive staging é lossless somente para tracked `MODIFY`, UTF-8 <= 2 MiB e newline final. Stage/unstage é de um hunk; working tree não é reescrito; hunk/HEAD/index são revalidados; conflitos/multi-stage, binário, non-UTF8 e missing-final-newline falham fechado; publicação usa `DirCacheEditor.commit()` sob lock. Esses limites são contrato, não `TOKEN_VAZIO`.
 
+No candidato atual, a regressão `MissingObjectException` foi corrigida mantendo `scan + format` no mesmo `DiffFormatter`; o full dev unit test gate passou.
+
 ## P33-25 — boundary de autenticação
 
-O nome histórico “Token refresh mechanism” não autoriza fingir que toda credencial possui refresh. A fonte agora implementa por capacidade:
+O nome histórico “Token refresh mechanism” não autoriza fingir que toda credencial possui refresh. A fonte implementa por capacidade:
 
 ```text
 PAT / OAuth App sem refresh_token
@@ -94,20 +118,31 @@ GitHub App Device Flow com refresh_token
 outro 403         -> forbidden, sessão preservada
 ```
 
-`savePat()` apaga refresh state de sessão anterior e `clearAuthState()` apaga access/refresh/expiries. O antigo método sempre-falhando `refreshOAuthToken(clientId, clientSecret, refreshToken)` foi removido; não é mais confundido com feature.
+`savePat()` apaga refresh state de sessão anterior e `clearAuthState()` apaga access/refresh/expiries. O antigo método sempre-falhando `refreshOAuthToken(clientId, clientSecret, refreshToken)` foi removido. Authentication tests do candidato passaram, porém o refresh real de GitHub App continua dependente de configuração/fixture real.
 
 ## Evidência ainda não promovida
 
 ```text
-unit tests do head              = TOKEN_VAZIO / BLOCKED_INFRA_BILLING remoto
-APK + SHA-256                   = TOKEN_VAZIO
-physical-device install/start   = TOKEN_VAZIO
-private remote fixtures         = TOKEN_VAZIO_RUNTIME
-GitHub App refresh real         = CONFIG_REQUIRED / TOKEN_VAZIO_RUNTIME
-claim_allowed                   = false
+unit tests do candidato           = PASS
+Android lint                      = PASS
+APK + SHA-256                     = PASS
+armeabi-v7a + arm64-v8a           = PASS
+physical-device install/start     = TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED
+private remote fixtures           = TOKEN_VAZIO_RUNTIME
+GitHub App refresh real           = CONFIG_REQUIRED / TOKEN_VAZIO_RUNTIME
+SSH/provider external fixtures    = TOKEN_VAZIO_RUNTIME
+claim_allowed                     = false
+release_allowed                   = false
 ```
 
-O 33/33 é **fonte**, não runtime PASS.
+O **33/33 continua sendo fonte**. O BUILD provado é uma camada adicional, não equivalência automática com runtime físico por feature.
+
+## Proveniência
+
+- estado atual: `docs/RAFGITTOOLS_CURRENT_STATE.md`;
+- matriz executável: `ECOSYSTEM_RUNTIME_STATE.json`;
+- checkpoint append-only: `docs/canonical/2026-08-14/RAFGITTOOLS_SOURCE_BUILD_EVIDENCE_V1.md`;
+- evidence JSON: `data/evidence/github/rafgittools_android_build_31821491676.v1.json`.
 
 ## Regra para próximos commits
 
@@ -115,3 +150,5 @@ O 33/33 é **fonte**, não runtime PASS.
 feat: implementa <descrição> (P33-XX)
 fix: corrige <descrição> (P33-XX)
 ```
+
+Se o commit/APK mudar, a cadeia de evidência de BUILD deve ser refeita; não reutilizar receipt antigo como prova do novo head.
