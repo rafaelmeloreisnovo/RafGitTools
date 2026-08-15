@@ -1,0 +1,33 @@
+{
+  "schema": "RAFGITTOOLS_COMPILE_HOTFIX_EVIDENCE/V1",
+  "observed_date": "2026-08-15",
+  "base_sha": "8cdfc778bb92d115df4fc4180cd02c52d07ace04",
+  "failing_workflow_run": 31877168237,
+  "failing_job": 94994548754,
+  "failure_class": "KOTLIN_COMPILE",
+  "failures": [
+    {
+      "path": "app/src/main/kotlin/com/rafgittools/rafgitfs/sync/RafGitFsDiffPlanner.kt",
+      "reason": "non_exhaustive_enum_when"
+    },
+    {
+      "path": "app/src/main/kotlin/com/rafgittools/rafgitfs/write/RafGitFsGithubBranchWriter.kt",
+      "reason": "unsafe_nullable_receiver"
+    }
+  ],
+  "hotfix_head_before_receipt": "4409870cd849fe42b096893e57997a753377ca36",
+  "delta": {
+    "source_files_modified": 2,
+    "source_additions": 5,
+    "source_deletions": 2,
+    "architecture_changed": false,
+    "dependency_changed": false,
+    "workflow_changed": false
+  },
+  "verification": {
+    "candidate_ci": "TOKEN_VAZIO_PENDING_PR_CI",
+    "apk_sha256": "TOKEN_VAZIO_PENDING_BUILD",
+    "device_runtime": "TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED",
+    "claim_allowed": false
+  }
+}
