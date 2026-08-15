@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rafaelmeloreisnovo/RafGitTools
-          ref: audit/repository-view-v1-20260814
+          ref: main
           path: .rafaelia-control/RafGitTools
           fetch-depth: 1
 
