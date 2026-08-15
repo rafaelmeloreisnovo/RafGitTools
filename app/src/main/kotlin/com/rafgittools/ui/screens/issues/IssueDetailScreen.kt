@@ -2,6 +2,7 @@ package com.rafgittools.ui.screens.issues
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
@@ -16,20 +17,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.rafgittools.domain.model.github.GithubComment
 import com.rafgittools.domain.model.github.GithubIssue
-import com.rafgittools.domain.model.github.GithubLabel
 import com.rafgittools.ui.theme.GitHubColors
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
-/**
- * Issue detail screen showing full issue info with comments
- */
+/** Issue detail with IME-safe comment composer. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IssueDetailScreen(
@@ -44,22 +42,19 @@ fun IssueDetailScreen(
     val comments by viewModel.comments.collectAsStateWithLifecycle()
     var newComment by remember { mutableStateOf("") }
     var isSubmitting by remember { mutableStateOf(false) }
-    
+
     LaunchedEffect(owner, repo, issueNumber) {
         viewModel.loadIssue(owner, repo, issueNumber)
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Column {
+                        Text("#$issueNumber", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            text = "#$issueNumber",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = "$owner/$repo",
+                            "$owner/$repo",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -70,97 +65,50 @@ fun IssueDetailScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    IconButton(onClick = viewModel::refresh) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ),
-                actions = {
-                    IconButton(onClick = { viewModel.refresh() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-                    }
-                }
+                )
             )
         },
         bottomBar = {
-            // Comment input bar
             if (uiState is IssueDetailUiState.Success) {
-                Surface(
-                    tonalElevation = 3.dp,
-                    shadowElevation = 8.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = newComment,
-                            onValueChange = { newComment = it },
-                            modifier = Modifier.weight(1f),
-                            placeholder = { Text("Add a comment...") },
-                            maxLines = 4,
-                            enabled = !isSubmitting
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        IconButton(
-                            onClick = {
-                                if (newComment.isNotBlank()) {
-                                    isSubmitting = true
-                                    viewModel.addComment(newComment) {
-                                        newComment = ""
-                                        isSubmitting = false
-                                    }
-                                }
-                            },
-                            enabled = newComment.isNotBlank() && !isSubmitting
-                        ) {
-                            if (isSubmitting) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.Send,
-                                    contentDescription = "Send",
-                                    tint = if (newComment.isNotBlank()) 
-                                        MaterialTheme.colorScheme.primary 
-                                    else 
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                CommentComposer(
+                    value = newComment,
+                    submitting = isSubmitting,
+                    onValueChange = { newComment = it },
+                    onSend = {
+                        if (newComment.isNotBlank() && !isSubmitting) {
+                            isSubmitting = true
+                            viewModel.addComment(newComment.trim()) {
+                                newComment = ""
+                                isSubmitting = false
                             }
                         }
                     }
-                }
+                )
             }
         }
     ) { padding ->
         Box(
-            modifier = Modifier
+            Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
             when (val state = uiState) {
-                is IssueDetailUiState.Loading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                is IssueDetailUiState.Error -> {
-                    ErrorContent(
-                        message = state.message,
-                        onRetry = { viewModel.loadIssue(owner, repo, issueNumber) },
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                is IssueDetailUiState.Success -> {
-                    issue?.let { issueData ->
-                        IssueContent(
-                            issue = issueData,
-                            comments = comments
-                        )
-                    }
+                IssueDetailUiState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                is IssueDetailUiState.Error -> ErrorContent(
+                    message = state.message,
+                    onRetry = { viewModel.loadIssue(owner, repo, issueNumber) },
+                    modifier = Modifier.align(Alignment.Center)
+                )
+                IssueDetailUiState.Success -> issue?.let { data ->
+                    IssueContent(issue = data, comments = comments)
                 }
             }
         }
@@ -168,172 +116,170 @@ fun IssueDetailScreen(
 }
 
 @Composable
-private fun IssueContent(
-    issue: GithubIssue,
-    comments: List<GithubComment>
+private fun CommentComposer(
+    value: String,
+    submitting: Boolean,
+    onValueChange: (String) -> Unit,
+    onSend: () -> Unit
 ) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .imePadding(),
+        tonalElevation = 3.dp,
+        shadowElevation = 8.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("Add a comment…") },
+                minLines = 1,
+                maxLines = 3,
+                enabled = !submitting
+            )
+            Spacer(Modifier.width(6.dp))
+            IconButton(
+                onClick = onSend,
+                enabled = value.isNotBlank() && !submitting
+            ) {
+                if (submitting) {
+                    CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
+                } else {
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun IssueContent(issue: GithubIssue, comments: List<GithubComment>) {
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy 'at' HH:mm", Locale.getDefault()) }
-    
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // Issue Header
+        item { IssueHeader(issue, dateFormat) }
+
         item {
-            IssueHeader(issue = issue, dateFormat = dateFormat)
+            Card(Modifier.fillMaxWidth()) {
+                SelectionContainer {
+                    Text(
+                        text = issue.body?.takeIf { it.isNotBlank() } ?: "No description provided.",
+                        modifier = Modifier.padding(14.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (issue.body.isNullOrBlank()) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        }
+                    )
+                }
+            }
         }
-        
-        // Issue Body
-        item {
-            IssueBody(body = issue.body)
-        }
-        
-        // Labels
+
         if (issue.labels.isNotEmpty()) {
             item {
-                IssueLabels(labels = issue.labels)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(issue.labels, key = { it.id }) { label ->
+                        AssistChip(onClick = {}, label = { Text(label.name) })
+                    }
+                }
             }
         }
-        
-        // Assignees
-        if (issue.assignees.isNotEmpty()) {
-            item {
-                IssueAssignees(assignees = issue.assignees)
-            }
-        }
-        
-        // Comments Section
+
         item {
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider()
+            Spacer(Modifier.height(4.dp))
             Text(
-                text = "Comments (${comments.size})",
+                "Comments (${comments.size})",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
         }
-        
+
         if (comments.isEmpty()) {
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
+                Column(
+                    Modifier.fillMaxWidth().padding(vertical = 28.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.ChatBubbleOutline,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "No comments yet",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Icon(
+                        Icons.Default.ChatBubbleOutline,
+                        null,
+                        Modifier.size(42.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text("No comments yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         } else {
             items(comments, key = { it.id }) { comment ->
-                CommentCard(comment = comment, dateFormat = dateFormat)
+                CommentCard(comment, dateFormat)
             }
         }
-        
-        // Bottom spacing for the input bar
-        item {
-            Spacer(modifier = Modifier.height(8.dp))
-        }
+
+        item { Spacer(Modifier.height(4.dp)) }
     }
 }
 
 @Composable
-private fun IssueHeader(
-    issue: GithubIssue,
-    dateFormat: SimpleDateFormat
-) {
+private fun IssueHeader(issue: GithubIssue, dateFormat: SimpleDateFormat) {
     Column {
-        // State badge
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Surface(
-                color = if (issue.state == "open") 
-                    GitHubColors.OpenGreen.copy(alpha = 0.2f) 
-                else 
-                    GitHubColors.MergedPurple.copy(alpha = 0.2f),
+                color = if (issue.state == "open") {
+                    GitHubColors.OpenGreen.copy(alpha = 0.18f)
+                } else {
+                    GitHubColors.MergedPurple.copy(alpha = 0.18f)
+                },
                 shape = MaterialTheme.shapes.small
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = if (issue.state == "open") 
-                            Icons.Default.RadioButtonUnchecked 
-                        else 
-                            Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = if (issue.state == "open") 
-                            GitHubColors.OpenGreen 
-                        else 
-                            GitHubColors.MergedPurple
+                        if (issue.state == "open") Icons.Default.RadioButtonUnchecked else Icons.Default.CheckCircle,
+                        null,
+                        Modifier.size(15.dp),
+                        tint = if (issue.state == "open") GitHubColors.OpenGreen else GitHubColors.MergedPurple
                     )
-                    Text(
-                        text = issue.state.replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (issue.state == "open") 
-                            GitHubColors.OpenGreen 
-                        else 
-                            GitHubColors.MergedPurple
-                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(issue.state.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.labelMedium)
                 }
             }
-            
-            Text(
-                text = "#${issue.number}",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Spacer(Modifier.width(8.dp))
+            Text("#${issue.number}", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        // Title
-        Text(
-            text = issue.title,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        // Author and date
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+
+        Spacer(Modifier.height(8.dp))
+        Text(issue.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
                 model = issue.user.avatarUrl,
                 contentDescription = "Author avatar",
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(MaterialTheme.shapes.small),
+                modifier = Modifier.size(24.dp).clip(MaterialTheme.shapes.small),
                 contentScale = ContentScale.Crop
             )
+            Spacer(Modifier.width(6.dp))
+            Text(issue.user.login, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(6.dp))
             Text(
-                text = issue.user.login,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = "opened on ${dateFormat.format(parseIsoDate(issue.createdAt))}",
+                "opened on ${dateFormat.format(parseIsoDate(issue.createdAt))}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -342,222 +288,52 @@ private fun IssueHeader(
 }
 
 @Composable
-private fun IssueBody(body: String?) {
-    if (body.isNullOrBlank()) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        ) {
-            Text(
-                text = "No description provided.",
-                modifier = Modifier.padding(16.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
-            )
-        }
-    } else {
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            SelectionContainer {
-                Text(
-                    text = body,
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium
+private fun CommentCard(comment: GithubComment, dateFormat: SimpleDateFormat) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AsyncImage(
+                    model = comment.user.avatarUrl,
+                    contentDescription = "Comment author avatar",
+                    modifier = Modifier.size(28.dp).clip(MaterialTheme.shapes.small),
+                    contentScale = ContentScale.Crop
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun IssueLabels(labels: List<GithubLabel>) {
-    Column {
-        Text(
-            text = "Labels",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            labels.forEach { label ->
-                val backgroundColor = try {
-                    androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor("#${label.color}"))
-                } catch (e: Exception) {
-                    MaterialTheme.colorScheme.primary
-                }
-                
-                Surface(
-                    color = backgroundColor.copy(alpha = 0.2f),
-                    shape = MaterialTheme.shapes.small
-                ) {
+                Spacer(Modifier.width(7.dp))
+                Column {
+                    Text(comment.user.login, fontWeight = FontWeight.Medium)
                     Text(
-                        text = label.name,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = backgroundColor
+                        dateFormat.format(parseIsoDate(comment.createdAt)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun IssueAssignees(assignees: List<com.rafgittools.domain.model.github.GithubUser>) {
-    Column {
-        Text(
-            text = "Assignees",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            assignees.forEach { assignee ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    AsyncImage(
-                        model = assignee.avatarUrl,
-                        contentDescription = assignee.login,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(MaterialTheme.shapes.small),
-                        contentScale = ContentScale.Crop
-                    )
-                    Text(
-                        text = assignee.login,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CommentCard(
-    comment: GithubComment,
-    dateFormat: SimpleDateFormat
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // Comment header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    AsyncImage(
-                        model = comment.user.avatarUrl,
-                        contentDescription = "Comment author avatar",
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(MaterialTheme.shapes.small),
-                        contentScale = ContentScale.Crop
-                    )
-                    Column {
-                        Text(
-                            text = comment.user.login,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = dateFormat.format(parseIsoDate(comment.createdAt)),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                
-                // Author association badge if available
-                comment.authorAssociation?.let { association ->
-                    if (association != "NONE" && association != "CONTRIBUTOR") {
-                        AssistChip(
-                            onClick = { },
-                            label = {
-                                Text(
-                                    text = association.lowercase()
-                                        .replaceFirstChar { it.uppercase() },
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            },
-                            modifier = Modifier.height(24.dp)
-                        )
-                    }
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // Comment body
+            Spacer(Modifier.height(8.dp))
             SelectionContainer {
-                Text(
-                    text = comment.body,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Text(comment.body, style = MaterialTheme.typography.bodyMedium)
             }
         }
     }
 }
 
 @Composable
-private fun ErrorContent(
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+private fun ErrorContent(message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Column(
-        modifier = modifier.padding(32.dp),
+        modifier = modifier.padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            imageVector = Icons.Default.Error,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.error
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Error Loading Issue",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.error
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onRetry) {
-            Text("Retry")
-        }
+        Icon(Icons.Default.Error, null, Modifier.size(52.dp), tint = MaterialTheme.colorScheme.error)
+        Spacer(Modifier.height(10.dp))
+        Text("Error Loading Issue", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.error)
+        Spacer(Modifier.height(6.dp))
+        Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(12.dp))
+        Button(onClick = onRetry) { Text("Retry") }
     }
 }
 
-// Helper function
-private fun parseIsoDate(isoDate: String): Date {
-    return try {
-        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).parse(isoDate) ?: Date()
-    } catch (e: Exception) {
-        Date()
-    }
+private fun parseIsoDate(isoDate: String): Date = try {
+    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).parse(isoDate) ?: Date()
+} catch (_: Exception) {
+    Date()
 }
