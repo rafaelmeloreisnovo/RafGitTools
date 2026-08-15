@@ -48,36 +48,37 @@ class HomeViewModel @Inject constructor(
         checkAuthAndLoadData()
     }
 
+    /** GitHub is optional: Drive and Local remain usable without a GitHub session. */
     private fun checkAuthAndLoadData() {
         viewModelScope.launch {
             val offlineMode = authRepository.isOfflineMode()
-            _isAuthenticated.value = authRepository.isAuthenticated() || offlineMode
-            if (offlineMode) {
-                _user.value = null
-                _remoteRepositories.value = emptyList()
-                loadLocalRepositories()
-                return@launch
-            }
+            _isAuthenticated.value = authRepository.isAuthenticated() && !offlineMode
+
             if (_isAuthenticated.value) {
-                // Application-level cache hydration is asynchronous. Rehydrate here before
-                // the first authenticated API call so a valid persisted session cannot race
-                // the AuthInterceptor and accidentally send an unauthenticated request.
                 val token = authRepository.getPat().getOrNull()
                 if (token.isNullOrBlank()) {
                     authTokenCache.token = null
                     _isAuthenticated.value = false
-                    _uiState.value = HomeUiState.NotAuthenticated
+                    _user.value = null
+                    _remoteRepositories.value = emptyList()
+                    _activeTab.value = HomeTab.DRIVE
+                    _uiState.value = HomeUiState.Success
                 } else {
                     authTokenCache.token = token
                     loadUserData()
                 }
             } else {
-                _uiState.value = HomeUiState.NotAuthenticated
+                _user.value = null
+                _remoteRepositories.value = emptyList()
+                _activeTab.value = HomeTab.DRIVE
+                _uiState.value = HomeUiState.Success
             }
+
             loadLocalRepositories()
         }
     }
 
+    /** Load every GitHub page; never confuse the API's first 30 items with a full inventory. */
     fun loadUserData() {
         viewModelScope.launch {
             _uiState.value = HomeUiState.Loading
@@ -85,20 +86,32 @@ class HomeViewModel @Inject constructor(
             githubRepository.getAuthenticatedUserSync()
                 .onSuccess { user -> _user.value = user }
 
-            githubRepository.getUserRepositoriesSync()
-                .onSuccess { repos ->
-                    _remoteRepositories.value = repos
-                    _uiState.value = if (repos.isEmpty() && _localRepositories.value.isEmpty()) {
-                        HomeUiState.Empty
-                    } else {
-                        HomeUiState.Success
-                    }
+            val allRepos = mutableListOf<GithubRepoModel>()
+            val perPage = 100
+            val maxPages = 50
+            var page = 1
+            var terminalError: Throwable? = null
+
+            while (page <= maxPages) {
+                val result = githubRepository.getUserRepositoriesSync(page = page, perPage = perPage)
+                val batch = result.getOrNull()
+                if (batch == null) {
+                    terminalError = result.exceptionOrNull()
+                    break
                 }
-                .onFailure { error ->
-                    _uiState.value = HomeUiState.Error(
-                        error.message ?: "Failed to load repositories"
-                    )
-                }
+                allRepos += batch
+                if (batch.size < perPage) break
+                page += 1
+            }
+
+            if (allRepos.isNotEmpty() || terminalError == null) {
+                _remoteRepositories.value = allRepos.distinctBy { it.id }
+                _uiState.value = HomeUiState.Success
+            } else {
+                _uiState.value = HomeUiState.Error(
+                    terminalError?.message ?: "Failed to load repositories"
+                )
+            }
         }
     }
 
@@ -109,12 +122,14 @@ class HomeViewModel @Inject constructor(
             val knownFiles = knownEntities
                 .map { File(it.path) }
                 .filter { it.exists() && it.isDirectory }
+
             knownFiles.forEach { dir ->
                 buildLocalRepoSummary(dir)?.let { localRepos.add(it) }
             }
             _localRepositories.value = localRepos
+
             if (_uiState.value == HomeUiState.Loading && !_isAuthenticated.value) {
-                _uiState.value = if (localRepos.isEmpty()) HomeUiState.Empty else HomeUiState.Success
+                _uiState.value = HomeUiState.Success
             }
         }
     }
@@ -135,6 +150,7 @@ class HomeViewModel @Inject constructor(
                     lastCommitAuthor = commit.author.name
                 }
             }
+
             LocalRepoSummary(
                 name = dir.name,
                 path = repoPath,
@@ -143,7 +159,7 @@ class HomeViewModel @Inject constructor(
                 lastCommitAuthor = lastCommitAuthor,
                 lastModified = dir.lastModified()
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -153,7 +169,11 @@ class HomeViewModel @Inject constructor(
     }
 
     fun refresh() {
-        loadUserData()
+        if (_isAuthenticated.value) {
+            loadUserData()
+        } else {
+            _uiState.value = HomeUiState.Success
+        }
         loadLocalRepositories()
     }
 
@@ -164,11 +184,13 @@ class HomeViewModel @Inject constructor(
             _isAuthenticated.value = false
             _user.value = null
             _remoteRepositories.value = emptyList()
-            _uiState.value = HomeUiState.NotAuthenticated
+            _activeTab.value = HomeTab.DRIVE
+            _uiState.value = HomeUiState.Success
+            loadLocalRepositories()
         }
     }
 
-    enum class HomeTab { REMOTE, LOCAL }
+    enum class HomeTab { REMOTE, DRIVE, LOCAL }
 }
 
 data class LocalRepoSummary(
