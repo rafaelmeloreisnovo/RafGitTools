@@ -104,7 +104,10 @@ object RafGitFsDiffPlanner {
         RafGitFsPlannedAction.REMOVE_LOCAL_CACHE,
         RafGitFsPlannedAction.CREATE_WORKSPACE,
         RafGitFsPlannedAction.WRITE_WORKSPACE_FILE -> RafGitFsOperationRisk.LOCAL_MUTATION
-        in branchActions -> RafGitFsOperationRisk.REMOTE_BRANCH_WRITE
+        RafGitFsPlannedAction.CREATE_BRANCH,
+        RafGitFsPlannedAction.CREATE_COMMIT,
+        RafGitFsPlannedAction.PUSH_BRANCH,
+        RafGitFsPlannedAction.OPEN_PULL_REQUEST -> RafGitFsOperationRisk.REMOTE_BRANCH_WRITE
         RafGitFsPlannedAction.DELETE_REMOTE -> RafGitFsOperationRisk.DESTRUCTIVE_REMOTE
     }
 
