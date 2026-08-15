@@ -134,7 +134,7 @@ class RafGitFsGithubBranchWriter @Inject constructor(
         if (existing?.state in setOf("BRANCH_CREATED", "COMMIT_READY", "PUSHED", "ROLLED_BACK") ||
             existing?.state?.startsWith("PR_OPEN:") == true
         ) {
-            return observed(step, "BRANCH_ALREADY_RECORDED", existing.localSha ?: baseSha, branch)
+            return observed(step, "BRANCH_ALREADY_RECORDED", existing?.localSha ?: baseSha, branch)
         }
         val response = writeApi.createRef(
             owner,
