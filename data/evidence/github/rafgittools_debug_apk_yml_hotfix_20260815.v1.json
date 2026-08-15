@@ -1,0 +1,46 @@
+{
+  "schema": "RAFGITTOOLS_DEBUG_APK_YML_HOTFIX_EVIDENCE/V1",
+  "date": "2026-08-15",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "base_branch": "main",
+  "base_sha": "04016a4def3b0764447b748b0b97efca1ea25ec0",
+  "branch": "hotfix/debug-apk-workflow-20260815",
+  "workflow": ".github/workflows/debug-apk.yml",
+  "source_fix_commit": "2804c7b6a0f1f70d554a0f364e741a16765b53c3",
+  "observed_gaps": [
+    {
+      "id": "GRADLE_TASK_CASE",
+      "before": "assemble${{ inputs.variant }}",
+      "risk": "devDebug expands to assembledevDebug instead of assembleDevDebug",
+      "state": "SOURCE_FIXED"
+    },
+    {
+      "id": "ABI_GATE_FAIL_OPEN",
+      "before": "ABI grep followed by || true",
+      "risk": "missing required ABI could pass workflow",
+      "state": "SOURCE_FIXED"
+    },
+    {
+      "id": "ARTIFACT_EXISTENCE",
+      "risk": "artifact upload did not explicitly fail when no files were found",
+      "state": "SOURCE_FIXED"
+    },
+    {
+      "id": "APK_PROVENANCE",
+      "risk": "manual debug workflow did not emit APK SHA256SUMS",
+      "state": "SOURCE_FIXED"
+    }
+  ],
+  "boundaries": {
+    "source_fixed": true,
+    "workflow_ci_pass": false,
+    "apk_verified": false,
+    "device_verified": false,
+    "claim_allowed": false
+  },
+  "pending": [
+    "TOKEN_VAZIO_PENDING_PR_WORKFLOW_RUN",
+    "TOKEN_VAZIO_PENDING_APK_SHA256",
+    "TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED"
+  ]
+}
