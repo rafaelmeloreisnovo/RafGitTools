@@ -50,7 +50,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { persist-credentials: false }
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: { python-version: '3.12' }
       - name: Validate Prompt 1 foundation
         run: python3 scripts/validate_rafgitfs_foundation.py
