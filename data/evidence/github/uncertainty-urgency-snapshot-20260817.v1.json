@@ -1,0 +1,58 @@
+{
+  "schema": "rafaelia.uncertainty-urgency-evidence.v1",
+  "generated_at": "2026-08-17T00:43:00Z",
+  "claim_allowed": false,
+  "source_mode": "READ_ONLY_OBSERVATION",
+  "canonical_drive": {
+    "title": "RAFAELIA — Implementação Latentes e Papers — Drive GitHub V1",
+    "document_id": "1g3eVD3zLMuwk0jevAwVL3wSmxhEMkKsAUPFQh2wEn88",
+    "state": "CANONICAL_DRAFT",
+    "execution": "NON_DESTRUCTIVE",
+    "claim_allowed": false,
+    "method": "source -> index -> semantic_token -> claim -> evidence -> falsifier -> decision -> artifact"
+  },
+  "mapa_pr_110": {
+    "state": "closed",
+    "merged": true,
+    "draft": false,
+    "merge_commit_sha": "d05a6bad499e747eb89733a151b1a425fa720155",
+    "source_mode": "READ_ONLY",
+    "automatic_mutation": false,
+    "automatic_merge": false,
+    "claim_allowed": false
+  },
+  "microcycle_window": {
+    "repository": "rafaelmeloreisnovo/Mapa",
+    "workflow": "RAFAELIA Adaptive Cycle",
+    "head_branch": "main",
+    "head_sha": "21546b15717fa07780daf36ef5fd8074a2b97dfe",
+    "required_count": 4,
+    "observed_count": 4,
+    "chain_state": "EVIDENCED_CONTIGUOUS",
+    "latest_index_entry_count": 147,
+    "latest_index_sha256": "04beccef5cda7bf76dbf810c558729887a1065863f75973fbfbe40a7503a638f",
+    "claim_allowed": false,
+    "entries": [
+      {"run_id":31977534213,"job_id":95239152172,"cycle_id":"RAF-CYCLE-20260816T225227Z-N01","n_mod_42":1,"phase":"chi","decision":"EXECUTED_READ_ONLY","previous_entry_sha256":"009bcac8b33344db059bca74c23f8d9d4e107a2ebb2c2e5c6fadd50c2b52186d","entry_sha256":"13e0a7450eac9ee411b0579c886819b1ed46360dffe6367bdb93c4828d3982d4","receipt_sha256":"802481bda2caa9750b36d5a3180cab4bab770e61985f352ea27b73a166f7d639","latest_four_count":4,"claim_allowed":false},
+      {"run_id":31979281070,"job_id":95243393354,"cycle_id":"RAF-CYCLE-20260816T232944Z-N03","n_mod_42":3,"phase":"delta","decision":"EXECUTED_READ_ONLY","previous_entry_sha256":"13e0a7450eac9ee411b0579c886819b1ed46360dffe6367bdb93c4828d3982d4","entry_sha256":"6c29005af6dbedc149b6834c8ac900e4e99bd7f887615cab3ea7ecd1a7b00d77","receipt_sha256":"9e20b9747870c86a8dbbba99e49f48d664338706be1c03f5407ae9103f1bac0b","latest_four_count":4,"claim_allowed":false},
+      {"run_id":31980251714,"job_id":95245742861,"cycle_id":"RAF-CYCLE-20260816T235030Z-N05","n_mod_42":5,"phase":"omega","decision":"EXECUTED_READ_ONLY","previous_entry_sha256":"6c29005af6dbedc149b6834c8ac900e4e99bd7f887615cab3ea7ecd1a7b00d77","entry_sha256":"2283b71ba506f6f56966ee4e89c43a38f8acc1d728111924c19eb2eb54be77d3","receipt_sha256":"a0b4c1c14629df52a54e24d6facdc64965da546e56fd426b0fc2ce25bd040814","latest_four_count":4,"claim_allowed":false},
+      {"run_id":31981935820,"job_id":95250149715,"cycle_id":"RAF-CYCLE-20260817T002435Z-N07","n_mod_42":7,"phase":"chi","decision":"EXECUTED_READ_ONLY","previous_entry_sha256":"2283b71ba506f6f56966ee4e89c43a38f8acc1d728111924c19eb2eb54be77d3","entry_sha256":"e3b59eae50943d4446648c237d10e82db1505ba2df62ccc5349bef0102538dff","receipt_sha256":"4a4a999025288c172c964135bfc9d8bab3ad7528761d784b8c6edaa80f65a787","latest_four_count":4,"claim_allowed":false}
+    ]
+  },
+  "uncertainties": [
+    {"id":"MAPA_MICROCYCLE_LATEST_FOUR","authority":"rafaelmeloreisnovo/Mapa","urgency":"P0","state":"EVIDENCED_CURRENT_SNAPSHOT","owner":"Mapa","next_action":"Continue read-only monitoring and fail closed on any chain discontinuity.","exit_criterion":"Four current main-branch receipts form an unbroken previous_entry_sha256 chain with latest_four_count=4 and claim_allowed=false.","evidence_refs":["github:actions:runs/31977534213,31979281070,31980251714,31981935820","github:artifact:9272595971"],"falsifier":"Any missing run, non-READ_ONLY decision, latest_four_count != 4, claim_allowed=true, or broken previous-entry chain.","risk_tier":"MEDIUM","human_review_required":false},
+    {"id":"RLL_REAL_BAYES_JOINT_MULTI_PROBE","authority":"instituto-Rafael/relativity-living-light","urgency":"P0","state":"TOKEN_VAZIO","owner":"RLL/science","next_action":"Execute normalized joint multi-probe nested sampling under a frozen data/prior/likelihood contract and emit evidence plus uncertainty receipts.","exit_criterion":"Receipt identifies frozen inputs, priors, likelihoods, sampler/version, seeds, convergence diagnostics, logZ with uncertainty, hashes and claim_allowed=false.","evidence_refs":["github:pr/668","github:pr/703"],"falsifier":"A BIC proxy, SN-only evidence or undocumented sampler output is presented as joint multi-probe Bayes.","risk_tier":"HIGH","human_review_required":true},
+    {"id":"RLL_INDEPENDENT_REPLICATION","authority":"instituto-Rafael/relativity-living-light","urgency":"P0","state":"TOKEN_VAZIO","owner":"independent-replication","next_action":"Reproduce the frozen scientific contract in a genuinely independent environment or implementation and compare declared tolerances.","exit_criterion":"Independent receipt proves same inputs and model contract, different environment or implementation, numerical tolerance pass, environment identity and hashes.","evidence_refs":["github:pr/629","github:pr/698"],"falsifier":"Second execution uses the same controlled runner/implementation without independent custody.","risk_tier":"HIGH","human_review_required":true},
+    {"id":"RLL_PHYSICAL_TERMUX_EXECUTION","authority":"local/Android-Termux","urgency":"P0","state":"TOKEN_VAZIO","owner":"physical-runtime","next_action":"Run the hardened replay contract on a physical Android/Termux device and return the signed/hash-bound capsule.","exit_criterion":"Physical receipt contains Android/device identity, environment, exact commit, command/log, two byte-identical replays and checksums validated by the repository gate.","evidence_refs":["github:pr/650"],"falsifier":"Linux CI, emulator-only output or synthetic fixture is presented as physical Termux execution.","risk_tier":"HIGH","human_review_required":true},
+    {"id":"RLL_DESI_DR2_OFFICIAL_JOINT_CROSSBLOCK_REPRODUCTION","authority":"instituto-Rafael/relativity-living-light","urgency":"P0","state":"TOKEN_VAZIO","owner":"RLL/data-likelihood","next_action":"Reproduce the official DESI DR2 joint/cross-block likelihood with pinning and custody rather than a local block-only substitute.","exit_criterion":"Official joint/cross-block inputs, covariance and likelihood path are hash-bound and reproduced with an auditable receipt.","evidence_refs":["github:pr/668","github:pr/701"],"falsifier":"Local 13-observable or block-diagonal control is relabeled as official joint/cross-block reproduction.","risk_tier":"HIGH","human_review_required":true},
+    {"id":"RLL_DEPENDENCY_GRAPH_B0_B1","authority":"instituto-Rafael/relativity-living-light","urgency":"P1","state":"PARTIAL_EVIDENCED","owner":"RLL/governance","next_action":"Extend read-only semantic dependency mapping beyond B0/B1 without bulk forward-porting.","exit_criterion":"All candidate dependency edges outside B0/B1 are evidence-backed or explicitly TOKEN_VAZIO; no invented edge remains.","evidence_refs":["github:pr/755"],"falsifier":"Zero textual overlap is used as proof of zero semantic dependency.","risk_tier":"MEDIUM","human_review_required":true},
+    {"id":"RLL_EXECUTABLE_CONSUMERS_B0_B1","authority":"instituto-Rafael/relativity-living-light","urgency":"P1","state":"PARTIAL_EVIDENCED","owner":"RLL/governance","next_action":"Materialize executable consumer evidence for the five remaining artifacts or preserve each as TOKEN_VAZIO_EXECUTABLE_CONSUMER.","exit_criterion":"Each of the five artifact consumers has a demonstrated executable read edge or an explicit unresolved token with falsifier.","evidence_refs":["github:pr/755"],"falsifier":"Upload/custody or documentary references are relabeled as executable consumption.","risk_tier":"MEDIUM","human_review_required":true},
+    {"id":"RLL_HISTORICAL_REAL_BAYES","authority":"instituto-Rafael/relativity-living-light","urgency":"P2","state":"EVIDENCED_SCOPED","owner":"RLL/science","next_action":"Preserve as historical evidence only; do not use it to close the joint multi-probe token.","exit_criterion":"Historical receipt remains immutable and scope-labeled.","evidence_refs":["github:pr/668"],"falsifier":"Historical FASE20 nested sampling is silently promoted to current joint multi-probe evidence.","risk_tier":"MEDIUM","human_review_required":true},
+    {"id":"RLL_MODERN_DOVEKIE_SN_ONLY_BAYES","authority":"instituto-Rafael/relativity-living-light","urgency":"P2","state":"EVIDENCED_SCOPED","owner":"RLL/science","next_action":"Preserve the SN-only result and require a separate joint multi-probe execution for broader claims.","exit_criterion":"SN-only evidence remains scope-labeled with priors and uncertainties.","evidence_refs":["github:pr/668"],"falsifier":"SN-only Bayes is transplanted into a multi-probe claim.","risk_tier":"MEDIUM","human_review_required":true}
+  ],
+  "usage_records": [
+    {"id":"USE_MICROCYCLE_ANTI_REGRESSION","purpose":"Detect chain breaks, hidden promotion and loss of four-run navigability.","data_minimization":"Store run/job identifiers, state fields and hashes; do not duplicate unrelated repository payloads.","source_asset":"GitHub Actions operational metadata","usage_mode":"REFERENCE_ONLY_NO_REDISTRIBUTION","rights":{"public_access":true,"license_state":"TOKEN_VAZIO_LICENSE","license_verified":false,"redistribution_allowed":false,"training_allowed":false,"commercial_use_allowed":false,"license_evidence_refs":[]},"ethics":{"risk_tier":"MEDIUM","human_review_required":false,"no_silent_inference":true,"rollback_required":false,"parable_reference":"PARABOLA_DA_OBRA","parable_evidence_effect":"NONE"}},
+    {"id":"USE_SCIENTIFIC_GAP_PRIORITIZATION","purpose":"Order evidence collection without changing scientific claims.","data_minimization":"Reference PR/receipt identifiers and declared gaps only.","source_asset":"RLL governance/science receipts","usage_mode":"REFERENCE_ONLY_NO_REDISTRIBUTION","rights":{"public_access":true,"license_state":"TOKEN_VAZIO_LICENSE","license_verified":false,"redistribution_allowed":false,"training_allowed":false,"commercial_use_allowed":false,"license_evidence_refs":[]},"ethics":{"risk_tier":"HIGH","human_review_required":true,"no_silent_inference":true,"rollback_required":false,"parable_reference":"PARABOLA_DA_OBRA","parable_evidence_effect":"NONE"}},
+    {"id":"USE_LICENSE_FRICTION_GATE","purpose":"Prevent public accessibility from being misread as redistribution, training or commercial permission.","data_minimization":"Store license identifiers/evidence references, not third-party payloads.","source_asset":"license and rights metadata","usage_mode":"GOVERNANCE_ONLY","rights":{"public_access":false,"license_state":"NOT_APPLICABLE_REFERENCE_ONLY","license_verified":false,"redistribution_allowed":false,"training_allowed":false,"commercial_use_allowed":false,"license_evidence_refs":[]},"ethics":{"risk_tier":"HIGH","human_review_required":true,"no_silent_inference":true,"rollback_required":false,"parable_reference":"PARABOLA_DA_OBRA","parable_evidence_effect":"NONE"}}
+  ]
+}
