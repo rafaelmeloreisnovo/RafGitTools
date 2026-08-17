@@ -1,7 +1,8 @@
 #!/usr/bin/env sh
 # Canonical dependency-free gate for RAFAELIA longitudinal, content validity,
 # toroidal research-cycle, GitHub Actions execution-evidence, platform assurance,
-# evidence-backed compliance, and human-AI bivalent privacy contracts.
+# evidence-backed compliance, uncertainty/urgency/ethics/license boundaries,
+# and human-AI bivalent privacy contracts.
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -66,6 +67,15 @@ python3 -m unittest discover -s tests \
   -p 'test_compliance_evidence_boundary.py' -v
 python3 scripts/validate_compliance_evidence_boundary.py \
   --strict --write-report
+
+# Uncertainty/urgency + ethics/license-by-design gate. This validates references
+# and rights metadata only; it does not infer permissions, promote scientific
+# claims, or mutate the source repositories named in the evidence snapshot.
+python3 -m unittest discover -s tests \
+  -p 'test_uncertainty_urgency_ethics_license.py' -v
+python3 scripts/validate_uncertainty_urgency_ethics_license.py \
+  --strict \
+  --write-report artifacts/uncertainty-urgency-ethics-license-report.json
 
 # Human-AI bivalent privacy middleware: tests and semantic validation are part
 # of the existing canonical gate, not a competing workflow.  The generated
