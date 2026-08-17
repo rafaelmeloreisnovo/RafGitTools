@@ -98,7 +98,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Android SDK + NDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Apply formula_ci.zip overlay
         run: bash scripts/apply_formula_ci_zip.sh formula_ci.zip

@@ -98,7 +98,7 @@ jobs:
           cache: gradle
 
       - name: Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Prepare Gradle wrapper
         run: chmod +x gradlew
