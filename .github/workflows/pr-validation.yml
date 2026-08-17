@@ -4,33 +4,48 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   validate:
     name: Validate Pull Request
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
-    timeout-minutes: 30
-    
+    timeout-minutes: 35
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
+
       - uses: android-actions/setup-android@v3
+
       - name: Generate local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
-      
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-      
+
       - name: Check PR title format
+        id: title
+        continue-on-error: true
         uses: amannn/action-semantic-pull-request@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -47,68 +62,105 @@ jobs:
             ci
             chore
             revert
-      
-      - name: Build debug variant
-        run: ./gradlew assembleDevDebug
-      
-      - name: Run unit tests
-        run: ./gradlew testDevDebugUnitTest
-      
-      - name: Run lint
-        run: ./gradlew lintDevDebug
-      
-      - name: Check file sizes
+
+      - name: Validate canonical RAFAELIA coherence contract
+        id: coherence
+        continue-on-error: true
+        shell: bash
         run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          sh scripts/validate_rafaelia_workflow.sh
+          {
+            echo "## RAFAELIA coherence boundary"
+            echo
+            echo "- claim_allowed: \`false\`"
+            echo "- workflow evidence: operational only"
+            echo "- scientific/physical promotion: forbidden"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build debug variant
+        id: build
+        continue-on-error: true
+        run: ./gradlew assembleDevDebug
+
+      - name: Run unit tests
+        id: tests
+        continue-on-error: true
+        run: ./gradlew testDevDebugUnitTest
+
+      - name: Run lint
+        id: lint
+        continue-on-error: true
+        run: ./gradlew lintDevDebug
+
+      - name: Check APK size
+        if: steps.build.outcome == 'success'
+        run: |
+          set -euo pipefail
           echo "Checking APK size..."
           du -h app/build/outputs/apk/dev/debug/*.apk
-      
-      - name: Comment PR with results
+
+      - name: Comment PR with observed results
         if: always()
         uses: actions/github-script@v7
+        env:
+          TITLE_RESULT: ${{ steps.title.outcome }}
+          COHERENCE_RESULT: ${{ steps.coherence.outcome }}
+          BUILD_RESULT: ${{ steps.build.outcome }}
+          TEST_RESULT: ${{ steps.tests.outcome }}
+          LINT_RESULT: ${{ steps.lint.outcome }}
         with:
           script: |
-            const fs = require('fs');
-            
-            let comment = '## 🤖 PR Validation Results\n\n';
-            
-            // Build status
-            comment += '### Build Status\n';
-            comment += '✅ Build completed successfully\n\n';
-            
-            // Test status
-            comment += '### Test Results\n';
-            comment += 'Unit tests passed ✅\n\n';
-            
-            // Lint status
-            comment += '### Lint Check\n';
-            comment += 'Lint checks passed ✅\n\n';
-            
-            // APK info
-            try {
-              const apkPath = 'app/build/outputs/apk/dev/debug';
-              comment += '### 📦 APK Information\n';
-              comment += `APK built successfully\n\n`;
-            } catch (error) {
-              comment += '⚠️ Could not read APK information\n\n';
+            const rows = [
+              ['PR title', process.env.TITLE_RESULT],
+              ['RAFAELIA coherence contract', process.env.COHERENCE_RESULT],
+              ['Build devDebug', process.env.BUILD_RESULT],
+              ['Unit tests', process.env.TEST_RESULT],
+              ['Lint', process.env.LINT_RESULT],
+            ];
+            let comment = '## PR Validation Results\n\n';
+            comment += '| Gate | Observed outcome |\n|---|---|\n';
+            for (const [gate, outcome] of rows) {
+              comment += `| ${gate} | \`${outcome || 'TOKEN_VAZIO_NOT_OBSERVED'}\` |\n`;
             }
-            
-            comment += '---\n';
-            comment += '*This is an automated message from the CI pipeline.*';
-            
-            github.rest.issues.createComment({
+            comment += '\n`claim_allowed=false`\n\n';
+            comment += 'CI/build evidence is operational evidence only; it is not scientific, physical, legal, or release proof.\n\n';
+            comment += `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: comment
+              body: comment,
             });
-  
+
+      - name: Enforce PR validation gate
+        if: always()
+        shell: bash
+        env:
+          TITLE_RESULT: ${{ steps.title.outcome }}
+          COHERENCE_RESULT: ${{ steps.coherence.outcome }}
+          BUILD_RESULT: ${{ steps.build.outcome }}
+          TEST_RESULT: ${{ steps.tests.outcome }}
+          LINT_RESULT: ${{ steps.lint.outcome }}
+        run: |
+          set -euo pipefail
+          for result in \
+            "$TITLE_RESULT" \
+            "$COHERENCE_RESULT" \
+            "$BUILD_RESULT" \
+            "$TEST_RESULT" \
+            "$LINT_RESULT"; do
+            test "$result" = "success"
+          done
+
   label:
     name: Auto Label PR
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
-    
+
     steps:
       - uses: actions/labeler@v5
         with:
