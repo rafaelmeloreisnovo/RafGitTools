@@ -2,7 +2,8 @@
 # Canonical dependency-free gate for RAFAELIA longitudinal, content validity,
 # toroidal research-cycle, GitHub Actions execution-evidence, platform assurance,
 # evidence-backed compliance, uncertainty/urgency/ethics/license boundaries,
-# executable gap-closure invariants, and human-AI bivalent privacy contracts.
+# executable gap-closure invariants, federated work-service entry, and
+# human-AI bivalent privacy contracts.
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -83,6 +84,19 @@ python3 -m unittest discover -s tests \
   -p 'test_gap_closure_execution.py' -v
 python3 scripts/check_gap_closure_ledger.py \
   | tee artifacts/gap-closure-execution-report.json
+
+# Federated entry/service gate. This proves the routing/work-envelope contract
+# only. It does not prove Mapa merge state, producer runtime, device execution,
+# dataset-wide privacy/security, or target claims.
+python3 -m unittest discover -s tests \
+  -p 'test_agent_entry_kernel.py' -v
+python3 scripts/check_agent_entry_kernel.py \
+  | tee artifacts/agent-entry-kernel-report.json
+python3 -m unittest discover -s tests \
+  -p 'test_federated_work_item.py' -v
+python3 scripts/validate_federated_work_item.py \
+  examples/federated_work_item.fgap-fnext-20260819.json \
+  --report artifacts/federated-work-item-report.json
 
 # Human-AI bivalent privacy middleware: tests and semantic validation are part
 # of the existing canonical gate, not a competing workflow.  The generated
