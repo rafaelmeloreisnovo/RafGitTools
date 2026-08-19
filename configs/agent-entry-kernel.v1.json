@@ -1,0 +1,100 @@
+{
+  "schema": "rafaelia.agent-entry-kernel.v1",
+  "version": "1.0.0",
+  "authority": "rafaelmeloreisnovo/RafGitTools",
+  "claim_allowed": false,
+  "purpose": "Provide a deterministic, minimal-entry kernel so every agent reconstructs the relevant federated state before acting instead of relying on prompt memory.",
+  "principles": [
+    "AGENTS.md is an entry router, not the sole source of truth.",
+    "Load the minimum relevant subgraph; do not crawl the whole universe by default.",
+    "TOKEN_VAZIO is a valid state and must never be coerced into zero, false, pass or resolved.",
+    "Urgency orders work; it does not increase epistemic confidence.",
+    "Local repository authority governs local implementation details; federation contracts govern cross-repository edges.",
+    "Evidence is bound to the exact commit, artifact, protocol, environment and device that produced it.",
+    "Historical observations are append-only; corrections supersede rather than rewrite receipts.",
+    "READY_TO_TEST is not RESOLVED.",
+    "Documentation is not runtime evidence and hashes are not scientific validation.",
+    "Every mutation must have an observable exit criterion; high-risk mutation requires rollback.",
+    "Negative results are assets when the falsifier was actually exercised.",
+    "No cross-repository claim promotion from a single repository receipt."
+  ],
+  "orthogonal_axes": {
+    "knowledge_state": ["TOKEN_VAZIO", "UNCERTAIN", "EVIDENCED_SCOPED", "RESOLVED_NEGATIVE", "RESOLVED"],
+    "attention_state": ["ACTIVE", "DISCOVERED", "DEFERRED", "IGNORED_WITH_REASON", "BLOCKED_BY_DEPENDENCY", "WATCH"],
+    "urgency": ["P0", "P1", "P2", "P3"],
+    "operational_state": ["BLOCKED", "READY_TO_TEST", "TESTING", "VERIFIED_LIMITED", "VERIFIED"],
+    "claim_gate": ["BLOCKED", "ALLOWED_STRUCTURAL", "ALLOWED"]
+  },
+  "entry_sequence": [
+    {"step": "E01_BIND", "action": "Bind repository, branch/ref, exact commit SHA and local AGENTS.md."},
+    {"step": "E02_ROUTE", "action": "Identify local role and open only the canonical indices named by AGENTS.md."},
+    {"step": "E03_LOAD_GAPS", "action": "Load unresolved gaps/TOKEN_VAZIO/uncertainty and their urgency, owner, provenance and dependencies."},
+    {"step": "E04_SELECT", "action": "Choose the next action by deterministic priority rules, not narrative salience."},
+    {"step": "E05_BASELINE", "action": "Record baseline commit, affected files, invariants, tests, contracts and rollback reference before mutation."},
+    {"step": "E06_EXECUTE", "action": "Apply the smallest coherent change that can exercise an explicit falsifier or exit criterion."},
+    {"step": "E07_VERIFY_LOCAL", "action": "Run repository-local tests and validators appropriate to the changed surface."},
+    {"step": "E08_VERIFY_EDGES", "action": "For cross-repository behavior, validate producer/consumer contracts on both sides and preserve any physical-runtime TOKEN_VAZIO."},
+    {"step": "E09_RECEIPT", "action": "Emit a transition receipt with F_ok, F_gap, F_next, evidence refs and uncertainty delta."},
+    {"step": "E10_APPEND", "action": "Append/supersede the ledger observation without rewriting historical evidence."}
+  ],
+  "priority_rules": [
+    "P0 safety, security, data-loss, rollback or execution blockers before lower urgency work.",
+    "Within the same urgency, unblock upstream dependencies before downstream consumers.",
+    "Prefer READY_TO_TEST items with observable exit criteria over speculative redesign.",
+    "Prefer a narrow action that reduces a named uncertainty over a broad refactor with no falsifier.",
+    "Prefer cross-repository blockers affecting multiple nodes over isolated cosmetic debt.",
+    "If still tied, process the oldest unresolved observation first."
+  ],
+  "canonical_indices": {
+    "federation_topology": "configs/workflow-master-index.json",
+    "gap_contract": "configs/gap-closure-execution.v1.json",
+    "gap_ledger": "data/evidence/github/cross-repo-gap-closure-20260819.v1.json",
+    "local_agent_router": "AGENTS.md"
+  },
+  "federation_roles": {
+    "rafgittools": "control-plane: routing, governance, state axes, ledgers, gates and cross-repository contracts",
+    "termux_app": "android-runtime: bootstrap, package identity, local execution services, device receipts and Vectra provider boundary",
+    "termux_packages": "package-factory: source/package build contracts, prefix artifacts, hashes and handoff schemas",
+    "vectra": "vm-consumer: bounded VM/QEMU request construction, Termux IPC consumer, safe-state and guest/runtime receipts",
+    "llama": "governed-retrieval: ONES/CTI memory ingestion, retrieval provenance, privacy gate and semantic-evaluation boundary"
+  },
+  "transition_receipt_required": [
+    "event_id",
+    "parent_event_id",
+    "observed_at",
+    "agent_role",
+    "repository",
+    "source_commit",
+    "attention_state_before",
+    "attention_state_after",
+    "knowledge_state_before",
+    "knowledge_state_after",
+    "urgency",
+    "action",
+    "invariants_checked",
+    "evidence_refs",
+    "f_ok",
+    "f_gap",
+    "f_next",
+    "uncertainty_delta",
+    "rollback_ref",
+    "claim_allowed"
+  ],
+  "vector_delta": {
+    "closed_gaps": "integer >= 0",
+    "new_gaps": "integer >= 0",
+    "uncertainty_reduced": "list of gap/claim ids",
+    "uncertainty_added": "list of newly discovered ids",
+    "evidence_added": "list of exact receipts/artifacts",
+    "dependencies_changed": "list of relation ids",
+    "urgency_changed": "list of id:from->to transitions"
+  },
+  "forbidden_shortcuts": [
+    "Do not infer RESOLVED from implementation presence.",
+    "Do not infer runtime success from dispatch acceptance.",
+    "Do not reuse VERIFIED from an older commit without explicit inherited-evidence rules.",
+    "Do not hide ignored/deferred work by deleting it from the ledger.",
+    "Do not copy another repository's local AGENTS.md specialization as if it were local authority.",
+    "Do not let symbolic/metaphorical language replace measurements or executable contracts."
+  ]
+}
