@@ -1,0 +1,121 @@
+{
+  "schema": "rafaelia.federated-work-item.v1",
+  "work_item_id": "WORK-FGAP-FNEXT-FEDERATED-SERVICE-20260819-0001",
+  "observed_at": "2026-08-19T04:38:00-03:00",
+  "state": "READY_TO_TEST",
+  "claim_allowed": false,
+  "actor": {
+    "agent_role": "control-plane executor",
+    "repository_role": "RafGitTools deterministic routing and validation"
+  },
+  "object_binding": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "ref": "governance/federated-work-service-v1-20260819",
+    "source_commit": "dbcb25304fafcdfebe25fa56bd15d51bea432e50",
+    "path_scope": "configs/agent-entry-kernel.v1.json + scripts/check_agent_entry_kernel.py + scripts/validate_federated_work_item.py + tests + examples",
+    "object_hash_or_TOKEN_VAZIO": "TOKEN_VAZIO_MULTI_OBJECT_SCOPE"
+  },
+  "authority": {
+    "local_authority": "rafaelmeloreisnovo/RafGitTools",
+    "federated_authority": "rafaelmeloreisnovo/Mapa",
+    "write_scope": "isolated RafGitTools branch and draft PR only"
+  },
+  "boundary": {
+    "claim_allowed": false,
+    "allowed_claim_scope": [
+      "structural validation of the executor contract",
+      "bounded validation of work-item envelopes"
+    ],
+    "forbidden_promotions": [
+      "remote Mapa contract considered canonical before merge/readback",
+      "producer runtime considered verified",
+      "physical Android considered executed",
+      "dataset-wide privacy/security considered proven"
+    ]
+  },
+  "indices": {
+    "minimum_indices": [
+      "configs/agent-entry-kernel.v1.json",
+      "configs/gap-closure-execution.v1.json",
+      "data/evidence/github/cross-repo-gap-closure-20260819.v1.json"
+    ],
+    "index_reasons": [
+      "entry/authority/receipt contract",
+      "gap state and closure invariants",
+      "current bounded operational gaps"
+    ],
+    "Mapa_route_or_TOKEN_VAZIO": "ROUTE-FGAP-FNEXT-FEDERATED-SERVICE-V1",
+    "route_anchors": [
+      "Mapa:governance/fgap-fnext-federated-service-v1-20260819:data/control-plane/RAFAELIA_FEDERATED_WORK_SERVICE_CONTRACT.v1.json@24698b9313bfb3e39af70c4d192002cd07887d8b",
+      "Mapa:governance/fgap-fnext-federated-service-v1-20260819:indices/RAFAELIA_FGAP_FNEXT_TRANSIT_INDEX_20260819_V1.md@9b16a1436b3bf845dabcce1ea994e0ea5870aafe"
+    ],
+    "route_stop_condition": "Stop after structural executor tests and exact branch validation; do not widen to producer runtime in this work item."
+  },
+  "gaps": {
+    "gap_ids": [
+      "GAP-FEDERATED-WORK-SERVICE-EXECUTOR-VALIDATION"
+    ],
+    "TOKEN_VAZIO_ids": [
+      "TOKEN_VAZIO_MAPA_CONTRACT_MERGE_STATE",
+      "TOKEN_VAZIO_GLOBAL_AGENT_RECONCILIATION"
+    ],
+    "uncertainties": [
+      "whether every repository-local AGENTS adapter exposes the new governance/data/privacy/security questions",
+      "whether remote CI executes the new validator on the exact candidate head"
+    ],
+    "dependencies": [
+      "Mapa contract branch",
+      "RafGitTools local tests",
+      "draft PR provider run"
+    ]
+  },
+  "evidence": {
+    "evidence_refs": [
+      "RafGitTools:main@d6b7f8714cf30e7ff0e63a8a794fe1764ad2f6ab",
+      "RafGitTools:branch@dbcb25304fafcdfebe25fa56bd15d51bea432e50",
+      "Mapa:main@2551b90df41d689cb2d8a961bc4fbca71a2fdc0e",
+      "Mapa:branch@9b16a1436b3bf845dabcce1ea994e0ea5870aafe"
+    ],
+    "evidence_observed_at": "2026-08-19T04:38:00-03:00",
+    "evidence_scope": "provider file/commit materialization only; tests not yet observed for this successor",
+    "staleness_state": "CURRENT_CANDIDATE_BRANCH"
+  },
+  "service_classification": {
+    "governance": {
+      "class": "FEDERATED",
+      "basis": "Mapa owns federated authority while RafGitTools owns executor validation; merge/promotion remains separate."
+    },
+    "data": {
+      "class": "NONE",
+      "basis": "This work item contains contracts, paths and commit references; no private dataset payload is required."
+    },
+    "privacy": {
+      "class": "NONE",
+      "basis": "No raw private conversation, identity dataset or sensor payload is copied into the executor fixture."
+    },
+    "security": {
+      "class": "MEDIUM",
+      "basis": "The validator controls fail-closed routing and must not allow hardcoded security/provenance success or high-risk rollback omission."
+    }
+  },
+  "execution": {
+    "urgency": "P0",
+    "risk": "MEDIUM",
+    "mutating": true,
+    "gate": "python3 -m unittest tests/test_agent_entry_kernel.py tests/test_federated_work_item.py -v && python3 scripts/check_agent_entry_kernel.py && python3 scripts/validate_federated_work_item.py examples/federated_work_item.fgap-fnext-20260819.json",
+    "falsifier": "Any missing Q01-Q12, missing governance/data/privacy/security dimension, invalid Mapa authority pointer, resolved-without-evidence state, or high-risk mutation without concrete rollback must fail non-zero.",
+    "exit_criterion": "All bounded tests pass on exact candidate bytes and the canonical validator reports PASS with claim_allowed=false.",
+    "stop_condition": "After executor validation and receipt emission, route remaining producer-specific changes to their local authority instead of expanding scope automatically.",
+    "rollback_ref": "RafGitTools:main@d6b7f8714cf30e7ff0e63a8a794fe1764ad2f6ab"
+  },
+  "delta_targets": {
+    "local_receipt_target": "data/evidence/github/federated-work-service-executor-20260819.v1.json",
+    "Mapa_transition_target": "data/routing/cycles/federated-work-service-transition-20260819.v1.json",
+    "Drive_reconstruction_target_or_TOKEN_VAZIO": "RAFAELIA — Implementação Latentes e Papers — Drive GitHub V1 append-only delta"
+  },
+  "f3": {
+    "F_ok": "Mapa contract/index and RafGitTools executor code are materialized on isolated branches.",
+    "F_gap": "Exact test execution, producer adapter reconciliation, remote CI and merge/readback remain open.",
+    "F_next": "Run the bounded validator suite, emit receipt, then patch producer AGENTS adapters only where the new entry questions are missing."
+  }
+}
