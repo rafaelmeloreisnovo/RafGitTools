@@ -103,7 +103,7 @@ jobs:
 
       - name: Comment PR with observed results
         if: always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           TITLE_RESULT: ${{ steps.title.outcome }}
           COHERENCE_RESULT: ${{ steps.coherence.outcome }}
