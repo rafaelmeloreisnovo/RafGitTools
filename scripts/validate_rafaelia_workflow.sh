@@ -2,7 +2,7 @@
 # Canonical dependency-free gate for RAFAELIA longitudinal, content validity,
 # toroidal research-cycle, GitHub Actions execution-evidence, platform assurance,
 # evidence-backed compliance, uncertainty/urgency/ethics/license boundaries,
-# and human-AI bivalent privacy contracts.
+# executable gap-closure invariants, and human-AI bivalent privacy contracts.
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -76,6 +76,13 @@ python3 -m unittest discover -s tests \
 python3 scripts/validate_uncertainty_urgency_ethics_license.py \
   --strict \
   --write-report artifacts/uncertainty-urgency-ethics-license-report.json
+
+# Executable gap-closure gate: unresolved states remain explicit, READY_TO_TEST
+# is not a resolution, and evidence cannot be inherited across commits/devices.
+python3 -m unittest discover -s tests \
+  -p 'test_gap_closure_execution.py' -v
+python3 scripts/check_gap_closure_ledger.py \
+  | tee artifacts/gap-closure-execution-report.json
 
 # Human-AI bivalent privacy middleware: tests and semantic validation are part
 # of the existing canonical gate, not a competing workflow.  The generated
