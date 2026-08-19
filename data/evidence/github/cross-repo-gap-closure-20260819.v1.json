@@ -64,6 +64,76 @@
       "claim_allowed": false
     },
     {
+      "id": "GAP-RAFGITTOOLS-SOURCE-MISSING-REFERENCES",
+      "repo": "rafaelmeloreisnovo/RafGitTools",
+      "surface": "Source Gap Audit exact-head inventory",
+      "state": "BLOCKED",
+      "urgency": "P0",
+      "risk": "HIGH",
+      "authority": "GitHub Actions Source Gap Audit scanner",
+      "owner": "rafaelmeloreisnovo",
+      "provenance": "Exact-head run 32216219552 scanned 52,590 files / 45,752 source files and reported 82 blocking missing_reference findings plus 34 warnings: 9 placeholder_stub and 25 stale_deprecated; artifact 10489368710 preserves the audit output.",
+      "next_action": "Expand the audit artifact into a finding-by-finding queue, classify each missing reference by source owner and dependency, then fix or prove obsolescence without broad silent waivers.",
+      "exit_criterion": "The same deterministic Source Gap Audit reports zero blocking missing_reference findings for the candidate head, or each intentionally retained reference is covered by an explicit scoped governance decision that does not weaken unrelated findings.",
+      "falsifier": "Any unclassified blocker, global ignore, wildcard waiver, or scanner bypass leaves this item BLOCKED.",
+      "evidence_refs": [
+        "RafGitTools:workflow-run:32216219552",
+        "RafGitTools:workflow-job:95958134265",
+        "RafGitTools:artifact:10489368710"
+      ],
+      "dependencies": ["source-gap audit artifact extraction", "per-finding ownership"],
+      "mutating": false,
+      "claim_allowed": false
+    },
+    {
+      "id": "GAP-RAFGITTOOLS-FEDERATION-STATE-AXES",
+      "repo": "rafaelmeloreisnovo/RafGitTools",
+      "surface": "configs/workflow-master-index.json + epistemic-runtime federation profile",
+      "state": "UNCERTAIN",
+      "urgency": "P0",
+      "risk": "MEDIUM",
+      "authority": "Federation Audit exact-head projection contract",
+      "owner": "rafaelmeloreisnovo",
+      "provenance": "Exact-head Federation Audit run 32216219557 failed all 15 master-index nodes with state axes mismatch. The profile requires operational_state, runtime_state, evidence_state, claim_state and epistemic_status; node-local states expose four axes while defaults contain epistemic_status.",
+      "next_action": "Resolve the semantic contract explicitly: either materialize epistemic_status on every node or define and test default-state expansion before projection. Preserve the existing negative test that rejects genuinely incomplete state vectors.",
+      "exit_criterion": "Federation Audit passes all 15 nodes under one documented state-resolution rule and regression tests prove that missing mandatory axes still fail when no authoritative default applies.",
+      "falsifier": "Silently dropping epistemic_status, weakening required_state_axes, or accepting arbitrary partial state maps keeps the item unresolved.",
+      "evidence_refs": [
+        "RafGitTools:workflow-run:32216219557",
+        "RafGitTools:workflow-job:95958134511",
+        "RafGitTools:configs/workflow-master-index.json",
+        "RafGitTools:configs/federation/epistemic-interop.v1.json",
+        "RafGitTools:scripts/federation/epistemic_interop.py"
+      ],
+      "dependencies": ["state default semantics decision", "federation regression test"],
+      "mutating": false,
+      "claim_allowed": false
+    },
+    {
+      "id": "GAP-TERMUX-VECTRAS-PROVIDER-V3-STATIC-CONTRACT",
+      "repo": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "surface": "scripts/verify_vectras_termux_provider_v3.py + build/package/constants/result delivery",
+      "state": "UNCERTAIN",
+      "urgency": "P0",
+      "risk": "HIGH",
+      "authority": "Vectras Termux Provider v3 static workflow",
+      "owner": "rafaelmeloreisnovo",
+      "provenance": "Exact-head run 32216210498 failed static provider checks. At least one failure is verifier drift: app/build.gradle defines the default package through getenv(TERMUX_PACKAGE_NAME) ?: com.termux.rafacodephi while the verifier expects a literal def assignment. Other findings concern expected constant aliases and visible result bounding/fail-closed metadata and require implementation-level adjudication.",
+      "next_action": "Split verifier-drift findings from implementation findings; update the verifier only where equivalent semantics are provable, then implement or expose bounded deterministic result delivery where genuinely absent and rerun the same provider-v3 gate.",
+      "exit_criterion": "Provider v3 static gate passes without weakening package/permission/action/result invariants, and each formerly failing assertion has a source-backed explanation or implementation change.",
+      "falsifier": "Regex relaxation that accepts a different package/protocol, unbounded result delivery, missing deterministic oversized-output metadata, or bypassing the provider-v3 workflow leaves this item unresolved.",
+      "evidence_refs": [
+        "termux-app-rafacodephi:workflow-run:32216210498",
+        "termux-app-rafacodephi:workflow-job:95958109858",
+        "termux-app-rafacodephi:scripts/verify_vectras_termux_provider_v3.py",
+        "termux-app-rafacodephi:app/build.gradle",
+        "termux-app-rafacodephi:termux-shared/src/main/java/com/termux/shared/termux/TermuxConstants.java"
+      ],
+      "dependencies": ["verifier/implementation semantic diff", "bounded result contract"],
+      "mutating": false,
+      "claim_allowed": false
+    },
+    {
       "id": "GAP-VECTRA-TERMUX-PROTOCOL-TOPOLOGY",
       "repo": "rafaelmeloreisnovo/Vectras-VM-Android",
       "surface": "discovery v2 + execution v3",
