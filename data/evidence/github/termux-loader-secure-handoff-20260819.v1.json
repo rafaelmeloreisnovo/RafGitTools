@@ -1,0 +1,43 @@
+{
+  "schema": "rafaelia.external-ci-evidence.v1",
+  "observed_at": "2026-08-19T01:39:00-03:00",
+  "source_repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+  "source_pr": 373,
+  "source_head": "48a0e94399e5db846072667ff0fe88853d57d011",
+  "workflow_run": 32216210532,
+  "workflow_job": 95958109976,
+  "gate": "Loader APK Secure Handoff Contract",
+  "state": "UNCERTAIN",
+  "urgency": "P0",
+  "claim_allowed": false,
+  "observed_pass": [
+    "19/19 loader functional-security unit tests PASS",
+    "14/14 loader secure-handoff contract unit tests PASS",
+    "source security validator PASS",
+    "host and loader Gradle builds completed successfully",
+    "loader APK package/minSdk/targetSdk/manifest security anchors PASS",
+    "loader and host APK signature verification individually PASS",
+    "bootstrap bridge-profile structural validation PASS for aarch64, arm, i686 and x86_64"
+  ],
+  "observed_fail": [
+    "functional loader expected exactly one DEX but observed dex_count=2",
+    "loader_cert_sha256=UNRESOLVED",
+    "host_cert_sha256=UNRESOLVED",
+    "signer comparison therefore emitted FAIL host and loader certificates differ"
+  ],
+  "token_vazio": [
+    "whether two DEX files violate a current functional invariant or the verifier is stale after dependency/build evolution",
+    "why certificate SHA extraction returned UNRESOLVED despite each APK passing apksigner verification",
+    "DEVICE_RECEIPT_COMPLETE on target Android",
+    "physical pkg update/install/DNS/TLS repository receipts"
+  ],
+  "artifacts": [
+    {"id": 9352513526, "role": "loader-apk"},
+    {"id": 9352514068, "role": "host-debug-apk"},
+    {"id": 9352514326, "role": "loader-stub-apk"},
+    {"id": 9352514575, "role": "loader-security-evidence"}
+  ],
+  "next_action": "Separate verifier drift from true contract violation: inspect why loader now materializes two DEX files and make signer-certificate extraction deterministic against current apksigner output. Do not weaken the same-signer requirement. Then rerun the exact gate and preserve physical-device closure as TOKEN_VAZIO.",
+  "exit_criterion": "The same Loader APK Secure Handoff gate passes with an explicitly justified DEX invariant and a deterministic non-UNRESOLVED signer digest match, while claim_allowed remains false until physical device receipts exist.",
+  "falsifier": "Disabling DEX/signer checks, treating UNRESOLVED as equal, or promoting the bridge bootstrap as real pkg runtime invalidates closure."
+}
