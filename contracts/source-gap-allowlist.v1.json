@@ -1,4 +1,23 @@
 {
   "schema": "raf.source-gap-allowlist.v1",
-  "entries": []
+  "entries": [
+    {
+      "marker": "NOT_IMPLEMENTED_ERROR",
+      "path": "app/src/main/kotlin/com/rafgittools/bisect/BisectManager.kt",
+      "line_sha256": "878cb314eefa6b1477cdf44420d2da0c5b9ffb1f4e8fa162598ba2f2b2afb049",
+      "reason": "Intentional fail-closed compatibility sentinel for empty repoPath; non-empty repoPath executes real git bisect commands. Revalidate if BisectManager API or stub-compatibility contract changes."
+    },
+    {
+      "marker": "NOT_IMPLEMENTED_ERROR",
+      "path": "app/src/main/kotlin/com/rafgittools/bisect/BisectManager.kt",
+      "line_sha256": "b8e26b99cbb2afea9f1c4dd8865c1b6f45799074baa2c575f8724fc470dc00f7",
+      "reason": "Intentional fail-closed sentinel for skip() when repoPath is empty; real execution is implemented for a concrete repository path."
+    },
+    {
+      "marker": "NOT_IMPLEMENTED_ERROR",
+      "path": "app/src/main/kotlin/com/rafgittools/bisect/BisectManager.kt",
+      "line_sha256": "3f4e5e3a9e213ca0de6a698ff8d6260ce143eb7588ce6b793389fd72090a94f9",
+      "reason": "Intentional fail-closed sentinel for log() when repoPath is empty; real git bisect log execution is implemented for a concrete repository path."
+    }
+  ]
 }
