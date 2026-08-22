@@ -18,6 +18,12 @@
       "path": "app/src/main/kotlin/com/rafgittools/bisect/BisectManager.kt",
       "line_sha256": "3f4e5e3a9e213ca0de6a698ff8d6260ce143eb7588ce6b793389fd72090a94f9",
       "reason": "Intentional fail-closed sentinel for log() when repoPath is empty; real git bisect log execution is implemented for a concrete repository path."
+    },
+    {
+      "marker": "NOT_IMPLEMENTED_ERROR",
+      "path": "app/src/main/kotlin/com/rafgittools/domain/error/AppError.kt",
+      "line_sha256": "34135216903fefdd8e01c79cee204d216b1b22443971373b029b19e1188bf816",
+      "reason": "Intentional exception-translation boundary: converts Kotlin NotImplementedError thrown elsewhere into the typed AppError.GeneralError.NotImplemented domain representation. This line does not itself mark an unimplemented execution path. Revalidate if Throwable.toAppError mapping semantics change."
     }
   ]
 }
