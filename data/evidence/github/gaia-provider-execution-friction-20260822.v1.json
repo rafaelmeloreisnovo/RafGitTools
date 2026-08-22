@@ -1,0 +1,94 @@
+{
+  "schema": "rafaelia.provider-execution-friction-evidence.v1",
+  "observed_date": "2026-08-22",
+  "state": "TOKEN_VAZIO_PROVIDER_EXECUTION",
+  "claim_allowed": false,
+  "gap_id": "TV-V3-PROVIDER-CLASS-001",
+  "producer": {
+    "repo": "rafaelmeloreisnovo/GAIA_phi",
+    "source_anchor_commit": "d3f49c10b74f740ee2024314dff91e9a0ef20b2f",
+    "source_blob": "1bb228392c51d3bfd0d85ae8e6ce92c40fe28dd1",
+    "pull_request": 98,
+    "pull_request_head": "bcef7084da7844101ff51a38ab39f54210233be8",
+    "merged": true,
+    "merge_commit": "f980cc5be46b8daff892e3885da40097eba46e90"
+  },
+  "target_workflow": {
+    "name": "cognitive-symbiotic-receipt",
+    "run_id": 32564704743,
+    "run_number": 1,
+    "conclusion_before_retry": "failure",
+    "job_id": 97011790745,
+    "job_name": "deterministic-receipt",
+    "exposed_steps_count": 0,
+    "job_log_fetch_state": "UNAVAILABLE_404_BLOB_NOT_FOUND",
+    "test_execution_observed": false,
+    "classification": "PROVIDER_PRE_STEP_FAILURE_CANDIDATE",
+    "boundary": "absence of exposed steps/logs does not prove provider root cause; it proves only that test execution is not observable from the captured job metadata"
+  },
+  "parallel_same_batch_observations": [
+    {
+      "workflow": "ci",
+      "run_id": 32564704720,
+      "jobs": ["android-ndk-configure", "host-build-and-tests"],
+      "job_steps_exposed": 0,
+      "conclusion": "failure"
+    },
+    {
+      "workflow": "net-freestanding",
+      "run_id": 32564704827,
+      "conclusion": "failure"
+    },
+    {
+      "workflow": "Stage4 L4 Edge Canonical Hash",
+      "run_id": 32564704717,
+      "conclusion": "failure"
+    },
+    {
+      "workflow": "Stage4 Split Determinism",
+      "run_id": 32564704724,
+      "conclusion": "failure"
+    },
+    {
+      "workflow": "Stage4 JSONL Offset Delta Fail Closed",
+      "run_id": 32564704766,
+      "conclusion": "failure"
+    },
+    {
+      "workflow": "Stage4 Adapter Canonical Serialization",
+      "run_id": 32564704715,
+      "conclusion": "failure"
+    },
+    {
+      "workflow": "context-geometric-invariant-v1-discovery",
+      "run_id": 32564704718,
+      "conclusion": "failure"
+    },
+    {
+      "workflow": "Stage4 JSONL Offset Delta Encoding",
+      "run_id": 32564704775,
+      "conclusion": "failure"
+    },
+    {
+      "workflow": "Stage4 Manifest Tail Corruption",
+      "run_id": 32564704722,
+      "conclusion": "failure"
+    }
+  ],
+  "retry": {
+    "requested": true,
+    "operation": "rerun failed jobs for workflow run 32564704743",
+    "request_result": "accepted",
+    "result_state": "TOKEN_VAZIO_PENDING_INSPECTION"
+  },
+  "anti_regression": [
+    "workflow failure != test failure when the test step is not observed executing",
+    "provider/runner candidate != proven provider root cause",
+    "merged code != execution evidence",
+    "retry success, if observed, supersedes but does not erase the failed attempt",
+    "claim_allowed remains false"
+  ],
+  "F_ok": "source identity, PR identity, failed run identity and non-observation of test steps are bound.",
+  "F_gap": "retry outcome and root-cause class are not yet observed.",
+  "F_next": "inspect rerun attempt; if steps execute, classify TEST_EXECUTED_PASS/FAIL and bind receipt/artifact; otherwise retain TOKEN_VAZIO_PROVIDER_EXECUTION."
+}
