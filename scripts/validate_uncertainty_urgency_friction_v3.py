@@ -245,15 +245,27 @@ def validate_provider_evidence(obj: dict[str, Any]) -> list[str]:
     if obj.get("claim_allowed") is not False:
         errors.append("provider evidence claim_allowed must be false")
     target = obj.get("target_workflow", {})
-    steps = target.get("exposed_steps_count")
+    steps = target.get("latest_exposed_steps_count", target.get("exposed_steps_count"))
     observed = target.get("test_execution_observed")
     classification = target.get("classification")
+    if steps is None:
+        errors.append("provider evidence must expose latest_exposed_steps_count or exposed_steps_count")
     if steps == 0 and observed is not False:
         errors.append("zero exposed steps cannot claim observed test execution")
     if steps == 0 and classification == "TEST_EXECUTED_FAIL":
         errors.append("zero exposed steps cannot be classified as test failure")
     if observed is False and obj.get("state") != "TOKEN_VAZIO_PROVIDER_EXECUTION":
         errors.append("unobserved execution must remain TOKEN_VAZIO_PROVIDER_EXECUTION")
+    attempts = obj.get("attempts", [])
+    if attempts:
+        for attempt in attempts:
+            attempt_steps = attempt.get("exposed_steps_count")
+            attempt_observed = attempt.get("test_execution_observed")
+            attempt_class = attempt.get("classification")
+            if attempt_steps == 0 and attempt_observed is not False:
+                errors.append(f"attempt {attempt.get('attempt')}: zero steps cannot claim observed test execution")
+            if attempt_steps == 0 and attempt_class == "TEST_EXECUTED_FAIL":
+                errors.append(f"attempt {attempt.get('attempt')}: zero steps cannot be classified as test failure")
     if obj.get("retry", {}).get("requested") is not True:
         errors.append("provider evidence must preserve retry request state")
     return errors
