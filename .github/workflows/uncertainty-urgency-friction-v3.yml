@@ -1,0 +1,80 @@
+name: uncertainty-urgency-friction-v3
+
+on:
+  pull_request:
+    paths:
+      - "configs/uncertainty-urgency-ethics-license.v1.json"
+      - "configs/uncertainty-urgency-ethics-license.v2.json"
+      - "configs/uncertainty-urgency-friction-ethics-license.v3.json"
+      - "scripts/validate_uncertainty_urgency_ethics_license.py"
+      - "scripts/validate_uncertainty_urgency_ethics_license_v2.py"
+      - "scripts/validate_uncertainty_urgency_friction_v3.py"
+      - "tests/test_uncertainty_urgency_friction_v3.py"
+      - "data/governance/license-friction-matrix.v1.json"
+      - "data/governance/ethics-by-design-use-registry.v1.json"
+      - "data/governance/complex-network-design-relations.v1.json"
+      - "data/evidence/github/gaia-provider-execution-friction-20260822.v1.json"
+      - "docs/UNCERTAINTY_URGENCY_FRICTION_ETHICS_LICENSE_BY_DESIGN_V3.md"
+      - ".github/workflows/uncertainty-urgency-friction-v3.yml"
+  push:
+    branches: [main]
+    paths:
+      - "configs/uncertainty-urgency-friction-ethics-license.v3.json"
+      - "scripts/validate_uncertainty_urgency_friction_v3.py"
+      - "tests/test_uncertainty_urgency_friction_v3.py"
+      - "data/governance/license-friction-matrix.v1.json"
+      - "data/governance/ethics-by-design-use-registry.v1.json"
+      - "data/governance/complex-network-design-relations.v1.json"
+      - "data/evidence/github/gaia-provider-execution-friction-20260822.v1.json"
+      - "docs/UNCERTAINTY_URGENCY_FRICTION_ETHICS_LICENSE_BY_DESIGN_V3.md"
+      - ".github/workflows/uncertainty-urgency-friction-v3.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  friction-anti-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile validators and tests
+        run: |
+          python3 -m py_compile \
+            scripts/validate_uncertainty_urgency_friction_v3.py \
+            tests/test_uncertainty_urgency_friction_v3.py
+
+      - name: Run fail-closed unit tests
+        run: python3 -m unittest -v tests/test_uncertainty_urgency_friction_v3.py
+
+      - name: Validate V1 V2 V3 and governed registries
+        run: |
+          mkdir -p build/friction-v3
+          python3 scripts/validate_uncertainty_urgency_friction_v3.py \
+            --output build/friction-v3/validation-report.json
+
+      - name: Hash governed inputs and report
+        run: |
+          sha256sum \
+            configs/uncertainty-urgency-friction-ethics-license.v3.json \
+            data/governance/license-friction-matrix.v1.json \
+            data/governance/ethics-by-design-use-registry.v1.json \
+            data/governance/complex-network-design-relations.v1.json \
+            data/evidence/github/gaia-provider-execution-friction-20260822.v1.json \
+            scripts/validate_uncertainty_urgency_friction_v3.py \
+            tests/test_uncertainty_urgency_friction_v3.py \
+            build/friction-v3/validation-report.json \
+            > build/friction-v3/SHA256SUMS
+
+      - name: Upload bounded receipt artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: uncertainty-urgency-friction-v3
+          path: build/friction-v3/
