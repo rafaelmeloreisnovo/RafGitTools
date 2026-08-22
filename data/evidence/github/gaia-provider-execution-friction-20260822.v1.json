@@ -13,18 +13,42 @@
     "merged": true,
     "merge_commit": "f980cc5be46b8daff892e3885da40097eba46e90"
   },
+  "attempts": [
+    {
+      "attempt": 1,
+      "workflow": "cognitive-symbiotic-receipt",
+      "run_id": 32564704743,
+      "job_id": 97011790745,
+      "job_name": "deterministic-receipt",
+      "conclusion": "failure",
+      "exposed_steps_count": 0,
+      "job_log_fetch_state": "UNAVAILABLE_404_BLOB_NOT_FOUND",
+      "test_execution_observed": false,
+      "classification": "PROVIDER_PRE_STEP_FAILURE_CANDIDATE"
+    },
+    {
+      "attempt": 2,
+      "workflow": "cognitive-symbiotic-receipt",
+      "run_id": 32564704743,
+      "job_id": 97033065513,
+      "job_name": "deterministic-receipt",
+      "conclusion": "failure",
+      "exposed_steps_count": 0,
+      "test_execution_observed": false,
+      "classification": "PROVIDER_PRE_STEP_FAILURE_CANDIDATE_REPRODUCED"
+    }
+  ],
   "target_workflow": {
     "name": "cognitive-symbiotic-receipt",
     "run_id": 32564704743,
     "run_number": 1,
-    "conclusion_before_retry": "failure",
-    "job_id": 97011790745,
-    "job_name": "deterministic-receipt",
-    "exposed_steps_count": 0,
-    "job_log_fetch_state": "UNAVAILABLE_404_BLOB_NOT_FOUND",
+    "attempt_count_observed": 2,
+    "latest_job_id": 97033065513,
+    "latest_conclusion": "failure",
+    "latest_exposed_steps_count": 0,
     "test_execution_observed": false,
-    "classification": "PROVIDER_PRE_STEP_FAILURE_CANDIDATE",
-    "boundary": "absence of exposed steps/logs does not prove provider root cause; it proves only that test execution is not observable from the captured job metadata"
+    "classification": "PROVIDER_PRE_STEP_FAILURE_CANDIDATE_REPRODUCED",
+    "boundary": "two attempts with zero exposed steps strengthen the pre-step/provider-friction hypothesis but do not prove provider root cause; no executed test result is observable"
   },
   "parallel_same_batch_observations": [
     {
@@ -34,61 +58,31 @@
       "job_steps_exposed": 0,
       "conclusion": "failure"
     },
-    {
-      "workflow": "net-freestanding",
-      "run_id": 32564704827,
-      "conclusion": "failure"
-    },
-    {
-      "workflow": "Stage4 L4 Edge Canonical Hash",
-      "run_id": 32564704717,
-      "conclusion": "failure"
-    },
-    {
-      "workflow": "Stage4 Split Determinism",
-      "run_id": 32564704724,
-      "conclusion": "failure"
-    },
-    {
-      "workflow": "Stage4 JSONL Offset Delta Fail Closed",
-      "run_id": 32564704766,
-      "conclusion": "failure"
-    },
-    {
-      "workflow": "Stage4 Adapter Canonical Serialization",
-      "run_id": 32564704715,
-      "conclusion": "failure"
-    },
-    {
-      "workflow": "context-geometric-invariant-v1-discovery",
-      "run_id": 32564704718,
-      "conclusion": "failure"
-    },
-    {
-      "workflow": "Stage4 JSONL Offset Delta Encoding",
-      "run_id": 32564704775,
-      "conclusion": "failure"
-    },
-    {
-      "workflow": "Stage4 Manifest Tail Corruption",
-      "run_id": 32564704722,
-      "conclusion": "failure"
-    }
+    {"workflow": "net-freestanding", "run_id": 32564704827, "conclusion": "failure"},
+    {"workflow": "Stage4 L4 Edge Canonical Hash", "run_id": 32564704717, "conclusion": "failure"},
+    {"workflow": "Stage4 Split Determinism", "run_id": 32564704724, "conclusion": "failure"},
+    {"workflow": "Stage4 JSONL Offset Delta Fail Closed", "run_id": 32564704766, "conclusion": "failure"},
+    {"workflow": "Stage4 Adapter Canonical Serialization", "run_id": 32564704715, "conclusion": "failure"},
+    {"workflow": "context-geometric-invariant-v1-discovery", "run_id": 32564704718, "conclusion": "failure"},
+    {"workflow": "Stage4 JSONL Offset Delta Encoding", "run_id": 32564704775, "conclusion": "failure"},
+    {"workflow": "Stage4 Manifest Tail Corruption", "run_id": 32564704722, "conclusion": "failure"}
   ],
   "retry": {
     "requested": true,
     "operation": "rerun failed jobs for workflow run 32564704743",
     "request_result": "accepted",
-    "result_state": "TOKEN_VAZIO_PENDING_INSPECTION"
+    "result_state": "COMPLETED_FAILURE_ZERO_EXPOSED_STEPS",
+    "closing_effect": "NONE_ON_EXECUTION_GAP"
   },
   "anti_regression": [
     "workflow failure != test failure when the test step is not observed executing",
     "provider/runner candidate != proven provider root cause",
     "merged code != execution evidence",
-    "retry success, if observed, supersedes but does not erase the failed attempt",
+    "retry result is appended and does not erase attempt 1",
+    "a future observed test result may supersede execution uncertainty but must preserve both failed attempts",
     "claim_allowed remains false"
   ],
-  "F_ok": "source identity, PR identity, failed run identity and non-observation of test steps are bound.",
-  "F_gap": "retry outcome and root-cause class are not yet observed.",
-  "F_next": "inspect rerun attempt; if steps execute, classify TEST_EXECUTED_PASS/FAIL and bind receipt/artifact; otherwise retain TOKEN_VAZIO_PROVIDER_EXECUTION."
+  "F_ok": "source identity, PR identity and two failed zero-step attempts are bound append-only; test failure has not been falsely inferred.",
+  "F_gap": "provider/root-cause class and actual remote execution remain unresolved; no receipt artifact exists from these attempts.",
+  "F_next": "run a provider-capability/minimal-runner probe or alternate authorized runner; only classify TEST_EXECUTED_PASS/FAIL after observable test steps, then bind receipt/artifact."
 }
