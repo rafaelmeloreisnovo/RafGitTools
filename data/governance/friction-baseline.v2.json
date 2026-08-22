@@ -1,0 +1,78 @@
+{
+  "schema": "rafaelia.friction-baseline.v2",
+  "date": "2026-08-22",
+  "state": "PARTIAL_REBASELINE",
+  "claim_allowed": false,
+  "predecessor": {
+    "path": "data/governance/friction-baseline.v1.json",
+    "scope_id": "FRICTION_SCOPE:GAIA_COMPLEX_FEEDBACK_RAFGITTOOLS_V3:20260822",
+    "preserved": true
+  },
+  "rebaseline_reason": "measurement scope expanded to include the dedicated minimal provider-capability probe from GAIA PR99; AR50 forbids silently comparing changed scope as if identical",
+  "scope_id": "FRICTION_SCOPE:GAIA_COMPLEX_FEEDBACK_RAFGITTOOLS_V3_PROVIDER_PROBE:20260822",
+  "scope_definition": "V1 bounded V3 governance/GAIA route plus dedicated provider-capability-probe run 32574530990",
+  "components": {
+    "unresolved_gap_count": {
+      "value": 5,
+      "basis": [
+        "TV-V3-PROVIDER-CLASS-001",
+        "TV-V3-LICENSE-PAYLOAD-001",
+        "TV-V3-COMPLEX-RELATIONS-001",
+        "TV-V3-FRICTION-BASELINE-001",
+        "TV-V3-B7-T2-001"
+      ],
+      "boundary": "provider probe adds evidence to an existing gap; it does not create a second provider gap"
+    },
+    "unbound_license_unit_count": {
+      "value": 2,
+      "basis": ["LIC:GAIA:MODEL_WEIGHTS", "LIC:GAIA:DATASETS_OR_EXTERNAL_PAYLOADS"],
+      "boundary": "unchanged bounded rights units"
+    },
+    "provider_pre_step_failure_count": {
+      "value": 3,
+      "basis": [
+        "GAIA cognitive receipt run 32564704743 attempt 1 / job 97011790745",
+        "GAIA cognitive receipt run 32564704743 attempt 2 / job 97033065513",
+        "GAIA provider-capability-probe run 32574530990 / job 97034798786"
+      ],
+      "boundary": "three zero-step observations strengthen pre-step/provider friction hypothesis; exact root cause remains TOKEN_VAZIO"
+    },
+    "untyped_relation_count": {
+      "value": 0,
+      "basis": "11/11 bounded V3 relation records remain typed",
+      "boundary": "new probe evidence is not silently counted as a relation edge"
+    },
+    "missing_rollback_count": {
+      "value": 0,
+      "basis": "5/5 governed uses retain rollback_or_irreversible_boundary",
+      "boundary": "probe is non-mutating and does not alter use registry count"
+    },
+    "missing_provenance_count": {
+      "value": 0,
+      "basis": "existing uses/relations have provenance fields and provider probe has explicit PR/head/run/job provenance",
+      "boundary": "field presence is not independent truth verification"
+    },
+    "manual_rework_count": {
+      "value": "TOKEN_VAZIO_UNMEASURED",
+      "basis": "manual rework event schema/window still not frozen",
+      "boundary": "must not be coerced to zero"
+    }
+  },
+  "aggregate": {
+    "numeric_total": "TOKEN_VAZIO_SCORE",
+    "reason": "manual rework remains unmeasured and heterogeneous components are not justified as one scalar",
+    "zero_vector_would_imply_claim": false
+  },
+  "comparison": {
+    "v1_to_v2_scalar_delta": "NOT_COMPARABLE_DIRECTLY_SCOPE_CHANGED",
+    "per_component_observation": "provider_pre_step_failure_count increases 2 -> 3 because scope added a falsifier probe; this is increased evidence/measurement coverage, not necessarily increased underlying provider failure rate",
+    "future_rule": "compare only repeated measurements under this exact v2 scope or append another explicit rebaseline"
+  },
+  "closure": {
+    "state": "PARTIAL_REBASELINE",
+    "residual_gap": "provider root cause, manual rework metric, residual license units, global relation coverage and B7_TO_T2 remain open"
+  },
+  "F_ok": "scope expansion is explicit and provider probe becomes a third provenance-bound pre-step observation without rewriting baseline V1",
+  "F_gap": "no shell-start receipt, provider root cause TOKEN_VAZIO, manual rework unmeasured",
+  "F_next": "obtain an authorized environment where a minimal shell step executes; then freeze manual rework metric and repeat this exact v2 scope for a true delta"
+}
