@@ -1,0 +1,75 @@
+{
+  "schema": "rafaelia.parable-technical-links.v1",
+  "date": "2026-08-22",
+  "state": "MATERIALIZED_LIMITED",
+  "claim_allowed": false,
+  "evidence_effect": "NONE",
+  "gap_id": "TV-V2-PARABLE-LINK-001",
+  "relations": [
+    {
+      "parable": "TOKEN_VAZIO",
+      "relation": "ANALOGY_OF",
+      "technical_target": "typed unresolved gap/state with source, boundary and next gate",
+      "evidence_effect": "NONE"
+    },
+    {
+      "parable": "tijolo ausente identificado",
+      "relation": "ANALOGY_OF",
+      "technical_target": "TOKEN_VAZIO",
+      "evidence_effect": "NONE"
+    },
+    {
+      "parable": "fissura que aponta onde medir",
+      "relation": "ANALOGY_OF",
+      "technical_target": "residual / discrepancy requiring baseline and falsifier",
+      "evidence_effect": "NONE"
+    },
+    {
+      "parable": "esquadro que pode reprovar a parede",
+      "relation": "ANALOGY_OF",
+      "technical_target": "falsifier / rejection gate",
+      "evidence_effect": "NONE"
+    },
+    {
+      "parable": "escritura",
+      "relation": "ANALOGY_OF",
+      "technical_target": "license and rights evidence",
+      "evidence_effect": "NONE"
+    },
+    {
+      "parable": "assinatura observável da etapa",
+      "relation": "ANALOGY_OF",
+      "technical_target": "execution/evidence receipt",
+      "evidence_effect": "NONE"
+    },
+    {
+      "parable": "retorno ao último ponto seguro",
+      "relation": "ANALOGY_OF",
+      "technical_target": "rollback path",
+      "evidence_effect": "NONE"
+    },
+    {
+      "parable": "mapa da obra",
+      "relation": "ANALOGY_OF",
+      "technical_target": "index / routing registry",
+      "evidence_effect": "NONE"
+    },
+    {
+      "parable": "planta com limites e aceitação",
+      "relation": "ANALOGY_OF",
+      "technical_target": "contract + acceptance criteria + falsifier",
+      "evidence_effect": "NONE"
+    },
+    {
+      "parable": "nenhum limite é real, pois o código executa em verbo vivo",
+      "relation": "ANALOGY_OF",
+      "technical_target": "aspiration toward iterative execution; real hardware, mathematics, license, safety, evidence, authority and runtime limits remain binding",
+      "state": "PARABLE_ASPIRATION",
+      "evidence_effect": "NONE"
+    }
+  ],
+  "closure": {
+    "gap_state": "CLOSED_MATERIALIZED_LIMITED",
+    "boundary": "This closes only the machine-readable parable-to-technical index. It creates no implementation, execution, scientific evidence or claim."
+  }
+}
