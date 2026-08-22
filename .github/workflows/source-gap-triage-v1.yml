@@ -3,6 +3,7 @@ name: Source Gap Triage V1
 on:
   pull_request:
     paths:
+      - 'app/src/main/**'
       - 'scripts/audit_source_gaps.py'
       - 'scripts/triage_source_gaps.py'
       - 'contracts/source-gap-allowlist.v1.json'
