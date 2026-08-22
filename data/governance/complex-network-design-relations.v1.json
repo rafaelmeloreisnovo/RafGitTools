@@ -1,0 +1,187 @@
+{
+  "schema": "rafaelia.complex-network-design-relations.v1",
+  "date": "2026-08-22",
+  "state": "PARTIAL_BOUNDED_INVENTORY",
+  "claim_allowed": false,
+  "gap_id": "TV-V3-COMPLEX-RELATIONS-001",
+  "graph_policy": {
+    "decorative_edges_allowed": false,
+    "source_ref_required": true,
+    "boundary_or_falsifier_required": true,
+    "next_gate_required": true,
+    "analogy_evidence_effect": "NONE",
+    "cooccurrence_evidence_effect": "NONE"
+  },
+  "nodes": [
+    {"id": "N:RAFGITTOOLS:V3", "kind": "GOVERNANCE_CONTRACT", "authority": "RafGitTools"},
+    {"id": "N:GAIA:COGNITIVE_SYMBIOTIC", "kind": "PRODUCER_IMPLEMENTATION", "authority": "GAIA_phi"},
+    {"id": "N:GAIA:PSI_V", "kind": "VECTOR_TRANSFORMATION", "authority": "GAIA_phi"},
+    {"id": "N:GAIA:T_OMEGA", "kind": "COMPLEX_TEMPORAL_FIELD", "authority": "GAIA_phi"},
+    {"id": "N:GAIA:COMPLEX_TO_REAL", "kind": "GATED_RESIDUAL_DECODER", "authority": "GAIA_phi"},
+    {"id": "N:GAIA:PR98_RUN", "kind": "EXECUTION_GATE", "authority": "GAIA_phi/GitHub Actions"},
+    {"id": "N:LICENSE:MATRIX", "kind": "RIGHTS_INDEX", "authority": "RafGitTools"},
+    {"id": "N:ETHICS:USE_REGISTRY", "kind": "ETHICS_BY_DESIGN_INDEX", "authority": "RafGitTools"},
+    {"id": "N:PARABLE:VERBO_VIVO", "kind": "PARABLE_ASPIRATION", "authority": "internal navigation"},
+    {"id": "N:MAPA:ROUTE", "kind": "FEDERATED_ROUTE", "authority": "Mapa"},
+    {"id": "N:DRIVE:LONGITUDINAL", "kind": "EDITORIAL_MEMORY", "authority": "Google Drive"},
+    {"id": "N:RAFAELIA:B7", "kind": "PRODUCER_ARTIFACT_FAMILY", "authority": "producer repository"},
+    {"id": "N:T2", "kind": "MATHEMATICAL_TOPOLOGY_OBJECT", "authority": "mathematical source domain"},
+    {"id": "N:GAP:B7_TO_T2", "kind": "TOKEN_VAZIO_BRIDGE", "authority": "RafGitTools/Mapa routing only"}
+  ],
+  "relations": [
+    {
+      "relation_id": "REL:001",
+      "from": "N:GAIA:COGNITIVE_SYMBIOTIC",
+      "relation_type": "IMPLEMENTS",
+      "to": "N:GAIA:PSI_V",
+      "source_ref": "GAIA_phi dados/cognitive_symbiotic.py blob 1bb228392c51d3bfd0d85ae8e6ce92c40fe28dd1",
+      "authority_domain": "producer implementation",
+      "uncertainty_state": "IMPLEMENTATION_OBSERVED",
+      "evidence_effect": "EVIDENCES_BOUNDED",
+      "boundary_or_falsifier": "source blob drift or producer test contradiction",
+      "next_gate": "bind executed deterministic receipt"
+    },
+    {
+      "relation_id": "REL:002",
+      "from": "N:GAIA:COGNITIVE_SYMBIOTIC",
+      "relation_type": "IMPLEMENTS",
+      "to": "N:GAIA:T_OMEGA",
+      "source_ref": "GAIA_phi dados/cognitive_symbiotic.py blob 1bb228392c51d3bfd0d85ae8e6ce92c40fe28dd1",
+      "authority_domain": "producer implementation",
+      "uncertainty_state": "IMPLEMENTATION_OBSERVED",
+      "evidence_effect": "EVIDENCES_BOUNDED",
+      "boundary_or_falsifier": "source blob drift or producer test contradiction",
+      "next_gate": "bind executed deterministic receipt"
+    },
+    {
+      "relation_id": "REL:003",
+      "from": "N:GAIA:T_OMEGA",
+      "relation_type": "ROUTES_TO",
+      "to": "N:GAIA:COMPLEX_TO_REAL",
+      "source_ref": "GAIA_phi CognitiveSymbioticBlock.forward",
+      "authority_domain": "producer implementation",
+      "uncertainty_state": "IMPLEMENTATION_OBSERVED",
+      "evidence_effect": "EVIDENCES_BOUNDED",
+      "boundary_or_falsifier": "forward path or decoder signature changes",
+      "next_gate": "execution fixture checks shape/finite/determinism"
+    },
+    {
+      "relation_id": "REL:004",
+      "from": "N:GAIA:PR98_RUN",
+      "relation_type": "HAS_GAP",
+      "to": "N:GAIA:COGNITIVE_SYMBIOTIC",
+      "source_ref": "GitHub Actions run 32564704743, failed attempt with zero exposed steps",
+      "authority_domain": "execution/provider evidence",
+      "uncertainty_state": "TOKEN_VAZIO_PROVIDER_EXECUTION",
+      "evidence_effect": "CONTRADICTS",
+      "boundary_or_falsifier": "a rerun with observed executed test steps and receipt resolves/supersedes this execution gap",
+      "next_gate": "inspect rerun attempt"
+    },
+    {
+      "relation_id": "REL:005",
+      "from": "N:LICENSE:MATRIX",
+      "relation_type": "LICENSED_BY",
+      "to": "N:GAIA:COGNITIVE_SYMBIOTIC",
+      "source_ref": "license-friction-matrix.v1.json + GAIA LICENSE blob f2a2f9fd2d04b99cd3126731640edcea3fea326b",
+      "authority_domain": "rights governance",
+      "uncertainty_state": "LICENSE_CLEAR_FOR_REPOSITORY_SOURCE_ONLY",
+      "evidence_effect": "SUPPORT_LIMITED",
+      "boundary_or_falsifier": "does not license dependencies, datasets, weights or third-party payloads",
+      "next_gate": "bind rights per additional material unit entering use"
+    },
+    {
+      "relation_id": "REL:006",
+      "from": "N:ETHICS:USE_REGISTRY",
+      "relation_type": "REQUIRES_REVIEW",
+      "to": "N:GAIA:PR98_RUN",
+      "source_ref": "ethics-by-design-use-registry.v1.json",
+      "authority_domain": "ethics/privacy/use governance",
+      "uncertainty_state": "BOUNDED_LOW_RISK_NON_MUTATING_FIXTURE",
+      "evidence_effect": "ROUTING_ONLY",
+      "boundary_or_falsifier": "scope change to personal data, mutation, release or conditional rights reopens review",
+      "next_gate": "re-evaluate envelope on scope change"
+    },
+    {
+      "relation_id": "REL:007",
+      "from": "N:PARABLE:VERBO_VIVO",
+      "relation_type": "ANALOGY_OF",
+      "to": "N:RAFGITTOOLS:V3",
+      "source_ref": "parable-technical-links.v1.json + V3 parable policy",
+      "authority_domain": "internal navigation",
+      "uncertainty_state": "PARABLE_ASPIRATION",
+      "evidence_effect": "NONE",
+      "boundary_or_falsifier": "cannot be sole evidence and cannot waive real limits",
+      "next_gate": "technical target follows its own evidence contract"
+    },
+    {
+      "relation_id": "REL:008",
+      "from": "N:MAPA:ROUTE",
+      "relation_type": "INDEXES",
+      "to": "N:RAFGITTOOLS:V3",
+      "source_ref": "Mapa routing successor target indices/RAFAELIA_FRICTION_ETHICS_LICENSE_COMPLEX_RELATIONS_ROUTING_V1.md",
+      "authority_domain": "federated routing",
+      "uncertainty_state": "ROUTE_PENDING_MATERIALIZATION",
+      "evidence_effect": "ROUTING_ONLY",
+      "boundary_or_falsifier": "Mapa must not duplicate RafGitTools governance logic",
+      "next_gate": "materialize pointer with exact branch/commit paths"
+    },
+    {
+      "relation_id": "REL:009",
+      "from": "N:DRIVE:LONGITUDINAL",
+      "relation_type": "CORRESPONDS_TO",
+      "to": "N:RAFGITTOOLS:V3",
+      "source_ref": "Drive file 1QrJmd7xsd8-zJVfNr8MMoHsFf-X-WvNXPmHTR_SlyRg",
+      "authority_domain": "longitudinal editorial memory",
+      "uncertainty_state": "MEMORY_NOT_EXECUTION_EVIDENCE",
+      "evidence_effect": "ROUTING_ONLY",
+      "boundary_or_falsifier": "Drive narrative cannot replace repository receipts or producer execution",
+      "next_gate": "append exact V3 commit/PR/CI receipts"
+    },
+    {
+      "relation_id": "REL:010",
+      "from": "N:RAFAELIA:B7",
+      "relation_type": "HAS_GAP",
+      "to": "N:GAP:B7_TO_T2",
+      "source_ref": "RafGitTools V2/V3 governance contracts",
+      "authority_domain": "semantic/formal bridge governance",
+      "uncertainty_state": "TOKEN_VAZIO_BRIDGE",
+      "evidence_effect": "ROUTING_ONLY",
+      "boundary_or_falsifier": "explicit typed transformation + invariant + falsifier required",
+      "next_gate": "formalize bridge or preserve separation"
+    },
+    {
+      "relation_id": "REL:011",
+      "from": "N:GAP:B7_TO_T2",
+      "relation_type": "BLOCKED_BY",
+      "to": "N:T2",
+      "source_ref": "B7_TO_T2_BRIDGE gap record",
+      "authority_domain": "formal mathematics routing",
+      "uncertainty_state": "TOKEN_VAZIO_BRIDGE",
+      "evidence_effect": "NONE",
+      "boundary_or_falsifier": "no topology/physical equivalence inferred from naming or visual analogy",
+      "next_gate": "typed proof/counterexample"
+    }
+  ],
+  "network_statistics": {
+    "node_count": 14,
+    "relation_count": 11,
+    "evidence_effect_NONE": 2,
+    "open_gap_relations": 3,
+    "note": "counts describe this bounded registry only; they are not scientific network metrics or completeness claims"
+  },
+  "symbolic_navigation_route": [
+    "STATISTICS",
+    "TOKENS",
+    "METAPHORS",
+    "VECTORS_WORDS",
+    "PROMISE_CONTRACT",
+    "EXECUTION",
+    "RECEIPT",
+    "DELTA",
+    "OMEGA_N"
+  ],
+  "closure": {
+    "state": "PARTIAL_BOUNDED_INVENTORY",
+    "boundary": "This closes only a bounded evidence-bearing relation materialization. Exhaustive ecosystem graph coverage remains TOKEN_VAZIO."
+  }
+}
