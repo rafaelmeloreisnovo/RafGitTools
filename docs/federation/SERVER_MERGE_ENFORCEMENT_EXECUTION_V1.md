@@ -16,7 +16,7 @@ Mapa provider applicator and does not configure GitHub by itself.
 
 ## Evidence boundary
 
-Two consecutive Mapa pull requests supplied the discriminant:
+Four consecutive Mapa pull requests supplied the discriminant:
 
 - PR #393: Promotion failed at `2026-08-25T01:41:37Z`, server
   enforcement failed at `2026-08-25T01:41:27Z`, and the PR merged at
@@ -24,18 +24,27 @@ Two consecutive Mapa pull requests supplied the discriminant:
 - PR #394: Promotion failed at `2026-08-25T02:42:12Z`, server
   enforcement failed at `2026-08-25T02:42:03Z`, and the PR merged at
   `2026-08-25T03:07:48Z`.
+- PR #395: CI failed at `2026-08-25T05:20:14Z`, Promotion failed at
+  `2026-08-25T05:20:26Z`, server enforcement failed at
+  `2026-08-25T05:20:13Z`, and the PR merged at
+  `2026-08-25T05:40:01Z`.
+- PR #396: Promotion failed at `2026-08-25T05:40:17Z`, server
+  enforcement failed at `2026-08-25T05:39:50Z`, and the PR merged at
+  `2026-08-25T05:40:48Z`.
 
-At the recorded observation, `Mapa/main` was unprotected, status-check
-enforcement was off, no required context was returned, and the repository
-ruleset list was empty. `RafGitTools/main` exposed the same provider gap and is
-recorded as a successor target, not silently changed in this Wave.
+The last two merges advanced `Mapa/main` during this Wave. The envelope was
+rebound to `423fd961a9c79ebfec7a879a325404191d1865b3`; provider readback still
+showed no protection, status-check enforcement off, no required context, and
+an empty repository-ruleset list. `RafGitTools/main` advanced to
+`9c2b682a52850d5318df71d19eca362f6cbc7811` after PR #379 and a dependency
+update merged; it still exposed the same provider gap.
 
 ## Bound producer
 
 The provider mutation remains owned by:
 
 ```text
-rafaelmeloreisnovo/Mapa@76ea910b3a9de4b000f89ebc9865db4e83d553cf
+rafaelmeloreisnovo/Mapa@423fd961a9c79ebfec7a879a325404191d1865b3
 scripts/apply_main_branch_protection.py
 git blob 87e98d96ede76d47253326345d03b5769c92fad1
 ```
@@ -91,7 +100,7 @@ main-SHA equality check. Its state remains `SPECIFIED_NOT_REHEARSED`.
 
 ## R3
 
-- `F_ok`: two temporal discriminants, exact producer/SHA/context, and a
+- `F_ok`: four temporal discriminants, exact producer/SHA/context, and a
   fail-closed envelope.
 - `F_gap`: `Administration:write`, provider apply/readback, rollback rehearsal,
   and rejection receipt.

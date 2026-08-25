@@ -3,7 +3,8 @@
   "event_id": "SME-DELTA-20260825-001",
   "parent_event": "MAPA-OMEGA-ASSURANCE-ADOPTION-V2",
   "observed_at": "2026-08-25T05:34:16Z",
-  "state": "READY_TO_APPLY_BLOCKED_AUTHORITY",
+  "reobserved_at": "2026-08-25T05:49:37Z",
+  "state": "REBOUND_TO_LATEST_OBSERVED_SHA_BLOCKED_AUTHORITY",
   "attention_state": "ACTIVE",
   "urgency": "P0",
   "risk": "HIGH_GOVERNANCE",
@@ -11,21 +12,25 @@
   "scope": "GitHub provider metadata, workflow decisions and control-plane execution planning only",
   "observations": {
     "mapa_main": {
-      "commit": "76ea910b3a9de4b000f89ebc9865db4e83d553cf",
-      "protected": false,
-      "protection_enabled": false,
-      "required_status_checks_enforcement": "off",
-      "required_contexts": [],
-      "repository_rulesets": []
-    },
-    "rafgittools_main": {
-      "commit": "6f46e37c7f66e5619bcefb9907f652c76ad831d7",
+      "previous_commit": "76ea910b3a9de4b000f89ebc9865db4e83d553cf",
+      "commit": "423fd961a9c79ebfec7a879a325404191d1865b3",
       "protected": false,
       "protection_enabled": false,
       "required_status_checks_enforcement": "off",
       "required_contexts": [],
       "repository_rulesets": [],
-      "classification": "NEW_SCOPED_GAP_NOT_MUTATED_IN_THIS_WAVE"
+      "transition": "PR395_AND_PR396_MERGED_DURING_WAVE"
+    },
+    "rafgittools_main": {
+      "previous_commit": "6f46e37c7f66e5619bcefb9907f652c76ad831d7",
+      "commit": "9c2b682a52850d5318df71d19eca362f6cbc7811",
+      "protected": false,
+      "protection_enabled": false,
+      "required_status_checks_enforcement": "off",
+      "required_contexts": [],
+      "repository_rulesets": [],
+      "classification": "PR379_MERGED_PLAN_ONLY; PROVIDER_GAP_UNCHANGED",
+      "transition": "PR379_AND_DEPENDABOT_PR251_MERGED_DURING_WAVE"
     }
   },
   "temporal_discriminants": [
@@ -50,11 +55,35 @@
       "merged_at": "2026-08-25T03:07:48Z",
       "merge_commit": "76ea910b3a9de4b000f89ebc9865db4e83d553cf",
       "allowed_interpretation": "The same policy-versus-provider separation recurred on the next merged PR."
+    },
+    {
+      "pull_request": "rafaelmeloreisnovo/Mapa#395",
+      "head": "2f41e49c66717d8dd0153e0ba05836ab1667847a",
+      "ci_failure_run": 32812424447,
+      "ci_completed_at": "2026-08-25T05:20:14Z",
+      "promotion_failure_run": 32812424367,
+      "promotion_completed_at": "2026-08-25T05:20:26Z",
+      "server_enforcement_failure_run": 32812424411,
+      "server_enforcement_completed_at": "2026-08-25T05:20:13Z",
+      "merged_at": "2026-08-25T05:40:01Z",
+      "merge_commit": "b9efba7e565fba1274a08ca6fa4b72e98bf53441",
+      "allowed_interpretation": "Content CI, promotion and server gates all failed before the merge; no provider barrier rejected it."
+    },
+    {
+      "pull_request": "rafaelmeloreisnovo/Mapa#396",
+      "head": "4ad3e84b242636adc35c011f543d922a1ac4588e",
+      "promotion_failure_run": 32813707049,
+      "promotion_completed_at": "2026-08-25T05:40:17Z",
+      "server_enforcement_failure_run": 32813707001,
+      "server_enforcement_completed_at": "2026-08-25T05:39:50Z",
+      "merged_at": "2026-08-25T05:40:48Z",
+      "merge_commit": "423fd961a9c79ebfec7a879a325404191d1865b3",
+      "allowed_interpretation": "The provider-barrier failure reproduced again and advanced main during this Wave."
     }
   ],
   "producer_binding": {
     "repository": "rafaelmeloreisnovo/Mapa",
-    "ref": "76ea910b3a9de4b000f89ebc9865db4e83d553cf",
+    "ref": "423fd961a9c79ebfec7a879a325404191d1865b3",
     "path": "scripts/apply_main_branch_protection.py",
     "git_blob": "87e98d96ede76d47253326345d03b5769c92fad1",
     "required_context": "promotion-control / enforce",
@@ -68,10 +97,10 @@
   "crossfail": {
     "input": "Policy gate returns DENIED while provider protection is absent",
     "expected": "No claim of provider enforcement; no merge test; HOLD for admin-authorized configuration",
-    "observed": "PR #393 and PR #394 merged after pre-merge policy/server gate failures",
-    "result": "FAIL_PROVIDER_BARRIER_ABSENT"
+    "observed": "PR #393 through PR #396 merged after pre-merge policy/server failures; PR #395 also had content CI failure",
+    "result": "REPRODUCED_FAIL_PROVIDER_BARRIER_ABSENT"
   },
-  "F_ok": "Temporal evidence now proves two consecutive policy-versus-provider discriminants; the exact Mapa producer, target SHA, required context, authority gate and rollback are bound in a validated plan-only envelope.",
-  "F_gap": "Administration:write is unavailable in the connected surface; branch protection is absent on Mapa and RafGitTools; rollback is specified but not rehearsed; no zero-approval server rejection receipt exists.",
+  "F_ok": "Temporal evidence now proves four consecutive policy-versus-provider discriminants; the exact Mapa producer, latest observed target SHA, required context, authority gate and rollback are bound in a validated plan-only envelope.",
+  "F_gap": "Administration:write is unavailable in the connected surface; branch protection is absent on Mapa and RafGitTools; main moved during the Wave and must be re-read again before apply; rollback is specified but not rehearsed; no zero-approval server rejection receipt exists.",
   "F_next": "An authorized administrator re-reads main/protection/rulesets, applies the Mapa producer with the exact SHA precondition, verifies readback, then produces a separate zero-approval rejection receipt with main SHA unchanged."
 }

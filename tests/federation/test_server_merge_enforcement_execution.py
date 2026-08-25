@@ -109,6 +109,20 @@ class ServerMergeEnforcementExecutionTests(unittest.TestCase):
         errors = MODULE.validate(broken)
         self.assertEqual(2, sum("receipt must remain TOKEN_VAZIO" in error for error in errors))
 
+    def test_four_temporal_discriminants_are_required(self) -> None:
+        broken = self.clone()
+        broken["evidence"] = [
+            item
+            for item in broken["evidence"]
+            if not item["id"].startswith("MAPA-PR396-")
+        ]
+        self.assertTrue(
+            any(
+                "four temporal discriminants" in error
+                for error in MODULE.validate(broken)
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,20 +1,20 @@
 {
   "schema": "rafaelia.server-merge-enforcement-execution.v1",
   "execution_id": "SME-MAPA-MAIN-20260825-001",
-  "observed_at": "2026-08-25T05:34:16Z",
+  "observed_at": "2026-08-25T05:49:37Z",
   "mode": "PLAN_ONLY_FAIL_CLOSED",
   "claim_allowed": false,
   "automatic_merge": false,
   "actor": {
     "repository": "rafaelmeloreisnovo/RafGitTools",
-    "source_commit": "6f46e37c7f66e5619bcefb9907f652c76ad831d7",
+    "source_commit": "9c2b682a52850d5318df71d19eca362f6cbc7811",
     "role": "CONTROL_PLANE_EXECUTOR",
     "authority_boundary": "Prepare and validate the bounded execution envelope; do not mutate GitHub provider protection without separately evidenced Administration:write authority."
   },
   "target": {
     "repository": "rafaelmeloreisnovo/Mapa",
     "branch": "main",
-    "observed_commit": "76ea910b3a9de4b000f89ebc9865db4e83d553cf",
+    "observed_commit": "423fd961a9c79ebfec7a879a325404191d1865b3",
     "branch_observation": {
       "protected": false,
       "protection_enabled": false,
@@ -27,7 +27,7 @@
     },
     "producer": {
       "repository": "rafaelmeloreisnovo/Mapa",
-      "ref": "76ea910b3a9de4b000f89ebc9865db4e83d553cf",
+      "ref": "423fd961a9c79ebfec7a879a325404191d1865b3",
       "path": "scripts/apply_main_branch_protection.py",
       "git_blob": "87e98d96ede76d47253326345d03b5769c92fad1"
     }
@@ -74,8 +74,8 @@
   "execution": {
     "urgency": "P0",
     "risk": "HIGH",
-    "plan_command": "python3 scripts/apply_main_branch_protection.py --repo rafaelmeloreisnovo/Mapa --branch main --required-context 'promotion-control / enforce' --expected-main-sha 76ea910b3a9de4b000f89ebc9865db4e83d553cf --write-receipt build/server-enforcement/plan.json",
-    "apply_command": "RAFAELIA_ADMIN_TOKEN=<ADMIN_WRITE_TOKEN> python3 scripts/apply_main_branch_protection.py --repo rafaelmeloreisnovo/Mapa --branch main --required-context 'promotion-control / enforce' --expected-main-sha 76ea910b3a9de4b000f89ebc9865db4e83d553cf --write-receipt build/server-enforcement/apply.json --apply",
+    "plan_command": "python3 scripts/apply_main_branch_protection.py --repo rafaelmeloreisnovo/Mapa --branch main --required-context 'promotion-control / enforce' --expected-main-sha 423fd961a9c79ebfec7a879a325404191d1865b3 --write-receipt build/server-enforcement/plan.json",
+    "apply_command": "RAFAELIA_ADMIN_TOKEN=<ADMIN_WRITE_TOKEN> python3 scripts/apply_main_branch_protection.py --repo rafaelmeloreisnovo/Mapa --branch main --required-context 'promotion-control / enforce' --expected-main-sha 423fd961a9c79ebfec7a879a325404191d1865b3 --write-receipt build/server-enforcement/apply.json --apply",
     "forbidden_operations": [
       "MERGE_WHILE_UNPROTECTED",
       "AUTO_MERGE",
@@ -122,6 +122,41 @@
       "id": "MAPA-PR394-MERGED",
       "ref": "github:rafaelmeloreisnovo/Mapa/pull/394",
       "result": "MERGED_2026-08-25T03:07:48Z"
+    },
+    {
+      "id": "MAPA-PR395-PREMERGE-CI-FAILED",
+      "ref": "github:rafaelmeloreisnovo/Mapa/actions/runs/32812424447",
+      "result": "FAIL_COMPLETED_BEFORE_MERGE"
+    },
+    {
+      "id": "MAPA-PR395-PREMERGE-PROMOTION-DENIED",
+      "ref": "github:rafaelmeloreisnovo/Mapa/actions/runs/32812424367",
+      "result": "FAIL_CLOSED_COMPLETED_BEFORE_MERGE"
+    },
+    {
+      "id": "MAPA-PR395-PREMERGE-SERVER-ENFORCEMENT-ABSENT",
+      "ref": "github:rafaelmeloreisnovo/Mapa/actions/runs/32812424411",
+      "result": "BLOCKED_COMPLETED_BEFORE_MERGE"
+    },
+    {
+      "id": "MAPA-PR395-MERGED",
+      "ref": "github:rafaelmeloreisnovo/Mapa/pull/395",
+      "result": "MERGED_2026-08-25T05:40:01Z"
+    },
+    {
+      "id": "MAPA-PR396-PREMERGE-PROMOTION-DENIED",
+      "ref": "github:rafaelmeloreisnovo/Mapa/actions/runs/32813707049",
+      "result": "FAIL_CLOSED_COMPLETED_BEFORE_MERGE"
+    },
+    {
+      "id": "MAPA-PR396-PREMERGE-SERVER-ENFORCEMENT-ABSENT",
+      "ref": "github:rafaelmeloreisnovo/Mapa/actions/runs/32813707001",
+      "result": "BLOCKED_COMPLETED_BEFORE_MERGE"
+    },
+    {
+      "id": "MAPA-PR396-MERGED",
+      "ref": "github:rafaelmeloreisnovo/Mapa/pull/396",
+      "result": "MERGED_2026-08-25T05:40:48Z"
     }
   ],
   "invariants": [
