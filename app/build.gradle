@@ -61,11 +61,12 @@ if (isReleaseTaskRequested && hasSigningEnv && !hasValidKeystoreFile) {
 }
 
 android {
-    // Use a modern namespace that matches the package name.
+    // Use a modern namespace that matches the package name
     namespace 'com.rafgittools'
 
-    // Deliberately bounded API 34 baseline. Dependency/toolchain promotions must
-    // move compileSdk/AGP/Kotlin/KSP together and pass CI before merge.
+    // Compile and target the latest stable API level (Android 14 / API 34) for
+    // compatibility with Google Play and modern devices.  Earlier versions (35,36)
+    // referenced in the original project are not publicly available.
     compileSdk 34
 
     defaultConfig {
@@ -219,7 +220,7 @@ configurations.all {
 }
 
 dependencies {
-    // Core Android libraries: retained at the last API-34-compatible baseline.
+    // Core Android libraries
     implementation 'androidx.core:core-ktx:1.13.1'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.4'
     implementation 'androidx.activity:activity-compose:1.9.1'
@@ -230,8 +231,9 @@ dependencies {
     implementation 'androidx.biometric:biometric:1.1.0'
     implementation 'androidx.security:security-crypto:1.1.0'
 
-    // Compose BOM defines versions for all Compose artifacts.  Keep this aligned
-    // with the bounded Kotlin/Compose compiler baseline.
+    // Compose BOM defines versions for all Compose artifacts.  Using a
+    // timestamped BOM (e.g. 2023.10.01) ensures that all compose
+    // dependencies are aligned to a compatible set.
     def composeBom = platform('androidx.compose:compose-bom:2024.06.00')
     implementation composeBom
     implementation 'androidx.compose.ui:ui'
@@ -253,16 +255,16 @@ dependencies {
     ksp "androidx.room:room-compiler:$roomVersion"
 
     // Retrofit & OkHttp for networking
-    implementation 'com.squareup.retrofit2:retrofit:3.0.0'
-    implementation 'com.squareup.retrofit2:converter-gson:3.0.0'
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
 
     // Gson for JSON parsing
-    implementation 'com.google.code.gson:gson:2.14.0'
+    implementation 'com.google.code.gson:gson:2.10.1'
 
     // JGit for Git operations
-    def jgitVersion = '7.7.0.202606012155-r'
+    def jgitVersion = '7.5.0.202512021534-r'
     implementation "org.eclipse.jgit:org.eclipse.jgit:$jgitVersion"
     implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:$jgitVersion") {
         exclude group: 'com.jcraft', module: 'jsch'
@@ -299,9 +301,9 @@ dependencies {
 
     // Testing libraries
     testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.jetbrains.kotlin:kotlin-test-junit:1.9.25'
+    testImplementation 'org.jetbrains.kotlin:kotlin-test-junit:1.9.24'
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3'
-    testImplementation 'io.mockk:mockk:1.14.11'
+    testImplementation 'io.mockk:mockk:1.13.12'
     testImplementation 'com.google.truth:truth:1.4.5'
     testImplementation 'androidx.arch.core:core-testing:2.2.0'
 
