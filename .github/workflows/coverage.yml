@@ -9,6 +9,8 @@ on:
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
 jobs:
   coverage:
@@ -82,23 +84,27 @@ jobs:
             app/build/reports/jacoco/
             app/build/reports/coverage/
           retention-days: 30
-      
+
       - name: Comment coverage on PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v9
         with:
           script: |
-            const fs = require('fs');
-            
+            const evidenceState = '${{ steps.coverage_artifacts.outputs.evidence_state }}';
+            const artifactFound = '${{ steps.coverage_artifacts.outputs.found }}' === 'true';
+
             let comment = '## 📊 Code Coverage Report\n\n';
-            comment += 'Coverage reports have been generated and uploaded as artifacts.\n\n';
-            comment += '### Test Summary\n';
+            comment += '### Observed state\n';
             comment += '- Unit tests completed ✅\n';
-            comment += '- Coverage report available in artifacts\n\n';
-            comment += '---\n';
-            comment += '*View detailed reports in the workflow artifacts.*';
-            
-            github.rest.issues.createComment({
+            comment += `- Coverage evidence: \`${evidenceState}\`\n`;
+            if (artifactFound) {
+              comment += '- Coverage artifact uploaded ✅\n';
+            } else {
+              comment += '- Coverage artifact not emitted; no coverage percentage is claimed.\n';
+            }
+            comment += '\n`claim_allowed=false` for any coverage claim not backed by an emitted report.\n';
+
+            await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
