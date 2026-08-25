@@ -7,12 +7,14 @@ marker class, relative path, line number and SHA-256 of the normalized line, so
 credentials or private source text are not duplicated into audit artifacts.
 
 Exit status:
-  0 -> no unallowlisted executable blockers
-  1 -> one or more executable blockers
+  0 -> no unallowlisted executable implementation blockers
+  1 -> one or more executable implementation blockers
   2 -> scanner/configuration error
 
-Warnings (TODO/FIXME comments, textual 'stub'/'placeholder') are inventory only.
-They are not promoted to code failure without an executable pattern.
+Warnings (TODO/FIXME comments, textual 'stub'/'placeholder', and TOKEN_VAZIO
+state references) are inventory/attention only. TOKEN_VAZIO is a valid
+fail-closed epistemic state in RAFAELIA and is not, by lexical occurrence alone,
+evidence that an implementation path is missing.
 """
 
 from __future__ import annotations
@@ -103,8 +105,9 @@ def iter_source_files(source_root: Path) -> Iterable[Path]:
 
 
 def load_allowlist(path: Path) -> dict[tuple[str, str, str], str]:
+    allowlist = {}
     if not path.exists():
-        return {}
+        return allowlist
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -159,8 +162,13 @@ def classify_line(rel_path: str, line_number: int, line: str, allowlist: dict[tu
         if pattern.search(line):
             append(marker, "WARNING" if comment_only else "BLOCKER")
 
+    # TOKEN_VAZIO is a first-class epistemic/runtime state. A lexical occurrence
+    # may be an enum member, comparison, fail-closed return, or explicit missing-
+    # evidence state. None of those proves source implementation is absent.
+    # Keep every occurrence observable as attention inventory, but never promote
+    # it to an implementation blocker without an independent executable marker.
     if TOKEN_VAZIO_RE.search(line):
-        append("TOKEN_VAZIO_SOURCE", "WARNING" if comment_only else "BLOCKER")
+        append("TOKEN_VAZIO_SOURCE", "WARNING")
 
     # Avoid duplicating TODO/FIXME as warnings when the same line already has an
     # executable blocker of the same conceptual class.
@@ -249,7 +257,12 @@ def self_test() -> None:
     assert not any(item.severity == "BLOCKER" for item in comment)
 
     tv = classify_line("x.kt", 3, "val state = TOKEN_VAZIO", empty_allow)
-    assert any(item.marker == "TOKEN_VAZIO_SOURCE" and item.severity == "BLOCKER" for item in tv)
+    assert any(item.marker == "TOKEN_VAZIO_SOURCE" and item.severity == "WARNING" for item in tv)
+    assert not any(item.severity == "BLOCKER" for item in tv)
+
+    mixed = classify_line("x.kt", 4, "fun f() = TODO(\"TOKEN_VAZIO\")", empty_allow)
+    assert any(item.marker == "KOTLIN_TODO_CALL" and item.severity == "BLOCKER" for item in mixed)
+    assert any(item.marker == "TOKEN_VAZIO_SOURCE" and item.severity == "WARNING" for item in mixed)
 
     line = "fun f() = TODO(\"later\")"
     sha = normalized_line_hash(line)
