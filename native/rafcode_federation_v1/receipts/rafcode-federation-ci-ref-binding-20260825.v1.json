@@ -1,0 +1,56 @@
+{
+  "schema": "rafaelia.federated-work-receipt.v1",
+  "event_id": "RAFCODE-FEDERATION-CI-REF-BINDING-20260825T130613-0300",
+  "parent_event_id": "RAFCODE-FEDERATION-CROSS-ABI-CI-20260825T125309-0300",
+  "observed_at": "2026-08-25T13:06:13-03:00",
+  "actor_role": "RafGitTools producer provenance clarification",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "ref": "chatgpt/rafcode-federation-freestanding-v1-20260825",
+  "commit_sha": "9362ae2560fc9cbdff0efc6b2ea1440a90ecb967",
+  "path_scope": "native/rafcode_federation_v1/receipts",
+  "authority": {
+    "local": "rafaelmeloreisnovo/RafGitTools",
+    "federated": "rafaelmeloreisnovo/Mapa"
+  },
+  "gap_or_goal_ids": [
+    "GOAL-RAFCODE-FEDERATION-FREESTANDING-V1",
+    "GAP-RAFCODE-CI-EXECUTED-REF-BINDING"
+  ],
+  "state_before": "EVIDENCED_SCOPED",
+  "state_after": "EVIDENCED_SCOPED",
+  "urgency": "P1",
+  "risk": "LOW",
+  "governance_class": "APPEND_ONLY_PROVENANCE_CLARIFICATION",
+  "data_class": "PUBLIC_GIT_REFS_AND_WORKFLOW_METADATA",
+  "privacy_class": "NO_PII_NO_PRIVATE_PATHS",
+  "security_class": "CONTENT_REF_BOUND_AUTHENTICITY_OPEN",
+  "action": "EMIT_RECEIPT",
+  "falsifier": "A mismatch among workflow run, checked-out merge ref, producer head, base head or parent relationship invalidates the ref binding.",
+  "exit_criterion": "The workflow log explicitly identifies the fetched SHA and its merge relationship to the exact producer head and base.",
+  "evidence_refs": {
+    "pull_request": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/381",
+    "workflow_run": "https://github.com/rafaelmeloreisnovo/RafGitTools/actions/runs/32868449710",
+    "workflow_job_id": 97869400865,
+    "producer_head_commit": "7e72713da20b849a0d975d3dbefedd3d65ca0443",
+    "base_commit": "83a2850870d1b6f53e3d1e7b6b929f19168add3d",
+    "executed_pr_merge_commit": "3e589ab557ad1afbc09e8b79bdf976d661f5a0fc",
+    "log_binding": "HEAD is now at 3e589ab Merge 7e72713da20b849a0d975d3dbefedd3d65ca0443 into 83a2850870d1b6f53e3d1e7b6b929f19168add3d",
+    "dedicated_workflow_conclusion": "success"
+  },
+  "F_ok": [
+    "The exact producer head and base are explicit parents of the PR merge ref executed by the successful workflow.",
+    "The prior cross-ABI receipt remains unchanged and is narrowed by this append-only clarification."
+  ],
+  "F_gap": [
+    "TOKEN_VAZIO_PRODUCER_PR_MERGE_AND_MAIN_RECEIPT",
+    "TOKEN_VAZIO_PHYSICAL_ARMV7_DEVICE_RECEIPT",
+    "TOKEN_VAZIO_PHYSICAL_AARCH64_DEVICE_RECEIPT",
+    "TOKEN_VAZIO_HMAC_AUTHENTICITY",
+    "TOKEN_VAZIO_REPOSITORY_WIDE_HEALTH"
+  ],
+  "F_next": "Keep the PR draft; use both producer-head and executed-merge-ref fields in receiving indices; do not infer post-merge main or physical execution.",
+  "uncertainty_delta": "The previously implicit PR merge ref is now explicit; artifact and scope conclusions are unchanged.",
+  "rollback_ref": "9362ae2560fc9cbdff0efc6b2ea1440a90ecb967",
+  "stop_reason": "Ref identity is reconstructible; next actions require global gate repair, independent approval/merge authority or physical devices.",
+  "claim_allowed": false
+}
