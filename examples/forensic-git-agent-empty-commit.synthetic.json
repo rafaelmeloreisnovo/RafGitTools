@@ -1,0 +1,68 @@
+{
+  "case_id": "synthetic-agent-empty-commit",
+  "claim_allowed": false,
+  "collection_mode": "ENRICHED_FIXTURE",
+  "collector": {
+    "tool": "fixture",
+    "tool_version": "1.0.0"
+  },
+  "commits": [
+    {
+      "agent": {
+        "producer": "synthetic-agent",
+        "task_receipt": null
+      },
+      "author": {
+        "date": "2025-11-25T00:04:02Z",
+        "email_fingerprint": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "name": "Synthetic Agent"
+      },
+      "committer": {
+        "date": "2025-11-25T00:04:02Z",
+        "email_fingerprint": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "name": "Synthetic Agent"
+      },
+      "diff": {
+        "empty_against_first_parent": true,
+        "empty_root": false,
+        "files": [],
+        "files_changed": 0,
+        "patch_id_stable": null
+      },
+      "external_receipt": null,
+      "message": "Initial plan",
+      "parent_trees": [
+        "2222222222222222222222222222222222222222"
+      ],
+      "parents": [
+        "0000000000000000000000000000000000000000"
+      ],
+      "platform": {
+        "first_seen_at": "2025-11-25T00:42:22Z",
+        "pusher": null,
+        "source": "synthetic_pr"
+      },
+      "refs_containing": [
+        "refs/heads/synthetic"
+      ],
+      "sha": "1111111111111111111111111111111111111111",
+      "signature": {
+        "git_status": "N",
+        "key_id": null,
+        "signer": null
+      },
+      "tree": "2222222222222222222222222222222222222222"
+    }
+  ],
+  "external_events": [],
+  "generated_at": "2026-08-03T12:00:00Z",
+  "limitations": [
+    "SYNTHETIC_FIXTURE_ONLY",
+    "NO_REAL_PERSON_OR_REPOSITORY_ASSERTED"
+  ],
+  "repository": {
+    "repository_name": "SYNTHETIC_FIXTURE_NOT_A_REAL_REPOSITORY"
+  },
+  "revision": "synthetic",
+  "schema_version": "rafgittools.forensic-git-evidence-run/v1"
+}

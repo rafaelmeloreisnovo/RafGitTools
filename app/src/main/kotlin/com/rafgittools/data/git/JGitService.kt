@@ -39,7 +39,7 @@ class JGitService @Inject constructor(
 ) {
     
     companion object {
-        // SSH authentication is now implemented
+        private const val TOKEN_USERNAME = "x-access-token"
     }
     
     /**
@@ -68,7 +68,7 @@ class JGitService @Inject constructor(
                 }
                 is Credentials.Token -> {
                     cloneCommand.setCredentialsProvider(
-                        UsernamePasswordCredentialsProvider(it.token, "")
+                        UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token)
                     )
                 }
                 is Credentials.SshKey -> {
@@ -242,7 +242,7 @@ class JGitService @Inject constructor(
                 }
                 is Credentials.Token -> {
                     cloneCommand.setCredentialsProvider(
-                        UsernamePasswordCredentialsProvider(it.token, "")
+                        UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token)
                     )
                 }
                 is Credentials.SshKey -> {
@@ -557,7 +557,7 @@ class JGitService @Inject constructor(
                     }
                     is Credentials.Token -> {
                         command.setCredentialsProvider(
-                            UsernamePasswordCredentialsProvider(it.token, "")
+                            UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token)
                         )
                     }
                     is Credentials.SshKey -> {
@@ -581,6 +581,11 @@ class JGitService @Inject constructor(
     /**
      * Force push with lease (safe force-push)
      * Feature #29 from roadmap (P33-06)
+     *
+     * The explicit remote preflight gives a useful local error when the caller's
+     * expected object id is already stale. The JGit RefLeaseSpec remains the
+     * authoritative atomic gate during push, so a remote change after preflight
+     * is still rejected rather than falling back to an unconditional force push.
      */
     suspend fun forcePushWithLease(
         repoPath: String,
@@ -594,10 +599,40 @@ class JGitService @Inject constructor(
             val branchRef = "refs/heads/$branch"
             val refSpec = "$branchRef:$branchRef"
             val absentObjectId = "0000000000000000000000000000000000000000"
-            val actualOldObjectId = git.lsRemote()
+            require(expectedOldObjectId.matches(Regex("^[0-9a-fA-F]{40}$"))) {
+                "Invalid expected object id for force-with-lease"
+            }
+
+            val lsRemoteCommand = git.lsRemote()
                 .setRemote(remote)
                 .setHeads(true)
-                .call()
+
+            credentials?.let {
+                when (it) {
+                    is Credentials.UsernamePassword -> {
+                        lsRemoteCommand.setCredentialsProvider(
+                            UsernamePasswordCredentialsProvider(it.username, it.password)
+                        )
+                    }
+                    is Credentials.Token -> {
+                        lsRemoteCommand.setCredentialsProvider(
+                            UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token)
+                        )
+                    }
+                    is Credentials.SshKey -> {
+                        val sshSessionFactory = if (it.passphrase != null) {
+                            SshSessionFactory.createWithPassphrase(it.privateKeyPath, it.passphrase)
+                        } else {
+                            SshSessionFactory.create(it.privateKeyPath)
+                        }
+                        lsRemoteCommand.setTransportConfigCallback(
+                            createSshTransportCallback(sshSessionFactory)
+                        )
+                    }
+                }
+            }
+
+            val actualOldObjectId = lsRemoteCommand.call()
                 .firstOrNull { it.name == branchRef }
                 ?.objectId
                 ?.name
@@ -612,7 +647,7 @@ class JGitService @Inject constructor(
                 .setRemote(remote)
                 .setForce(true)
                 .setRefSpecs(org.eclipse.jgit.transport.RefSpec(refSpec))
-                .setRefLeaseSpecs(RefLeaseSpec(refSpec, expectedOldObjectId))
+                .setRefLeaseSpecs(RefLeaseSpec(branchRef, expectedOldObjectId))
 
             credentials?.let {
                 when (it) {
@@ -623,7 +658,7 @@ class JGitService @Inject constructor(
                     }
                     is Credentials.Token -> {
                         command.setCredentialsProvider(
-                            UsernamePasswordCredentialsProvider(it.token, "")
+                            UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token)
                         )
                     }
                     is Credentials.SshKey -> {
@@ -679,7 +714,7 @@ class JGitService @Inject constructor(
                     }
                     is Credentials.Token -> {
                         command.setCredentialsProvider(
-                            UsernamePasswordCredentialsProvider(it.token, "")
+                            UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token)
                         )
                     }
                     is Credentials.SshKey -> {
@@ -725,7 +760,7 @@ class JGitService @Inject constructor(
                             UsernamePasswordCredentialsProvider(it.username, it.password))
                     is Credentials.Token ->
                         command.setCredentialsProvider(
-                            UsernamePasswordCredentialsProvider(it.token, ""))
+                            UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token))
                     is Credentials.SshKey -> {
                         val factory = if (it.passphrase != null)
                             SshSessionFactory.createWithPassphrase(it.privateKeyPath, it.passphrase)
@@ -775,7 +810,7 @@ class JGitService @Inject constructor(
                     }
                     is Credentials.Token -> {
                         command.setCredentialsProvider(
-                            UsernamePasswordCredentialsProvider(it.token, "")
+                            UsernamePasswordCredentialsProvider(TOKEN_USERNAME, it.token)
                         )
                     }
                     is Credentials.SshKey -> {
@@ -1409,78 +1444,94 @@ class JGitService @Inject constructor(
     ): Result<List<GitDiff>> = withContext(Dispatchers.IO) {
         runCatching {
         openRepository(repoPath).getOrThrow().use { git ->
-            val diffFormatter = org.eclipse.jgit.diff.DiffFormatter(java.io.ByteArrayOutputStream())
-            diffFormatter.setRepository(git.repository)
-            diffFormatter.setDetectRenames(true)
-            
-            val reader = git.repository.newObjectReader()
-            val newTree = if (cached) {
-                // Compare HEAD to index
-                org.eclipse.jgit.treewalk.CanonicalTreeParser().apply {
-                    val headId = git.repository.resolve(Constants.HEAD + "^{tree}")
-                    if (headId != null) {
-                        reset(reader, headId)
-                    }
-                }
-            } else {
-                // Compare index to working tree
-                org.eclipse.jgit.treewalk.FileTreeIterator(git.repository)
-            }
-            
-            val oldTree = if (cached) {
-                org.eclipse.jgit.dircache.DirCacheIterator(git.repository.readDirCache())
-            } else {
-                org.eclipse.jgit.treewalk.CanonicalTreeParser().apply {
-                    val headId = git.repository.resolve(Constants.HEAD + "^{tree}")
-                    if (headId != null) {
-                        reset(reader, headId)
-                    }
-                }
-            }
-            
-            val diffs = if (cached) {
-                git.diff()
-                    .setCached(true)
-                    .call()
-            } else {
-                git.diff()
-                    .setCached(false)
-                    .call()
-            }
-            
-            diffs.map { diffEntry ->
-                val changeType = when (diffEntry.changeType) {
-                    org.eclipse.jgit.diff.DiffEntry.ChangeType.ADD -> DiffChangeType.ADD
-                    org.eclipse.jgit.diff.DiffEntry.ChangeType.MODIFY -> DiffChangeType.MODIFY
-                    org.eclipse.jgit.diff.DiffEntry.ChangeType.DELETE -> DiffChangeType.DELETE
-                    org.eclipse.jgit.diff.DiffEntry.ChangeType.RENAME -> DiffChangeType.RENAME
-                    org.eclipse.jgit.diff.DiffEntry.ChangeType.COPY -> DiffChangeType.COPY
-                }
-                
-                // Get the raw diff content
+            val repository = git.repository
+            repository.newObjectReader().use { reader ->
                 val outputStream = java.io.ByteArrayOutputStream()
-                val formatter = org.eclipse.jgit.diff.DiffFormatter(outputStream)
-                formatter.setRepository(git.repository)
-                formatter.format(diffEntry)
-                formatter.flush()
-                
-                val diffContent = outputStream.toString("UTF-8")
-                val hunks = parseDiffHunks(diffContent)
-                logDiffAudit(repoPath, diffEntry, diffContent)
-                
-                GitDiff(
-                    oldPath = if (diffEntry.oldPath != "/dev/null") diffEntry.oldPath else null,
-                    newPath = if (diffEntry.newPath != "/dev/null") diffEntry.newPath else null,
-                    changeType = changeType,
-                    oldContent = null, // Would need to load from repository
-                    newContent = null,
-                    hunks = hunks
-                )
+                org.eclipse.jgit.diff.DiffFormatter(outputStream).use { formatter ->
+                    formatter.setRepository(repository)
+                    formatter.setDetectRenames(true)
+
+                    val oldTree: org.eclipse.jgit.treewalk.AbstractTreeIterator
+                    val newTree: org.eclipse.jgit.treewalk.AbstractTreeIterator
+                    if (cached) {
+                        val headTreeId = repository.resolve(Constants.HEAD + "^{tree}")
+                            ?: throw IllegalStateException("No HEAD tree found")
+                        oldTree = org.eclipse.jgit.treewalk.CanonicalTreeParser().apply {
+                            reset(reader, headTreeId)
+                        }
+                        newTree = org.eclipse.jgit.dircache.DirCacheIterator(
+                            repository.readDirCache()
+                        )
+                    } else {
+                        oldTree = org.eclipse.jgit.dircache.DirCacheIterator(
+                            repository.readDirCache()
+                        )
+                        newTree = org.eclipse.jgit.treewalk.FileTreeIterator(repository)
+                    }
+
+                    // Keep scan + format on the same DiffFormatter. Its ContentSource
+                    // retains FileTreeIterator access for unstaged working-tree blobs
+                    // that are not yet materialized in the Git object database.
+                    val diffs = formatter.scan(oldTree, newTree)
+                    diffs.map { diffEntry ->
+                        outputStream.reset()
+                        formatter.format(diffEntry)
+                        formatter.flush()
+
+                        val diffContent = outputStream.toString("UTF-8")
+                        val hunks = parseDiffHunks(diffContent)
+                        logDiffAudit(repoPath, diffEntry, diffContent)
+
+                        val oldContent = runCatching {
+                            val oid = diffEntry.oldId.toObjectId()
+                            if (oid != org.eclipse.jgit.lib.ObjectId.zeroId())
+                                repository.open(oid).bytes.toString(Charsets.UTF_8)
+                                    .takeUnless { s -> s.take(512).any { c -> c == '\u0000' } }
+                            else null
+                        }.getOrNull()
+
+                        val newContent = if (!cached && diffEntry.newPath != "/dev/null") {
+                            runCatching {
+                                val file = java.io.File(repoPath, diffEntry.newPath)
+                                if (!file.isFile || file.length() > 1_000_000L) null
+                                else file.readBytes().let { bytes ->
+                                    if (bytes.take(512).any { it.toInt() == 0 }) null
+                                    else String(bytes, Charsets.UTF_8)
+                                }
+                            }.getOrNull()
+                        } else {
+                            runCatching {
+                                val oid = diffEntry.newId.toObjectId()
+                                if (oid != org.eclipse.jgit.lib.ObjectId.zeroId())
+                                    repository.open(oid).bytes.toString(Charsets.UTF_8)
+                                        .takeUnless { s -> s.take(512).any { c -> c == '\u0000' } }
+                                else null
+                            }.getOrNull()
+                        }
+
+                        val changeType = when (diffEntry.changeType) {
+                            org.eclipse.jgit.diff.DiffEntry.ChangeType.ADD -> DiffChangeType.ADD
+                            org.eclipse.jgit.diff.DiffEntry.ChangeType.MODIFY -> DiffChangeType.MODIFY
+                            org.eclipse.jgit.diff.DiffEntry.ChangeType.DELETE -> DiffChangeType.DELETE
+                            org.eclipse.jgit.diff.DiffEntry.ChangeType.RENAME -> DiffChangeType.RENAME
+                            org.eclipse.jgit.diff.DiffEntry.ChangeType.COPY -> DiffChangeType.COPY
+                        }
+
+                        GitDiff(
+                            oldPath = if (diffEntry.oldPath != "/dev/null") diffEntry.oldPath else null,
+                            newPath = if (diffEntry.newPath != "/dev/null") diffEntry.newPath else null,
+                            changeType = changeType,
+                            oldContent = oldContent,
+                            newContent = newContent,
+                            hunks = hunks
+                        )
+                    }
+                }
             }
         }
+        }
     }
-    }
-    
+
     /**
      * Get diff between two commits
      */
@@ -1531,15 +1582,27 @@ class JGitService @Inject constructor(
                     oldPath = if (diffEntry.oldPath != "/dev/null") diffEntry.oldPath else null,
                     newPath = if (diffEntry.newPath != "/dev/null") diffEntry.newPath else null,
                     changeType = changeType,
-                    oldContent = null,
-                    newContent = null,
+                    oldContent = runCatching {
+                        val oid = diffEntry.oldId.toObjectId()
+                        if (oid != org.eclipse.jgit.lib.ObjectId.zeroId())
+                            git.repository.open(oid).bytes.toString(Charsets.UTF_8)
+                                .takeUnless { s -> s.take(512).any { c -> c == '\u0000' } }
+                        else null
+                    }.getOrNull(),
+                    newContent = runCatching {
+                        val oid = diffEntry.newId.toObjectId()
+                        if (oid != org.eclipse.jgit.lib.ObjectId.zeroId())
+                            git.repository.open(oid).bytes.toString(Charsets.UTF_8)
+                                .takeUnless { s -> s.take(512).any { c -> c == '\u0000' } }
+                        else null
+                    }.getOrNull(),
                     hunks = hunks
                 )
             }
         }
     }
     }
-    
+
     /**
      * Parse diff content into hunks
      */

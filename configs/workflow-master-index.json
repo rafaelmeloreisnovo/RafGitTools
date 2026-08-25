@@ -1,0 +1,130 @@
+{
+  "schema_version": "2.0.0",
+  "generated_at": "2026-07-16T22:00:00Z",
+  "control_plane": "rafgittools",
+  "claim_allowed": false,
+  "ontology": {
+    "node_types": ["REPOSITORY", "CLAIM", "TEST", "DATASET", "ARTIFACT", "METHOD", "SOFTWARE", "DEVICE", "ABI", "ENVIRONMENT", "PARAMETER_SET"],
+    "state_axes": ["source_status", "epistemic_status", "operational_status", "claim_gate"],
+    "relation_fields": ["producer", "consumer", "schema_version", "compatibility", "authentication", "privacy_class", "timeout_seconds", "retry_policy", "idempotency", "failure_behavior", "evidence_required"]
+  },
+  "policies": {
+    "token_vazio_is_valid": true,
+    "negative_results_are_assets": true,
+    "documentation_is_not_runtime_evidence": true,
+    "hash_is_not_scientific_validation": true,
+    "temporal_inference_is_forbidden": true,
+    "blocked_or_empty_requires_owner_and_exit_criteria": true,
+    "rollback_must_be_drilled": true,
+    "dependencies_must_be_pinned": true,
+    "default_change_mode": "draft_pull_request",
+    "automatic_merge": false
+  },
+  "defaults": {
+    "states": {"epistemic_status": "METHOD_BOUNDARY"},
+    "temporal": {"observed_at": "2026-07-16T22:00:00Z", "valid_from": "2026-07-16T22:00:00Z", "valid_until": null, "superseded_at": null, "event_sequence": 1},
+    "runtime_evidence": {"status": "TOKEN_VAZIO", "artifact": "TOKEN_VAZIO", "device": "TOKEN_VAZIO", "abi": "TOKEN_VAZIO", "environment": "TOKEN_VAZIO"},
+    "supply_chain": {"source_ref": "main", "dependency_lock": "TOKEN_VAZIO", "sbom": "TOKEN_VAZIO", "attestation": "TOKEN_VAZIO"},
+    "recovery": {"safe_state": "repository-defined-safe-state", "rollback": "restore-last-known-good-commit-and-artifact-hash", "last_drill_status": "TOKEN_VAZIO", "last_drill_artifact": "TOKEN_VAZIO"}
+  },
+  "nodes": [
+    {
+      "id": "rafgittools", "repository": "rafaelmeloreisnovo/RafGitTools", "layer": "control-plane", "canonical_source": "configs/rafaelia-federation.json", "owner": "rafaelmeloreisnovo", "critical": true, "dependencies": [],
+      "states": {"source_status": "VERIFIED_LIMITED", "epistemic_status": "METHOD_BOUNDARY", "operational_status": "PARTIAL", "claim_gate": "BLOCKED"},
+      "next_action": "Produce CI artifact proving master-index, supply-chain and rollback gates.", "exit_criteria": "CI uploads master-index-report.json, supply-chain.spdx.json and recovery-drill.json with local gates PASS.",
+      "recovery": {"drill_command": "python3 scripts/federation/recovery_drill.py --index configs/workflow-master-index.json --node rafgittools", "safe_state": "read-only-status", "rollback": "revert-draft-pr"},
+      "supply_chain": {"dependency_lock": ".github/actions-lock.json"}
+    },
+    {
+      "id": "mapa", "repository": "rafaelmeloreisnovo/Mapa", "layer": "navigation", "canonical_source": "README.md", "owner": "rafaelmeloreisnovo", "critical": false, "dependencies": [],
+      "states": {"source_status": "VERIFIED_LIMITED", "epistemic_status": "METHOD_BOUNDARY", "operational_status": "PARTIAL", "claim_gate": "BLOCKED"},
+      "next_action": "Generate measured weights only from commit/test artifacts.", "exit_criteria": "Every non-empty weight points to repository, commit, method and artifact.",
+      "recovery": {"drill_command": "python3 scripts/federation/recovery_drill.py --index configs/workflow-master-index.json --node mapa"}
+    },
+    {
+      "id": "vectras", "repository": "rafaelmeloreisnovo/Vectras-VM-Android", "layer": "device-runtime", "canonical_source": "BUILDING.md", "owner": "rafaelmeloreisnovo", "critical": true, "dependencies": ["termux"],
+      "states": {"source_status": "VERIFIED_LIMITED", "epistemic_status": "METHOD_BOUNDARY", "operational_status": "BLOCKED", "claim_gate": "BLOCKED"},
+      "next_action": "Produce APK manifest plus real-device/QEMU boot smoke evidence.", "exit_criteria": "Artifact records APK hash, device/ABI, command, guest marker, logs and rollback image hash.",
+      "recovery": {"drill_command": "python3 scripts/federation/recovery_drill.py --index configs/workflow-master-index.json --node vectras"}, "runtime_evidence": {"status": "BLOCKED"}
+    },
+    {
+      "id": "qemu", "repository": "rafaelmeloreisnovo/qemu_rafaelia", "layer": "runtime-failover", "canonical_source": "README.md", "owner": "rafaelmeloreisnovo", "critical": false, "dependencies": [],
+      "states": {"source_status": "DECLARED_BY_AUTHOR", "epistemic_status": "METHOD_BOUNDARY", "operational_status": "TOKEN_VAZIO", "claim_gate": "BLOCKED"},
+      "next_action": "Run deterministic QEMU smoke test.", "exit_criteria": "Known-good binary hash and non-mutating disk smoke report exist.",
+      "recovery": {"drill_command": "python3 scripts/federation/recovery_drill.py --index configs/workflow-master-index.json --node qemu"}
+    },
+    {
+      "id": "termux", "repository": "rafaelmeloreisnovo/termux-app-rafacodephi", "layer": "android-runtime", "canonical_source": "README_TERMUX.md", "owner": "rafaelmeloreisnovo", "critical": true, "dependencies": [],
+      "states": {"source_status": "VERIFIED_LIMITED", "epistemic_status": "METHOD_BOUNDARY", "operational_status": "PARTIAL", "claim_gate": "BLOCKED"},
+      "next_action": "Produce device evidence for shell, PREFIX, dpkg/apt, ABI and package install.", "exit_criteria": "Report proves commands, exit codes, ABI, APK hash and rollback APK hash.",
+      "recovery": {"drill_command": "python3 scripts/federation/recovery_drill.py --index configs/workflow-master-index.json --node termux"}
+    },
+    {
+      "id": "userland", "repository": "rafaelmeloreisnovo/UserLAnd", "layer": "runtime-failover", "canonical_source": "README.md", "owner": "rafaelmeloreisnovo", "critical": false, "dependencies": [],
+      "states": {"source_status": "DECLARED_BY_AUTHOR", "epistemic_status": "METHOD_BOUNDARY", "operational_status": "TOKEN_VAZIO", "claim_gate": "BLOCKED"},
+      "next_action": "Run build and session smoke test with rootfs hash.", "exit_criteria": "Report records APK/rootfs hashes, command, exit code and teardown.",
+      "recovery": {"drill_command": "python3 scripts/federation/recovery_drill.py --index configs/workflow-master-index.json --node userland"}
+    },
+    {
+      "id": "rafpolimata", "repository": "rafaelmeloreisnovo/RafPolimata", "layer": "semantic-governance", "canonical_source": "README.md", "owner": "rafaelmeloreisnovo", "critical": true, "dependencies": [],
+      "states": {"source_status": "VERIFIED_LIMITED", "epistemic_status": "METHOD_BOUNDARY", "operational_status": "PARTIAL", "claim_gate": "BLOCKED"},
+      "next_action": "Emit one dual-validated formal experiment manifest consumed by RLL.", "exit_criteria": "Artifact contains source, units, equations, proof duties, falsifier and claim gate.",
+      "recovery": {"drill_command": "python3 scripts/federation/recovery_drill.py --index configs/workflow-master-index.json --node rafpolimata"}
+    },
+    {
+      "id": "gaia", "repository": "rafaelmeloreisnovo/GAIA_phi", "layer": "evidence-custody", "canonical_source": "README.md", "owner": "rafaelmeloreisnovo", "critical": true, "dependencies": [],
+      "states": {"source_status": "VERIFIED_LIMITED", "epistemic_status": "METHOD_BOUNDARY", "operational_status": "PARTIAL", "claim_gate": "BLOCKED"},
+      "next_action": "Produce pointer-only import receipt for one RLL artifact.", "exit_criteria": "Receipt proves source commit, artifact hash, ordering and no payload mutation.",
+      "recovery": {"drill_command": "python3 scripts/federation/recovery_drill.py --index configs/workflow-master-index.json --node gaia"}
+    },
+    {
+      "id": "zipraf", "repository": "rafaelmeloreisnovo/ZIPRAF_OMEGA_FULL", "layer": "serialization", "canonical_source": "README.md", "owner": "rafaelmeloreisnovo", "critical": false, "dependencies": [],
+      "states": {"source_status": "VERIFIED_LIMITED", "epistemic_status": "METHOD_BOUNDARY", "operational_status": "PARTIAL", "claim_gate": "BLOCKED"},
+      "next_action": "Run codec KAT, corruption, expansion-limit and round-trip tests.", "exit_criteria": "Report records hashes, limits, negative fixtures and codec version.",
+      "recovery": {"drill_command": "python3 scripts/federation/recovery_drill.py --index configs/workflow-master-index.json --node zipraf"}
+    },
+    {
+      "id": "llama", "repository": "rafaelmeloreisnovo/llamaRafaelia", "layer": "model-runtime", "canonical_source": "README.md", "owner": "rafaelmeloreisnovo", "critical": false, "dependencies": ["gaia"],
+      "states": {"source_status": "VERIFIED_LIMITED", "epistemic_status": "METHOD_BOUNDARY", "operational_status": "PARTIAL", "claim_gate": "BLOCKED"},
+      "next_action": "Produce deterministic inference smoke artifact.", "exit_criteria": "Artifact locks runtime, model/tokenizer hashes, config, seed, device/ABI and output.",
+      "recovery": {"drill_command": "python3 scripts/federation/recovery_drill.py --index configs/workflow-master-index.json --node llama"}
+    },
+    {
+      "id": "tinygpt", "repository": "rafaelmeloreisnovo/TinyGPT", "layer": "model-failover", "canonical_source": "README.md", "owner": "rafaelmeloreisnovo", "critical": false, "dependencies": [],
+      "states": {"source_status": "DECLARED_BY_AUTHOR", "epistemic_status": "METHOD_BOUNDARY", "operational_status": "TOKEN_VAZIO", "claim_gate": "BLOCKED"},
+      "next_action": "Run deterministic minimal inference fixture.", "exit_criteria": "Fixture, model hash, config lock and output digest are recorded.",
+      "recovery": {"drill_command": "python3 scripts/federation/recovery_drill.py --index configs/workflow-master-index.json --node tinygpt"}
+    },
+    {
+      "id": "private", "repository": "rafaelmeloreisnovo/Rafaelia_Private", "layer": "restricted-vault", "canonical_source": "PRIVATE_POINTER_ONLY", "owner": "rafaelmeloreisnovo", "critical": true, "dependencies": [],
+      "states": {"source_status": "VERIFIED_LIMITED", "epistemic_status": "METHOD_BOUNDARY", "operational_status": "PARTIAL", "claim_gate": "BLOCKED"},
+      "next_action": "Produce private CI attestation and Merkle root without exposing bodies.", "exit_criteria": "Public receipt proves validator run, commit range, Merkle root and signature.",
+      "recovery": {"drill_command": "python3 scripts/federation/recovery_drill.py --index configs/workflow-master-index.json --node private"}
+    },
+    {
+      "id": "chipquantum", "repository": "rafaelmeloreisnovo/ChipQuantum", "layer": "math-runtime", "canonical_source": "papers/technical/README.md", "owner": "rafaelmeloreisnovo", "critical": true, "dependencies": ["matematica"],
+      "states": {"source_status": "VERIFIED_LIMITED", "epistemic_status": "METHOD_BOUNDARY", "operational_status": "PARTIAL", "claim_gate": "BLOCKED"},
+      "next_action": "Produce float64 versus fixed-point runtime evidence for one Paper 6 claim.", "exit_criteria": "Artifact records hashes, compiler, flags, ABI, vectors, tolerance, overflow and verdict.",
+      "recovery": {"drill_command": "python3 scripts/federation/recovery_drill.py --index configs/workflow-master-index.json --node chipquantum"}
+    },
+    {
+      "id": "matematica", "repository": "rafaelmeloreisnovo/Matem-tica-", "layer": "formal-math", "canonical_source": "README.md", "owner": "rafaelmeloreisnovo", "critical": true, "dependencies": [],
+      "states": {"source_status": "VERIFIED_LIMITED", "epistemic_status": "METHOD_BOUNDARY", "operational_status": "PARTIAL", "claim_gate": "BLOCKED"},
+      "next_action": "Produce machine-readable proof/verification boundary for one theorem candidate.", "exit_criteria": "Artifact distinguishes PROVED, FINITELY_TESTED, HYPOTHESIS, COUNTEREXAMPLE and TOKEN_VAZIO.",
+      "recovery": {"drill_command": "python3 scripts/federation/recovery_drill.py --index configs/workflow-master-index.json --node matematica"}
+    },
+    {
+      "id": "rll", "repository": "instituto-Rafael/relativity-living-light", "layer": "science", "canonical_source": "knowledge_ecosystem/rll_cross_repo_entrelaces_v2.json", "owner": "instituto-Rafael", "critical": true, "dependencies": ["gaia"],
+      "states": {"source_status": "VERIFIED_LIMITED", "epistemic_status": "METHOD_BOUNDARY", "operational_status": "PARTIAL", "claim_gate": "BLOCKED"},
+      "next_action": "Recompute r_d with CAMB/RECFAST at each MCMC point.", "exit_criteria": "Artifact records data hashes, priors, chains, convergence, evidence and residual systematics.",
+      "recovery": {"drill_command": "python3 scripts/federation/recovery_drill.py --index configs/workflow-master-index.json --node rll"}
+    }
+  ],
+  "relations": [
+    {"id": "termux-to-vectras", "producer": "termux", "consumer": "vectras", "schema_version": "runtime-evidence.v1", "compatibility": "shell/PREFIX/proot/QEMU preflight", "authentication": "local-process-boundary", "privacy_class": "INTERNAL", "timeout_seconds": 120, "retry_policy": "one-retry-then-safe-state", "idempotency": "required", "failure_behavior": "stop VM before image mutation", "evidence_required": "device ABI, command, exit code, APK and rootfs hashes"},
+    {"id": "gaia-to-rll", "producer": "gaia", "consumer": "rll", "schema_version": "evidence-receipt.v1", "compatibility": "pointer-only artifact custody", "authentication": "commit-and-digest", "privacy_class": "PUBLIC_POINTER_ONLY", "timeout_seconds": 60, "retry_policy": "no-blind-retry", "idempotency": "required", "failure_behavior": "retain last immutable manifest", "evidence_required": "source commit, artifact hash, receipt hash and no-payload-mutation proof"},
+    {"id": "matematica-to-chipquantum", "producer": "matematica", "consumer": "chipquantum", "schema_version": "formal-boundary.v1", "compatibility": "definition/domain/proof/test boundary", "authentication": "commit-and-blob-sha", "privacy_class": "PUBLIC", "timeout_seconds": 60, "retry_policy": "fail-closed", "idempotency": "required", "failure_behavior": "keep experiment disabled", "evidence_required": "proof state, domain, counterexample policy and source hash"},
+    {"id": "rafpolimata-to-rll", "producer": "rafpolimata", "consumer": "rll", "schema_version": "formal-experiment-manifest.v1", "compatibility": "claim/unit/model/data/falsifier contract", "authentication": "commit-and-artifact-sha256", "privacy_class": "PUBLIC", "timeout_seconds": 120, "retry_policy": "fail-closed", "idempotency": "required", "failure_behavior": "claim gate remains BLOCKED", "evidence_required": "dual validator reports and bounded claim manifest"},
+    {"id": "rafgittools-control", "producer": "rafgittools", "consumer": "rll", "schema_version": "federation-control.v2", "compatibility": "structural audit only", "authentication": "GitHub branch protection and commit SHA", "privacy_class": "METADATA_ONLY", "timeout_seconds": 300, "retry_policy": "manual-review", "idempotency": "required", "failure_behavior": "no cross-repository write and no claim promotion", "evidence_required": "master index, recovery drill and supply-chain reports"}
+  ]
+}

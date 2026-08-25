@@ -1,0 +1,91 @@
+{
+  "schema": "rafaelia.uncertainty-friction-v3-applied-status.v1",
+  "date": "2026-08-22",
+  "state": "CI_VERIFIED_LIMITED",
+  "claim_allowed": false,
+  "tested_head": "5b92a46884ee50f828a0c2130974ccd2558473c5",
+  "predecessor_negative_run": {
+    "head": "a17dbca5c1a4e6222575221dafaae75e38164406",
+    "run_id": 32574162282,
+    "status": "FAIL",
+    "tests": {"total": 12, "passed": 11, "failed": 1},
+    "failure_class": "VALIDATOR_SCHEMA_DRIFT",
+    "failure_detail": "validator read exposed_steps_count while evidence record had latest_exposed_steps_count",
+    "preserved": true
+  },
+  "correction": {
+    "commit": "5b92a46884ee50f828a0c2130974ccd2558473c5",
+    "change": "provider validator reads latest_exposed_steps_count with legacy fallback, requires a count field, and validates each attempt",
+    "gate_weakened": false
+  },
+  "verified_gate": {
+    "workflow": "uncertainty-urgency-friction-v3",
+    "run_id": 32574481174,
+    "run_number": 7,
+    "job_id": 97034679154,
+    "job_name": "friction-anti-regression",
+    "conclusion": "success",
+    "steps": {
+      "compile_validators_and_tests": "success",
+      "fail_closed_unit_tests": "success",
+      "validate_v1_v2_v3_registries": "success",
+      "reconcile_friction_baseline": "success",
+      "hash_inputs_and_reports": "success",
+      "upload_receipt_artifact": "success"
+    },
+    "tests": {"total": 12, "passed": 12, "failed": 0},
+    "validation_report": {
+      "status": "PASS",
+      "errors": [],
+      "v1_invariants": 30,
+      "v2_invariants": 10,
+      "v3_invariants": 12,
+      "total_guarded_invariants": 52,
+      "license_units": 4,
+      "governed_uses": 5,
+      "relation_nodes": 14,
+      "relations": 11,
+      "provider_execution_state": "TOKEN_VAZIO_PROVIDER_EXECUTION"
+    },
+    "baseline_report": {
+      "status": "PASS",
+      "scope_id": "FRICTION_SCOPE:GAIA_COMPLEX_FEEDBACK_RAFGITTOOLS_V3:20260822",
+      "unresolved_gap_count": 5,
+      "unbound_license_unit_count": 2,
+      "provider_pre_step_failure_count": 2,
+      "untyped_relation_count": 0,
+      "missing_rollback_count": 0,
+      "missing_provenance_count": 0,
+      "manual_rework_count": "TOKEN_VAZIO_UNMEASURED",
+      "numeric_total": "TOKEN_VAZIO_SCORE"
+    },
+    "artifact": {
+      "id": 9476220537,
+      "name": "uncertainty-urgency-friction-v3",
+      "size_bytes": 3015,
+      "sha256_zip": "e2992a540066eb8a58e7e5651bf56e59525a00ae073c6c88d4950e95f5a21f32",
+      "expires_at": "2026-11-20T12:59:17Z"
+    }
+  },
+  "governed_input_sha256": {
+    "v1": "bf3f410ad848d124b68c9587b9b2aceecb942dcfdcb96b2d2351f5848e52c07f",
+    "v2": "9fcebb5bdee38e270bbc07d789d73a861cc57e1db29f728dbc10fa4113d9b7db",
+    "v3": "f8fe67016e6b0784cd107f4d34461ee5bb984d17ed8e57442897b2ce372f0a56",
+    "provider_evidence": "6fc33d733cc5ed416e108ddf5df916856577ab4c5e8d96cd8fafff25855b622d",
+    "complex_relations": "44927eb4bfb85e77ff9044f774091557f6c397c958b96b14e8b49558742036d8",
+    "ethics_use_registry": "9a87c9521ba4e5771aa5dd083ffc9fecb861e4f971dbf815609b9326ed06c9df",
+    "license_matrix": "d2fa7142917609b897ca55c401739d95cebe6285e1bfd69a589804acdcb332ce"
+  },
+  "closure_effects": {
+    "TV-V3-USE-REGISTRY-001": "CLOSED_MATERIALIZED_LIMITED_AND_CI_VALIDATED",
+    "TV-V3-COMPLEX-RELATIONS-001": "PARTIAL_BOUNDED_INVENTORY_CI_VALIDATED",
+    "TV-V3-FRICTION-BASELINE-001": "PARTIAL_BASELINE_CI_RECONCILED",
+    "TV-V3-PROVIDER-CLASS-001": "TOKEN_VAZIO_PROVIDER_EXECUTION",
+    "TV-V3-LICENSE-PAYLOAD-001": "PARTIAL_RESIDUAL_RIGHTS_OPEN",
+    "TV-V3-B7-T2-001": "TOKEN_VAZIO_BRIDGE"
+  },
+  "evidence_boundary": "PASS proves consistency of the bounded V1/V2/V3 contracts, 12 fail-closed tests, license/use/relation/provider registries and friction-baseline reconciliation on the tested head. It does not prove GAIA execution, provider root cause, legal sufficiency for unbound payloads, scientific mechanism, ecosystem-wide graph completeness, novelty or claim promotion.",
+  "F_ok": "12/12 fail-closed tests, 52 guarded invariants, V3 registry validation, friction baseline reconciliation, hashes and receipt artifact verified on exact tested head",
+  "F_gap": "GAIA provider execution, residual rights units, manual rework measurement, exhaustive relation coverage and B7_TO_T2 bridge remain open",
+  "F_next": "bind provider-capability probe result; append Mapa/Drive successor receipts; measure manual rework under frozen scope; close only exact residual tokens with receipts"
+}

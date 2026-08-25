@@ -1,0 +1,32 @@
+name: RAFAELIA Navigator Selftest
+
+on:
+  pull_request:
+    paths:
+      - 'tools/rafaelia_navigator/**'
+      - '.github/workflows/rafaelia-navigator-selftest.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-selftest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run base synthetic private-safe gate
+        run: python tools/rafaelia_navigator/rafaelia_navigator.py selftest
+      - name: Run full-node integrity and resume gate
+        working-directory: tools/rafaelia_navigator
+        run: python rafaelia_navigator_integrity_v1.py selftest
+      - name: Run set-based FTS gate
+        working-directory: tools/rafaelia_navigator
+        run: python rafaelia_navigator_bulk_v1.py selftest
+      - name: Run deterministic committed-state publication gate
+        working-directory: tools/rafaelia_navigator
+        run: python rafaelia_navigator_publish_v1.py selftest

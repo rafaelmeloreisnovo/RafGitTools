@@ -1,0 +1,21 @@
+{
+  "schema": "RAFAELIA_NAVIGATOR_BOOTSTRAP_V1",
+  "privacy_class": "PRIVATE_DEFAULT_DENY",
+  "claim_allowed": false,
+  "training_executed": false,
+  "source_policy": "READ_ONLY_IMMUTABLE",
+  "checkpoint_policy": "APPEND_ONLY_PER_SOURCE_FILE",
+  "source_families": [
+    "conversations-*.json",
+    "codex-*.json",
+    "conversation_asset_file_names.json",
+    "export_manifest.json"
+  ],
+  "targets": {
+    "drive": "RAFAELIA_DATA_NAVIGATOR/03_NAVIGATOR",
+    "gaia_phi": ["L1_raw", "L2_parsed", "L3_indexed"],
+    "rafaelia_private": ["RMRALPHA"],
+    "rmria": "HOLD"
+  },
+  "bootstrap_sha256": "c895c431b99fcf9b866c70e21ab1ae56936e6df8c1af8c431d95f9dce8e22ca3"
+}

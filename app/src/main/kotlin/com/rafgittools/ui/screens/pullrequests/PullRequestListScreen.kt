@@ -30,7 +30,8 @@ fun PullRequestListScreen(
     repo: String,
     viewModel: PullRequestListViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {},
-    onPullRequestClick: (GithubPullRequest) -> Unit = {}
+    onPullRequestClick: (GithubPullRequest) -> Unit = {},
+    onCreatePullRequest: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val pullRequests by viewModel.pullRequests.collectAsStateWithLifecycle()
@@ -41,6 +42,11 @@ fun PullRequestListScreen(
     }
     
     Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = onCreatePullRequest) {
+                Icon(Icons.Default.Add, contentDescription = "Create Pull Request")
+            }
+        },
         topBar = {
             TopAppBar(
                 title = {

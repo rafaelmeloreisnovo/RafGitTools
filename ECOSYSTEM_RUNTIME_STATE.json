@@ -1,0 +1,261 @@
+{
+  "schema": "raf.ecosystem-runtime-state.v1",
+  "observed_at": "2026-08-14T17:30:22Z",
+  "ci_execution": {
+    "state": "AVAILABLE",
+    "reason": "Hosted runners are available. The last commit-bound verified Android build remains run 31821491676 for bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa. PR #347 is the active successor gate. This mutable state file intentionally does not freeze its own containing branch-head SHA, because committing the file would make that self-reference stale; the exact current head must be read from PR metadata and matched to its own workflow run/build receipt."
+  },
+  "components": [
+    {
+      "id": "rafgittools.current-head-gate",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": ".",
+      "implementation_state": "REFERENCE",
+      "evidence_state": "TOKEN_VAZIO",
+      "evidence": [
+        "PR #347 is the governed successor to merged PR #346",
+        "PR #347 was open, draft and mergeable=true at the last observation",
+        "The branch contains the CI PR-binding hardening, its regression test and the reconciled current documentation",
+        "Exact candidate head SHA is intentionally resolved from GitHub PR metadata rather than cached in this mutable file"
+      ],
+      "gaps": [
+        "No final-candidate PASS is inferred until the exact frozen PR head completes its own test/lint/build workflow",
+        "No final-candidate APK SHA-256/build receipt is stored as VERIFIED here yet",
+        "Physical-device receipt remains TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED"
+      ],
+      "next_action": "Freeze the PR #347 branch, resolve its exact head from GitHub metadata, accept BUILD_VERIFIED only if that same SHA passes structural tests, auth tests, full unit tests, lint, assemble, APK verification and build receipt, then use that exact artifact for physical closure."
+    },
+    {
+      "id": "rafgittools.ci-pr-binding",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": ".github/workflows/ci.yml",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence": [
+        "Historical hardcoded target issues/236/comments was removed from the successor branch",
+        "PR comment target is bound to github.event.pull_request.number",
+        "PR_NUMBER is validated before the API write",
+        "tests/test_workflow_pr_binding.py rejects a numeric hardcoded issue/PR comment target",
+        "android-client-build.yml includes the new regression in the custody/structural test gate"
+      ],
+      "gaps": [
+        "The binding remains non-VERIFIED until the frozen final candidate executes the structural gate successfully"
+      ],
+      "next_action": "Promote this component to VERIFIED only from the exact frozen candidate workflow result."
+    },
+    {
+      "id": "rafgittools.android-client",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "VERIFIED",
+      "evidence": [
+        "Kotlin/Compose/Hilt/Room source is integrated",
+        "P33 backlog is 33/33 source-functional",
+        "GitHub API and JGit source paths are integrated",
+        "Android Client Build run 31821491676 completed successfully for commit bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa",
+        "Full dev unit tests and Android lint passed",
+        "assembleDevDebug passed",
+        "Artifact RafGitTools-devDebug id 9227343409 was uploaded",
+        "APK app-dev-debug.apk is hash-bound as SHA-256 115b9cb1e71f53f16b2648924a09549b8e5e0b9e453280cab2e7f183a411ebf6",
+        "APK verification confirmed armeabi-v7a and arm64-v8a"
+      ],
+      "gaps": [
+        "This VERIFIED evidence is commit-bound to bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa and is not silently inherited by PR #347",
+        "Physical-device install/start receipt remains TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED",
+        "Release signing and release acceptance remain outside this verified build cut"
+      ],
+      "next_action": "First close the frozen PR #347 build gate. Then install and launch the exact final-candidate hash-bound APK on a supported physical ARM device and close the runtime receipt.",
+      "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
+    },
+    {
+      "id": "rafgittools.auth",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/src/main/kotlin/com/rafgittools/data/auth/",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "VERIFIED",
+      "evidence": [
+        "PAT validation and encrypted persistence exist",
+        "OAuth Device Flow exists with placeholder Client ID rejection",
+        "gh CLI import validates hostname/exit code and separates stderr",
+        "GitHub HTTPS UI/JGit use token material as password rather than URL/username",
+        "Authentication unit tests passed in Android Client Build run 31821491676",
+        "Full dev unit test suite also passed in the same run"
+      ],
+      "gaps": [
+        "Verification is anchored to bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa",
+        "Real OAuth/GitHub App Client ID configuration is not present in this evidence chain",
+        "Authenticated Android device smoke remains TOKEN_VAZIO_RUNTIME"
+      ],
+      "next_action": "After final-candidate BUILD and device smoke, exercise disposable real credential fixtures without logging credential material.",
+      "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
+    },
+    {
+      "id": "rafgittools.token-lifecycle",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/src/main/kotlin/com/rafgittools/data/auth/TokenRefreshManager.kt",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "VERIFIED",
+      "evidence": [
+        "PAT/OAuth sessions without refresh capability fall back to fail-closed reauthentication on 401",
+        "Device Flow token responses preserve optional access expiry, refresh token and refresh expiry",
+        "Refresh token is encrypted under a separate Android Keystore alias",
+        "savePat removes stale refresh state and clearAuthState removes access+refresh+expiries",
+        "GitHub App refresh request uses client_id + grant_type=refresh_token + refresh_token and no client secret",
+        "refreshMutex and recoveryMutex serialize rotating refresh and invalidation decisions",
+        "AuthInterceptor retries exactly once after successful rotation and invalidates on a second 401",
+        "Authentication tests and full dev unit tests passed in run 31821491676"
+      ],
+      "gaps": [
+        "Verification is anchored to bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa",
+        "Real GitHub App Device Flow refresh rotation remains CONFIG_REQUIRED / TOKEN_VAZIO_RUNTIME",
+        "PAT/OAuth 401 reauthentication behavior on physical Android remains TOKEN_VAZIO_RUNTIME"
+      ],
+      "next_action": "After final-candidate BUILD/device smoke, prove a non-refreshable 401 path and a refresh-capable GitHub App rotation on disposable fixtures.",
+      "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
+    },
+    {
+      "id": "rafgittools.private-auth-check",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "scripts/rafgittools_private_auth_check.sh",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence": [
+        "Script checks gh authentication and private repository metadata access without printing the token",
+        "Receipt stores only non-secret account/permission metadata and SHA-256"
+      ],
+      "gaps": [
+        "Execution on the target authenticated Termux installation remains TOKEN_VAZIO"
+      ],
+      "next_action": "Run the private-auth check in authenticated Termux and preserve the receipt hash."
+    },
+    {
+      "id": "rafgittools.readiness-gate",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "scripts/rafgittools_readiness_gate.sh",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence": [
+        "Gate separates PASS, FAIL, TOKEN_VAZIO and SKIP",
+        "Gate checks source anchors, JDK17, Android SDK, unit tests, APK/hash and device presence",
+        "Physical install/start is explicit opt-in",
+        "A hosted build independently proved tests, lint, APK build, APK hash/ABI verification and build receipt for the bbdb556 anchor"
+      ],
+      "gaps": [
+        "Final-candidate BUILD verification is pending",
+        "VERIFIED_DEVICE requires final-candidate APK hash and physical smoke in one evidence chain"
+      ],
+      "next_action": "Use the exact APK/build receipt emitted by the successful frozen-candidate pipeline once it exists; do not reuse the bbdb556 artifact as another commit receipt."
+    },
+    {
+      "id": "rafgittools.interactive-staging",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/src/main/kotlin/com/rafgittools/data/git/InteractiveStagingService.kt",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "VERIFIED",
+      "evidence": [
+        "Per-hunk stage and unstage source paths exist",
+        "Mutation is index-only with stale hunk/HEAD/index validation",
+        "DirCache lock + editor commit + unconditional idempotent unlock are present",
+        "Binary/non-UTF8/missing-final-newline/unmerged inputs fail closed",
+        "The MissingObjectException regression was repaired by keeping scan and format on the same DiffFormatter",
+        "Full dev unit tests passed in run 31821491676"
+      ],
+      "gaps": [
+        "Verification is anchored to bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa",
+        "Physical Android interactive-staging smoke remains TOKEN_VAZIO_RUNTIME"
+      ],
+      "next_action": "After final-candidate BUILD/device install, run a two-hunk stage/unstage physical Android fixture.",
+      "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
+    },
+    {
+      "id": "rafgittools.offline-queue",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/src/main/kotlin/com/rafgittools/offline/",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence": [
+        "Durable queue storage and workers exist",
+        "AtomicFile queue storage uses bounded records, fsync and same-directory publication",
+        "The app source compiled successfully in run 31821491676"
+      ],
+      "gaps": [
+        "Production scheduling/restart recovery requires device regression"
+      ],
+      "next_action": "Exercise enqueue/restart/recovery on the final candidate device build and record a receipt."
+    },
+    {
+      "id": "rafgittools.terminal-bounded-executor",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/src/main/kotlin/com/rafgittools/terminal/TerminalEmulator.kt",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "DECLARED_BY_AUTHOR",
+      "evidence": [
+        "Output is drained concurrently",
+        "Malformed quoting is rejected",
+        "Generic Git terminal surface is restricted to read-only subcommands",
+        "The containing app source compiled successfully in run 31821491676"
+      ],
+      "gaps": [
+        "This is intentionally a bounded executor, not PTY/VT100"
+      ],
+      "next_action": "Keep writable operations routed through typed/governed actions; treat PTY as a separate future capability."
+    },
+    {
+      "id": "rafgittools.multi-provider",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/src/main/kotlin/com/rafgittools/platform/MultiPlatformManager.kt",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "VERIFIED",
+      "evidence": [
+        "GitLab, Bitbucket, Gitea/Forgejo and Azure DevOps adapters exist",
+        "Typed success/configuration/authentication/network states exist",
+        "MultiPlatformManager test expectations were reconciled with the implemented GitLab adapter",
+        "Full dev unit tests passed in run 31821491676"
+      ],
+      "gaps": [
+        "Verification is anchored to bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa",
+        "Real provider credentials/endpoints are not exercised in this evidence chain"
+      ],
+      "next_action": "After final-candidate BUILD/device smoke, validate each provider independently with disposable credentials and repositories.",
+      "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
+    },
+    {
+      "id": "rafgittools.rafaelia-jni",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/src/main/cpp/",
+      "implementation_state": "IMPLEMENTED",
+      "evidence_state": "VERIFIED",
+      "evidence": [
+        "Rafaelia JNI bridge is wired through the Android/CMake build",
+        "The generated APK passed verification with native libraries for armeabi-v7a and arm64-v8a in run 31821491676"
+      ],
+      "gaps": [
+        "Verification is anchored to bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa",
+        "Native library presence in the APK does not by itself prove every native method on physical hardware",
+        "Experimental RAFAELIA kernels remain outside this promotion"
+      ],
+      "next_action": "After final-candidate BUILD/device install, add a physical JNI health receipt.",
+      "commit": "bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa"
+    },
+    {
+      "id": "rafgittools.advanced-external-runtime",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "path": "app/src/main/",
+      "implementation_state": "PARTIAL",
+      "evidence_state": "TOKEN_VAZIO",
+      "evidence": [
+        "Adapters/UI exist for GPG, Git LFS, worktree and bisect",
+        "LLaMA JNI bridge source exists but requires external llama headers/runtime"
+      ],
+      "gaps": [
+        "GPG runtime fixture not executed",
+        "Git LFS remote fixture not executed",
+        "Worktree filesystem/device matrix not executed",
+        "Bisect controlled regression fixture not executed",
+        "LLaMA external dependency/runtime not pinned and proven"
+      ],
+      "next_action": "Close each external TOKEN_VAZIO with an isolated fixture/evidence chain after core physical runtime verification."
+    }
+  ]
+}

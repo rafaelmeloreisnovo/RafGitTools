@@ -1,0 +1,58 @@
+name: RAFAELIA Repository View V1
+
+on:
+  workflow_call:
+    inputs:
+      max-records-per-shard:
+        description: Maximum records written to each YAML shard
+        required: false
+        type: number
+        default: 5000
+  workflow_dispatch:
+    inputs:
+      max-records-per-shard:
+        description: Maximum records written to each YAML shard
+        required: false
+        default: "5000"
+
+permissions:
+  contents: read
+
+jobs:
+  repository-view:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout target repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Checkout RAFAELIA navigation generator
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/RafGitTools
+          ref: main
+          path: .rafaelia-control/RafGitTools
+          fetch-depth: 1
+
+      - name: Generate recursive repository map
+        env:
+          MAX_RECORDS: ${{ inputs.max-records-per-shard || '5000' }}
+        run: |
+          python3 .rafaelia-control/RafGitTools/scripts/navigation/repository_view.py \
+            --root . \
+            --output-dir .rafaelia-artifacts/repository-map \
+            --max-records-per-shard "$MAX_RECORDS"
+
+      - name: Publish map summary
+        run: |
+          cat .rafaelia-artifacts/repository-map/TREE.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload recursive repository map
+        uses: actions/upload-artifact@v4
+        with:
+          name: rafaelia-repository-view-${{ github.repository_id }}-${{ github.sha }}
+          path: .rafaelia-artifacts/repository-map/
+          if-no-files-found: error
+          retention-days: 30

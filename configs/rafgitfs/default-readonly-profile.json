@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "profile_id": "rafgitfs-default-readonly",
+  "display_name": "GitHub — armazenamento virtual",
+  "provider": "GITHUB",
+  "scope": "AUTHENTICATED_USER",
+  "scope_value": "authenticated-user",
+  "selected_repositories": [],
+  "default_ref": "main",
+  "access_mode": "READ_ONLY",
+  "cache_policy": "ON_DEMAND",
+  "write_policy": "BLOCKED",
+  "protected_branch_patterns": [
+    "main",
+    "master",
+    "release/*"
+  ],
+  "receipt_required": true,
+  "claim_allowed": false,
+  "enabled": true
+}

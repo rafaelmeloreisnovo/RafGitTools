@@ -1,0 +1,28 @@
+{
+  "schema": "rafaelia.local-receipt/v1",
+  "event_id": "RAFGITTOOLS-LIVING-BOOK-IR-BUNDLE-V1-20260801",
+  "environment": "CONTAINER_REFERENCE",
+  "source_scope": "LOCALLY_GENERATED_EQUIVALENT_SOURCE",
+  "branch_refetch_execution": "TOKEN_VAZIO_NOT_EXECUTED",
+  "python_compile": "PASS",
+  "tests": "9/9 PASS",
+  "covered_invariants": [
+    "descriptor-only bundle accepted",
+    "EXECUTE action rejected",
+    "seed/private key rejected",
+    "bundle digest tamper detected",
+    "dispatch enablement rejected",
+    "network target rejected",
+    "approval digest before review rejected",
+    "private source embedding rejected",
+    "descriptor digest internally consistent"
+  ],
+  "state": "READY_FOR_REVIEW_NOT_DISPATCHED",
+  "claim_allowed": false,
+  "dispatch_allowed": false,
+  "execution_allowed": false,
+  "publication_allowed": false,
+  "F_ok": "descriptor-only transport bundle and adversarial tests on equivalent local source",
+  "F_gap": "exact branch refetch test, reviewed human approval contract and Termux receipt",
+  "F_next": "review exact branch; expose bundle in Termux menu as inspect-only before any dispatch"
+}

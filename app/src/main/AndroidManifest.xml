@@ -70,6 +70,40 @@
             </intent-filter>
         </activity>
 
+        <!-- Read-only GitHub virtual storage surface. Separate launcher entry keeps
+             Prompt 4 independent from the existing MainActivity navigation graph. -->
+        <activity
+            android:name=".RafGitFsActivity"
+            android:exported="true"
+            android:label="RafGitFS"
+            android:theme="@style/Theme.RafGitTools"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="rafgittools" android:host="storage" />
+            </intent-filter>
+        </activity>
+
+        <!-- Fail-closed GitHub repository privacy control plane. Separate launcher keeps
+             this high-impact operation isolated from normal repository browsing. -->
+        <activity
+            android:name=".RepositoryPrivacyActivity"
+            android:exported="true"
+            android:label="Raf Privacy"
+            android:theme="@style/Theme.RafGitTools"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <!-- Direct Java control surface for Kiwi <-> APK <-> local model. -->
         <activity
             android:name=".bridge.RafBridgeActivity"
@@ -105,16 +139,9 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <provider
-            android:name="androidx.startup.InitializationProvider"
-            android:authorities="${applicationId}.androidx-startup"
-            android:exported="false"
-            tools:node="merge">
-            <meta-data
-                android:name="androidx.work.WorkManagerInitializer"
-                android:value="androidx.startup"
-                tools:node="remove" />
-        </provider>
+        <!-- Keep WorkManager's AndroidX Startup initializer enabled. The application
+             schedules periodic work during Application.onCreate() and does not provide
+             an alternative WorkManager Configuration.Provider. -->
 
     </application>
 

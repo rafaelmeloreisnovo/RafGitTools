@@ -1,0 +1,58 @@
+{
+  "schema": "rafgitfs.closeout-receipt.v1",
+  "version": "RafGitFS-V1",
+  "generated_on": "2026-07-25",
+  "prompts_source_completed": "8/8",
+  "prompt_receipts": {
+    "1": "PR_300_MERGED",
+    "2": "PR_300_MERGED",
+    "3": "PR_301_OPEN",
+    "4": "PR_302_OPEN",
+    "5": "PR_303_OPEN",
+    "6": "PR_304_OPEN",
+    "7": "PR_305_OPEN",
+    "8": "PR_306_OPEN"
+  },
+  "f_ok": [
+    "architecture_contracts",
+    "room_v6",
+    "github_readonly_engine",
+    "compose_virtual_browser",
+    "cache_offline",
+    "governed_sync",
+    "workspace_three_way_diff",
+    "generated_branch_commit_push",
+    "draft_pull_request",
+    "rollback_commit",
+    "runtime_security_gate",
+    "accessibility_semantics",
+    "unit_adversarial_instrumented_tests"
+  ],
+  "f_gap": [
+    "github_actions_zero_step_no_logs",
+    "android_device_execution",
+    "production_signing",
+    "external_security_review",
+    "performance_baseline",
+    "end_to_end_test_repository"
+  ],
+  "f_next": [
+    "restore_observable_ci",
+    "compile_exact_head",
+    "run_on_arm32_and_arm64_android",
+    "execute_draft_pr_and_rollback_on_test_repository",
+    "capture_signing_sbom_and_performance_receipts"
+  ],
+  "blocked_by_policy": {
+    "direct_main_write": true,
+    "force_push": true,
+    "remote_delete": true,
+    "auto_merge": true
+  },
+  "remote_ci": "TOKEN_VAZIO_ZERO_STEP_NO_LOGS",
+  "android_device": "TOKEN_VAZIO",
+  "production_ready": false,
+  "certification_claim": false,
+  "claim_allowed": false,
+  "canonical_sha256": "73e73a9696ecf3e448fc098aa9a691151c9ceacf315fcdf9b622663bb55b1f25"
+}

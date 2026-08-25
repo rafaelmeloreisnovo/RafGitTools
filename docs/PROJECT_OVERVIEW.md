@@ -1,5 +1,13 @@
 # RafGitTools - Unified Git/GitHub Android Client
 
+## Implementation Scope (as of 2026-07-21)
+
+> **Current scope**: GitHub + JGit + multi-platform adapters (GitLab, Bitbucket, Gitea/Forgejo, Azure DevOps). The sections below describe the full vision; for verified implementation status see [EVOLUTIONARY_PROCESS.md](EVOLUTIONARY_PROCESS.md) and [STATUS_REPORT.md](STATUS_REPORT.md).
+>
+> **What's fully wired**: GitHub/GitLab/Bitbucket/Gitea/Azure DevOps API adapters; Git ops via JGit (25+ ops); Git LFS UI; SSH key rotation + PAT expiry detection; Room-backed offline queue; repository sync state worker; rafaelia JNI bridge (CMake); 15+ Compose screens.
+>
+> **What's stubbed / blocked**: terminal PTY (current impl is a `ProcessBuilder` command-allowlist, not a VT100/PTY — blocked on Termux `terminal-view`); LLaMA kernel JNI (bridge exists, `llama.h` missing); AI/ML features (GovernanceGate + ToolRouter present, model integration pending).
+
 ## Project Vision
 
 RafGitTools aims to create a comprehensive, high-performance Android application that combines the best features from multiple popular Git and GitHub clients while respecting their open-source licenses. The goal is to provide a unified, intuitive, and powerful mobile Git experience.
@@ -135,6 +143,8 @@ For a complete feature comparison with industry-leading Git clients, see [FEATUR
 - Intelligent refactoring
 - Test case generation
 - Security vulnerability prediction
+- **GovernanceGate** (kernel/GovernanceGate.kt): runtime allow/deny control for AI tool calls, driven by `assets/kernel/protocol/tool_registry.json`
+- **ToolRouter** (kernel/ToolRouter.kt): routes incoming AI tool-call JSON through GovernanceGate before dispatching to handlers
 
 ### DevOps & CI/CD (12+ Features)
 - Universal CI/CD support (GitHub Actions, GitLab CI, Jenkins, CircleCI, Travis CI)
@@ -149,7 +159,7 @@ For a complete feature comparison with industry-leading Git clients, see [FEATUR
 - Multi-language static analysis
 - Complexity metrics and technical debt tracking
 - Vulnerability scanning
-- License compliance checking
+- License metadata/policy checking
 - Performance profiling
 - Code style enforcement
 - Smart dependency updates
@@ -303,7 +313,7 @@ app/
 5. **Performance**: Optimized for mobile constraints
 6. **Offline-First**: Work without internet when possible
 
-## License Compliance
+## License Metadata and Policy Review
 
 This project respects all source licenses:
 
@@ -320,8 +330,8 @@ This project respects all source licenses:
 ## Development Roadmap
 
 ### Phase 1: Foundation (Weeks 1-4)
-- [ ] Project setup and architecture
-- [ ] Core Git operations (clone, commit, push, pull)
+- [x] Project setup and architecture
+- [x] Core Git operations (clone, commit, push, pull, amend, force-push-with-lease, pull-with-rebase, merge-with-strategy, cherry-pick, blame, reflog, revert, clean, reset)
 - [ ] Basic repository browsing
 - [ ] Authentication system
 
@@ -369,6 +379,7 @@ This project respects all source licenses:
 - GPG signature verification
 - No logging of sensitive data
 - Regular security audits
+- **DiffAuditLogger** (core/logging/DiffAuditLogger.kt): persistent audit trail for every diff operation — records file paths, change type, diff/file size, and MD5 hash to a DataStore-backed log (capped at 1,000 entries)
 
 ## Contributing
 

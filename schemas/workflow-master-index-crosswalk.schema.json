@@ -1,0 +1,280 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rafaelmeloreisnovo/RafGitTools/schemas/workflow-master-index-crosswalk.schema.json",
+  "title": "RAFAELIA Workflow Master Index Crosswalk v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "claim_allowed",
+    "profiles",
+    "selection_rules",
+    "cycle_routes",
+    "conflict_policy",
+    "directive_policy",
+    "normative_reference_registry",
+    "invariants"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "rafaelia.workflow-master-index-crosswalk/v1"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "claim_allowed": {
+      "const": false
+    },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "semantic_v1",
+        "control_v2"
+      ],
+      "properties": {
+        "semantic_v1": {
+          "$ref": "#/$defs/profile"
+        },
+        "control_v2": {
+          "$ref": "#/$defs/profile"
+        }
+      }
+    },
+    "selection_rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "intent",
+          "required_profiles",
+          "decision"
+        ],
+        "properties": {
+          "intent": {
+            "type": "string",
+            "minLength": 1
+          },
+          "required_profiles": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "semantic_v1",
+                "control_v2"
+              ]
+            }
+          },
+          "decision": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "cycle_routes": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "cycle_state",
+          "semantic_layers",
+          "control_paths"
+        ],
+        "properties": {
+          "cycle_state": {
+            "enum": [
+              "PSI_INTENT",
+              "CHI_OBSERVE",
+              "RHO_NOISE",
+              "DELTA_TRANSFORM",
+              "SIGMA_CUSTODY",
+              "OMEGA_CLOSE",
+              "PSI_REOPEN"
+            ]
+          },
+          "semantic_layers": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^S(?:0[1-9]|[12][0-9]|30)$"
+            }
+          },
+          "control_paths": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 3
+            }
+          }
+        }
+      }
+    },
+    "conflict_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "default_state",
+        "silent_precedence",
+        "required_record",
+        "owner",
+        "exit_criteria"
+      ],
+      "properties": {
+        "default_state": {
+          "const": "BLOCKED"
+        },
+        "silent_precedence": {
+          "const": false
+        },
+        "required_record": {
+          "const": "CONTRADICTION"
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "exit_criteria": {
+          "type": "string",
+          "minLength": 10
+        }
+      }
+    },
+    "directive_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_type",
+        "authoritative_schema",
+        "allowed_effects",
+        "forbidden_effects",
+        "retroactive_default",
+        "automatic_merge",
+        "claim_promotion"
+      ],
+      "properties": {
+        "record_type": {
+          "const": "DIRECTIVE_EVENT"
+        },
+        "authoritative_schema": {
+          "type": "string",
+          "minLength": 10
+        },
+        "allowed_effects": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "INTERPRET",
+              "ROUTE",
+              "WRITE",
+              "BLOCK"
+            ]
+          }
+        },
+        "forbidden_effects": {
+          "type": "array",
+          "contains": {
+            "const": "PROMOTE"
+          }
+        },
+        "retroactive_default": {
+          "const": false
+        },
+        "automatic_merge": {
+          "const": false
+        },
+        "claim_promotion": {
+          "const": false
+        }
+      }
+    },
+    "normative_reference_registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "adoption_state",
+        "validator"
+      ],
+      "properties": {
+        "path": {
+          "const": "configs/normative-reference-registry.v1.json"
+        },
+        "adoption_state": {
+          "const": "REFERENCE_ONLY"
+        },
+        "validator": {
+          "type": "string",
+          "minLength": 3
+        }
+      }
+    },
+    "invariants": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 3
+      }
+    }
+  },
+  "$defs": {
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "schema_field",
+        "schema_value",
+        "authority",
+        "exclusions"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema_field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema_value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authority": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "exclusions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

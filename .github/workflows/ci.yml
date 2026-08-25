@@ -14,16 +14,73 @@ on:
 permissions:
   contents: read
   issues: write
+  pull-requests: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  GITHUB_CLIENT_ID_DEV: ${{ vars.GITHUB_CLIENT_ID_DEV }}
-  GITHUB_CLIENT_ID_PRODUCTION: ${{ vars.GITHUB_CLIENT_ID_PRODUCTION }}
+  APP_CLIENT_ID_DEV: ${{ vars.APP_CLIENT_ID_DEV }}
+  APP_CLIENT_ID_PRODUCTION: ${{ vars.APP_CLIENT_ID_PRODUCTION }}
 
 jobs:
+  coherence-contract:
+    name: RAFAELIA coherence / anti-regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Execute canonical coherence gate
+        run: |
+          set -eu
+          mkdir -p artifacts
+          sh scripts/validate_rafaelia_workflow.sh
+
+      - name: Publish coherence boundary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## RAFAELIA coherence / anti-regression"
+            echo
+            echo "- claim_allowed: \`false\`"
+            echo "- automatic_promotion: \`false\`"
+            echo "- CI/hash/cron evidence role: operational only"
+            echo "- scientific/physical/legal proof: not implied"
+            echo
+            if [ -f artifacts/uncertainty-urgency-ethics-license-report.json ]; then
+              echo "### uncertainty/urgency/ethics/license report"
+              echo '```json'
+              cat artifacts/uncertainty-urgency-ethics-license-report.json
+              echo '```'
+            else
+              echo "uncertainty report: \`TOKEN_VAZIO_NOT_EMITTED\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coherence receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rafaelia-coherence-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 30
+
   android-client:
     name: Test, lint and assemble devDebug
     runs-on: ubuntu-latest
@@ -45,6 +102,14 @@ jobs:
 
       - name: Prepare Gradle wrapper
         run: chmod +x gradlew
+
+      - name: Validate Android startup contract
+        run: python3 -m unittest discover -s tests -p 'test_validate_runtime_truth.py' -v
+
+      - name: Validate documentation claim boundary
+        run: |
+          python3 scripts/validate_documentation_claim_boundary.py --strict
+          python3 -m unittest discover -s tests -p 'test_validate_documentation_claim_boundary.py' -v
 
       - name: Authentication tests
         id: auth_tests
@@ -105,10 +170,11 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Publish build result to PR 236
-        if: always() && github.ref == 'refs/heads/main'
+      - name: Publish build result to current PR
+        if: always() && github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           AUTH_RESULT: ${{ steps.auth_tests.outcome }}
           UNIT_RESULT: ${{ steps.unit_tests.outcome }}
           LINT_RESULT: ${{ steps.lint.outcome }}
@@ -117,6 +183,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          test -n "$PR_NUMBER"
+          case "$PR_NUMBER" in
+            *[!0-9]*) echo "invalid PR_NUMBER=$PR_NUMBER" >&2; exit 2 ;;
+          esac
           cat > /tmp/rafgittools-ci.md <<EOF
           ## Resultado automático do fechamento RafGitTools
 
@@ -130,9 +200,13 @@ jobs:
           | Assemble devDebug | \`${ASSEMBLE_RESULT}\` |
           | APK + SHA-256 | \`${APK_RESULT}\` |
 
+          claim_allowed=false
+
+          CI/build/hash constituem evidência operacional do commit observado; não constituem prova científica, física, jurídica ou de release.
+
           Execução: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
           EOF
-          gh api "repos/${GITHUB_REPOSITORY}/issues/236/comments" \
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
             --method POST \
             --field body="$(cat /tmp/rafgittools-ci.md)"
 

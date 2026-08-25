@@ -1,0 +1,77 @@
+{
+  "schema": "rafaelia.relation-coverage.v1",
+  "date": "2026-08-22",
+  "state": "PARTIAL_BOUNDED_INVENTORY",
+  "claim_allowed": false,
+  "gap_id": "TV-V2-RELATION-COVERAGE-001",
+  "relations": [
+    {
+      "source": "Mapa/Drive Deep Corpus Delta 0004",
+      "relation": "SUPPORTS",
+      "target": "A2 RAW048..050 current custody closure",
+      "uncertainty": "bounded to exact current provider objects/bytes/hash/JSON/PIDs",
+      "boundary_or_falsifier": "contradictory current bytes/hash or invalid JSON identity",
+      "next_gate": "preserve A2 closed; proceed to A1/A3"
+    },
+    {
+      "source": "A1 RAW018",
+      "relation": "BLOCKED_BY",
+      "target": "A3 FULL_CORPUS_OFFICIAL_V2",
+      "uncertainty": "current provider/immutable byte witness absent",
+      "boundary_or_falsifier": "observe exact provider route or cryptographically bound immutable witness",
+      "next_gate": "recover A1 then execute full declared corpus"
+    },
+    {
+      "source": "GAIA_phi:d3f49c10b74f740ee2024314dff91e9a0ef20b2f/dados/cognitive_symbiotic.py",
+      "relation": "IMPLEMENTS",
+      "target": "Psi_v/T_Omega complex feedback engineering mapping",
+      "uncertainty": "scientific/cognitive interpretation not established",
+      "boundary_or_falsifier": "producer tests/benchmarks may refute implementation assumptions; no semantic promotion",
+      "next_gate": "inspect deterministic CI receipt on GAIA PR98"
+    },
+    {
+      "source": "GAIA_phi docs/PSI_TOMEGA_COMPLEX_FEEDBACK_V1.md",
+      "relation": "SUPPORTS",
+      "target": "local implementation test status",
+      "uncertainty": "producer-local environment only",
+      "boundary_or_falsifier": "new CI failure or source blob drift",
+      "next_gate": "commit/source-bound CI receipt"
+    },
+    {
+      "source": "GAIA_phi LICENSE",
+      "relation": "LICENSED_BY",
+      "target": "GAIA repository source",
+      "uncertainty": "does not extend automatically to dependencies/models/datasets",
+      "boundary_or_falsifier": "payload-specific license differs",
+      "next_gate": "inventory external/mixed payloads separately"
+    },
+    {
+      "source": "PyTorch upstream LICENSE",
+      "relation": "LICENSED_BY",
+      "target": "torch direct dependency source",
+      "uncertainty": "specific distributed wheels/transitives not inventoried here",
+      "boundary_or_falsifier": "distribution-specific license bundle differs or adds obligations",
+      "next_gate": "bind exact packaged dependency when redistribution is in scope"
+    },
+    {
+      "source": "parable-technical-links.v1.json",
+      "relation": "ANALOGY_OF",
+      "target": "typed technical objects",
+      "uncertainty": "none as evidence because evidence_effect=NONE",
+      "boundary_or_falsifier": "parable must never be sole evidence",
+      "next_gate": "technical target retains its own evidence gate"
+    },
+    {
+      "source": "RafaelIA B7",
+      "relation": "HAS_GAP",
+      "target": "B7_TO_T2_BRIDGE",
+      "uncertainty": "no formal bridge observed",
+      "boundary_or_falsifier": "produce explicit transformation/invariant/falsifier",
+      "next_gate": "formal proof/typed bridge or preserve separation"
+    }
+  ],
+  "closure": {
+    "state": "PARTIAL_BOUNDED_INVENTORY",
+    "boundary": "This is not exhaustive relation coverage and must not be treated as a complete graph."
+  }
+}

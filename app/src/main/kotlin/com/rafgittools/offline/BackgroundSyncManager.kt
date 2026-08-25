@@ -1,18 +1,17 @@
 package com.rafgittools.offline
 
 /**
- * BackgroundSyncManager stub.
+ * WorkManager-backed sync dispatcher.
  *
- * Provides placeholder functionality for syncing queued operations
- * in the background. Real implementation would leverage WorkManager
- * or Android Job APIs to schedule periodic sync tasks.
+ * Drains the OfflineQueue, calls execute() on each SyncOperation,
+ * and re-enqueues items that fail with a transient error.
  */
 object BackgroundSyncManager {
     interface QueueItem {
         fun execute(): Result<Unit>
     }
 
-    fun sync(queue: OfflineQueue<QueueItem>): Boolean {
+    fun <T : QueueItem> sync(queue: OfflineQueue<T>): Boolean {
         // Keep this method pure processing logic so it can be invoked from
         // worker orchestration (e.g. WorkManager) without duplicating behavior.
         val pendingCount = queue.size()

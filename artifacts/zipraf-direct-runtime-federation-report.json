@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "errors": [],
+  "authorities": 7,
+  "local_tests": 5,
+  "semantic_sha256": "fd7c041e569d1859939cad9dff7c0c5bfff9e123f0d162bff64683aeb055cb5e",
+  "storage_method": "STORE",
+  "decompression_required": false,
+  "stage_count": 3,
+  "core_count_max": 8,
+  "fixed_bits_required": true,
+  "remote_runtime": "TOKEN_VAZIO",
+  "claim_allowed": false
+}

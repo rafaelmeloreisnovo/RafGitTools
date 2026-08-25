@@ -1,0 +1,5 @@
+status=PASS_LOCAL_DECLARED_SCOPE
+deterministic=true
+resume=true
+archive_extracted=false
+payload_copied=false

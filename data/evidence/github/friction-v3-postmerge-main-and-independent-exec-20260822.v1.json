@@ -1,0 +1,85 @@
+{
+  "schema": "rafaelia.friction-v3.postmerge-main-independent-exec-receipt.v1",
+  "date": "2026-08-22",
+  "state": "POSTMERGE_CONTENT_BOUND__INDEPENDENT_EXECUTION_PASS__PROVIDER_OPEN",
+  "claim_allowed": false,
+  "rafgittools_main": {
+    "commit": "beac247565cba4f1dac9125f1a1cacb0186c981f",
+    "merge_pr": 377,
+    "merge_parent_base": "8e78ea64573b95c5edaa93ea94627f248c2c1e80",
+    "merge_parent_head": "4453fe723473110b21ee7d6732b43b9da844d9cd",
+    "signature_verified": true,
+    "branch_protection_observed": false,
+    "server_enforcement_state": "TOKEN_VAZIO_SERVER_ENFORCEMENT"
+  },
+  "postmerge_content_identity": {
+    "state": "VERIFIED_SAMPLED_GOVERNANCE_ARTIFACTS",
+    "method": "compare Git blob identities in data/governance between merged head 4453fe7... and main beac247...",
+    "matching_blobs": {
+      "data/governance/complex-network-design-relations.v1.json": "e8605885c476cfdb55dc6a8e92d5297d30fe7c4c",
+      "data/governance/ethics-by-design-use-registry.v1.json": "f22419729fbc6c129f0a9696c9ee948d6ec2ab4f",
+      "data/governance/friction-baseline.v1.json": "c8f5b849481bc5077aec06f0b047607220277ab8",
+      "data/governance/friction-baseline.v2.json": "1e0dafb54c83cf44d6a7d205f3951b86e983702e",
+      "data/governance/license-friction-matrix.v1.json": "29a22cdba5f76506cc4b33136150bd397f2e5256",
+      "data/governance/uncertainty-friction-v3.applied-status-20260822.json": "2d916986f3f9f0fe838ea9acfdd2a8db2cf3b886"
+    },
+    "boundary": "sampled governance identity is not a post-merge runtime CI receipt"
+  },
+  "premerge_v3_gate": {
+    "run_id": 32574481174,
+    "job_id": 97034679154,
+    "result": "SUCCESS",
+    "tests": "12/12 PASS",
+    "guarded_invariants": 52,
+    "artifact_id": 9476220537,
+    "artifact_digest": "sha256:e2992a540066eb8a58e7e5651bf56e59525a00ae073c6c88d4950e95f5a21f32",
+    "state": "PREMERGE_RECEIPT_PRESERVED_NOT_INHERITED_AS_POSTMERGE_RUNTIME"
+  },
+  "gaia_main": {
+    "commit": "e5b62377ac9e7ee3e013ce68a4846538c2695604",
+    "merge_pr": 99,
+    "branch_protection_observed": false,
+    "source_path": "dados/cognitive_symbiotic.py",
+    "source_git_blob": "1bb228392c51d3bfd0d85ae8e6ce92c40fe28dd1"
+  },
+  "gaia_independent_execution": {
+    "producer_receipt_pr": 100,
+    "producer_receipt_head": "ee1496e97a3cd7c2909ffe3b08ee126c94912b63",
+    "executor": "INDEPENDENT_ASSISTANT_CONTAINER",
+    "python": "3.13.5",
+    "torch": "2.10.0+cpu",
+    "canonical_tests": "9/9 PASS",
+    "supplemental_checks": "16/16 PASS",
+    "output_digest_sha256": "8940b9bfd5fa68539e8ec6af72056d6ab66a223f6523fbdba20c9e8a90800ec9",
+    "identity_gate": "source git hash-object == 1bb228392c51d3bfd0d85ae8e6ce92c40fe28dd1",
+    "state": "INDEPENDENT_EXECUTION_PASS"
+  },
+  "github_actions_provider": {
+    "state": "TOKEN_VAZIO_PROVIDER_EXECUTION",
+    "zero_step_observations": 3,
+    "root_cause": "TOKEN_VAZIO",
+    "anti_regression": "independent PASS must not be relabeled as GitHub Actions CI PASS"
+  },
+  "friction_baseline_v2": {
+    "scope_id": "FRICTION_SCOPE:GAIA_COMPLEX_FEEDBACK_RAFGITTOOLS_V3_PROVIDER_PROBE:20260822",
+    "unresolved_gap_count": 5,
+    "unbound_license_unit_count": 2,
+    "provider_pre_step_failure_count": 3,
+    "untyped_relation_count": 0,
+    "missing_rollback_count": 0,
+    "missing_provenance_count": 0,
+    "manual_rework_count": "TOKEN_VAZIO_UNMEASURED",
+    "aggregate": "TOKEN_VAZIO_SCORE"
+  },
+  "anti_regression": [
+    "merged != postmerge runtime verified",
+    "premerge CI PASS is preserved but not silently inherited",
+    "independent executor PASS != GitHub Actions PASS",
+    "branch protection disabled remains an enforcement gap",
+    "provider root cause remains TOKEN_VAZIO",
+    "claim_allowed remains false"
+  ],
+  "F_ok": "RafGitTools and GAIA merges bound; sampled V3 governance blobs match merged head; exact GAIA source blob passes 9 canonical tests plus 16 supplemental independent checks",
+  "F_gap": "post-merge GitHub Actions provider execution and server-side branch enforcement remain unverified/absent; license payload and scientific/domain gaps remain",
+  "F_next": "route this receipt into Mapa/Drive; preserve GAIA PR100 as producer receipt candidate; pursue server-side enforcement and a GitHub shell-start receipt independently"
+}

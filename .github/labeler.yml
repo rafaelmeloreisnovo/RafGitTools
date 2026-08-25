@@ -1,68 +1,96 @@
-# Auto-labeling configuration for pull requests
-# This file is used by the labeler action in pr-validation.yml
+# Auto-labeling configuration for actions/labeler v5+
+# Keep routing structural only: labels do not imply correctness, evidence,
+# scientific validity, legal status, release readiness, or claim promotion.
 
-# Documentation changes
-'documentation':
-  - '**/*.md'
-  - 'docs/**/*'
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**/*'
 
-# Source code changes
-'code':
-  - 'app/src/**/*.kt'
-  - 'app/src/**/*.java'
+code:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'app/src/**/*.kt'
+          - 'app/src/**/*.java'
 
-# UI changes
-'ui':
-  - 'app/src/**/ui/**/*'
-  - 'app/src/**/theme/**/*'
-  - 'app/src/main/res/**/*'
+ui:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'app/src/**/ui/**/*'
+          - 'app/src/**/theme/**/*'
+          - 'app/src/main/res/**/*'
 
-# Tests
-'tests':
-  - 'app/src/test/**/*'
-  - 'app/src/androidTest/**/*'
-  - '**/*Test.kt'
-  - '**/*Test.java'
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'app/src/test/**/*'
+          - 'app/src/androidTest/**/*'
+          - '**/*Test.kt'
+          - '**/*Test.java'
+          - 'tests/**/*'
 
-# Build configuration
-'build':
-  - '*.gradle'
-  - '*.gradle.kts'
-  - 'gradle/**/*'
-  - 'gradle.properties'
+build:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '*.gradle'
+          - '*.gradle.kts'
+          - '**/build.gradle'
+          - '**/build.gradle.kts'
+          - 'gradle/**/*'
+          - 'gradle.properties'
 
-# CI/CD changes
-'ci/cd':
-  - '.github/workflows/**/*'
-  - '.github/actions/**/*'
+ci/cd:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/**/*'
+          - '.github/actions/**/*'
+          - '.github/labeler.yml'
 
-# Dependencies
-'dependencies':
-  - 'gradle/libs.versions.toml'
-  - '**/build.gradle'
-  - '**/build.gradle.kts'
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'gradle/libs.versions.toml'
+          - '**/build.gradle'
+          - '**/build.gradle.kts'
+          - 'requirements/**/*'
 
-# Git operations
-'git-operations':
-  - 'app/src/**/git/**/*'
+git-operations:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'app/src/**/git/**/*'
 
-# GitHub integration
-'github-integration':
-  - 'app/src/**/github/**/*'
-  - 'app/src/**/api/**/*'
+github-integration:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'app/src/**/github/**/*'
+          - 'app/src/**/api/**/*'
 
-# Security
-'security':
-  - 'app/src/**/auth/**/*'
-  - 'app/src/**/security/**/*'
+security:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'app/src/**/auth/**/*'
+          - 'app/src/**/security/**/*'
+          - '.github/workflows/codeql.yml'
+          - '.github/workflows/security.yml'
 
-# Database
-'database':
-  - 'app/src/**/data/**/*'
-  - 'app/src/**/database/**/*'
-  - 'app/src/**/dao/**/*'
+database:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'app/src/**/data/**/*'
+          - 'app/src/**/database/**/*'
+          - 'app/src/**/dao/**/*'
 
-# Networking
-'networking':
-  - 'app/src/**/network/**/*'
-  - 'app/src/**/api/**/*'
+networking:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'app/src/**/network/**/*'
+          - 'app/src/**/api/**/*'
+
+governance:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'configs/**/*'
+          - 'data/evidence/**/*'
+          - 'scripts/validate_*.py'
+          - 'scripts/validate_*.sh'

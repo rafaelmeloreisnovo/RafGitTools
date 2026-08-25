@@ -1,0 +1,2 @@
+# Exact dependency version for the scoped federation audit.
+pytest==8.4.1

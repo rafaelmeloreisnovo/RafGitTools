@@ -14,8 +14,8 @@ on:
       - develop
 
 env:
-  GITHUB_CLIENT_ID_DEV: ${{ vars.GITHUB_CLIENT_ID_DEV || 'local-dev-client-id' }}
-  GITHUB_CLIENT_ID_PRODUCTION: ${{ vars.GITHUB_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
+  APP_CLIENT_ID_DEV: ${{ vars.APP_CLIENT_ID_DEV || 'local-dev-client-id' }}
+  APP_CLIENT_ID_PRODUCTION: ${{ vars.APP_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
   ALLOW_UNSIGNED_RELEASE: "true"
 
 jobs:
@@ -35,6 +35,8 @@ jobs:
       - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh
       - name: Generate local.properties
         run: ./scripts/prepare_local_properties.sh
+      - name: Test fail-closed Android runtime receipt contract
+        run: python3 -m unittest discover -s tests -p 'test_android_runtime_receipt.py' -v
       - name: Build production release (unsigned validation)
         run: ./scripts/gradlew_with_java17.sh assembleProductionRelease ${{ inputs.gradle_args || '--stacktrace --info' }}
       - name: Validate formulas and CI graph consistency

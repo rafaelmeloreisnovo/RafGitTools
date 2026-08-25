@@ -1,0 +1,52 @@
+{
+  "schema": "rafaelia.session_single_subtokenization.v2",
+  "session_id": "DANCA_LUZ_MATERIA_PLASMA_RLL_20260718",
+  "supersedes": "configs/session-single-subtokenization-v1.json",
+  "interaction_model": "ONE_CAPSULE_ORDERED_ATOMIC_SUBTOKENS",
+  "source_scope": [
+    "current_session",
+    "uploaded_session_transcript",
+    "merged_RLL_PR_564",
+    "merged_RLL_PR_565",
+    "RLL_main_16f25acf4dbf587dfdca915aecaf9fcbc0be73a5",
+    "merged_RafPolimata_PR_138",
+    "merged_RafGitTools_PR_266"
+  ],
+  "excluded_topics": ["digital_identity"],
+  "tokens": [
+    {"sequence":1,"token_id":"S01","domain":"light_matter","statement":"The cited experiment reports coherent exciton-polaron beats in CsPbI3 nanocrystals at 2 K with 3.2 meV and 5.1 meV modes.","modality":"REPORTED_INPUT","negation":false,"numbers":["2 K","3.2 meV","5.1 meV"],"authority":"external_primary_source","claim_gate":"SOURCE_REQUIRED"},
+    {"sequence":2,"token_id":"S02","domain":"scale_boundary","statement":"Temporal quantum beats are not an observed spatial spiral.","modality":"BOUNDARY","negation":true,"numbers":[],"authority":"instituto-Rafael/relativity-living-light","claim_gate":"CLOSED"},
+    {"sequence":3,"token_id":"S03","domain":"geometry","statement":"A logarithmic spiral using sqrt(3)/2 is a prescribed geometry, not a derived black-hole orbit.","modality":"MODEL_BOUNDARY","negation":true,"numbers":["sqrt(3)/2"],"authority":"instituto-Rafael/relativity-living-light","claim_gate":"CLOSED"},
+    {"sequence":4,"token_id":"S04","domain":"frequency","statement":"144 kHz and 288 kHz are treated as an external fundamental and second harmonic, not direct atomic single-photon ionization energies.","modality":"TESTABLE_HYPOTHESIS","negation":true,"numbers":["144 kHz","288 kHz"],"authority":"instituto-Rafael/relativity-living-light","claim_gate":"CLOSED"},
+    {"sequence":5,"token_id":"S05","domain":"plasma_transport","statement":"Plasma conductivity depends on frequency, collisions, ionization, temperature and magnetic field and is generally tensorial.","modality":"PHYSICAL_MODEL","negation":false,"numbers":[],"authority":"instituto-Rafael/relativity-living-light","claim_gate":"MODEL_ONLY"},
+    {"sequence":6,"token_id":"S06","domain":"thermal_balance","statement":"Ordered mean inflow can coexist with microscopic damping, heating, transport and radiation.","modality":"PHYSICAL_MODEL","negation":false,"numbers":[],"authority":"instituto-Rafael/relativity-living-light","claim_gate":"MODEL_ONLY"},
+    {"sequence":7,"token_id":"S07","domain":"corona","statement":"Electrical corona discharge and astrophysical hot corona are distinct regimes.","modality":"BOUNDARY","negation":true,"numbers":[],"authority":"instituto-Rafael/relativity-living-light","claim_gate":"CLOSED"},
+    {"sequence":8,"token_id":"S08","domain":"magnetogenesis","statement":"Non-parallel density and electron-temperature gradients can seed magnetic field through a Biermann-like term.","modality":"MODEL_CANDIDATE","negation":false,"numbers":[],"authority":"instituto-Rafael/relativity-living-light","claim_gate":"MODEL_ONLY"},
+    {"sequence":9,"token_id":"S09","domain":"black_hole_flow","statement":"The accretion flow has an ordered mean structure plus turbulence, shocks, reconnection and phase mixing.","modality":"MULTISCALE_MODEL","negation":false,"numbers":[],"authority":"instituto-Rafael/relativity-living-light","claim_gate":"MODEL_ONLY"},
+    {"sequence":10,"token_id":"S10","domain":"carbon_phase","statement":"Diamond bonding is blocked in fully ionized plasma; recondensation is only a candidate during cooling or quench.","modality":"PHASE_BOUNDARY","negation":true,"numbers":[],"authority":"instituto-Rafael/relativity-living-light","claim_gate":"CLOSED"},
+    {"sequence":11,"token_id":"S11","domain":"compact_remnant","statement":"A dense carbon-oxygen compact companion is not equivalent to a confirmed planet made entirely of ordinary sp3 diamond.","modality":"EVIDENCE_BOUNDARY","negation":true,"numbers":[],"authority":"instituto-Rafael/relativity-living-light","claim_gate":"CLOSED"},
+    {"sequence":12,"token_id":"S12","domain":"gpt_architecture","statement":"GPT transforms contextual representations and predicts tokens; it does not possess a demonstrated medical intention or volition.","modality":"SYSTEM_BOUNDARY","negation":true,"numbers":[],"authority":"rafaelmeloreisnovo/RafGitTools","claim_gate":"CLOSED"},
+    {"sequence":13,"token_id":"S13","domain":"semantic_risk","statement":"Compression may close a branch too early, so negation, modality, exceptions, numbers and units must be preserved.","modality":"GOVERNANCE_RULE","negation":false,"numbers":[],"authority":"rafaelmeloreisnovo/RafGitTools","claim_gate":"STRUCTURAL"},
+    {"sequence":14,"token_id":"S14","domain":"orchestration","statement":"Permutations and scale are compiled by RafPolimata after authority, unit and claim gates.","modality":"FEDERATION_RULE","negation":false,"numbers":[],"authority":"rafaelmeloreisnovo/RafPolimata","claim_gate":"STRUCTURAL"},
+    {"sequence":15,"token_id":"S15","domain":"mapping","statement":"Mapa stores pointers and dependencies and does not become the source authority.","modality":"FEDERATION_RULE","negation":true,"numbers":[],"authority":"rafaelmeloreisnovo/Mapa","claim_gate":"STRUCTURAL"},
+    {"sequence":16,"token_id":"S16","domain":"claim_boundary","statement":"The unified session capsule does not validate RLL cosmology, a laboratory plasma, an astrophysical source or exoplanet composition.","modality":"GLOBAL_BOUNDARY","negation":true,"numbers":[],"authority":"rafaelmeloreisnovo/RafGitTools","claim_gate":"CLOSED"},
+    {"sequence":17,"token_id":"S17","domain":"microscopic_collision","statement":"Microscopic collision means scattering or field-mediated quantum interaction, not literal hard-sphere contact.","modality":"SEMANTIC_CORRECTION","negation":true,"numbers":[],"authority":"instituto-Rafael/relativity-living-light","claim_gate":"CLOSED"},
+    {"sequence":18,"token_id":"S18","domain":"microphysics_thresholds","statement":"Compression can heat, excite, dissociate and ionize, but it does not automatically create subparticles; nuclear, pair and subnuclear channels require process-specific thresholds and cross sections.","modality":"PHYSICAL_BOUNDARY","negation":true,"numbers":[],"authority":"instituto-Rafael/relativity-living-light","claim_gate":"CLOSED"},
+    {"sequence":19,"token_id":"S19","domain":"pauli_spin_degeneracy","statement":"Pauli exclusion concerns occupation of the same quantum state, while electron spin contributes magnetic moment; neither statement alone supplies a macroscopic magnetic or gravitational solution.","modality":"QUANTUM_BOUNDARY","negation":true,"numbers":[],"authority":"instituto-Rafael/relativity-living-light","claim_gate":"CLOSED"},
+    {"sequence":20,"token_id":"S20","domain":"stress_energy_gravity","statement":"Matter, electromagnetic fields and radiation contribute to stress-energy, but an equivalent mass-density proxy is not an Einstein-equation backreaction solution or a new plasma-gravity force.","modality":"RELATIVISTIC_BOUNDARY","negation":true,"numbers":[],"authority":"instituto-Rafael/relativity-living-light","claim_gate":"CLOSED"},
+    {"sequence":21,"token_id":"S21","domain":"magnetic_field_evolution","statement":"Magnetic field lines are representations of the field and evolve with plasma flow through induction, advection, diffusion and reconnection; they are not material strings pulled directly by gravity.","modality":"MHD_BOUNDARY","negation":true,"numbers":[],"authority":"instituto-Rafael/relativity-living-light","claim_gate":"MODEL_ONLY"},
+    {"sequence":22,"token_id":"S22","domain":"photon_thrust","statement":"Photon momentum transfer produces thrust proportional to power/c and radiative acceleration proportional to opacity times flux/c; the Eddington ratio benchmarks competition with gravity.","modality":"PHYSICAL_MODEL","negation":false,"numbers":[],"authority":"instituto-Rafael/relativity-living-light","claim_gate":"MODEL_ONLY"}
+  ],
+  "routes": {
+    "physics":"instituto-Rafael/relativity-living-light",
+    "orchestration":"rafaelmeloreisnovo/RafPolimata",
+    "governance":"rafaelmeloreisnovo/RafGitTools",
+    "map":"rafaelmeloreisnovo/Mapa",
+    "editorial":"rafaelmeloreisnovo/papers"
+  },
+  "cross_source_merge_requires_bridge":true,
+  "private_payload_copied":false,
+  "automatic_cross_repo_write":false,
+  "automatic_merge":false,
+  "claim_allowed":false
+}

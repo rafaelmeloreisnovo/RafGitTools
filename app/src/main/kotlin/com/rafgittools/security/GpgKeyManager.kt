@@ -2,6 +2,11 @@ package com.rafgittools.security
 
 import java.io.File
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 
 /**
  * GpgKeyManager — GPG key operations via the system gpg binary.
@@ -26,6 +31,7 @@ object GpgKeyManager {
     private const val GPG_TIMEOUT_SECS = 30L
     private const val GPG_NOT_FOUND_MSG =
         "gpg not found. On Termux run: pkg install gnupg"
+    private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // ─── Internal helpers ──────────────────────────────────────────────────
 
@@ -44,21 +50,21 @@ object GpgKeyManager {
         val gpg = findGpg()
             ?: return GpgResult(exitCode = -1, stdout = "", stderr = GPG_NOT_FOUND_MSG)
         return try {
-            val pb = ProcessBuilder(listOf(gpg) + args.toList())
-            val process = pb.start()
+            val process = ProcessBuilder(listOf(gpg) + args.toList())
+                .redirectErrorStream(true)
+                .start()
             if (stdinText != null) {
                 process.outputStream.bufferedWriter().use { it.write(stdinText) }
             }
+            val outputFuture = ioScope.async { process.inputStream.bufferedReader().readText() }
             val finished = process.waitFor(GPG_TIMEOUT_SECS, TimeUnit.SECONDS)
+            val output = runBlocking { outputFuture.await() }
             if (!finished) {
                 process.destroyForcibly()
+                process.waitFor()
                 return GpgResult(exitCode = -1, stdout = "", stderr = "gpg operation timed out")
             }
-            GpgResult(
-                exitCode = process.exitValue(),
-                stdout = process.inputStream.bufferedReader().readText(),
-                stderr = process.errorStream.bufferedReader().readText()
-            )
+            GpgResult(exitCode = process.exitValue(), stdout = output, stderr = "")
         } catch (e: Exception) {
             GpgResult(exitCode = -1, stdout = "", stderr = "Failed to launch gpg: ${e.message}")
         }
@@ -154,6 +160,31 @@ object GpgKeyManager {
         val r = runGpg("--list-secret-keys", "--with-colons", "--with-fingerprint")
         if (r.exitCode != 0) throw IllegalStateException("GPG list-keys failed: ${r.stderr}")
         parseColonOutput(r.stdout)
+    }
+
+    /**
+     * Verify a detached binary signature over [data].
+     *
+     * The signer's public key must already be present in the local keyring
+     * (imported via [importKey]).  Returns `true` when gpg exits 0 (good
+     * signature), `false` when the signature is invalid or the key is not
+     * trusted.  Returns `Result.failure` only for I/O or process errors.
+     *
+     * @param data           original data that was signed
+     * @param signatureBytes raw bytes of the detached .sig file
+     */
+    fun verifySignature(data: ByteArray, signatureBytes: ByteArray): Result<Boolean> = runCatching {
+        val tmpData = File.createTempFile("raf_gpg_data_", ".bin")
+        val tmpSig = File.createTempFile("raf_gpg_sig_", ".sig")
+        try {
+            tmpData.writeBytes(data)
+            tmpSig.writeBytes(signatureBytes)
+            val r = runGpg("--batch", "--verify", tmpSig.absolutePath, tmpData.absolutePath)
+            r.exitCode == 0
+        } finally {
+            tmpData.delete()
+            tmpSig.delete()
+        }
     }
 
     /**

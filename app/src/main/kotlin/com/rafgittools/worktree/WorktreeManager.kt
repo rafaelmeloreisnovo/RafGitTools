@@ -2,6 +2,11 @@ package com.rafgittools.worktree
 
 import java.io.File
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 
 /**
  * WorktreeManager — Git worktree management via the system `git` binary.
@@ -11,35 +16,47 @@ import java.util.concurrent.TimeUnit
  * feature development, hotfix branches, or CI staging without stash/pop cycles.
  *
  * Requires Git 2.5+ (standard on Android Termux and modern Linux).
- * A non-empty [repoPath] must be passed to execute real git commands; omitting
- * it (default "") returns [NotImplementedError] for backward-compatibility with
- * placeholder-level callers.
+ * Operations that require a repository reject a blank [repoPath] as invalid
+ * input; a missing caller argument is not an unimplemented execution path.
  *
  * See: git-worktree(1) man page.
  */
 object WorktreeManager {
 
     private const val GIT_TIMEOUT_SECS = 30L
+    private const val REPO_PATH_REQUIRED_MSG = "repoPath must not be blank"
+    private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // ─── Internal helpers ──────────────────────────────────────────────────
 
     private data class GitResult(val exitCode: Int, val stdout: String, val stderr: String)
 
+    private fun checkGitAvailable(): Boolean = runCatching {
+        val p = ProcessBuilder("git", "--version").start()
+        p.waitFor(5, TimeUnit.SECONDS) && p.exitValue() == 0
+    }.getOrDefault(false)
+
+    private fun requireRepoPath(repoPath: String): Result<Unit>? =
+        if (repoPath.isBlank()) Result.failure(IllegalArgumentException(REPO_PATH_REQUIRED_MSG)) else null
+
     private fun runGit(repoPath: String, vararg args: String): GitResult {
+        if (!checkGitAvailable()) {
+            return GitResult(-1, "", "git not found — install Termux and run: pkg install git")
+        }
         return try {
-            val pb = ProcessBuilder(listOf("git") + args.toList())
+            val process = ProcessBuilder(listOf("git") + args.toList())
                 .directory(File(repoPath))
-            val process = pb.start()
+                .redirectErrorStream(true)
+                .start()
+            val outputFuture = ioScope.async { process.inputStream.bufferedReader().readText() }
             val finished = process.waitFor(GIT_TIMEOUT_SECS, TimeUnit.SECONDS)
+            val output = runBlocking { outputFuture.await() }
             if (!finished) {
                 process.destroyForcibly()
+                process.waitFor()
                 return GitResult(-1, "", "git worktree timed out after ${GIT_TIMEOUT_SECS}s")
             }
-            GitResult(
-                exitCode = process.exitValue(),
-                stdout = process.inputStream.bufferedReader().readText().trimEnd(),
-                stderr = process.errorStream.bufferedReader().readText().trimEnd()
-            )
+            GitResult(exitCode = process.exitValue(), stdout = output.trimEnd(), stderr = "")
         } catch (e: Exception) {
             GitResult(-1, "", "Failed to run git: ${e.message}")
         }
@@ -65,11 +82,7 @@ object WorktreeManager {
         repoPath: String = "",
         createBranch: Boolean = false
     ): Result<Unit> {
-        if (repoPath.isEmpty()) {
-            return Result.failure(
-                NotImplementedError("Git worktree add is not implemented yet")
-            )
-        }
+        requireRepoPath(repoPath)?.let { return it }
         return runCatching {
             val args = if (createBranch) {
                 arrayOf("worktree", "add", "-b", branch, path)
@@ -90,11 +103,7 @@ object WorktreeManager {
      * @return list of [WorktreeInfo] entries (main + all linked worktrees)
      */
     fun list(repoPath: String = ""): Result<List<WorktreeInfo>> {
-        if (repoPath.isEmpty()) {
-            return Result.failure(
-                NotImplementedError("Git worktree list is not implemented yet")
-            )
-        }
+        requireRepoPath(repoPath)?.let { return Result.failure(it.exceptionOrNull()!!) }
         return runCatching {
             val r = runGit(repoPath, "worktree", "list", "--porcelain")
             if (r.exitCode != 0) throw IllegalStateException("git worktree list failed: ${r.stderr}")
@@ -112,11 +121,7 @@ object WorktreeManager {
      * @param force     remove even if the worktree has modified files
      */
     fun remove(path: String, repoPath: String = "", force: Boolean = false): Result<Unit> {
-        if (repoPath.isEmpty()) {
-            return Result.failure(
-                NotImplementedError("Git worktree remove is not implemented yet")
-            )
-        }
+        requireRepoPath(repoPath)?.let { return it }
         return runCatching {
             val args = if (force) {
                 arrayOf("worktree", "remove", "--force", path)
@@ -136,6 +141,7 @@ object WorktreeManager {
      * @param repoPath  absolute path to the main repository
      */
     fun prune(repoPath: String): Result<Unit> = runCatching {
+        if (repoPath.isBlank()) throw IllegalArgumentException(REPO_PATH_REQUIRED_MSG)
         val r = runGit(repoPath, "worktree", "prune")
         if (r.exitCode != 0) throw IllegalStateException("git worktree prune failed: ${r.stderr}")
     }
@@ -150,6 +156,7 @@ object WorktreeManager {
      * @param reason    optional human-readable reason stored in the lock file
      */
     fun lock(path: String, repoPath: String, reason: String = ""): Result<Unit> = runCatching {
+        if (repoPath.isBlank()) throw IllegalArgumentException(REPO_PATH_REQUIRED_MSG)
         val args = if (reason.isEmpty()) {
             arrayOf("worktree", "lock", path)
         } else {
@@ -168,6 +175,7 @@ object WorktreeManager {
      * @param repoPath  absolute path to the main repository
      */
     fun unlock(path: String, repoPath: String): Result<Unit> = runCatching {
+        if (repoPath.isBlank()) throw IllegalArgumentException(REPO_PATH_REQUIRED_MSG)
         val r = runGit(repoPath, "worktree", "unlock", path)
         if (r.exitCode != 0) throw IllegalStateException("git worktree unlock failed: ${r.stderr}")
     }

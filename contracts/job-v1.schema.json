@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafcode.local/contracts/job-v1.schema.json",
+  "title": "RAFAELIA Typed Runtime Job v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "job_id",
+    "operation",
+    "created_at",
+    "source",
+    "destination",
+    "authorization",
+    "limits",
+    "idempotency_key",
+    "evidence_state"
+  ],
+  "properties": {
+    "schema": { "const": "raf.job.v1" },
+    "job_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{8,128}$" },
+    "operation": {
+      "enum": [
+        "GIT_CLONE",
+        "GIT_FETCH",
+        "GIT_STATUS",
+        "DRIVE_DOWNLOAD_READ_ONLY",
+        "RAFPOLIMATA_SEGMENT",
+        "VALIDATE_ARTIFACT"
+      ]
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["uri", "immutable_id"],
+      "properties": {
+        "uri": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "immutable_id": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+        "size_bytes": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "destination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relative_path"],
+      "properties": {
+        "relative_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "not": { "pattern": "(^/|(^|/)\\.\\.(/|$))" }
+        }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorization_id", "actor", "allowed_effects"],
+      "properties": {
+        "authorization_id": { "type": "string", "minLength": 8, "maxLength": 256 },
+        "actor": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "allowed_effects": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["READ", "NETWORK_READ", "LOCAL_WRITE", "GIT_WRITE"] }
+        }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_bytes", "timeout_seconds", "max_attempts"],
+      "properties": {
+        "max_bytes": { "type": "integer", "minimum": 1, "maximum": 1099511627776 },
+        "timeout_seconds": { "type": "integer", "minimum": 1, "maximum": 86400 },
+        "max_attempts": { "type": "integer", "minimum": 1, "maximum": 20 }
+      }
+    },
+    "idempotency_key": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{16,256}$" },
+    "evidence_state": {
+      "enum": ["VERIFIED", "DECLARED_BY_AUTHOR", "TOKEN_VAZIO", "CONTRADICTION"]
+    }
+  }
+}

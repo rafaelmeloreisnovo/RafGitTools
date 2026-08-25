@@ -1,0 +1,53 @@
+{
+  "schema": "rafaelia.provider-capability-probe-evidence.v1",
+  "date": "2026-08-22",
+  "state": "TOKEN_VAZIO_PROVIDER_ROOT_CAUSE_WITH_REPRODUCED_PRE_STEP_FAILURE",
+  "claim_allowed": false,
+  "producer_repo": "rafaelmeloreisnovo/GAIA_phi",
+  "probe_pr": 99,
+  "probe_branch": "audit/provider-capability-probe-20260822",
+  "probe_head": "9d5aeaede43d2c9cb180ff674a6083b3752a135b",
+  "workflow": {
+    "name": "provider-capability-probe",
+    "run_id": 32574530990,
+    "run_number": 1,
+    "conclusion": "failure",
+    "job_id": 97034798786,
+    "job_name": "minimal-runner-probe",
+    "steps": null,
+    "shell_step_observed": false,
+    "artifact_expected_if_shell_started": "provider-capability-probe",
+    "artifact_observed": false
+  },
+  "probe_scope": "bare ubuntu-latest job intended only to run shell, python3 --version, git --version and uname; no PyTorch, GAIA import, build or scientific test",
+  "comparison_to_cognitive_receipt": {
+    "cognitive_run_id": 32564704743,
+    "attempt_1_job": 97011790745,
+    "attempt_2_job": 97033065513,
+    "attempt_1_exposed_steps": 0,
+    "attempt_2_exposed_steps": 0,
+    "probe_exposed_steps": 0,
+    "shared_observation": "failure before any test/shell step is exposed in connector metadata"
+  },
+  "inference": {
+    "supported": "pre-step/provider-runner friction hypothesis is strengthened because the minimal probe reproduces the zero-step failure without the GAIA/PyTorch test stack",
+    "not_supported": [
+      "exact provider root cause",
+      "GAIA implementation failure",
+      "PyTorch failure",
+      "scientific refutation",
+      "claim promotion"
+    ],
+    "root_cause_state": "TOKEN_VAZIO"
+  },
+  "anti_regression": [
+    "minimal probe failure with no steps is not TEST_EXECUTED_FAIL",
+    "absence of shell step does not prove exact provider root cause",
+    "probe does not validate or refute cognitive_symbiotic.py",
+    "prior two cognitive attempts remain preserved",
+    "new probe expands measurement scope and therefore requires a baseline successor, not an in-place baseline edit"
+  ],
+  "F_ok": "third independent zero-step observation produced with a minimal runner/shell probe and no GAIA/PyTorch stack",
+  "F_gap": "provider internal root cause remains unobservable; no shell receipt artifact was emitted",
+  "F_next": "use provider/admin status or alternate authorized runner/environment to obtain a shell-start receipt; do not change producer code until execution reaches observable test steps"
+}

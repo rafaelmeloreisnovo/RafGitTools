@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafaelia.local/schemas/knowledge-antiderivative-v1.schema.json",
+  "title": "RAFAELIA Knowledge Antiderivative Profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "claim_allowed",
+    "automatic_merge",
+    "automatic_cross_repository_write",
+    "private_payload_copied",
+    "security",
+    "drive_outputs",
+    "source_pointers",
+    "empty_state_model",
+    "operators",
+    "toroidal_model",
+    "hexagonal_longitudinal_model",
+    "permutation_contract",
+    "term_boundaries",
+    "repository_routes"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "profile_id": {"const": "RAFAELIA-KNOWLEDGE-ANTIDERIVATIVE-1"},
+    "generated_from_observation_date": {"type": "string", "format": "date"},
+    "claim_allowed": {"const": false},
+    "automatic_merge": {"const": false},
+    "automatic_cross_repository_write": {"const": false},
+    "private_payload_copied": {"const": false},
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["secret_detected_in_historical_drive_dump", "secret_value_copied", "required_remediation"],
+      "properties": {
+        "secret_detected_in_historical_drive_dump": {"type": "boolean"},
+        "secret_value_copied": {"const": false},
+        "required_remediation": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "drive_outputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["folder_id", "document_id", "spreadsheet_id", "storage_mode"],
+      "properties": {
+        "folder_id": {"type": "string", "minLength": 10},
+        "document_id": {"type": "string", "minLength": 10},
+        "spreadsheet_id": {"type": "string", "minLength": 10},
+        "storage_mode": {"const": "POINTER_ONLY"}
+      }
+    },
+    "source_pointers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "class", "payload_copied"],
+        "properties": {
+          "id": {"type": "string", "minLength": 10},
+          "title": {"type": "string", "minLength": 1},
+          "class": {"type": "string", "minLength": 1},
+          "payload_copied": {"const": false}
+        }
+      }
+    },
+    "empty_state_model": {
+      "type": "object",
+      "required": ["token_vazio_is_numeric", "token_vazio_is_pass", "states", "required_fields_for_unresolved"],
+      "properties": {
+        "token_vazio_is_numeric": {"const": false},
+        "token_vazio_is_pass": {"const": false},
+        "states": {"type": "array", "minItems": 7, "uniqueItems": true, "items": {"type": "string"}},
+        "required_fields_for_unresolved": {"type": "array", "minItems": 4, "uniqueItems": true, "items": {"type": "string"}}
+      }
+    },
+    "operators": {
+      "type": "array",
+      "minItems": 6,
+      "items": {
+        "type": "object",
+        "required": ["id", "expression", "purpose"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Z0-9_]+$"},
+          "expression": {"type": "string", "minLength": 1},
+          "purpose": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "toroidal_model": {"type": "object"},
+    "hexagonal_longitudinal_model": {"type": "object"},
+    "permutation_contract": {"type": "object"},
+    "term_boundaries": {
+      "type": "object",
+      "required": ["observed_terms", "unresolved_terms"],
+      "properties": {
+        "observed_terms": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "unresolved_terms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["term", "state", "reason", "owner", "next_action", "exit_criteria"],
+            "properties": {
+              "term": {"type": "string", "minLength": 1},
+              "state": {"enum": ["NOT_EXAMINED", "TOKEN_VAZIO", "OPEN_GAP", "BLOCKED", "CONTRADICTION"]},
+              "reason": {"type": "string", "minLength": 1},
+              "owner": {"type": "string", "minLength": 1},
+              "next_action": {"type": "string", "minLength": 1},
+              "exit_criteria": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      }
+    },
+    "repository_routes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["repository", "authority"],
+        "properties": {
+          "repository": {"type": "string", "pattern": "^[^/]+/[^/]+$"},
+          "authority": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

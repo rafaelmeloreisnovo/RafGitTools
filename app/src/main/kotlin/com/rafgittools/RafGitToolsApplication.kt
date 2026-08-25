@@ -10,11 +10,17 @@ import com.rafgittools.core.localization.LocalizationManager
 import com.rafgittools.data.auth.AuthRepository
 import com.rafgittools.data.auth.AuthTokenCache
 import com.rafgittools.data.preferences.PreferencesRepository
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import com.rafgittools.offline.RepositorySyncWorker
+import com.rafgittools.offline.SyncWorker
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 /**
@@ -65,8 +71,35 @@ class RafGitToolsApplication : Application() {
             localizationManager.applyLocale(this@RafGitToolsApplication, savedLanguage)
             authTokenCache.token = authRepository.getPat().getOrNull()
         }
+
+        schedulePeriodicSync()
+        scheduleRepositorySync()
     }
-    
+
+    private fun schedulePeriodicSync() {
+        val request = PeriodicWorkRequestBuilder<SyncWorker>(
+            repeatInterval = 15,
+            repeatIntervalTimeUnit = TimeUnit.MINUTES,
+        ).build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            SyncWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request,
+        )
+    }
+
+    private fun scheduleRepositorySync() {
+        val request = PeriodicWorkRequestBuilder<RepositorySyncWorker>(
+            repeatInterval = 15,
+            repeatIntervalTimeUnit = TimeUnit.MINUTES,
+        ).build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            RepositorySyncWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request,
+        )
+    }
+
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         

@@ -1,22 +1,27 @@
 package com.rafgittools.platform
 
+import android.util.Base64
+import com.rafgittools.data.azuredevops.AzureDevOpsApiService
+import com.rafgittools.data.bitbucket.BitbucketApiService
+import com.rafgittools.data.gitea.GiteaApiService
+import com.rafgittools.data.gitlab.GitLabApiService
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.runBlocking
+import okhttp3.OkHttpClient
+import retrofit2.HttpException
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.io.IOException
+import java.util.concurrent.TimeUnit
+
 /**
- * MultiPlatformManager — Git-hosting provider abstraction layer.
+ * Git-hosting provider abstraction layer.
  *
- * Provides a unified interface for interacting with multiple Git hosting
- * providers beyond GitHub. Each provider is represented by a [HostedRepository]
- * value type. HTTP calls are intentionally left to the caller's Retrofit/OkHttp
- * setup so this manager stays free of Android context dependencies.
- *
- * Current implementation status:
- *   - GitHub: fully implemented via [GithubRepository] / [GithubApiService]
- *   - GitLab: skeleton ready — needs GitLabApiService + Retrofit integration
- *   - Bitbucket: skeleton ready — needs BitbucketApiService + Retrofit integration
- *   - Gitea: skeleton ready — needs GiteaApiService + Retrofit integration
- *   - Azure DevOps: skeleton ready — needs AzureDevOpsApiService + Retrofit integration
- *
- * Native assembly health check: the `rafcore` shared library exposes two JNI
- * symbols used for platform diagnostics. Missing library → graceful no-op.
+ * GitHub is implemented through the existing GithubRepository/GithubApiService.
+ * GitLab (v4 API), Bitbucket (v2 API), Gitea/Forgejo (v1 API), and Azure DevOps
+ * (REST API 7.0) are implemented via their own Retrofit service interfaces.
  */
 object MultiPlatformManager {
 
@@ -27,14 +32,6 @@ object MultiPlatformManager {
     external fun nativeAsmHealth(): Int
     external fun nativeAbiMask(): Int
 
-    // ─── Shared domain type ────────────────────────────────────────────────
-
-    /**
-     * Minimal repository descriptor returned by all providers.
-     *
-     * Callers can inspect [provider] to decide which API client to use for
-     * deeper queries (PRs, issues, releases, etc.).
-     */
     data class HostedRepository(
         val id: String,
         val name: String,
@@ -48,93 +45,215 @@ object MultiPlatformManager {
 
     enum class Provider { GITHUB, GITLAB, BITBUCKET, GITEA, AZURE_DEVOPS }
 
-    // ─── Provider stubs ────────────────────────────────────────────────────
+    sealed interface ProviderQueryResult {
+        data class Success(val repositories: List<HostedRepository>) : ProviderQueryResult
+        data class NotConfigured(val provider: Provider, val reason: String) : ProviderQueryResult
+        data class NotImplemented(val provider: Provider, val integrationPath: String) : ProviderQueryResult
+        data class AuthenticationError(val provider: Provider, val message: String) : ProviderQueryResult
+        data class NetworkError(val provider: Provider, val message: String) : ProviderQueryResult
+    }
 
-    /**
-     * Retrieve repositories for the authenticated GitLab user.
-     *
-     * Integration path:
-     *   1. Add `com.squareup.retrofit2` GitLab API service interface
-     *   2. Inject base URL `https://gitlab.com/api/v4/` (or self-hosted)
-     *   3. Call `GET /projects?membership=true&per_page=100`
-     *   4. Map response to [HostedRepository] list with provider = GITLAB
-     *
-     * @param token  GitLab personal access token (scope: `read_api`)
-     * @param baseUrl GitLab instance base URL; defaults to gitlab.com
-     */
-    fun getGitLabProjects(
+    suspend fun queryGitLabProjects(
         token: String = "",
         baseUrl: String = "https://gitlab.com"
-    ): List<HostedRepository> {
-        // TODO: implement GitLab REST API integration
-        return emptyList()
+    ): ProviderQueryResult {
+        if (token.isBlank()) {
+            return ProviderQueryResult.NotConfigured(Provider.GITLAB, "GitLab token is missing")
+        }
+        if (!isHttpUrl(baseUrl)) {
+            return ProviderQueryResult.NotConfigured(Provider.GITLAB, "GitLab base URL is invalid")
+        }
+        return try {
+            val service = buildRetrofit(baseUrl).create(GitLabApiService::class.java)
+            val projects = service.getUserProjects(token)
+            ProviderQueryResult.Success(projects.map { p ->
+                HostedRepository(
+                    id = p.id.toString(),
+                    name = p.name,
+                    fullName = p.fullPath,
+                    description = p.description,
+                    cloneUrl = p.cloneUrlHttp,
+                    sshUrl = p.cloneUrlSsh,
+                    isPrivate = p.isPrivate,
+                    provider = Provider.GITLAB
+                )
+            })
+        } catch (e: HttpException) {
+            if (e.code() == 401 || e.code() == 403) {
+                ProviderQueryResult.AuthenticationError(Provider.GITLAB, "GitLab auth failed: ${e.message()}")
+            } else {
+                ProviderQueryResult.NetworkError(Provider.GITLAB, "GitLab HTTP ${e.code()}: ${e.message()}")
+            }
+        } catch (e: IOException) {
+            ProviderQueryResult.NetworkError(Provider.GITLAB, "GitLab network error: ${e.message}")
+        }
     }
 
-    /**
-     * Retrieve repositories for the authenticated Bitbucket user.
-     *
-     * Integration path:
-     *   1. Add Bitbucket Cloud REST API service interface (v2.0)
-     *   2. Base URL: `https://api.bitbucket.org/2.0/`
-     *   3. Call `GET /repositories/{workspace}` with OAuth 2.0 Bearer token
-     *   4. Map response to [HostedRepository] with provider = BITBUCKET
-     *
-     * @param accessToken  Bitbucket OAuth 2.0 access token
-     * @param workspace    Bitbucket workspace slug
-     */
-    fun getBitbucketRepositories(
+    suspend fun queryBitbucketRepositories(
         accessToken: String = "",
         workspace: String = ""
-    ): List<HostedRepository> {
-        // TODO: implement Bitbucket REST API integration
-        return emptyList()
+    ): ProviderQueryResult {
+        if (accessToken.isBlank() || workspace.isBlank()) {
+            return ProviderQueryResult.NotConfigured(
+                Provider.BITBUCKET,
+                "Bitbucket access token and workspace are required"
+            )
+        }
+        return try {
+            val service = buildRetrofit("https://api.bitbucket.org").create(BitbucketApiService::class.java)
+            val page = service.getWorkspaceRepositories(
+                authorization = "Bearer $accessToken",
+                workspace = workspace
+            )
+            ProviderQueryResult.Success(page.values.map { r ->
+                HostedRepository(
+                    id = r.uuid,
+                    name = r.name,
+                    fullName = r.fullName,
+                    description = r.description,
+                    cloneUrl = r.links?.httpsCloneUrl() ?: "",
+                    sshUrl = r.links?.sshCloneUrl(),
+                    isPrivate = r.isPrivate,
+                    provider = Provider.BITBUCKET
+                )
+            })
+        } catch (e: HttpException) {
+            if (e.code() == 401 || e.code() == 403) {
+                ProviderQueryResult.AuthenticationError(Provider.BITBUCKET, "Bitbucket auth failed: ${e.message()}")
+            } else {
+                ProviderQueryResult.NetworkError(Provider.BITBUCKET, "Bitbucket HTTP ${e.code()}: ${e.message()}")
+            }
+        } catch (e: IOException) {
+            ProviderQueryResult.NetworkError(Provider.BITBUCKET, "Bitbucket network error: ${e.message}")
+        }
     }
 
-    /**
-     * Retrieve repositories for the authenticated Gitea user.
-     *
-     * Integration path:
-     *   1. Add Gitea Swagger API service interface
-     *   2. Base URL configurable per self-hosted instance
-     *   3. Call `GET /api/v1/repos/search?token=<token>&limit=50`
-     *   4. Map response to [HostedRepository] with provider = GITEA
-     *
-     * @param token    Gitea API token
-     * @param baseUrl  Gitea instance base URL (e.g. "https://gitea.example.com")
-     */
-    fun getGiteaRepositories(
+    suspend fun queryAllProviders(
+        gitLabToken: String = "",
+        bitbucketToken: String = "",
+        gitLabBaseUrl: String = "https://gitlab.com",
+        bitbucketWorkspace: String = ""
+    ): List<ProviderQueryResult> = coroutineScope {
+        val jobs = mutableListOf<Deferred<ProviderQueryResult>>()
+        if (gitLabToken.isNotBlank())
+            jobs += async { queryGitLabProjects(gitLabToken, gitLabBaseUrl) }
+        if (bitbucketToken.isNotBlank() && bitbucketWorkspace.isNotBlank())
+            jobs += async { queryBitbucketRepositories(bitbucketToken, bitbucketWorkspace) }
+        jobs.map { it.await() }
+    }
+
+    fun queryGiteaRepositories(
         token: String = "",
         baseUrl: String = ""
-    ): List<HostedRepository> {
-        // TODO: implement Gitea REST API integration
-        return emptyList()
+    ): ProviderQueryResult {
+        if (token.isBlank() || !isHttpUrl(baseUrl)) {
+            return ProviderQueryResult.NotConfigured(
+                Provider.GITEA,
+                "Gitea token and valid instance URL are required"
+            )
+        }
+        return try {
+            val service = buildRetrofit(baseUrl).create(GiteaApiService::class.java)
+            val repos = runBlocking { service.getUserRepos(authorization = "token $token") }
+            ProviderQueryResult.Success(repos.map { r ->
+                HostedRepository(
+                    id = r.id.toString(),
+                    name = r.name,
+                    fullName = r.fullName,
+                    description = r.description,
+                    cloneUrl = r.cloneUrl,
+                    sshUrl = r.sshUrl,
+                    isPrivate = r.isPrivate,
+                    provider = Provider.GITEA
+                )
+            })
+        } catch (e: HttpException) {
+            if (e.code() == 401 || e.code() == 403) {
+                ProviderQueryResult.AuthenticationError(Provider.GITEA, "Gitea auth failed: ${e.message()}")
+            } else {
+                ProviderQueryResult.NetworkError(Provider.GITEA, "Gitea HTTP ${e.code()}: ${e.message()}")
+            }
+        } catch (e: IOException) {
+            ProviderQueryResult.NetworkError(Provider.GITEA, "Gitea network error: ${e.message}")
+        }
+    }
+
+    fun queryAzureDevOpsRepos(
+        token: String = "",
+        organization: String = "",
+        project: String = ""
+    ): ProviderQueryResult {
+        if (token.isBlank() || organization.isBlank() || project.isBlank()) {
+            return ProviderQueryResult.NotConfigured(
+                Provider.AZURE_DEVOPS,
+                "Azure token, organization and project are required"
+            )
+        }
+        return try {
+            val pat = Base64.encodeToString(":$token".toByteArray(), Base64.NO_WRAP)
+            val service = buildRetrofit("https://dev.azure.com").create(AzureDevOpsApiService::class.java)
+            val result = runBlocking {
+                service.getRepositories(
+                    authorization = "Basic $pat",
+                    organization = organization,
+                    project = project
+                )
+            }
+            ProviderQueryResult.Success(result.value.mapNotNull { r ->
+                if (r.remoteUrl.isNullOrBlank()) null
+                else HostedRepository(
+                    id = r.id,
+                    name = r.name,
+                    fullName = r.fullName,
+                    description = null,
+                    cloneUrl = r.remoteUrl,
+                    sshUrl = r.sshUrl,
+                    isPrivate = r.project?.isPrivate ?: true,
+                    provider = Provider.AZURE_DEVOPS
+                )
+            })
+        } catch (e: HttpException) {
+            if (e.code() == 401 || e.code() == 203) {
+                ProviderQueryResult.AuthenticationError(
+                    Provider.AZURE_DEVOPS,
+                    "Azure DevOps auth failed: ${e.message()}"
+                )
+            } else {
+                ProviderQueryResult.NetworkError(
+                    Provider.AZURE_DEVOPS,
+                    "Azure DevOps HTTP ${e.code()}: ${e.message()}"
+                )
+            }
+        } catch (e: IOException) {
+            ProviderQueryResult.NetworkError(Provider.AZURE_DEVOPS, "Azure DevOps network error: ${e.message}")
+        }
     }
 
     /**
-     * Retrieve repositories for the authenticated Azure DevOps user.
+     * Compatibility methods retained for existing callers.
      *
-     * Integration path:
-     *   1. Add Azure DevOps REST API service interface (api-version 7.0)
-     *   2. Base URL: `https://dev.azure.com/{organization}/`
-     *   3. Call `GET /{project}/_apis/git/repositories`
-     *   4. Map response to [HostedRepository] with provider = AZURE_DEVOPS
-     *
-     * @param token        Azure DevOps Personal Access Token
-     * @param organization Azure DevOps organisation slug
-     * @param project      Azure DevOps project name
+     * They now throw for non-success states instead of collapsing
+     * NOT_IMPLEMENTED and NOT_CONFIGURED into an empty list.
      */
+    @Deprecated("Use queryGitLabProjects for typed status")
+    fun getGitLabProjects(token: String = "", baseUrl: String = "https://gitlab.com"): List<HostedRepository> =
+        requireSuccess(runBlocking { queryGitLabProjects(token, baseUrl) })
+
+    @Deprecated("Use queryBitbucketRepositories for typed status")
+    fun getBitbucketRepositories(accessToken: String = "", workspace: String = ""): List<HostedRepository> =
+        requireSuccess(runBlocking { queryBitbucketRepositories(accessToken, workspace) })
+
+    @Deprecated("Use queryGiteaRepositories for typed status")
+    fun getGiteaRepositories(token: String = "", baseUrl: String = ""): List<HostedRepository> =
+        requireSuccess(queryGiteaRepositories(token, baseUrl))
+
+    @Deprecated("Use queryAzureDevOpsRepos for typed status")
     fun getAzureDevOpsRepos(
         token: String = "",
         organization: String = "",
         project: String = ""
-    ): List<HostedRepository> {
-        // TODO: implement Azure DevOps REST API integration
-        return emptyList()
-    }
+    ): List<HostedRepository> = requireSuccess(queryAzureDevOpsRepos(token, organization, project))
 
-    // ─── Capability queries ────────────────────────────────────────────────
-
-    /** Returns the set of providers that have a non-empty token/configuration. */
     fun configuredProviders(
         gitLabToken: String = "",
         bitbucketToken: String = "",
@@ -146,6 +265,33 @@ object MultiPlatformManager {
         if (giteaToken.isNotEmpty()) add(Provider.GITEA)
         if (azureToken.isNotEmpty()) add(Provider.AZURE_DEVOPS)
     }
+
+    private fun requireSuccess(result: ProviderQueryResult): List<HostedRepository> = when (result) {
+        is ProviderQueryResult.Success -> result.repositories
+        is ProviderQueryResult.NotConfigured -> throw IllegalStateException(result.reason)
+        is ProviderQueryResult.NotImplemented -> throw UnsupportedOperationException(result.integrationPath)
+        is ProviderQueryResult.AuthenticationError -> throw SecurityException(result.message)
+        is ProviderQueryResult.NetworkError -> throw IllegalStateException(result.message)
+    }
+
+    private val sharedOkClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+
+    private fun buildRetrofit(baseUrl: String): Retrofit {
+        val normalized = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+        return Retrofit.Builder()
+            .baseUrl(normalized)
+            .client(sharedOkClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    private fun isHttpUrl(value: String): Boolean =
+        value.startsWith("https://") || value.startsWith("http://127.0.0.1") || value.startsWith("http://localhost")
 }
 
 /** Returns true when the native assembler core library is loaded and healthy. */

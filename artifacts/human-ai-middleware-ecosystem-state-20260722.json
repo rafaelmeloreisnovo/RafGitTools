@@ -1,0 +1,141 @@
+{
+  "schema": "raf.human-ai.ecosystem-state.v1",
+  "operation": "RAFAELIA-HAM-V1-20260722",
+  "generated_from_execution": "2026-07-22",
+  "canonical_contract": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "path": "contracts/human-ai-middleware-v1.schema.json",
+    "commit_pin": "fd184197f72b1669102fc76be771d52e02fc3902",
+    "control_plane_merge": "4ffc88ec293b8df3cf3c533c2a0a71bd942e6117",
+    "canonical_gate_merge": "0e04b22ff5b078409333c5732f45902280d61b19"
+  },
+  "invariant": {
+    "ai_lane": [
+      "IDENTIFY_RISK",
+      "MINIMIZE_DATA",
+      "EXPLAIN_LIMITS",
+      "PRESERVE_PROVENANCE",
+      "ABSTAIN_WHEN_UNCERTAIN"
+    ],
+    "human_lane": [
+      "DEFINE_INTENT",
+      "APPROVE_SCOPE",
+      "FINAL_DECISION",
+      "REVOKE",
+      "APPEAL"
+    ],
+    "ai_may_execute": false,
+    "ai_may_finalize": false,
+    "ai_may_expand_scope": false,
+    "private_data_may_be_public": false,
+    "raw_secrets_allowed": false
+  },
+  "repositories": [
+    {
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "role": "CONTROL_PLANE",
+      "adapter_or_control_merge": "4ffc88ec293b8df3cf3c533c2a0a71bd942e6117",
+      "runtime_or_gate_merge": "0e04b22ff5b078409333c5732f45902280d61b19",
+      "tracking": "https://github.com/rafaelmeloreisnovo/RafGitTools/issues/291",
+      "runtime_state": "TOKEN_VAZIO_EXACT_CHECKOUT"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/RafPolimata",
+      "role": "DETERMINISTIC_STRUCTURER",
+      "adapter_or_control_merge": "37ab688166c7b6cf7c09fe53dc34626d70b19f87",
+      "tracking": "https://github.com/rafaelmeloreisnovo/RafPolimata/issues/158",
+      "runtime_state": "TOKEN_VAZIO"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/GAIA_phi",
+      "role": "SENSOR_MANIFEST",
+      "adapter_or_control_merge": "224608448158c901fe00341cf26c68a1ce3f8a7c",
+      "tracking": "https://github.com/rafaelmeloreisnovo/GAIA_phi/issues/48",
+      "runtime_state": "TOKEN_VAZIO"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/ZIPRAF_OMEGA_FULL",
+      "role": "ARCHIVE_INTEGRITY",
+      "adapter_or_control_merge": "088a5fa5f363ff512e3a2874d577fce8739b72bd",
+      "tracking": "https://github.com/rafaelmeloreisnovo/ZIPRAF_OMEGA_FULL/issues/32",
+      "runtime_state": "TOKEN_VAZIO"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/llamaRafaelia",
+      "role": "SEMANTIC_INTERPRETER",
+      "adapter_or_control_merge": "261e75c066d2cee669ec2e5b0444b59e3fee1a90",
+      "tracking": "TRACKING_FALLBACK_RAFGITTOOLS_291_ISSUES_DISABLED",
+      "runtime_state": "TOKEN_VAZIO"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Rafaelia_Private",
+      "role": "PRIVATE_POLICY_VAULT",
+      "adapter_or_control_merge": "cebabd2178000d063aa147a4fe68521b192254a1",
+      "tracking": "https://github.com/rafaelmeloreisnovo/Rafaelia_Private/issues/190",
+      "runtime_state": "TOKEN_VAZIO"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "role": "LOCAL_RUNTIME_BROKER",
+      "adapter_or_control_merge": "43d469adaf56518027077d734470718c7f227394",
+      "runtime_or_gate_merge": "d605f448b2224c08d93324eb71d6c04074870e34",
+      "tracking": "https://github.com/rafaelmeloreisnovo/termux-app-rafacodephi/issues/306",
+      "runtime_state": "VERIFIED_LOCAL_EQUIVALENT_POC"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/termux-api_rafcodephi",
+      "role": "ANDROID_CAPABILITY_ADAPTER",
+      "adapter_or_control_merge": "79cd17754e04a110079b558ac23f32a96c34f334",
+      "tracking": "TRACKING_FALLBACK_RAFGITTOOLS_291_ISSUES_DISABLED",
+      "runtime_state": "TOKEN_VAZIO_ANDROID_DEVICE"
+    }
+  ],
+  "proofs": {
+    "contract_validator_local_equivalent": {
+      "tests": "16/16_PASS",
+      "adapters": 8,
+      "request_findings": 0,
+      "adapter_findings": 0,
+      "exact_git_checkout": "TOKEN_VAZIO"
+    },
+    "termux_readonly_vertical_slice_local_equivalent": {
+      "positive_gate": "ALLOW_BOUNDED",
+      "readonly_git_probe": "EXECUTED",
+      "receipt_generated": true,
+      "receipt_sha256": "3050746a2b05bad54808e36b201de9acfd3abe3fd000db8d38bfd1b9a6487f06",
+      "stdout_sha256": "49fb6157d1d0fb51d5019bcadabbf4b116f307aecfd64b3f036280b5b20e1c47",
+      "negative_cases": "4/4_PASS_BLOCKED_BEFORE_EXECUTION",
+      "exact_merged_checkout": "TOKEN_VAZIO",
+      "Android_device": "TOKEN_VAZIO"
+    },
+    "measured_usefulness_0_94": "TOKEN_VAZIO",
+    "expected_usefulness_target": 0.94,
+    "claim_allowed": false
+  },
+  "friction_control": {
+    "token_vazio_requires_reason": true,
+    "token_vazio_requires_next_step": true,
+    "loop_budget_required": true,
+    "stop_on_no_new_evidence": true
+  },
+  "F_ok": [
+    "canonical human-AI contract merged",
+    "dependency-free validator and adversarial tests merged",
+    "eight repository adapters merged and pinned",
+    "canonical RafGitTools local gate wired",
+    "read-only Termux runtime PoC executed locally with receipt",
+    "four invalid requests blocked before execution",
+    "runtime gaps converted into traceable issues or central fallbacks"
+  ],
+  "F_gap": [
+    "execute exact merged checkouts",
+    "execute on Android device",
+    "federate the receipt through RafPolimata and llamaRafaelia",
+    "implement consent-bound Termux API device receipts",
+    "measure usefulness under a declared human protocol"
+  ],
+  "F_next": [
+    "run one bounded exact-checkout job RafGitTools to Termux to RafPolimata to llamaRafaelia and attach immutable receipts to issue 291"
+  ],
+  "claim_allowed": false
+}

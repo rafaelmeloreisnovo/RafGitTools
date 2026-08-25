@@ -22,9 +22,12 @@ on:
         default: "--stacktrace"
         type: string
 
+permissions:
+  contents: read
+
 env:
-  GITHUB_CLIENT_ID_DEV: ${{ vars.GITHUB_CLIENT_ID_DEV || 'local-dev-client-id' }}
-  GITHUB_CLIENT_ID_PRODUCTION: ${{ vars.GITHUB_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
+  APP_CLIENT_ID_DEV: ${{ vars.APP_CLIENT_ID_DEV || 'local-dev-client-id' }}
+  APP_CLIENT_ID_PRODUCTION: ${{ vars.APP_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
 
 jobs:
   build-debug:
@@ -56,19 +59,39 @@ jobs:
         run: ./scripts/prepare_local_properties.sh
 
       - name: Assemble debug APK
-        run: ./scripts/gradlew_with_java17.sh assemble${{ inputs.variant }} ${{ inputs.gradle_args }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${{ inputs.variant }}" in
+            devDebug) gradle_task="assembleDevDebug" ;;
+            productionDebug) gradle_task="assembleProductionDebug" ;;
+            *)
+              echo "::error::Unsupported debug variant: ${{ inputs.variant }}"
+              exit 2
+              ;;
+          esac
+          ./scripts/gradlew_with_java17.sh "$gradle_task" ${{ inputs.gradle_args }}
 
       - name: Resolve APK path
         id: apk
         shell: bash
         run: |
           set -euo pipefail
-          apk_path=$(find app/build/outputs/apk -type f -name "*.apk" | grep -E "/${{ inputs.variant == 'devDebug' && 'dev/debug' || 'production/debug' }}/" | head -n 1)
-          if [ -z "$apk_path" ]; then
-            echo "::error::APK for ${{ inputs.variant }} not found"
+          case "${{ inputs.variant }}" in
+            devDebug) apk_dir="app/build/outputs/apk/dev/debug" ;;
+            productionDebug) apk_dir="app/build/outputs/apk/production/debug" ;;
+            *)
+              echo "::error::Unsupported debug variant: ${{ inputs.variant }}"
+              exit 2
+              ;;
+          esac
+          apk_path=$(find "$apk_dir" -maxdepth 1 -type f -name "*.apk" -print -quit)
+          if [ -z "$apk_path" ] || [ ! -s "$apk_path" ]; then
+            echo "::error::Non-empty APK for ${{ inputs.variant }} not found"
             exit 1
           fi
           echo "apk_path=$apk_path" >> "$GITHUB_OUTPUT"
+          echo "apk_dir=$apk_dir" >> "$GITHUB_OUTPUT"
           ls -lh "$apk_path"
 
       - name: Generate unsigned copy (non-installable / structural)
@@ -83,18 +106,34 @@ jobs:
           echo "Unsigned structural copy generated: $unsigned"
           ls -lh "$unsigned"
 
-      - name: Verify ABI entries
+      - name: Verify required ABI entries
         shell: bash
         run: |
           set -euo pipefail
-          unzip -l "${{ steps.apk.outputs.apk_path }}" | grep -E 'lib/(armeabi-v7a|arm64-v8a)/' || true
+          apk="${{ steps.apk.outputs.apk_path }}"
+          for abi in armeabi-v7a arm64-v8a; do
+            if ! unzip -l "$apk" | grep -q "lib/${abi}/"; then
+              echo "::error::Required ABI missing from APK: ${abi}"
+              exit 1
+            fi
+            echo "ABI present: ${abi}"
+          done
+
+      - name: Write APK checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="${{ steps.apk.outputs.apk_path }}"
+          sha256sum "$apk" | tee "${{ steps.apk.outputs.apk_dir }}/SHA256SUMS.txt"
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk-${{ inputs.variant }}
           path: |
-            app/build/outputs/apk/**/*.apk
+            ${{ steps.apk.outputs.apk_dir }}/*.apk
+            ${{ steps.apk.outputs.apk_dir }}/SHA256SUMS.txt
+          if-no-files-found: error
           retention-days: 14
 
       - name: Summary
@@ -103,6 +142,8 @@ jobs:
           echo "## Debug APK build result" >> "$GITHUB_STEP_SUMMARY"
           echo "- Variant: ${{ inputs.variant }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Signed debug APK: ${{ steps.apk.outputs.apk_path }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Required ABIs: armeabi-v7a + arm64-v8a" >> "$GITHUB_STEP_SUMMARY"
+          echo "- SHA-256: recorded in SHA256SUMS.txt" >> "$GITHUB_STEP_SUMMARY"
           echo "- Unsigned copy requested: ${{ inputs.generate_unsigned_copy }}" >> "$GITHUB_STEP_SUMMARY"
           if [ "${{ inputs.generate_unsigned_copy }}" = "true" ]; then
             echo "- Note: unsigned output is for structural inspection and is not installable." >> "$GITHUB_STEP_SUMMARY"

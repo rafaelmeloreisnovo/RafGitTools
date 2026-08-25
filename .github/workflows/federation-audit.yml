@@ -1,0 +1,226 @@
+name: Federation Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: "Optional node id failure to simulate"
+        required: false
+        default: ""
+        type: string
+  pull_request:
+    paths:
+      - "workflow-master-index.json"
+      - "configs/rafaelia-federation.json"
+      - "configs/workflow-master-index.json"
+      - "configs/workflow-master-index.crosswalk.v1.json"
+      - "configs/normative-reference-registry.v1.json"
+      - "configs/epistemic-provenance-interop.json"
+      - "configs/knowledge-antiderivative-v1.json"
+      - "configs/backfill-stage-1.json"
+      - "configs/lineage-stage-2.tsv"
+      - "schemas/workflow-master-index.schema.json"
+      - "schemas/workflow-master-index-crosswalk.schema.json"
+      - "schemas/normative-reference-registry.schema.json"
+      - "schemas/epistemic-provenance-interop.schema.json"
+      - "schemas/knowledge-antiderivative-v1.schema.json"
+      - "scripts/federation/**"
+      - "tests/federation/**"
+      - "docs/federation/**"
+      - "docs/WORKFLOW_MASTER_INDEX_RAFAELIA.md"
+      - "docs/COMPLIANCE.md"
+      - "scripts/validate_rafaelia_workflow.sh"
+      - "workflows/WORKFLOW_MASTER_INDEX_RAFAELIA.md"
+      - ".github/actions-lock.json"
+      - "requirements/federation-audit.lock"
+      - ".github/workflows/federation-audit.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: federation-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout pinned source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Setup pinned Python action
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Install exact audit dependency
+        run: python3 -m pip install --disable-pip-version-check -r requirements/federation-audit.lock
+
+      - name: Validate deterministic federation manifest v1
+        run: |
+          mkdir -p artifacts
+          python3 scripts/federation/watchdog.py \
+            --manifest configs/rafaelia-federation.json \
+            --report artifacts/federation-watchdog.json
+
+      - name: Validate workflow master index v2
+        run: |
+          python3 scripts/federation/validate_master_index.py \
+            --index configs/workflow-master-index.json \
+            --report artifacts/master-index-report.json
+
+      - name: Validate semantic v1 to control v2 crosswalk
+        run: |
+          python3 scripts/federation/validate_workflow_master_crosswalk.py \
+            --semantic workflow-master-index.json \
+            --control configs/workflow-master-index.json \
+            --crosswalk configs/workflow-master-index.crosswalk.v1.json \
+            --report artifacts/workflow-master-crosswalk-report.json
+
+      - name: Validate normative references without conformity promotion
+        run: |
+          python3 scripts/federation/validate_normative_reference_registry.py \
+            --registry configs/normative-reference-registry.v1.json \
+            --report artifacts/normative-reference-registry-report.json
+
+      - name: Project epistemic provenance interoperability v1
+        run: |
+          python3 scripts/federation/epistemic_interop.py \
+            --profile configs/epistemic-provenance-interop.json \
+            --index configs/workflow-master-index.json \
+            --output-dir artifacts \
+            --report artifacts/epistemic-interop-report.json
+
+      - name: Validate Drive-first knowledge antiderivative v1
+        run: |
+          python3 scripts/federation/knowledge_antiderivative.py \
+            --profile configs/knowledge-antiderivative-v1.json \
+            --report artifacts/knowledge-antiderivative-report.json
+
+      - name: Validate session lineage author correction
+        run: |
+          python3 scripts/federation/session_lineage.py \
+            --profile docs/federation/session-lineage-v1.json \
+            --report artifacts/session-lineage-report.json
+
+      - name: Validate missing-information backfill stage 1
+        run: |
+          python3 scripts/federation/validate_backfill_stage1.py \
+            --profile configs/backfill-stage-1.json \
+            --report artifacts/backfill-stage-1-report.json
+
+      - name: Validate temporal lineage stage 2
+        run: |
+          python3 scripts/federation/validate_lineage_stage2.py \
+            --table configs/lineage-stage-2.tsv \
+            --report artifacts/lineage-stage-2-report.json
+
+      - name: Run real local rollback drill
+        run: |
+          python3 scripts/federation/recovery_drill.py \
+            --index configs/workflow-master-index.json \
+            --node rafgittools \
+            --report artifacts/recovery-drill.json
+
+      - name: Validate supply chain and generate SPDX evidence
+        run: |
+          python3 scripts/federation/supply_chain.py \
+            --lock .github/actions-lock.json \
+            --workflow .github/workflows/federation-audit.yml \
+            --requirements requirements/federation-audit.lock \
+            --report artifacts/supply-chain.spdx.json
+
+      - name: Run blind temporal ownership recovery interop knowledge lineage and backfill tests
+        run: |
+          python3 -m pytest -q \
+            tests/federation/test_watchdog.py \
+            tests/federation/test_master_index.py \
+            tests/federation/test_supply_chain.py \
+            tests/federation/test_epistemic_interop.py \
+            tests/federation/test_knowledge_antiderivative.py \
+            tests/federation/test_session_lineage.py \
+            tests/federation/test_backfill_stage1.py \
+            tests/federation/test_lineage_stage2.py \
+            tests/federation/test_workflow_master_crosswalk.py \
+            tests/federation/test_normative_reference_registry.py
+
+      - name: Simulate requested failure
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.simulate_failure != '' }}
+        run: |
+          python3 scripts/federation/recovery_drill.py \
+            --index configs/workflow-master-index.json \
+            --node "${{ inputs.simulate_failure }}" \
+            --report artifacts/federation-failure-simulation.json
+
+      - name: Build checksums and claim boundary
+        if: always()
+        run: |
+          sha256sum \
+            workflow-master-index.json \
+            configs/rafaelia-federation.json \
+            configs/workflow-master-index.json \
+            configs/workflow-master-index.crosswalk.v1.json \
+            configs/normative-reference-registry.v1.json \
+            configs/epistemic-provenance-interop.json \
+            configs/knowledge-antiderivative-v1.json \
+            configs/backfill-stage-1.json \
+            configs/lineage-stage-2.tsv \
+            docs/federation/session-lineage-v1.json \
+            docs/federation/BACKFILL_STAGE_1.md \
+            docs/federation/WORKFLOW_MASTER_INDEX_CROSSWALK_V1.md \
+            docs/federation/NORMATIVE_REFERENCE_STATUS_V1.md \
+            schemas/workflow-master-index.schema.json \
+            schemas/workflow-master-index-crosswalk.schema.json \
+            schemas/normative-reference-registry.schema.json \
+            schemas/epistemic-provenance-interop.schema.json \
+            schemas/knowledge-antiderivative-v1.schema.json \
+            .github/actions-lock.json \
+            requirements/federation-audit.lock \
+            artifacts/*.json \
+            > artifacts/CHECKSUMS.sha256
+          printf '%s\n' \
+            'CLAIM_ALLOWED=false' \
+            'REMOTE_RUNTIME_PROVEN=false' \
+            'LOCAL_FILE_ROLLBACK_DRILLED=true' \
+            'REMOTE_RECOVERY=TOKEN_VAZIO' \
+            'DRIVE_STORAGE_MODE=POINTER_ONLY' \
+            'PRIVATE_PAYLOAD_COPIED=false' \
+            'SECRET_VALUE_COPIED=false' \
+            'HISTORICAL_TERMUX_DEBIAN_BRIDGE_ACTIVE_NOW=false' \
+            'DRIVE_PERIODIC_CUSTODY_NOW=true' \
+            'FULL_ARCHIVE_SCAN=TOKEN_VAZIO' \
+            'ALL_SNAPSHOTS_LINKED=TOKEN_VAZIO' \
+            'BACKFILL_STAGE_1_REGISTERED=true' \
+            'TEMPORAL_LINEAGE_STAGE_2_REGISTERED=true' \
+            'EXACT_EVENT_TIMES=TOKEN_VAZIO' \
+            'PHYSICAL_TOROIDAL_UNIVERSE_PROVEN=false' \
+            'UNIVERSAL_HEX_RECONSTRUCTION_PROVEN=false' \
+            'VOYNICH_DECODED=false' \
+            'ZFR_ALIAS_TO_ZRF=TOKEN_VAZIO' \
+            'OMINI_ALIAS_TO_OMNI=TOKEN_VAZIO' \
+            'SEMANTICS_888=TOKEN_VAZIO' \
+            'PROV_FORMAL_CONFORMANCE=TOKEN_VAZIO' \
+            'OPENLINEAGE_FORMAL_CONFORMANCE=TOKEN_VAZIO' \
+            'SLSA_FORMAL_CONFORMANCE=TOKEN_VAZIO' \
+            'SLSA_ATTESTATION=TOKEN_VAZIO' \
+            'SPDX_FORMAL_CONFORMANCE=TOKEN_VAZIO' \
+            'NIST_AI_RMF_CONFORMANCE=TOKEN_VAZIO' \
+            'SUPPLY_CHAIN_ATTESTATION=TOKEN_VAZIO' \
+            'AUTOMATIC_CROSS_REPO_WRITE=false' \
+            'AUTOMATIC_MERGE=false' \
+            'WORKFLOW_INDEX_SILENT_PRECEDENCE=false' \
+            'NORMATIVE_REFERENCE_CONFORMANCE=false' \
+            > artifacts/CLAIM_BOUNDARY.txt
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
+        with:
+          name: federation-audit-v7-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30

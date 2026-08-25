@@ -15,7 +15,7 @@ RafGitTools is currently in active development. Translation and multilingual sup
 
 ## Future Plans
 
-Once RafGitTools reaches a stable, production-ready state, we plan to:
+Once RafGitTools has a scoped stable release with supporting evidence, we plan to:
 
 1. **Establish Documentation Foundation**
    - Complete and stabilize English documentation

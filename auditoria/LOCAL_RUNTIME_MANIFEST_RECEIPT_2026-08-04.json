@@ -1,0 +1,66 @@
+{
+  "schema": "rafaelia.local-runtime-manifest-receipt.v1",
+  "event_id": "LOCAL-RUNTIME-MANIFEST-20260804T105600Z",
+  "recorded_at": "2026-08-04T10:56:00Z",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "branch": "ops/runtime-lock-refresh-20260804",
+  "tested_components": {
+    "runtime_lock_commit": "9303d1c4eec0b6ee1c27f3fe6c42d7ddd21b535f",
+    "manifest_generator_commit": "06f1ecb7e8735934aa8b52fc45b60bd7931cd14d",
+    "manifest_tests_commit": "5daded32de1bd510543ac86180726d8a162fc177",
+    "workflow_commit": "589da9757666e1e087e90fba288584beffc4ad95"
+  },
+  "environment": {
+    "os": "Linux 6.12.13 x86_64 glibc 2.41",
+    "python": "3.13.5",
+    "bash": "GNU bash 5.2.37",
+    "sha256sum": "GNU coreutils 9.7",
+    "device": "local validation container, not Android hardware"
+  },
+  "checks": [
+    {
+      "id": "bash_syntax",
+      "command": "bash -n scripts/generate_runtime_manifest.sh",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "id": "source_only_manifest",
+      "command": "generate_runtime_manifest.sh runtime-lock.json empty-build RUNTIME_MANIFEST.json",
+      "exit_code": 0,
+      "artifact_state": "SOURCE_ONLY",
+      "artifact_count": 0,
+      "sha256_sidecar": true,
+      "result": "PASS"
+    },
+    {
+      "id": "empty_promotion_rejection",
+      "command": "generate_runtime_manifest.sh runtime-lock.json empty-build RUNTIME_MANIFEST.json --require-artifacts",
+      "exit_code": 3,
+      "expected_message_observed": true,
+      "result": "PASS"
+    },
+    {
+      "id": "synthetic_artifact_manifest",
+      "command": "generate_runtime_manifest.sh runtime-lock.json build-artifacts RUNTIME_MANIFEST.json --require-artifacts",
+      "exit_code": 0,
+      "artifact_state": "ARTIFACTS_PRESENT",
+      "artifact_count": 1,
+      "relative_path": "arm64-v8a/librafaelia_fixture.so",
+      "artifact_sha256_match": true,
+      "sha256_sidecar": true,
+      "result": "PASS"
+    }
+  ],
+  "classification": {
+    "source_lock_validation": "PASS_LOCAL",
+    "manifest_generator": "PASS_LOCAL",
+    "artifact_promotion_boundary": "PASS_LOCAL_SYNTHETIC",
+    "android_device_execution": "TOKEN_VAZIO",
+    "remote_ci": "TOKEN_VAZIO_RUNNER",
+    "claim_allowed": false
+  },
+  "F_ok": "generator is syntactically valid and distinguishes source-only, rejected empty promotion and hashed artifact states",
+  "F_gap": "no Android ARM32/ARM64 device receipt and no GitHub runner steps",
+  "F_next": "add a one-command Termux handoff that validates the lock, generates the manifest, verifies its sidecar and records a device receipt"
+}

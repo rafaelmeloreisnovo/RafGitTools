@@ -1,0 +1,121 @@
+{
+  "schema": "rafaelia.content-validity-manifest.v1",
+  "manifest_id": "CONTENT-VALIDITY-EXAMPLE-20260717",
+  "title": "TOKEN_VAZIO as a valid epistemic state",
+  "observed_at": "2026-07-17T00:00:00-03:00",
+  "declared_use": "Validate a governance definition without promoting it to a physical claim.",
+  "sources": [
+    {
+      "id": "SRC001",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "ref": "main",
+      "path": "docs/SEMANTIC_INVARIANT_GLOSSARY.md",
+      "source_state": "SOURCE_DECLARED"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E001",
+      "source_ref": "SRC001",
+      "locator": "TOKEN_VAZIO definition",
+      "kind": "DOCUMENT",
+      "observed_at": "2026-07-17T00:00:00-03:00"
+    },
+    {
+      "id": "E002",
+      "source_ref": "SRC001",
+      "locator": "Rule of silent non-promotion",
+      "kind": "DOCUMENT",
+      "observed_at": "2026-07-17T00:00:00-03:00"
+    }
+  ],
+  "tokens": [
+    {
+      "id": "T001",
+      "kind": "DEFINITION",
+      "state": "VALID",
+      "source_ref": "SRC001",
+      "raw_text": "TOKEN_VAZIO is a valid epistemic record for absent, unproven or intentionally non-inferred information.",
+      "normalized_text": "TOKEN_VAZIO records an explicit absence without coercion to zero, false, success or proof of nonexistence.",
+      "declared_domain": "research governance",
+      "declared_use": "represent missing support without fabrication",
+      "evidence_refs": ["E001", "E002"],
+      "semantic_features": {
+        "negation": ["not zero", "not false", "not success", "not proof of nonexistence"],
+        "modality": [],
+        "conditions": ["information is absent, unproven or intentionally not inferred"],
+        "exceptions": [],
+        "numbers": [],
+        "units": []
+      },
+      "limitations": ["valid as a governance definition, not as a physical observable"]
+    },
+    {
+      "id": "T002",
+      "kind": "GAP",
+      "state": "TOKEN_VAZIO",
+      "source_ref": "SRC001",
+      "raw_text": "Production tokenizer window size",
+      "normalized_text": "Production tokenizer window size is not fixed by the governance contract.",
+      "declared_domain": "runtime configuration",
+      "declared_use": "prevent an invented universal window size",
+      "evidence_refs": [],
+      "semantic_features": {
+        "negation": ["not fixed"],
+        "modality": [],
+        "conditions": ["runtime and model profile are not supplied"],
+        "exceptions": [],
+        "numbers": [],
+        "units": ["tokens"]
+      },
+      "reason": "No tokenizer, model profile or runtime budget was supplied.",
+      "owner": "runtime owner",
+      "next_action": "Provide tokenizer identity, context limit and memory budget.",
+      "exit_criteria": "A versioned runtime profile declares max_tokens and overlap_tokens."
+    }
+  ],
+  "windows": [
+    {
+      "id": "W001",
+      "source_refs": ["SRC001"],
+      "token_refs": ["T001", "T002"],
+      "max_tokens": 128,
+      "overlap_tokens": 16,
+      "observed_token_count": 54,
+      "truncation": "NONE",
+      "bridge_ref": null
+    }
+  ],
+  "tensor_cells": [
+    {"token_ref": "T001", "window_ref": "W001", "dimension_ref": "D01", "weight": 1.0, "evidence_refs": ["E001"]},
+    {"token_ref": "T001", "window_ref": "W001", "dimension_ref": "D02", "weight": 1.0, "evidence_refs": ["E001", "E002"]},
+    {"token_ref": "T001", "window_ref": "W001", "dimension_ref": "D03", "weight": 0.9, "evidence_refs": ["E002"]},
+    {"token_ref": "T001", "window_ref": "W001", "dimension_ref": "D07", "weight": 0.8, "evidence_refs": ["E001"]},
+    {"token_ref": "T001", "window_ref": "W001", "dimension_ref": "D08", "weight": 1.0, "evidence_refs": ["E002"]},
+    {"token_ref": "T002", "window_ref": "W001", "dimension_ref": "D01", "weight": 1.0, "evidence_refs": ["E001"]},
+    {"token_ref": "T002", "window_ref": "W001", "dimension_ref": "D02", "weight": 1.0, "evidence_refs": ["E001"]},
+    {"token_ref": "T002", "window_ref": "W001", "dimension_ref": "D03", "weight": "TOKEN_VAZIO", "evidence_refs": [], "reason": "Runtime domain is not fixed."},
+    {"token_ref": "T002", "window_ref": "W001", "dimension_ref": "D07", "weight": 1.0, "evidence_refs": ["E001"]},
+    {"token_ref": "T002", "window_ref": "W001", "dimension_ref": "D08", "weight": 1.0, "evidence_refs": ["E002"]}
+  ],
+  "contradictions": [],
+  "bridges": [],
+  "token_vazio_ledger": [
+    {
+      "id": "TV001",
+      "field": "tokens.T002",
+      "reason": "Production tokenizer parameters are absent.",
+      "owner": "runtime owner",
+      "next_action": "Provide a versioned tokenizer/runtime profile.",
+      "exit_criteria": "Profile contains tokenizer hash, context limit, max_tokens, overlap_tokens and memory budget."
+    },
+    {
+      "id": "TV002",
+      "field": "tensor_cells.T002.W001.D03",
+      "reason": "Domain fit cannot be weighted before the runtime profile exists.",
+      "owner": "runtime owner",
+      "next_action": "Attach runtime profile evidence.",
+      "exit_criteria": "D03 receives a numeric evidence-linked weight."
+    }
+  ]
+}

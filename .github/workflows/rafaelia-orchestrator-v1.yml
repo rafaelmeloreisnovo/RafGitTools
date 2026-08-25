@@ -1,0 +1,540 @@
+name: RAFAELIA Ω Orchestrator V1
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_cross_repo:
+        description: "Executar gates nos repositórios federados"
+        required: false
+        default: true
+        type: boolean
+      run_private_corpus:
+        description: "Executar ingestão privada no runner rafaelia-private"
+        required: false
+        default: false
+        type: boolean
+      private_max_files:
+        description: "Máximo de fontes privadas por execução"
+        required: false
+        default: "5"
+        type: string
+      fail_on_token_vazio:
+        description: "Falhar o fechamento se restar TOKEN_VAZIO operacional"
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    - cron: "35 */6 * * *"
+  pull_request:
+    paths:
+      - ".github/workflows/rafaelia-orchestrator-v1.yml"
+      - "runtime-lock.json"
+      - "contracts/rafcodephi-runtime-stack.v1.schema.json"
+      - "scripts/runtime_lock_contract.py"
+      - "scripts/validate_rafcodephi_stack_contract.py"
+      - "tests/test_rafcodephi_stack_contract.py"
+      - "tools/rafaelia_navigator/**"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: rafaelia-orchestrator-v1-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  ORCHESTRATOR_SCHEMA: RAFAELIA_ORCHESTRATOR_V1
+  CLAIM_ALLOWED: "false"
+  RELEASE_ALLOWED: "false"
+  TRAINING_EXECUTED: "false"
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  preflight:
+    name: "00 · Preflight / invariantes"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      termux_commit: ${{ steps.lock.outputs.termux_commit }}
+      termux_api_commit: ${{ steps.lock.outputs.termux_api_commit }}
+      termux_packages_commit: ${{ steps.lock.outputs.termux_packages_commit }}
+      rafpolimata_commit: ${{ steps.lock.outputs.rafpolimata_commit }}
+    steps:
+      - name: Checkout control plane
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate orchestration prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f tools/rafaelia_navigator/rafaelia_navigator.py
+          test -f tools/rafaelia_navigator/rafaelia_navigator_integrity_v1.py
+          test -f tools/rafaelia_navigator/rafaelia_navigator_bulk_v1.py
+          test -f tools/rafaelia_navigator/rafaelia_navigator_publish_v1.py
+          test -f scripts/runtime_lock_contract.py
+          test -f scripts/validate_rafcodephi_stack_contract.py
+          mkdir -p _orchestration
+          python - <<'PY'
+          import json, os
+          receipt = {
+              "schema": os.environ["ORCHESTRATOR_SCHEMA"],
+              "stage": "00_preflight",
+              "state": "PASS",
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "sha": os.environ["GITHUB_SHA"],
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "event": os.environ["GITHUB_EVENT_NAME"],
+              "claim_allowed": False,
+              "release_allowed": False,
+              "training_executed": False,
+              "append_only": True,
+          }
+          with open("_orchestration/00-preflight.json", "w", encoding="utf-8") as f:
+              json.dump(receipt, f, ensure_ascii=False, indent=2, sort_keys=True)
+              f.write("\n")
+          PY
+      - name: Validate RAFCODEPHI source lock
+        id: lock
+        run: |
+          python3 scripts/runtime_lock_contract.py validate \
+            runtime-lock.json \
+            --github-output "$GITHUB_OUTPUT"
+          python3 -m unittest tests.test_rafcodephi_stack_contract -v
+      - name: Upload preflight receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: receipt-00-preflight-${{ github.run_id }}
+          path: _orchestration/00-preflight.json
+          if-no-files-found: error
+          retention-days: 30
+
+  navigator:
+    name: "01 · Censo / Navigator determinístico"
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout control plane
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run all private-safe Navigator selftests
+        shell: bash
+        run: |
+          set -u
+          mkdir -p _orchestration/logs
+          rc=0
+          python tools/rafaelia_navigator/rafaelia_navigator.py selftest >_orchestration/logs/navigator-base.log 2>&1 || rc=1
+          (cd tools/rafaelia_navigator && python rafaelia_navigator_integrity_v1.py selftest) >_orchestration/logs/navigator-integrity.log 2>&1 || rc=1
+          (cd tools/rafaelia_navigator && python rafaelia_navigator_bulk_v1.py selftest) >_orchestration/logs/navigator-bulk.log 2>&1 || rc=1
+          (cd tools/rafaelia_navigator && python rafaelia_navigator_publish_v1.py selftest) >_orchestration/logs/navigator-publish.log 2>&1 || rc=1
+          export STAGE_RC="$rc"
+          python - <<'PY'
+          import json, os
+          rc = int(os.environ["STAGE_RC"])
+          receipt = {
+              "schema": os.environ["ORCHESTRATOR_SCHEMA"],
+              "stage": "01_navigator",
+              "state": "PASS" if rc == 0 else "FAIL",
+              "gates": ["base_selftest", "full_node_integrity", "bulk_fts", "committed_state_publication"],
+              "source_class": "SYNTHETIC_FIXTURE",
+              "private_body_exported": False,
+              "claim_allowed": False,
+              "training_executed": False,
+              "append_only": True,
+          }
+          with open("_orchestration/01-navigator.json", "w", encoding="utf-8") as f:
+              json.dump(receipt, f, ensure_ascii=False, indent=2, sort_keys=True)
+              f.write("\n")
+          PY
+          exit "$rc"
+      - name: Upload Navigator receipt and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: receipt-01-navigator-${{ github.run_id }}
+          path: |
+            _orchestration/01-navigator.json
+            _orchestration/logs/*.log
+          if-no-files-found: error
+          retention-days: 30
+
+  private_corpus:
+    name: "02 · Corpus privado / ingestão controlada"
+    needs: navigator
+    if: >-
+      ${{
+        (github.event_name == 'workflow_dispatch' && inputs.run_private_corpus == true) ||
+        vars.RAFAELIA_PRIVATE_RUNNER_ENABLED == 'true'
+      }}
+    runs-on: [self-hosted, linux, rafaelia-private]
+    timeout-minutes: 45
+    env:
+      PRIVATE_SOURCE: ${{ vars.RAFAELIA_PRIVATE_SOURCE }}
+      PRIVATE_MAX_FILES: ${{ github.event_name == 'workflow_dispatch' && inputs.private_max_files || '5' }}
+    steps:
+      - name: Checkout control plane
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Execute bounded private ingestion
+        shell: bash
+        run: |
+          set -u
+          mkdir -p _orchestration
+          state="TOKEN_VAZIO_PRIVATE_SOURCE"
+          rc=0
+          output="${RUNNER_TEMP}/rafaelia-navigator-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          if [[ -n "${PRIVATE_SOURCE:-}" && -d "${PRIVATE_SOURCE:-}" ]]; then
+            rm -rf "$output"
+            set +e
+            python tools/rafaelia_navigator/rafaelia_navigator_bulk_v1.py build "$PRIVATE_SOURCE" "$output" --max-files "$PRIVATE_MAX_FILES"
+            exec_rc=$?
+            set -e
+            if [[ "$exec_rc" -eq 0 && -f "$output/RAFAELIA_NAVIGATOR.sqlite3" ]]; then
+              state="PASS_PRIVATE_BOUNDED"
+              db_sha="$(sha256sum "$output/RAFAELIA_NAVIGATOR.sqlite3" | awk '{print $1}')"
+            else
+              state="FAIL_PRIVATE_PIPELINE"
+              db_sha=""
+              rc=1
+            fi
+          fi
+          export PRIVATE_STATE="$state" PRIVATE_DB_SHA="${db_sha:-}" PRIVATE_RC="$rc"
+          python - <<'PY'
+          import json, os
+          receipt = {
+              "schema": os.environ["ORCHESTRATOR_SCHEMA"],
+              "stage": "02_private_corpus",
+              "state": os.environ["PRIVATE_STATE"],
+              "bounded_max_files": os.environ.get("PRIVATE_MAX_FILES", "5"),
+              "database_sha256": os.environ.get("PRIVATE_DB_SHA") or None,
+              "private_paths_recorded": False,
+              "private_bodies_uploaded": False,
+              "claim_allowed": False,
+              "training_executed": False,
+              "append_only": True,
+          }
+          with open("_orchestration/02-private-corpus.json", "w", encoding="utf-8") as f:
+              json.dump(receipt, f, ensure_ascii=False, indent=2, sort_keys=True)
+              f.write("\n")
+          PY
+          rm -rf "$output"
+          exit "$rc"
+      - name: Upload sanitized private receipt only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: receipt-02-private-${{ github.run_id }}
+          path: _orchestration/02-private-corpus.json
+          if-no-files-found: error
+          retention-days: 30
+
+  cross_repo_preflight:
+    name: "03a · Federação / autorização"
+    needs: navigator
+    if: always() && needs.navigator.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      enabled: ${{ steps.gate.outputs.enabled }}
+      state: ${{ steps.gate.outputs.state }}
+    env:
+      ORCHESTRATOR_TOKEN: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN }}
+      REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.run_cross_repo || vars.RAFAELIA_CROSS_REPO_ENABLED }}
+    steps:
+      - name: Classify cross-repository authority
+        id: gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${REQUESTED:-false}" != "true" ]]; then
+            state="TOKEN_VAZIO_CROSS_REPO_NOT_REQUESTED"
+            enabled="false"
+          elif [[ -z "${ORCHESTRATOR_TOKEN:-}" ]]; then
+            state="TOKEN_VAZIO_CROSS_REPO_TOKEN"
+            enabled="false"
+          else
+            state="PASS_AUTHORIZED"
+            enabled="true"
+          fi
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+          echo "enabled=$enabled" >> "$GITHUB_OUTPUT"
+
+  cross_repo:
+    name: "03b · Federação / ${{ matrix.id }}"
+    needs: [navigator, cross_repo_preflight]
+    if: needs.cross_repo_preflight.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: mapa-invariants
+            repository: rafaelmeloreisnovo/Mapa
+            ref: main
+            command: python tests/test_cognitive_operators.py
+          - id: rafpolimata-operators
+            repository: rafaelmeloreisnovo/RafPolimata
+            ref: main
+            command: python tests/test_cognitive_operator_reference.py && python tests/test_cognitive_operators_runtime_index.py && python -m pip install --disable-pip-version-check pytest && python -m pytest -q tests/test_rafcodephi_bootstrap_evidence.py
+          - id: gaia-stage4
+            repository: rafaelmeloreisnovo/GAIA_phi
+            ref: main
+            command: python tests/test_manifest_lineage_tail_recovery.py && python tests/test_manifest_lineage_tail_corruption.py && python tests/test_stage4_rmralpha_precedence_123.py && python tests/test_stage4_rmralpha_precedence_124.py && python tests/test_stage4_rmralpha_precedence_125.py
+          - id: termux-packages-bootstrap
+            repository: rafaelmeloreisnovo/termux-packages
+            ref: main
+            command: python scripts/tests/test_rafcodephi_termux_api_contract.py && python core/tests/test_rafcodephi_prefix_contract.py && bash -n scripts/build-rafcodephi-real-bootstrap.sh
+          - id: termux-app-contract
+            repository: rafaelmeloreisnovo/termux-app-rafacodephi
+            ref: master
+            command: python -m pip install --disable-pip-version-check pytest && python -m pytest -q tests/test_source_built_real_bootstrap.py tests/test_bootstrap_package_install_contract.py && bash -n scripts/prepare_bootstrap_env.sh
+          - id: termux-api-identity
+            repository: rafaelmeloreisnovo/termux-api_rafcodephi
+            ref: master
+            command: python scripts/validate-package-identity.py && bash -n scripts/*.sh api.sh
+          - id: rll-governance
+            repository: instituto-Rafael/relativity-living-light
+            ref: main
+            command: python tests/test_rll_execution_queue_effective.py && python tests/test_rll_termux_physical_replay.py && python tests/test_rll_termux_runner_contract.py
+    env:
+      GATE_COMMAND: ${{ matrix.command }}
+      GATE_ID: ${{ matrix.id }}
+      TARGET_REPOSITORY: ${{ matrix.repository }}
+    steps:
+      - name: Checkout federated authority
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repository }}
+          ref: ${{ matrix.ref }}
+          token: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN || github.token }}
+          persist-credentials: false
+          path: target
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Execute canonical bounded gate
+        shell: bash
+        run: |
+          set -u
+          mkdir -p _orchestration
+          set +e
+          (cd target && bash -euo pipefail -c "$GATE_COMMAND") >"_orchestration/${GATE_ID}.log" 2>&1
+          rc=$?
+          set -e
+          export FEDERATED_RC="$rc"
+          python - <<'PY'
+          import json, os
+          rc = int(os.environ["FEDERATED_RC"])
+          receipt = {
+              "schema": os.environ["ORCHESTRATOR_SCHEMA"],
+              "stage": "03_cross_repo",
+              "gate": os.environ["GATE_ID"],
+              "repository": os.environ["TARGET_REPOSITORY"],
+              "state": "PASS" if rc == 0 else "FAIL",
+              "runner_started": True,
+              "claim_allowed": False,
+              "release_allowed": False,
+              "training_executed": False,
+              "append_only": True,
+          }
+          path = f"_orchestration/03-{os.environ['GATE_ID']}.json"
+          with open(path, "w", encoding="utf-8") as f:
+              json.dump(receipt, f, ensure_ascii=False, indent=2, sort_keys=True)
+              f.write("\n")
+          PY
+          exit "$rc"
+      - name: Upload federated receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: receipt-03-${{ matrix.id }}-${{ github.run_id }}
+          path: |
+            _orchestration/03-${{ matrix.id }}.json
+            _orchestration/${{ matrix.id }}.log
+          if-no-files-found: error
+          retention-days: 30
+
+  rafcodephi_stack:
+    name: "03c · RAFCODEPHI / contrato vertical"
+    needs: [preflight, navigator, cross_repo_preflight]
+    if: needs.cross_repo_preflight.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout control plane
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout locked Termux app
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/termux-app-rafacodephi
+          ref: ${{ needs.preflight.outputs.termux_commit }}
+          token: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN || github.token }}
+          persist-credentials: false
+          path: _stack/termux-app-rafacodephi
+      - name: Checkout locked Termux API
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/termux-api_rafcodephi
+          ref: ${{ needs.preflight.outputs.termux_api_commit }}
+          token: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN || github.token }}
+          persist-credentials: false
+          path: _stack/termux-api_rafcodephi
+      - name: Checkout locked Termux packages
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/termux-packages
+          ref: ${{ needs.preflight.outputs.termux_packages_commit }}
+          token: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN || github.token }}
+          persist-credentials: false
+          path: _stack/termux-packages
+      - name: Checkout locked RafPolimata
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/RafPolimata
+          ref: ${{ needs.preflight.outputs.rafpolimata_commit }}
+          token: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN || github.token }}
+          persist-credentials: false
+          path: _stack/RafPolimata
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run focused repository contracts
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check pytest
+          python -m pytest -q \
+            _stack/termux-app-rafacodephi/tests/test_source_built_real_bootstrap.py \
+            _stack/termux-app-rafacodephi/tests/test_bootstrap_package_install_contract.py
+          python _stack/termux-api_rafcodephi/scripts/validate-package-identity.py
+          python _stack/termux-packages/scripts/tests/test_rafcodephi_termux_api_contract.py
+          python _stack/termux-packages/core/tests/test_rafcodephi_prefix_contract.py
+          python -m pytest -q _stack/RafPolimata/tests/test_rafcodephi_bootstrap_evidence.py
+      - name: Cross-check locked identities and routes
+        run: |
+          python3 scripts/validate_rafcodephi_stack_contract.py \
+            --app _stack/termux-app-rafacodephi \
+            --api _stack/termux-api_rafcodephi \
+            --packages _stack/termux-packages \
+            --polimata _stack/RafPolimata \
+            --output _orchestration/03c-rafcodephi-runtime-stack.json
+      - name: Upload stack receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: receipt-03c-rafcodephi-stack-${{ github.run_id }}
+          path: _orchestration/03c-rafcodephi-runtime-stack.json
+          if-no-files-found: error
+          retention-days: 30
+
+  reconcile:
+    name: "04 · Reconciliação Ω / receipt final"
+    needs: [preflight, navigator, private_corpus, cross_repo_preflight, cross_repo, rafcodephi_stack]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RESULT_PREFLIGHT: ${{ needs.preflight.result }}
+      RESULT_NAVIGATOR: ${{ needs.navigator.result }}
+      RESULT_PRIVATE: ${{ needs.private_corpus.result }}
+      RESULT_CROSS_PREFLIGHT: ${{ needs.cross_repo_preflight.result }}
+      RESULT_CROSS: ${{ needs.cross_repo.result }}
+      RESULT_RAFCODEPHI_STACK: ${{ needs.rafcodephi_stack.result }}
+      CROSS_STATE: ${{ needs.cross_repo_preflight.outputs.state }}
+      FAIL_ON_TOKEN_VAZIO: ${{ github.event_name == 'workflow_dispatch' && inputs.fail_on_token_vazio || false }}
+    steps:
+      - name: Build append-only final receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _orchestration
+          python - <<'PY'
+          import json, os
+          results = {
+              "preflight": os.environ.get("RESULT_PREFLIGHT", "skipped"),
+              "navigator": os.environ.get("RESULT_NAVIGATOR", "skipped"),
+              "private_corpus": os.environ.get("RESULT_PRIVATE", "skipped"),
+              "cross_repo_preflight": os.environ.get("RESULT_CROSS_PREFLIGHT", "skipped"),
+              "cross_repo": os.environ.get("RESULT_CROSS", "skipped"),
+              "rafcodephi_stack": os.environ.get("RESULT_RAFCODEPHI_STACK", "skipped"),
+          }
+          cross_state = os.environ.get("CROSS_STATE") or "TOKEN_VAZIO_CROSS_REPO_UNOBSERVED"
+          hard_fail = any(v in {"failure", "cancelled"} for k, v in results.items() if k not in {"private_corpus", "cross_repo"})
+          if results["cross_repo"] == "failure" or results["private_corpus"] == "failure" or results["rafcodephi_stack"] == "failure":
+              hard_fail = True
+          token_vazio = []
+          if results["private_corpus"] == "skipped":
+              token_vazio.append("TOKEN_VAZIO_PRIVATE_CORPUS_EXECUTION")
+          if results["cross_repo"] == "skipped":
+              token_vazio.append(cross_state)
+          token_vazio.extend([
+              "TOKEN_VAZIO_PHYSICAL_TERMUX_EXECUTION",
+              "TOKEN_VAZIO_ARM32_DEVICE_BOOTSTRAP",
+              "TOKEN_VAZIO_ARM64_DEVICE_BOOTSTRAP",
+              "TOKEN_VAZIO_PAIRED_APK_DEVICE_INSTALL",
+              "TOKEN_VAZIO_TERMUX_API_DEVICE_CALL",
+              "TOKEN_VAZIO_CUSTOM_BINARY_REPOSITORY",
+              "TOKEN_VAZIO_INDEPENDENT_REPLICATION",
+          ])
+          state = "FAIL" if hard_fail else ("PASS_GOVERNED_WITH_TOKEN_VAZIO" if token_vazio else "PASS")
+          receipt = {
+              "schema": os.environ["ORCHESTRATOR_SCHEMA"],
+              "stage": "04_reconcile",
+              "state": state,
+              "results": results,
+              "token_vazio": sorted(set(token_vazio)),
+              "invariants": {
+                  "claim_allowed": False,
+                  "release_allowed": False,
+                  "training_executed": False,
+                  "automatic_merge": False,
+                  "private_bodies_in_public_artifacts": False,
+                  "failure_without_steps_is_code_defect": False,
+              },
+              "f_ok": "gates executados em sequência e estados preservados",
+              "f_gap": "itens TOKEN_VAZIO permanecem explícitos até evidência material",
+              "f_next": "executar o primeiro gate material ainda vazio e anexar successor receipt",
+              "append_only": True,
+          }
+          with open("_orchestration/RAFAELIA_ORCHESTRATION_RECEIPT_V1.json", "w", encoding="utf-8") as f:
+              json.dump(receipt, f, ensure_ascii=False, indent=2, sort_keys=True)
+              f.write("\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+              f.write("# RAFAELIA Ω Orchestrator V1\n\n")
+              f.write(f"**State:** `{state}`\n\n")
+              f.write("| Stage | Result |\n|---|---|\n")
+              for key, value in results.items():
+                  f.write(f"| {key} | `{value}` |\n")
+              f.write("\n**TOKEN_VAZIO:**\n")
+              for token in sorted(set(token_vazio)):
+                  f.write(f"- `{token}`\n")
+          fail_on_tv = os.environ.get("FAIL_ON_TOKEN_VAZIO", "false").lower() == "true"
+          if hard_fail or (fail_on_tv and token_vazio):
+              raise SystemExit(1)
+          PY
+      - name: Upload final receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: receipt-04-omega-${{ github.run_id }}
+          path: _orchestration/RAFAELIA_ORCHESTRATION_RECEIPT_V1.json
+          if-no-files-found: error
+          retention-days: 90

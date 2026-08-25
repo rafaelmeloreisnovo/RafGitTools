@@ -1,0 +1,81 @@
+{
+  "schema": "rafaelia.authority-pyramid-adapter.v1",
+  "repo": "rafaelmeloreisnovo/RafGitTools",
+  "authority_ref": "main",
+  "authority_sha": "062f09986840db24b684ba5affde1fbf192f35c7",
+  "role": "CONTROL_PLANE_EXECUTOR_TOOL_ROUTER",
+  "federated_authority": "rafaelmeloreisnovo/Mapa",
+  "central_contract": "data/control-plane/RAFAELIA_AUTHORITY_PYRAMID_FAIL_CLOSED_V1.json",
+  "claim_allowed": false,
+  "promotion_state": "HOLD_ON_P0_OR_GATING_TOKEN_VAZIO",
+  "service_dimensions": ["epistemic","operational","provenance","governance","data","privacy","security","reconstruction"],
+  "evidence_state": "PARTIAL",
+  "attention_state": "URGENT",
+  "protected_subject": {
+    "state": "TOKEN_VAZIO_NOT_ESTABLISHED",
+    "invariant": "do_not_infer_age_culture_ethnicity_religion_guardian_role_or_vulnerability_from_names_labels_or_repository_context",
+    "escalation": "IF_CHILD_OR_VULNERABLE_SUBJECT_IS_ESTABLISHED_OR_POTENTIAL_THEN_P0_PRIVACY_DIGNITY_BEST_INTEREST_CONTEXT_GATE"
+  },
+  "critical_data_classes": [
+    "credentials_and_tokens",
+    "account_metadata",
+    "repository_and_local_paths",
+    "logs_and_diagnostics",
+    "workflow_artifacts",
+    "cross_repo_receipts"
+  ],
+  "local_evidence_anchors": [
+    "AGENTS.md",
+    "docs/PRIVACY_SECURITY_COMPLIANCE_SUMMARY.md",
+    "docs/SECURITY.md",
+    "docs/PRIVACY.md",
+    "docs/DATA_FLOW_SECURITY.md",
+    "docs/RAFGITFS_SECURITY_THREAT_MODEL.md"
+  ],
+  "gaps": [
+    {
+      "id": "RGT_SERVER_SIDE_PROMOTION_BARRIER",
+      "category": "GOVERNANCE_GAP",
+      "evidence_state": "OBSERVED",
+      "attention_state": "URGENT",
+      "priority": "P0",
+      "observation": "classic branch protection observed disabled on main; complete ruleset/bypass state remains outside this adapter evidence",
+      "next_probe": "server-side ruleset/bypass/required-context inspection plus rejection receipt",
+      "owner": "TOKEN_VAZIO_OWNER_REQUIRED"
+    },
+    {
+      "id": "RGT_POSTMERGE_MAIN_EXECUTION_RECEIPT",
+      "category": "DEBUG_BLOCKER",
+      "evidence_state": "TOKEN_VAZIO",
+      "attention_state": "UNDERPRIORITIZED",
+      "priority": "P1",
+      "next_probe": "bind main SHA to post-merge run/job/steps/artifacts/hashes",
+      "owner": "RafGitTools"
+    },
+    {
+      "id": "RGT_PRIVACY_RUNTIME_EFFECTIVENESS",
+      "category": "PRIVACY_RISK",
+      "evidence_state": "TOKEN_VAZIO",
+      "attention_state": "URGENT",
+      "priority": "P0",
+      "next_probe": "inspect exact-run logs/artifacts for minimization/redaction, credential leakage, retention and access boundaries",
+      "owner": "RafGitTools"
+    },
+    {
+      "id": "RGT_SECURITY_CONTROL_RUNTIME_EFFECTIVENESS",
+      "category": "SECURITY_WEAKNESS",
+      "evidence_state": "TOKEN_VAZIO",
+      "attention_state": "ACTIVE",
+      "priority": "P1",
+      "next_probe": "execute scoped negative tests for secure storage, credential handling, network config and failure logging at an exact head",
+      "owner": "RafGitTools"
+    }
+  ],
+  "non_compensatory_gate": {
+    "dimensions": ["governance","privacy","security","protected_subject"],
+    "rule": "ANY_P0_OR_GATING_TOKEN_VAZIO_BLOCKS_PROMOTION",
+    "unknown_is_pass": false
+  },
+  "receipt_minimum": ["repo","ref","commit","path_or_artifact","authority","gap_id","risk","data_classification","privacy_classification","security_classification","falsifier","exit_criterion","rollback","evidence_refs","F_ok","F_gap","F_next","claim_allowed"],
+  "falsifier": "A promotion from this repository while any P0 governance/privacy/security/protected-subject gate is unresolved falsifies the adapter contract."
+}

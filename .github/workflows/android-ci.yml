@@ -48,8 +48,8 @@ on:
         type: string
 
 env:
-  GITHUB_CLIENT_ID_DEV: ${{ vars.GITHUB_CLIENT_ID_DEV || 'local-dev-client-id' }}
-  GITHUB_CLIENT_ID_PRODUCTION: ${{ vars.GITHUB_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
+  APP_CLIENT_ID_DEV: ${{ vars.APP_CLIENT_ID_DEV || 'local-dev-client-id' }}
+  APP_CLIENT_ID_PRODUCTION: ${{ vars.APP_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
   ALLOW_UNSIGNED_RELEASE: ${{ inputs.allow_unsigned_release && 'true' || 'false' }}
 
 jobs:
@@ -116,7 +116,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
@@ -142,7 +142,7 @@ jobs:
     if: inputs.build_mode == 'all' || inputs.build_mode == 'lint_only'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

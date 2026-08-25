@@ -1,0 +1,19 @@
+{
+  "schema": "RAFAELIA_NAVIGATOR_CI_OBSERVATION_V1",
+  "head_sha": "e53238243947c08dcd448e503ebaf1c2e2ebe611",
+  "workflow": "RAFAELIA Navigator Selftest",
+  "run_id": 31099048516,
+  "job_id": 92607905468,
+  "run_status": "completed",
+  "run_conclusion": "failure",
+  "jobs": 1,
+  "jobs_with_steps": 0,
+  "steps": 0,
+  "runner_started": false,
+  "classification": "TOKEN_VAZIO_RUNNER",
+  "code_defect_established": false,
+  "claim_allowed": false,
+  "F_ok": "workflow and job identities were observed for the corrected head",
+  "F_gap": "no remotely executed step or command is observable",
+  "F_next": "retain local deterministic tests as current evidence until a runner exposes at least one executed step"
+}

@@ -456,7 +456,7 @@ core:security/
 - Security threat detection (root, debugger)
 - Secure random number generation
 
-**Standards Compliance:**
+**Normative Reference Alignment:**
 - NIST SP 800-53 (Security Controls)
 - OWASP MASVS Level 2
 - FIPS 140-2 (Cryptographic algorithms)
@@ -481,14 +481,14 @@ core:privacy/
 - Privacy audit logging
 - Analytics data anonymization
 
-**Regulatory Compliance:**
+**Regulatory Reference Considerations:**
 - GDPR (General Data Protection Regulation)
 - CCPA (California Consumer Privacy Act)
 - ISO/IEC 27701 (Privacy Information Management)
 - LGPD (Brazilian Data Protection Law)
 
 #### ComplianceManager
-Standards and regulatory compliance tracking.
+Reference and evidence tracking; not a conformity or certification result.
 
 ```kotlin
 core:compliance/
@@ -722,7 +722,40 @@ val sanitized = securityManager.sanitizeInput(gitUrl, InputValidationType.GIT_UR
 For detailed compliance information, see:
 - [PRIVACY.md](PRIVACY.md) - Privacy policy and data protection
 - [SECURITY.md](SECURITY.md) - Security standards and practices
-- [COMPLIANCE.md](COMPLIANCE.md) - Regulatory and standards compliance
+- [COMPLIANCE.md](COMPLIANCE.md) - Regulatory and standards reference boundary
+
+---
+
+## AI Tool Governance (Kernel)
+
+Two components in `app/src/main/kotlin/com/rafgittools/kernel/` enforce which AI-generated tool calls the application is permitted to execute at runtime.
+
+### GovernanceGate
+
+**File**: `kernel/GovernanceGate.kt`
+
+Reads `assets/kernel/protocol/tool_registry.json` at construction time and evaluates every incoming tool call against the registry.
+
+```kotlin
+kernel/
+└── GovernanceGate.kt   # evaluates toolName + userAuthenticated → Decision(allowed, reason)
+```
+
+**Behaviour:**
+- Loads the tool registry from app assets on first instantiation.
+- `evaluate(toolName: String, userAuthenticated: Boolean): Decision` — returns `Decision(allowed=true, "ok")` when the named tool is registered, has `allowed=true`, and (where `requires_auth=true`) the user is authenticated. Returns a denial with a descriptive reason code otherwise.
+- `buildDenialJson(toolName, reason): String` — serialises a `DENIED` response envelope for the calling layer.
+
+### ToolRouter
+
+**File**: `kernel/ToolRouter.kt`
+
+Accepts a raw JSON tool-call string, passes it through `GovernanceGate`, and dispatches to the appropriate internal handler.
+
+**Behaviour:**
+- Parses the `tool` field from the incoming JSON; returns an error envelope for malformed input.
+- Calls `GovernanceGate.evaluate()`; logs a warning and returns the denial envelope on rejection.
+- Dispatches to `handleGitStatus()` or `handleGitDiff()` for handlers that are wired; returns a `TOKEN_VAZIO` response for tools with handlers not yet implemented.
 
 ## Monitoring and Logging
 

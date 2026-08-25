@@ -1,0 +1,33 @@
+{
+  "schema": "RAFAELIA_T7_CONTROL_ADAPTER/v1",
+  "product_id": "T7-P02",
+  "owner_repository": "rafaelmeloreisnovo/RafGitTools",
+  "generated_at": "2026-08-03T04:10:00-03:00",
+  "claim_allowed": false,
+  "mode": "READ_ONLY",
+  "required_trace_fields": ["trace_id","run_id","source_locator","source_revision","intent_hash","policy_hash","result_state"],
+  "allowed_result_states": ["PASS_LIMITED","FAIL","BLOCKED","TOKEN_VAZIO"],
+  "forbidden": ["shell_from_untrusted_input","automatic_merge","claim_promotion","secret_logging"],
+  "handoffs": {
+    "input": "IntentIR/JobEnvelope",
+    "output": "ControlSnapshot/ResultEnvelope",
+    "next": "termux-app-rafacodephi or evidence plane"
+  },
+  "gates": ["O0","O1","O2","O3","O8","O12"],
+  "self_test_cases": [
+    {
+      "name": "valid",
+      "record": {
+        "trace_id": "t1",
+        "run_id": "r1",
+        "source_locator": "repo://x",
+        "source_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "intent_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "policy_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "result_state": "PASS_LIMITED"
+      },
+      "expect": "PASS"
+    },
+    {"name":"missing_trace","record":{"run_id":"r1"},"expect":"FAIL"}
+  ]
+}

@@ -1,21 +1,17 @@
 package com.rafgittools.core.privacy
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.preferencesDataStore
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Date
 import java.util.UUID
-
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "privacy_datastore")
 
 /**
  * Privacy Manager
@@ -42,15 +38,16 @@ class PrivacyManager(
     private val storage: EncryptedPrivacyStorage
 ) {
     
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     private val _privacySettings = MutableStateFlow(PrivacySettings())
     val privacySettings: StateFlow<PrivacySettings> = _privacySettings.asStateFlow()
-    
+
     init {
-        // Load initial settings from storage
-        kotlinx.coroutines.GlobalScope.launch {
-            _privacySettings.value = storage.getPrivacySettings()
-        }
+        scope.launch { _privacySettings.value = storage.getPrivacySettings() }
     }
+
+    fun close() { scope.cancel() }
     
     /**
      * Export all user data in compliance with GDPR Article 20 (Data Portability)
@@ -282,18 +279,22 @@ class PrivacyManager(
     }
     
     private suspend fun getCredentialsCount(): Int {
-        // Implementation would count stored credentials
-        return 0
+        return try {
+            val ks = java.security.KeyStore.getInstance("AndroidKeyStore")
+            ks.load(null)
+            ks.aliases().toList().size
+        } catch (_: Exception) { 0 }
     }
-    
+
     private suspend fun getRepositoriesCount(): Int {
-        // Implementation would count cloned repositories
-        return 0
+        return context.filesDir.resolve("repositories")
+            .takeIf { it.isDirectory }?.listFiles()?.count { it.isDirectory } ?: 0
     }
-    
+
     private suspend fun getSettingsCount(): Int {
-        // Implementation would count settings entries
-        return 0
+        return try {
+            storage.getStoredEntryCount()
+        } catch (_: Exception) { 0 }
     }
     
     private suspend fun getCacheSize(): Long {
@@ -362,7 +363,13 @@ class PrivacyManager(
                 ?.map { repoDir ->
                     RepositoryExport(
                         name = repoDir.name,
-                        url = "", // Would need to read from .git/config
+                        url = runCatching {
+                            org.eclipse.jgit.storage.file.FileRepositoryBuilder()
+                                .setGitDir(File(repoDir, ".git"))
+                                .readEnvironment()
+                                .build()
+                                .use { repo -> repo.config.getString("remote", "origin", "url") ?: "" }
+                        }.getOrDefault(""),
                         localPath = repoDir.absolutePath,
                         createdDate = Date(repoDir.lastModified()),
                         lastAccessed = Date(repoDir.lastModified()),

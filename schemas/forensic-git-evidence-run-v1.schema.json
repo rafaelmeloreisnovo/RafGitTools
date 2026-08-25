@@ -1,0 +1,192 @@
+{
+  "$defs": {
+    "identityClock": {
+      "additionalProperties": true,
+      "properties": {
+        "date": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "email_fingerprint": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "date"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/rafaelmeloreisnovo/RafGitTools/schemas/forensic-git-evidence-run-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "claim_allowed": {
+      "const": false
+    },
+    "collection_mode": {
+      "enum": [
+        "LOCAL_READ_ONLY_NO_NETWORK",
+        "ENRICHED_FIXTURE",
+        "PLATFORM_SNAPSHOT"
+      ]
+    },
+    "collector": {
+      "type": "object"
+    },
+    "commits": {
+      "items": {
+        "additionalProperties": true,
+        "properties": {
+          "agent": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object"
+              }
+            ]
+          },
+          "author": {
+            "$ref": "#/$defs/identityClock"
+          },
+          "committer": {
+            "$ref": "#/$defs/identityClock"
+          },
+          "diff": {
+            "type": "object"
+          },
+          "external_receipt": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "parent_trees": {
+            "items": {
+              "pattern": "^[0-9a-f]{40}$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "parents": {
+            "items": {
+              "pattern": "^[0-9a-f]{40}$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "platform": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object"
+              }
+            ]
+          },
+          "refs_containing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "sha": {
+            "pattern": "^[0-9a-f]{40}$",
+            "type": "string"
+          },
+          "signature": {
+            "type": "object"
+          },
+          "tree": {
+            "pattern": "^[0-9a-f]{40}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sha",
+          "parents",
+          "tree",
+          "author",
+          "committer",
+          "signature",
+          "diff"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "custody": {
+      "type": "object"
+    },
+    "external_events": {
+      "type": "array"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "repository": {
+      "properties": {
+        "git_common_dir_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "repository_name": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "repository_path": {
+          "type": "string"
+        },
+        "repository_path_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "repository_name"
+      ],
+      "type": "object"
+    },
+    "revision": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "rafgittools.forensic-git-evidence-run/v1"
+    }
+  },
+  "required": [
+    "schema_version",
+    "case_id",
+    "generated_at",
+    "collection_mode",
+    "claim_allowed",
+    "repository",
+    "collector",
+    "commits",
+    "limitations"
+  ],
+  "title": "RafGitTools Forensic Git Evidence Run V1",
+  "type": "object"
+}

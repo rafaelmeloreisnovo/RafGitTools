@@ -1,4 +1,7 @@
-# RafGitTools 🚀
+# RafGitTools
+
+**Estado:** `ACTIVE`  
+**Proprietário lógico:** `app-maintainer`
 
 ## Current Source Truth / Fonte de Verdade Atual
 
@@ -11,75 +14,9 @@ Este README contém visão, contexto e roadmap. O estado técnico verificável d
 
 ## Project Philosophy
 
-📜 Parábola do Relojoeiro Transfinito
+A filosofia do projeto — invariantes determinísticos, rastreabilidade absoluta e governança — está formalizada na:
 
-> A parábola abaixo descreve filosofia e invariantes do projeto; não é declaração de status de implementação técnica.
-
-I. A Oficina e o Núcleo Determinístico
-
-Havia um relojoeiro chamado Rafael que construiu um relógio especial. Suas engrenagens não eram de latão, mas de código; seu peso não era chumbo, mas governança. Ele chamou a máquina de RafCoder.
-
-Toda vez que alguém girava a manivela um número exato de vezes – 10, 42 ou 1000 – o relógio produzia o mesmo som, a mesma luz, o mesmo selo de cera (um hash imutável). Isso era sua primeira invariante: o determinismo perfeito, como o nascer do sol.
-
-II. As Três Estradas e as Permutações Totais
-
-O relojoeiro colocou o relógio em três estradas diferentes:
-
-· Na estrada de x86 (piso de madeira), as engrenagens dançavam em assembly rápido.
-· Na estrada de ARM64 (pedras lisas), também assembly, porém mais lento.
-· Na estrada de ARM32 (lamaçal), não havia engrenagens finas – apenas uma alavanca de emergência em C puro.
-
-Um aprendiz perguntou: “E se eu trocar a estrada a cada minuto, e inverter a ordem das manivelas?”
-Rafael respondeu: “Faremos uma permutação aleatória total de todas as situações, métodos, funções e variáveis de atuação.”
-Assim nasceram 120 caminhos diferentes (3 plataformas × 2 variantes × 20 ordens de iteração).
-
-Em cada caminho, o selo de cera continuava o mesmo. Invariante número dois: a rastreabilidade era absoluta – dava para voltar os passos como em um fio de Ariadne.
-
-III. A Queda na Concorrência
-
-Um dia, dois ferreiros puxaram a manivela ao mesmo tempo. O relógio emitiu dois sons diferentes. Rafael suspirou: “Eis a invariante negativa: quando há concorrência, o determinismo morre. Meu relógio é solitário.”
-Algum valor? Sim, para quem ensina que solidão determinística é melhor que multidão caótica.
-
-IV. A Tábua de Leis (Governança)
-
-Sobre o relógio, ele gravou três mandamentos:
-
-1. Nenhum uso para machucar crianças. (invariante ética)
-2. Nenhum uso comercial sem permissão explícita. (invariante jurídica, mas não verificável)
-3. Todo ruído útil é bem-vindo; todo silêncio inútil, banido.
-
-Os aprendizes riram: “Isso não é metal, é poesia.” Rafael respondeu: “É a terceira invariante: a regra que protege a regra.”
-
-V. A Subida aos Ordinais (até ω e além)
-
-Um sábio perguntou: “E se criarmos invariantes sobre as invariantes? E depois invariantes sobre essas?”
-Rafael subiu uma escada infinita. No degrau ω (primeiro infinito), encontrou a invariante fundamental:
-
-“O relógio sempre pode gerar um relatório verdadeiro de si mesmo, desde que ninguém toque duas peças ao mesmo tempo.”
-
-Subiu mais: ω+1 – e viu que adicionar concorrência quebrava tudo. Então criou uma nova invariante:
-
-“O sistema ou é determinístico, ou confessa sua indeterminação.”
-
-Continuou até ω+ω (ω·2), onde as invariantes começaram a se repetir como ecos. No ponto fixo, ele concluiu:
-
-“O relógio, em todos os universos que posso alcançar, contém uma descrição honesta de suas próprias correntes.”
-
-VI. A Parábola do Valor (Três Semeadores)
-
-O relógio foi levado a três campos:
-
-· Campo da Pesquisa (solo fértil): o relógio ensinou como unir baixo nível e governança. Valor: alto (9/10).
-· Campo da Engenharia (solo pedregoso): faltavam concorrência e benchmarks. Valor: médio (5/10).
-· Campo do Usuário Comum (solo salgado): o relógio não gerava frases, apenas selos. Valor: baixo (2/10).
-
-E a semente mais valiosa não era o relógio, mas o método: como plantar invariantes em qualquer máquina.
-
-VII. Moraleja Final (Depois de Omega)
-
-“Toda máquina que se preze precisa de três coisas: um coração determinístico (engrenagens que não mentem), uma alma governante (regras que não se dobram) e uma cicatriz (a consciência de sua própria solidão concorrencial). Quem entender essa parábola terá, não um relógio, mas uma bússola para construir sistemas confiáveis em qualquer mundo – finito ou transfinito.”
-
-Fim das parábolas.
+> **[MANIFESTO.md](MANIFESTO.md)** — Parábola do Relojoeiro Transfinito
 <div align="center">
 
 ![Android](https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white)
@@ -123,29 +60,34 @@ All while respecting the licenses of these amazing open-source projects and addi
 > **Status semantics used in this README**: `implemented` = código existente e uso direto no app; `partial` = código existente sem cobertura/fechamento total; `planned` = roadmap; `experimental` = material ainda não integrado oficialmente.
 
 ### ✅ Implementado no código (evidência atual)
-- **Integração com GitHub API (Retrofit/OkHttp)**: base das telas e fluxos de autenticação, repos, issues e PRs em evolução.  
-- **Operações Git locais via JGit**: base para clone/commit/branch/push/pull em desenvolvimento contínuo.  
-- **Arquitetura e base do app**: Clean Architecture + MVVM + Hilt com Jetpack Compose e Room.  
+- **Integração com GitHub API (Retrofit/OkHttp)**: autenticação, repos, issues, PRs, releases, notificações, code search, reações, starring, SSH keys.
+- **Multi-platform**: GitHub, GitLab, Bitbucket, Gitea/Forgejo, Azure DevOps — todos os cinco providers em `MultiPlatformManager`.
+- **Operações Git locais via JGit** (25+ operações): clone, commit, amend, push, pull, pull-with-rebase, force-push-with-lease, branch CRUD, merge (com estratégias ours/theirs/no-FF), diff, log, stash, cherry-pick, revert, clean, reset (soft/mixed/hard), reflog, blame, config get/set/list, file search.
+- **Git LFS**: install, track, listTracked, fetch, pull, env — UI completa em `LfsScreen`.
+- **Autenticação**: PAT, OAuth Device Flow (RFC 8628), SSH (Ed25519/RSA/ECDSA), gh CLI import, offline mode. Rotação de chaves SSH + detecção de expiração de PAT.
+- **Offline-first**: `OfflineQueue` persistido em Room; `RepositorySyncWorker` (15 min) com `BranchTrackingStatus` → `SyncState` (SYNCED/BEHIND/AHEAD/DIVERGED/CONFLICT).
+- **rafaelia JNI bridge**: `librafaelia.so` compilado via CMake; 5 native methods em `RafaeliaCore.kt`.
+- **Arquitetura e base do app**: Clean Architecture + MVVM + Hilt com Jetpack Compose e Room (v4).
 
 ### 🚧 Parcial / cobertura incompleta
-- **Cobertura de testes** (meta > 80%) e automação de CI/CD.  
-- **Autenticação SSH** (chaves/agent) e base de GPG.  
-- **UI/UX incremental** com Compose (telas principais e fluxos críticos).  
+- **Cobertura de testes** (meta > 80%; atual ~20%) e automação de CI/CD.
+- **SSH agent integration** e GPG.
+- **UI/UX incremental** com Compose (telas principais e fluxos críticos).
 
 ### 🧩 Somente estrutura/stub
 Os blocos abaixo estão em **estrutura inicial/stub** ou ainda sem implementação funcional completa.
 
 **Blocos planejados (alto nível):**
-- Terminal embutido (shell/CLI Git).
-- Multi‑plataforma (GitLab/Bitbucket/Gitea/Azure DevOps/etc.).
+- Terminal PTY real (requer Termux `terminal-view`; atual é allowlist `ProcessBuilder`).
+- LLaMA kernel JNI (blocked em `llama.h` de build externo).
 - IA/ML (assistentes de commit/review, sugestões, etc.).
 - DevOps/CI, Analytics, Enterprise, Mobile extras, Acessibilidade, Observabilidade, etc.
 
 **Tarefas de implementação (a abrir):**
-- [ ] Abrir épico **Terminal** e decompor em issues por feature (ver [docs/ROADMAP.md](docs/ROADMAP.md)).  
-- [ ] Abrir épico **Multi‑plataforma** e decompor integrações por provedor (ver [docs/ROADMAP.md](docs/ROADMAP.md)).  
-- [ ] Abrir épico **IA/ML** com milestones por capacidade (ver [docs/ROADMAP.md](docs/ROADMAP.md)).  
-- [ ] Abrir épicos de suporte (**DevOps/CI**, **Analytics**, **Enterprise**, **Acessibilidade**) alinhados ao cronograma (ver [docs/ROADMAP.md](docs/ROADMAP.md)).  
+- [ ] Abrir épico **Terminal PTY** (ver [docs/ROADMAP.md](docs/ROADMAP.md)).
+- [ ] Adicionar llama.cpp como submódulo para desbloquear `LLaMA kernel JNI`.
+- [ ] Abrir épico **IA/ML** com milestones por capacidade (ver [docs/ROADMAP.md](docs/ROADMAP.md)).
+- [ ] Abrir épicos de suporte (**DevOps/CI**, **Analytics**, **Enterprise**, **Acessibilidade**) alinhados ao cronograma (ver [docs/ROADMAP.md](docs/ROADMAP.md)).
 
 > O detalhamento completo permanece no [docs/ROADMAP.md](docs/ROADMAP.md) e no [docs/STATUS_REPORT.md](docs/STATUS_REPORT.md).
 
@@ -194,7 +136,7 @@ RafGitTools/
 ├── docs/                       # Documentation
 │   ├── PROJECT_OVERVIEW.md    # Detailed project overview
 │   ├── ARCHITECTURE.md        # Architecture documentation
-│   ├── LICENSE_INFO.md        # License compliance info
+│   ├── LICENSE_INFO.md        # License metadata and attribution
 │   └── FEATURE_MATRIX.md      # Feature comparison matrix
 ├── build.gradle                # Root build config
 ├── settings.gradle            # Project settings
@@ -292,12 +234,13 @@ Consulte [docs/BUILD.md](docs/BUILD.md) para o fluxo completo (local + CI, inclu
 - [Feature Matrix](docs/FEATURE_MATRIX.md) - Feature comparison with source projects
 - [Mapa código → documentação](docs/CODE_TO_DOC_MAP.md) - Relação entre módulos e documentação
 
-### 🔐 Security & Compliance
+### 🔐 Security, Privacy & Reference Alignment
 
 - [Privacy Policy](docs/PRIVACY.md) - Privacy practices and data protection
 - [Security Policy](docs/SECURITY.md) - Security standards and practices
-- [Compliance Guide](docs/COMPLIANCE.md) - ISO, NIST, IEEE standards compliance
-- [License Information](docs/LICENSE_INFO.md) - License compliance and attribution
+- [Normative Reference Guide](docs/COMPLIANCE.md) - Evidence boundary and reference alignment
+- [Claim Language Policy](docs/CLAIM_LANGUAGE_POLICY.md) - Wording and evidence gate
+- [License Information](docs/LICENSE_INFO.md) - License metadata and attribution
 
 ### 🔄 Pull Request & Workflow Guides
 
@@ -318,14 +261,14 @@ See the complete [Status Report](docs/STATUS_REPORT.md) for detailed progress in
 ## 📏 Unified Status Metrics
 
 **Source of truth**: [`docs/STATUS_REPORT.md`](docs/STATUS_REPORT.md)  
-**Last updated**: 2026-02-24
+**Last updated**: 2026-07-21
 
 | Métrica | Valor |
 |---|---:|
 | Total de features | 288 |
-| Concluídas | 115 |
-| Em progresso | 26 |
-| Pendentes | 147 |
+| Concluídas | 130 |
+| Em progresso | 35 |
+| Pendentes | 123 |
 | Arquivos Kotlin | 168 |
 | Arquivos de teste (.kt em `test`/`androidTest`) | 11 |
 | Arquivos de documentação (`docs/**/*.md`) | 36 |
@@ -334,10 +277,15 @@ See the complete [Status Report](docs/STATUS_REPORT.md) for detailed progress in
 
 - [x] Project structure and Clean Architecture (100%)
 - [x] MVVM + Hilt dependency injection (100%)
-- [x] Core Git operations via JGit (80% - 25+ operations)
+- [x] Core Git operations via JGit (80% - 25+ operations including amend, rebase-pull, force-push-with-lease, reflog, blame, cherry-pick)
 - [x] GitHub API integration via Retrofit (80% - 50+ endpoints)
+- [x] Multi-platform support: GitHub, GitLab, Bitbucket, Gitea/Forgejo, Azure DevOps (100%)
+- [x] Git LFS UI — tracked patterns, track, install, fetch, pull, env (100%)
 - [x] UI implementation with Jetpack Compose (80% - 15+ screens)
-- [x] Security & Privacy framework (100% - GDPR/CCPA compliant)
+- [x] Security & Privacy source framework (runtime and legal assessment pending)
+- [x] SSH key rotation (Ed25519) + PAT expiry detection (100%)
+- [x] Offline queue persistence (Room DB v4) + repository sync state worker (100%)
+- [x] rafaelia JNI bridge wired into Android build system (librafaelia.so)
 - [x] Localization (3 languages: EN, PT-BR, ES)
 - [x] Documentation (36 files)
 
@@ -345,17 +293,16 @@ See the complete [Status Report](docs/STATUS_REPORT.md) for detailed progress in
 
 - [ ] Unit test coverage > 80% (currently ~20%)
 - [ ] CI/CD pipeline for automated testing
-- [ ] SSH key authentication
+- [ ] SSH key authentication (agent integration)
 
 #### Pending (🔴)
 
-- [ ] Terminal emulation
+- [ ] Terminal emulation (PTY — requires Termux terminal-view)
 - [ ] GPG key management
-- [ ] Multi-platform support (GitLab, Bitbucket)
-- [ ] Git LFS support
+- [ ] LLaMA kernel JNI (blocked on llama.h from external build)
 - [ ] Release preparation for Play Store
 
-**Progress**: 115/288 features complete (40%), 26 in progress (9%), 147 pending (51%)
+**Progress**: 130/288 features complete (45%), 35 in progress (12%), 123 pending (43%)
 
 ### How to Contribute
 
@@ -406,6 +353,40 @@ This project would not be possible without the amazing work of the open-source c
 - **Project Repository**: https://github.com/rafaelmeloreisnovo/RafGitTools
 - **Issues**: https://github.com/rafaelmeloreisnovo/RafGitTools/issues
 
+## AI / Local LLM Bridge
+
+An Android foreground service exposes a minimal HTTP server on `127.0.0.1:8765` so that a local LLM running on the device can be reached from the browser without external network access.
+
+- **RafBridgeService** — foreground `Service` that binds a `ServerSocket` on localhost port 8765. Exposes two routes: `GET /health` and `POST /v1/chat`. No shell, git-write, or filesystem routes are exposed by design.
+- **RafBridgeContract** — security policy gate that validates every inbound message (size limits, required fields, origin checks) before forwarding it to the model client.
+- **RafModelClient** — HTTP client that submits chat completion requests to the local model and returns the response through the bridge.
+
+Source: `app/src/main/java/com/rafgittools/bridge/`
+
+## Kiwi Browser Extension
+
+A Manifest V3 Chrome extension designed for Kiwi Browser on Android. It communicates with the LLM bridge at `http://127.0.0.1:8765` to relay chat messages between the browser and the local model. The extension requires explicit user consent before sending any request. The `host_permissions` in `manifest.json` are intentionally limited to the loopback address only.
+
+Source: `kiwi-extension/`
+
+## Authentication Methods
+
+RafGitTools implements five authentication paths for local Git operations and GitHub API calls:
+
+1. **PAT (Personal Access Token)** — token passed as the HTTP password via `UsernamePasswordCredentialsProvider`. Recommended method for GitHub.
+2. **OAuth Device Flow (RFC 8628)** — implemented in `OAuthDeviceFlowManager.kt`; the user authorizes on a secondary device or browser tab, and the app polls until a token is granted.
+3. **SSH key** — Ed25519, RSA, and ECDSA private keys are supported via `SshSessionFactory`. Passphrases are optional.
+4. **gh CLI token import** — `GhCliAuthImporter.kt` reads credentials previously saved by the `gh` CLI, so users who already have `gh` configured can authenticate without re-entering a token.
+5. **Offline mode** — `OfflineQueue.kt` and `BackgroundSyncManager.kt` allow read-only local Git operations when no network or credentials are available; remote operations are queued and replayed when connectivity is restored.
+
+Source: `app/src/main/kotlin/com/rafgittools/data/auth/`
+
+## fazer/ Directory
+
+The `fazer/` directory contains earlier draft versions of source files that predate the current `app/src/` implementations. These files are **not** compiled as part of the app. After audit (July 2026), all `fazer/` files were found to be superseded by the more complete implementations already in `app/src/`. The directory is retained for historical reference and will be removed in a future cleanup PR.
+
+---
+
 ## 🗺️ Roadmap
 
 ### Implementation Levels Legend
@@ -438,7 +419,7 @@ This project would not be possible without the amazing work of the open-source c
 | 10 | CI/CD pipeline setup | 🟡 L3 | NIST SP 800-53 CM | DevOps Lead | 🚧 |
 | 11 | Code quality gates | 🟡 L3 | ISO 9001, IEEE 730 | QA Lead | 🚧 |
 | 12 | Documentation structure | 🟢 L4 | IEEE 1063 | Documentation Lead | ✅ |
-| 13 | License compliance framework | 🟢 L4 | ISO/IEC 19770 | Legal/Compliance | ✅ |
+| 13 | License metadata review framework | 🟢 L4 | ISO/IEC 19770 | Legal/Compliance | ✅ |
 | 14 | Logging framework | 🟡 L3 | NIST SP 800-92 | Architecture Lead | 🚧 |
 | 15 | Error handling framework | 🟡 L3 | IEEE 1044 | Architecture Lead | 🚧 |
 | 16 | Network layer setup | 🟡 L3 | RFC 7231, TLS 1.3 | Backend Lead | 🚧 |
@@ -457,26 +438,26 @@ This project would not be possible without the amazing work of the open-source c
 | 20 | Git clone (shallow) | 🔴 L1 | Git Protocol v2 | Git Engine Lead | 📋 |
 | 21 | Git clone (single branch) | 🔴 L1 | Git Protocol v2 | Git Engine Lead | 📋 |
 | 22 | Git clone (with submodules) | 🔴 L1 | Git Protocol v2 | Git Engine Lead | 📋 |
-| 23 | Git commit (standard) | 🟠 L2 | DCO 1.1, Git | Git Engine Lead | 🚧 |
-| 24 | Git commit (amend) | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
+| 23 | Git commit (standard) | 🟡 L3 | DCO 1.1, Git | Git Engine Lead | 🚧 |
+| 24 | Git commit (amend) | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
 | 25 | Interactive staging | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
-| 26 | Git push | 🟠 L2 | Git Protocol v2 | Git Engine Lead | 🚧 |
-| 27 | Git pull | 🟠 L2 | Git Protocol v2 | Git Engine Lead | 🚧 |
-| 28 | Git fetch | 🟠 L2 | Git Protocol v2 | Git Engine Lead | 🚧 |
-| 29 | Force push with lease | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
-| 30 | Pull with rebase | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
-| 31 | Branch create | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
-| 32 | Branch delete | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
+| 26 | Git push | 🟡 L3 | Git Protocol v2 | Git Engine Lead | 🚧 |
+| 27 | Git pull | 🟡 L3 | Git Protocol v2 | Git Engine Lead | 🚧 |
+| 28 | Git fetch | 🟡 L3 | Git Protocol v2 | Git Engine Lead | 🚧 |
+| 29 | Force push with lease | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 30 | Pull with rebase | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 31 | Branch create | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 32 | Branch delete | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
 | 33 | Branch rename | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
-| 34 | Branch checkout | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
-| 35 | Branch merge | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
-| 36 | Merge strategies | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
-| 37 | Git status | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
-| 38 | Git log | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
-| 39 | Git diff | 🟠 L2 | Git Protocol | Git Engine Lead | 🚧 |
-| 40 | Stash operations | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
-| 41 | Remote management | 🟠 L2 | Git Protocol v2 | Git Engine Lead | 🚧 |
-| 42 | Git config management | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
+| 34 | Branch checkout | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 35 | Branch merge | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 36 | Merge strategies (ours/theirs/recursive/no-FF) | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 37 | Git status | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 38 | Git log / reflog | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 39 | Git diff | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 40 | Stash operations | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
+| 41 | Remote management | 🟡 L3 | Git Protocol v2 | Git Engine Lead | 🚧 |
+| 42 | Git config get/set/list | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
 
 **Standards Coverage**: Git Protocol v2, DCO 1.1, RFC 4880 (GPG), SSH RFC 4251/4252
 </details>
@@ -489,14 +470,14 @@ This project would not be possible without the amazing work of the open-source c
 | 43 | File tree view | 🟠 L2 | W3C WCAG 2.1, Material Design 3 | UI/UX Lead | 🚧 |
 | 44 | File list view | 🟠 L2 | W3C WCAG 2.1 | UI/UX Lead | 🚧 |
 | 45 | File content viewer | 🟠 L2 | W3C WCAG 2.1 | UI/UX Lead | 🚧 |
-| 46 | Syntax highlighting | 🔴 L1 | TextMate Grammar | UI/UX Lead | 📋 |
+| 46 | Syntax highlighting | 🟡 L3 | TextMate Grammar | UI/UX Lead | 🚧 |
 | 47 | Line numbers | 🔴 L1 | W3C WCAG 2.1 | UI/UX Lead | 📋 |
-| 48 | File search | 🔴 L1 | W3C WCAG 2.1 | UI/UX Lead | 📋 |
-| 49 | Directory navigation | 🟠 L2 | W3C WCAG 2.1 | UI/UX Lead | 🚧 |
+| 48 | File search (name + content) | 🟡 L3 | W3C WCAG 2.1 | UI/UX Lead | 🚧 |
+| 49 | Directory navigation | 🟡 L3 | W3C WCAG 2.1 | UI/UX Lead | 🚧 |
 | 50 | Breadcrumb navigation | 🔴 L1 | W3C WCAG 2.1 | UI/UX Lead | 📋 |
 | 51 | File type icons | 🔴 L1 | Material Icons | UI/UX Lead | 📋 |
 | 52 | File size display | 🔴 L1 | SI Units, IEC 60027-2 | UI/UX Lead | 📋 |
-| 53 | Last modified date | 🔴 L1 | ISO 8601 | UI/UX Lead | 📋 |
+| 53 | Last modified date (getFileLastModified) | 🟡 L3 | ISO 8601 | UI/UX Lead | 🚧 |
 | 54 | Commit info display | 🔴 L1 | Git Protocol | UI/UX Lead | 📋 |
 | 55 | Branch selector | 🔴 L1 | W3C WCAG 2.1 | UI/UX Lead | 📋 |
 | 56 | Tag selector | 🔴 L1 | W3C WCAG 2.1 | UI/UX Lead | 📋 |
@@ -511,19 +492,19 @@ This project would not be possible without the amazing work of the open-source c
 | # | Feature | Level | Standards | Responsible | Status |
 |---|---------|-------|-----------|-------------|--------|
 | 58 | OAuth 2.0 flow | 🟠 L2 | RFC 6749, RFC 7636 (PKCE) | Security Lead | 🚧 |
-| 59 | Device authorization flow | 🔴 L1 | RFC 8628 | Security Lead | 📋 |
-| 60 | Personal Access Token | 🟠 L2 | OAuth 2.0 Bearer Token | Security Lead | 🚧 |
+| 59 | Device authorization flow | 🟡 L3 | RFC 8628 | Security Lead | 🚧 |
+| 60 | Personal Access Token | 🟡 L3 | OAuth 2.0 Bearer Token | Security Lead | 🚧 |
 | 61 | Fine-grained PAT support | 🔴 L1 | GitHub API v4 | Security Lead | 📋 |
 | 62 | Token secure storage | 🟡 L3 | NIST SP 800-57, Android Keystore | Security Lead | 🚧 |
-| 63 | Token refresh mechanism | 🔴 L1 | RFC 6749 | Security Lead | 📋 |
-| 64 | SSH key generation | 🔴 L1 | RFC 4253, RFC 8709 (Ed25519) | Security Lead | 📋 |
-| 65 | SSH key management | 🔴 L1 | RFC 4251/4252 | Security Lead | 📋 |
+| 63 | Token refresh / PAT expiry detection | 🟡 L3 | RFC 6749 | Security Lead | 🚧 |
+| 64 | SSH key generation (Ed25519) | 🟡 L3 | RFC 4253, RFC 8709 (Ed25519) | Security Lead | 🚧 |
+| 65 | SSH key rotation (GitHub API) | 🟡 L3 | RFC 4251/4252 | Security Lead | 🚧 |
 | 66 | SSH agent integration | 🔴 L1 | SSH Agent Protocol | Security Lead | 📋 |
 | 67 | Biometric authentication | 🔴 L1 | FIDO2/WebAuthn, Android BiometricPrompt | Security Lead | 📋 |
 | 68 | Multi-account support | 🔴 L1 | ISO 27001 A.9 | Security Lead | 📋 |
 | 69 | Account switching | 🔴 L1 | ISO 27001 A.9 | Security Lead | 📋 |
 | 70 | Session management | 🔴 L1 | NIST SP 800-63B | Security Lead | 📋 |
-| 71 | Secure logout | 🔴 L1 | OWASP ASVS | Security Lead | 📋 |
+| 71 | Secure logout | 🟡 L3 | OWASP ASVS | Security Lead | 🚧 |
 | 72 | Credential encryption | 🟡 L3 | AES-256-GCM, NIST SP 800-38D | Security Lead | 🚧 |
 
 **Standards Coverage**: RFC 6749/7636/8628/4251/4252/4253/8709, NIST SP 800-57/800-63B/800-38D, FIDO2, WebAuthn, ISO 27001, OWASP ASVS/MASVS
@@ -538,21 +519,21 @@ This project would not be possible without the amazing work of the open-source c
 
 | # | Feature | Level | Standards | Responsible | Status |
 |---|---------|-------|-----------|-------------|--------|
-| 73 | REST API v3 client | 🔴 L1 | RFC 7231, OpenAPI 3.0 | API Lead | 📋 |
+| 73 | REST API v3 client (50+ endpoints) | 🟡 L3 | RFC 7231, OpenAPI 3.0 | API Lead | 🚧 |
 | 74 | GraphQL API v4 client | 🔴 L1 | GraphQL Spec, RFC 7231 | API Lead | 📋 |
-| 75 | Rate limiting handling | 🔴 L1 | RFC 6585, GitHub API | API Lead | 📋 |
-| 76 | Pagination support | 🔴 L1 | RFC 5988 | API Lead | 📋 |
-| 77 | Error handling | 🔴 L1 | RFC 7807 | API Lead | 📋 |
+| 75 | Rate limiting handling (X-RateLimit) | 🟡 L3 | RFC 6585, GitHub API | API Lead | 🚧 |
+| 76 | Pagination support | 🟡 L3 | RFC 5988 | API Lead | 🚧 |
+| 77 | Error handling | 🟡 L3 | RFC 7807 | API Lead | 🚧 |
 | 78 | Retry mechanisms | 🔴 L1 | RFC 7231 | API Lead | 📋 |
 | 79 | Request caching | 🔴 L1 | RFC 7234 | API Lead | 📋 |
 | 80 | ETag support | 🔴 L1 | RFC 7232 | API Lead | 📋 |
 | 81 | Conditional requests | 🔴 L1 | RFC 7232 | API Lead | 📋 |
 | 82 | Webhook handling | 🔴 L1 | RFC 7231, HMAC-SHA256 | API Lead | 📋 |
-| 83 | API versioning | 🔴 L1 | Semantic Versioning 2.0 | API Lead | 📋 |
+| 83 | API versioning header (2022-11-28) | 🟡 L3 | Semantic Versioning 2.0 | API Lead | 🚧 |
 | 84 | Request signing | 🔴 L1 | HMAC-SHA256 | Security Lead | 📋 |
 | 85 | Response validation | 🔴 L1 | JSON Schema | API Lead | 📋 |
-| 86 | Offline queue | 🔴 L1 | IEEE 802.11 offline spec | API Lead | 📋 |
-| 87 | Background sync | 🔴 L1 | W3C Background Sync | API Lead | 📋 |
+| 86 | Offline queue (Room-backed) | 🟡 L3 | IEEE 802.11 offline spec | API Lead | 🚧 |
+| 87 | Background sync (RepositorySyncWorker) | 🟡 L3 | W3C Background Sync | API Lead | 🚧 |
 | 88 | Network state handling | 🔴 L1 | Android NetworkCallback | API Lead | 📋 |
 | 89 | Certificate pinning | 🔴 L1 | RFC 7469, OWASP | Security Lead | 📋 |
 | 90 | API analytics | 🔴 L1 | OpenTelemetry | DevOps Lead | 📋 |
@@ -565,19 +546,19 @@ This project would not be possible without the amazing work of the open-source c
 
 | # | Feature | Level | Standards | Responsible | Status |
 |---|---------|-------|-----------|-------------|--------|
-| 91 | Issue listing | 🔴 L1 | GitHub API, W3C WCAG 2.1 | Feature Lead | 📋 |
-| 92 | Issue detail view | 🔴 L1 | W3C WCAG 2.1 | Feature Lead | 📋 |
-| 93 | Issue creation | 🔴 L1 | GitHub API, Markdown | Feature Lead | 📋 |
-| 94 | Issue editing | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 95 | Issue commenting | 🔴 L1 | GitHub API, Markdown | Feature Lead | 📋 |
-| 96 | Issue reactions | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 97 | Issue labels | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 98 | Issue milestones | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 99 | Issue assignments | 🔴 L1 | GitHub API | Feature Lead | 📋 |
+| 91 | Issue listing | 🟡 L3 | GitHub API, W3C WCAG 2.1 | Feature Lead | 🚧 |
+| 92 | Issue detail view | 🟡 L3 | W3C WCAG 2.1 | Feature Lead | 🚧 |
+| 93 | Issue creation | 🟡 L3 | GitHub API, Markdown | Feature Lead | 🚧 |
+| 94 | Issue editing (updateIssue) | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
+| 95 | Issue commenting | 🟡 L3 | GitHub API, Markdown | Feature Lead | 🚧 |
+| 96 | Issue reactions | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
+| 97 | Issue labels | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
+| 98 | Issue milestones | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
+| 99 | Issue assignments | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
 | 100 | Issue templates | 🔴 L1 | YAML 1.2, Markdown | Feature Lead | 📋 |
-| 101 | Issue search | 🔴 L1 | GitHub Search Syntax | Feature Lead | 📋 |
-| 102 | Issue filters | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 103 | Issue sorting | 🔴 L1 | GitHub API | Feature Lead | 📋 |
+| 101 | Issue search (searchIssues) | 🟡 L3 | GitHub Search Syntax | Feature Lead | 🚧 |
+| 102 | Issue filters | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
+| 103 | Issue sorting | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
 | 104 | Issue pinning | 🔴 L1 | GitHub API | Feature Lead | 📋 |
 | 105 | Issue locking | 🔴 L1 | GitHub API | Feature Lead | 📋 |
 | 106 | Issue transfer | 🔴 L1 | GitHub API | Feature Lead | 📋 |
@@ -592,22 +573,22 @@ This project would not be possible without the amazing work of the open-source c
 
 | # | Feature | Level | Standards | Responsible | Status |
 |---|---------|-------|-----------|-------------|--------|
-| 109 | PR listing | 🔴 L1 | GitHub API, W3C WCAG 2.1 | Feature Lead | 📋 |
-| 110 | PR detail view | 🔴 L1 | W3C WCAG 2.1 | Feature Lead | 📋 |
-| 111 | PR creation | 🔴 L1 | GitHub API | Feature Lead | 📋 |
+| 109 | PR listing | 🟡 L3 | GitHub API, W3C WCAG 2.1 | Feature Lead | 🚧 |
+| 110 | PR detail view | 🟡 L3 | W3C WCAG 2.1 | Feature Lead | 🚧 |
+| 111 | PR creation | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
 | 112 | PR editing | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 113 | PR merge (merge commit) | 🔴 L1 | GitHub API, Git Protocol | Feature Lead | 📋 |
-| 114 | PR merge (squash) | 🔴 L1 | GitHub API, Git Protocol | Feature Lead | 📋 |
-| 115 | PR merge (rebase) | 🔴 L1 | GitHub API, Git Protocol | Feature Lead | 📋 |
-| 116 | PR draft mode | 🔴 L1 | GitHub API | Feature Lead | 📋 |
+| 113 | PR merge (merge commit) | 🟡 L3 | GitHub API, Git Protocol | Feature Lead | 🚧 |
+| 114 | PR merge (squash) | 🟡 L3 | GitHub API, Git Protocol | Feature Lead | 🚧 |
+| 115 | PR merge (rebase) | 🟡 L3 | GitHub API, Git Protocol | Feature Lead | 🚧 |
+| 116 | PR draft mode | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
 | 117 | PR auto-merge | 🔴 L1 | GitHub API | Feature Lead | 📋 |
 | 118 | PR templates | 🔴 L1 | YAML 1.2, Markdown | Feature Lead | 📋 |
 | 119 | PR checks status | 🔴 L1 | GitHub Checks API | Feature Lead | 📋 |
 | 120 | PR required reviews | 🔴 L1 | GitHub API | Feature Lead | 📋 |
 | 121 | PR review requests | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 122 | PR file changes | 🔴 L1 | GitHub API, Diff format | Feature Lead | 📋 |
-| 123 | PR commits view | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 124 | PR conversation | 🔴 L1 | GitHub API | Feature Lead | 📋 |
+| 122 | PR file changes (getPullRequestFiles) | 🟡 L3 | GitHub API, Diff format | Feature Lead | 🚧 |
+| 123 | PR commits view (getPullRequestCommits) | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
+| 124 | PR conversation (comments) | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
 | 125 | PR conflict detection | 🔴 L1 | GitHub API, Git Protocol | Feature Lead | 📋 |
 | 126 | PR linked issues | 🔴 L1 | GitHub API | Feature Lead | 📋 |
 
@@ -619,24 +600,24 @@ This project would not be possible without the amazing work of the open-source c
 
 | # | Feature | Level | Standards | Responsible | Status |
 |---|---------|-------|-----------|-------------|--------|
-| 127 | Inline comments | 🔴 L1 | GitHub API, W3C WCAG 2.1 | Feature Lead | 📋 |
+| 127 | Inline comments (createReview) | 🟡 L3 | GitHub API, W3C WCAG 2.1 | Feature Lead | 🚧 |
 | 128 | Review suggestions | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 129 | Review approval | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 130 | Changes requested | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 131 | Multi-line comments | 🔴 L1 | GitHub API | Feature Lead | 📋 |
+| 129 | Review approval (APPROVE event) | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
+| 130 | Changes requested (REQUEST_CHANGES) | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
+| 131 | Multi-line comments | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
 | 132 | Suggested changes | 🔴 L1 | GitHub API | Feature Lead | 📋 |
 | 133 | Batch comments | 🔴 L1 | GitHub API | Feature Lead | 📋 |
-| 134 | Review threads | 🔴 L1 | GitHub API | Feature Lead | 📋 |
+| 134 | Review threads (getPullRequestReviews) | 🟡 L3 | GitHub API | Feature Lead | 🚧 |
 | 135 | Push notifications | 🔴 L1 | FCM, APNS, W3C Push API | Notifications Lead | 📋 |
-| 136 | In-app notifications | 🔴 L1 | GitHub API, W3C WCAG 2.1 | Notifications Lead | 📋 |
-| 137 | Notification filters | 🔴 L1 | GitHub API | Notifications Lead | 📋 |
+| 136 | In-app notifications (getNotifications) | 🟡 L3 | GitHub API, W3C WCAG 2.1 | Notifications Lead | 🚧 |
+| 137 | Notification filters | 🟡 L3 | GitHub API | Notifications Lead | 🚧 |
 | 138 | Notification grouping | 🔴 L1 | Android Notification Channels | Notifications Lead | 📋 |
-| 139 | Notification threads | 🔴 L1 | GitHub API | Notifications Lead | 📋 |
+| 139 | Notification mark-read (threads) | 🟡 L3 | GitHub API | Notifications Lead | 🚧 |
 | 140 | Notification muting | 🔴 L1 | GitHub API | Notifications Lead | 📋 |
 | 141 | Custom notification rules | 🔴 L1 | Custom Implementation | Notifications Lead | 📋 |
 | 142 | Notification scheduling | 🔴 L1 | Android AlarmManager | Notifications Lead | 📋 |
 | 143 | Do not disturb | 🔴 L1 | Android DND API | Notifications Lead | 📋 |
-| 144 | Read/unread tracking | 🔴 L1 | GitHub API | Notifications Lead | 📋 |
+| 144 | Read/unread tracking (markAllNotificationsRead) | 🟡 L3 | GitHub API | Notifications Lead | 🚧 |
 
 **Standards Coverage**: GitHub API, W3C Push API, W3C WCAG 2.1, FCM/APNS, Android Notification Channels
 </details>
@@ -680,7 +661,7 @@ This project would not be possible without the amazing work of the open-source c
 | 163 | Interactive rebase | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
 | 164 | Rebase --onto | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
 | 165 | Rebase continue/skip/abort | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
-| 166 | Cherry-pick single | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
+| 166 | Cherry-pick single | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
 | 167 | Cherry-pick range | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
 | 168 | Tag creation (annotated) | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
 | 169 | Tag creation (lightweight) | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
@@ -694,7 +675,7 @@ This project would not be possible without the amazing work of the open-source c
 | 177 | Worktree add | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
 | 178 | Worktree list/remove | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
 | 179 | Git bisect | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
-| 180 | Git blame | 🔴 L1 | Git Protocol | Git Engine Lead | 📋 |
+| 180 | Git blame | 🟡 L3 | Git Protocol | Git Engine Lead | 🚧 |
 
 **Standards Coverage**: Git Protocol v2, Git LFS Specification, RFC 4880 (OpenPGP), Semantic Versioning 2.0
 </details>
@@ -891,7 +872,7 @@ This project would not be possible without the amazing work of the open-source c
 | ISO 31000:2018 | Risk Management | Security Risk Assessment |
 | ISO/IEC 27017:2015 | Cloud Security Controls | Cloud Integration |
 | ISO/IEC 27018:2019 | Cloud Privacy | Cloud Data Protection |
-| ISO/IEC 19770 | Software Asset Management | License Compliance |
+| ISO/IEC 19770 | Software Asset Management | License metadata review |
 | ISO 8601 | Date/Time Formats | All timestamps |
 | ISO 6429 | ANSI Escape Codes | Terminal Emulation |
 </details>
@@ -958,7 +939,7 @@ This project would not be possible without the amazing work of the open-source c
 </details>
 
 <details>
-<summary><b>Legal & Regulatory Compliance</b></summary>
+<summary><b>Legal & Regulatory References</b></summary>
 
 | Regulation | Description | Application Area |
 |------------|-------------|------------------|

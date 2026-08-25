@@ -1,0 +1,114 @@
+{
+  "schema": "actions_execution_evidence_manifest_v1",
+  "schema_version": "1.0.0",
+  "observed_at": "2026-07-17T18:35:00Z",
+  "incidents": [
+    {
+      "incident_id": "ACT-MAPA-TOPOLOGY-20260717",
+      "repository_full_name": "rafaelmeloreisnovo/Mapa",
+      "run_id": 29600507830,
+      "job_id": 87951195310,
+      "status": "completed",
+      "conclusion": "failure",
+      "steps_observed": 0,
+      "logs_state": "ABSENT",
+      "evidence_code": "NO_EXPLICIT_CAUSE",
+      "evidence_source": "github_connector.fetch_workflow_run_jobs",
+      "observed_at": "2026-07-17T17:33:25Z",
+      "declared_classification": "ZERO_STEP_NO_LOGS"
+    },
+    {
+      "incident_id": "ACT-MAPA-CI-20260717",
+      "repository_full_name": "rafaelmeloreisnovo/Mapa",
+      "run_id": 29600507825,
+      "job_id": 87951195363,
+      "status": "completed",
+      "conclusion": "failure",
+      "steps_observed": 0,
+      "logs_state": "ABSENT",
+      "evidence_code": "NO_EXPLICIT_CAUSE",
+      "evidence_source": "github_connector.fetch_workflow_run_jobs",
+      "observed_at": "2026-07-17T17:33:25Z",
+      "declared_classification": "ZERO_STEP_NO_LOGS"
+    },
+    {
+      "incident_id": "ACT-RAFGITTOOLS-PR-VALIDATION-20260717-A",
+      "repository_full_name": "rafaelmeloreisnovo/RafGitTools",
+      "run_id": 29586438868,
+      "job_id": 87904483057,
+      "status": "completed",
+      "conclusion": "failure",
+      "steps_observed": 0,
+      "logs_state": "ABSENT",
+      "evidence_code": "NO_EXPLICIT_CAUSE",
+      "evidence_source": "github_connector.fetch_workflow_run_jobs",
+      "observed_at": "2026-07-17T14:04:00Z",
+      "declared_classification": "ZERO_STEP_NO_LOGS"
+    },
+    {
+      "incident_id": "ACT-RAFGITTOOLS-PR-VALIDATION-20260717-B",
+      "repository_full_name": "rafaelmeloreisnovo/RafGitTools",
+      "run_id": 29586438868,
+      "job_id": 87904483088,
+      "status": "completed",
+      "conclusion": "failure",
+      "steps_observed": 0,
+      "logs_state": "ABSENT",
+      "evidence_code": "NO_EXPLICIT_CAUSE",
+      "evidence_source": "github_connector.fetch_workflow_run_jobs",
+      "observed_at": "2026-07-17T14:04:00Z",
+      "declared_classification": "ZERO_STEP_NO_LOGS"
+    },
+    {
+      "incident_id": "ACT-RLL-SCIENTIFIC-VALIDATION-PASS-20260717",
+      "repository_full_name": "instituto-Rafael/relativity-living-light",
+      "run_id": 29566816023,
+      "job_id": 87841176605,
+      "status": "completed",
+      "conclusion": "success",
+      "steps_observed": 14,
+      "logs_state": "TOKEN_VAZIO",
+      "evidence_code": "SUCCESS_WITH_OBSERVED_STEPS",
+      "evidence_source": "github_connector.fetch_workflow_run_jobs",
+      "observed_at": "2026-07-17T18:35:00Z",
+      "declared_classification": "WORKFLOW_PASS"
+    }
+  ],
+  "scope_assertions": [
+    {
+      "assertion_id": "SCOPE-BILLING-BLOCK-EXCEPT-RLL-20260717",
+      "statement": "O responsável observou mensagem de pagamento/billing bloqueando GitHub Actions nos repositórios das instalações rafaelmeloreisnovo e instituto-Rafael, enquanto instituto-Rafael/relativity-living-light permaneceu executando workflows.",
+      "source_type": "owner_observation",
+      "state": "DECLARED",
+      "claim_allowed": false,
+      "exit_criteria": [
+        "capturar privadamente a mensagem de billing exibida pelo GitHub em um repositório bloqueado",
+        "registrar data, repositório, run e texto causal sem expor dados financeiros sensíveis",
+        "manter o RLL como controle positivo enquanto continuar executando steps"
+      ]
+    },
+    {
+      "assertion_id": "PAYMENT-REFUND-CHRONOLOGY-20260717",
+      "statement": "O responsável relata pagamento do GitHub via Google Play, execução inicial de Actions nas duas instalações, interrupção posterior dos CIs fora do RLL e devolução unilateral aproximadamente cinco dias depois, do GitHub para o Google e do Google para a conta do responsável.",
+      "source_type": "owner_observation",
+      "state": "DECLARED",
+      "claim_allowed": false,
+      "exit_criteria": [
+        "preservar privadamente comprovante do pagamento via Google Play",
+        "preservar privadamente notificações ou registros da devolução",
+        "correlacionar timestamps do pagamento, bloqueio dos Actions e estorno"
+      ]
+    },
+    {
+      "assertion_id": "RLL-POSITIVE-CONTROL-20260717",
+      "statement": "instituto-Rafael/relativity-living-light executou o workflow RLL Scientific Validation Pipeline com conclusão success e 14 steps observados.",
+      "source_type": "github_connector.fetch_workflow_run_jobs",
+      "state": "VERIFIED",
+      "claim_allowed": true,
+      "exit_criteria": [
+        "revalidar a exceção em execuções futuras",
+        "não generalizar o sucesso do RLL para outros repositórios"
+      ]
+    }
+  ]
+}

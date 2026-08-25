@@ -1,0 +1,81 @@
+# Makefile.client — raf_client freestanding ELF build
+# nomalloc nolibc noGC — zero stdlib, zero heap, zero abstraction
+# Targets: arm64 (default), arm32, x86-64, riscv64
+# Usage:
+#   make -f Makefile.client              # ARM64 (Android 28 NDK)
+#   make -f Makefile.client ARCH=arm     # ARM32
+#   make -f Makefile.client ARCH=x64     # x86-64 (host)
+#   make -f Makefile.client ARCH=riscv64 # RISC-V 64-bit (Linux)
+
+ARCH ?= arm64
+
+# ── ARM64 (Android 28 / Linux AArch64) ─────────────────────────────
+ifeq ($(ARCH),arm64)
+CC   := aarch64-linux-android28-clang
+AS   := $(CC)
+LD   := $(CC)
+OUT  := raf_client
+DEFS := -D__aarch64__
+endif
+
+# ── ARM32 (Android 28 / Linux ARM) ─────────────────────────────────
+ifeq ($(ARCH),arm)
+CC   := armv7a-linux-androideabi28-clang
+AS   := $(CC)
+LD   := $(CC)
+OUT  := raf_client_arm32
+DEFS := -D__arm__
+endif
+
+# ── x86-64 (Linux host) ────────────────────────────────────────────
+ifeq ($(ARCH),x64)
+CC   := gcc
+AS   := gcc
+LD   := gcc
+OUT  := raf_client_x64
+DEFS := -D__x86_64__
+endif
+
+# ── RISCV64 (Linux) ─────────────────────────────────────────────────
+ifeq ($(ARCH),riscv64)
+CC   := riscv64-linux-gnu-gcc
+AS   := $(CC)
+LD   := $(CC)
+OUT  := raf_client_riscv64
+DEFS := -D__riscv -D__riscv_xlen=64 -march=rv64gc -mabi=lp64d
+endif
+
+SRC  := raf_client.c raf_client_start.S
+INC  := -I.
+
+CFLAGS := \
+    -O2 \
+    -std=c11 \
+    -ffreestanding \
+    -fno-builtin \
+    -fno-stack-protector \
+    -fno-asynchronous-unwind-tables \
+    -fomit-frame-pointer \
+    -ffunction-sections \
+    -fdata-sections \
+    -fno-plt \
+    -fPIE \
+    $(DEFS) $(INC)
+
+LDFLAGS := \
+    -nostdlib \
+    -Wl,--gc-sections \
+    -Wl,--build-id=none \
+    -Wl,-pie \
+    -Wl,-z,max-page-size=16384
+
+all: $(OUT)
+
+$(OUT): $(SRC) raf_client_sys.h raf_elf.h raf_dex.h raf_pe.h
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(SRC)
+	strip --strip-all $@
+
+clean:
+	rm -f raf_client raf_client_arm32 raf_client_x64 raf_client_riscv64
+
+.PHONY: all clean

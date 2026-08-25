@@ -2,17 +2,31 @@ package com.rafgittools.di
 
 import android.content.Context
 import androidx.room.Room
-import com.google.gson.GsonBuilder
 import com.google.gson.FieldNamingPolicy
+import com.google.gson.GsonBuilder
 import com.rafgittools.BuildConfig
 import com.rafgittools.data.auth.AuthInterceptor
 import com.rafgittools.data.cache.CacheDao
 import com.rafgittools.data.cache.CacheDatabase
+import com.rafgittools.data.cache.LocalRepositoryDao
 import com.rafgittools.data.cache.RepositoryNameCacheDao
 import com.rafgittools.data.cache.UserCacheDao
 import com.rafgittools.data.github.GithubApiService
 import com.rafgittools.data.repository.GitRepositoryImpl
 import com.rafgittools.domain.repository.GitRepository
+import com.rafgittools.offline.OfflineOperationDao
+import com.rafgittools.offline.RoomOfflineQueueStorage
+import com.rafgittools.rafgitfs.data.ContentCacheDao
+import com.rafgittools.rafgitfs.data.OperationReceiptDao
+import com.rafgittools.rafgitfs.data.RepositoryRefDao
+import com.rafgittools.rafgitfs.data.StagedOperationDao
+import com.rafgittools.rafgitfs.data.StorageProfileDao
+import com.rafgittools.rafgitfs.data.SyncConflictDao
+import com.rafgittools.rafgitfs.data.TransferJobDao
+import com.rafgittools.rafgitfs.data.VirtualTreeDao
+import com.rafgittools.rafgitfs.data.WorkspaceDao
+import com.rafgittools.rafgitfs.remote.RafGitFsGithubApiService
+import com.rafgittools.kernel.GovernanceGate
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -33,8 +47,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
-        // FIX L4: log body only in debug builds — PATs/tokens must never appear in prod logs
+        // Debug HTTP tracing is useful, but credentials must never enter logs.
         val loggingInterceptor = HttpLoggingInterceptor().apply {
+            redactHeader("Authorization")
+            redactHeader("Proxy-Authorization")
             level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
                     else HttpLoggingInterceptor.Level.NONE
         }
@@ -69,6 +85,11 @@ object NetworkModule {
     @Singleton
     fun provideGithubApiService(retrofit: Retrofit): GithubApiService =
         retrofit.create(GithubApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideRafGitFsGithubApiService(retrofit: Retrofit): RafGitFsGithubApiService =
+        retrofit.create(RafGitFsGithubApiService::class.java)
 }
 
 @Module
@@ -79,8 +100,13 @@ object CacheModule {
     @Singleton
     fun provideCacheDatabase(@ApplicationContext context: Context): CacheDatabase =
         Room.databaseBuilder(context, CacheDatabase::class.java, "rafgittools_cache.db")
-            .fallbackToDestructiveMigration()
-            .addMigrations(CacheDatabase.MIGRATION_1_2)
+            .addMigrations(
+                CacheDatabase.MIGRATION_1_2,
+                CacheDatabase.MIGRATION_2_3,
+                CacheDatabase.MIGRATION_3_4,
+                CacheDatabase.MIGRATION_4_5,
+                CacheDatabase.MIGRATION_5_6
+            )
             .build()
 
     @Provides @Singleton
@@ -91,6 +117,43 @@ object CacheModule {
 
     @Provides @Singleton
     fun provideUserCacheDao(db: CacheDatabase): UserCacheDao = db.userCacheDao()
+
+    @Provides @Singleton
+    fun provideOfflineOperationDao(db: CacheDatabase): OfflineOperationDao = db.offlineOperationDao()
+
+    @Provides @Singleton
+    fun provideRoomOfflineQueueStorage(dao: OfflineOperationDao): RoomOfflineQueueStorage =
+        RoomOfflineQueueStorage(dao)
+
+    @Provides @Singleton
+    fun provideLocalRepositoryDao(db: CacheDatabase): LocalRepositoryDao = db.localRepositoryDao()
+
+    @Provides @Singleton
+    fun provideStorageProfileDao(db: CacheDatabase): StorageProfileDao = db.storageProfileDao()
+
+    @Provides @Singleton
+    fun provideRepositoryRefDao(db: CacheDatabase): RepositoryRefDao = db.repositoryRefDao()
+
+    @Provides @Singleton
+    fun provideVirtualTreeDao(db: CacheDatabase): VirtualTreeDao = db.virtualTreeDao()
+
+    @Provides @Singleton
+    fun provideContentCacheDao(db: CacheDatabase): ContentCacheDao = db.contentCacheDao()
+
+    @Provides @Singleton
+    fun provideWorkspaceDao(db: CacheDatabase): WorkspaceDao = db.workspaceDao()
+
+    @Provides @Singleton
+    fun provideTransferJobDao(db: CacheDatabase): TransferJobDao = db.transferJobDao()
+
+    @Provides @Singleton
+    fun provideStagedOperationDao(db: CacheDatabase): StagedOperationDao = db.stagedOperationDao()
+
+    @Provides @Singleton
+    fun provideSyncConflictDao(db: CacheDatabase): SyncConflictDao = db.syncConflictDao()
+
+    @Provides @Singleton
+    fun provideOperationReceiptDao(db: CacheDatabase): OperationReceiptDao = db.operationReceiptDao()
 }
 
 @Module
@@ -98,4 +161,13 @@ object CacheModule {
 abstract class RepositoryModule {
     @Binds @Singleton
     abstract fun bindGitRepository(impl: GitRepositoryImpl): GitRepository
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+object KernelModule {
+    @Provides
+    @Singleton
+    fun provideGovernanceGate(@ApplicationContext context: Context): GovernanceGate =
+        GovernanceGate(context)
 }

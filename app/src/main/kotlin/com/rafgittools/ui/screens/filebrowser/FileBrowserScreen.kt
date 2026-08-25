@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -24,10 +25,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rafgittools.domain.model.FileContent
+import com.rafgittools.domain.model.GitBranch
 import com.rafgittools.domain.model.GitFile
+import com.rafgittools.domain.model.GitTag
+import com.rafgittools.ui.components.SyntaxHighlighter
 
 /**
- * File browser screen for exploring repository files
+ * File browser screen for exploring repository files.
+ *
+ * Closes RG6:
+ *  - P33-12: syntax highlighting via SyntaxHighlighter (wired in FileViewer)
+ *  - P33-13: line numbers inline (unchanged — already in gutter)
+ *  - P33-15: breadcrumb navigation (unchanged — BreadcrumbBar)
+ *  - P33-16: file icons by extension (unchanged — getFileIcon)
+ *  - P33-20/21: branch/tag ref selector (RefSelector composable in top bar)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,11 +53,16 @@ fun FileBrowserScreen(
     val breadcrumbs by viewModel.breadcrumbs.collectAsStateWithLifecycle()
     val selectedFile by viewModel.selectedFile.collectAsStateWithLifecycle()
     val fileContent by viewModel.fileContent.collectAsStateWithLifecycle()
-    
+    val currentRef by viewModel.currentRef.collectAsStateWithLifecycle()
+    val availableBranches by viewModel.availableBranches.collectAsStateWithLifecycle()
+    val availableTags by viewModel.availableTags.collectAsStateWithLifecycle()
+
+    var showRefPicker by remember { mutableStateOf(false) }
+
     LaunchedEffect(repoPath) {
         viewModel.loadRepository(repoPath)
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -80,6 +96,114 @@ fun FileBrowserScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 actions = {
+                    // Branch/tag ref picker (P33-20/21)
+                    Box {
+                        AssistChip(
+                            onClick = {
+                                if (availableBranches.isNotEmpty() || availableTags.isNotEmpty()) {
+                                    showRefPicker = true
+                                }
+                            },
+                            label = {
+                                Text(
+                                    text = currentRef,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.widthIn(max = 120.dp)
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.AccountTree,
+                                    contentDescription = "Branch",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                        DropdownMenu(
+                            expanded = showRefPicker,
+                            onDismissRequest = { showRefPicker = false }
+                        ) {
+                            if (availableBranches.isNotEmpty()) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            "Branches",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    },
+                                    onClick = {},
+                                    enabled = false
+                                )
+                                availableBranches.forEach { branch ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                if (branch.shortName == currentRef) {
+                                                    Icon(
+                                                        Icons.Default.Check,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(16.dp),
+                                                        tint = MaterialTheme.colorScheme.primary
+                                                    )
+                                                    Spacer(Modifier.width(4.dp))
+                                                } else {
+                                                    Spacer(Modifier.width(20.dp))
+                                                }
+                                                Text(branch.shortName)
+                                            }
+                                        },
+                                        onClick = {
+                                            showRefPicker = false
+                                            viewModel.switchRef(branch.shortName)
+                                        }
+                                    )
+                                }
+                            }
+                            if (availableTags.isNotEmpty()) {
+                                HorizontalDivider()
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            "Tags",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    },
+                                    onClick = {},
+                                    enabled = false
+                                )
+                                availableTags.take(20).forEach { tag ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                if (tag.name == currentRef) {
+                                                    Icon(
+                                                        Icons.Default.Check,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(16.dp),
+                                                        tint = MaterialTheme.colorScheme.primary
+                                                    )
+                                                    Spacer(Modifier.width(4.dp))
+                                                } else {
+                                                    Spacer(Modifier.width(20.dp))
+                                                }
+                                                Text(tag.name)
+                                            }
+                                        },
+                                        onClick = {
+                                            showRefPicker = false
+                                            viewModel.switchRef(tag.name)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
                     IconButton(onClick = { viewModel.refresh() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
@@ -92,14 +216,14 @@ fun FileBrowserScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Breadcrumb navigation
+            // Breadcrumb navigation (P33-15)
             if (breadcrumbs.isNotEmpty() && selectedFile == null) {
                 BreadcrumbBar(
                     breadcrumbs = breadcrumbs,
                     onNavigate = { path -> viewModel.navigateTo(path) }
                 )
             }
-            
+
             Box(modifier = Modifier.fillMaxSize()) {
                 when (val state = uiState) {
                     is FileBrowserUiState.Loading -> {
@@ -152,7 +276,6 @@ private fun BreadcrumbBar(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Root
             TextButton(
                 onClick = { onNavigate("") },
                 contentPadding = PaddingValues(horizontal = 4.dp)
@@ -163,7 +286,7 @@ private fun BreadcrumbBar(
                     modifier = Modifier.size(18.dp)
                 )
             }
-            
+
             breadcrumbs.forEachIndexed { index, (name, path) ->
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
@@ -171,7 +294,7 @@ private fun BreadcrumbBar(
                     modifier = Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
+
                 if (index == breadcrumbs.lastIndex) {
                     Text(
                         text = name,
@@ -285,6 +408,15 @@ private fun FileItem(
 
 @Composable
 private fun FileViewer(content: FileContent) {
+    // Pre-compute syntax-highlighted lines once per file (P33-12).
+    val extension = content.name.substringAfterLast(".", "")
+    val highlightedLines: List<AnnotatedString> = remember(content.content, extension) {
+        if (content.isBinary) emptyList()
+        else content.content.lines().map { line ->
+            SyntaxHighlighter.highlight(line.ifEmpty { " " }, extension)
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         // File info header
         Surface(
@@ -321,7 +453,7 @@ private fun FileViewer(content: FileContent) {
                         }
                     }
                 }
-                
+
                 if (content.isBinary) {
                     AssistChip(
                         onClick = { },
@@ -337,8 +469,7 @@ private fun FileViewer(content: FileContent) {
                 }
             }
         }
-        
-        // File content
+
         if (content.isBinary) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -352,10 +483,7 @@ private fun FileViewer(content: FileContent) {
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Binary file",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    Text(text = "Binary file", style = MaterialTheme.typography.bodyLarge)
                     Text(
                         text = formatFileSize(content.size),
                         style = MaterialTheme.typography.bodyMedium,
@@ -364,9 +492,8 @@ private fun FileViewer(content: FileContent) {
                 }
             }
         } else {
-            // Code viewer — single LazyColumn with Row per line to keep
-            // line numbers and code content always in sync during scroll.
-            val lines = content.content.lines()
+            // Code viewer with line numbers (P33-13) and syntax highlighting (P33-12).
+            // Each Row keeps the line number gutter and the highlighted code line in sync.
             SelectionContainer {
                 LazyColumn(
                     modifier = Modifier
@@ -374,7 +501,7 @@ private fun FileViewer(content: FileContent) {
                         .horizontalScroll(rememberScrollState()),
                     contentPadding = PaddingValues(8.dp)
                 ) {
-                    itemsIndexed(lines) { index, line ->
+                    itemsIndexed(highlightedLines) { index, annotatedLine ->
                         Row(
                             modifier = Modifier.padding(vertical = 2.dp),
                             verticalAlignment = Alignment.Top
@@ -389,9 +516,9 @@ private fun FileViewer(content: FileContent) {
                                 textAlign = TextAlign.End
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            // Code line
+                            // Syntax-highlighted code line
                             Text(
-                                text = line.ifEmpty { " " },
+                                text = annotatedLine,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace
                             )
@@ -439,6 +566,7 @@ private fun ErrorContent(
 }
 
 // Helper functions
+
 private fun formatFileSize(bytes: Long): String {
     return when {
         bytes < 1024 -> "$bytes B"

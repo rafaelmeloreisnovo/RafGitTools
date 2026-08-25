@@ -2,14 +2,20 @@ package com.rafgittools.gitlfs
 
 import java.io.File
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 
 /**
  * LfsManager — Git LFS operations via the system `git-lfs` binary.
  *
  * Requires `git-lfs` to be installed on the device (Termux: `pkg install git-lfs`).
- * All methods return a descriptive [IllegalStateException] when git-lfs is not found,
- * and a [NotImplementedError] when [repoPath] is empty so that stub-mode callers
- * continue to receive a clear signal.
+ * All methods return a descriptive [IllegalStateException] when git-lfs is not found.
+ * Operations that require a repository return [IllegalArgumentException] when
+ * [repoPath] is blank; a missing caller argument is invalid input, not an
+ * unimplemented execution path.
  *
  * Git LFS documentation: https://git-lfs.com
  */
@@ -18,6 +24,8 @@ object LfsManager {
     private const val LFS_TIMEOUT_SECS = 60L
     private const val LFS_NOT_FOUND_MSG =
         "git-lfs not found. On Termux run: pkg install git-lfs"
+    private const val REPO_PATH_REQUIRED_MSG = "repoPath must not be blank"
+    private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // ─── Internal helpers ──────────────────────────────────────────────────
 
@@ -30,21 +38,24 @@ object LfsManager {
         p.waitFor(5, TimeUnit.SECONDS) && p.exitValue() == 0
     }.getOrDefault(false)
 
+    private fun requireRepoPath(repoPath: String): Result<Unit>? =
+        if (repoPath.isBlank()) Result.failure(IllegalArgumentException(REPO_PATH_REQUIRED_MSG)) else null
+
     private fun runLfs(repoPath: String, vararg args: String): CmdResult {
         return try {
-            val pb = ProcessBuilder(listOf("git", "lfs") + args.toList())
+            val process = ProcessBuilder(listOf("git", "lfs") + args.toList())
                 .directory(File(repoPath))
-            val process = pb.start()
+                .redirectErrorStream(true)
+                .start()
+            val outputFuture = ioScope.async { process.inputStream.bufferedReader().readText() }
             val finished = process.waitFor(LFS_TIMEOUT_SECS, TimeUnit.SECONDS)
+            val output = runBlocking { outputFuture.await() }
             if (!finished) {
                 process.destroyForcibly()
+                process.waitFor()
                 return CmdResult(-1, "", "git lfs timed out after ${LFS_TIMEOUT_SECS}s")
             }
-            CmdResult(
-                exitCode = process.exitValue(),
-                stdout = process.inputStream.bufferedReader().readText().trimEnd(),
-                stderr = process.errorStream.bufferedReader().readText().trimEnd()
-            )
+            CmdResult(exitCode = process.exitValue(), stdout = output.trimEnd(), stderr = "")
         } catch (e: Exception) {
             CmdResult(-1, "", "Failed to run git lfs: ${e.message}")
         }
@@ -61,9 +72,7 @@ object LfsManager {
      * @param repoPath  absolute path to the local git repository
      */
     fun install(repoPath: String = ""): Result<Unit> {
-        if (repoPath.isEmpty()) {
-            return Result.failure(NotImplementedError("Git LFS install is not implemented yet"))
-        }
+        requireRepoPath(repoPath)?.let { return it }
         return runCatching {
             if (!isLfsAvailable()) throw IllegalStateException(LFS_NOT_FOUND_MSG)
             val r = runLfs(repoPath, "install")
@@ -81,9 +90,7 @@ object LfsManager {
      * @param repoPath  absolute path to the local git repository
      */
     fun track(pattern: String, repoPath: String = ""): Result<Unit> {
-        if (repoPath.isEmpty()) {
-            return Result.failure(NotImplementedError("Git LFS track is not implemented yet"))
-        }
+        requireRepoPath(repoPath)?.let { return it }
         return runCatching {
             if (!isLfsAvailable()) throw IllegalStateException(LFS_NOT_FOUND_MSG)
             val r = runLfs(repoPath, "track", pattern)
@@ -100,9 +107,7 @@ object LfsManager {
      * @param remote    git remote name (defaults to "origin")
      */
     fun fetch(repoPath: String = "", remote: String = "origin"): Result<Unit> {
-        if (repoPath.isEmpty()) {
-            return Result.failure(NotImplementedError("Git LFS fetch is not implemented yet"))
-        }
+        requireRepoPath(repoPath)?.let { return it }
         return runCatching {
             if (!isLfsAvailable()) throw IllegalStateException(LFS_NOT_FOUND_MSG)
             val r = runLfs(repoPath, "fetch", remote)
@@ -119,6 +124,7 @@ object LfsManager {
      * @param remote    git remote name (defaults to "origin")
      */
     fun pull(repoPath: String, remote: String = "origin"): Result<Unit> = runCatching {
+        if (repoPath.isBlank()) throw IllegalArgumentException(REPO_PATH_REQUIRED_MSG)
         if (!isLfsAvailable()) throw IllegalStateException(LFS_NOT_FOUND_MSG)
         val r = runLfs(repoPath, "pull", remote)
         if (r.exitCode != 0) throw IllegalStateException("git lfs pull failed: ${r.stderr}")
@@ -134,6 +140,7 @@ object LfsManager {
      * @param ref       branch or commit ref to push (defaults to current HEAD)
      */
     fun push(repoPath: String, remote: String = "origin", ref: String = "HEAD"): Result<Unit> = runCatching {
+        if (repoPath.isBlank()) throw IllegalArgumentException(REPO_PATH_REQUIRED_MSG)
         if (!isLfsAvailable()) throw IllegalStateException(LFS_NOT_FOUND_MSG)
         val r = runLfs(repoPath, "push", remote, ref)
         if (r.exitCode != 0) throw IllegalStateException("git lfs push failed: ${r.stderr}")
@@ -146,6 +153,7 @@ object LfsManager {
      * @return list of tracked glob patterns
      */
     fun listTracked(repoPath: String): Result<List<String>> = runCatching {
+        if (repoPath.isBlank()) throw IllegalArgumentException(REPO_PATH_REQUIRED_MSG)
         if (!isLfsAvailable()) throw IllegalStateException(LFS_NOT_FOUND_MSG)
         val r = runLfs(repoPath, "track")
         if (r.exitCode != 0) throw IllegalStateException("git lfs track list failed: ${r.stderr}")
@@ -160,6 +168,7 @@ object LfsManager {
      * @param repoPath  absolute path to the local git repository
      */
     fun env(repoPath: String): Result<String> = runCatching {
+        if (repoPath.isBlank()) throw IllegalArgumentException(REPO_PATH_REQUIRED_MSG)
         if (!isLfsAvailable()) throw IllegalStateException(LFS_NOT_FOUND_MSG)
         val r = runLfs(repoPath, "env")
         if (r.exitCode != 0) throw IllegalStateException("git lfs env failed: ${r.stderr}")

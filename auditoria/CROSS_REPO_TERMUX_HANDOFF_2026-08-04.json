@@ -1,0 +1,55 @@
+{
+  "schema": "rafaelia.cross-repo-termux-handoff.v1",
+  "event_id": "CROSS-REPO-TERMUX-HANDOFF-20260804T110700Z",
+  "recorded_at": "2026-08-04T11:07:00Z",
+  "producer": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "pull_request": 330,
+    "branch": "ops/runtime-lock-refresh-20260804",
+    "head_commit_before_this_receipt": "0e25f4daf8266ff7e0df575f61548b9fafc1c245",
+    "outputs": [
+      "runtime-lock.json",
+      "scripts/generate_runtime_manifest.sh",
+      "scripts/termux_runtime_handoff.sh",
+      "RUNTIME_MANIFEST_*.json",
+      "RUNTIME_MANIFEST_*.json.sha256",
+      "TERMUX_RUNTIME_HANDOFF_*.json",
+      "TERMUX_RUNTIME_HANDOFF_*.json.sha256"
+    ],
+    "state": "PASS_LOCAL_TOKEN_VAZIO_RUNNER"
+  },
+  "consumer": {
+    "repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+    "pull_request": 327,
+    "branch": "ops/b7-device-receipt-20260804",
+    "head_commit": "a6a77472b7f1dc972b90e008dc8fa29a461d098c",
+    "base_commit_locked": "0e4330273375344042eba8ff17de47c5bc8af573",
+    "outputs_expected_on_device": [
+      "RAF-B7-SELFTEST-*.stdout",
+      "RAF-B7-SELFTEST-*.stderr",
+      "RAF-B7-SELFTEST-*.json",
+      "RAF-B7-SELFTEST-*.json.sha256"
+    ],
+    "state": "IMPLEMENTED_DEVICE_EXECUTION_TOKEN_VAZIO"
+  },
+  "invariants": {
+    "canonical_lock_points_to_default_branch_commit": true,
+    "draft_branch_does_not_replace_locked_master": true,
+    "no_merge_performed": true,
+    "no_private_payload_published": true,
+    "no_apk_installed": true,
+    "claim_allowed": false
+  },
+  "flow": [
+    "validate canonical source lock",
+    "generate typed runtime manifest",
+    "verify manifest SHA-256 sidecar",
+    "execute B7 selftest on the observed Termux device",
+    "hash sources, binary, stdout and stderr",
+    "write append-only device receipt",
+    "repeat on second ABI and compare"
+  ],
+  "F_ok": "producer and consumer contracts are implemented in separate mergeable draft pull requests with explicit provenance boundaries",
+  "F_gap": "no physical com.termux.rafacodephi ARMv7 or ARM64 receipt has been returned",
+  "F_next": "execute PR327 wrapper in the installed Termux RAFCODE-Φ checkout and attach the unmodified four-file receipt set"
+}
