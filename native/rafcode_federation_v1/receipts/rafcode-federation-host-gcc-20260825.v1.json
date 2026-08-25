@@ -1,0 +1,77 @@
+{
+  "schema": "rafaelia.federated-work-receipt.v1",
+  "event_id": "RAFCODE-FEDERATION-HOST-GCC-20260825T124133-0300",
+  "parent_event_id": "TOKEN_VAZIO_NO_PRIOR_RAFCODE_FEDERATION_RECEIPT",
+  "observed_at": "2026-08-25T12:41:33-03:00",
+  "actor_role": "RafGitTools producer and bounded executor",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "ref": "chatgpt/rafcode-federation-freestanding-v1-20260825",
+  "commit_sha": "83a2850870d1b6f53e3d1e7b6b929f19168add3d",
+  "path_scope": "native/rafcode_federation_v1",
+  "authority": {
+    "local": "rafaelmeloreisnovo/RafGitTools",
+    "federated": "rafaelmeloreisnovo/Mapa",
+    "contract_sha": "20b2a9fb3ef251726fcaffca5a73059f6bc91f4a"
+  },
+  "gap_or_goal_ids": [
+    "GOAL-RAFCODE-FEDERATION-FREESTANDING-V1",
+    "GAP-RAFGITTOOLS-CURRENT-RUNTIME-SNAPSHOT"
+  ],
+  "state_before": "TOKEN_VAZIO",
+  "state_after": "READY_TO_TEST",
+  "urgency": "P1",
+  "risk": "MEDIUM",
+  "governance_class": "DRAFT_PR_NO_AUTO_MERGE",
+  "data_class": "PUBLIC_SOURCE_AND_SYNTHETIC_TEST_VECTORS",
+  "privacy_class": "NO_PII_NO_PRIVATE_PATHS",
+  "security_class": "FAIL_CLOSED_STRUCTURAL_GATE_AUTHENTICITY_OPEN",
+  "action": "VERIFY_LOCAL",
+  "falsifier": "Any hosted dependency, writable static state, relocation, symbol, source loop, x86_64 hotpath branch/call, nondeterministic rebuild, or invalid fail-closed result fails this receipt.",
+  "exit_criterion": "Two byte-identical x86_64 builds plus smoke and ELF/hotpath gates all exit zero.",
+  "evidence_refs": {
+    "source_manifest_sha256": "5fe9733587c2eb0a89ee0bdaa1cc6006bfc0b31f71d15f584d4d268ec20445e8",
+    "binary_sha256": "b8b9c5a17be32da32641529a5ea227a0c80f603aeb112122127f092fe0f62e45",
+    "binary_bytes": 1384,
+    "binary_format": "ELF64-x86-64-static-stripped",
+    "compiler": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+    "linker": "GNU ld 2.42",
+    "build": "make clean host test audit",
+    "rebuild_comparison": "PASS_BYTE_IDENTICAL",
+    "smoke": "PASS_VALID_DETERMINISTIC_CLAIM_REJECTED_SHORT_FRAME_REJECTED",
+    "elf": {
+      "pt_load": 1,
+      "pt_interp": 0,
+      "dt_needed": 0,
+      "relocations": 0,
+      "symbols": 0,
+      "undefined_symbols": 0,
+      "writable_static_bytes": 0,
+      "source_loops": 0,
+      "heap_primitives": 0
+    },
+    "x86_64_hotpath": {
+      "function": "raf_fed_validate",
+      "machine_branches": 0,
+      "machine_calls": 0
+    }
+  },
+  "F_ok": [
+    "Fixed 64-byte input and receipt layouts compile without hosted headers.",
+    "Host executable is loaderless, dependency-free, heap-free and reproducible in the observed environment.",
+    "L/O/T and four federation participant masks fail closed when incomplete.",
+    "claim_allowed and private-path inputs are rejected.",
+    "x86_64 validator hotpath has zero machine branches and zero calls."
+  ],
+  "F_gap": [
+    "TOKEN_VAZIO_ARMV7_CROSS_BUILD_RECEIPT",
+    "TOKEN_VAZIO_AARCH64_CROSS_BUILD_RECEIPT",
+    "TOKEN_VAZIO_PHYSICAL_ARMV7_DEVICE_RECEIPT",
+    "TOKEN_VAZIO_PHYSICAL_AARCH64_DEVICE_RECEIPT",
+    "TOKEN_VAZIO_HMAC_AUTHENTICITY"
+  ],
+  "F_next": "Publish a draft producer PR, execute the independent Clang/lld cross-ABI workflow, and append a Mapa receiving-side transition without promoting physical-runtime or authenticity claims.",
+  "uncertainty_delta": "Host implementation and x86_64 structural properties moved from TOKEN_VAZIO to locally observed; ARM and cross-repository properties remain explicit TOKEN_VAZIO.",
+  "rollback_ref": "83a2850870d1b6f53e3d1e7b6b929f19168add3d",
+  "stop_reason": "Local exit criterion observed; next evidence belongs to GitHub Actions and then the federated receiving authority.",
+  "claim_allowed": false
+}
