@@ -1,6 +1,7 @@
 # Server Merge Enforcement Execution V1
 
-State: `READY_TO_APPLY_BLOCKED_AUTHORITY` · `PLAN_ONLY_FAIL_CLOSED` · `claim_allowed=false`
+State: `READY_TO_APPLY_BLOCKED_AUTHORITY` · `PLAN_ONLY_FAIL_CLOSED` ·
+`claim_allowed=false`
 
 ## Outcome
 
@@ -17,10 +18,12 @@ Mapa provider applicator and does not configure GitHub by itself.
 
 Two consecutive Mapa pull requests supplied the discriminant:
 
-| PR | Promotion failure completed | Server-enforcement failure completed | Merged |
-| --- | --- | --- | --- |
-| #393 | 2026-08-25T01:41:37Z | 2026-08-25T01:41:27Z | 2026-08-25T01:44:30Z |
-| #394 | 2026-08-25T02:42:12Z | 2026-08-25T02:42:03Z | 2026-08-25T03:07:48Z |
+- PR #393: Promotion failed at `2026-08-25T01:41:37Z`, server
+  enforcement failed at `2026-08-25T01:41:27Z`, and the PR merged at
+  `2026-08-25T01:44:30Z`.
+- PR #394: Promotion failed at `2026-08-25T02:42:12Z`, server
+  enforcement failed at `2026-08-25T02:42:03Z`, and the PR merged at
+  `2026-08-25T03:07:48Z`.
 
 At the recorded observation, `Mapa/main` was unprotected, status-check
 enforcement was off, no required context was returned, and the repository
@@ -88,14 +91,13 @@ main-SHA equality check. Its state remains `SPECIFIED_NOT_REHEARSED`.
 
 ## R3
 
-```text
-F_ok   = two temporal discriminants + exact producer/SHA/context + fail-closed envelope
-F_gap  = Administration:write + provider apply/readback + rollback rehearsal + rejection receipt
-F_next = authorized Mapa apply, then zero-approval server rejection with main SHA unchanged
-```
+- `F_ok`: two temporal discriminants, exact producer/SHA/context, and a
+  fail-closed envelope.
+- `F_gap`: `Administration:write`, provider apply/readback, rollback rehearsal,
+  and rejection receipt.
+- `F_next`: authorized Mapa apply, then zero-approval server rejection while
+  the main SHA remains unchanged.
 
-Primary references:
-
-- <https://docs.github.com/en/rest/branches/branch-protection>
-- <https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches>
-- <https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets>
+Primary references are the current GitHub documentation for protected-branch
+REST endpoints, protected branches, and repository rulesets. Their canonical
+URLs are preserved in the machine-readable evidence delta.
