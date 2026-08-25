@@ -39,6 +39,21 @@ REQUIRED_FORBIDDEN_OPERATIONS = {
     "DIRECT_PUSH_MAIN",
     "PUBLISH_SECRET",
 }
+REQUIRED_EVIDENCE_IDS = {
+    "MAPA-PR393-PREMERGE-PROMOTION-DENIED",
+    "MAPA-PR393-PREMERGE-SERVER-ENFORCEMENT-ABSENT",
+    "MAPA-PR393-MERGED",
+    "MAPA-PR394-PREMERGE-PROMOTION-DENIED",
+    "MAPA-PR394-PREMERGE-SERVER-ENFORCEMENT-ABSENT",
+    "MAPA-PR394-MERGED",
+    "MAPA-PR395-PREMERGE-CI-FAILED",
+    "MAPA-PR395-PREMERGE-PROMOTION-DENIED",
+    "MAPA-PR395-PREMERGE-SERVER-ENFORCEMENT-ABSENT",
+    "MAPA-PR395-MERGED",
+    "MAPA-PR396-PREMERGE-PROMOTION-DENIED",
+    "MAPA-PR396-PREMERGE-SERVER-ENFORCEMENT-ABSENT",
+    "MAPA-PR396-MERGED",
+}
 
 
 def _object(data: dict[str, Any], key: str, errors: list[str]) -> dict[str, Any]:
@@ -182,10 +197,22 @@ def validate(data: dict[str, Any]) -> list[str]:
             errors.append(f"rollback.{field} missing")
 
     evidence = data.get("evidence")
-    if not isinstance(evidence, list) or len(evidence) < 6:
-        errors.append("six temporal evidence anchors are required")
-    elif any(not isinstance(item, dict) or not all(_nonempty(item.get(k)) for k in ("id", "ref", "result")) for item in evidence):
-        errors.append("every evidence anchor requires id/ref/result")
+    if not isinstance(evidence, list):
+        errors.append("evidence must be a list")
+    else:
+        evidence_ids = {
+            item.get("id")
+            for item in evidence
+            if isinstance(item, dict) and _nonempty(item.get("id"))
+        }
+        if not REQUIRED_EVIDENCE_IDS <= evidence_ids:
+            errors.append("four temporal discriminants require all evidence anchors")
+        if any(
+            not isinstance(item, dict)
+            or not all(_nonempty(item.get(k)) for k in ("id", "ref", "result"))
+            for item in evidence
+        ):
+            errors.append("every evidence anchor requires id/ref/result")
 
     invariants = data.get("invariants")
     if not isinstance(invariants, list) or not REQUIRED_INVARIANTS <= set(invariants):
