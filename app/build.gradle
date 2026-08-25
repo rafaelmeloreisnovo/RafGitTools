@@ -264,7 +264,7 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.14.0'
 
     // JGit for Git operations
-    def jgitVersion = '7.5.0.202512021534-r'
+    def jgitVersion = '7.7.0.202606012155-r'
     implementation "org.eclipse.jgit:org.eclipse.jgit:$jgitVersion"
     implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:$jgitVersion") {
         exclude group: 'com.jcraft', module: 'jsch'
