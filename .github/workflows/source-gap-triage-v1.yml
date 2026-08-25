@@ -34,10 +34,16 @@ jobs:
           d=json.load(open(p, encoding='utf-8'))
           assert d['schema']=='RAFGITTOOLS_SOURCE_GAP_TRIAGE_V1'
           assert d['claim_allowed'] is False
-          assert d['blockers'] > 0, 'baseline debt unexpectedly vanished; investigate before promotion'
+          assert d['source_gate_clear'] is (d['blockers'] == 0)
           assert sum(d['priority_counts'].values()) == d['blockers']
+          assert sum(d['attention_marker_counts'].values()) == d['warnings']
+          assert sum(g['count'] for g in d['groups']) == d['blockers']
+          assert sum(g['count'] for g in d['attention_groups']) == d['warnings']
           assert all(g['claim_allowed'] is False for g in d['groups'])
+          assert all(g['claim_allowed'] is False for g in d['attention_groups'])
           assert 'TOKEN_VAZIO != 0' in d['invariants']
+          assert 'zero executable blockers != zero uncertainty' in d['invariants']
+          assert 'source gate clear != runtime/device/evidence claim' in d['invariants']
           print('PASS source-gap triage semantics')
           PY
       - name: Upload triage receipt
