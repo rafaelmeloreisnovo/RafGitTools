@@ -68,7 +68,7 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: gradle
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
       - name: Apply CI runtime overlay zip
         run: ./scripts/apply_formula_ci_zip.sh formula_ci.zip
       - name: Prepare local.properties
@@ -121,7 +121,7 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: gradle
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
       - name: Apply CI runtime overlay zip
         run: ./scripts/apply_formula_ci_zip.sh formula_ci.zip
       - name: Prepare local.properties
@@ -148,7 +148,7 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: gradle
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
       - name: Apply CI runtime overlay zip
         run: ./scripts/apply_formula_ci_zip.sh formula_ci.zip
       - name: Prepare local.properties

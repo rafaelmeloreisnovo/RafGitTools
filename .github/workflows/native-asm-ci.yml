@@ -17,7 +17,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
       - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh scripts/native/build_apks_signed_unsigned.sh
       - run: ./scripts/native/build_apks_signed_unsigned.sh
       - uses: actions/upload-artifact@v4

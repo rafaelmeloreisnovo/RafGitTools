@@ -130,7 +130,7 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: gradle
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
       - name: Generate one untrusted validation signing identity for both APKs
         run: |
           set -euo pipefail

@@ -26,9 +26,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
-
-      - uses: android-actions/setup-android@v3
-
+      - uses: android-actions/setup-android@v4
       - name: Generate local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
