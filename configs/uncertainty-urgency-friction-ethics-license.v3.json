@@ -1,0 +1,217 @@
+{
+  "schema": "rafaelia.uncertainty-urgency-friction-ethics-license.v3",
+  "date": "2026-08-22",
+  "authority": "rafaelmeloreisnovo/RafGitTools",
+  "mode": "EVIDENCE_FIRST_FAIL_CLOSED_APPEND_ONLY",
+  "claim_allowed": false,
+  "automatic_promotion": false,
+  "automatic_merge": false,
+  "direct_main_mutation": false,
+  "extends": {
+    "path": "configs/uncertainty-urgency-ethics-license.v2.json",
+    "git_blob_sha": "c4766b2ad8aaf782a0d1f6b5b33ae134d2944efe",
+    "policy": "validate V2 first; preserve V1/V2 invariants and receipts; apply only additive V3 friction delta"
+  },
+  "mother_contract": "uncertainty -> authority -> provenance -> friction_class -> providence -> test/falsifier -> receipt -> decision -> delta -> index",
+  "separation": "SOURCE != IDEA != STATISTIC != TOKEN != METAPHOR != VECTOR_WORD != CONTRACT != IMPLEMENTATION != EXECUTION != EVIDENCE != CLAIM != NOVELTY",
+  "friction_classes": [
+    "LICENSE_RIGHTS",
+    "PROVIDER_RUNNER",
+    "AUTHORITY_ROUTING",
+    "SEMANTIC_AMBIGUITY",
+    "IMPLEMENTATION_BINDING",
+    "RUNTIME_REPRODUCIBILITY",
+    "EVIDENCE_GAP",
+    "RELATION_UNCERTAINTY",
+    "ROLLBACK_IRREVERSIBILITY",
+    "PRIVACY_MINIMIZATION"
+  ],
+  "friction_rule": {
+    "goal": "reduce avoidable operational friction without weakening evidence, rights, safety, authority, privacy or falsification gates",
+    "friction_reduction_is_permission_broadening": false,
+    "friction_reduction_is_claim_promotion": false,
+    "friction_reduction_is_history_rewrite": false,
+    "partial_closure_preserves_residual_gap": true
+  },
+  "provider_execution_classifier": {
+    "states": [
+      "NOT_RUN",
+      "QUEUED",
+      "PROVIDER_PRE_STEP_FAILURE",
+      "SETUP_FAILURE",
+      "TEST_EXECUTED_PASS",
+      "TEST_EXECUTED_FAIL",
+      "RECEIPT_EMITTED",
+      "TOKEN_VAZIO_PROVIDER_EXECUTION"
+    ],
+    "rules": [
+      "workflow failure with zero exposed steps must not be classified as test failure",
+      "test failure requires evidence that the test step executed",
+      "provider pre-step failure preserves implementation state and leaves execution unresolved",
+      "retry success may supersede provider failure without erasing the failed attempt"
+    ]
+  },
+  "license_unit_policy": {
+    "unit": "payload_or_dependency_or_repository_source",
+    "required_fields": [
+      "artifact_id",
+      "origin",
+      "owner",
+      "license_id_or_token_vazio",
+      "spdx_or_exact_text_ref",
+      "redistribution_allowed",
+      "modification_allowed",
+      "training_allowed",
+      "commercial_use_allowed",
+      "attribution_required",
+      "share_alike_required",
+      "compatibility_state",
+      "proof_reference",
+      "scope_boundary"
+    ],
+    "unknown_permission_default": false,
+    "repository_license_covers_dependencies_automatically": false,
+    "repository_license_covers_datasets_or_weights_automatically": false
+  },
+  "ethics_by_design_v3": {
+    "required_use_fields": [
+      "use_id",
+      "purpose",
+      "necessity",
+      "minimization",
+      "risk_class",
+      "human_review",
+      "rights_state",
+      "privacy_state",
+      "rollback_or_irreversible_boundary",
+      "provenance",
+      "evidence_state",
+      "claim_allowed"
+    ],
+    "high_risk_requires_human_review": true,
+    "mutating_action_requires_rollback_or_irreversible_boundary": true,
+    "unknown_rights_block_payload_copy": true,
+    "unknown_rights_allow_reference_only_when_no_payload_copy": true,
+    "technical_execution_equals_authorization": false
+  },
+  "complex_relation_policy": {
+    "required_fields": [
+      "relation_id",
+      "from",
+      "relation_type",
+      "to",
+      "source_ref",
+      "authority_domain",
+      "uncertainty_state",
+      "evidence_effect",
+      "boundary_or_falsifier",
+      "next_gate"
+    ],
+    "allowed_evidence_effects": ["NONE", "ROUTING_ONLY", "SUPPORT_LIMITED", "CONTRADICTS", "EVIDENCES_BOUNDED"],
+    "analogy_evidence_effect": "NONE",
+    "cooccurrence_evidence_effect": "NONE",
+    "similarity_is_equivalence": false,
+    "network_edge_without_source_is_forbidden": true,
+    "decorative_edges_forbidden_in_evidence_graph": true
+  },
+  "parable_reference_policy": {
+    "route": [
+      "STATISTICS",
+      "TOKENS",
+      "METAPHORS",
+      "VECTORS_WORDS",
+      "PROMISE_CONTRACT",
+      "EXECUTION",
+      "RECEIPT",
+      "DELTA",
+      "OMEGA_N"
+    ],
+    "parable_evidence_effect": "NONE",
+    "phrase": "nenhum limite é real, pois o código executa em verbo vivo",
+    "phrase_state": "PARABLE_ASPIRATION",
+    "real_limits_remain_binding": ["hardware", "mathematics", "license", "safety", "privacy", "evidence", "authority", "runtime"],
+    "technical_target_required": true
+  },
+  "friction_measurement": {
+    "purpose": "routing and anti-regression heuristic only; never a truth or merit score",
+    "components": [
+      "unresolved_gap_count",
+      "unbound_license_unit_count",
+      "provider_pre_step_failure_count",
+      "untyped_relation_count",
+      "missing_rollback_count",
+      "missing_provenance_count",
+      "manual_rework_count"
+    ],
+    "delta_rule": "friction_delta = after - before",
+    "preferred_direction": "<= 0 when scope is identical",
+    "scope_change_requires_rebaseline": true,
+    "zero_friction_does_not_imply_claim": true
+  },
+  "urgency_queue_v3": [
+    {
+      "id": "TV-V3-PROVIDER-CLASS-001",
+      "priority": "P0",
+      "state": "PARTIAL_EVIDENCE",
+      "friction_class": "PROVIDER_RUNNER",
+      "known": "GAIA pull-request batch includes multiple failed jobs with no exposed steps; rerun requested for cognitive-symbiotic receipt",
+      "next_gate": "inspect rerun attempt and classify provider pre-step versus executed test result"
+    },
+    {
+      "id": "TV-V3-LICENSE-PAYLOAD-001",
+      "priority": "P0",
+      "state": "TOKEN_VAZIO_LICENSE_INVENTORY",
+      "friction_class": "LICENSE_RIGHTS",
+      "known": "GAIA repository source MIT and PyTorch dependency terms are separately identified",
+      "next_gate": "materialize per-payload/dependency rights matrix for affected use scope"
+    },
+    {
+      "id": "TV-V3-USE-REGISTRY-001",
+      "priority": "P0",
+      "state": "TOKEN_VAZIO_USE_REGISTRY",
+      "friction_class": "PRIVACY_MINIMIZATION",
+      "known": "ETHICS_BY_DESIGN envelope exists",
+      "next_gate": "bind concrete uses to purpose, minimization, rights, privacy, rollback, provenance and evidence state"
+    },
+    {
+      "id": "TV-V3-COMPLEX-RELATIONS-001",
+      "priority": "P1",
+      "state": "TOKEN_VAZIO_RELATION_COVERAGE",
+      "friction_class": "RELATION_UNCERTAINTY",
+      "known": "bounded V2 relation inventory and GAIA complex-feedback producer anchor exist",
+      "next_gate": "materialize evidence-bearing complex-network/design relation ledger with no decorative edges"
+    },
+    {
+      "id": "TV-V3-FRICTION-BASELINE-001",
+      "priority": "P1",
+      "state": "TOKEN_VAZIO_BASELINE",
+      "friction_class": "EVIDENCE_GAP",
+      "known": "friction components are typed",
+      "next_gate": "freeze scope and compute before/after counts from machine-readable ledgers"
+    },
+    {
+      "id": "TV-V3-B7-T2-001",
+      "priority": "P1",
+      "state": "TOKEN_VAZIO_BRIDGE",
+      "friction_class": "SEMANTIC_AMBIGUITY",
+      "known": "B7 bounded scalar lane imbalance and T2 artifacts exist separately",
+      "next_gate": "formal typed bridge with invariant and falsifier or preserve separation explicitly"
+    }
+  ],
+  "anti_regression_invariants_delta": [
+    {"id": "AR41", "rule": "A provider pre-step failure must never be relabeled as a failed scientific or implementation test unless the test step executed."},
+    {"id": "AR42", "rule": "A retry may supersede a provider failure but must preserve the failed attempt in append-only custody."},
+    {"id": "AR43", "rule": "License compatibility must be assessed at the smallest material rights unit in scope; repository license may not silently cover dependencies, datasets, weights or mixed payloads."},
+    {"id": "AR44", "rule": "Unknown license permissions remain denied for payload copying, redistribution, training and commercial use until a verifiable grant is bound."},
+    {"id": "AR45", "rule": "Every governed use must bind purpose, necessity, minimization, risk, rights, privacy, rollback boundary, provenance and evidence state."},
+    {"id": "AR46", "rule": "Complex-network relations without source provenance, relation type, uncertainty, boundary/falsifier and next gate are invalid evidence edges."},
+    {"id": "AR47", "rule": "Analogy, metaphor, co-occurrence and decorative graph proximity always have evidence_effect NONE."},
+    {"id": "AR48", "rule": "Reducing operational friction must never broaden claim, authority, rights or scientific validity."},
+    {"id": "AR49", "rule": "A friction metric is a routing heuristic only and must never be interpreted as truth, novelty, quality certification or causal evidence."},
+    {"id": "AR50", "rule": "Friction before/after comparison requires identical scope or an explicit rebaseline event."},
+    {"id": "AR51", "rule": "A closed TOKEN_VAZIO must retain predecessor identity, closing receipt and residual gap when closure is partial."},
+    {"id": "AR52", "rule": "The phrase about limitless living code remains PARABLE_ASPIRATION; real hardware, mathematics, license, safety, privacy, evidence, authority and runtime limits remain binding."}
+  ],
+  "mapa_routing_target": "indices/RAFAELIA_FRICTION_ETHICS_LICENSE_COMPLEX_RELATIONS_ROUTING_V1.md",
+  "drive_editorial_target_file_id": "1QrJmd7xsd8-zJVfNr8MMoHsFf-X-WvNXPmHTR_SlyRg"
+}

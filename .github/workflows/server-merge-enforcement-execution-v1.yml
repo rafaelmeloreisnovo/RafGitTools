@@ -1,0 +1,44 @@
+name: Server Merge Enforcement Execution v1
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "configs/server-merge-enforcement-execution.v1.json"
+      - "scripts/federation/validate_server_merge_enforcement_execution.py"
+      - "tests/federation/test_server_merge_enforcement_execution.py"
+      - "data/evidence/github/mapa-server-merge-enforcement-delta-20260825.v1.json"
+      - "docs/federation/SERVER_MERGE_ENFORCEMENT_EXECUTION_V1.md"
+      - ".github/workflows/server-merge-enforcement-execution-v1.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-plan-only:
+    name: validate plan-only boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout without persistent credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run fail-closed fixtures
+        run: python3 -m unittest -v tests.federation.test_server_merge_enforcement_execution
+      - name: Validate canonical envelope
+        run: |
+          python3 scripts/federation/validate_server_merge_enforcement_execution.py \
+            configs/server-merge-enforcement-execution.v1.json \
+            --report artifacts/server-merge-enforcement-execution-v1.json
+      - name: Upload plan-only report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-merge-enforcement-execution-v1
+          if-no-files-found: error
+          path: artifacts/server-merge-enforcement-execution-v1.json

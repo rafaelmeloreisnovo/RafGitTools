@@ -1,0 +1,42 @@
+{
+  "schema":"RAFGITTOOLS_NEUROBIO_GATE_V1",
+  "version":"1.0.0",
+  "claim_allowed_default":false,
+  "objective":"Route neurocognitive/biophysical claims to the correct evidence authority without automatic promotion.",
+  "preflight":{
+    "required":["claim_id","gap_id","source_ids","endpoint_type","falsifier","acceptance_criterion","next_gate","destination_authority"],
+    "on_missing":"TOKEN_VAZIO",
+    "destructive_writes":false
+  },
+  "authority_routes":{
+    "ONTOLOGY_STATE":"rafaelmeloreisnovo/Mapa",
+    "SCIENTIFIC_SYNTHESIS":"rafaelmeloreisnovo/papers",
+    "DETERMINISTIC_CONTRACT_EVIDENCE":"rafaelmeloreisnovo/RafPolimata",
+    "CONTROL_PLANE":"rafaelmeloreisnovo/RafGitTools",
+    "BIOLOGICAL_OR_HUMAN_EXPERIMENT":"EXTERNAL_AUTHORIZED_LAB_OR_STUDY",
+    "LONGITUDINAL_MEMORY":"Google Drive"
+  },
+  "hard_gates":[
+    {"id":"G-ENDPOINT","rule":"DNA_SEQUENCE != DNA_DAMAGE_ADDUCT != DNA_METHYLATION != GENE_EXPRESSION","failure":"BLOCKED_ENDPOINT_CONFLATION"},
+    {"id":"G-INTENTION","rule":"INTENTION != DIRECT_GENOME_EDITING","failure":"TOKEN_VAZIO_DIRECT_EDITING_MECHANISM"},
+    {"id":"G-EMF","rule":"EMF requires radiation_class + frequency_or_energy + dose_or_dosimetry + duration + geometry + thermal_control + sham","failure":"BLOCKED_DOSIMETRY_INCOMPLETE"},
+    {"id":"G-UPE","rule":"UPE neural promotion requires background_control + detector_characterization + source_attribution_control + independent replication","failure":"BLOCKED_SOURCE_ATTRIBUTION"},
+    {"id":"G-EXTERNAL","rule":"software/docs/CI cannot close wet-lab or human biological gate","failure":"TOKEN_VAZIO_EXTERNAL_EVIDENCE"},
+    {"id":"G-REPLICATION","rule":"internal reproduction != independent replication","failure":"BLOCKED_INDEPENDENCE"}
+  ],
+  "promotion_state_machine":["TOKEN_VAZIO","DRAFT","EVIDENCE_FOUND_GATE_OPEN","REPRODUCED_INTERNAL","REPLICATED_INDEPENDENT","PASS"],
+  "promotion_policy":{
+    "automatic_promotion":false,
+    "negative_evidence_append_only":true,
+    "fail_is_terminal_for_exact_falsified_claim":false,
+    "fail_requires_scope_record":true,
+    "pass_requires_claim_specific_receipt":true
+  },
+  "receipt_required_fields":["receipt_id","claim_id","authority","source_hashes","protocol_or_command","environment_or_model","result","uncertainty_or_limitations","timestamp"],
+  "stop_conditions":[
+    "required authority absent",
+    "gate failed",
+    "next action requires external biological measurement unavailable to this control plane",
+    "continued search adds no new evidence"
+  ]
+}

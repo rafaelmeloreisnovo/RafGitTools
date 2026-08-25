@@ -1,0 +1,175 @@
+{
+  "schema": "rafaelia.federated-work-service-executor-receipt.v1",
+  "event_id": "FGAP-FNEXT-FEDERATED-SERVICE-EXECUTOR-20260819-0001",
+  "parent_event_id": "RafGitTools-PR360-agent-entry-and-gap-closure",
+  "observed_at": "2026-08-19T04:38:00-03:00",
+  "state": "READY_TO_TEST_PROVIDER_QUEUED",
+  "claim_allowed": false,
+  "authority": {
+    "federated": "rafaelmeloreisnovo/Mapa",
+    "executor": "rafaelmeloreisnovo/RafGitTools",
+    "producer_local_authority_preserved": true
+  },
+  "observed_executor_head": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "branch": "governance/federated-work-service-v1-20260819",
+    "commit": "64be7b3908629007b89c6f6d44a61d7ad6d3aef2",
+    "pr": 361,
+    "pr_state": "OPEN_DRAFT_UNMERGED"
+  },
+  "observed_federated_authority_head": {
+    "repository": "rafaelmeloreisnovo/Mapa",
+    "branch": "governance/fgap-fnext-federated-service-v1-20260819",
+    "commit": "5af0f581a2e0e9def791aac5daa136da5385c0ed",
+    "pr": 288,
+    "pr_state": "OPEN_DRAFT_UNMERGED"
+  },
+  "service_contract": {
+    "entry_questions": 12,
+    "mandatory_dimensions": [
+      "epistemic",
+      "operational",
+      "provenance",
+      "governance",
+      "data",
+      "privacy",
+      "security",
+      "reconstruction"
+    ],
+    "non_compensatory_axes": ["governance", "data", "privacy", "security"],
+    "stop_conditions_required": true,
+    "receipt_required": true,
+    "append_only": true
+  },
+  "producer_adapters": [
+    {
+      "repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "pr": 375,
+      "head": "b08ba887d2bcea0639aac3620a129754fb7a33dc",
+      "state": "OPEN_DRAFT_UNMERGED",
+      "role": "ANDROID_RUNTIME_PROVIDER",
+      "data_privacy_security_boundary": "device/log/path/IPC payload minimized; exported components/permissions/signing/bootstrap/IPC are security surfaces"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "pr": 1099,
+      "head": "b70285799649f0063fe92ffec15f19f313fe015b",
+      "state": "OPEN_DRAFT_UNMERGED",
+      "role": "VM_QEMU_CONSUMER",
+      "data_privacy_security_boundary": "guest/image/log/IPC data minimized; QEMU args/image mutation/IPC/safe-state are security surfaces"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/termux-packages",
+      "pr": 86,
+      "head": "61a87e7bb8dc0823848f517d5edca2a55145fe4c",
+      "state": "OPEN_DRAFT_UNMERGED",
+      "role": "PACKAGE_SOURCE_FACTORY",
+      "data_privacy_security_boundary": "source/archive/recipe/log/artifact identity required; secrets/credential URLs forbidden; checksum/authenticity/schema fail closed"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/llamaRafaelia",
+      "pr": 116,
+      "head": "61a8e70c0910257d254bfbf20f873eb7335c3332",
+      "state": "OPEN_DRAFT_UNMERGED",
+      "role": "GOVERNED_RETRIEVAL_MEMORY",
+      "data_privacy_security_boundary": "raw conversation/PII/sensitive corpus not assumed public; context injection/poisoning/secrets/quarantine/provenance-loss fail closed"
+    }
+  ],
+  "provider_runs": {
+    "Mapa_5af0f581": [
+      {"name": "RAFAELIA Promotion Control V1", "run_id": 32229871268, "status": "queued", "conclusion": null},
+      {"name": "Branch Topology Gate", "run_id": 32229871329, "status": "queued", "conclusion": null},
+      {"name": "CI", "run_id": 32229871309, "status": "queued", "conclusion": null},
+      {"name": "Live Control Plane Reconciliation", "run_id": 32229871362, "status": "queued", "conclusion": null}
+    ],
+    "RafGitTools_64be7b39": [
+      {"name": "Internal Validation", "run_id": 32229889544, "status": "queued", "conclusion": null},
+      {"name": "CodeQL Advanced", "run_id": 32229889621, "status": "queued", "conclusion": null},
+      {"name": "Android Client Build", "run_id": 32229889584, "status": "queued", "conclusion": null},
+      {"name": "PR Validation", "run_id": 32229889615, "status": "queued", "conclusion": null},
+      {"name": "CI", "run_id": 32229889599, "status": "queued", "conclusion": null},
+      {"name": "Performance Metrics", "run_id": 32229889616, "status": "queued", "conclusion": null},
+      {"name": "Code Coverage", "run_id": 32229889696, "status": "queued", "conclusion": null},
+      {"name": "Source Gap Audit", "run_id": 32229889647, "status": "queued", "conclusion": null},
+      {"name": "Documentation", "run_id": 32229889664, "status": "queued", "conclusion": null},
+      {"name": "Security Scan", "run_id": 32229889684, "status": "queued", "conclusion": null},
+      {"name": "rafaelia-block1", "run_id": 32229889705, "status": "queued", "conclusion": null},
+      {"name": "Federation Audit", "run_id": 32229889769, "status": "queued", "conclusion": null}
+    ],
+    "Termux_b08ba887": [
+      {"name": "abi-policy-consistency", "run_id": 32229908281, "status": "queued", "conclusion": null},
+      {"name": "Rafaelia Native Safety", "run_id": 32229907999, "status": "queued", "conclusion": null},
+      {"name": "top42-bench", "run_id": 32229908223, "status": "queued", "conclusion": null},
+      {"name": "audit-benchmark-contract", "run_id": 32229908001, "status": "queued", "conclusion": null}
+    ],
+    "Vectra_b7028579": [
+      {"name": "Orchestrator - Build Matrix", "run_id": 32229927211, "status": "queued", "conclusion": null},
+      {"name": "Shell-Loader Smoke", "run_id": 32229926859, "status": "queued", "conclusion": null},
+      {"name": "APK Wizard", "run_id": 32229926857, "status": "queued", "conclusion": null},
+      {"name": "Validate Formula", "run_id": 32229926874, "status": "queued", "conclusion": null},
+      {"name": "audit-benchmark-contract", "run_id": 32229926872, "status": "queued", "conclusion": null},
+      {"name": "host-ci", "run_id": 32229926899, "status": "queued", "conclusion": null}
+    ],
+    "termux_packages_61a87e7b": [
+      {"name": "Phase 9.15 Production Hardening CI/CD", "run_id": 32229940773, "status": "queued", "conclusion": null}
+    ],
+    "llama_61a8e70c": [
+      {"name": "EditorConfig Checker", "run_id": 32229959126, "status": "queued", "conclusion": null},
+      {"name": "Build on RISCV Linux Machine by Cloud-V", "run_id": 32229959199, "status": "queued", "conclusion": null}
+    ]
+  },
+  "epistemic_boundary": {
+    "provider_run_created": true,
+    "runner_assignment_observed": false,
+    "steps_executed_observed": false,
+    "terminal_test_verdict_observed": false,
+    "physical_runtime_observed": false,
+    "classification": "PROVIDER_QUEUED_NOT_EXECUTED",
+    "rule": "run creation != runner assignment != step execution != PASS"
+  },
+  "governance": {
+    "class": "FEDERATED_REVIEW_REQUIRED",
+    "mutation_mode": "ISOLATED_BRANCH_DRAFT_PR",
+    "automatic_merge": false,
+    "historical_rewrite": false
+  },
+  "data": {
+    "class": "NO_PRIVATE_PAYLOAD_REQUIRED_FOR_CONTROL_PLANE_RECEIPT",
+    "minimum_necessary": true,
+    "payload_policy": "REFERENCES_HASHES_AND_BOUNDED_METADATA"
+  },
+  "privacy": {
+    "class": "NO_RAW_PRIVATE_DATA_IN_THIS_RECEIPT",
+    "redaction_required_for_future_sensitive_refs": true,
+    "dataset_wide_classification": "TOKEN_VAZIO_NOT_PROVEN"
+  },
+  "security": {
+    "class": "HIGH_ASSURANCE_CONTROL_PATH",
+    "known_open_near_miss": "gap:mapa:federated-broker:hmac-provenance:20260819",
+    "security_provenance_success_hardcoding_forbidden": true,
+    "HMAC_cross_repo_provenance_closure": "TOKEN_VAZIO_OPEN"
+  },
+  "falsifier": "Any new contract/validator path accepts missing Q01-Q12, missing governance/data/privacy/security classification, high-risk mutation without rollback, claim_allowed=true, resolved state without evidence, or hardcoded security/provenance success.",
+  "exit_criterion": "Exact candidate heads execute terminal repository-local gates; RafGitTools agent/work-item validators PASS; Mapa authority branch passes governance/topology/CI; producer docs/gates do not regress their local contracts; receipts bind final tested heads.",
+  "stop_reason": "Provider runs are queued and no terminal step evidence is yet available; do not infer PASS or expand into physical runtime from this receipt.",
+  "F_ok": "Mapa work-service contract/index and AGENTS inventory materialized; RafGitTools executor/validators/tests/fixture materialized; four producer adapter successors materialized; six draft PRs created; provider workflow runs created for each observed candidate head.",
+  "F_gap": "Runner assignment, executed steps and terminal verdicts remain TOKEN_VAZIO for the new candidate heads; Mapa/RafGitTools/producer PRs are unmerged; HMAC/cross-repo provenance closure, physical Android E2E, dataset-wide privacy classification and global agent-instruction reconciliation remain open.",
+  "F_next": "Re-read each exact provider run; classify terminal PASS vs code failure vs infrastructure/pre-step failure; fix only evidenced failures; emit successor receipts bound to the tested final heads; then reconcile Mapa and Drive append-only without promoting physical/runtime or global claims.",
+  "uncertainty_delta": {
+    "reduced": [
+      "roles_and_authority_split",
+      "Q01_Q12_entry_contract",
+      "governance_data_privacy_security_required_dimensions",
+      "producer_AGENTS_current_identity",
+      "provider_run_creation_for_candidate_heads"
+    ],
+    "open": [
+      "provider_execution_terminal_state",
+      "federated_HMAC_provenance_closure",
+      "global_AGENT_instruction_reconciliation",
+      "physical_runtime_edges",
+      "dataset_wide_privacy_classification"
+    ]
+  },
+  "rollback_ref": "RafGitTools:main@d6b7f8714cf30e7ff0e63a8a794fe1764ad2f6ab"
+}

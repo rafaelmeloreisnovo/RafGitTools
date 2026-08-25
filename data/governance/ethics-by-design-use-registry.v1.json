@@ -1,0 +1,83 @@
+{
+  "schema": "rafaelia.ethics-by-design-use-registry.v1",
+  "date": "2026-08-22",
+  "state": "MATERIALIZED_BOUNDED",
+  "claim_allowed": false,
+  "gap_id": "TV-V3-USE-REGISTRY-001",
+  "uses": [
+    {
+      "use_id": "USE:GAIA:COGNITIVE_SYMBIOTIC:DETERMINISTIC_TEST",
+      "purpose": "reproduce the bounded engineering behavior of the Psi_v/T_Omega complex-feedback producer and emit a source-bound receipt",
+      "necessity": "bounded to deterministic fixture inputs and exact producer source blob",
+      "minimization": "synthetic tensors only; no personal data, model weights or external datasets required",
+      "risk_class": "low",
+      "human_review": "not_required_for_non_mutating_test_execution",
+      "rights_state": "LICENSE_CONDITIONAL",
+      "privacy_state": "NO_PERSONAL_DATA_IN_DECLARED_FIXTURE",
+      "rollback_or_irreversible_boundary": "non-mutating execution; generated artifacts may be discarded; source remains immutable",
+      "provenance": "GAIA_phi source blob 1bb228392c51d3bfd0d85ae8e6ce92c40fe28dd1 + PR98 test/workflow artifacts",
+      "evidence_state": "TOKEN_VAZIO_PROVIDER_EXECUTION_PENDING_RETRY_INSPECTION",
+      "claim_allowed": false
+    },
+    {
+      "use_id": "USE:RAFGITTOOLS:LICENSE_CLASSIFICATION:GAIA_ROUTE",
+      "purpose": "classify rights early to reduce legal/operational friction without inferring permission",
+      "necessity": "only license units in the bounded GAIA complex-feedback route are enumerated",
+      "minimization": "store identifiers, license references, states and boundaries; do not copy unrelated payloads",
+      "risk_class": "low",
+      "human_review": "required_before_redistribution_or_commercial_release_when_rights_are_conditional_or_unknown",
+      "rights_state": "LICENSE_CONDITIONAL",
+      "privacy_state": "NO_PERSONAL_DATA_REQUIRED",
+      "rollback_or_irreversible_boundary": "classification is append-only and may be superseded without erasing predecessor",
+      "provenance": "license-friction-matrix.v1.json + V2 applied status",
+      "evidence_state": "PARTIAL_VERIFIED",
+      "claim_allowed": false
+    },
+    {
+      "use_id": "USE:PARABLE:INTERNAL_NAVIGATION",
+      "purpose": "reduce cognitive/navigation friction by linking parables to technical objects",
+      "necessity": "internal teaching and index bridge only",
+      "minimization": "store short parable labels and technical targets; no source payload expansion",
+      "risk_class": "low",
+      "human_review": "not_required",
+      "rights_state": "REFERENCE_ONLY",
+      "privacy_state": "NO_PERSONAL_DATA_REQUIRED",
+      "rollback_or_irreversible_boundary": "append-only mapping can be superseded; evidence graph remains separate",
+      "provenance": "data/governance/parable-technical-links.v1.json",
+      "evidence_state": "NAVIGATION_ONLY_EVIDENCE_EFFECT_NONE",
+      "claim_allowed": false
+    },
+    {
+      "use_id": "USE:MAPA:ROUTING_POINTER:ETHICS_LICENSE_COMPLEXITY",
+      "purpose": "route consumers to RafGitTools governance and producer authorities without duplicating implementation logic",
+      "necessity": "single route/index pointer in Mapa",
+      "minimization": "references only; no producer source copied",
+      "risk_class": "low",
+      "human_review": "not_required_for_index_update",
+      "rights_state": "REFERENCE_ONLY",
+      "privacy_state": "NO_PRIVATE_PAYLOAD_REQUIRED",
+      "rollback_or_irreversible_boundary": "append-only route successor; predecessor remains addressable",
+      "provenance": "Mapa indices/RAFAELIA_NOISE_UNCERTAINTY_ETHICS_LICENSE_ROUTING_V1.md + RafGitTools V3",
+      "evidence_state": "ROUTING_ONLY",
+      "claim_allowed": false
+    },
+    {
+      "use_id": "USE:DRIVE:EDITORIAL_LONGITUDINAL_MIRROR",
+      "purpose": "preserve longitudinal human-readable memory of governance deltas, urgencies and receipts",
+      "necessity": "append only checkpoints and references needed for reconstruction",
+      "minimization": "no secrets, credentials, private payload bytes or unnecessary personal data",
+      "risk_class": "low",
+      "human_review": "not_required_for_append_only_checkpoint",
+      "rights_state": "INTERNAL_REFERENCE",
+      "privacy_state": "MINIMIZED_REFERENCE_ONLY",
+      "rollback_or_irreversible_boundary": "append correction rather than rewrite prior checkpoint",
+      "provenance": "Drive file 1QrJmd7xsd8-zJVfNr8MMoHsFf-X-WvNXPmHTR_SlyRg",
+      "evidence_state": "MEMORY_NOT_PROOF",
+      "claim_allowed": false
+    }
+  ],
+  "closure": {
+    "state": "CLOSED_MATERIALIZED_LIMITED",
+    "boundary": "This closes only the bounded use-registry materialization gap. New uses require new records and may introduce new rights/privacy/review gaps."
+  }
+}

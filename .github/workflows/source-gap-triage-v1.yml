@@ -1,0 +1,49 @@
+name: Source Gap Triage V1
+
+on:
+  pull_request:
+    paths:
+      - 'app/src/main/**'
+      - 'scripts/audit_source_gaps.py'
+      - 'scripts/triage_source_gaps.py'
+      - 'contracts/source-gap-allowlist.v1.json'
+      - '.github/workflows/source-gap-triage-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Scanner self-test
+        run: python3 scripts/audit_source_gaps.py --self-test
+      - name: Build deterministic triage registry
+        run: python3 scripts/triage_source_gaps.py
+      - name: Verify fail-closed triage semantics
+        run: |
+          python3 - <<'PY'
+          import json
+          p='.rafgittools/receipts/source-gap-triage-v1.json'
+          d=json.load(open(p, encoding='utf-8'))
+          assert d['schema']=='RAFGITTOOLS_SOURCE_GAP_TRIAGE_V1'
+          assert d['claim_allowed'] is False
+          assert d['blockers'] > 0, 'baseline debt unexpectedly vanished; investigate before promotion'
+          assert sum(d['priority_counts'].values()) == d['blockers']
+          assert all(g['claim_allowed'] is False for g in d['groups'])
+          assert 'TOKEN_VAZIO != 0' in d['invariants']
+          print('PASS source-gap triage semantics')
+          PY
+      - name: Upload triage receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-gap-triage-v1
+          path: |
+            .rafgittools/receipts/source-gap-triage-v1.json
+            .rafgittools/receipts/source-gap-triage-v1.json.sha256

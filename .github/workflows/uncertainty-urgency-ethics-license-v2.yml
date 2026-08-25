@@ -1,0 +1,58 @@
+name: uncertainty-urgency-ethics-license-v2
+
+on:
+  pull_request:
+    paths:
+      - "configs/uncertainty-urgency-ethics-license.v1.json"
+      - "configs/uncertainty-urgency-ethics-license.v2.json"
+      - "scripts/validate_uncertainty_urgency_ethics_license.py"
+      - "scripts/validate_uncertainty_urgency_ethics_license_v2.py"
+      - "docs/UNCERTAINTY_URGENCY_ETHICS_LICENSE_BY_DESIGN_V1.md"
+      - "docs/UNCERTAINTY_URGENCY_ETHICS_LICENSE_BY_DESIGN_V2.md"
+      - ".github/workflows/uncertainty-urgency-ethics-license-v2.yml"
+  push:
+    branches: [main]
+    paths:
+      - "configs/uncertainty-urgency-ethics-license.v1.json"
+      - "configs/uncertainty-urgency-ethics-license.v2.json"
+      - "scripts/validate_uncertainty_urgency_ethics_license.py"
+      - "scripts/validate_uncertainty_urgency_ethics_license_v2.py"
+      - "docs/UNCERTAINTY_URGENCY_ETHICS_LICENSE_BY_DESIGN_V1.md"
+      - "docs/UNCERTAINTY_URGENCY_ETHICS_LICENSE_BY_DESIGN_V2.md"
+      - ".github/workflows/uncertainty-urgency-ethics-license-v2.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  anti-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate V1 predecessor and V2 delta
+        run: python3 scripts/validate_uncertainty_urgency_ethics_license_v2.py
+
+      - name: Fail closed boundaries
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path("configs/uncertainty-urgency-ethics-license.v2.json")
+          c = json.loads(p.read_text(encoding="utf-8"))
+          assert c["claim_allowed"] is False
+          assert c["automatic_promotion"] is False
+          assert c["automatic_merge"] is False
+          assert c["direct_main_mutation"] is False
+          assert c["parable_bridge_v2"]["evidence_effect"] == "NONE"
+          assert c["producer_anchors"]["rafaelia_b7"]["bridge_state"] == "TOKEN_VAZIO_BRIDGE"
+          print("PASS fail-closed boundaries")
+          PY

@@ -1,0 +1,139 @@
+{
+  "schema": "rafaelia.server-merge-enforcement-execution.v1",
+  "execution_id": "SME-MAPA-MAIN-20260825-001",
+  "observed_at": "2026-08-25T05:34:16Z",
+  "mode": "PLAN_ONLY_FAIL_CLOSED",
+  "claim_allowed": false,
+  "automatic_merge": false,
+  "actor": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "source_commit": "6f46e37c7f66e5619bcefb9907f652c76ad831d7",
+    "role": "CONTROL_PLANE_EXECUTOR",
+    "authority_boundary": "Prepare and validate the bounded execution envelope; do not mutate GitHub provider protection without separately evidenced Administration:write authority."
+  },
+  "target": {
+    "repository": "rafaelmeloreisnovo/Mapa",
+    "branch": "main",
+    "observed_commit": "76ea910b3a9de4b000f89ebc9865db4e83d553cf",
+    "branch_observation": {
+      "protected": false,
+      "protection_enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      },
+      "repository_rulesets": []
+    },
+    "producer": {
+      "repository": "rafaelmeloreisnovo/Mapa",
+      "ref": "76ea910b3a9de4b000f89ebc9865db4e83d553cf",
+      "path": "scripts/apply_main_branch_protection.py",
+      "git_blob": "87e98d96ede76d47253326345d03b5769c92fad1"
+    }
+  },
+  "desired_state": {
+    "required_contexts": [
+      "promotion-control / enforce"
+    ],
+    "strict_status_checks": true,
+    "enforce_admins": true,
+    "required_approving_review_count": 1,
+    "dismiss_stale_reviews": true,
+    "require_last_push_approval": true,
+    "automatic_merge": false
+  },
+  "authority_gate": {
+    "required_permission": "Administration:write",
+    "credential_state": "TOKEN_VAZIO_NOT_AVAILABLE_IN_CONNECTED_SURFACE",
+    "apply_allowed": false,
+    "secret_handling": "Environment only; never persist, print or copy the raw credential into a receipt."
+  },
+  "preconditions": [
+    {
+      "id": "MAIN_SHA_MATCH",
+      "state": "RECHECK_REQUIRED"
+    },
+    {
+      "id": "FULL_PROTECTION_PRESTATE_SNAPSHOT",
+      "state": "RECHECK_REQUIRED"
+    },
+    {
+      "id": "REQUIRED_CONTEXT_UNIQUE",
+      "state": "EVIDENCED_SCOPED"
+    },
+    {
+      "id": "ADMIN_WRITE_AUTHORITY",
+      "state": "TOKEN_VAZIO"
+    },
+    {
+      "id": "ROLLBACK_READY",
+      "state": "SPECIFIED_NOT_REHEARSED"
+    }
+  ],
+  "execution": {
+    "urgency": "P0",
+    "risk": "HIGH",
+    "plan_command": "python3 scripts/apply_main_branch_protection.py --repo rafaelmeloreisnovo/Mapa --branch main --required-context 'promotion-control / enforce' --expected-main-sha 76ea910b3a9de4b000f89ebc9865db4e83d553cf --write-receipt build/server-enforcement/plan.json",
+    "apply_command": "RAFAELIA_ADMIN_TOKEN=<ADMIN_WRITE_TOKEN> python3 scripts/apply_main_branch_protection.py --repo rafaelmeloreisnovo/Mapa --branch main --required-context 'promotion-control / enforce' --expected-main-sha 76ea910b3a9de4b000f89ebc9865db4e83d553cf --write-receipt build/server-enforcement/apply.json --apply",
+    "forbidden_operations": [
+      "MERGE_WHILE_UNPROTECTED",
+      "AUTO_MERGE",
+      "DIRECT_PUSH_MAIN",
+      "PUBLISH_SECRET"
+    ],
+    "stop_condition": "Stop on main SHA drift, protection/ruleset drift, missing Administration:write authority, unknown required context identity, failed readback or any rollback ambiguity.",
+    "exit_criterion": "Provider readback shows main protected, admins enforced, one independent approval required, and promotion-control / enforce required; then a separate zero-approval rejection receipt preserves the main SHA."
+  },
+  "rollback": {
+    "observed_prestate": "ABSENT_PROTECTION_AND_EMPTY_REPOSITORY_RULESETS",
+    "state": "SPECIFIED_NOT_REHEARSED",
+    "precondition": "Immediately before apply, an authoritative provider read must still confirm absent branch protection and no repository ruleset targeting main.",
+    "command": "gh api --method DELETE repos/rafaelmeloreisnovo/Mapa/branches/main/protection",
+    "postcondition": "Provider readback matches the captured absent prestate and main SHA remains unchanged."
+  },
+  "evidence": [
+    {
+      "id": "MAPA-PR393-PREMERGE-PROMOTION-DENIED",
+      "ref": "github:rafaelmeloreisnovo/Mapa/actions/runs/32798510471",
+      "result": "FAIL_CLOSED_COMPLETED_BEFORE_MERGE"
+    },
+    {
+      "id": "MAPA-PR393-PREMERGE-SERVER-ENFORCEMENT-ABSENT",
+      "ref": "github:rafaelmeloreisnovo/Mapa/actions/runs/32798510328",
+      "result": "BLOCKED_COMPLETED_BEFORE_MERGE"
+    },
+    {
+      "id": "MAPA-PR393-MERGED",
+      "ref": "github:rafaelmeloreisnovo/Mapa/pull/393",
+      "result": "MERGED_2026-08-25T01:44:30Z"
+    },
+    {
+      "id": "MAPA-PR394-PREMERGE-PROMOTION-DENIED",
+      "ref": "github:rafaelmeloreisnovo/Mapa/actions/runs/32802381783",
+      "result": "FAIL_CLOSED_COMPLETED_BEFORE_MERGE"
+    },
+    {
+      "id": "MAPA-PR394-PREMERGE-SERVER-ENFORCEMENT-ABSENT",
+      "ref": "github:rafaelmeloreisnovo/Mapa/actions/runs/32802381812",
+      "result": "BLOCKED_COMPLETED_BEFORE_MERGE"
+    },
+    {
+      "id": "MAPA-PR394-MERGED",
+      "ref": "github:rafaelmeloreisnovo/Mapa/pull/394",
+      "result": "MERGED_2026-08-25T03:07:48Z"
+    }
+  ],
+  "invariants": [
+    "POLICY_DECISION_NE_SERVER_SIDE_MERGE_BARRIER",
+    "CAN_DO_NE_MAY_DO",
+    "PLAN_PASS_NE_PROVIDER_APPLY",
+    "CONFIGURATION_NE_REJECTION_RECEIPT",
+    "TOKEN_VAZIO_NE_PASS"
+  ],
+  "outputs": {
+    "local_report": "artifacts/server-merge-enforcement-execution-v1.json",
+    "target_apply_receipt": "TOKEN_VAZIO_PROVIDER_APPLY_NOT_EXECUTED",
+    "zero_approval_rejection_receipt": "TOKEN_VAZIO_NOT_EXECUTED"
+  }
+}

@@ -1,0 +1,222 @@
+{
+  "schema": "rafaelia.uncertainty-urgency-ethics-license.v2",
+  "authority": "rafaelmeloreisnovo/RafGitTools",
+  "mode": "EVIDENCE_FIRST_FAIL_CLOSED_APPEND_ONLY",
+  "claim_allowed": false,
+  "automatic_promotion": false,
+  "automatic_merge": false,
+  "direct_main_mutation": false,
+  "extends": {
+    "path": "configs/uncertainty-urgency-ethics-license.v1.json",
+    "git_blob_sha": "45630c859b29dcc0e58242fd424798bedcd5688a",
+    "policy": "validate v1 first; preserve AR01..AR30 verbatim; apply only additive V2 delta"
+  },
+  "reconstructible_route": [
+    "statistics",
+    "tokens",
+    "metaphors",
+    "vectors_words",
+    "promise_contract",
+    "execution",
+    "receipt",
+    "delta",
+    "omega_n"
+  ],
+  "noise_residual_policy": {
+    "observation_model": "observed = model + residual",
+    "residual_definition": "residual = observed - model",
+    "residual_is_signal_by_default": false,
+    "correlation_is_causality": false,
+    "similarity_is_equivalence": false,
+    "structured_signal_candidate_requires": [
+      "recurrence_across_independent_windows",
+      "direction_or_asymmetry_persistence",
+      "autocorrelation_or_cross_correlation_against_frozen_baseline",
+      "distribution_shift_against_declared_null_model",
+      "reproducibility_under_new_seed_source_or_run",
+      "adversarial_falsifier_not_triggered"
+    ],
+    "states": [
+      "NOISE_UNCLASSIFIED",
+      "RESIDUAL_MEASURED",
+      "STRUCTURE_CANDIDATE",
+      "TESTED_LIMITED",
+      "EVIDENCED",
+      "REFUTED",
+      "TOKEN_VAZIO"
+    ]
+  },
+  "rights_policy_v2": {
+    "public_access_is_public_domain": false,
+    "public_access_is_redistribution_permission": false,
+    "public_access_is_training_permission": false,
+    "repository_license_covers_third_party_payloads_automatically": false,
+    "unknown_permissions_fail_closed": true,
+    "license_conflict_preserves_reference_provenance_and_gap": true,
+    "rights_fields": [
+      "license_id",
+      "spdx_or_exact_text",
+      "source_owner",
+      "payload_origin",
+      "redistribution_allowed",
+      "modification_allowed",
+      "training_allowed",
+      "commercial_use_allowed",
+      "attribution_required",
+      "share_alike_required",
+      "compatibility_state",
+      "proof_reference"
+    ],
+    "states": [
+      "LICENSE_CLEAR",
+      "LICENSE_CONDITIONAL",
+      "LICENSE_CONFLICT",
+      "TOKEN_VAZIO_LICENSE"
+    ]
+  },
+  "ethics_by_design_v2": {
+    "required_fields": [
+      "purpose",
+      "necessity",
+      "minimization",
+      "human_review",
+      "risk_class",
+      "rights_state",
+      "rollback_path",
+      "provenance",
+      "claim_allowed"
+    ],
+    "high_risk_requires_human_review": true,
+    "mutating_action_requires_rollback_or_irreversible_boundary": true,
+    "scientific_validity_waives_rights": false,
+    "technical_executability_equals_ethical_authorization": false
+  },
+  "parable_bridge_v2": {
+    "evidence_effect": "NONE",
+    "phrase_state": "PARABLE_ASPIRATION",
+    "phrase": "nenhum limite é real, pois o código executa em verbo vivo",
+    "real_limits_remain_binding": [
+      "hardware",
+      "mathematics",
+      "license",
+      "safety",
+      "evidence",
+      "authority",
+      "runtime"
+    ],
+    "mapping": {
+      "TOKEN_VAZIO": "tijolo_ausente_identificado",
+      "residual": "fissura_que_aponta_onde_medir",
+      "falsifier": "esquadro_que_pode_reprovar",
+      "license": "escritura_que_define_uso_e_redistribuicao",
+      "receipt": "assinatura_observavel_da_etapa",
+      "rollback": "retorno_ao_ultimo_ponto_seguro",
+      "index": "mapa_da_obra",
+      "contract": "planta_com_limites_e_aceitacao"
+    },
+    "technical_target_required": true
+  },
+  "relation_types_v2": [
+    "DERIVES_FROM",
+    "IMPLEMENTS",
+    "EXECUTES",
+    "MEASURES",
+    "SUPPORTS",
+    "CONTRADICTS",
+    "CORRESPONDS_TO",
+    "ANALOGY_OF",
+    "INDEXES",
+    "ROUTES_TO",
+    "HAS_GAP",
+    "BLOCKED_BY",
+    "SUPERSEDES_WITHOUT_ERASING",
+    "LICENSED_BY",
+    "REQUIRES_REVIEW"
+  ],
+  "producer_anchors": {
+    "gaia_complex_feedback": {
+      "repo": "rafaelmeloreisnovo/GAIA_phi",
+      "commit": "d3f49c10b74f740ee2024314dff91e9a0ef20b2f",
+      "path": "dados/cognitive_symbiotic.py",
+      "implementation_state": "IMPLEMENTATION_OBSERVED",
+      "execution_state": "TOKEN_VAZIO_EXECUTION",
+      "scientific_generalization": "TOKEN_VAZIO",
+      "claim_allowed": false
+    },
+    "rafaelia_b7": {
+      "producer": "Rafaelia_Private/runtime/b7",
+      "known_property": "bounded_scalar_lane_imbalance_for_uniform_partition16",
+      "bridge_gap": "B7_TO_T2_BRIDGE",
+      "bridge_state": "TOKEN_VAZIO_BRIDGE",
+      "claim_allowed": false
+    }
+  },
+  "urgency_queue": [
+    {
+      "id": "TV-V2-LICENSE-PRODUCER-001",
+      "priority": "P0",
+      "state": "TOKEN_VAZIO_LICENSE",
+      "next_gate": "bind SPDX or exact grant per affected payload and run compatibility check"
+    },
+    {
+      "id": "TV-V2-GAIA-COMPLEX-EXEC-001",
+      "priority": "P0",
+      "state": "TOKEN_VAZIO_EXECUTION",
+      "next_gate": "execute deterministic fixtures at exact GAIA commit and bind environment input output hashes"
+    },
+    {
+      "id": "TV-V2-NOISE-NULL-001",
+      "priority": "P0",
+      "state": "TOKEN_VAZIO_BASELINE",
+      "next_gate": "freeze domain null model and threshold before residual interpretation"
+    },
+    {
+      "id": "TV-V2-B7-T2-001",
+      "priority": "P1",
+      "state": "TOKEN_VAZIO_BRIDGE",
+      "next_gate": "formalize a typed bridge with invariant and falsifier or preserve explicit separation"
+    },
+    {
+      "id": "TV-V2-PARABLE-LINK-001",
+      "priority": "P1",
+      "state": "TOKEN_VAZIO_INDEX",
+      "next_gate": "materialize machine-readable parable to technical-object edges with evidence_effect NONE"
+    },
+    {
+      "id": "TV-V2-RELATION-COVERAGE-001",
+      "priority": "P1",
+      "state": "TOKEN_VAZIO_INVENTORY",
+      "next_gate": "build bounded evidence-bearing relation inventory without decorative edges"
+    }
+  ],
+  "token_closure_required_fields": [
+    "source_identity",
+    "repo_ref_path_hash_or_drive_revision",
+    "gap_id",
+    "method_or_test",
+    "inputs",
+    "runtime_environment",
+    "gate_result",
+    "falsifier_result",
+    "rights_state_if_material",
+    "output_or_receipt_hash",
+    "predecessor_link"
+  ],
+  "anti_regression_invariants_delta": [
+    {"id": "AR31", "rule": "Residual or noise must never be promoted to structured signal without a declared baseline and falsifier."},
+    {"id": "AR32", "rule": "Correlation must never be promoted to causality without a causal gate."},
+    {"id": "AR33", "rule": "Similarity must never be promoted to equivalence without an equivalence proof or bounded correspondence label."},
+    {"id": "AR34", "rule": "A TOKEN_VAZIO must never disappear without evidence-backed resolution, explicit supersession, or preserved successor linkage."},
+    {"id": "AR35", "rule": "A negative result or correction must remain in custody and may only be superseded without erasure."},
+    {"id": "AR36", "rule": "Producer implementation authority must remain with the producer repository; control-plane references may not impersonate implementation ownership."},
+    {"id": "AR37", "rule": "Every new material relation requires a relation type, source reference, uncertainty state, boundary or falsifier, and next gate."},
+    {"id": "AR38", "rule": "Parable and metaphor nodes require a technical target and always retain evidence_effect NONE."},
+    {"id": "AR39", "rule": "License conflict may block use or promotion but must not erase source identity, provenance, hash, reference, or gap state."},
+    {"id": "AR40", "rule": "Partial closure must remain PARTIAL or VERIFIED_LIMITED and must not collapse unresolved uncertainty."}
+  ],
+  "drive_editorial_mirror": {
+    "file_id": "1QrJmd7xsd8-zJVfNr8MMoHsFf-X-WvNXPmHTR_SlyRg",
+    "revision_id": "AIroW352DH4MIs5KVn8ghfcSkiassLOPpOJbNafrpWJe70KzPrHSTRtYNDiCUDHJwbCwm7EPRzEyNwg-ZhEgF0SRS9h5apPMOzBLpoeco7s"
+  },
+  "mapa_routing_target": "indices/RAFAELIA_NOISE_UNCERTAINTY_ETHICS_LICENSE_ROUTING_V1.md"
+}
