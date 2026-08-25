@@ -23,7 +23,7 @@ State codes reproduce the eight canonical gap states (`TOKEN_VAZIO` through `RES
 
 ## Hotpath
 
-`raf_fed_validate(void *, void *, u32)` is branchless at source level and has zero source loops. Its x86-64 object gate also requires zero machine branches and zero calls. Boundary code has zero source loops as well. The validator rejects:
+`raf_fed_validate(void *, void *, u32)` is branchless at source level and has zero source loops. The compiler emits its assembly as a named intermediate, the build verifies zero branches and zero calls, and only then assembles the exact checked text into the linked object. The x86-64 object receives a second disassembly gate. Boundary code has zero source loops as well. The validator rejects:
 
 - incomplete `L/O/T` axes or participant masks;
 - missing transaction, input identity or route identity;
@@ -57,11 +57,11 @@ Compiler:
 Linker:
 
 ```text
--nostdlib -static -no-pie -e _start --gc-sections --strip-all
+-nostdlib -static -Wl,-no-pie -e _start --gc-sections --strip-all
 --build-id=none --no-undefined -z noexecstack
 ```
 
-The linker script asserts zero writable static data, zero BSS/global state and zero relocation sections. The ELF audit additionally requires one `PT_LOAD`, no `PT_INTERP`, no `DT_NEEDED`, no relocation and no undefined symbol.
+The linker script asserts zero writable static data, zero BSS/global state, zero relocation sections and zero GOT/PLT indirection. Relocation and indirection occupy separate zero-sized output classes so GNU ld and lld enforce the same negative contract. The ELF audit additionally requires the expected machine, one `PT_LOAD`, no `PT_INTERP`, no `DT_NEEDED`, no relocation and no undefined symbol.
 
 These are runtime guarantees. The build uses only the selected compiler, assembler, linker and POSIX audit tools; the workflow performs a native Git fetch instead of importing a checkout action.
 

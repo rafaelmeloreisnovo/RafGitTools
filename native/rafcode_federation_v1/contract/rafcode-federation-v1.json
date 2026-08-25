@@ -67,6 +67,10 @@
     "source_condition_branches": 0,
     "x86_64_machine_branches": 0,
     "x86_64_machine_calls": 0,
+    "armv7_linked_generated_assembly_branches": 0,
+    "armv7_linked_generated_assembly_calls": 0,
+    "aarch64_linked_generated_assembly_branches": 0,
+    "aarch64_linked_generated_assembly_calls": 0,
     "tail_call_optimization": false,
     "variable_shadowing": "compiler-error",
     "static_mutable_state": false

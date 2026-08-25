@@ -32,6 +32,10 @@ SECTIONS
     {
         *(.rel .rel.*)
         *(.rela .rela.*)
+    } :image
+
+    .indirection : ALIGN(4)
+    {
         *(.got .got.*)
         *(.plt .plt.*)
         *(.iplt .iplt.*)
@@ -53,3 +57,4 @@ SECTIONS
 ASSERT(SIZEOF(.data) == 0, "rafcode federation forbids writable static data")
 ASSERT(SIZEOF(.bss) == 0, "rafcode federation forbids BSS/global state")
 ASSERT(SIZEOF(.relocations) == 0, "rafcode federation forbids runtime relocations")
+ASSERT(SIZEOF(.indirection) == 0, "rafcode federation forbids GOT/PLT indirection")

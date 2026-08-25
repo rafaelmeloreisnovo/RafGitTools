@@ -14,7 +14,7 @@ CFLAGS_COMMON = -std=c11 -Os -ffreestanding -fno-builtin -fno-stack-protector \
 	-Wsign-conversion -Wundef -Wstrict-prototypes -Wmissing-prototypes \
 	-Wold-style-definition -Wcast-align
 HOST_ARCH_CFLAGS = -m64 -fcf-protection=none
-LINK_COMMON = -nostdlib -static -no-pie -Wl,-e,_start -Wl,--gc-sections \
+LINK_COMMON = -nostdlib -static -Wl,-no-pie -Wl,-e,_start -Wl,--gc-sections \
 	-Wl,--strip-all -Wl,--build-id=none -Wl,--no-undefined -Wl,-z,noexecstack \
 	-Wl,-T,linker/rafcode_federation.ld
 
@@ -27,9 +27,11 @@ all: host
 
 host: $(BUILD)/host/rafcode-federation
 
-$(BUILD)/host/rafcode-federation: $(CORE) $(ENTRY) arch/x86_64/syscalls.S include/rafcode_federation.h linker/rafcode_federation.ld
+$(BUILD)/host/rafcode-federation: $(CORE) $(ENTRY) arch/x86_64/syscalls.S include/rafcode_federation.h linker/rafcode_federation.ld tools/audit_hotpath_assembly.sh
 	mkdir -p $(BUILD)/host
-	$(HOST_CC) $(CPPFLAGS_COMMON) $(CFLAGS_COMMON) $(HOST_ARCH_CFLAGS) -c $(CORE) -o $(BUILD)/host/core.o
+	$(HOST_CC) $(CPPFLAGS_COMMON) $(CFLAGS_COMMON) $(HOST_ARCH_CFLAGS) -S $(CORE) -o $(BUILD)/host/core.s
+	sh tools/audit_hotpath_assembly.sh $(BUILD)/host/core.s x86_64
+	$(HOST_CC) $(CPPFLAGS_COMMON) $(HOST_ARCH_CFLAGS) -c $(BUILD)/host/core.s -o $(BUILD)/host/core.o
 	$(HOST_CC) $(CPPFLAGS_COMMON) $(CFLAGS_COMMON) $(HOST_ARCH_CFLAGS) -c $(ENTRY) -o $(BUILD)/host/entry.o
 	$(HOST_CC) $(CPPFLAGS_COMMON) -m64 -c arch/x86_64/syscalls.S -o $(BUILD)/host/syscalls.o
 	$(HOST_CC) $(LINK_COMMON) -Wl,--defsym,RAF_IMAGE_BASE=0x400000 \
@@ -39,10 +41,13 @@ $(BUILD)/host/rafcode-federation: $(CORE) $(ENTRY) arch/x86_64/syscalls.S includ
 
 armv7: $(BUILD)/armv7/rafcode-federation
 
-$(BUILD)/armv7/rafcode-federation: $(CORE) $(ENTRY) arch/armv7/syscalls.S include/rafcode_federation.h linker/rafcode_federation.ld
+$(BUILD)/armv7/rafcode-federation: $(CORE) $(ENTRY) arch/armv7/syscalls.S include/rafcode_federation.h linker/rafcode_federation.ld tools/audit_hotpath_assembly.sh
 	mkdir -p $(BUILD)/armv7
 	$(ARMV7_CC) --target=armv7a-linux-androideabi24 $(CPPFLAGS_COMMON) $(CFLAGS_COMMON) \
-		-march=armv7-a -mfloat-abi=softfp -mfpu=neon-vfpv4 -c $(CORE) -o $(BUILD)/armv7/core.o
+		-march=armv7-a -mfloat-abi=softfp -mfpu=neon-vfpv4 -S $(CORE) -o $(BUILD)/armv7/core.s
+	sh tools/audit_hotpath_assembly.sh $(BUILD)/armv7/core.s armv7
+	$(ARMV7_CC) --target=armv7a-linux-androideabi24 $(CPPFLAGS_COMMON) \
+		-march=armv7-a -mfloat-abi=softfp -mfpu=neon-vfpv4 -c $(BUILD)/armv7/core.s -o $(BUILD)/armv7/core.o
 	$(ARMV7_CC) --target=armv7a-linux-androideabi24 $(CPPFLAGS_COMMON) $(CFLAGS_COMMON) \
 		-march=armv7-a -mfloat-abi=softfp -mfpu=neon-vfpv4 -c $(ENTRY) -o $(BUILD)/armv7/entry.o
 	$(ARMV7_CC) --target=armv7a-linux-androideabi24 $(CPPFLAGS_COMMON) \
@@ -55,10 +60,13 @@ $(BUILD)/armv7/rafcode-federation: $(CORE) $(ENTRY) arch/armv7/syscalls.S includ
 
 aarch64: $(BUILD)/aarch64/rafcode-federation
 
-$(BUILD)/aarch64/rafcode-federation: $(CORE) $(ENTRY) arch/aarch64/syscalls.S include/rafcode_federation.h linker/rafcode_federation.ld
+$(BUILD)/aarch64/rafcode-federation: $(CORE) $(ENTRY) arch/aarch64/syscalls.S include/rafcode_federation.h linker/rafcode_federation.ld tools/audit_hotpath_assembly.sh
 	mkdir -p $(BUILD)/aarch64
 	$(AARCH64_CC) --target=aarch64-linux-android24 $(CPPFLAGS_COMMON) $(CFLAGS_COMMON) \
-		-march=armv8-a -c $(CORE) -o $(BUILD)/aarch64/core.o
+		-march=armv8-a -S $(CORE) -o $(BUILD)/aarch64/core.s
+	sh tools/audit_hotpath_assembly.sh $(BUILD)/aarch64/core.s aarch64
+	$(AARCH64_CC) --target=aarch64-linux-android24 $(CPPFLAGS_COMMON) \
+		-march=armv8-a -c $(BUILD)/aarch64/core.s -o $(BUILD)/aarch64/core.o
 	$(AARCH64_CC) --target=aarch64-linux-android24 $(CPPFLAGS_COMMON) $(CFLAGS_COMMON) \
 		-march=armv8-a -c $(ENTRY) -o $(BUILD)/aarch64/entry.o
 	$(AARCH64_CC) --target=aarch64-linux-android24 $(CPPFLAGS_COMMON) \
@@ -73,7 +81,7 @@ test: host
 	sh tests/smoke.sh $(BUILD)/host/rafcode-federation
 
 audit: host
-	sh tools/audit_elf.sh $(BUILD)/host/rafcode-federation
+	sh tools/audit_elf.sh $(BUILD)/host/rafcode-federation 'Advanced Micro Devices X86-64'
 	sh tools/audit_hotpath_x86_64.sh $(BUILD)/host/core.o
 
 clean:

@@ -51,5 +51,8 @@ jobs:
         run: |
           make -C native/rafcode_federation_v1 armv7 ARMV7_CC=clang
           make -C native/rafcode_federation_v1 aarch64 AARCH64_CC=clang
-          (cd native/rafcode_federation_v1 && sh tools/audit_elf.sh build/armv7/rafcode-federation)
-          (cd native/rafcode_federation_v1 && sh tools/audit_elf.sh build/aarch64/rafcode-federation)
+          (cd native/rafcode_federation_v1 && sh tools/audit_elf.sh build/armv7/rafcode-federation ARM)
+          (cd native/rafcode_federation_v1 && sh tools/audit_elf.sh build/aarch64/rafcode-federation AArch64)
+          sha256sum native/rafcode_federation_v1/build/host/rafcode-federation
+          sha256sum native/rafcode_federation_v1/build/armv7/rafcode-federation
+          sha256sum native/rafcode_federation_v1/build/aarch64/rafcode-federation

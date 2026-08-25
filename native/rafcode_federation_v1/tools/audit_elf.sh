@@ -1,11 +1,18 @@
 #!/bin/sh
 set -eu
 
-binary=${1:?usage: audit_elf.sh <elf>}
+binary=${1:?usage: audit_elf.sh <elf> [expected-machine]}
+expected_machine=${2:-}
 maximum_bytes=${MAXIMUM_BYTES:-8192}
 
 test -f "$binary"
 test "$(wc -c < "$binary")" -le "$maximum_bytes"
+
+machine=$(readelf -hW "$binary" | sed -n 's/^[[:space:]]*Machine:[[:space:]]*//p')
+if test -n "$expected_machine" && test "$machine" != "$expected_machine"; then
+    printf 'FAIL: machine expected=%s observed=%s\n' "$expected_machine" "$machine" >&2
+    exit 1
+fi
 
 if readelf -lW "$binary" | grep -q ' INTERP '; then
     printf '%s\n' 'FAIL: PT_INTERP present' >&2
@@ -47,5 +54,5 @@ if grep -En '(^|[^[:alnum:]_])(malloc|calloc|realloc|free|memcpy|memmove|memset)
     exit 1
 fi
 
-printf 'PASS elf=%s bytes=%s load_segments=%s interp=0 needed=0 relocations=0 symbols=0 undefined=0 source_loops=0 heap_primitives=0\n' \
-    "$binary" "$(wc -c < "$binary")" "$load_count"
+printf 'PASS elf=%s machine=%s bytes=%s load_segments=%s interp=0 needed=0 relocations=0 symbols=0 undefined=0 source_loops=0 heap_primitives=0\n' \
+    "$binary" "$machine" "$(wc -c < "$binary")" "$load_count"
