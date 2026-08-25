@@ -1,0 +1,58 @@
+name: RafCode Federation Freestanding
+
+on:
+  pull_request:
+    paths:
+      - "native/rafcode_federation_v1/**"
+      - ".github/workflows/rafcode-federation-freestanding.yml"
+      - "Makefile"
+  push:
+    branches: [main]
+    paths:
+      - "native/rafcode_federation_v1/**"
+      - ".github/workflows/rafcode-federation-freestanding.yml"
+      - "Makefile"
+
+permissions:
+  contents: read
+
+jobs:
+  freestanding:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch exact source without external actions
+        shell: bash
+        run: |
+          git init .
+          git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          git fetch --depth=1 origin "${GITHUB_SHA}"
+          git checkout --detach FETCH_HEAD
+      - name: Bind toolchain
+        shell: bash
+        run: |
+          clang --version
+          if ! command -v ld.lld >/dev/null 2>&1; then
+            raf_lld_source=$(find "$(rustc --print sysroot)" -type f -name rust-lld -print -quit)
+            test -n "${raf_lld_source}"
+            raf_lld_bind="${RUNNER_TEMP}/rafcode-toolchain"
+            mkdir -p "${raf_lld_bind}"
+            ln -s "${raf_lld_source}" "${raf_lld_bind}/ld.lld"
+            printf '%s\n' "${raf_lld_bind}" >> "${GITHUB_PATH}"
+            PATH="${raf_lld_bind}:${PATH}"
+          fi
+          ld.lld --version
+          readelf --version
+      - name: Host compile, execution and ELF gates
+        run: |
+          make -C native/rafcode_federation_v1 clean
+          make -C native/rafcode_federation_v1 host test audit HOST_CC=clang
+      - name: ARM32 and ARM64 freestanding link gates
+        run: |
+          make -C native/rafcode_federation_v1 armv7 ARMV7_CC=clang
+          make -C native/rafcode_federation_v1 aarch64 AARCH64_CC=clang
+          (cd native/rafcode_federation_v1 && sh tools/audit_elf.sh build/armv7/rafcode-federation ARM)
+          (cd native/rafcode_federation_v1 && sh tools/audit_elf.sh build/aarch64/rafcode-federation AArch64)
+          sha256sum native/rafcode_federation_v1/build/host/rafcode-federation
+          sha256sum native/rafcode_federation_v1/build/armv7/rafcode-federation
+          sha256sum native/rafcode_federation_v1/build/aarch64/rafcode-federation

@@ -1,4 +1,4 @@
-.PHONY: clean all audit-validate runtime-receipt runtime-receipt-tests
+.PHONY: clean all audit-validate runtime-receipt runtime-receipt-tests rafcode-federation rafcode-federation-test rafcode-federation-audit
 
 SDK_DIR := $(firstword $(ANDROID_SDK_ROOT) $(ANDROID_HOME) $(wildcard $(HOME)/Android/Sdk) $(wildcard $(HOME)/android-sdk) $(wildcard /usr/local/lib/android/sdk))
 RUNTIME_APK ?=
@@ -34,3 +34,12 @@ runtime-receipt:
 
 runtime-receipt-tests:
 	python3 -m unittest discover -s tests -p 'test_android_runtime_receipt.py' -v
+
+rafcode-federation:
+	$(MAKE) -C native/rafcode_federation_v1 host
+
+rafcode-federation-test:
+	$(MAKE) -C native/rafcode_federation_v1 test
+
+rafcode-federation-audit:
+	$(MAKE) -C native/rafcode_federation_v1 audit

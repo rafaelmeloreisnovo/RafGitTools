@@ -1,0 +1,94 @@
+{
+  "schema": "rafcode.federation.freestanding.v1",
+  "version": 1,
+  "owner": "rafaelmeloreisnovo/RafGitTools",
+  "federated_authority": "rafaelmeloreisnovo/Mapa",
+  "claim_allowed": false,
+  "runtime": {
+    "kind": "loaderless-linux-android-userspace",
+    "libc": false,
+    "crt": false,
+    "heap": false,
+    "malloc": false,
+    "garbage_collector": false,
+    "dynamic_linker": false,
+    "external_runtime_dependencies": [],
+    "syscall_boundary": "architecture-owned assembly"
+  },
+  "memory_axes": {
+    "required_mask": "0x07",
+    "members": ["LONGITUDINAL", "ORTHOGONAL", "TRANSVERSAL"],
+    "source": "Mapa:data/memory/RAFAELIA_TRIAXIAL_MEMORY_INDEX_V1.json"
+  },
+  "participants": {
+    "required_mask": "0x0f",
+    "members": ["CONTROL", "EXECUTOR", "EVIDENCE", "VM"],
+    "source": "RafGitTools:contracts/rafaelia-federated-runtime-v1.json"
+  },
+  "wire": {
+    "byte_order": "little-endian",
+    "input_bytes": 64,
+    "output_bytes": 64,
+    "single_frame_io": true,
+    "short_frame_behavior": "fail-closed receipt plus exit 2",
+    "write_failure_exit": 3
+  },
+  "state_codes": {
+    "0": "TOKEN_VAZIO",
+    "1": "UNCERTAIN",
+    "2": "BLOCKED",
+    "3": "READY_TO_TEST",
+    "4": "TESTING",
+    "5": "EVIDENCED_SCOPED",
+    "6": "RESOLVED_NEGATIVE",
+    "7": "RESOLVED"
+  },
+  "action_codes": {
+    "1": "DISCOVER",
+    "2": "BIND_IDENTITY",
+    "3": "RESOLVE_AUTHORITY",
+    "4": "LOAD_MINIMUM_INDICES",
+    "5": "TYPE_GAP_OR_GOAL",
+    "6": "CLASSIFY_GOVERNANCE_DATA_PRIVACY_SECURITY",
+    "7": "RESOLVE_MAPA_ROUTE",
+    "8": "SELECT_GATE",
+    "9": "CAPTURE_BASELINE_AND_ROLLBACK",
+    "10": "EXECUTE_BOUNDED",
+    "11": "VERIFY_LOCAL",
+    "12": "VERIFY_CROSS_REPO_EDGES_IF_ANY",
+    "13": "EMIT_RECEIPT",
+    "14": "APPEND_TRANSITION",
+    "15": "UPDATE_DRIVE_RECONSTRUCTION_IF_MATERIAL",
+    "16": "RECOMPUTE_F_GAP_F_NEXT"
+  },
+  "hotpath": {
+    "function": "raf_fed_validate",
+    "source_loops": 0,
+    "source_condition_branches": 0,
+    "x86_64_machine_branches": 0,
+    "x86_64_machine_calls": 0,
+    "armv7_linked_generated_assembly_branches": 0,
+    "armv7_linked_generated_assembly_calls": 0,
+    "aarch64_linked_generated_assembly_branches": 0,
+    "aarch64_linked_generated_assembly_calls": 0,
+    "tail_call_optimization": false,
+    "variable_shadowing": "compiler-error",
+    "static_mutable_state": false
+  },
+  "policy": {
+    "claim_allowed_input": "rejected",
+    "private_paths_input": "rejected",
+    "mutating_requires_rollback": true,
+    "receipt_required": true,
+    "state_at_or_above_EVIDENCED_SCOPED_requires_evidence_binding": true,
+    "unknown_flags": "rejected",
+    "missing_identity": "rejected"
+  },
+  "evidence_boundary": {
+    "trace_tag": "deterministic non-cryptographic structural tag",
+    "authentication": "TOKEN_VAZIO_HMAC_NOT_IMPLEMENTED",
+    "physical_arm32_execution": "TOKEN_VAZIO_DEVICE_RECEIPT",
+    "physical_arm64_execution": "TOKEN_VAZIO_DEVICE_RECEIPT",
+    "federation_certified": false
+  }
+}
