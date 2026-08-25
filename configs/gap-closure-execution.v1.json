@@ -1,0 +1,53 @@
+{
+  "schema": "rafaelia.gap-closure-execution.v1",
+  "authority": "rafaelmeloreisnovo/RafGitTools",
+  "mode": "EVIDENCE_FIRST_FAIL_CLOSED",
+  "claim_allowed": false,
+  "automatic_promotion": false,
+  "automatic_merge": false,
+  "direct_main_mutation": false,
+  "allowed_states": [
+    "TOKEN_VAZIO",
+    "UNCERTAIN",
+    "BLOCKED",
+    "READY_TO_TEST",
+    "EVIDENCED_SCOPED",
+    "RESOLVED_NEGATIVE",
+    "RESOLVED"
+  ],
+  "urgency_levels": ["P0", "P1", "P2"],
+  "risk_levels": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+  "resolution_states": ["EVIDENCED_SCOPED", "RESOLVED_NEGATIVE", "RESOLVED"],
+  "unresolved_states": ["TOKEN_VAZIO", "UNCERTAIN", "BLOCKED", "READY_TO_TEST"],
+  "required_fields": [
+    "id",
+    "repo",
+    "surface",
+    "state",
+    "urgency",
+    "risk",
+    "authority",
+    "owner",
+    "provenance",
+    "next_action",
+    "exit_criterion",
+    "falsifier",
+    "evidence_refs",
+    "dependencies",
+    "claim_allowed"
+  ],
+  "anti_regression_invariants": [
+    {"id":"GC01","rule":"TOKEN_VAZIO is an explicit epistemic state and must never be coerced to zero, false, null, PASS, FAIL or RESOLVED."},
+    {"id":"GC02","rule":"Every unresolved item requires authority, owner, provenance, next_action, exit_criterion and falsifier."},
+    {"id":"GC03","rule":"A resolution or evidenced state requires non-empty evidence_refs tied to an observable artifact or run."},
+    {"id":"GC04","rule":"Evidence is bounded to the exact repository, ref or commit, path or artifact, and observation represented by its reference."},
+    {"id":"GC05","rule":"Urgency changes execution order only; urgency never upgrades evidence quality or claim truth."},
+    {"id":"GC06","rule":"A mutating high-risk or critical action requires explicit rollback or recovery provenance before execution."},
+    {"id":"GC07","rule":"Evidence from one commit, build, APK, dataset, protocol version or device must not be silently inherited by another."},
+    {"id":"GC08","rule":"Claims requiring physical Android, Termux, VM or device execution remain TOKEN_VAZIO until a physical runtime receipt exists."},
+    {"id":"GC09","rule":"Cross-repository protocol compatibility requires both producer and consumer contract evidence for the same protocol version."},
+    {"id":"GC10","rule":"Gap closure is append-only at the evidence layer; corrections supersede prior receipts instead of rewriting historical observations."},
+    {"id":"GC11","rule":"READY_TO_TEST means implementation exists but the exit criterion has not yet been observed; it is not RESOLVED."},
+    {"id":"GC12","rule":"Negative evidence may close a hypothesis as RESOLVED_NEGATIVE and must not be converted into a positive success claim."}
+  ]
+}

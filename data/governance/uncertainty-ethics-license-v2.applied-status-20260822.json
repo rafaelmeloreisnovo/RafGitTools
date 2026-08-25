@@ -1,0 +1,76 @@
+{
+  "schema": "rafaelia.uncertainty-urgency-ethics-license.v2.applied-status.v1",
+  "date": "2026-08-22",
+  "predecessor_contract": "configs/uncertainty-urgency-ethics-license.v2.json",
+  "state": "APPLIED_PARTIAL_VERIFIED",
+  "claim_allowed": false,
+  "governance_ci": {
+    "workflow": "uncertainty-urgency-ethics-license-v2",
+    "run_id": 32549522527,
+    "head": "c4252dcbe047b58c0efa8a87a894a6814420a456",
+    "status": "completed",
+    "conclusion": "success",
+    "state": "CLOSED_CI_GATE"
+  },
+  "urgencies": {
+    "TV-V2-LICENSE-PRODUCER-001": {
+      "state": "PARTIAL_VERIFIED_GAIA_PRODUCER",
+      "producer": "rafaelmeloreisnovo/GAIA_phi",
+      "producer_license": {
+        "id": "MIT",
+        "license_blob": "f2a2f9fd2d04b99cd3126731640edcea3fea326b",
+        "state": "LICENSE_CLEAR_FOR_REPOSITORY_SOURCE_SUBJECT_TO_NOTICE"
+      },
+      "dependency": {
+        "name": "PyTorch/torch",
+        "upstream_repo": "pytorch/pytorch",
+        "license_blob_observed": "c23172f7aff0254e4f0f163fb2e6e355cbaec5f4",
+        "state": "LICENSE_CONDITIONAL_NOTICE_REQUIRED_IF_REDISTRIBUTED"
+      },
+      "boundary": "ecosystem-wide external/mixed payload inventory remains open; repository license does not automatically license dependencies, model weights or datasets"
+    },
+    "TV-V2-GAIA-COMPLEX-EXEC-001": {
+      "state": "LOCAL_PASS_PRODUCER_SOURCE_BLOB_BOUND__CI_RECEIPT_IN_PROGRESS",
+      "repo": "rafaelmeloreisnovo/GAIA_phi",
+      "source_anchor_commit": "d3f49c10b74f740ee2024314dff91e9a0ef20b2f",
+      "source_blob": "1bb228392c51d3bfd0d85ae8e6ce92c40fe28dd1",
+      "current_main_same_blob": true,
+      "producer_local_evidence": "docs/PSI_TOMEGA_COMPLEX_FEEDBACK_V1.md records 6 passed on PyTorch 2.10.0 CPU",
+      "new_pr": 98,
+      "new_workflow": "cognitive-symbiotic-receipt",
+      "new_workflow_run_id": 32564704743,
+      "new_execution_state": "IN_PROGRESS_AT_STATUS_CAPTURE",
+      "boundary": "do not promote new CI execution until workflow completes successfully and receipt artifact is inspected"
+    },
+    "TV-V2-NOISE-NULL-001": {
+      "state": "PARTIAL_IMPLEMENTATION_NULL_DEFINED__DOMAIN_NULLS_OPEN",
+      "technical_null": "GAIA zero_relevance: delta_r_m=0 -> Psi_v=0 -> T_Omega=0",
+      "scope": "directional/temporal implementation branch only",
+      "boundary": "decoder embedding need not be zero; no scientific/domain null model or threshold is implied",
+      "next_gate": "freeze domain-specific H0, baseline, threshold and falsifier before residual interpretation"
+    },
+    "TV-V2-B7-T2-001": {
+      "state": "TOKEN_VAZIO_BRIDGE",
+      "claim": false,
+      "next_gate": "formal typed bridge with invariant and falsifier or preserve explicit separation"
+    },
+    "TV-V2-PARABLE-LINK-001": {
+      "state": "CLOSED_MATERIALIZED_LIMITED",
+      "artifact": "data/governance/parable-technical-links.v1.json",
+      "evidence_effect": "NONE"
+    },
+    "TV-V2-RELATION-COVERAGE-001": {
+      "state": "PARTIAL_BOUNDED_INVENTORY",
+      "artifact": "data/governance/relation-coverage.v1.json",
+      "boundary": "bounded known relations only; not exhaustive"
+    }
+  },
+  "anti_regression": [
+    "governance CI success does not prove producer runtime",
+    "producer local pass does not prove semantic/scientific claims",
+    "technical null fixture does not become domain null model",
+    "license is typed per producer/dependency/payload",
+    "parable index has evidence_effect NONE",
+    "B7_TO_T2_BRIDGE remains open"
+  ]
+}

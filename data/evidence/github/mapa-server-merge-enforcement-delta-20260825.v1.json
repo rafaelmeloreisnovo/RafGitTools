@@ -1,0 +1,77 @@
+{
+  "schema": "rafaelia.server-merge-enforcement-delta.v1",
+  "event_id": "SME-DELTA-20260825-001",
+  "parent_event": "MAPA-OMEGA-ASSURANCE-ADOPTION-V2",
+  "observed_at": "2026-08-25T05:34:16Z",
+  "state": "READY_TO_APPLY_BLOCKED_AUTHORITY",
+  "attention_state": "ACTIVE",
+  "urgency": "P0",
+  "risk": "HIGH_GOVERNANCE",
+  "claim_allowed": false,
+  "scope": "GitHub provider metadata, workflow decisions and control-plane execution planning only",
+  "observations": {
+    "mapa_main": {
+      "commit": "76ea910b3a9de4b000f89ebc9865db4e83d553cf",
+      "protected": false,
+      "protection_enabled": false,
+      "required_status_checks_enforcement": "off",
+      "required_contexts": [],
+      "repository_rulesets": []
+    },
+    "rafgittools_main": {
+      "commit": "6f46e37c7f66e5619bcefb9907f652c76ad831d7",
+      "protected": false,
+      "protection_enabled": false,
+      "required_status_checks_enforcement": "off",
+      "required_contexts": [],
+      "repository_rulesets": [],
+      "classification": "NEW_SCOPED_GAP_NOT_MUTATED_IN_THIS_WAVE"
+    }
+  },
+  "temporal_discriminants": [
+    {
+      "pull_request": "rafaelmeloreisnovo/Mapa#393",
+      "head": "d4e088ee174efe7980d97622f5eceb9b46d66f5e",
+      "promotion_failure_run": 32798510471,
+      "promotion_completed_at": "2026-08-25T01:41:37Z",
+      "server_enforcement_failure_run": 32798510328,
+      "server_enforcement_completed_at": "2026-08-25T01:41:27Z",
+      "merged_at": "2026-08-25T01:44:30Z",
+      "merge_commit": "d3bc5415b39a7f902147435d8494e0541c5722e6",
+      "allowed_interpretation": "Both fail-closed gates completed before the merge, but no provider barrier rejected the merge."
+    },
+    {
+      "pull_request": "rafaelmeloreisnovo/Mapa#394",
+      "head": "72a742dfc488b00d57e4d4cd9a0a442bb5f054a1",
+      "promotion_failure_run": 32802381783,
+      "promotion_completed_at": "2026-08-25T02:42:12Z",
+      "server_enforcement_failure_run": 32802381812,
+      "server_enforcement_completed_at": "2026-08-25T02:42:03Z",
+      "merged_at": "2026-08-25T03:07:48Z",
+      "merge_commit": "76ea910b3a9de4b000f89ebc9865db4e83d553cf",
+      "allowed_interpretation": "The same policy-versus-provider separation recurred on the next merged PR."
+    }
+  ],
+  "producer_binding": {
+    "repository": "rafaelmeloreisnovo/Mapa",
+    "ref": "76ea910b3a9de4b000f89ebc9865db4e83d553cf",
+    "path": "scripts/apply_main_branch_protection.py",
+    "git_blob": "87e98d96ede76d47253326345d03b5769c92fad1",
+    "required_context": "promotion-control / enforce",
+    "provider_permission": "Administration:write"
+  },
+  "external_primary_sources": [
+    "https://docs.github.com/en/rest/branches/branch-protection",
+    "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches",
+    "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets"
+  ],
+  "crossfail": {
+    "input": "Policy gate returns DENIED while provider protection is absent",
+    "expected": "No claim of provider enforcement; no merge test; HOLD for admin-authorized configuration",
+    "observed": "PR #393 and PR #394 merged after pre-merge policy/server gate failures",
+    "result": "FAIL_PROVIDER_BARRIER_ABSENT"
+  },
+  "F_ok": "Temporal evidence now proves two consecutive policy-versus-provider discriminants; the exact Mapa producer, target SHA, required context, authority gate and rollback are bound in a validated plan-only envelope.",
+  "F_gap": "Administration:write is unavailable in the connected surface; branch protection is absent on Mapa and RafGitTools; rollback is specified but not rehearsed; no zero-approval server rejection receipt exists.",
+  "F_next": "An authorized administrator re-reads main/protection/rulesets, applies the Mapa producer with the exact SHA precondition, verifies readback, then produces a separate zero-approval rejection receipt with main SHA unchanged."
+}

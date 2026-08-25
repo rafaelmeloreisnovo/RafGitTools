@@ -1,0 +1,18 @@
+{
+  "schema":"rafaelia.adaptive-resilience-adapter/v1",
+  "repo":"rafaelmeloreisnovo/RafGitTools",
+  "authority_ref":"main",
+  "authority_sha":"ab3ca76dbde9a7d9e7121801fa5ab8dc321766af",
+  "federated_authority":"rafaelmeloreisnovo/Mapa",
+  "central_contract_pr":334,
+  "claim_allowed":false,
+  "state_machine":["OBSERVE","SCORE","HOLD_OR_ROUTE","SANDBOX_TEST","MITIGATE","VERIFY","CANARY","HOTSWAP_OR_FAILOVER","MONITOR","CLOSE_OR_ROLLBACK"],
+  "fail_closed":{"p0":"HOLD","unknown":"TOKEN_VAZIO","stale_watchdog":"HOLD","prediction_promotes_claim":false},
+  "local_scope":{"role":"CONTROL_PLANE_EXECUTOR_TOOL_ROUTER","allowed_autonomous_actions":["observe","record","sandbox_test","isolate_non_authoritative_route"],"requires_authority":["production_hotfix","promotion","cross_repo_mutation","credential_or_permission_change"]},
+  "gaps":[
+    {"gap_id":"RGT_SERVER_SIDE_PROMOTION_BARRIER","urgency":"P0","state":"OBSERVED_OPEN","next_probe":"provider ruleset/bypass/required-context inspection plus rejection receipt","closure_gate":"server-side rejection + unchanged authoritative ref"},
+    {"gap_id":"RGT_PRIVACY_RUNTIME_EFFECTIVENESS","urgency":"P0","state":"TOKEN_VAZIO","next_probe":"exact-run redaction/minimization canary","closure_gate":"bounded runtime receipt with no sensitive leakage"},
+    {"gap_id":"RGT_POSTMERGE_MAIN_EXECUTION_RECEIPT","urgency":"P1","state":"TOKEN_VAZIO","next_probe":"bind main SHA to post-merge run/jobs/steps/artifacts","closure_gate":"post-merge exact-head receipt"}
+  ],
+  "invariants":["prediction != evidence","sandbox_pass != production_pass","TOKEN_VAZIO != PASS","hotfix_candidate != hotfix_approved","rollback_success != prevention_control"]
+}

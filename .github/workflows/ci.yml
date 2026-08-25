@@ -40,7 +40,7 @@ jobs:
           fetch-depth: 1
 
       - name: Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -98,7 +98,7 @@ jobs:
           cache: gradle
 
       - name: Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Prepare Gradle wrapper
         run: chmod +x gradlew

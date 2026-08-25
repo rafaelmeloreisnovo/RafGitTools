@@ -1,0 +1,73 @@
+{
+  "schema": "rafaelia.friction-baseline.v1",
+  "date": "2026-08-22",
+  "state": "PARTIAL_BASELINE",
+  "claim_allowed": false,
+  "gap_id": "TV-V3-FRICTION-BASELINE-001",
+  "scope_id": "FRICTION_SCOPE:GAIA_COMPLEX_FEEDBACK_RAFGITTOOLS_V3:20260822",
+  "scope_definition": "RafGitTools V3 governance artifacts plus the bounded GAIA cognitive-symbiotic producer/execution route, Mapa pointer target and Drive editorial mirror",
+  "inputs": [
+    "configs/uncertainty-urgency-friction-ethics-license.v3.json",
+    "data/governance/license-friction-matrix.v1.json",
+    "data/governance/ethics-by-design-use-registry.v1.json",
+    "data/governance/complex-network-design-relations.v1.json",
+    "data/evidence/github/gaia-provider-execution-friction-20260822.v1.json"
+  ],
+  "components": {
+    "unresolved_gap_count": {
+      "value": 5,
+      "basis": [
+        "TV-V3-PROVIDER-CLASS-001",
+        "TV-V3-LICENSE-PAYLOAD-001",
+        "TV-V3-COMPLEX-RELATIONS-001",
+        "TV-V3-FRICTION-BASELINE-001",
+        "TV-V3-B7-T2-001"
+      ],
+      "boundary": "TV-V3-USE-REGISTRY-001 is materialized limited and therefore excluded from unresolved count"
+    },
+    "unbound_license_unit_count": {
+      "value": 2,
+      "basis": ["LIC:GAIA:MODEL_WEIGHTS", "LIC:GAIA:DATASETS_OR_EXTERNAL_PAYLOADS"],
+      "boundary": "count includes explicit placeholder rights units in this bounded scope only"
+    },
+    "provider_pre_step_failure_count": {
+      "value": 2,
+      "basis": ["GAIA run 32564704743 attempt 1", "GAIA run 32564704743 attempt 2"],
+      "boundary": "candidate class; provider root cause not proven"
+    },
+    "untyped_relation_count": {
+      "value": 0,
+      "basis": "11/11 bounded relations contain required typed fields",
+      "boundary": "zero in this registry does not imply ecosystem-wide relation completeness"
+    },
+    "missing_rollback_count": {
+      "value": 0,
+      "basis": "5/5 governed uses include rollback_or_irreversible_boundary",
+      "boundary": "current bounded use registry only"
+    },
+    "missing_provenance_count": {
+      "value": 0,
+      "basis": "5/5 governed uses have provenance and 11/11 relations have source_ref",
+      "boundary": "field presence is not proof that every source claim is independently verified"
+    },
+    "manual_rework_count": {
+      "value": "TOKEN_VAZIO_UNMEASURED",
+      "basis": "no frozen operational definition or collection window yet",
+      "boundary": "must not be coerced to zero"
+    }
+  },
+  "aggregate": {
+    "numeric_total": "TOKEN_VAZIO_SCORE",
+    "reason": "manual_rework_count is unmeasured and components have different semantics; no scalar aggregation is justified",
+    "comparison_rule": "compare component vector only under identical scope_id; scope change requires rebaseline",
+    "zero_vector_would_imply_claim": false
+  },
+  "closure": {
+    "state": "PARTIAL_BASELINE",
+    "closed_part": "six components are bounded and reproducibly countable from current registries",
+    "residual_gap": "manual_rework_count definition/window and a successor identical-scope measurement are required for a real before/after friction delta"
+  },
+  "F_ok": "bounded component vector exists without inventing a total score.",
+  "F_gap": "manual rework remains unmeasured and no successor identical-scope measurement exists.",
+  "F_next": "define manual_rework event schema/window, then recompute the same scope after a concrete closure and compare component-wise."
+}
