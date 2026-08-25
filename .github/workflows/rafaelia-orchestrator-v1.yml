@@ -66,7 +66,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Validate orchestration prerequisites
@@ -127,7 +127,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Run all private-safe Navigator selftests
@@ -325,7 +325,7 @@ jobs:
           persist-credentials: false
           path: target
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Execute canonical bounded gate
@@ -414,7 +414,7 @@ jobs:
           persist-credentials: false
           path: _stack/RafPolimata
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Run focused repository contracts
