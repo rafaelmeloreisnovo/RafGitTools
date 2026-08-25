@@ -35,8 +35,9 @@ Four consecutive Mapa pull requests supplied the discriminant:
 The last two merges advanced `Mapa/main` during this Wave. The envelope was
 rebound to `423fd961a9c79ebfec7a879a325404191d1865b3`; provider readback still
 showed no protection, status-check enforcement off, no required context, and
-an empty repository-ruleset list. `RafGitTools/main` exposed the same provider
-gap and is recorded as a successor target, not silently changed in this Wave.
+an empty repository-ruleset list. `RafGitTools/main` advanced to
+`9c2b682a52850d5318df71d19eca362f6cbc7811` after PR #379 and a dependency
+update merged; it still exposed the same provider gap.
 
 ## Bound producer
 

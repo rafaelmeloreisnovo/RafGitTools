@@ -3,7 +3,7 @@
   "event_id": "SME-DELTA-20260825-001",
   "parent_event": "MAPA-OMEGA-ASSURANCE-ADOPTION-V2",
   "observed_at": "2026-08-25T05:34:16Z",
-  "reobserved_at": "2026-08-25T05:45:34Z",
+  "reobserved_at": "2026-08-25T05:49:37Z",
   "state": "REBOUND_TO_LATEST_OBSERVED_SHA_BLOCKED_AUTHORITY",
   "attention_state": "ACTIVE",
   "urgency": "P0",
@@ -22,13 +22,15 @@
       "transition": "PR395_AND_PR396_MERGED_DURING_WAVE"
     },
     "rafgittools_main": {
-      "commit": "6f46e37c7f66e5619bcefb9907f652c76ad831d7",
+      "previous_commit": "6f46e37c7f66e5619bcefb9907f652c76ad831d7",
+      "commit": "9c2b682a52850d5318df71d19eca362f6cbc7811",
       "protected": false,
       "protection_enabled": false,
       "required_status_checks_enforcement": "off",
       "required_contexts": [],
       "repository_rulesets": [],
-      "classification": "NEW_SCOPED_GAP_NOT_MUTATED_IN_THIS_WAVE"
+      "classification": "PR379_MERGED_PLAN_ONLY; PROVIDER_GAP_UNCHANGED",
+      "transition": "PR379_AND_DEPENDABOT_PR251_MERGED_DURING_WAVE"
     }
   },
   "temporal_discriminants": [

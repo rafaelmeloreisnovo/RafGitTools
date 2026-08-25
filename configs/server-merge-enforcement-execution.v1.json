@@ -1,13 +1,13 @@
 {
   "schema": "rafaelia.server-merge-enforcement-execution.v1",
   "execution_id": "SME-MAPA-MAIN-20260825-001",
-  "observed_at": "2026-08-25T05:45:34Z",
+  "observed_at": "2026-08-25T05:49:37Z",
   "mode": "PLAN_ONLY_FAIL_CLOSED",
   "claim_allowed": false,
   "automatic_merge": false,
   "actor": {
     "repository": "rafaelmeloreisnovo/RafGitTools",
-    "source_commit": "6f46e37c7f66e5619bcefb9907f652c76ad831d7",
+    "source_commit": "9c2b682a52850d5318df71d19eca362f6cbc7811",
     "role": "CONTROL_PLANE_EXECUTOR",
     "authority_boundary": "Prepare and validate the bounded execution envelope; do not mutate GitHub provider protection without separately evidenced Administration:write authority."
   },
