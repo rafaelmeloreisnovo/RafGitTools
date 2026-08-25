@@ -29,8 +29,18 @@ jobs:
           git fetch --depth=1 origin "${GITHUB_SHA}"
           git checkout --detach FETCH_HEAD
       - name: Bind toolchain
+        shell: bash
         run: |
           clang --version
+          if ! command -v ld.lld >/dev/null 2>&1; then
+            raf_lld_source=$(find "$(rustc --print sysroot)" -type f -name rust-lld -print -quit)
+            test -n "${raf_lld_source}"
+            raf_lld_bind="${RUNNER_TEMP}/rafcode-toolchain"
+            mkdir -p "${raf_lld_bind}"
+            ln -s "${raf_lld_source}" "${raf_lld_bind}/ld.lld"
+            printf '%s\n' "${raf_lld_bind}" >> "${GITHUB_PATH}"
+            PATH="${raf_lld_bind}:${PATH}"
+          fi
           ld.lld --version
           readelf --version
       - name: Host compile, execution and ELF gates
