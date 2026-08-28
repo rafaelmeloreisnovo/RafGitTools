@@ -1,0 +1,59 @@
+{
+  "schema": "rafaelia.public-repo-assurance-executor.v1",
+  "authority": {
+    "federated_router": "rafaelmeloreisnovo/Mapa",
+    "evidence_kernel": "rafaelmeloreisnovo/Recipt",
+    "executor": "rafaelmeloreisnovo/RafGitTools"
+  },
+  "accepted_matrix_schema": "rafaelia.public-repository-assurance.v1",
+  "accepted_receipt_schema": "rafaelia.public-repo-provenance-envelope.v1",
+  "required_dimensions": [
+    "identity",
+    "authority",
+    "license",
+    "provenance",
+    "third_party",
+    "security",
+    "privacy",
+    "runtime_evidence",
+    "gate",
+    "rollback"
+  ],
+  "critical_dimensions": [
+    "authority",
+    "license",
+    "provenance",
+    "third_party",
+    "security",
+    "privacy"
+  ],
+  "states": [
+    "OBSERVED",
+    "HOLD",
+    "READY_FOR_GATE",
+    "PASS",
+    "FAIL",
+    "BLOCKED"
+  ],
+  "transition_rules": {
+    "unknown_critical_dimension": "HOLD",
+    "token_vazio_present": "HOLD_UNLESS_GATE_SPECIFIC_AND_NONCRITICAL",
+    "claim_allowed_true_without_terminal_gate": "FAIL",
+    "upstream_derivative_without_delta_boundary": "HOLD",
+    "missing_rollback_for_high_or_critical_risk": "FAIL",
+    "all_required_dimensions_bound_and_named_gate_passed": "PASS"
+  },
+  "non_promotable_evidence": [
+    "README_ONLY",
+    "PUBLIC_VISIBILITY_ONLY",
+    "SOURCE_PRESENCE_ONLY",
+    "HASH_ONLY",
+    "BUILD_ONLY_FOR_RUNTIME_CLAIM",
+    "LOCAL_ONLY_FOR_PHYSICAL_DEVICE_CLAIM",
+    "UPSTREAM_BRAND_ONLY",
+    "SELF_DECLARED_SECURITY_ONLY"
+  ],
+  "fork_invariant": "upstream_license_controls_upstream_material_and_only_proven_authorial_delta_may_receive_separate_compatible_terms",
+  "token_vazio_invariant": "TOKEN_VAZIO_is_evidence_absence_not_zero_false_or_pass",
+  "default_claim_allowed": false
+}

@@ -1,0 +1,79 @@
+{
+  "schema": "rafaelia.public-repo-assurance-work-item.v1",
+  "repository": {
+    "name": "rafaelmeloreisnovo/BLAKE3",
+    "commit": "c4301ed02dfec8b571d1ce7a91e53e839d55ec3e",
+    "classification": "UPSTREAM_DERIVATIVE_REQUIRES_DELTA_PROVENANCE"
+  },
+  "matrix_binding": {
+    "schema": "rafaelia.public-repository-assurance.v1",
+    "repository": "rafaelmeloreisnovo/Mapa",
+    "commit": "8b8ce953b6f0aefed983c92802657a3cb0d3eacf",
+    "path": "data/control-plane/PUBLIC_REPOSITORY_ASSURANCE_MATRIX_V1.json"
+  },
+  "receipt_binding": {
+    "schema": "rafaelia.public-repo-provenance-envelope.v1",
+    "repository": "rafaelmeloreisnovo/Recipt",
+    "path": "schemas/public-repo-provenance-envelope.schema.v1.json",
+    "state": "IMPLEMENTED_ON_DRAFT_BRANCH"
+  },
+  "dimensions": {
+    "identity": {
+      "state": "BOUND",
+      "commit": "c4301ed02dfec8b571d1ce7a91e53e839d55ec3e"
+    },
+    "authority": {
+      "state": "BOUND",
+      "local": "BLAKE3 repository",
+      "federated": "Mapa"
+    },
+    "license": {
+      "state": "UPSTREAM_LICENSES_OBSERVED",
+      "anchors": [
+        "LICENSE_A2@d512ca94d0ca6bf6a7272b16c83f51b7045902ca",
+        "LICENSE_CC0@0e259d42c996742e9e3cba14c677129b2c1b6311"
+      ]
+    },
+    "provenance": {
+      "state": "TOKEN_VAZIO_AUTHORIAL_DELTA_BOUNDARY",
+      "authorial_delta_boundary_bound": false
+    },
+    "third_party": {
+      "state": "UPSTREAM_TERMS_PRESERVED_BUT_DELTA_COMPATIBILITY_TOKEN_VAZIO"
+    },
+    "security": {
+      "state": "TOKEN_VAZIO_CRYPTO_DELTA_SECURITY_VALIDATION"
+    },
+    "privacy": {
+      "state": "NOT_APPLICABLE_TO_HASH_PRIMITIVE_CORE_UNLESS_INTEGRATION_ADDS_DATA_FLOW"
+    },
+    "runtime_evidence": {
+      "state": "TOKEN_VAZIO_CURRENT_DELTA_EQUIVALENCE"
+    },
+    "gate": {
+      "state": "TOKEN_VAZIO",
+      "id": "UPSTREAM_EQUIVALENCE_PLUS_OFFICIAL_KAT",
+      "evidence": null,
+      "falsifier": "any authorial delta changes official BLAKE3 output for a known-answer vector"
+    },
+    "rollback": {
+      "state": "BOUND",
+      "procedure": "revert authorial delta to observed upstream-compatible commit"
+    }
+  },
+  "risk": {
+    "severity": "CRITICAL",
+    "summary": "cryptographic fork may not promote correctness or new licensing until authorial delta and equivalence are proven"
+  },
+  "gaps": [
+    "TOKEN_VAZIO_AUTHORIAL_DELTA_BOUNDARY",
+    "TOKEN_VAZIO_CRYPTO_DELTA_SECURITY_VALIDATION",
+    "TOKEN_VAZIO_CURRENT_DELTA_EQUIVALENCE"
+  ],
+  "rollback": {
+    "available": true,
+    "procedure": "do not merge or promote; revert delta branch/commit if equivalence or provenance fails"
+  },
+  "requested_transition": "HOLD",
+  "claim_allowed": false
+}
