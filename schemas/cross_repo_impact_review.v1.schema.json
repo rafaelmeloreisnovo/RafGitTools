@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rafaelia:schema:cross-repo-impact-review:1.0.0",
+  "title": "RAFAELIA Cross Repository Impact Review V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_id", "schema_version", "producer_repo", "producer_commit", "contract_id", "contract_version", "consumers_known", "change_classes", "backward_compatible", "migration_required", "rollback_anchor", "golden_fixture_ref", "golden_fixture_digest", "negative_fixture_refs", "cross_repo_execution_receipt", "claim_allowed_from_interop", "observations"],
+  "properties": {
+    "schema_id": {"const": "rafaelia.cross_repo_impact_review"},
+    "schema_version": {"const": 1},
+    "producer_repo": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+    "producer_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "contract_id": {"type": "string", "minLength": 1},
+    "contract_version": {"type": ["integer", "string"]},
+    "consumers_known": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "change_classes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["SCHEMA", "STATE_SEMANTICS", "RELATION_SEMANTICS", "DIGEST_CANONICALIZATION", "BINARY_ABI", "RUNTIME_PREFIX", "CLI_PROTOCOL", "AUTH_POLICY", "PRIVACY_RETENTION", "CLAIM_PROMOTION", "ROLLBACK", "METRIC_IDENTITY"]}},
+    "backward_compatible": {"oneOf": [{"type": "boolean"}, {"const": "TOKEN_VAZIO"}]},
+    "migration_required": {"type": "boolean"},
+    "rollback_anchor": {"oneOf": [{"type": "string", "minLength": 1}, {"const": "TOKEN_VAZIO"}]},
+    "golden_fixture_ref": {"type": "string", "minLength": 1},
+    "golden_fixture_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "negative_fixture_refs": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "cross_repo_execution_receipt": {"oneOf": [{"type": "string", "minLength": 1}, {"const": "TOKEN_VAZIO"}]},
+    "claim_allowed_from_interop": {"type": "boolean"},
+    "observations": {
+      "type": "object", "additionalProperties": false,
+      "required": ["golden", "token_states", "artifacts", "provider", "devices", "runtime", "metric_series"],
+      "properties": {
+        "golden": {"type": "object", "required": ["expected_digest", "observed_digest"], "additionalProperties": false, "properties": {"expected_digest": {"type": "string"}, "observed_digest": {"type": "string"}}},
+        "token_states": {"type": "array", "items": {"type": "object", "required": ["field", "expected_state", "raw_value"], "additionalProperties": false, "properties": {"field": {"type": "string"}, "expected_state": {"const": "TOKEN_VAZIO"}, "raw_value": {}}}},
+        "artifacts": {"type": "array", "items": {"type": "object", "required": ["path", "content_hash", "producer_commit", "revision_id"], "additionalProperties": false, "properties": {"path": {"type": "string"}, "content_hash": {"type": "string"}, "producer_commit": {"type": "string"}, "revision_id": {"type": "string"}}}},
+        "provider": {"type": "object", "required": ["required_context_expected", "required_context_observed", "provider_enforcement_observed", "head_sha", "approval_sha", "independent_approval_observed"], "additionalProperties": false, "properties": {"required_context_expected": {"type": "string"}, "required_context_observed": {"type": "string"}, "provider_enforcement_observed": {"type": "boolean"}, "head_sha": {"type": "string"}, "approval_sha": {"oneOf": [{"type": "string"}, {"const": "TOKEN_VAZIO"}]}, "independent_approval_observed": {"type": "boolean"}}},
+        "devices": {"type": "array", "items": {"type": "object", "required": ["receipt_id", "role", "apk_sha256", "device_fingerprint"], "additionalProperties": false, "properties": {"receipt_id": {"type": "string"}, "role": {"enum": ["arm32-legacy", "arm64-modern", "other"]}, "apk_sha256": {"type": "string"}, "device_fingerprint": {"type": "string"}}}},
+        "runtime": {"type": "object", "required": ["expected_prefix", "scanned_strings"], "additionalProperties": false, "properties": {"expected_prefix": {"type": "string"}, "scanned_strings": {"type": "array", "items": {"type": "string"}}}},
+        "metric_series": {"type": "array", "items": {"type": "object", "required": ["pool_id", "metric_id", "workload_id", "input_id", "unit", "method_version", "environment_class"], "additionalProperties": false, "properties": {"pool_id": {"type": "string"}, "metric_id": {"type": "string"}, "workload_id": {"type": "string"}, "input_id": {"type": "string"}, "unit": {"type": "string"}, "method_version": {"type": "string"}, "environment_class": {"type": "string"}}}}
+      }
+    }
+  }
+}

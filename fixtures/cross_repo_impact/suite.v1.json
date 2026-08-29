@@ -1,0 +1,19 @@
+{
+  "schema_id": "rafaelia.cross_repo_impact_suite",
+  "schema_version": 1,
+  "note": "Mutation fixtures are falsifiers, not live interoperability evidence.",
+  "cases": [
+    {"id": "positive", "file": "positive.v1.json", "expected_ok": true, "expected_code": null},
+    {"id": "negative_missing_required_field", "base_file": "positive.v1.json", "expected_ok": false, "expected_code": "STRUCT_REQUIRED_FIELD_MISSING", "mutations": [{"op": "delete", "path": ["producer_commit"]}]},
+    {"id": "negative_unknown_version", "base_file": "positive.v1.json", "expected_ok": false, "expected_code": "SCHEMA_VERSION_UNSUPPORTED", "mutations": [{"op": "set", "path": ["schema_version"], "value": 2}]},
+    {"id": "negative_golden_hash_mismatch", "base_file": "positive.v1.json", "expected_ok": false, "expected_code": "GOLDEN_DIGEST_MISMATCH", "mutations": [{"op": "set", "path": ["observations", "golden", "observed_digest"], "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"}]},
+    {"id": "negative_token_vazio_coerced", "base_file": "positive.v1.json", "expected_ok": false, "expected_code": "TOKEN_VAZIO_COERCED", "mutations": [{"op": "set", "path": ["observations", "token_states", 0, "raw_value"], "value": false}]},
+    {"id": "negative_path_identity_collision", "base_file": "positive.v1.json", "expected_ok": false, "expected_code": "PATH_IDENTITY_COLLISION", "mutations": [{"op": "append", "path": ["observations", "artifacts"], "value": {"path": "renamed/schema.json", "content_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "producer_commit": "fdf944c5c50d41431b2e9c6655bc2b0f4aca4d6d", "revision_id": "artifact-ref-v1"}}]},
+    {"id": "negative_required_context_renamed", "base_file": "positive.v1.json", "expected_ok": false, "expected_code": "PROVIDER_CONTEXT_UNBOUND", "mutations": [{"op": "set", "path": ["observations", "provider", "required_context_observed"], "value": "Cross Repo Impact Review V2"}]},
+    {"id": "negative_device_role_reuse", "base_file": "positive.v1.json", "expected_ok": false, "expected_code": "DEVICE_RECEIPT_ROLE_REUSE", "mutations": [{"op": "set", "path": ["observations", "devices"], "value": [{"receipt_id": "same-receipt", "role": "arm32-legacy", "apk_sha256": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "device_fingerprint": "device-A"}, {"receipt_id": "same-receipt", "role": "arm64-modern", "apk_sha256": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "device_fingerprint": "device-B"}]}]},
+    {"id": "negative_legacy_prefix", "base_file": "positive.v1.json", "expected_ok": false, "expected_code": "LEGACY_RUNTIME_PREFIX_PRESENT", "mutations": [{"op": "set", "path": ["observations", "runtime", "scanned_strings"], "value": ["#!/data/data/com.termux/files/usr/bin/sh"]}]},
+    {"id": "negative_metric_series_mixed", "base_file": "positive.v1.json", "expected_ok": false, "expected_code": "METRIC_SERIES_HETEROGENEOUS", "mutations": [{"op": "append", "path": ["observations", "metric_series"], "value": {"pool_id": "p1", "metric_id": "latency", "workload_id": "w2", "input_id": "i1", "unit": "ns", "method_version": "v1", "environment_class": "host"}}]},
+    {"id": "negative_stale_approval_sha", "base_file": "positive.v1.json", "expected_ok": false, "expected_code": "APPROVAL_SHA_STALE", "mutations": [{"op": "set", "path": ["observations", "provider", "approval_sha"], "value": "1111111111111111111111111111111111111111"}]},
+    {"id": "negative_claim_without_receipt", "base_file": "positive.v1.json", "expected_ok": false, "expected_code": "CLAIM_WITHOUT_CROSS_REPO_RECEIPT", "mutations": [{"op": "set", "path": ["claim_allowed_from_interop"], "value": true}]}
+  ]
+}

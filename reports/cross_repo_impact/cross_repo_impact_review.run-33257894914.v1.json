@@ -1,0 +1,70 @@
+{
+  "schema_id": "rafaelia.cross_repo_impact_review_execution_receipt",
+  "schema_version": 1,
+  "observed_at_utc": "2026-08-29T14:33:28Z",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "pull_request": 388,
+  "workflow": {
+    "name": "Cross Repo Impact Review",
+    "workflow_id": 345363850,
+    "run_id": 33257894914,
+    "run_number": 1,
+    "event": "pull_request",
+    "status": "completed",
+    "conclusion": "success",
+    "run_attempt": 1
+  },
+  "revisions": {
+    "head_sha": "9c8908e9deeb0c1a212c6eac15b87bfbf3a58dff",
+    "base_sha": "e4ec439e8784ff141edef551b8f81690b4674be8",
+    "executed_merge_ref_sha": "48ed18a258cb7d3ee3bea5fb44822cd0c52f8923"
+  },
+  "job": {
+    "job_id": 99114689546,
+    "name": "semantic-falsifiers",
+    "status": "completed",
+    "conclusion": "success",
+    "runner_class": "github_hosted",
+    "runner_version": "2.336.0",
+    "runner_image": "ubuntu-24.04",
+    "runner_image_version": "20260823.283.1",
+    "worker_id": "6121318e-f6ad-4bc2-b861-4f6cc92484c9",
+    "steps_observed": 6
+  },
+  "executed_checks": {
+    "python_compile": "PASS",
+    "fixture_suite": "PASS",
+    "cases_total": 12,
+    "nominal_cases": 1,
+    "negative_falsifiers": 11,
+    "typed_falsifiers_observed": [
+      "STRUCT_REQUIRED_FIELD_MISSING",
+      "SCHEMA_VERSION_UNSUPPORTED",
+      "GOLDEN_DIGEST_MISMATCH",
+      "TOKEN_VAZIO_COERCED",
+      "PATH_IDENTITY_COLLISION",
+      "PROVIDER_CONTEXT_UNBOUND",
+      "DEVICE_RECEIPT_ROLE_REUSE",
+      "LEGACY_RUNTIME_PREFIX_PRESENT",
+      "METRIC_SERIES_HETEROGENEOUS",
+      "APPROVAL_SHA_STALE",
+      "CLAIM_WITHOUT_CROSS_REPO_RECEIPT"
+    ]
+  },
+  "evidence_pointers": {
+    "workflow_run": "github-actions:run/33257894914",
+    "workflow_job": "github-actions:job/99114689546",
+    "implementation_commit": "git:9c8908e9deeb0c1a212c6eac15b87bfbf3a58dff"
+  },
+  "epistemic_boundary": {
+    "validator_execution_proven": true,
+    "synthetic_falsifier_suite_proven": true,
+    "live_producer_consumer_interop_proven": false,
+    "device_runtime_proven": false,
+    "provider_promotion_enforcement_proven_by_this_receipt": false,
+    "scientific_claim_proven_by_this_receipt": false,
+    "claim_allowed_from_interop": false,
+    "live_cross_repo_interop": "TOKEN_VAZIO"
+  },
+  "next_verifiable_step": "Execute the exact RafGitTools artifact_ref V1 fixture through RafPolimata#298 on pinned producer and consumer commits, preserve SOURCE_FACT separately from DERIVED_VIEW, and append a two-commit interoperability receipt."
+}
