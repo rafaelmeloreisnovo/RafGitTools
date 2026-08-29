@@ -1,0 +1,10 @@
+{
+  "content_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "media_type": "application/octet-stream",
+  "path": "fixtures/cross_repo_impact/golden_payload.bin",
+  "producer_commit": "fdf944c5c50d41431b2e9c6655bc2b0f4aca4d6d",
+  "producer_repo": "rafaelmeloreisnovo/RafGitTools",
+  "provenance_state": "OBSERVED",
+  "schema_id": "rafaelia.cross_repo_artifact_ref",
+  "schema_version": 1
+}

@@ -1,0 +1,27 @@
+{
+  "schema_id": "rafaelia.cross_repo_impact_review",
+  "schema_version": 1,
+  "producer_repo": "rafaelmeloreisnovo/RafGitTools",
+  "producer_commit": "fdf944c5c50d41431b2e9c6655bc2b0f4aca4d6d",
+  "contract_id": "rafaelia.cross_repo_artifact_ref",
+  "contract_version": 1,
+  "consumers_known": ["rafaelmeloreisnovo/RafPolimata"],
+  "change_classes": ["SCHEMA", "STATE_SEMANTICS", "DIGEST_CANONICALIZATION", "ROLLBACK"],
+  "backward_compatible": true,
+  "migration_required": false,
+  "rollback_anchor": "git:fdf944c5c50d41431b2e9c6655bc2b0f4aca4d6d",
+  "golden_fixture_ref": "golden_artifact_ref.v1.json",
+  "golden_fixture_digest": "sha256:35bdb8bd1b68514d07a447f53c5c0109a131b9ee3ae0d4c6934b2afb34faabf4",
+  "negative_fixture_refs": ["suite.v1.json"],
+  "cross_repo_execution_receipt": "TOKEN_VAZIO",
+  "claim_allowed_from_interop": false,
+  "observations": {
+    "golden": {"expected_digest": "sha256:35bdb8bd1b68514d07a447f53c5c0109a131b9ee3ae0d4c6934b2afb34faabf4", "observed_digest": "sha256:35bdb8bd1b68514d07a447f53c5c0109a131b9ee3ae0d4c6934b2afb34faabf4"},
+    "token_states": [{"field": "cross_repo_execution_receipt", "expected_state": "TOKEN_VAZIO", "raw_value": "TOKEN_VAZIO"}],
+    "artifacts": [{"path": "schemas/cross_repo_artifact_ref.v1.json", "content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "producer_commit": "fdf944c5c50d41431b2e9c6655bc2b0f4aca4d6d", "revision_id": "artifact-ref-v1"}],
+    "provider": {"required_context_expected": "Cross Repo Impact Review", "required_context_observed": "Cross Repo Impact Review", "provider_enforcement_observed": true, "head_sha": "fdf944c5c50d41431b2e9c6655bc2b0f4aca4d6d", "approval_sha": "TOKEN_VAZIO", "independent_approval_observed": false},
+    "devices": [],
+    "runtime": {"expected_prefix": "/data/data/com.termux.rafacodephi/files/usr", "scanned_strings": []},
+    "metric_series": [{"pool_id": "p1", "metric_id": "latency", "workload_id": "w1", "input_id": "i1", "unit": "ns", "method_version": "v1", "environment_class": "host"}]
+  }
+}

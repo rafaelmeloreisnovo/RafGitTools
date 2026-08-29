@@ -1,0 +1,27 @@
+name: Cross Repo Impact Review
+
+on:
+  pull_request:
+    paths:
+      - "schemas/cross_repo_impact_review.v1.schema.json"
+      - "tools/validate_cross_repo_impact_review.py"
+      - "fixtures/cross_repo_impact/**"
+      - "docs/CROSS_REPO_IMPACT_REVIEW_V1.md"
+      - ".github/workflows/cross-repo-impact-review.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  semantic-falsifiers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile validator
+        run: python3 -m py_compile tools/validate_cross_repo_impact_review.py
+      - name: Run positive and negative fixtures
+        run: |
+          python3 tools/validate_cross_repo_impact_review.py \
+            --suite fixtures/cross_repo_impact/suite.v1.json
