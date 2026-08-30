@@ -1,0 +1,13 @@
+{
+  "schema": "rafgittools.coherence_ruler_gate.v1",
+  "claim_allowed": false,
+  "accepted_source_repo": "rafaelmeloreisnovo/Mapa",
+  "accepted_source_schema": "rafaelia.coherence_ruler_receipt.v1",
+  "accepted_status": "RULER_FOUND_REGION_RESTRICTED",
+  "accepted_regions": ["PROVENANCE_INDEX_VECTOR", "RESIDUE_GRAPH_ARITHMETIC", "MULTIDIM_COHERENCE", "CROSS_REPO_IMPACT"],
+  "require_random_total_permutation_sweep_false": true,
+  "require_output_only_rollback": true,
+  "require_claim_allowed_false": true,
+  "live_cross_repo_receipt": "TOKEN_VAZIO",
+  "failure_mode": "HOLD"
+}
