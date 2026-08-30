@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-CASE = ROOT / "audits/HUMAN_IMPACT_CASE_CHIPQUANTUM_BOUNDARY_20260830.v1.json"
+CASE = ROOT / "audits/HUMAN_IMPACT_CASE_RAFPOLIMATA_BOUNDARY_20260830.v1.json"
 CONTRACT = ROOT / "contracts/human_impact_cross_repo.v1.json"
 DEFAULT_OUTPUT = ROOT / "artifacts/live-human-impact-receipt.json"
 
@@ -114,12 +114,7 @@ def main():
         "decision_state": case["decision_state"],
         "decision_id": case["decision_id"],
         "scope": case["scope"],
-        "control_plane": {
-            **cp,
-            "source_url": cp_url,
-            "sha256": sha256(cp_bytes),
-            "readback": "OBSERVED_HTTP_200_AND_VALIDATED"
-        },
+        "control_plane": {**cp, "source_url": cp_url, "sha256": sha256(cp_bytes), "readback": "OBSERVED_HTTP_200_AND_VALIDATED"},
         "transport": {
             "repository": os.environ.get("GITHUB_REPOSITORY", "rafaelmeloreisnovo/RafGitTools"),
             "revision": transport_revision,
@@ -127,12 +122,7 @@ def main():
             "contract_sha256": sha256(CONTRACT.read_bytes()),
             "readback": "LOCAL_EXACT_CHECKOUT_AND_VALIDATED"
         },
-        "consumer": {
-            **consumer,
-            "source_url": consumer_url,
-            "sha256": sha256(consumer_bytes),
-            "readback": "OBSERVED_HTTP_200_AND_VALIDATED"
-        },
+        "consumer": {**consumer, "source_url": consumer_url, "sha256": sha256(consumer_bytes), "readback": "OBSERVED_HTTP_200_AND_VALIDATED"},
         "human_impact_record": {key: case[key] for key in contract["required_for_material_human_impact"]},
         "external_authority_gaps": {
             "independent_human_review": "TOKEN_VAZIO",
@@ -147,13 +137,7 @@ def main():
             "github_actor": os.environ.get("GITHUB_ACTOR", "TOKEN_VAZIO")
         },
         "falsifier": case["falsifier"],
-        "guards": [
-            "FIXTURE != LIVE",
-            "LOCAL_PASS != HUMAN_IMPACT_PASS",
-            "CI_PASS != ETHICAL_CERTIFICATION",
-            "SELF_REVIEW != INDEPENDENT_REVIEW",
-            "TOKEN_VAZIO != PASS"
-        ]
+        "guards": ["FIXTURE != LIVE", "LOCAL_PASS != HUMAN_IMPACT_PASS", "CI_PASS != ETHICAL_CERTIFICATION", "SELF_REVIEW != INDEPENDENT_REVIEW", "TOKEN_VAZIO != PASS"]
     }
 
     output.write_text(json.dumps(receipt, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
