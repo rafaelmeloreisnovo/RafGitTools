@@ -5,6 +5,7 @@ name: Live Human Impact Cross-Repo V1
     paths:
       - 'contracts/human_impact_cross_repo.v1.json'
       - 'audits/HUMAN_IMPACT_CASE_CHIPQUANTUM_BOUNDARY_20260830.v1.json'
+      - 'audits/HUMAN_IMPACT_CASE_RAFPOLIMATA_BOUNDARY_20260830.v1.json'
       - 'tools/execute_live_cross_repo_human_impact.py'
       - 'tools/validate_live_human_impact_receipt.py'
       - '.github/workflows/live-human-impact-cross-repo-v1.yml'
