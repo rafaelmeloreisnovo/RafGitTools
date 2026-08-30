@@ -1,0 +1,73 @@
+{
+  "schema": "rafaelia.rafgittools-main-provider-enforcement-plan.v1",
+  "generated_at": "2026-08-30",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "target_branch": "main",
+  "mode": "PREPARED_NOT_APPLIED",
+  "provider_enforcement_active": false,
+  "provider_enforcement_state": "TOKEN_VAZIO_ADMIN_ACTION_REQUIRED",
+  "claim_allowed": false,
+  "merge_authorized_from_this_artifact": false,
+  "source_gap_issue": 393,
+  "required_policy": {
+    "pull_request_required": true,
+    "direct_main_write_forbidden": true,
+    "force_push_forbidden": true,
+    "branch_deletion_forbidden": true,
+    "human_review_required": true,
+    "minimum_approving_reviews": 1,
+    "dismiss_stale_approvals_on_new_commits": true,
+    "rollback_required_for_breaking_contract_changes": true
+  },
+  "required_status_checks": [
+    "Human Impact Cross-Repo Gate V1 / validate-human-impact-contract",
+    "Auditor Closure Gate V1 / auditor-closure",
+    "Documentation / Validate Documentation"
+  ],
+  "required_when_candidate_is_ready_for_review": [
+    "PR Validation / Validate Pull Request"
+  ],
+  "recommended_security_checks": [
+    "Security Scan",
+    "CodeQL Advanced",
+    "Source Gap Audit"
+  ],
+  "application_boundary": {
+    "authorized_executor": "TOKEN_VAZIO_GITHUB_ADMIN_OR_PROVIDER_CAPABLE_SURFACE",
+    "current_agent_may_self_approve": false,
+    "current_agent_may_fabricate_provider_state": false,
+    "independent_human_review": "TOKEN_VAZIO",
+    "affected_community_review": "TOKEN_VAZIO_WHEN_APPLICABLE",
+    "specialist_review": "TOKEN_VAZIO_WHEN_APPLICABLE"
+  },
+  "required_provider_readback": {
+    "branch_protected": true,
+    "required_status_checks_enforced": true,
+    "pull_request_rule_observed": true,
+    "review_rule_observed": true,
+    "force_push_block_observed": true,
+    "deletion_block_observed": true,
+    "exact_ruleset_or_protection_identifier_required": true
+  },
+  "negative_assurance_test": {
+    "required_when_safely_feasible": true,
+    "destructive_test_allowed": false,
+    "method": "use a bounded PR/fixture with one required check deliberately failing and observe provider refusal to merge without bypass",
+    "success": "provider blocks merge",
+    "failure": "provider permits merge despite required failure or absent required review"
+  },
+  "exit_criteria": [
+    "authorized administrative surface applies equivalent or stronger provider policy",
+    "provider readback proves enforcement on canonical main",
+    "required checks are bound to the branch",
+    "review requirement is observable",
+    "successor receipt records exact provider policy identifiers and observed repository revision"
+  ],
+  "invariants": [
+    "DETECTOR != ENFORCEMENT != PROOF_OF_BLOCKING",
+    "FAILED_GATE != MERGE_AUTHORIZED",
+    "LOCAL_PASS != HUMAN_IMPACT_PASS",
+    "TOKEN_VAZIO != PASS",
+    "SELF_REVIEW != INDEPENDENT_REVIEW"
+  ]
+}
