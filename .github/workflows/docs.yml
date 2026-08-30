@@ -6,11 +6,13 @@ on:
     paths:
       - 'docs/**'
       - '**.md'
+      - 'contracts/documentation_no_regression.v1.json'
       - '.github/workflows/docs.yml'
   pull_request:
     paths:
       - 'docs/**'
       - '**.md'
+      - 'contracts/documentation_no_regression.v1.json'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -25,6 +27,38 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Validate documentation no-regression contract
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('contracts/documentation_no_regression.v1.json')
+          if not p.is_file():
+              raise SystemExit('FAIL: documentation no-regression contract missing')
+          c = json.loads(p.read_text(encoding='utf-8'))
+          required = {
+              'NEW_DEBT == 0_FOR_CHANGED_MARKDOWN',
+              'UNCHANGED_LEGACY_DEBT != PASS',
+              'CI_PASS != DOCUMENTATION_PERFECTION',
+              'DEBT_DISCOVERED != DEBT_CREATED',
+              'LATEST != STRONGER',
+          }
+          if c.get('claim_allowed') is not False:
+              raise SystemExit('FAIL: documentation contract self-promoted')
+          if c.get('mode') != 'CHANGED_FILE_STRICT_WITH_LEGACY_DEBT_PRESERVED':
+              raise SystemExit('FAIL: unexpected documentation no-regression mode')
+          if not required.issubset(set(c.get('invariants', []))):
+              raise SystemExit('FAIL: documentation no-regression invariant drift')
+          policy = c.get('pull_request_policy', {})
+          if policy.get('new_markdown_must_pass_markdownlint') is not True:
+              raise SystemExit('FAIL: new Markdown lint gate weakened')
+          if policy.get('modified_markdown_must_pass_markdownlint_as_complete_file') is not True:
+              raise SystemExit('FAIL: modified Markdown lint gate weakened')
+          if c.get('legacy_documentation_debt', {}).get('untouched_legacy_debt_promoted_to_pass') is not False:
+              raise SystemExit('FAIL: legacy debt fabricated closed')
+          print('PASS: documentation no-regression contract')
+          PY
 
       - name: Install markdownlint-cli2
         run: npm install --global markdownlint-cli2@0.14.0
@@ -192,7 +226,6 @@ jobs:
         run: |
           echo "Checking for broken internal links in README.md..."
 
-          # Extract markdown links
           grep -o '\[.*\](\.\/.*\.md)' README.md | grep -o '(\.\/.*\.md)' | tr -d '()' | while read -r link; do
             if [ ! -f "$link" ]; then
               echo "⚠️ Broken link: $link"
