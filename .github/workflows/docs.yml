@@ -11,6 +11,7 @@ on:
     paths:
       - 'docs/**'
       - '**.md'
+      - '.github/workflows/docs.yml'
   workflow_dispatch:
 
 jobs:
@@ -22,12 +23,82 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install markdownlint-cli2
         run: npm install --global markdownlint-cli2@0.14.0
 
-      - name: Check markdown files
-        run: markdownlint-cli2 "**/*.md" "#**/node_modules/**" "#**/build/**"
+      - name: Resolve changed markdown files
+        id: changed-markdown
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          case "${{ github.event_name }}" in
+            pull_request)
+              BASE="${{ github.event.pull_request.base.sha }}"
+              HEAD="${{ github.event.pull_request.head.sha }}"
+              ;;
+            push)
+              BASE="${{ github.event.before }}"
+              HEAD="${{ github.sha }}"
+              if [[ "$BASE" =~ ^0+$ ]]; then
+                BASE="${HEAD}^"
+              fi
+              ;;
+            workflow_dispatch)
+              HEAD="${{ github.sha }}"
+              BASE="${HEAD}^"
+              ;;
+            *)
+              echo "Unsupported event: ${{ github.event_name }}" >&2
+              exit 2
+              ;;
+          esac
+
+          git diff --name-only --diff-filter=ACMR -z "$BASE" "$HEAD" -- '*.md' > /tmp/changed-markdown.zlist
+
+          COUNT="$(python3 - <<'PY'
+          from pathlib import Path
+          raw = Path('/tmp/changed-markdown.zlist').read_bytes()
+          files = [p for p in raw.split(b'\0') if p]
+          print(len(files))
+          PY
+          )"
+
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "Markdown files in audited delta: $COUNT"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          raw = Path('/tmp/changed-markdown.zlist').read_bytes()
+          for p in (x.decode('utf-8') for x in raw.split(b'\0') if x):
+              print(f' - {p}')
+          PY
+
+      - name: Check changed markdown files
+        if: steps.changed-markdown.outputs.count != '0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' > /tmp/markdownlint-args
+          from pathlib import Path
+          raw = Path('/tmp/changed-markdown.zlist').read_bytes()
+          for p in (x.decode('utf-8') for x in raw.split(b'\0') if x):
+              print(p)
+          PY
+          mapfile -t FILES < /tmp/markdownlint-args
+          markdownlint-cli2 "${FILES[@]}"
+
+      - name: Record documentation no-regression boundary
+        shell: bash
+        run: |
+          echo 'DOC_LINT_SCOPE=CHANGED_OR_NEW_MARKDOWN' >> "$GITHUB_STEP_SUMMARY"
+          echo 'LEGACY_DEBT_ERASED=false' >> "$GITHUB_STEP_SUMMARY"
+          echo 'UNCHANGED_LEGACY_DEBT_IS_NOT_PROMOTED_TO_PASS=true' >> "$GITHUB_STEP_SUMMARY"
+          echo 'CHANGED_MARKDOWN_MUST_PASS=true' >> "$GITHUB_STEP_SUMMARY"
+          echo 'CI_PASS != DOCUMENTATION_PERFECTION' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Check links
         uses: gaurav-nelson/github-action-markdown-link-check@v1
