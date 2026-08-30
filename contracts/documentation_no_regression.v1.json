@@ -1,0 +1,32 @@
+{
+  "schema": "rafaelia.documentation-no-regression.v1",
+  "version": 1,
+  "mode": "CHANGED_FILE_STRICT_WITH_LEGACY_DEBT_PRESERVED",
+  "claim_allowed": false,
+  "legacy_documentation_debt": {
+    "state": "OBSERVED_NONZERO",
+    "count_claim": "TOKEN_VAZIO_NOT_RECOUNTED_BY_THIS_CONTRACT",
+    "untouched_legacy_debt_promoted_to_pass": false,
+    "mass_rewrite_required_for_unrelated_pr": false
+  },
+  "pull_request_policy": {
+    "new_markdown_must_pass_markdownlint": true,
+    "modified_markdown_must_pass_markdownlint_as_complete_file": true,
+    "deleted_markdown_is_not_linted": true,
+    "unchanged_markdown_is_not_reclassified": true,
+    "lint_rule_weakening_allowed_silently": false
+  },
+  "push_main_policy": {
+    "markdown_changed_by_push_must_pass": true,
+    "legacy_debt_remains_visible_until_separately_remediated": true
+  },
+  "invariants": [
+    "NEW_DEBT == 0_FOR_CHANGED_MARKDOWN",
+    "UNCHANGED_LEGACY_DEBT != PASS",
+    "CI_PASS != DOCUMENTATION_PERFECTION",
+    "DEBT_DISCOVERED != DEBT_CREATED",
+    "LATEST != STRONGER"
+  ],
+  "falsifier": "A pull request can add or modify a Markdown file containing a markdownlint violation and still pass the documentation validation job.",
+  "exit_condition_for_legacy_debt": "A separate bounded remediation effort demonstrates zero remaining legacy debt under the same or stronger rules."
+}

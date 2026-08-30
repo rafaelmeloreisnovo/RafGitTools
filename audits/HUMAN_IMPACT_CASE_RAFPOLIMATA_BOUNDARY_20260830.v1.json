@@ -1,0 +1,39 @@
+{
+  "schema": "rafaelia.human-impact-case.v1",
+  "decision_id": "HI-RAFPOLIMATA-BOUNDARY-20260830-01",
+  "scope": "Verify live cross-repository propagation of the human-dignity computation boundary from Mapa through RafGitTools to public RafPolimata without making a human-value decision or deployment claim.",
+  "control_plane": {
+    "repository": "rafaelmeloreisnovo/Mapa",
+    "revision": "318aec3b5f36a76654b16601a843e9443acaffd0",
+    "path": "data/control-plane/HUMAN_DIGNITY_ETHICS_RATCHET_V1.json"
+  },
+  "consumer": {
+    "repository": "rafaelmeloreisnovo/RafPolimata",
+    "revision": "a28c01d2a37923e48771441b11d612ed0573111a",
+    "path": "governance/HUMAN_DIGNITY_COMPUTATION_BOUNDARY_V1.md"
+  },
+  "producer_repo": "rafaelmeloreisnovo/Mapa",
+  "producer_revision": "318aec3b5f36a76654b16601a843e9443acaffd0",
+  "affected_people_or_groups": ["repository maintainers", "research artifact consumers"],
+  "protected_domains_touched": ["children_and_adolescents", "health_and_mental_health", "education", "privacy_and_personal_data", "civil_and_human_rights", "culture_and_belief", "accessibility_and_disability", "environment_and_ecosystem", "humanitarian_contexts"],
+  "known_benefits": ["prevents computational output from being promoted to human-value authority", "preserves explicit rights, child, privacy and uncertainty boundaries across repositories"],
+  "known_harms": ["governance adds review and maintenance overhead", "structural PASS could be misunderstood as certification if boundary text is ignored"],
+  "unknown_risks": ["TOKEN_VAZIO_INDEPENDENT_HUMAN_RIGHTS_REVIEW", "TOKEN_VAZIO_CHILD_SAFETY_DOMAIN_REVIEW_WHEN_APPLICABLE", "TOKEN_VAZIO_JURISDICTION_SPECIFIC_LEGAL_REVIEW_WHEN_APPLICABLE", "TOKEN_VAZIO_AFFECTED_COMMUNITY_REVIEW_WHEN_APPLICABLE", "TOKEN_VAZIO_PROVIDER_ENFORCEMENT"],
+  "distribution_of_benefit_and_harm": "Immediate benefit is repository-level governance consistency; immediate burden is additional review. No direct end-user deployment is asserted.",
+  "privacy_data_surface": "No personal data is required or intentionally processed by this readback case.",
+  "child_impact": "No child-specific deployment is performed. Best interest remains a hard constraint; specialist review remains TOKEN_VAZIO when applicable.",
+  "health_impact": "No clinical recommendation is produced; clinical/domain review remains TOKEN_VAZIO when applicable.",
+  "education_impact": "No educational placement or learner decision is produced; domain review remains TOKEN_VAZIO when applicable.",
+  "culture_and_belief_impact": "The consumer boundary does not authorize computation to determine human worth or cultural truth.",
+  "environmental_impact": "No material environmental measurement is established by this repository readback; review remains TOKEN_VAZIO when applicable.",
+  "consequence_radius": "repository governance and research-artifact interpretation only; no direct production decision about an individual is authorized",
+  "reversibility_or_mitigation": "Changes are version-controlled and PR-scoped; rollback is available by reverting relevant commits. External deployment remains separately gated.",
+  "appeal_path": "Repository issue/PR review and human governance review; independent appeal authority remains TOKEN_VAZIO until established for a deployment context.",
+  "review_roles": ["repository technical maintainer", "TOKEN_VAZIO_INDEPENDENT_HUMAN_REVIEW_WHEN_REQUIRED"],
+  "evidence_refs": ["Mapa@318aec3b5f36a76654b16601a843e9443acaffd0:data/control-plane/HUMAN_DIGNITY_ETHICS_RATCHET_V1.json", "RafGitTools:contracts/human_impact_cross_repo.v1.json", "RafPolimata@a28c01d2a37923e48771441b11d612ed0573111a:governance/HUMAN_DIGNITY_COMPUTATION_BOUNDARY_V1.md"],
+  "falsifier": "Fail if any exact revision is unreadable, if Mapa permits autonomous human-value authority or self-promotion, if the local transport contract loses required invariants, or if RafPolimata lacks the declared human-dignity/rights/child/unknown-risk boundaries.",
+  "decision_state": "ALLOW_WITH_MONITORING",
+  "claim_allowed": false,
+  "deployment_authorized": false,
+  "independent_review": "TOKEN_VAZIO"
+}

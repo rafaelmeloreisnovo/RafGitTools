@@ -1,0 +1,48 @@
+{
+  "schema": "rafgittools.auditor_closure_policy.v1",
+  "version": "1.0.0",
+  "policy": "FAIL_CLOSED_EVIDENCE_ONLY",
+  "invariants": [
+    "TOKEN_VAZIO != PASS",
+    "DOCUMENTED != IMPLEMENTED",
+    "IMPLEMENTED != EXECUTED",
+    "EXECUTED != REPRODUCED",
+    "LOCAL_PASS != LIVE_CROSS_REPO_PASS",
+    "STRUCTURAL_PASS != LEGAL_COMPLIANCE",
+    "STRUCTURAL_PASS != ETHICAL_ADEQUACY",
+    "FIXTURE != LIVE",
+    "FAILED_GATE != MERGE_AUTHORIZED"
+  ],
+  "closure_requirements": [
+    "subject_revision_bound",
+    "scope_explicit",
+    "evidence_reference_present",
+    "evidence_state_success_for_scope",
+    "claim_boundary_explicit",
+    "falsifier_or_negative_test_present_when_applicable",
+    "no_unresolved_blocker_inside_claimed_scope"
+  ],
+  "allowed_decisions": [
+    "CLOSED_LIMITED",
+    "OPEN_GAP",
+    "TOKEN_VAZIO",
+    "BLOCKED",
+    "CONTESTED",
+    "HOLD"
+  ],
+  "forbidden_promotions": {
+    "token_vazio_to_closed_without_new_evidence": true,
+    "ancestor_test_to_unrelated_runtime_claim": true,
+    "fixture_to_live": true,
+    "ci_success_to_legal_compliance": true,
+    "ci_success_to_external_certification": true,
+    "failed_gate_to_merge_authorized": true,
+    "draft_pr_to_production_release": true
+  },
+  "merge_policy": {
+    "failed_observed_gate_requires_hold": true,
+    "unknown_branch_protection_requires_no_claim_about_required_checks": true,
+    "draft_state_is_not_release_evidence": true
+  },
+  "claim_allowed": false
+}

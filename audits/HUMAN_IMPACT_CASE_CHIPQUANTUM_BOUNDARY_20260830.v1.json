@@ -1,0 +1,71 @@
+{
+  "schema": "rafaelia.human-impact-case.v1",
+  "decision_id": "HI-CHIPQUANTUM-BOUNDARY-20260830-01",
+  "scope": "Verify live cross-repository propagation of the human-dignity decision boundary from Mapa through RafGitTools to ChipQuantum without making a human-value decision or deployment claim.",
+  "control_plane": {
+    "repository": "rafaelmeloreisnovo/Mapa",
+    "revision": "318aec3b5f36a76654b16601a843e9443acaffd0",
+    "path": "data/control-plane/HUMAN_DIGNITY_ETHICS_RATCHET_V1.json"
+  },
+  "consumer": {
+    "repository": "rafaelmeloreisnovo/ChipQuantum",
+    "revision": "0636d96424ed47d73761cae8af92d56dbd05074f",
+    "path": "Docpaper/HUMAN_DIGNITY_DECISION_BOUNDARY_2026-08-30.md"
+  },
+  "producer_repo": "rafaelmeloreisnovo/Mapa",
+  "producer_revision": "318aec3b5f36a76654b16601a843e9443acaffd0",
+  "affected_people_or_groups": [
+    "repository maintainers",
+    "research artifact consumers"
+  ],
+  "protected_domains_touched": [
+    "children_and_adolescents",
+    "health_and_mental_health",
+    "education",
+    "privacy_and_personal_data",
+    "civil_and_human_rights",
+    "culture_and_belief",
+    "accessibility_and_disability",
+    "environment_and_ecosystem",
+    "humanitarian_contexts"
+  ],
+  "known_benefits": [
+    "prevents computational or geometric model output from being promoted to human-value authority",
+    "preserves explicit child, privacy, dignity, review, appeal and rollback boundaries across repositories"
+  ],
+  "known_harms": [
+    "governance checks add review and maintenance overhead",
+    "a structural PASS could be misunderstood as ethical or legal certification if the boundary text is ignored"
+  ],
+  "unknown_risks": [
+    "TOKEN_VAZIO_INDEPENDENT_HUMAN_RIGHTS_REVIEW",
+    "TOKEN_VAZIO_CHILD_SAFETY_DOMAIN_REVIEW_WHEN_APPLICABLE",
+    "TOKEN_VAZIO_JURISDICTION_SPECIFIC_LEGAL_REVIEW_WHEN_APPLICABLE",
+    "TOKEN_VAZIO_AFFECTED_COMMUNITY_REVIEW_WHEN_APPLICABLE",
+    "TOKEN_VAZIO_PROVIDER_ENFORCEMENT"
+  ],
+  "distribution_of_benefit_and_harm": "The immediate benefit is repository-level governance consistency; the immediate burden is borne by maintainers through additional gates. No direct end-user deployment is asserted by this case.",
+  "privacy_data_surface": "No personal data is required or intentionally processed by this cross-repository readback case.",
+  "child_impact": "No child-specific deployment is performed. Child best-interest remains a hard constraint and specialist review remains TOKEN_VAZIO when applicable.",
+  "health_impact": "No clinical or health recommendation is produced. Clinical/domain review remains TOKEN_VAZIO when applicable.",
+  "education_impact": "No educational placement or learner decision is produced. Domain review remains TOKEN_VAZIO when applicable.",
+  "culture_and_belief_impact": "The consumer boundary explicitly forbids treating cultural symbolism as empirical proof or human classification authority.",
+  "environmental_impact": "No material environmental measurement is established by this bounded repository readback; material externality review remains TOKEN_VAZIO when applicable.",
+  "consequence_radius": "repository governance and research-artifact interpretation only; no direct production decision about an individual is authorized",
+  "reversibility_or_mitigation": "Changes remain version-controlled and PR-scoped; rollback is available by reverting the relevant commits. External deployment remains blocked by separate gates.",
+  "appeal_path": "Repository issue/PR review and human governance review; independent appeal authority remains TOKEN_VAZIO until actually established for a deployment context.",
+  "review_roles": [
+    "repository technical maintainer",
+    "TOKEN_VAZIO_INDEPENDENT_HUMAN_REVIEW_WHEN_REQUIRED"
+  ],
+  "evidence_refs": [
+    "Mapa@318aec3b5f36a76654b16601a843e9443acaffd0:data/control-plane/HUMAN_DIGNITY_ETHICS_RATCHET_V1.json",
+    "RafGitTools:contracts/human_impact_cross_repo.v1.json",
+    "ChipQuantum@0636d96424ed47d73761cae8af92d56dbd05074f:Docpaper/HUMAN_DIGNITY_DECISION_BOUNDARY_2026-08-30.md"
+  ],
+  "falsifier": "Fail if any exact revision is unreadable, if Mapa permits autonomous human-value authority or claim self-promotion, if the local contract loses its required invariants, or if ChipQuantum lacks the declared human-dignity/rights/child/unknown-risk boundaries.",
+  "decision_state": "ALLOW_WITH_MONITORING",
+  "claim_allowed": false,
+  "deployment_authorized": false,
+  "independent_review": "TOKEN_VAZIO"
+}

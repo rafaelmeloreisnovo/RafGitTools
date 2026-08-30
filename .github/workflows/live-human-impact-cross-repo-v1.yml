@@ -1,0 +1,55 @@
+name: Live Human Impact Cross-Repo V1
+
+"on":
+  pull_request:
+    paths:
+      - 'contracts/human_impact_cross_repo.v1.json'
+      - 'audits/HUMAN_IMPACT_CASE_CHIPQUANTUM_BOUNDARY_20260830.v1.json'
+      - 'audits/HUMAN_IMPACT_CASE_RAFPOLIMATA_BOUNDARY_20260830.v1.json'
+      - 'tools/execute_live_cross_repo_human_impact.py'
+      - 'tools/validate_live_human_impact_receipt.py'
+      - '.github/workflows/live-human-impact-cross-repo-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-cross-repo-readback:
+    name: Live exact-revision readback
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Validate local structural contract
+        run: python3 tools/validate_human_impact_cross_repo.py
+
+      - name: Execute live cross-repository readback
+        env:
+          TRANSPORT_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python3 tools/execute_live_cross_repo_human_impact.py artifacts/live-human-impact-receipt.json
+
+      - name: Validate generated receipt boundaries
+        run: python3 tools/validate_live_human_impact_receipt.py artifacts/live-human-impact-receipt.json
+
+      - name: Expose epistemic boundary
+        run: |
+          echo 'RECEIPT_STATE=LIVE_CROSS_REPO_READBACK_LIMITED' >> "$GITHUB_STEP_SUMMARY"
+          echo 'CLAIM_ALLOWED=false' >> "$GITHUB_STEP_SUMMARY"
+          echo 'DEPLOYMENT_AUTHORIZED=false' >> "$GITHUB_STEP_SUMMARY"
+          echo 'ETHICAL_CERTIFICATION=false' >> "$GITHUB_STEP_SUMMARY"
+          echo 'INDEPENDENT_HUMAN_REVIEW=TOKEN_VAZIO' >> "$GITHUB_STEP_SUMMARY"
+          echo 'PROVIDER_MAIN_ENFORCEMENT=TOKEN_VAZIO' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload immutable run receipt artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-human-impact-receipt-${{ github.run_id }}
+          path: artifacts/live-human-impact-receipt.json
+          if-no-files-found: error
+          retention-days: 90

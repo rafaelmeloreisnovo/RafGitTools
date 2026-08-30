@@ -6,11 +6,14 @@ on:
     paths:
       - 'docs/**'
       - '**.md'
+      - 'contracts/documentation_no_regression.v1.json'
       - '.github/workflows/docs.yml'
   pull_request:
     paths:
       - 'docs/**'
       - '**.md'
+      - 'contracts/documentation_no_regression.v1.json'
+      - '.github/workflows/docs.yml'
   workflow_dispatch:
 
 jobs:
@@ -18,19 +21,119 @@ jobs:
     name: Validate Documentation
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Check markdown files
-        uses: DavidAnson/markdownlint-cli2-action@v16
         with:
-          globs: |
-            **/*.md
-            !**/node_modules/**
-            !**/build/**
-      
+          fetch-depth: 0
+
+      - name: Validate documentation no-regression contract
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('contracts/documentation_no_regression.v1.json')
+          if not p.is_file():
+              raise SystemExit('FAIL: documentation no-regression contract missing')
+          c = json.loads(p.read_text(encoding='utf-8'))
+          required = {
+              'NEW_DEBT == 0_FOR_CHANGED_MARKDOWN',
+              'UNCHANGED_LEGACY_DEBT != PASS',
+              'CI_PASS != DOCUMENTATION_PERFECTION',
+              'DEBT_DISCOVERED != DEBT_CREATED',
+              'LATEST != STRONGER',
+          }
+          if c.get('claim_allowed') is not False:
+              raise SystemExit('FAIL: documentation contract self-promoted')
+          if c.get('mode') != 'CHANGED_FILE_STRICT_WITH_LEGACY_DEBT_PRESERVED':
+              raise SystemExit('FAIL: unexpected documentation no-regression mode')
+          if not required.issubset(set(c.get('invariants', []))):
+              raise SystemExit('FAIL: documentation no-regression invariant drift')
+          policy = c.get('pull_request_policy', {})
+          if policy.get('new_markdown_must_pass_markdownlint') is not True:
+              raise SystemExit('FAIL: new Markdown lint gate weakened')
+          if policy.get('modified_markdown_must_pass_markdownlint_as_complete_file') is not True:
+              raise SystemExit('FAIL: modified Markdown lint gate weakened')
+          if c.get('legacy_documentation_debt', {}).get('untouched_legacy_debt_promoted_to_pass') is not False:
+              raise SystemExit('FAIL: legacy debt fabricated closed')
+          print('PASS: documentation no-regression contract')
+          PY
+
+      - name: Install markdownlint-cli2
+        run: npm install --global markdownlint-cli2@0.14.0
+
+      - name: Resolve changed markdown files
+        id: changed-markdown
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          case "${{ github.event_name }}" in
+            pull_request)
+              BASE="${{ github.event.pull_request.base.sha }}"
+              HEAD="${{ github.event.pull_request.head.sha }}"
+              ;;
+            push)
+              BASE="${{ github.event.before }}"
+              HEAD="${{ github.sha }}"
+              if [[ "$BASE" =~ ^0+$ ]]; then
+                BASE="${HEAD}^"
+              fi
+              ;;
+            workflow_dispatch)
+              HEAD="${{ github.sha }}"
+              BASE="${HEAD}^"
+              ;;
+            *)
+              echo "Unsupported event: ${{ github.event_name }}" >&2
+              exit 2
+              ;;
+          esac
+
+          git diff --name-only --diff-filter=ACMR -z "$BASE" "$HEAD" -- '*.md' > /tmp/changed-markdown.zlist
+
+          COUNT="$(python3 - <<'PY'
+          from pathlib import Path
+          raw = Path('/tmp/changed-markdown.zlist').read_bytes()
+          files = [p for p in raw.split(b'\0') if p]
+          print(len(files))
+          PY
+          )"
+
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "Markdown files in audited delta: $COUNT"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          raw = Path('/tmp/changed-markdown.zlist').read_bytes()
+          for p in (x.decode('utf-8') for x in raw.split(b'\0') if x):
+              print(f' - {p}')
+          PY
+
+      - name: Check changed markdown files
+        if: steps.changed-markdown.outputs.count != '0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' > /tmp/markdownlint-args
+          from pathlib import Path
+          raw = Path('/tmp/changed-markdown.zlist').read_bytes()
+          for p in (x.decode('utf-8') for x in raw.split(b'\0') if x):
+              print(p)
+          PY
+          mapfile -t FILES < /tmp/markdownlint-args
+          markdownlint-cli2 "${FILES[@]}"
+
+      - name: Record documentation no-regression boundary
+        shell: bash
+        run: |
+          echo 'DOC_LINT_SCOPE=CHANGED_OR_NEW_MARKDOWN' >> "$GITHUB_STEP_SUMMARY"
+          echo 'LEGACY_DEBT_ERASED=false' >> "$GITHUB_STEP_SUMMARY"
+          echo 'UNCHANGED_LEGACY_DEBT_IS_NOT_PROMOTED_TO_PASS=true' >> "$GITHUB_STEP_SUMMARY"
+          echo 'CHANGED_MARKDOWN_MUST_PASS=true' >> "$GITHUB_STEP_SUMMARY"
+          echo 'CI_PASS != DOCUMENTATION_PERFECTION' >> "$GITHUB_STEP_SUMMARY"
+
       - name: Check links
         uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:
@@ -38,23 +141,23 @@ jobs:
           use-verbose-mode: 'no'
           config-file: '.github/markdown-link-check.json'
         continue-on-error: true
-      
+
       - name: Spell check
         uses: rojopolis/spellcheck-github-actions@0.63.0
         with:
           config_path: '.github/spellcheck.yml'
         continue-on-error: true
-  
+
   generate-docs:
     name: Generate API Documentation
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     timeout-minutes: 20
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -64,15 +167,15 @@ jobs:
       - uses: android-actions/setup-android@v4
       - name: Generate local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
-      
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-      
+
       - name: Generate Dokka documentation
         run: |
           # Add Dokka task if available
           ./gradlew dokkaHtml || echo "Dokka not configured"
-      
+
       - name: Upload documentation
         uses: actions/upload-artifact@v4
         with:
@@ -80,20 +183,20 @@ jobs:
           path: app/build/dokka/
           retention-days: 30
         continue-on-error: true
-  
+
   check-readme:
     name: Check README Completeness
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Check README sections
         run: |
           echo "Checking README.md for required sections..."
-          
+
           REQUIRED_SECTIONS=(
             "Overview"
             "Features"
@@ -103,31 +206,30 @@ jobs:
             "Contributing"
             "License"
           )
-          
+
           MISSING_SECTIONS=()
-          
+
           for section in "${REQUIRED_SECTIONS[@]}"; do
             if ! grep -qi "^#.*$section" README.md; then
               MISSING_SECTIONS+=("$section")
             fi
           done
-          
+
           if [ ${#MISSING_SECTIONS[@]} -eq 0 ]; then
             echo "✅ All required sections are present in README.md"
           else
             echo "⚠️ Missing sections in README.md:"
             printf '%s\n' "${MISSING_SECTIONS[@]}"
           fi
-      
+
       - name: Check for broken internal links
         run: |
           echo "Checking for broken internal links in README.md..."
-          
-          # Extract markdown links
+
           grep -o '\[.*\](\.\/.*\.md)' README.md | grep -o '(\.\/.*\.md)' | tr -d '()' | while read -r link; do
             if [ ! -f "$link" ]; then
               echo "⚠️ Broken link: $link"
             fi
           done
-          
+
           echo "✅ Internal link check complete"

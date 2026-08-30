@@ -1,0 +1,45 @@
+{
+  "schema": "rafaelia.rafgittools-main-server-enforcement-observation.v1",
+  "receipt_id": "RECEIPT-RAFGITTOOLS-MAIN-SERVER-ENFORCEMENT-20260830-V1",
+  "observed_date": "2026-08-30",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "branch": "main",
+  "observed_head": "ce6305974fae97a9db97c934516ec0422a25bc69",
+  "branch_metadata": {
+    "protected": false,
+    "protection_enabled": false,
+    "required_status_checks_enforcement_level": "off",
+    "required_status_check_contexts": [],
+    "required_status_checks": []
+  },
+  "repository_rulesets": [],
+  "branch_protection_detail_endpoint": {
+    "state": "ACCESS_BOUNDARY",
+    "http_status": 403,
+    "message": "Resource not accessible by integration",
+    "interpretation": "403 is an integration authorization boundary. It is not proof of hidden configuration absence; visible provider metadata nevertheless reports protected=false and enforcement off."
+  },
+  "prepared_plan": "contracts/MAIN_PROVIDER_ENFORCEMENT_PLAN_20260830.v1.json",
+  "provider_enforcement_active": false,
+  "provider_enforcement_pass": false,
+  "gap_issue": 393,
+  "state": "HOLD_PROVIDER_ADMIN_ACTION_REQUIRED",
+  "claim_allowed": false,
+  "merge_authorized": false,
+  "external_authority": "TOKEN_VAZIO_GITHUB_ADMIN_OR_PROVIDER_CAPABLE_SURFACE",
+  "independent_human_review": "TOKEN_VAZIO",
+  "guards": [
+    "DETECTOR != ENFORCEMENT != PROOF_OF_BLOCKING",
+    "FAILED_GATE != MERGE_AUTHORIZED",
+    "PROTECTED_FALSE_IS_OBSERVED_PROVIDER_METADATA",
+    "RULESETS_EMPTY_IS_OBSERVED_COLLECTION_STATE",
+    "403_NE_ABSENCE",
+    "TOKEN_VAZIO != PASS"
+  ],
+  "exit_criteria": [
+    "authorized provider/admin action applies equivalent or stronger protection",
+    "provider readback shows branch/ruleset enforcement active",
+    "required human-impact, audit, documentation and review checks are observable as required",
+    "successor append-only receipt binds exact provider policy identifiers"
+  ]
+}
