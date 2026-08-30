@@ -1,0 +1,81 @@
+{
+  "version": "1.0.0",
+  "authority": {
+    "routing_authority": "rafaelmeloreisnovo/Mapa:data/control-plane/HUMAN_DIGNITY_ETHICS_RATCHET_V1.json",
+    "transport_and_provenance_authority": "rafaelmeloreisnovo/RafGitTools",
+    "producer_truth_remains_with_producer": true,
+    "live_cross_repo_ethics_receipt": "TOKEN_VAZIO"
+  },
+  "invariants": [
+    "LOCAL_PASS != HUMAN_IMPACT_PASS",
+    "TECHNICAL_CORRECTNESS != ETHICAL_PERMISSION",
+    "MODEL_RECOMMENDATION != HUMAN_VALUE_DECISION",
+    "TOKEN_VAZIO != PASS",
+    "UNKNOWN_RISK != SAFE",
+    "PERFORMANCE_GAIN != RIGHTS_OVERRIDE",
+    "FIXTURE != LIVE"
+  ],
+  "protected_domains": [
+    "children_and_adolescents",
+    "health_and_mental_health",
+    "education",
+    "privacy_and_personal_data",
+    "civil_and_human_rights",
+    "culture_and_belief",
+    "accessibility_and_disability",
+    "environment_and_ecosystem",
+    "humanitarian_contexts"
+  ],
+  "required_for_material_human_impact": [
+    "decision_id",
+    "producer_repo",
+    "producer_revision",
+    "scope",
+    "affected_people_or_groups",
+    "protected_domains_touched",
+    "known_benefits",
+    "known_harms",
+    "unknown_risks",
+    "distribution_of_benefit_and_harm",
+    "privacy_data_surface",
+    "child_impact",
+    "health_impact",
+    "education_impact",
+    "culture_and_belief_impact",
+    "environmental_impact",
+    "consequence_radius",
+    "reversibility_or_mitigation",
+    "appeal_path",
+    "review_roles",
+    "evidence_refs",
+    "falsifier",
+    "decision_state"
+  ],
+  "forbidden_promotions": {
+    "local_pass_to_human_impact_pass": true,
+    "fixture_to_live": true,
+    "unknown_to_safe": true,
+    "single_actor_to_high_impact_final_authority": true,
+    "child_best_interest_to_optimization_weight": true,
+    "technical_performance_to_social_permission": true
+  },
+  "accepted_states": [
+    "ALLOW_LOW_IMPACT",
+    "ALLOW_WITH_MONITORING",
+    "REQUIRE_PLURAL_REVIEW",
+    "REQUIRE_AFFECTED_GROUP_REVIEW",
+    "FAILSAFE_HOLD",
+    "TOKEN_VAZIO",
+    "CONTESTED",
+    "INSUFFICIENT_EVIDENCE",
+    "BLOCKED_BY_RIGHTS",
+    "ROLLBACK_REQUIRED"
+  ],
+  "anti_regression": {
+    "latest_wins": false,
+    "backward_compatibility_or_versioned_migration_required": true,
+    "rollback_required_for_incompatible_change": true,
+    "human_protection_may_not_be_silently_weakened": true
+  },
+  "claim_allowed": false
+}

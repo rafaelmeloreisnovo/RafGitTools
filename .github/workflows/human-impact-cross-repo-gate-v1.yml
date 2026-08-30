@@ -1,0 +1,26 @@
+name: Human Impact Cross-Repo Gate V1
+
+"on":
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: human-impact-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate-human-impact-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout without persistent credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Validate cross-repo human impact contract
+        run: python3 tools/validate_human_impact_cross_repo.py

@@ -1,0 +1,96 @@
+{
+  "schema": "rafgittools.auditor_closure_record.v1",
+  "record_id": "AUDITOR-CLOSURE-PR390-20260830-V1",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "pull_request": 390,
+  "assessed_subject_revision": "08dc77cab251f3bc0b0b8ccd74c51346352aa1fb",
+  "policy": "contracts/auditor-closure-policy.v1.json",
+  "observed_evidence": [
+    {
+      "name": "Human Impact Cross-Repo Gate V1",
+      "run_id": 33298676579,
+      "conclusion": "success"
+    },
+    {
+      "name": "PR Validation",
+      "run_id": 33298676602,
+      "conclusion": "success"
+    },
+    {
+      "name": "Source Gap Audit",
+      "run_id": 33298676620,
+      "conclusion": "success"
+    },
+    {
+      "name": "Documentation",
+      "run_id": 33298676583,
+      "conclusion": "failure"
+    }
+  ],
+  "closures": [
+    {
+      "id": "CL-001",
+      "subject": "human_impact_contract_structural_validation",
+      "decision": "CLOSED_LIMITED",
+      "scope": "Local structural safeguards declared by contracts/human_impact_cross_repo.v1.json and tools/validate_human_impact_cross_repo.py at the assessed revision.",
+      "evidence_refs": ["github-actions:33298676579"],
+      "claim_boundary": "Does not prove legal compliance, ethical adequacy, social acceptance, clinical safety, child safety, environmental harmlessness, or live cross-repository interoperability."
+    },
+    {
+      "id": "CL-002",
+      "subject": "pull_request_generic_validation_at_assessed_revision",
+      "decision": "CLOSED_LIMITED",
+      "scope": "PR Validation workflow only at the assessed revision.",
+      "evidence_refs": ["github-actions:33298676602"],
+      "claim_boundary": "Does not override other failed or unobserved gates."
+    },
+    {
+      "id": "CL-003",
+      "subject": "source_gap_audit_at_assessed_revision",
+      "decision": "CLOSED_LIMITED",
+      "scope": "Source Gap Audit workflow only at the assessed revision.",
+      "evidence_refs": ["github-actions:33298676620"],
+      "claim_boundary": "No executable source-gap finding from this gate is not equivalent to runtime, production readiness, or absence of epistemic uncertainty."
+    }
+  ],
+  "open_items": [
+    {
+      "id": "OP-001",
+      "subject": "live_cross_repo_ethics_receipt",
+      "decision": "TOKEN_VAZIO",
+      "reason": "No live receipt binding exact producer and consumer revisions with an actual human-impact record was evidenced.",
+      "exit_criterion": "Execute exact producer and consumer revisions together with an actual human-impact record and preserve the resulting immutable receipt."
+    },
+    {
+      "id": "OP-002",
+      "subject": "legal_or_external_compliance",
+      "decision": "TOKEN_VAZIO",
+      "reason": "Structural CI cannot certify legal compliance or external standards conformity.",
+      "exit_criterion": "Requirement-by-requirement external or qualified review with evidence, findings, remediation status, and signed/identifiable assessment record as applicable."
+    },
+    {
+      "id": "OP-003",
+      "subject": "documentation_workflow",
+      "decision": "BLOCKED",
+      "reason": "Observed Documentation workflow failed at the assessed revision.",
+      "evidence_refs": ["github-actions:33298676583"],
+      "exit_criterion": "A new exact-revision Documentation workflow run concludes success after the failure is corrected or formally dispositioned without weakening the gate."
+    },
+    {
+      "id": "OP-004",
+      "subject": "merge_authorization",
+      "decision": "HOLD",
+      "reason": "At least one observed gate failed; pull request is draft; branch-protection requirements were not independently readable in this assessment.",
+      "exit_criterion": "No observed failed gate for the candidate revision, draft/review state resolved according to repository governance, and required-check policy observed or explicitly left unclaimed."
+    },
+    {
+      "id": "OP-005",
+      "subject": "branch_protection_required_checks",
+      "decision": "TOKEN_VAZIO",
+      "reason": "Branch protection endpoint was not accessible to the assessment connector.",
+      "exit_criterion": "Read the authoritative branch protection/ruleset configuration or obtain an equivalent repository-admin evidence record."
+    }
+  ],
+  "merge_authorized": false,
+  "claim_allowed": false
+}

@@ -1,0 +1,40 @@
+name: Auditor Closure Gate V1
+
+"on":
+  pull_request:
+    paths:
+      - 'contracts/auditor-closure-policy.v1.json'
+      - 'audits/AUDITOR_CLOSURE_PR390_20260830.v1.json'
+      - 'tools/validate_auditor_closure.py'
+      - 'tests/test_auditor_closure.py'
+      - '.github/workflows/auditor-closure-gate-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auditor-closure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Validate auditor closure record
+        run: python3 tools/validate_auditor_closure.py
+
+      - name: Run anti-promotion tests
+        run: python3 -m unittest tests.test_auditor_closure -v
+
+      - name: Re-check source-gap audit semantics
+        run: python3 scripts/audit_source_gaps.py --self-test
+
+      - name: Expose closure boundary
+        run: |
+          echo 'CLOSED=CLOSED_LIMITED_ONLY'
+          echo 'LIVE_CROSS_REPO=TOKEN_VAZIO'
+          echo 'EXTERNAL_COMPLIANCE=TOKEN_VAZIO'
+          echo 'MERGE_AUTHORIZED=false'
