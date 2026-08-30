@@ -1,0 +1,14 @@
+{
+  "schema":"rafaelia.session_formula_integration.v1",
+  "canonical_repo":"rafaelmeloreisnovo/Mapa",
+  "canonical_path":"data/formulas/SESSION_FORMULA_REGISTRY_53_V1.json",
+  "registry_id":"SESSION-FORMULAS-53-20260830-V1",
+  "exact_count":53,
+  "canonical_range":"F01..F53",
+  "local_repo":"rafaelmeloreisnovo/RafGitTools",
+  "role":"EXECUTION_CONTROL_PLANE",
+  "applicable_ids":["F15","F27","F28","F29","F30","F33","F37","F38","F42","F43","F44","F45","F47","F48","F49","F50","F51","F52","F53"],
+  "non_applicable":"REFERENCE_CANONICAL_NO_DUPLICATION",
+  "private_raw_allowed":false,
+  "claim_allowed":false
+}

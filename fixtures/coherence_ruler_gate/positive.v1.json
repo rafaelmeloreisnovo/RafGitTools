@@ -1,0 +1,14 @@
+{
+  "source_repo": "rafaelmeloreisnovo/Mapa",
+  "receipt": {
+    "schema": "rafaelia.coherence_ruler_receipt.v1",
+    "status": "RULER_FOUND_REGION_RESTRICTED",
+    "claim_allowed": false,
+    "selected_ruler": "R-INDICES-PLURAL-ORTHOGONAL",
+    "selected_region": "PROVENANCE_INDEX_VECTOR",
+    "random_total_permutation_sweep_required": false,
+    "watchdog_budget": {"candidate_evaluations": 4, "relation_edges": 18, "requested_regions": 4},
+    "rollback": "OUTPUT_ONLY_NO_AUTONOMOUS_MUTATION",
+    "failover": "CONSERVATIVE_HOLD_WITH_TYPED_GAP"
+  }
+}

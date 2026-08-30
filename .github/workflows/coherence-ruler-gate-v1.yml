@@ -1,0 +1,38 @@
+name: Coherence Ruler Gate V1
+
+on:
+  pull_request:
+    paths:
+      - 'configs/coherence-ruler-gate.v1.json'
+      - 'fixtures/coherence_ruler_gate/positive.v1.json'
+      - 'tools/validate_coherence_ruler_gate.py'
+      - 'tests/test_coherence_ruler_gate.py'
+      - 'docs/COHERENCE_RULER_GATE_V1.md'
+      - '.github/workflows/coherence-ruler-gate-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ruler-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Validate route authorization
+        run: python3 tools/validate_coherence_ruler_gate.py
+
+      - name: Run anti-regression tests
+        run: python3 -m unittest tests.test_coherence_ruler_gate -v
+
+      - name: Expose authority boundary
+        run: |
+          echo 'MAPA=ROUTING_AUTHORITY'
+          echo 'RAFGITTOOLS=EXECUTION_GATE'
+          echo 'LIVE_CROSS_REPO_RECEIPT=TOKEN_VAZIO'
+          echo 'CLAIM_ALLOWED=false'
