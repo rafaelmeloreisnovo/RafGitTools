@@ -155,6 +155,12 @@ def changed_mutable_uses(root: Path, base_ref: str) -> list[dict]:
         if line.startswith("+++ b/"):
             current = line[6:]
             continue
+        # Ratchet only YAML-bearing GitHub Actions definitions. The diff scope
+        # intentionally includes .github/actions so composite action.yml files
+        # are checked, while implementation files such as audit.py cannot be
+        # misclassified by coincidental source text like `uses: list[dict]`.
+        if not current.lower().endswith((".yml", ".yaml")):
+            continue
         m = ADDED_USES.match(line)
         if not m:
             continue
