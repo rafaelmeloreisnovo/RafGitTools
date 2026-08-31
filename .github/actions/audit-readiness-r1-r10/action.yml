@@ -1,0 +1,15 @@
+name: Audit Readiness R1-R10
+
+description: Validate evidence-first audit-readiness profiles without claiming certification.
+
+inputs:
+  profile:
+    description: Path to the audit-readiness profile JSON in the caller workspace.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Validate R1-R10 profile
+      shell: bash
+      run: python3 "$GITHUB_ACTION_PATH/validate.py" "${{ inputs.profile }}"
