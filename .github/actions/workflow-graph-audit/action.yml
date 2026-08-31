@@ -1,0 +1,31 @@
+name: Workflow Graph Audit
+
+description: Evidence-first lexical audit of GitHub Actions workflow structure, logic and dependencies.
+
+inputs:
+  mode:
+    description: report or strict-changed
+    required: false
+    default: strict-changed
+  base-ref:
+    description: Base revision used by strict-changed ratchet
+    required: false
+    default: ''
+  output-json:
+    description: Output path for machine-readable graph
+    required: false
+    default: workflow-graph-audit.json
+
+runs:
+  using: composite
+  steps:
+    - name: Audit workflow graph
+      shell: bash
+      run: |
+        set -euo pipefail
+        python3 "$GITHUB_ACTION_PATH/audit.py" \
+          --repo "$GITHUB_WORKSPACE" \
+          --mode "${{ inputs.mode }}" \
+          --base-ref "${{ inputs.base-ref }}" \
+          --output "${{ inputs.output-json }}" \
+          --summary

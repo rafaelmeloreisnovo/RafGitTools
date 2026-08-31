@@ -1,0 +1,32 @@
+{
+  "schema": "rafgittools.workflow_graph_audit_contract.v1",
+  "version": "1.0.0",
+  "claim_allowed": false,
+  "purpose": "Make GitHub Actions workflow structure, logic and dependency surfaces auditable without claiming full YAML semantic verification or certification.",
+  "observations": [
+    "workflow triggers",
+    "job identities",
+    "needs dependency edges",
+    "runs-on labels",
+    "uses dependencies",
+    "mutable versus immutable remote refs",
+    "top-level permissions presence",
+    "pull_request_target presence",
+    "secrets inherit presence",
+    "concurrency presence"
+  ],
+  "ratchet": {
+    "scope": "added uses lines in changed .github/workflows and .github/actions files",
+    "reject_new_mutable_remote_refs": true,
+    "allow_local_actions": true,
+    "docker_refs_report_only": true,
+    "legacy_mutable_refs": "OBSERVED_DEBT_NOT_AUTO_PROMOTED_TO_PASS"
+  },
+  "invariants": [
+    "LEXICAL_PARSE != FULL_YAML_SEMANTICS",
+    "MUTABLE_REF != IMMUTABLE_SUPPLY_CHAIN",
+    "CI_SUCCESS != SERVER_SIDE_ENFORCEMENT",
+    "NO_FINDING != NO_RISK",
+    "TOKEN_VAZIO != PASS"
+  ]
+}
