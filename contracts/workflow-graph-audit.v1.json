@@ -1,0 +1,52 @@
+{
+  "schema": "rafgittools.workflow_graph_audit_contract.v1",
+  "version": "1.1.0",
+  "claim_allowed": false,
+  "purpose": "Make GitHub Actions workflow structure, dependency graph and supply-chain surfaces auditable without claiming full YAML semantic verification or certification.",
+  "observations": [
+    "workflow triggers",
+    "job identities",
+    "needs dependency edges",
+    "undefined/self/cyclic needs",
+    "duplicate lexical job identities",
+    "runs-on labels",
+    "timeout-minutes presence",
+    "uses dependencies and dependency kinds",
+    "mutable versus immutable remote action refs",
+    "mutable Docker tags versus sha256 digests",
+    "top-level permissions presence",
+    "permissions write-all presence",
+    "pull_request_target presence",
+    "secrets inherit presence",
+    "concurrency presence",
+    "workflow_call presence"
+  ],
+  "ratchet": {
+    "scope": "added or changed GitHub Actions YAML under .github/workflows and .github/actions",
+    "reject_new_mutable_remote_refs": true,
+    "reject_new_mutable_docker_tags": true,
+    "reject_new_write_all_permissions": true,
+    "new_workflow_requires_explicit_permissions": true,
+    "changed_job_graph_requires_defined_acyclic_needs": true,
+    "advisory_new_pull_request_target": true,
+    "advisory_new_secrets_inherit": true,
+    "advisory_changed_job_without_timeout": true,
+    "advisory_changed_workflow_without_concurrency": true,
+    "allow_local_actions": true,
+    "legacy_mutable_refs": "OBSERVED_DEBT_NOT_AUTO_PROMOTED_TO_PASS"
+  },
+  "evidence_output": {
+    "format": "json",
+    "default_path": "workflow-graph-audit.json",
+    "artifact_preservation_expected": true,
+    "artifact_is_execution_evidence_not_certification": true
+  },
+  "invariants": [
+    "LEXICAL_PARSE != FULL_YAML_SEMANTICS",
+    "MUTABLE_REF != IMMUTABLE_SUPPLY_CHAIN",
+    "DOCKER_TAG != DOCKER_DIGEST",
+    "CI_SUCCESS != SERVER_SIDE_ENFORCEMENT",
+    "NO_FINDING != NO_RISK",
+    "TOKEN_VAZIO != PASS"
+  ]
+}

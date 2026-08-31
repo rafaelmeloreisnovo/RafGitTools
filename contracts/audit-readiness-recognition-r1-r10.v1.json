@@ -1,0 +1,40 @@
+{
+  "schema": "rafgittools.audit_readiness_r1_r10.v1",
+  "version": "1.0.0",
+  "purpose": "Evidence-first audit-readiness recognition. This is not certification or legal compliance.",
+  "canonical_owner": "rafaelmeloreisnovo/RafGitTools",
+  "non_certification": true,
+  "claim_allowed": false,
+  "allowed_states": [
+    "PASS",
+    "PARTIAL",
+    "BLOCKED",
+    "TOKEN_VAZIO",
+    "NOT_APPLICABLE"
+  ],
+  "invariants": [
+    "TOKEN_VAZIO != PASS",
+    "DOCUMENTED != IMPLEMENTED",
+    "IMPLEMENTED != EXECUTED",
+    "EXECUTED != EVIDENCED",
+    "CI_PASS != SERVER_SIDE_ENFORCEMENT",
+    "SELF_REVIEW != INDEPENDENT_REVIEW",
+    "AUDIT_READY != CERTIFIED",
+    "NO_FINDING != NO_RISK"
+  ],
+  "recognition": [
+    {"id": "R1", "name": "Identity and exact revision"},
+    {"id": "R2", "name": "Provenance, custody and licensing"},
+    {"id": "R3", "name": "Scope, requirements and claim boundary"},
+    {"id": "R4", "name": "Deterministic build and verification definition"},
+    {"id": "R5", "name": "Security, privacy, safety and risk controls"},
+    {"id": "R6", "name": "Supply-chain and reproducibility controls"},
+    {"id": "R7", "name": "Fail-closed negative gates and typed unknowns"},
+    {"id": "R8", "name": "Provider-side governance enforcement"},
+    {"id": "R9", "name": "Independent review or replication"},
+    {"id": "R10", "name": "Bounded audit-ready evidence bundle"}
+  ],
+  "promotion_rule": "R10 may be PASS only when R1..R9 are PASS and blockers is empty.",
+  "evidence_rule": "Each PASS requires at least one concrete evidence reference bound to an exact subject revision.",
+  "unknown_rule": "Missing evidence is TOKEN_VAZIO or BLOCKED; it is never inferred as PASS."
+}
