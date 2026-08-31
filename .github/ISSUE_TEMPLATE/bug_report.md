@@ -1,9 +1,10 @@
 ---
 name: Bug Report
 about: Report a bug or issue with RafGitTools
-title: '[BUG] '
-labels: 'bug'
+title: "[BUG] "
+labels: bug, enhancement
 assignees: ''
+
 ---
 
 ## 🐛 Bug Description
