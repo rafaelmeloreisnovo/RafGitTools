@@ -1,0 +1,39 @@
+name: Audit Readiness R1-R10
+
+"on":
+  pull_request:
+    paths:
+      - 'contracts/audit-readiness-recognition-r1-r10.v1.json'
+      - 'audits/readiness/**'
+      - '.github/actions/audit-readiness-r1-r10/**'
+      - '.github/workflows/audit-readiness-r1-r10.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Validate canonical contract JSON
+        run: python3 -m json.tool contracts/audit-readiness-recognition-r1-r10.v1.json >/dev/null
+
+      - name: Validate RafGitTools R1-R10 profile
+        uses: ./.github/actions/audit-readiness-r1-r10
+        with:
+          profile: audits/readiness/AUDIT_READINESS_R1_R10_20260831.v1.json
+
+      - name: Expose audit boundary
+        run: |
+          echo 'AUDIT_READINESS=BOUNDED_ONLY'
+          echo 'CERTIFICATION=false'
+          echo 'LEGAL_COMPLIANCE_CLAIM=false'
+          echo 'CLAIM_ALLOWED=false'
+          echo 'TOKEN_VAZIO!=PASS'
