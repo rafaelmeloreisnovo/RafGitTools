@@ -1,9 +1,10 @@
 ---
 name: Feature Request
 about: Suggest a new feature or enhancement for RafGitTools
-title: '[FEATURE] '
-labels: 'enhancement'
+title: "[FEATURE] "
+labels: enhancement
 assignees: ''
+
 ---
 
 ## 🚀 Feature Description
