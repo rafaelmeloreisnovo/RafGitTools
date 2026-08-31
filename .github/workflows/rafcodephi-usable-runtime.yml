@@ -125,7 +125,7 @@ jobs:
         with:
           name: rafcodephi-source-bootstrap-${{ needs.lock.outputs.termux_packages_commit }}
           path: stack/source
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
