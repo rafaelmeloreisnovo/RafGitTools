@@ -121,7 +121,7 @@ jobs:
           token: ${{ secrets.RAFAELIA_ORCHESTRATOR_TOKEN || github.token }}
           persist-credentials: false
           path: stack/polimata
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: rafcodephi-source-bootstrap-${{ needs.lock.outputs.termux_packages_commit }}
           path: stack/source
