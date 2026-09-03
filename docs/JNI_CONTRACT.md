@@ -10,10 +10,13 @@
 
 ## Overview
 
-The JNI contract defines the interface between the Kotlin kernel bridge and the native C/C++ implementation (`kernel/native/raf_kernel_jni.c`).
+The JNI contract defines the interface between the Kotlin kernel bridge and
+the native C/C++ implementation in `kernel/native/raf_kernel_jni.c`.
 
-The Kotlin layer is **IMPLEMENTED** and testable without the native layer.  
-The native layer remains **TOKEN_VAZIO** pending availability of `llama.h` and the language model runtime.
+The Kotlin layer is **IMPLEMENTED** and testable without the native layer.
+
+The native layer remains **TOKEN_VAZIO** pending availability of `llama.h`
+and the language model runtime.
 
 ---
 
@@ -26,12 +29,14 @@ The native layer remains **TOKEN_VAZIO** pending availability of `llama.h` and t
 **Signature**:
 ```kotlin
 external fun nativeAsmHealth(): Int
+
 ```
 
 **Native Signature**:
 ```c
 JNIEXPORT jint JNICALL Java_com_rafgittools_kernel_RafaeliaKernelBridge_nativeAsmHealth
   (JNIEnv *env, jobject obj)
+
 ```
 
 **Returns**:
@@ -43,6 +48,7 @@ JNIEXPORT jint JNICALL Java_com_rafgittools_kernel_RafaeliaKernelBridge_nativeAs
 ```kotlin
 val health = bridge.nativeAsmHealth()
 if (health >= 8) { /* proceed */ }
+
 ```
 
 **Implementation Notes**:
@@ -59,12 +65,14 @@ if (health >= 8) { /* proceed */ }
 **Signature**:
 ```kotlin
 external fun nativeAbiMask(): Int
+
 ```
 
 **Native Signature**:
 ```c
 JNIEXPORT jint JNICALL Java_com_rafgittools_kernel_RafaeliaKernelBridge_nativeAbiMask
   (JNIEnv *env, jobject obj)
+
 ```
 
 **Returns**: Bitmask:
@@ -80,6 +88,7 @@ return 0x01;
 
 // AArch64 + ARMv7
 return 0x03;
+
 ```
 
 ---
@@ -91,12 +100,14 @@ return 0x03;
 **Signature**:
 ```kotlin
 external fun nativeContextInit(ctiPath: String, maxTokens: Int): Long
+
 ```
 
 **Native Signature**:
 ```c
 JNIEXPORT jlong JNICALL Java_com_rafgittools_kernel_RafaeliaKernelBridge_nativeContextInit
   (JNIEnv *env, jobject obj, jstring ctiPath, jint maxTokens)
+
 ```
 
 **Parameters**:
@@ -104,12 +115,14 @@ JNIEXPORT jlong JNICALL Java_com_rafgittools_kernel_RafaeliaKernelBridge_nativeC
   - **CRITICAL**: This path MUST be passed through to `llama_context_init()`
   - **Currently TOKEN_VAZIO**: llama.h not available; contract pending
   - Suggested llama.h integration:
+
     ```c
     llama_context *ctx = llama_context_init(
         ctiPath,              // <-- from Kotlin parameter
         maxTokens,
         /*other params*/
     );
+
     ```
 
 - `maxTokens`: Maximum context window (typically 2048-4096)
@@ -126,6 +139,7 @@ JNIEXPORT jlong JNICALL Java_com_rafgittools_kernel_RafaeliaKernelBridge_nativeC
 ```kotlin
 val contextId = nativeContextInit(ctiPath, 4096)
 if (contextId < 0) { /* handle error */ }
+
 ```
 
 **TOKEN_VAZIO Closure Path**:
@@ -144,12 +158,14 @@ if (contextId < 0) { /* handle error */ }
 **Signature**:
 ```kotlin
 external fun nativeInvokeTool(contextId: Long, toolName: String, arguments: String): String
+
 ```
 
 **Native Signature**:
 ```c
 JNIEXPORT jstring JNICALL Java_com_rafgittools_kernel_RafaeliaKernelBridge_nativeInvokeTool
   (JNIEnv *env, jobject obj, jlong contextId, jstring toolName, jstring arguments)
+
 ```
 
 **Parameters**:
@@ -162,6 +178,7 @@ JNIEXPORT jstring JNICALL Java_com_rafgittools_kernel_RafaeliaKernelBridge_nativ
 **Example Arguments**:
 ```json
 {"command": "ls -la /tmp"}
+
 ```
 
 **Example Return**:
@@ -171,6 +188,7 @@ JNIEXPORT jstring JNICALL Java_com_rafgittools_kernel_RafaeliaKernelBridge_nativ
   "stdout": "total 48\n...",
   "stderr": ""
 }
+
 ```
 
 ---
@@ -186,12 +204,14 @@ external fun nativeRunToolLoop(
     prompt: String,
     maxIterations: Int
 ): String
+
 ```
 
 **Native Signature**:
 ```c
 JNIEXPORT jstring JNICALL Java_com_rafgittools_kernel_RafaeliaKernelBridge_nativeRunToolLoop
   (JNIEnv *env, jobject obj, jlong contextId, jstring prompt, jint maxIterations)
+
 ```
 
 **Parameters**:
@@ -203,7 +223,8 @@ JNIEXPORT jstring JNICALL Java_com_rafgittools_kernel_RafaeliaKernelBridge_nativ
 
 **Response Types**:
 
-**Type 1: Final Response (Text)**
+### Type 1: Final Response (Text)
+
 ```json
 {
   "type": "text",
@@ -211,7 +232,8 @@ JNIEXPORT jstring JNICALL Java_com_rafgittools_kernel_RafaeliaKernelBridge_nativ
 }
 ```
 
-**Type 2: Tool Request (TOKEN_VAZIO_LLAMA_LOOP until implemented)**
+### Type 2: Tool Request (TOKEN_VAZIO_LLAMA_LOOP)
+
 ```json
 {
   "type": "tool_use",
@@ -220,6 +242,7 @@ JNIEXPORT jstring JNICALL Java_com_rafgittools_kernel_RafaeliaKernelBridge_nativ
     "command": "ls"
   }
 }
+
 ```
 
 **Multi-Turn Continuation (Currently TOKEN_VAZIO)**:
@@ -239,12 +262,14 @@ JNIEXPORT jstring JNICALL Java_com_rafgittools_kernel_RafaeliaKernelBridge_nativ
 **Signature**:
 ```kotlin
 external fun nativeContextCleanup(contextId: Long)
+
 ```
 
 **Native Signature**:
 ```c
 JNIEXPORT void JNICALL Java_com_rafgittools_kernel_RafaeliaKernelBridge_nativeContextCleanup
   (JNIEnv *env, jobject obj, jlong contextId)
+
 ```
 
 **Parameters**:
@@ -262,6 +287,7 @@ try {
 } finally {
     nativeContextCleanup(contextId)
 }
+
 ```
 
 ---
@@ -269,7 +295,7 @@ try {
 ## Data Type Mappings
 
 | Kotlin | JNI | C |
-|--------|-----|---|
+| -------- | ----- | --- |
 | `Int` | `jint` | `int` |
 | `Long` | `jlong` | `long long` |
 | `String` | `jstring` | `const char*` (UTF-8) |
@@ -285,6 +311,7 @@ const char *cstr = (*env)->GetStringUTFChars(env, javaString, NULL);
 
 // Create jstring from C string
 jstring result = (*env)->NewStringUTF(env, cstr);
+
 ```
 
 ---
@@ -303,8 +330,10 @@ jstring result = (*env)->NewStringUTF(env, cstr);
   - Null or error JSON string for text-returning functions
   - Empty string as fallback
 - Use JNI error reporting:
+
   ```c
   (*env)->ThrowNew(env, exceptionClass, "error message");
+
   ```
 
 ---
@@ -319,6 +348,7 @@ jstring result = (*env)->NewStringUTF(env, cstr);
 **Run**:
 ```bash
 ./gradlew app:testDebugUnitTest -Pandroid.testInstrumentationRunnerArguments.class=com.rafgittools.kernel.RafaeliaKernelBridgeTest
+
 ```
 
 ### Integration Tests (TOKEN_VAZIO_FIXTURES)
@@ -329,6 +359,7 @@ jstring result = (*env)->NewStringUTF(env, cstr);
 **Run** (when native available):
 ```bash
 ./gradlew app:connectedAndroidTest
+
 ```
 
 ---
@@ -361,7 +392,7 @@ jstring result = (*env)->NewStringUTF(env, cstr);
 ## Authority & Responsibility
 
 | Layer | Owner | Responsibility |
-|-------|-------|---|
+| ------- | ------- | --- |
 | Kotlin Bridge | RafGitTools | Loop control, state management, error handling |
 | JNI Shim | RafGitTools | Function dispatch, string marshalling |
 | Native (C) | RafGitTools + GGML/llama.cpp | LLM inference, context management |
@@ -377,6 +408,7 @@ raf_kernel_jni.c:             TOKEN_VAZIO (awaits llama.h + implementation)
 llama.h availability:         TOKEN_VAZIO (external dependency)
 Multi-turn loop (native):      TOKEN_VAZIO_LLAMA_LOOP
 Physical device tests:         TOKEN_VAZIO_RUNNER
+
 ```
 
 **Claim Gate**: Cycle 6 (FEDERATION_CERTIFIED when cross-repo validation complete)

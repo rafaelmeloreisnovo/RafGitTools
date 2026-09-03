@@ -1,0 +1,59 @@
+# Markdownlint configuration for RafGitTools documentation
+# https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+#
+# Philosophy: Enable practical markdown rules that catch real issues
+# while allowing documentation to remain readable and maintainable.
+# Documentation is for humans AND machines; line length limits must
+# respect code examples and deep technical content.
+
+default: true
+
+# MD003: Heading style consistency - use consistent format
+MD003:
+  style: consistent
+
+# MD007: List indentation - 2 spaces
+MD007:
+  indent: 2
+
+# MD013: Line length - allow longer lines for documentation
+# Tables, code snippets, and technical references often exceed 80 chars
+MD013:
+  line_length: 100
+  heading_line_length: 100
+  header_line_length: 100
+  code_line_length: 100
+  code_blocks: true
+  tables: false
+  headers: true
+  headers_always: false
+  stern: false
+
+# MD022: Headings should be surrounded by blank lines - disable for readability
+# Technical documentation often has headings immediately after previous content
+MD022: false
+
+# MD024: Allow duplicate heading names (e.g., multiple "Objetivo" sections
+# in different contexts)
+MD024: false
+
+# MD031: Blank lines around code fences - disable for readability
+# Fenced code in documentation often appears in tight sequences
+MD031: false
+
+# MD032: Blank lines around lists - disable for readability
+# Technical lists often flow tightly with surrounding content
+MD032: false
+
+# MD033: Allow inline HTML (some documentation may need it)
+MD033: false
+
+# MD040: Code fence language specification - require it
+MD040: true
+
+# MD041: First line should be H1 - disable (not always applicable)
+MD041: false
+
+# MD046: Code fence style - consistent (allow fenced)
+MD046:
+  style: consistent

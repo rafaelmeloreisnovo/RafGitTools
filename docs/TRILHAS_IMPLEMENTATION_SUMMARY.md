@@ -12,15 +12,18 @@
 ## Trilha 1: Novos Conectores (Conectividade Expandida)
 
 ### Objetivo
-Adicionar suporte para repositórios self-hosted e privados via novos conectores Git (Forgejo, Gitea SSH).
+Adicionar suporte para repositórios self-hosted e privados via novos conectores
+Git (Forgejo, Gitea SSH).
 
 ### Implementação
 
 #### 1.1 Forgejo Connector
+
 - **File**: `data/forgejo/ForgejoApiService.kt`
 - **Pattern**: Retrofit interface (consistent with existing connectors)
-- **Models**: ForgejoRepository, ForgejoIssue, ForgejoPullRequest, ForgejoWorkflow, ForgejoActionRun, ForgejoUser, ForgejoOrganization
-- **Endpoints**: 
+- **Models**: ForgejoRepository, ForgejoIssue, ForgejoPullRequest,
+  ForgejoWorkflow, ForgejoActionRun, ForgejoUser, ForgejoOrganization
+- **Endpoints**:
   - Repository queries (GET /user/repos)
   - Issue management (CRUD)
   - PR tracking (CRUD)
@@ -59,7 +62,7 @@ Adicionar suporte para repositórios self-hosted e privados via novos conectores
   - configuredProviders() logic with multiple providers
 
 **Commits**:
-```
+```text
 718489f feat: Add Forgejo and Gitea SSH connectors to MultiPlatformManager
 ```
 
@@ -68,7 +71,8 @@ Adicionar suporte para repositórios self-hosted e privados via novos conectores
 ## Trilha 2: Skills Operacionais (Funcionalidades Avançadas)
 
 ### Objetivo
-Implementar 3–5 "skills" como features de UI/workflow que encapsulem operações complexas.
+Implementar 3–5 "skills" como features de UI/workflow que encapsulem operações
+complexas.
 
 ### 2.1 SSH Key Manager Skill
 
@@ -95,8 +99,9 @@ Implementar 3–5 "skills" como features de UI/workflow que encapsulem operaçõ
 **TOKEN_VAZIO Closed**: TV-CODE (SSH key discovery and management)
 
 **Commits**:
-```
+```text
 90d0d71 feat: Add SSH Key Manager skill (Trilha 2.1) — UI + ViewModel
+
 ```
 
 ---
@@ -123,8 +128,9 @@ Implementar 3–5 "skills" como features de UI/workflow que encapsulem operaçõ
 **TOKEN_VAZIO Closed**: TV-CODE (worktree API implementation)
 
 **Commits**:
-```
+```text
 7639dd2 feat: Add Git Worktree Flow skill (Trilha 2.2) — parallel development
+
 ```
 
 ---
@@ -154,8 +160,9 @@ Implementar 3–5 "skills" como features de UI/workflow que encapsulem operaçõ
 **TOKEN_VAZIO Closed**: TV-CODE (interactive bisect implementation)
 
 **Commits**:
-```
+```text
 738ae25 feat: Add Interactive Bisect skill (Trilha 2.3) — regression finding UI
+
 ```
 
 ---
@@ -163,7 +170,8 @@ Implementar 3–5 "skills" como features de UI/workflow que encapsulem operaçõ
 ## Trilha 3: Kernel JNI — Fechar TOKEN_VAZIO_RUNTIME
 
 ### Objetivo
-Completar Kotlin bridge e documentar JNI contract para multi-turn LLM tool calls.
+Completar Kotlin bridge e documentar JNI contract para multi-turn LLM tool
+calls.
 
 ### Implementação
 
@@ -211,8 +219,9 @@ Completar Kotlin bridge e documentar JNI contract para multi-turn LLM tool calls
 - nativeRunToolLoop(): TOKEN_VAZIO_LLAMA_LOOP (multi-turn logic pending)
 
 **Commits**:
-```
+```text
 8fad4cf feat: Add Kernel bridge + JNI contract (Trilha 3) — multi-turn LLM loop
+
 ```
 
 ---
@@ -222,7 +231,7 @@ Completar Kotlin bridge e documentar JNI contract para multi-turn LLM tool calls
 ### Authority Boundaries
 
 | Component | Authority | Responsibility |
-|-----------|-----------|---|
+| ----------- | ----------- | --- |
 | MultiPlatformManager | RafGitTools | Provider routing, query orchestration |
 | Forgejo Connector | RafGitTools + Forgejo (external) | Query API, auth, repository mapping |
 | Gitea SSH Connector | RafGitTools + Gitea (external) | SSH key discovery, device integration |
@@ -234,7 +243,7 @@ Completar Kotlin bridge e documentar JNI contract para multi-turn LLM tool calls
 
 ### Token Flow
 
-```
+```text
 User UI (Compose)
   ↓ intent (create SSH key / bisect / worktree)
 ViewModel (StateFlow)
@@ -246,6 +255,7 @@ External System (Git repo / KeyStore / remote API)
 ViewModel (update state)
   ↓ UI state change
 User sees result
+
 ```
 
 ---
@@ -257,6 +267,7 @@ User sees result
 **Run all unit tests**:
 ```bash
 ./gradlew app:testDebugUnitTest
+
 ```
 
 **Tests per skill**:
@@ -277,6 +288,7 @@ Requires:
 **Run** (when device available):
 ```bash
 ./gradlew app:connectedAndroidTest
+
 ```
 
 ### Device Physical Validation (TOKEN_VAZIO_FIXTURES)
@@ -294,7 +306,7 @@ Pending:
 **Documented gaps** (not erased, closure paths specified):
 
 | Gap | Category | Closure Cycle |
-|-----|----------|---|
+| ----- | ---------- | --- |
 | TV-FIXTURES | SSH/Worktree/Bisect test fixtures | 4 |
 | TV-RUNNER | Physical device execution | 6 |
 | TV-LLAMA_HEADER | llama.h dependency | 4 |
@@ -312,7 +324,7 @@ Pending:
 ## Metrics
 
 | Metric | Value |
-|--------|-------|
+| -------- | ------- |
 | Commits | 5 (1 trilha 1, 3 trilha 2, 1 trilha 3) |
 | Files Added | ~35 (Kotlin + tests + docs) |
 | Lines of Code | ~4000 (Kotlin) + 600 (docs) |
@@ -389,6 +401,7 @@ Pending:
     }
   ]
 }
+
 ```
 
 (Similar packets for Trilha 2 skills and Trilha 3 kernel bridge)

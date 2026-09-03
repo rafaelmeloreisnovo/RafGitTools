@@ -14,7 +14,8 @@
     "modified_markdown_must_pass_markdownlint_as_complete_file": true,
     "deleted_markdown_is_not_linted": true,
     "unchanged_markdown_is_not_reclassified": true,
-    "lint_rule_weakening_allowed_silently": false
+    "lint_rule_weakening_allowed_silently": false,
+    "lint_configuration": ".markdownlint.yaml (documented)"
   },
   "push_main_policy": {
     "markdown_changed_by_push_must_pass": true,
