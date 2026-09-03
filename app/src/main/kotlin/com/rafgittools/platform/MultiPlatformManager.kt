@@ -3,7 +3,9 @@ package com.rafgittools.platform
 import android.util.Base64
 import com.rafgittools.data.azuredevops.AzureDevOpsApiService
 import com.rafgittools.data.bitbucket.BitbucketApiService
+import com.rafgittools.data.forgejo.ForgejoApiService
 import com.rafgittools.data.gitea.GiteaApiService
+import com.rafgittools.data.gitea.GiteaSshApiService
 import com.rafgittools.data.gitlab.GitLabApiService
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -43,7 +45,7 @@ object MultiPlatformManager {
         val provider: Provider
     )
 
-    enum class Provider { GITHUB, GITLAB, BITBUCKET, GITEA, AZURE_DEVOPS }
+    enum class Provider { GITHUB, GITLAB, BITBUCKET, GITEA, GITEA_SSH, FORGEJO, AZURE_DEVOPS }
 
     sealed interface ProviderQueryResult {
         data class Success(val repositories: List<HostedRepository>) : ProviderQueryResult
@@ -178,6 +180,74 @@ object MultiPlatformManager {
         }
     }
 
+    suspend fun queryForgejoRepositories(
+        token: String = "",
+        baseUrl: String = ""
+    ): ProviderQueryResult {
+        if (token.isBlank() || !isHttpUrl(baseUrl)) {
+            return ProviderQueryResult.NotConfigured(
+                Provider.FORGEJO,
+                "Forgejo token and valid instance URL are required"
+            )
+        }
+        return try {
+            val service = buildRetrofit(baseUrl).create(ForgejoApiService::class.java)
+            val repos = service.getUserRepositories(authorization = "token $token")
+            ProviderQueryResult.Success(repos.map { r ->
+                HostedRepository(
+                    id = r.id.toString(),
+                    name = r.name,
+                    fullName = r.fullName,
+                    description = r.description,
+                    cloneUrl = r.cloneUrl,
+                    sshUrl = r.sshUrl,
+                    isPrivate = r.private,
+                    provider = Provider.FORGEJO
+                )
+            })
+        } catch (e: HttpException) {
+            if (e.code() == 401 || e.code() == 403) {
+                ProviderQueryResult.AuthenticationError(Provider.FORGEJO, "Forgejo auth failed: ${e.message()}")
+            } else {
+                ProviderQueryResult.NetworkError(Provider.FORGEJO, "Forgejo HTTP ${e.code()}: ${e.message()}")
+            }
+        } catch (e: IOException) {
+            ProviderQueryResult.NetworkError(Provider.FORGEJO, "Forgejo network error: ${e.message}")
+        }
+    }
+
+    suspend fun queryGiteaSshKeys(
+        token: String = "",
+        baseUrl: String = ""
+    ): ProviderQueryResult {
+        if (token.isBlank() || !isHttpUrl(baseUrl)) {
+            return ProviderQueryResult.NotConfigured(
+                Provider.GITEA_SSH,
+                "Gitea token and valid instance URL are required for SSH key discovery"
+            )
+        }
+        return try {
+            val service = buildRetrofit(baseUrl).create(GiteaSshApiService::class.java)
+            val keys = service.getUserSshKeys(authorization = "token $token")
+            if (keys.isEmpty()) {
+                ProviderQueryResult.NotConfigured(
+                    Provider.GITEA_SSH,
+                    "No SSH keys configured in Gitea instance"
+                )
+            } else {
+                ProviderQueryResult.Success(emptyList()) // SSH keys don't map to repos; handled separately
+            }
+        } catch (e: HttpException) {
+            if (e.code() == 401 || e.code() == 403) {
+                ProviderQueryResult.AuthenticationError(Provider.GITEA_SSH, "Gitea SSH auth failed: ${e.message()}")
+            } else {
+                ProviderQueryResult.NetworkError(Provider.GITEA_SSH, "Gitea SSH HTTP ${e.code()}: ${e.message()}")
+            }
+        } catch (e: IOException) {
+            ProviderQueryResult.NetworkError(Provider.GITEA_SSH, "Gitea SSH network error: ${e.message}")
+        }
+    }
+
     fun queryAzureDevOpsRepos(
         token: String = "",
         organization: String = "",
@@ -247,6 +317,14 @@ object MultiPlatformManager {
     fun getGiteaRepositories(token: String = "", baseUrl: String = ""): List<HostedRepository> =
         requireSuccess(queryGiteaRepositories(token, baseUrl))
 
+    @Deprecated("Use queryForgejoRepositories for typed status")
+    fun getForgejoRepositories(token: String = "", baseUrl: String = ""): List<HostedRepository> =
+        requireSuccess(runBlocking { queryForgejoRepositories(token, baseUrl) })
+
+    @Deprecated("Use queryGiteaSshKeys for typed status")
+    fun getGiteaSshKeys(token: String = "", baseUrl: String = ""): List<HostedRepository> =
+        requireSuccess(runBlocking { queryGiteaSshKeys(token, baseUrl) })
+
     @Deprecated("Use queryAzureDevOpsRepos for typed status")
     fun getAzureDevOpsRepos(
         token: String = "",
@@ -258,11 +336,15 @@ object MultiPlatformManager {
         gitLabToken: String = "",
         bitbucketToken: String = "",
         giteaToken: String = "",
+        forgejoToken: String = "",
+        giteaSshToken: String = "",
         azureToken: String = ""
     ): Set<Provider> = buildSet {
         if (gitLabToken.isNotEmpty()) add(Provider.GITLAB)
         if (bitbucketToken.isNotEmpty()) add(Provider.BITBUCKET)
         if (giteaToken.isNotEmpty()) add(Provider.GITEA)
+        if (forgejoToken.isNotEmpty()) add(Provider.FORGEJO)
+        if (giteaSshToken.isNotEmpty()) add(Provider.GITEA_SSH)
         if (azureToken.isNotEmpty()) add(Provider.AZURE_DEVOPS)
     }
 
