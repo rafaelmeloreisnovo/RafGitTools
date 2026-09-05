@@ -1,0 +1,32 @@
+name: FIAT_LUX Evidence DB V1
+
+on:
+  pull_request:
+    paths:
+      - 'tools/rafaelia_navigator/fiat_lux_evidence_db_v1.py'
+      - 'tools/rafaelia_navigator/fiat_lux_evidence_db_v1.sql'
+      - '.github/workflows/fiat-lux-evidence-db-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fiat-lux-evidence-db-v1-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evidence-db-selftest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Python syntax
+        run: python3 -m py_compile tools/rafaelia_navigator/fiat_lux_evidence_db_v1.py
+      - name: FIAT_LUX SQLite selftest
+        run: python3 tools/rafaelia_navigator/fiat_lux_evidence_db_v1.py selftest
+      - name: MOD9 hot-path smoke
+        run: |
+          test "$(python3 tools/rafaelia_navigator/fiat_lux_evidence_db_v1.py walk 8 forward)" = "0"
+          test "$(python3 tools/rafaelia_navigator/fiat_lux_evidence_db_v1.py walk 0 reverse)" = "8"
+          test "$(python3 tools/rafaelia_navigator/fiat_lux_evidence_db_v1.py walk 7 bank)" = "1"
