@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="repo_governance_title">Repository Governance</string>
+    <string name="repo_governance_entry_title">Repository configuration &amp; security</string>
+    <string name="repo_governance_entry_subtitle">Audit and stage provider-bound settings per repository</string>
+    <string name="repo_governance_contract">OBSERVED ≠ DESIRED ≠ APPLIED. Provider denials and missing evidence remain TOKEN_VAZIO until verified.</string>
+    <string name="repo_governance_refresh">Refresh repository governance state</string>
+    <string name="repo_governance_structure">Structural configuration</string>
+    <string name="repo_governance_security">Security configuration</string>
+    <string name="repo_governance_issues">Issues</string>
+    <string name="repo_governance_projects">Projects</string>
+    <string name="repo_governance_wiki">Wiki</string>
+    <string name="repo_governance_discussions">Discussions</string>
+    <string name="repo_governance_merge_commit">Merge commits</string>
+    <string name="repo_governance_squash_merge">Squash merge</string>
+    <string name="repo_governance_rebase_merge">Rebase merge</string>
+    <string name="repo_governance_delete_branch">Delete head branch after merge</string>
+    <string name="repo_governance_signoff">Require web commit sign-off</string>
+    <string name="repo_governance_branch_protection">Protect default branch</string>
+    <string name="repo_governance_vulnerability_alerts">Vulnerability alerts</string>
+    <string name="repo_governance_dependabot">Dependabot security updates</string>
+    <string name="repo_governance_advanced_security">Advanced Security</string>
+    <string name="repo_governance_secret_scanning">Secret scanning</string>
+    <string name="repo_governance_push_protection">Secret scanning push protection</string>
+    <string name="repo_governance_baseline">Stage safe baseline</string>
+    <string name="repo_governance_discard">Discard staged</string>
+    <string name="repo_governance_apply_count">Apply %1$d staged change(s)</string>
+    <string name="repo_governance_receipt">Receipt: %1$s</string>
+    <string name="repo_governance_confirm_title">Apply repository governance changes?</string>
+    <string name="repo_governance_confirm_body">Repository: %1$s\nStaged fields: %2$d\n\nThis writes provider settings. A receipt is appended locally and the screen re-probes authoritative state after the operation.</string>
+    <string name="repo_governance_confirm_apply">Apply and verify</string>
+    <string name="repo_governance_select_repository">Select repository</string>
+    <string name="repo_governance_loading">Loading provider inventory…</string>
+    <string name="repo_governance_none">No repository selected</string>
+    <string name="repo_governance_archived">Archived repository — read only</string>
+    <string name="repo_governance_admin_proven">Admin authority observed</string>
+    <string name="repo_governance_admin_unproven">Admin authority not proven — writes blocked</string>
+    <string name="repo_governance_admin">Admin</string>
+    <string name="repo_governance_read_only">Read-only / authority unproven</string>
+</resources>
