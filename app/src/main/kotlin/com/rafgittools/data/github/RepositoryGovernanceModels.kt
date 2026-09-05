@@ -3,10 +3,10 @@ package com.rafgittools.data.github
 import com.google.gson.annotations.SerializedName
 
 /**
- * Provider-bound models used by the repository governance screen.
+ * Provider-bound models used by the repository governance control center.
  *
- * These models intentionally keep observed provider state separate from desired state.
- * A missing/forbidden field is not interpreted as false; callers must keep it TOKEN_VAZIO.
+ * Observed provider state is kept separate from desired state. Missing/forbidden
+ * fields are never coerced to false by callers; they remain TOKEN_VAZIO.
  */
 data class GovernanceRepositorySummary(
     val name: String,
@@ -44,6 +44,8 @@ data class GovernanceRepositoryDetails(
     @SerializedName("allow_merge_commit") val allowMergeCommit: Boolean = true,
     @SerializedName("allow_squash_merge") val allowSquashMerge: Boolean = true,
     @SerializedName("allow_rebase_merge") val allowRebaseMerge: Boolean = true,
+    @SerializedName("allow_auto_merge") val allowAutoMerge: Boolean = false,
+    @SerializedName("allow_update_branch") val allowUpdateBranch: Boolean = false,
     @SerializedName("delete_branch_on_merge") val deleteBranchOnMerge: Boolean = false,
     @SerializedName("web_commit_signoff_required") val webCommitSignoffRequired: Boolean = false,
     @SerializedName("security_and_analysis") val securityAndAnalysis: GovernanceSecurityAndAnalysis? = null,
@@ -74,6 +76,8 @@ data class UpdateRepositoryGovernanceRequest(
     @SerializedName("allow_merge_commit") val allowMergeCommit: Boolean? = null,
     @SerializedName("allow_squash_merge") val allowSquashMerge: Boolean? = null,
     @SerializedName("allow_rebase_merge") val allowRebaseMerge: Boolean? = null,
+    @SerializedName("allow_auto_merge") val allowAutoMerge: Boolean? = null,
+    @SerializedName("allow_update_branch") val allowUpdateBranch: Boolean? = null,
     @SerializedName("delete_branch_on_merge") val deleteBranchOnMerge: Boolean? = null,
     @SerializedName("web_commit_signoff_required") val webCommitSignoffRequired: Boolean? = null,
     @SerializedName("security_and_analysis") val securityAndAnalysis: UpdateGovernanceSecurityAndAnalysis? = null
@@ -86,11 +90,11 @@ data class UpdateGovernanceSecurityAndAnalysis(
 )
 
 data class BranchProtectionRequest(
-    @SerializedName("required_status_checks") val requiredStatusChecks: RequiredStatusChecksRequest? = null,
+    @SerializedName("required_status_checks") val requiredStatusChecks: RequiredStatusChecksRequest? = RequiredStatusChecksRequest(),
     @SerializedName("enforce_admins") val enforceAdmins: Boolean = true,
     @SerializedName("required_pull_request_reviews") val requiredPullRequestReviews: PullRequestReviewProtectionRequest = PullRequestReviewProtectionRequest(),
     val restrictions: BranchRestrictionsRequest? = null,
-    @SerializedName("required_linear_history") val requiredLinearHistory: Boolean = false,
+    @SerializedName("required_linear_history") val requiredLinearHistory: Boolean = true,
     @SerializedName("allow_force_pushes") val allowForcePushes: Boolean = false,
     @SerializedName("allow_deletions") val allowDeletions: Boolean = false,
     @SerializedName("block_creations") val blockCreations: Boolean = false,
@@ -108,7 +112,7 @@ data class PullRequestReviewProtectionRequest(
     @SerializedName("dismiss_stale_reviews") val dismissStaleReviews: Boolean = true,
     @SerializedName("require_code_owner_reviews") val requireCodeOwnerReviews: Boolean = false,
     @SerializedName("required_approving_review_count") val requiredApprovingReviewCount: Int = 1,
-    @SerializedName("require_last_push_approval") val requireLastPushApproval: Boolean = false
+    @SerializedName("require_last_push_approval") val requireLastPushApproval: Boolean = true
 )
 
 data class BranchRestrictionsRequest(
@@ -118,12 +122,18 @@ data class BranchRestrictionsRequest(
 )
 
 data class BranchProtectionSnapshot(
+    @SerializedName("required_status_checks") val requiredStatusChecks: RequiredStatusChecksSnapshot? = null,
     @SerializedName("required_pull_request_reviews") val requiredPullRequestReviews: PullRequestReviewProtectionSnapshot? = null,
     @SerializedName("enforce_admins") val enforceAdmins: EnabledFlag? = null,
     @SerializedName("required_linear_history") val requiredLinearHistory: EnabledFlag? = null,
     @SerializedName("allow_force_pushes") val allowForcePushes: EnabledFlag? = null,
     @SerializedName("allow_deletions") val allowDeletions: EnabledFlag? = null,
     @SerializedName("required_conversation_resolution") val requiredConversationResolution: EnabledFlag? = null
+)
+
+data class RequiredStatusChecksSnapshot(
+    val strict: Boolean = false,
+    val contexts: List<String> = emptyList()
 )
 
 data class PullRequestReviewProtectionSnapshot(
@@ -135,4 +145,28 @@ data class PullRequestReviewProtectionSnapshot(
 
 data class EnabledFlag(
     val enabled: Boolean = false
+)
+
+data class ActionsPermissionsSnapshot(
+    val enabled: Boolean = true,
+    @SerializedName("allowed_actions") val allowedActions: String? = null,
+    @SerializedName("selected_actions_url") val selectedActionsUrl: String? = null
+)
+
+data class ActionsWorkflowPermissionsSnapshot(
+    @SerializedName("default_workflow_permissions") val defaultWorkflowPermissions: String? = null,
+    @SerializedName("can_approve_pull_request_reviews") val canApprovePullRequestReviews: Boolean? = null
+)
+
+data class UpdateActionsWorkflowPermissionsRequest(
+    @SerializedName("default_workflow_permissions") val defaultWorkflowPermissions: String,
+    @SerializedName("can_approve_pull_request_reviews") val canApprovePullRequestReviews: Boolean
+)
+
+data class RepositoryRulesetSummary(
+    val id: Long,
+    val name: String,
+    val target: String? = null,
+    val enforcement: String? = null,
+    @SerializedName("node_id") val nodeId: String? = null
 )
