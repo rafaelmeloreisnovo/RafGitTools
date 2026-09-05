@@ -12,6 +12,7 @@ import com.rafgittools.data.cache.LocalRepositoryDao
 import com.rafgittools.data.cache.RepositoryNameCacheDao
 import com.rafgittools.data.cache.UserCacheDao
 import com.rafgittools.data.github.GithubApiService
+import com.rafgittools.data.github.RepositoryGovernanceApiService
 import com.rafgittools.data.repository.GitRepositoryImpl
 import com.rafgittools.domain.repository.GitRepository
 import com.rafgittools.offline.OfflineOperationDao
@@ -85,6 +86,11 @@ object NetworkModule {
     @Singleton
     fun provideGithubApiService(retrofit: Retrofit): GithubApiService =
         retrofit.create(GithubApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideRepositoryGovernanceApiService(retrofit: Retrofit): RepositoryGovernanceApiService =
+        retrofit.create(RepositoryGovernanceApiService::class.java)
 
     @Provides
     @Singleton

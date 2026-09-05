@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="repo_governance_title">Governança de Repositórios</string>
+    <string name="repo_governance_entry_title">Configuração e segurança dos repositórios</string>
+    <string name="repo_governance_entry_subtitle">Auditar e preparar configurações vinculadas ao provedor em cada repositório</string>
+    <string name="repo_governance_contract">OBSERVADO ≠ DESEJADO ≠ APLICADO. Negativas do provedor e ausência de evidência permanecem TOKEN_VAZIO até verificação.</string>
+    <string name="repo_governance_refresh">Atualizar estado de governança do repositório</string>
+    <string name="repo_governance_structure">Configuração estrutural</string>
+    <string name="repo_governance_security">Configuração de segurança</string>
+    <string name="repo_governance_issues">Issues</string>
+    <string name="repo_governance_projects">Projects</string>
+    <string name="repo_governance_wiki">Wiki</string>
+    <string name="repo_governance_discussions">Discussões</string>
+    <string name="repo_governance_merge_commit">Merge commits</string>
+    <string name="repo_governance_squash_merge">Squash merge</string>
+    <string name="repo_governance_rebase_merge">Rebase merge</string>
+    <string name="repo_governance_delete_branch">Excluir branch de origem após merge</string>
+    <string name="repo_governance_signoff">Exigir sign-off em commits feitos pela web</string>
+    <string name="repo_governance_branch_protection">Proteger branch padrão</string>
+    <string name="repo_governance_vulnerability_alerts">Alertas de vulnerabilidade</string>
+    <string name="repo_governance_dependabot">Atualizações de segurança do Dependabot</string>
+    <string name="repo_governance_advanced_security">Advanced Security</string>
+    <string name="repo_governance_secret_scanning">Varredura de segredos</string>
+    <string name="repo_governance_push_protection">Proteção de push da varredura de segredos</string>
+    <string name="repo_governance_baseline">Preparar baseline seguro</string>
+    <string name="repo_governance_discard">Descartar preparação</string>
+    <string name="repo_governance_apply_count">Aplicar %1$d alteração(ões) preparada(s)</string>
+    <string name="repo_governance_receipt">Recibo: %1$s</string>
+    <string name="repo_governance_confirm_title">Aplicar mudanças de governança?</string>
+    <string name="repo_governance_confirm_body">Repositório: %1$s\nCampos preparados: %2$d\n\nEsta ação grava configurações no provedor. Um recibo é anexado localmente e a tela consulta novamente o estado autoritativo após a operação.</string>
+    <string name="repo_governance_confirm_apply">Aplicar e verificar</string>
+    <string name="repo_governance_select_repository">Selecionar repositório</string>
+    <string name="repo_governance_loading">Carregando inventário do provedor…</string>
+    <string name="repo_governance_none">Nenhum repositório selecionado</string>
+    <string name="repo_governance_archived">Repositório arquivado — somente leitura</string>
+    <string name="repo_governance_admin_proven">Autoridade de admin observada</string>
+    <string name="repo_governance_admin_unproven">Autoridade de admin não comprovada — gravações bloqueadas</string>
+    <string name="repo_governance_admin">Admin</string>
+    <string name="repo_governance_read_only">Somente leitura / autoridade não comprovada</string>
+</resources>

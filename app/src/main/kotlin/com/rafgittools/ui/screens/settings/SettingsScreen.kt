@@ -53,6 +53,14 @@ fun SettingsScreen(
     var showGitConfigDialog by remember { mutableStateOf(false) }
     var showCacheDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+    var showRepositoryGovernance by remember { mutableStateOf(false) }
+
+    if (showRepositoryGovernance) {
+        RepositoryGovernanceScreen(
+            onNavigateBack = { showRepositoryGovernance = false }
+        )
+        return
+    }
     
     Scaffold(
         topBar = {
@@ -133,6 +141,20 @@ fun SettingsScreen(
                         onCheckedChange = { viewModel.setSignCommits(it) }
                     )
                 }
+            }
+
+            // Repository governance: provider-bound repository settings + security.
+            item {
+                SettingsSectionHeader(title = stringResource(R.string.repo_governance_title))
+            }
+
+            item {
+                ClickableSettingsItem(
+                    icon = Icons.Default.Security,
+                    title = stringResource(R.string.repo_governance_entry_title),
+                    subtitle = stringResource(R.string.repo_governance_entry_subtitle),
+                    onClick = { showRepositoryGovernance = true }
+                )
             }
             
             // Storage Section
