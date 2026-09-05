@@ -11,10 +11,10 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 /**
- * Narrow provider-bound surface for repository configuration + security governance.
+ * Provider-bound surface for repository configuration, enforcement and security governance.
  *
- * The screen consumes Response<T> for endpoints where 404/403 are meaningful evidence
- * states, so provider denial is preserved instead of being coerced into false.
+ * Response<T> is intentionally used where 403/404/409 are meaningful evidence states.
+ * Provider denial, plan limitations and absent features must remain distinguishable from false.
  */
 interface RepositoryGovernanceApiService {
 
@@ -68,6 +68,35 @@ interface RepositoryGovernanceApiService {
     ): Response<Unit>
 
     @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
+    @GET("repos/{owner}/{repo}/rulesets")
+    suspend fun listRulesets(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String
+    ): Response<List<RepositoryRulesetSummary>>
+
+    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
+    @GET("repos/{owner}/{repo}/actions/permissions")
+    suspend fun getActionsPermissions(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String
+    ): Response<ActionsPermissionsSnapshot>
+
+    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
+    @GET("repos/{owner}/{repo}/actions/permissions/workflow")
+    suspend fun getActionsWorkflowPermissions(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String
+    ): Response<ActionsWorkflowPermissionsSnapshot>
+
+    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
+    @PUT("repos/{owner}/{repo}/actions/permissions/workflow")
+    suspend fun updateActionsWorkflowPermissions(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Body request: UpdateActionsWorkflowPermissionsRequest
+    ): Response<Unit>
+
+    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
     @GET("repos/{owner}/{repo}/vulnerability-alerts")
     suspend fun checkVulnerabilityAlerts(
         @Path("owner") owner: String,
@@ -105,6 +134,27 @@ interface RepositoryGovernanceApiService {
     @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
     @DELETE("repos/{owner}/{repo}/automated-security-fixes")
     suspend fun disableAutomatedSecurityFixes(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String
+    ): Response<Unit>
+
+    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
+    @GET("repos/{owner}/{repo}/private-vulnerability-reporting")
+    suspend fun checkPrivateVulnerabilityReporting(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String
+    ): Response<PrivateVulnerabilityReportingSnapshot>
+
+    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
+    @PUT("repos/{owner}/{repo}/private-vulnerability-reporting")
+    suspend fun enablePrivateVulnerabilityReporting(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String
+    ): Response<Unit>
+
+    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
+    @DELETE("repos/{owner}/{repo}/private-vulnerability-reporting")
+    suspend fun disablePrivateVulnerabilityReporting(
         @Path("owner") owner: String,
         @Path("repo") repo: String
     ): Response<Unit>
