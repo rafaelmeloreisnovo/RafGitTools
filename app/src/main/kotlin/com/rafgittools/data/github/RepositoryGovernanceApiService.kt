@@ -143,7 +143,7 @@ interface RepositoryGovernanceApiService {
     suspend fun checkPrivateVulnerabilityReporting(
         @Path("owner") owner: String,
         @Path("repo") repo: String
-    ): Response<Unit>
+    ): Response<PrivateVulnerabilityReportingSnapshot>
 
     @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
     @PUT("repos/{owner}/{repo}/private-vulnerability-reporting")
