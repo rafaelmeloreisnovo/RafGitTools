@@ -150,7 +150,7 @@ class BisectManager(private val context: Context) {
 
     private fun formatDate(ident: PersonIdent?): String {
         return if (ident != null) {
-            SimpleDateFormat("yyyy-MM-dd HH:mm").format(Date(ident.when * 1000))
+            SimpleDateFormat("yyyy-MM-dd HH:mm").format(Date.from(ident.whenAsInstant))
         } else {
             "Unknown"
         }
