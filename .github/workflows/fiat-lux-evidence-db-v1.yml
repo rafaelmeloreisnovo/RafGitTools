@@ -11,12 +11,16 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: fiat-lux-evidence-db-v1-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   evidence-db-selftest:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Python syntax
         run: python3 -m py_compile tools/rafaelia_navigator/fiat_lux_evidence_db_v1.py
       - name: FIAT_LUX SQLite selftest
