@@ -2,6 +2,7 @@ package com.rafgittools.data.github
 
 import android.content.Context
 import com.google.gson.Gson
+import com.google.gson.JsonParser
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.security.MessageDigest
@@ -131,10 +132,8 @@ class RepositoryGovernanceReceiptStore @Inject constructor(
             for (line in lines) {
                 lineNumber += 1
                 if (line.isBlank()) continue
-                val envelope = runCatching {
-                    gson.fromJson(line, ReceiptEnvelope::class.java)
-                }.getOrNull()
-                if (envelope?.schema != SCHEMA || envelope.record_hash.isBlank()) {
+                val envelope = parseV2Envelope(line)
+                if (envelope == null) {
                     if (chained > 0) {
                         return@synchronized GovernanceReceiptChainStatus(
                             valid = false,
@@ -201,12 +200,24 @@ class RepositoryGovernanceReceiptStore @Inject constructor(
         var tail: ReceiptEnvelope? = null
         receiptFile.bufferedReader(Charsets.UTF_8).useLines { lines ->
             lines.filter { it.isNotBlank() }.forEach { line ->
-                val parsed = runCatching { gson.fromJson(line, ReceiptEnvelope::class.java) }.getOrNull()
-                if (parsed?.schema == SCHEMA && parsed.record_hash.isNotBlank()) tail = parsed
+                parseV2Envelope(line)?.let { tail = it }
             }
         }
         return tail
     }
+
+    private fun parseV2Envelope(line: String): ReceiptEnvelope? = runCatching {
+        val root = JsonParser.parseString(line)
+        if (!root.isJsonObject) return@runCatching null
+        val obj = root.asJsonObject
+        if (obj.get("schema")?.takeIf { it.isJsonPrimitive }?.asString != SCHEMA) {
+            return@runCatching null
+        }
+        REQUIRED_V2_FIELDS.forEach { field ->
+            if (!obj.has(field) || obj.get(field).isJsonNull) return@runCatching null
+        }
+        gson.fromJson(obj, ReceiptEnvelope::class.java)
+    }.getOrNull()
 
     private fun canonicalPayload(
         sequence: Long,
@@ -245,5 +256,16 @@ class RepositoryGovernanceReceiptStore @Inject constructor(
         private const val MAX_DETAILS_CHARS = 8192
         private const val MAX_SNAPSHOT_CHARS = 32768
         private const val MAX_FIELD_CHARS = 1024
+        private val REQUIRED_V2_FIELDS = setOf(
+            "sequence",
+            "receipt_id",
+            "timestamp_epoch_ms",
+            "repository",
+            "operation",
+            "outcome",
+            "details",
+            "previous_hash",
+            "record_hash"
+        )
     }
 }
