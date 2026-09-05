@@ -20,12 +20,12 @@ import com.rafgittools.data.github.UpdateActionsWorkflowPermissionsRequest
 import com.rafgittools.data.github.UpdateGovernanceSecurityAndAnalysis
 import com.rafgittools.data.github.UpdateRepositoryGovernanceRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import retrofit2.Response
-import javax.inject.Inject
 
 enum class GovernanceEvidenceState {
     OBSERVED, READY, APPLYING, APPLIED, FAILED, TOKEN_VAZIO
@@ -140,7 +140,7 @@ class RepositoryGovernanceViewModel @Inject constructor(
                         compareByDescending<GovernanceRepositorySummary> { it.permissions?.admin == true }
                             .thenBy { it.fullName.lowercase() }
                     )
-                    val currentName = _uiState.value.selectedRepository?.fullName
+                    val previousSelection = _uiState.value.selectedRepository?.fullName
                     _uiState.value = _uiState.value.copy(
                         repositories = ordered,
                         isLoadingRepositories = false,
@@ -151,7 +151,7 @@ class RepositoryGovernanceViewModel @Inject constructor(
                             "Observed ${ordered.size} repository/repositories across all provider pages."
                         }
                     )
-                    val next = currentName?.let { name -> ordered.firstOrNull { it.fullName == name } }
+                    val next = previousSelection?.let { name -> ordered.firstOrNull { it.fullName == name } }
                         ?: ordered.firstOrNull { it.permissions?.admin == true }
                         ?: ordered.firstOrNull()
                     next?.let { selectRepository(it.fullName) }
@@ -164,21 +164,6 @@ class RepositoryGovernanceViewModel @Inject constructor(
                     )
                 }
         }
-    }
-
-    private suspend fun listAllRepositories(): List<GovernanceRepositorySummary> {
-        val all = LinkedHashMap<String, GovernanceRepositorySummary>()
-        var page = 1
-        while (true) {
-            val batch = api.listRepositories(page = page, perPage = PAGE_SIZE)
-            batch.forEach { all[it.fullName] = it }
-            if (batch.size < PAGE_SIZE) break
-            page += 1
-            check(page <= MAX_REPOSITORY_PAGES) {
-                "TOKEN_VAZIO: repository inventory exceeded guarded pagination bound"
-            }
-        }
-        return all.values.toList()
     }
 
     fun selectRepository(fullName: String) {
@@ -204,12 +189,14 @@ class RepositoryGovernanceViewModel @Inject constructor(
 
     fun runDeepAudit() {
         val repository = _uiState.value.selectedRepository ?: return
-        _uiState.value = _uiState.value.copy(isAuditing = true, message = "Running provider-bound governance audit…")
+        _uiState.value = _uiState.value.copy(
+            isAuditing = true,
+            message = "Running provider-bound governance audit…"
+        )
         viewModelScope.launch {
             probe(
                 repository = repository,
                 preserveDirty = true,
-                preserveMessage = false,
                 writeAuditReceipt = true,
                 auditOperation = "repository_governance_deep_audit"
             )
@@ -234,9 +221,8 @@ class RepositoryGovernanceViewModel @Inject constructor(
     }
 
     /**
-     * Stages a conservative baseline. Existing protection is preserved rather than rewritten.
-     * Rulesets remain audit-only in V2 because a ruleset PUT/POST is replacement-shaped and needs
-     * a complete provider fidelity model before safe mutation.
+     * Stages a conservative baseline. Existing branch-protection/ruleset policy is not
+     * replacement-written when already enabled because partial fidelity can erase controls.
      */
     fun useRecommendedBaseline() {
         val state = _uiState.value
@@ -268,22 +254,19 @@ class RepositoryGovernanceViewModel @Inject constructor(
             } else gaps += "private vulnerability reporting"
         }
 
-        if (observed.advancedSecurityEnabled != null) {
-            stage(GovernanceField.ADVANCED_SECURITY, true)
-        } else gaps += "advanced security"
-
-        if (observed.secretScanningEnabled != null) {
-            stage(GovernanceField.SECRET_SCANNING, true)
-        } else gaps += "secret scanning"
-
-        if (observed.secretScanningPushProtectionEnabled != null) {
-            stage(GovernanceField.SECRET_SCANNING_PUSH_PROTECTION, true)
-        } else gaps += "push protection"
+        stageIfObserved(observed.advancedSecurityEnabled, GovernanceField.ADVANCED_SECURITY, true, dirty, gaps, "advanced security") { field, value ->
+            desired = desired.withField(field, value)
+        }
+        stageIfObserved(observed.secretScanningEnabled, GovernanceField.SECRET_SCANNING, true, dirty, gaps, "secret scanning") { field, value ->
+            desired = desired.withField(field, value)
+        }
+        stageIfObserved(observed.secretScanningPushProtectionEnabled, GovernanceField.SECRET_SCANNING_PUSH_PROTECTION, true, dirty, gaps, "push protection") { field, value ->
+            desired = desired.withField(field, value)
+        }
 
         if (observed.workflowPermissions?.defaultWorkflowPermissions != null) {
             stage(GovernanceField.ACTIONS_READ_ONLY_DEFAULT, true)
         } else gaps += "Actions default token permission"
-
         if (observed.workflowPermissions?.canApprovePullRequestReviews != null) {
             stage(GovernanceField.ACTIONS_CAN_APPROVE_PULL_REQUESTS, false)
         } else gaps += "Actions PR approval authority"
@@ -293,7 +276,7 @@ class RepositoryGovernanceViewModel @Inject constructor(
             dirtyFields = dirty,
             evidenceState = if (dirty.isEmpty()) GovernanceEvidenceState.OBSERVED else GovernanceEvidenceState.READY,
             message = buildString {
-                append("Conservative baseline staged; existing rulesets/protection are not destructively rewritten.")
+                append("Conservative baseline staged without destructive policy replacement.")
                 if (gaps.isNotEmpty()) append(" TOKEN_VAZIO preserved for: ${gaps.joinToString(", ")}.")
             }
         )
@@ -317,36 +300,23 @@ class RepositoryGovernanceViewModel @Inject constructor(
         val dirty = state.dirtyFields
         if (dirty.isEmpty()) return
 
-        if (!state.adminAuthorityProven) {
-            val receipt = receiptStore.appendDetailed(
-                repository = repository.fullName,
-                operation = "repository_governance_apply",
-                outcome = "TOKEN_VAZIO",
-                details = "Provider inventory/details did not prove admin permission; no mutation attempted.",
-                beforeSnapshot = providerSnapshot(observed),
-                gaps = listOf("ADMIN_AUTHORITY_NOT_PROVEN")
-            )
-            _uiState.value = state.copy(
-                evidenceState = GovernanceEvidenceState.TOKEN_VAZIO,
-                message = "TOKEN_VAZIO: admin authority is required for repository governance writes.",
-                lastReceiptId = receipt,
-                receiptPath = receiptStore.path(),
-                receiptChainStatus = receiptStore.verifyChain()
-            )
-            return
-        }
-        if (repository.archived) {
+        if (!state.adminAuthorityProven || repository.archived) {
+            val reason = if (repository.archived) "ARCHIVED_REPOSITORY" else "ADMIN_AUTHORITY_NOT_PROVEN"
             val receipt = receiptStore.appendDetailed(
                 repository = repository.fullName,
                 operation = "repository_governance_apply",
                 outcome = "BLOCKED",
-                details = "Archived repository is read-only; no mutation attempted.",
+                details = "$reason; no mutation attempted.",
                 beforeSnapshot = providerSnapshot(observed),
-                gaps = listOf("ARCHIVED_REPOSITORY")
+                gaps = listOf(reason)
             )
             _uiState.value = state.copy(
-                evidenceState = GovernanceEvidenceState.FAILED,
-                message = "Archived repositories are read-only; no mutation attempted.",
+                evidenceState = if (repository.archived) GovernanceEvidenceState.FAILED else GovernanceEvidenceState.TOKEN_VAZIO,
+                message = if (repository.archived) {
+                    "Archived repositories are read-only; no mutation attempted."
+                } else {
+                    "TOKEN_VAZIO: admin authority is required for repository governance writes."
+                },
                 lastReceiptId = receipt,
                 receiptPath = receiptStore.path(),
                 receiptChainStatus = receiptStore.verifyChain()
@@ -358,175 +328,200 @@ class RepositoryGovernanceViewModel @Inject constructor(
             evidenceState = GovernanceEvidenceState.APPLYING,
             message = "Applying ${dirty.size} staged governance field(s)…"
         )
+        viewModelScope.launch { applyProviderChanges(repository, observed, desired, dirty) }
+    }
 
-        viewModelScope.launch {
-            val coordinates = repositoryCoordinates(repository.fullName)
-            if (coordinates == null) {
-                _uiState.value = _uiState.value.copy(
-                    evidenceState = GovernanceEvidenceState.FAILED,
-                    message = "Invalid repository identity: ${repository.fullName}"
-                )
-                return@launch
-            }
-            val (owner, repo) = coordinates
-            val succeeded = mutableSetOf<GovernanceField>()
-            val failures = mutableListOf<String>()
-
-            val structuralFields = dirty intersect STRUCTURAL_FIELDS
-            if (structuralFields.isNotEmpty()) {
-                runCatching { api.updateRepository(owner, repo, structuralRequest(desired, structuralFields)) }
-                    .onSuccess { succeeded += structuralFields }
-                    .onFailure { failures += "structure: ${providerMessage(it)}" }
-            }
-
-            val analysisFields = dirty intersect ANALYSIS_FIELDS
-            if (analysisFields.isNotEmpty()) {
-                runCatching { api.updateRepository(owner, repo, securityAnalysisRequest(desired, analysisFields)) }
-                    .onSuccess { succeeded += analysisFields }
-                    .onFailure { failures += "security_and_analysis: ${providerMessage(it)}" }
-            }
-
-            applyToggleEndpoint(
-                field = GovernanceField.VULNERABILITY_ALERTS,
-                dirty = dirty,
-                desired = desired.vulnerabilityAlertsEnabled,
-                observed = observed.vulnerabilityAlertsEnabled,
-                enable = { api.enableVulnerabilityAlerts(owner, repo) },
-                disable = { api.disableVulnerabilityAlerts(owner, repo) },
-                succeeded = succeeded,
-                failures = failures,
-                label = "vulnerability_alerts"
-            )
-
-            applyToggleEndpoint(
-                field = GovernanceField.AUTOMATED_SECURITY_FIXES,
-                dirty = dirty,
-                desired = desired.automatedSecurityFixesEnabled,
-                observed = observed.automatedSecurityFixesEnabled,
-                enable = { api.enableAutomatedSecurityFixes(owner, repo) },
-                disable = { api.disableAutomatedSecurityFixes(owner, repo) },
-                succeeded = succeeded,
-                failures = failures,
-                label = "automated_security_fixes"
-            )
-
-            if (GovernanceField.PRIVATE_VULNERABILITY_REPORTING in dirty) {
-                if (observed.details.isPrivate) {
-                    failures += "private_vulnerability_reporting: NOT_APPLICABLE to private repository"
-                } else {
-                    applyToggleEndpoint(
-                        field = GovernanceField.PRIVATE_VULNERABILITY_REPORTING,
-                        dirty = dirty,
-                        desired = desired.privateVulnerabilityReportingEnabled,
-                        observed = observed.privateVulnerabilityReportingEnabled,
-                        enable = { api.enablePrivateVulnerabilityReporting(owner, repo) },
-                        disable = { api.disablePrivateVulnerabilityReporting(owner, repo) },
-                        succeeded = succeeded,
-                        failures = failures,
-                        label = "private_vulnerability_reporting"
-                    )
-                }
-            }
-
-            val actionsFields = dirty intersect ACTIONS_FIELDS
-            if (actionsFields.isNotEmpty()) {
-                val workflow = observed.workflowPermissions
-                if (workflow?.defaultWorkflowPermissions == null || workflow.canApprovePullRequestReviews == null) {
-                    failures += "actions_workflow_permissions: TOKEN_VAZIO pre-state; replacement blocked"
-                } else {
-                    runProviderResponse(
-                        operation = {
-                            api.updateActionsWorkflowPermissions(
-                                owner,
-                                repo,
-                                UpdateActionsWorkflowPermissionsRequest(
-                                    defaultWorkflowPermissions = if (desired.actionsReadOnlyDefault) "read" else "write",
-                                    canApprovePullRequestReviews = desired.actionsCanApprovePullRequests
-                                )
-                            )
-                        },
-                        idempotentNotFound = false
-                    ).fold(
-                        onSuccess = { succeeded += actionsFields },
-                        onFailure = { failures += "actions_workflow_permissions: ${it.message}" }
-                    )
-                }
-            }
-
-            if (GovernanceField.BRANCH_PROTECTION in dirty) {
-                when {
-                    observed.branchProtectionEnabled == null -> failures +=
-                        "branch_protection: TOKEN_VAZIO pre-state; destructive replacement blocked"
-                    desired.branchProtectionEnabled == observed.branchProtectionEnabled ->
-                        succeeded += GovernanceField.BRANCH_PROTECTION
-                    desired.branchProtectionEnabled && observed.branchProtectionEnabled == false -> {
-                        runProviderResponse(
-                            operation = {
-                                api.updateBranchProtection(
-                                    owner,
-                                    repo,
-                                    observed.details.defaultBranch,
-                                    BranchProtectionRequest(requiredStatusChecks = null)
-                                )
-                            },
-                            idempotentNotFound = false
-                        ).fold(
-                            onSuccess = { succeeded += GovernanceField.BRANCH_PROTECTION },
-                            onFailure = { failures += "branch_protection: ${it.message}" }
-                        )
-                    }
-                    !desired.branchProtectionEnabled && observed.branchProtectionEnabled == true -> {
-                        runProviderResponse(
-                            operation = { api.deleteBranchProtection(owner, repo, observed.details.defaultBranch) },
-                            idempotentNotFound = true
-                        ).fold(
-                            onSuccess = { succeeded += GovernanceField.BRANCH_PROTECTION },
-                            onFailure = { failures += "branch_protection: ${it.message}" }
-                        )
-                    }
-                }
-            }
-
-            val outcome = when {
-                failures.isEmpty() -> "PROVIDER_ACCEPTED"
-                succeeded.isEmpty() -> "FAILED"
-                else -> "PARTIAL"
-            }
-            val receipt = receiptStore.appendDetailed(
-                repository = repository.fullName,
-                operation = "repository_governance_apply",
-                outcome = outcome,
-                details = "dirty=${dirty.sortedBy { it.name }.joinToString(",")}; " +
-                    "succeeded=${succeeded.sortedBy { it.name }.joinToString(",")}; " +
-                    "failures=${failures.joinToString(" | ")}",
-                beforeSnapshot = providerSnapshot(observed),
-                afterSnapshot = "AUTHORITATIVE_REPROBE_PENDING",
-                gaps = failures
-            )
-
+    private suspend fun applyProviderChanges(
+        repository: GovernanceRepositorySummary,
+        observed: ObservedRepositoryGovernance,
+        desired: DesiredRepositoryGovernance,
+        dirty: Set<GovernanceField>
+    ) {
+        val coordinates = repositoryCoordinates(repository.fullName)
+        if (coordinates == null) {
             _uiState.value = _uiState.value.copy(
-                dirtyFields = dirty - succeeded,
-                evidenceState = when {
-                    failures.isEmpty() -> GovernanceEvidenceState.APPLIED
-                    succeeded.isEmpty() -> GovernanceEvidenceState.FAILED
-                    else -> GovernanceEvidenceState.TOKEN_VAZIO
-                },
-                message = if (failures.isEmpty()) {
-                    "Provider accepted all staged operations. Re-probing authoritative state…"
-                } else {
-                    "${succeeded.size} field(s) accepted; unresolved: ${failures.joinToString(" | ")}"
-                },
-                lastReceiptId = receipt,
-                receiptPath = receiptStore.path(),
-                receiptChainStatus = receiptStore.verifyChain()
+                evidenceState = GovernanceEvidenceState.FAILED,
+                message = "Invalid repository identity: ${repository.fullName}"
             )
-            probe(
-                repository = repository,
-                preserveDirty = true,
-                preserveMessage = failures.isNotEmpty(),
-                writeAuditReceipt = true,
-                auditOperation = "repository_governance_post_apply_reprobe"
-            )
+            return
+        }
+        val (owner, repo) = coordinates
+        val succeeded = mutableSetOf<GovernanceField>()
+        val failures = mutableListOf<String>()
+
+        val structuralFields = dirty intersect STRUCTURAL_FIELDS
+        if (structuralFields.isNotEmpty()) {
+            runCatching { api.updateRepository(owner, repo, structuralRequest(desired, structuralFields)) }
+                .onSuccess { succeeded += structuralFields }
+                .onFailure { failures += "structure: ${providerMessage(it)}" }
+        }
+
+        val analysisFields = dirty intersect ANALYSIS_FIELDS
+        if (analysisFields.isNotEmpty()) {
+            runCatching { api.updateRepository(owner, repo, securityAnalysisRequest(desired, analysisFields)) }
+                .onSuccess { succeeded += analysisFields }
+                .onFailure { failures += "security_and_analysis: ${providerMessage(it)}" }
+        }
+
+        applyToggleEndpoint(
+            GovernanceField.VULNERABILITY_ALERTS,
+            dirty,
+            desired.vulnerabilityAlertsEnabled,
+            observed.vulnerabilityAlertsEnabled,
+            { api.enableVulnerabilityAlerts(owner, repo) },
+            { api.disableVulnerabilityAlerts(owner, repo) },
+            succeeded,
+            failures,
+            "vulnerability_alerts"
+        )
+        applyToggleEndpoint(
+            GovernanceField.AUTOMATED_SECURITY_FIXES,
+            dirty,
+            desired.automatedSecurityFixesEnabled,
+            observed.automatedSecurityFixesEnabled,
+            { api.enableAutomatedSecurityFixes(owner, repo) },
+            { api.disableAutomatedSecurityFixes(owner, repo) },
+            succeeded,
+            failures,
+            "automated_security_fixes"
+        )
+        if (GovernanceField.PRIVATE_VULNERABILITY_REPORTING in dirty) {
+            if (observed.details.isPrivate) {
+                failures += "private_vulnerability_reporting: NOT_APPLICABLE to private repository"
+            } else {
+                applyToggleEndpoint(
+                    GovernanceField.PRIVATE_VULNERABILITY_REPORTING,
+                    dirty,
+                    desired.privateVulnerabilityReportingEnabled,
+                    observed.privateVulnerabilityReportingEnabled,
+                    { api.enablePrivateVulnerabilityReporting(owner, repo) },
+                    { api.disablePrivateVulnerabilityReporting(owner, repo) },
+                    succeeded,
+                    failures,
+                    "private_vulnerability_reporting"
+                )
+            }
+        }
+
+        applyActionsPermissions(owner, repo, observed, desired, dirty, succeeded, failures)
+        applyBranchProtection(owner, repo, observed, desired, dirty, succeeded, failures)
+
+        val outcome = when {
+            failures.isEmpty() -> "PROVIDER_ACCEPTED"
+            succeeded.isEmpty() -> "FAILED"
+            else -> "PARTIAL"
+        }
+        val receipt = receiptStore.appendDetailed(
+            repository = repository.fullName,
+            operation = "repository_governance_apply",
+            outcome = outcome,
+            details = "dirty=${dirty.sortedBy { it.name }.joinToString(",")}; " +
+                "succeeded=${succeeded.sortedBy { it.name }.joinToString(",")}; " +
+                "failures=${failures.joinToString(" | ")}",
+            beforeSnapshot = providerSnapshot(observed),
+            afterSnapshot = "AUTHORITATIVE_REPROBE_PENDING",
+            gaps = failures
+        )
+
+        _uiState.value = _uiState.value.copy(
+            dirtyFields = dirty - succeeded,
+            evidenceState = when {
+                failures.isEmpty() -> GovernanceEvidenceState.APPLIED
+                succeeded.isEmpty() -> GovernanceEvidenceState.FAILED
+                else -> GovernanceEvidenceState.TOKEN_VAZIO
+            },
+            message = if (failures.isEmpty()) {
+                "Provider accepted staged operations. Re-probing authoritative state…"
+            } else {
+                "${succeeded.size} field(s) accepted; unresolved: ${failures.joinToString(" | ")}"
+            },
+            lastReceiptId = receipt,
+            receiptPath = receiptStore.path(),
+            receiptChainStatus = receiptStore.verifyChain()
+        )
+        probe(
+            repository = repository,
+            preserveDirty = true,
+            preserveMessage = failures.isNotEmpty(),
+            writeAuditReceipt = true,
+            auditOperation = "repository_governance_post_apply_reprobe"
+        )
+    }
+
+    private suspend fun applyActionsPermissions(
+        owner: String,
+        repo: String,
+        observed: ObservedRepositoryGovernance,
+        desired: DesiredRepositoryGovernance,
+        dirty: Set<GovernanceField>,
+        succeeded: MutableSet<GovernanceField>,
+        failures: MutableList<String>
+    ) {
+        val fields = dirty intersect ACTIONS_FIELDS
+        if (fields.isEmpty()) return
+        val workflow = observed.workflowPermissions
+        if (workflow?.defaultWorkflowPermissions == null || workflow.canApprovePullRequestReviews == null) {
+            failures += "actions_workflow_permissions: TOKEN_VAZIO pre-state; replacement blocked"
+            return
+        }
+        runProviderResponse(
+            operation = {
+                api.updateActionsWorkflowPermissions(
+                    owner,
+                    repo,
+                    UpdateActionsWorkflowPermissionsRequest(
+                        defaultWorkflowPermissions = if (desired.actionsReadOnlyDefault) "read" else "write",
+                        canApprovePullRequestReviews = desired.actionsCanApprovePullRequests
+                    )
+                )
+            },
+            idempotentNotFound = false
+        ).fold(
+            onSuccess = { succeeded += fields },
+            onFailure = { failures += "actions_workflow_permissions: ${it.message}" }
+        )
+    }
+
+    private suspend fun applyBranchProtection(
+        owner: String,
+        repo: String,
+        observed: ObservedRepositoryGovernance,
+        desired: DesiredRepositoryGovernance,
+        dirty: Set<GovernanceField>,
+        succeeded: MutableSet<GovernanceField>,
+        failures: MutableList<String>
+    ) {
+        if (GovernanceField.BRANCH_PROTECTION !in dirty) return
+        when {
+            observed.branchProtectionEnabled == null -> failures +=
+                "branch_protection: TOKEN_VAZIO pre-state; replacement blocked"
+            desired.branchProtectionEnabled == observed.branchProtectionEnabled ->
+                succeeded += GovernanceField.BRANCH_PROTECTION
+            desired.branchProtectionEnabled && observed.branchProtectionEnabled == false -> {
+                runProviderResponse(
+                    operation = {
+                        api.updateBranchProtection(
+                            owner,
+                            repo,
+                            observed.details.defaultBranch,
+                            BranchProtectionRequest(requiredStatusChecks = null)
+                        )
+                    },
+                    idempotentNotFound = false
+                ).fold(
+                    onSuccess = { succeeded += GovernanceField.BRANCH_PROTECTION },
+                    onFailure = { failures += "branch_protection: ${it.message}" }
+                )
+            }
+            !desired.branchProtectionEnabled && observed.branchProtectionEnabled == true -> {
+                runProviderResponse(
+                    operation = { api.deleteBranchProtection(owner, repo, observed.details.defaultBranch) },
+                    idempotentNotFound = true
+                ).fold(
+                    onSuccess = { succeeded += GovernanceField.BRANCH_PROTECTION },
+                    onFailure = { failures += "branch_protection: ${it.message}" }
+                )
+            }
         }
     }
 
@@ -581,14 +576,14 @@ class RepositoryGovernanceViewModel @Inject constructor(
             val details = api.getRepository(owner, repo)
             val adminProven = repository.permissions?.admin == true || details.permissions?.admin == true
             val protectionResponse = runCatching { api.getBranchProtection(owner, repo, details.defaultBranch) }.getOrNull()
-            val vulnerability = runCatching { api.checkVulnerabilityAlerts(owner, repo) }.getOrNull()
-            val automatedFixes = runCatching { api.checkAutomatedSecurityFixes(owner, repo) }.getOrNull()
+            val vulnerabilityResponse = runCatching { api.checkVulnerabilityAlerts(owner, repo) }.getOrNull()
+            val automatedFixesResponse = runCatching { api.checkAutomatedSecurityFixes(owner, repo) }.getOrNull()
             val rulesetsResponse = runCatching { api.listRulesets(owner, repo) }.getOrNull()
             val actionsResponse = runCatching { api.getActionsPermissions(owner, repo) }.getOrNull()
             val workflowResponse = runCatching { api.getActionsWorkflowPermissions(owner, repo) }.getOrNull()
-            val privateVulnerabilityResponse = if (!details.isPrivate) {
+            val privateVulnerabilityResponse = if (details.isPrivate) null else {
                 runCatching { api.checkPrivateVulnerabilityReporting(owner, repo) }.getOrNull()
-            } else null
+            }
 
             ObservedRepositoryGovernance(
                 details = details,
@@ -597,60 +592,19 @@ class RepositoryGovernanceViewModel @Inject constructor(
                 rulesets = rulesetsResponse?.takeIf { it.isSuccessful }?.body(),
                 actionsPermissions = actionsResponse?.takeIf { it.isSuccessful }?.body(),
                 workflowPermissions = workflowResponse?.takeIf { it.isSuccessful }?.body(),
-                vulnerabilityAlertsEnabled = responseBoolean(vulnerability, adminProven),
-                automatedSecurityFixesEnabled = responseBoolean(automatedFixes, adminProven),
-                privateVulnerabilityReportingEnabled = if (details.isPrivate) null else responseBoolean(privateVulnerabilityResponse, adminProven),
+                vulnerabilityAlertsEnabled = responseBoolean(vulnerabilityResponse, adminProven),
+                automatedSecurityFixesEnabled = responseBoolean(automatedFixesResponse, adminProven),
+                privateVulnerabilityReportingEnabled = if (details.isPrivate) {
+                    null
+                } else {
+                    privateVulnerabilityResponse?.takeIf { it.isSuccessful }?.body()?.enabled
+                },
                 advancedSecurityEnabled = details.securityAndAnalysis?.advancedSecurity?.isEnabledOrNull(),
                 secretScanningEnabled = details.securityAndAnalysis?.secretScanning?.isEnabledOrNull(),
                 secretScanningPushProtectionEnabled = details.securityAndAnalysis?.secretScanningPushProtection?.isEnabledOrNull()
             )
         }.onSuccess { observed ->
-            val chainBefore = receiptStore.verifyChain()
-            val audit = RepositoryGovernanceAuditor.evaluate(
-                GovernanceAuditInput(
-                    repository = observed.details,
-                    branchProtectionEnabled = observed.branchProtectionEnabled,
-                    branchProtection = observed.branchProtection,
-                    rulesets = observed.rulesets,
-                    actionsPermissions = observed.actionsPermissions,
-                    workflowPermissions = observed.workflowPermissions,
-                    vulnerabilityAlertsEnabled = observed.vulnerabilityAlertsEnabled,
-                    automatedSecurityFixesEnabled = observed.automatedSecurityFixesEnabled,
-                    privateVulnerabilityReportingEnabled = observed.privateVulnerabilityReportingEnabled,
-                    appendOnlyChainValid = chainBefore.valid
-                )
-            )
-            val previous = _uiState.value
-            var auditReceipt: String? = null
-            if (writeAuditReceipt) {
-                val gaps = audit.controls
-                    .filter { it.state == GovernanceControlState.FAIL || it.state == GovernanceControlState.TOKEN_VAZIO }
-                    .map { "${it.id}:${it.state.name}" }
-                auditReceipt = receiptStore.appendDetailed(
-                    repository = repository.fullName,
-                    operation = auditOperation,
-                    outcome = if (audit.failCount == 0 && audit.gapCount == 0) "AUDIT_PASS" else "AUDIT_OPEN_GAPS",
-                    details = "profile=${audit.profileId}; score=${audit.scorePercent}; pass=${audit.passCount}; fail=${audit.failCount}; token_vazio=${audit.gapCount}; na=${audit.notApplicableCount}",
-                    afterSnapshot = providerSnapshot(observed),
-                    gaps = gaps
-                )
-            }
-            val chainAfter = receiptStore.verifyChain()
-            _uiState.value = previous.copy(
-                observed = observed,
-                desired = if (preserveDirty && previous.desired != null) previous.desired else desiredFromObserved(observed),
-                dirtyFields = if (preserveDirty) previous.dirtyFields else emptySet(),
-                auditReport = audit,
-                receiptChainStatus = chainAfter,
-                isLoadingRepository = false,
-                isAuditing = false,
-                evidenceState = if (preserveDirty && previous.dirtyFields.isNotEmpty()) {
-                    GovernanceEvidenceState.READY
-                } else GovernanceEvidenceState.OBSERVED,
-                message = if (preserveMessage) previous.message else evidenceSummary(observed, audit),
-                lastReceiptId = auditReceipt ?: previous.lastReceiptId,
-                receiptPath = if (auditReceipt != null || previous.receiptPath != null) receiptStore.path() else null
-            )
+            publishProbe(repository, observed, preserveDirty, preserveMessage, writeAuditReceipt, auditOperation)
         }.onFailure { error ->
             val receipt = if (writeAuditReceipt) {
                 receiptStore.appendDetailed(
@@ -671,6 +625,93 @@ class RepositoryGovernanceViewModel @Inject constructor(
                 receiptChainStatus = receiptStore.verifyChain()
             )
         }
+    }
+
+    private fun publishProbe(
+        repository: GovernanceRepositorySummary,
+        observed: ObservedRepositoryGovernance,
+        preserveDirty: Boolean,
+        preserveMessage: Boolean,
+        writeAuditReceipt: Boolean,
+        auditOperation: String
+    ) {
+        val chainBefore = receiptStore.verifyChain()
+        val audit = RepositoryGovernanceAuditor.evaluate(
+            GovernanceAuditInput(
+                repository = observed.details,
+                branchProtectionEnabled = observed.branchProtectionEnabled,
+                branchProtection = observed.branchProtection,
+                rulesets = observed.rulesets,
+                actionsPermissions = observed.actionsPermissions,
+                workflowPermissions = observed.workflowPermissions,
+                vulnerabilityAlertsEnabled = observed.vulnerabilityAlertsEnabled,
+                automatedSecurityFixesEnabled = observed.automatedSecurityFixesEnabled,
+                privateVulnerabilityReportingEnabled = observed.privateVulnerabilityReportingEnabled,
+                appendOnlyChainValid = chainBefore.valid
+            )
+        )
+        val previous = _uiState.value
+        val auditReceipt = if (writeAuditReceipt) {
+            val gaps = audit.controls
+                .filter { it.state == GovernanceControlState.FAIL || it.state == GovernanceControlState.TOKEN_VAZIO }
+                .map { "${it.id}:${it.state.name}" }
+            receiptStore.appendDetailed(
+                repository = repository.fullName,
+                operation = auditOperation,
+                outcome = if (audit.failCount == 0 && audit.gapCount == 0) "AUDIT_PASS" else "AUDIT_OPEN_GAPS",
+                details = "profile=${audit.profileId}; score=${audit.scorePercent}; pass=${audit.passCount}; fail=${audit.failCount}; token_vazio=${audit.gapCount}; na=${audit.notApplicableCount}",
+                afterSnapshot = providerSnapshot(observed),
+                gaps = gaps
+            )
+        } else null
+
+        _uiState.value = previous.copy(
+            observed = observed,
+            desired = if (preserveDirty && previous.desired != null) previous.desired else desiredFromObserved(observed),
+            dirtyFields = if (preserveDirty) previous.dirtyFields else emptySet(),
+            auditReport = audit,
+            receiptChainStatus = receiptStore.verifyChain(),
+            isLoadingRepository = false,
+            isAuditing = false,
+            evidenceState = if (preserveDirty && previous.dirtyFields.isNotEmpty()) {
+                GovernanceEvidenceState.READY
+            } else GovernanceEvidenceState.OBSERVED,
+            message = if (preserveMessage) previous.message else evidenceSummary(observed, audit),
+            lastReceiptId = auditReceipt ?: previous.lastReceiptId,
+            receiptPath = if (auditReceipt != null || previous.receiptPath != null) receiptStore.path() else null
+        )
+    }
+
+    private suspend fun listAllRepositories(): List<GovernanceRepositorySummary> {
+        val all = LinkedHashMap<String, GovernanceRepositorySummary>()
+        var page = 1
+        while (true) {
+            val batch = api.listRepositories(page = page, perPage = PAGE_SIZE)
+            batch.forEach { all[it.fullName] = it }
+            if (batch.size < PAGE_SIZE) break
+            page += 1
+            check(page <= MAX_REPOSITORY_PAGES) {
+                "TOKEN_VAZIO: repository inventory exceeded guarded pagination bound"
+            }
+        }
+        return all.values.toList()
+    }
+
+    private fun stageIfObserved(
+        observedValue: Boolean?,
+        field: GovernanceField,
+        desiredValue: Boolean,
+        dirty: MutableSet<GovernanceField>,
+        gaps: MutableList<String>,
+        gapLabel: String,
+        updateDesired: (GovernanceField, Boolean) -> Unit
+    ) {
+        if (observedValue == null) {
+            gaps += gapLabel
+            return
+        }
+        updateDesired(field, desiredValue)
+        if (observedValue == desiredValue) dirty.remove(field) else dirty.add(field)
     }
 
     private fun DesiredRepositoryGovernance.withField(
@@ -830,7 +871,10 @@ class RepositoryGovernanceViewModel @Inject constructor(
         append("; rulesets=").append(observed.rulesets?.size ?: "TOKEN_VAZIO")
         append("; vulnerability_alerts=").append(observed.vulnerabilityAlertsEnabled ?: "TOKEN_VAZIO")
         append("; automated_security_fixes=").append(observed.automatedSecurityFixesEnabled ?: "TOKEN_VAZIO")
-        append("; private_vulnerability_reporting=").append(observed.privateVulnerabilityReportingEnabled ?: if (observed.details.isPrivate) "NOT_APPLICABLE" else "TOKEN_VAZIO")
+        append("; private_vulnerability_reporting=").append(
+            observed.privateVulnerabilityReportingEnabled
+                ?: if (observed.details.isPrivate) "NOT_APPLICABLE" else "TOKEN_VAZIO"
+        )
         append("; advanced_security=").append(observed.advancedSecurityEnabled ?: "TOKEN_VAZIO")
         append("; secret_scanning=").append(observed.secretScanningEnabled ?: "TOKEN_VAZIO")
         append("; push_protection=").append(observed.secretScanningPushProtectionEnabled ?: "TOKEN_VAZIO")
