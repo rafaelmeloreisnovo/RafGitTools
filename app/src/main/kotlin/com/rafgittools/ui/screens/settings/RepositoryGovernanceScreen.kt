@@ -24,7 +24,6 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,12 +51,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rafgittools.R
+import com.rafgittools.data.github.GovernanceAuditControl
+import com.rafgittools.data.github.GovernanceControlState
 
 /**
- * Provider-bound repository governance screen.
+ * Provider-bound repository governance control center.
  *
- * This screen deliberately distinguishes observed provider state from staged desired state.
- * Nothing is promoted to applied until the provider accepts the mutation and a re-probe runs.
+ * Configuration, enforcement evidence and audit state are deliberately separated.
+ * Nothing is promoted to applied until the provider accepts a mutation and a re-probe runs.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,8 +128,28 @@ fun RepositoryGovernanceScreen(
                 )
             }
 
+            item { GovernanceEvidenceCard(state) }
+
             item {
-                GovernanceEvidenceCard(state)
+                OutlinedButton(
+                    onClick = viewModel::runDeepAudit,
+                    enabled = state.selectedRepository != null &&
+                        !state.isAuditing &&
+                        state.evidenceState != GovernanceEvidenceState.APPLYING,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (state.isAuditing) {
+                        CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
+                    }
+                    Text(stringResource(R.string.repo_governance_deep_audit))
+                }
+            }
+
+            state.auditReport?.let { report ->
+                item { GovernanceAuditSummaryCard(state) }
+                report.controls.forEach { control ->
+                    item { GovernanceAuditControlRow(control) }
+                }
             }
 
             if (state.isLoadingRepository) {
@@ -151,91 +172,24 @@ fun RepositoryGovernanceScreen(
                         title = stringResource(R.string.repo_governance_structure)
                     )
                 }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_issues), observedLabel(observed.details.hasIssues), desired.hasIssues, GovernanceField.HAS_ISSUES in state.dirtyFields) { viewModel.setField(GovernanceField.HAS_ISSUES, it) } }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_projects), observedLabel(observed.details.hasProjects), desired.hasProjects, GovernanceField.HAS_PROJECTS in state.dirtyFields) { viewModel.setField(GovernanceField.HAS_PROJECTS, it) } }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_wiki), observedLabel(observed.details.hasWiki), desired.hasWiki, GovernanceField.HAS_WIKI in state.dirtyFields) { viewModel.setField(GovernanceField.HAS_WIKI, it) } }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_discussions), observedLabel(observed.details.hasDiscussions), desired.hasDiscussions, GovernanceField.HAS_DISCUSSIONS in state.dirtyFields) { viewModel.setField(GovernanceField.HAS_DISCUSSIONS, it) } }
 
                 item {
-                    GovernanceSwitchRow(
-                        title = stringResource(R.string.repo_governance_issues),
-                        subtitle = observedLabel(observed.details.hasIssues),
-                        checked = desired.hasIssues,
-                        dirty = GovernanceField.HAS_ISSUES in state.dirtyFields,
-                        onCheckedChange = { viewModel.setField(GovernanceField.HAS_ISSUES, it) }
+                    SectionHeader(
+                        icon = Icons.Default.SettingsSuggest,
+                        title = stringResource(R.string.repo_governance_merge_policy)
                     )
                 }
-                item {
-                    GovernanceSwitchRow(
-                        title = stringResource(R.string.repo_governance_projects),
-                        subtitle = observedLabel(observed.details.hasProjects),
-                        checked = desired.hasProjects,
-                        dirty = GovernanceField.HAS_PROJECTS in state.dirtyFields,
-                        onCheckedChange = { viewModel.setField(GovernanceField.HAS_PROJECTS, it) }
-                    )
-                }
-                item {
-                    GovernanceSwitchRow(
-                        title = stringResource(R.string.repo_governance_wiki),
-                        subtitle = observedLabel(observed.details.hasWiki),
-                        checked = desired.hasWiki,
-                        dirty = GovernanceField.HAS_WIKI in state.dirtyFields,
-                        onCheckedChange = { viewModel.setField(GovernanceField.HAS_WIKI, it) }
-                    )
-                }
-                item {
-                    GovernanceSwitchRow(
-                        title = stringResource(R.string.repo_governance_discussions),
-                        subtitle = observedLabel(observed.details.hasDiscussions),
-                        checked = desired.hasDiscussions,
-                        dirty = GovernanceField.HAS_DISCUSSIONS in state.dirtyFields,
-                        onCheckedChange = { viewModel.setField(GovernanceField.HAS_DISCUSSIONS, it) }
-                    )
-                }
-
-                item { Divider() }
-
-                item {
-                    GovernanceSwitchRow(
-                        title = stringResource(R.string.repo_governance_merge_commit),
-                        subtitle = observedLabel(observed.details.allowMergeCommit),
-                        checked = desired.allowMergeCommit,
-                        dirty = GovernanceField.ALLOW_MERGE_COMMIT in state.dirtyFields,
-                        onCheckedChange = { viewModel.setField(GovernanceField.ALLOW_MERGE_COMMIT, it) }
-                    )
-                }
-                item {
-                    GovernanceSwitchRow(
-                        title = stringResource(R.string.repo_governance_squash_merge),
-                        subtitle = observedLabel(observed.details.allowSquashMerge),
-                        checked = desired.allowSquashMerge,
-                        dirty = GovernanceField.ALLOW_SQUASH_MERGE in state.dirtyFields,
-                        onCheckedChange = { viewModel.setField(GovernanceField.ALLOW_SQUASH_MERGE, it) }
-                    )
-                }
-                item {
-                    GovernanceSwitchRow(
-                        title = stringResource(R.string.repo_governance_rebase_merge),
-                        subtitle = observedLabel(observed.details.allowRebaseMerge),
-                        checked = desired.allowRebaseMerge,
-                        dirty = GovernanceField.ALLOW_REBASE_MERGE in state.dirtyFields,
-                        onCheckedChange = { viewModel.setField(GovernanceField.ALLOW_REBASE_MERGE, it) }
-                    )
-                }
-                item {
-                    GovernanceSwitchRow(
-                        title = stringResource(R.string.repo_governance_delete_branch),
-                        subtitle = observedLabel(observed.details.deleteBranchOnMerge),
-                        checked = desired.deleteBranchOnMerge,
-                        dirty = GovernanceField.DELETE_BRANCH_ON_MERGE in state.dirtyFields,
-                        onCheckedChange = { viewModel.setField(GovernanceField.DELETE_BRANCH_ON_MERGE, it) }
-                    )
-                }
-                item {
-                    GovernanceSwitchRow(
-                        title = stringResource(R.string.repo_governance_signoff),
-                        subtitle = observedLabel(observed.details.webCommitSignoffRequired),
-                        checked = desired.webCommitSignoffRequired,
-                        dirty = GovernanceField.WEB_COMMIT_SIGNOFF_REQUIRED in state.dirtyFields,
-                        onCheckedChange = { viewModel.setField(GovernanceField.WEB_COMMIT_SIGNOFF_REQUIRED, it) }
-                    )
-                }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_merge_commit), observedLabel(observed.details.allowMergeCommit), desired.allowMergeCommit, GovernanceField.ALLOW_MERGE_COMMIT in state.dirtyFields) { viewModel.setField(GovernanceField.ALLOW_MERGE_COMMIT, it) } }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_squash_merge), observedLabel(observed.details.allowSquashMerge), desired.allowSquashMerge, GovernanceField.ALLOW_SQUASH_MERGE in state.dirtyFields) { viewModel.setField(GovernanceField.ALLOW_SQUASH_MERGE, it) } }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_rebase_merge), observedLabel(observed.details.allowRebaseMerge), desired.allowRebaseMerge, GovernanceField.ALLOW_REBASE_MERGE in state.dirtyFields) { viewModel.setField(GovernanceField.ALLOW_REBASE_MERGE, it) } }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_auto_merge), observedLabel(observed.details.allowAutoMerge), desired.allowAutoMerge, GovernanceField.ALLOW_AUTO_MERGE in state.dirtyFields) { viewModel.setField(GovernanceField.ALLOW_AUTO_MERGE, it) } }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_update_branch), observedLabel(observed.details.allowUpdateBranch), desired.allowUpdateBranch, GovernanceField.ALLOW_UPDATE_BRANCH in state.dirtyFields) { viewModel.setField(GovernanceField.ALLOW_UPDATE_BRANCH, it) } }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_delete_branch), observedLabel(observed.details.deleteBranchOnMerge), desired.deleteBranchOnMerge, GovernanceField.DELETE_BRANCH_ON_MERGE in state.dirtyFields) { viewModel.setField(GovernanceField.DELETE_BRANCH_ON_MERGE, it) } }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_signoff), observedLabel(observed.details.webCommitSignoffRequired), desired.webCommitSignoffRequired, GovernanceField.WEB_COMMIT_SIGNOFF_REQUIRED in state.dirtyFields) { viewModel.setField(GovernanceField.WEB_COMMIT_SIGNOFF_REQUIRED, it) } }
 
                 item {
                     SectionHeader(
@@ -243,60 +197,37 @@ fun RepositoryGovernanceScreen(
                         title = stringResource(R.string.repo_governance_security)
                     )
                 }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_branch_protection), observedLabel(observed.branchProtectionEnabled), desired.branchProtectionEnabled, GovernanceField.BRANCH_PROTECTION in state.dirtyFields) { viewModel.setField(GovernanceField.BRANCH_PROTECTION, it) } }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_vulnerability_alerts), observedLabel(observed.vulnerabilityAlertsEnabled), desired.vulnerabilityAlertsEnabled, GovernanceField.VULNERABILITY_ALERTS in state.dirtyFields) { viewModel.setField(GovernanceField.VULNERABILITY_ALERTS, it) } }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_dependabot), observedLabel(observed.automatedSecurityFixesEnabled), desired.automatedSecurityFixesEnabled, GovernanceField.AUTOMATED_SECURITY_FIXES in state.dirtyFields) { viewModel.setField(GovernanceField.AUTOMATED_SECURITY_FIXES, it) } }
+                if (!observed.details.isPrivate) {
+                    item { GovernanceSwitchRow(stringResource(R.string.repo_governance_private_vulnerability), observedLabel(observed.privateVulnerabilityReportingEnabled), desired.privateVulnerabilityReportingEnabled, GovernanceField.PRIVATE_VULNERABILITY_REPORTING in state.dirtyFields) { viewModel.setField(GovernanceField.PRIVATE_VULNERABILITY_REPORTING, it) } }
+                }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_advanced_security), observedLabel(observed.advancedSecurityEnabled), desired.advancedSecurityEnabled, GovernanceField.ADVANCED_SECURITY in state.dirtyFields) { viewModel.setField(GovernanceField.ADVANCED_SECURITY, it) } }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_secret_scanning), observedLabel(observed.secretScanningEnabled), desired.secretScanningEnabled, GovernanceField.SECRET_SCANNING in state.dirtyFields) { viewModel.setField(GovernanceField.SECRET_SCANNING, it) } }
+                item { GovernanceSwitchRow(stringResource(R.string.repo_governance_push_protection), observedLabel(observed.secretScanningPushProtectionEnabled), desired.secretScanningPushProtectionEnabled, GovernanceField.SECRET_SCANNING_PUSH_PROTECTION in state.dirtyFields) { viewModel.setField(GovernanceField.SECRET_SCANNING_PUSH_PROTECTION, it) } }
 
                 item {
-                    GovernanceSwitchRow(
-                        title = stringResource(R.string.repo_governance_branch_protection),
-                        subtitle = observedLabel(observed.branchProtectionEnabled),
-                        checked = desired.branchProtectionEnabled,
-                        dirty = GovernanceField.BRANCH_PROTECTION in state.dirtyFields,
-                        onCheckedChange = { viewModel.setField(GovernanceField.BRANCH_PROTECTION, it) }
+                    SectionHeader(
+                        icon = Icons.Default.Security,
+                        title = stringResource(R.string.repo_governance_actions)
                     )
                 }
                 item {
                     GovernanceSwitchRow(
-                        title = stringResource(R.string.repo_governance_vulnerability_alerts),
-                        subtitle = observedLabel(observed.vulnerabilityAlertsEnabled),
-                        checked = desired.vulnerabilityAlertsEnabled,
-                        dirty = GovernanceField.VULNERABILITY_ALERTS in state.dirtyFields,
-                        onCheckedChange = { viewModel.setField(GovernanceField.VULNERABILITY_ALERTS, it) }
-                    )
+                        stringResource(R.string.repo_governance_actions_read_only),
+                        observedLabel(observed.workflowPermissions?.defaultWorkflowPermissions?.let { it == "read" }),
+                        desired.actionsReadOnlyDefault,
+                        GovernanceField.ACTIONS_READ_ONLY_DEFAULT in state.dirtyFields
+                    ) { viewModel.setField(GovernanceField.ACTIONS_READ_ONLY_DEFAULT, it) }
                 }
                 item {
                     GovernanceSwitchRow(
-                        title = stringResource(R.string.repo_governance_dependabot),
-                        subtitle = observedLabel(observed.automatedSecurityFixesEnabled),
-                        checked = desired.automatedSecurityFixesEnabled,
-                        dirty = GovernanceField.AUTOMATED_SECURITY_FIXES in state.dirtyFields,
-                        onCheckedChange = { viewModel.setField(GovernanceField.AUTOMATED_SECURITY_FIXES, it) }
-                    )
-                }
-                item {
-                    GovernanceSwitchRow(
-                        title = stringResource(R.string.repo_governance_advanced_security),
-                        subtitle = observedLabel(observed.advancedSecurityEnabled),
-                        checked = desired.advancedSecurityEnabled,
-                        dirty = GovernanceField.ADVANCED_SECURITY in state.dirtyFields,
-                        onCheckedChange = { viewModel.setField(GovernanceField.ADVANCED_SECURITY, it) }
-                    )
-                }
-                item {
-                    GovernanceSwitchRow(
-                        title = stringResource(R.string.repo_governance_secret_scanning),
-                        subtitle = observedLabel(observed.secretScanningEnabled),
-                        checked = desired.secretScanningEnabled,
-                        dirty = GovernanceField.SECRET_SCANNING in state.dirtyFields,
-                        onCheckedChange = { viewModel.setField(GovernanceField.SECRET_SCANNING, it) }
-                    )
-                }
-                item {
-                    GovernanceSwitchRow(
-                        title = stringResource(R.string.repo_governance_push_protection),
-                        subtitle = observedLabel(observed.secretScanningPushProtectionEnabled),
-                        checked = desired.secretScanningPushProtectionEnabled,
-                        dirty = GovernanceField.SECRET_SCANNING_PUSH_PROTECTION in state.dirtyFields,
-                        onCheckedChange = { viewModel.setField(GovernanceField.SECRET_SCANNING_PUSH_PROTECTION, it) }
-                    )
+                        stringResource(R.string.repo_governance_actions_approve_pr),
+                        observedLabel(observed.workflowPermissions?.canApprovePullRequestReviews),
+                        desired.actionsCanApprovePullRequests,
+                        GovernanceField.ACTIONS_CAN_APPROVE_PULL_REQUESTS in state.dirtyFields
+                    ) { viewModel.setField(GovernanceField.ACTIONS_CAN_APPROVE_PULL_REQUESTS, it) }
                 }
 
                 item {
@@ -307,16 +238,14 @@ fun RepositoryGovernanceScreen(
                     ) {
                         OutlinedButton(
                             onClick = viewModel::useRecommendedBaseline,
-                            enabled = state.selectedRepository?.permissions?.admin == true &&
-                                state.evidenceState != GovernanceEvidenceState.APPLYING,
+                            enabled = state.adminAuthorityProven && state.evidenceState != GovernanceEvidenceState.APPLYING,
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(stringResource(R.string.repo_governance_baseline))
                         }
                         OutlinedButton(
                             onClick = viewModel::discardChanges,
-                            enabled = state.dirtyFields.isNotEmpty() &&
-                                state.evidenceState != GovernanceEvidenceState.APPLYING,
+                            enabled = state.dirtyFields.isNotEmpty() && state.evidenceState != GovernanceEvidenceState.APPLYING,
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(stringResource(R.string.repo_governance_discard))
@@ -330,33 +259,12 @@ fun RepositoryGovernanceScreen(
                         enabled = state.canApply,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            stringResource(
-                                R.string.repo_governance_apply_count,
-                                state.dirtyFields.size
-                            )
-                        )
+                        Text(stringResource(R.string.repo_governance_apply_count, state.dirtyFields.size))
                     }
                 }
 
                 if (state.lastReceiptId != null) {
-                    item {
-                        Card(modifier = Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(12.dp)) {
-                                Text(
-                                    stringResource(R.string.repo_governance_receipt, state.lastReceiptId),
-                                    style = MaterialTheme.typography.labelLarge
-                                )
-                                state.receiptPath?.let {
-                                    Text(
-                                        text = it,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    item { GovernanceReceiptCard(state) }
                 }
             }
         }
@@ -486,6 +394,108 @@ private fun GovernanceEvidenceCard(state: RepositoryGovernanceUiState) {
             state.message?.let {
                 Text(
                     text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GovernanceAuditSummaryCard(state: RepositoryGovernanceUiState) {
+    val report = state.auditReport ?: return
+    val chain = state.receiptChainStatus
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                stringResource(R.string.repo_governance_audit),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                stringResource(
+                    R.string.repo_governance_audit_score,
+                    report.scorePercent,
+                    report.passCount,
+                    report.failCount,
+                    report.gapCount
+                ),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            if (chain != null) {
+                Text(
+                    if (chain.valid) {
+                        stringResource(R.string.repo_governance_chain_valid)
+                    } else {
+                        stringResource(R.string.repo_governance_chain_invalid)
+                    },
+                    style = MaterialTheme.typography.labelLarge
+                )
+                Text(
+                    stringResource(
+                        R.string.repo_governance_chain_records,
+                        chain.chainedRecords,
+                        chain.legacyRecords
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                chain.error?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GovernanceAuditControlRow(control: GovernanceAuditControl) {
+    val icon = when (control.state) {
+        GovernanceControlState.PASS -> Icons.Default.CheckCircle
+        GovernanceControlState.FAIL,
+        GovernanceControlState.TOKEN_VAZIO -> Icons.Default.Warning
+        GovernanceControlState.NOT_APPLICABLE -> Icons.Default.SettingsSuggest
+    }
+    Card(modifier = Modifier.fillMaxWidth()) {
+        ListItem(
+            leadingContent = { Icon(icon, contentDescription = null) },
+            headlineContent = {
+                Text("${control.id} · ${control.title}")
+            },
+            supportingContent = {
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text("${control.domain} · ${control.state.name}", style = MaterialTheme.typography.labelSmall)
+                    Text(control.evidence, style = MaterialTheme.typography.bodySmall)
+                    control.remediation?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun GovernanceReceiptCard(state: RepositoryGovernanceUiState) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            state.lastReceiptId?.let {
+                Text(
+                    stringResource(R.string.repo_governance_receipt, it),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+            state.receiptPath?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            state.receiptChainStatus?.headHash?.let {
+                Text(
+                    text = "SHA-256 head: $it",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
