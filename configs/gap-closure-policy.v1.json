@@ -1,0 +1,20 @@
+{
+  "schema": "rafaelia.gap-closure-policy/v1",
+  "policy_id": "GAP-CLOSURE-20260905",
+  "claim_allowed": false,
+  "states": ["OBSERVED", "WIRED", "BUILD_PROVEN", "RUNTIME_PROVEN", "DEVICE_PROVEN", "REPRODUCED", "TOKEN_VAZIO", "BLOCKED", "FALSIFIED", "CLOSED"],
+  "producer_authority": {
+    "contract": "repository_source",
+    "code": "repository_source",
+    "ci": "github_actions_or_local_reproducible_harness",
+    "physical_runtime": "physical_device_receipt",
+    "scientific_proof": "domain_specific_reproducible_evidence"
+  },
+  "transition_guards": [
+    "No transition may infer evidence from documentation alone",
+    "TOKEN_VAZIO is preserved until the declared producer emits evidence",
+    "Physical runtime cannot be closed by host CI",
+    "Scientific proof cannot be closed by implementation existence",
+    "Every closure requires provenance and falsifier or negative-test path"
+  ]
+}
