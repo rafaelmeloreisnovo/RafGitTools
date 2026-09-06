@@ -1,0 +1,59 @@
+{
+  "schema": "rafaelia.urgency-gate-gap.v1",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "observed_main": "eacfcaaa8b4feb8d42021cc3437192e9ce87ff20",
+  "date": "2026-09-06",
+  "append_only_snapshot": true,
+  "claim_allowed": false,
+  "release_allowed": false,
+  "invariants": [
+    "SOURCE_OBSERVED!=WIRED!=TEST_PROVEN!=BUILD_PROVEN!=RUNTIME_PROVEN!=DEVICE_PROVEN!=RELEASE_PROVEN",
+    "TOKEN_VAZIO!=FAIL!=PASS",
+    "ROADMAP_COUNT!=CURRENT_RUNTIME_STATUS"
+  ],
+  "observed_predecessor_head": "b6ee0645d2117b4cba6fd1adfd7725cc5b74d140",
+  "observed_predecessor_runs": {
+    "ci": {"run_id": 34029265867, "conclusion": "success"},
+    "android_client_build": {"run_id": 34029265871, "conclusion": "success"},
+    "security_scan": {"run_id": 34029265863, "conclusion": "success"},
+    "codeql": {"run_id": 34029265883, "conclusion": "success"},
+    "internal_validation": {"run_id": 34029265848, "conclusion": "success"},
+    "pr_validation": {"run_id": 34029265845, "conclusion": "success"},
+    "source_gap_audit": {"run_id": 34029265857, "conclusion": "success"},
+    "code_coverage": {"run_id": 34029265870, "conclusion": "success"},
+    "performance_metrics": {
+      "run_id": 34029265847,
+      "conclusion": "failure",
+      "measurement_steps": "success",
+      "failure_boundary": "PR comment permission only",
+      "apk_size_bytes": 4270203
+    },
+    "documentation": {
+      "run_id": 34029265868,
+      "conclusion": "failure",
+      "failure_boundary": "four MD013 findings in new matrix markdown"
+    }
+  },
+  "items": [
+    {"id":"RGT-U0-01","urgency":"U0","surface":"github-governance","state":"UNPROTECTED_OBSERVED","gap":"main protection/ruleset enforcement not active in observed response","gate":"desired-policy dry-run, reversible apply, provider readback","evidence_required":["provider_json","policy_fingerprint","rollback_capsule","readback_receipt"]},
+    {"id":"RGT-U0-02","urgency":"U0","surface":"exact-head-ci","state":"PREDECESSOR_HEAD_PASS_FINAL_HEAD_REVALIDATION_REQUIRED","gap":"b6ee0645 passed CI/build/security gates but the corrective audit delta moves the head","gate":"rerun required gates on exact new head","evidence_required":["workflow_run_ids","job_ids","head_sha","artifact_digest","test_lint_summary"]},
+    {"id":"RGT-U0-03","urgency":"U0","surface":"android-device","state":"TOKEN_VAZIO","gap":"same-artifact install launch restart recovery proof","gate":"physical-device exact CI APK execution","evidence_required":["commit","apk_sha256","package_id","device","abi","install_launch_result","logcat_digest"]},
+    {"id":"RGT-U0-04","urgency":"U0","surface":"release","state":"BLOCKED_BY_EVIDENCE","gap":"signed exact-artifact release plus physical smoke and provenance","gate":"signed release build, verification, physical smoke","evidence_required":["signing_certificate_digest","apk_or_aab_digest","build_receipt","physical_smoke_receipt"]},
+    {"id":"RGT-U0-05","urgency":"U0","surface":"security-ci","state":"PREDECESSOR_HEAD_PASS_FINAL_HEAD_REVALIDATION_REQUIRED","gap":"Security Scan and CodeQL passed on b6ee0645; new head requires revalidation","gate":"exact-head security workflow reproduction","evidence_required":["security_run","step_log_digest","categorized_receipt"]},
+    {"id":"RGT-U1-01","urgency":"U1","surface":"fnext8-validator","state":"PR_EXECUTED_NOT_MAIN","gap":"PR 412 executed but is not in observed main","gate":"review plus final-head CI plus merge plus post-merge validation","evidence_required":["pr_head","ci_run","merge_sha","post_merge_run"]},
+    {"id":"RGT-U1-02","urgency":"U1","surface":"git-remote-fixtures","state":"IMPLEMENTED_ADVANCED_RUNTIME_GATED","gap":"controlled remote/conflict/recovery matrix","gate":"deterministic local and remote fixture suite","evidence_required":["fixture_hashes","command_transcript","state_receipts"]},
+    {"id":"RGT-U1-03","urgency":"U1","surface":"authentication","state":"PARTIAL_RUNTIME_GATED","gap":"OAuth PAT SSH gh import GPG real-runtime matrix","gate":"authorized fixture/account tests with secret redaction","evidence_required":["redacted_config_fingerprint","provider_response_class","runtime_receipt"]},
+    {"id":"RGT-U1-04","urgency":"U1","surface":"multi-provider","state":"IMPLEMENTED_FIXTURE_GATED","gap":"provider-real E2E fixtures for GitLab Bitbucket Gitea-Forgejo Azure","gate":"provider-specific permission-bounded tests","evidence_required":["provider_version","request_class","response_digest","cleanup_receipt"]},
+    {"id":"RGT-U1-05","urgency":"U1","surface":"offline-recovery","state":"IMPLEMENTED_DEVICE_GATED","gap":"process-death network-loss restart idempotency proof","gate":"device recovery harness","evidence_required":["db_state_hashes","worker_transitions","recovery_receipt"]},
+    {"id":"RGT-U1-06","urgency":"U1","surface":"terminal","state":"BOUNDED_EXECUTOR","gap":"PTY VT100 lifecycle resize signals escape behavior","gate":"real PTY integration and device tests","evidence_required":["pty_test_receipt","device_receipt"]},
+    {"id":"RGT-U1-07","urgency":"U1","surface":"llama-jni","state":"BLOCKED_EXTERNAL","gap":"external source headers model runtime not pinned/proven","gate":"dependency pin plus JNI/device smoke","evidence_required":["dependency_shas","library_hash","model_hash","jni_device_receipt"]},
+    {"id":"RGT-U1-08","urgency":"U1","surface":"licensing-metadata","state":"DIVERGENT","gap":"README GPL-3.0 versus repository metadata Other/unrecognized","gate":"root license/SPDX/attribution reconciliation and provider readback","evidence_required":["license_hash","attribution_inventory","provider_metadata"]},
+    {"id":"RGT-U2-01","urgency":"U2","surface":"coverage","state":"EXACT_HEAD_WORKFLOW_EXECUTED_DENOMINATOR_REVIEW_OPEN","gap":"coverage workflow passed on predecessor head but denominator semantics are not yet canonically bound","gate":"persist exact report and denominator manifest","evidence_required":["coverage_report","source_manifest_hash","test_manifest_hash"]},
+    {"id":"RGT-U2-02","urgency":"U2","surface":"documentation-drift","state":"ACTIVE_RISK","gap":"roadmap/status may lag moving source","gate":"exact-head code-to-doc/status regeneration","evidence_required":["generated_map","diff","review_queue"]},
+    {"id":"RGT-U2-03","urgency":"U2","surface":"cross-repo-receipts","state":"VALIDATOR_AVAILABLE_IN_PR","gap":"structural validity must not promote physical/scientific claims","gate":"federation-boundary enforcement preserving closure ownership","evidence_required":["accepted_rejected_bundle","closure_ids","no_promotion_flag"]},
+    {"id":"RGT-U3-01","urgency":"U3","surface":"performance-ux","state":"CI_BUILD_METRICS_EXECUTED_DEVICE_BENCHMARK_OPEN","gap":"CI measurements exist; controlled device repo-size thermal percentile matrix remains open","gate":"pinned benchmark protocol after correctness gates","evidence_required":["raw_traces","environment","p50_p95_p99","variance"]}
+  ],
+  "f_ok": ["advanced Android/Git source","predecessor exact-head CI/build/security receipts","dual ABI artifact history","governance dry-run/rollback machinery","FNEXT8 validator executed in PR"],
+  "f_gap": ["final-head revalidation after corrective delta","physical device chain","release provenance","real provider/auth/Git fixtures","PTY","external LLaMA runtime","license metadata reconciliation"],
+  "f_next": "Revalidate the corrected head, then close physical evidence before feature-count expansion or claim promotion."
+}
