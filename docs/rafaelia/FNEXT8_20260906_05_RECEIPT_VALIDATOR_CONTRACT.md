@@ -34,6 +34,7 @@ Define the machine-checkable minimum for a receipt that binds a repository event
 6. A CI pass is not automatically device/runtime proof.
 
 ## Output states
-`VALID`, `VALID_WITH_TOKEN_VAZIO`, `INVALID_SCHEMA`, `BROKEN_LINEAGE`, `UNSUPPORTED_PROMOTION`.
+`VALID`, `VALID_WITH_TOKEN_VAZIO`, `INVALID_SCHEMA`, `BROKEN_LINEAGE`,
+`UNSUPPORTED_PROMOTION`.
 
 This contract specifies validation behavior; executable implementation and test receipts remain separately evidenced.
