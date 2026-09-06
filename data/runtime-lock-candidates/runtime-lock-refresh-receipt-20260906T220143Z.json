@@ -1,0 +1,50 @@
+{
+  "artifact_hashes_preserved": true,
+  "base_lock_sha256": "bdb484dd9a59505007c5df54da7caa62c5cda27ad232f1c9e39cb676bf33969b",
+  "candidate_sha256": "32d35964b934fe159eec51a675f914550db818f69fb1defc46915df94f5d010a",
+  "canonical_lock_mutated": false,
+  "changed_count": 6,
+  "changed_repositories": [
+    {
+      "from": "31df72137513885ec2535077141f8597496fce73",
+      "name": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "to": "607137eb50b0b0e4c4d80c20f37f2eaf5827e30f"
+    },
+    {
+      "from": "3d7816f34e7bd5bcac0799a59fef32d7af206d75",
+      "name": "rafaelmeloreisnovo/termux-api_rafcodephi",
+      "to": "3aeb83da3bbb00527a76cd103695ea1c0e062c2d"
+    },
+    {
+      "from": "eddb81b63c35ae18d98278a73475127d0fd2c5fc",
+      "name": "rafaelmeloreisnovo/termux-packages",
+      "to": "0ffb24a5a6be58316236383a6d249544c39eb3e3"
+    },
+    {
+      "from": "628105046620ae9e92d625e85def2bf728edfac8",
+      "name": "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE",
+      "to": "6852ec1d81ff1dcde3f07f5c2323af2d674f6967"
+    },
+    {
+      "from": "ceacf4be5ccf3889b864288423258dbf823a07ad",
+      "name": "rafaelmeloreisnovo/llamaRafaelia",
+      "to": "7a667531b3411c63349a22b24ed5a7d7a314f79a"
+    },
+    {
+      "from": "ce4debb982d18bd678758a511a8a09abc6f47428",
+      "name": "rafaelmeloreisnovo/RafPolimata",
+      "to": "87bc929198e96cdb245e381b28a4e5db132ad82f"
+    }
+  ],
+  "claim_allowed": false,
+  "f_gap": [
+    "TOKEN_VAZIO_CROSS_REPO_CANDIDATE_INTEGRATION_EXECUTION",
+    "TOKEN_VAZIO_RUNTIME_LOCK_PROMOTION_AUTHORIZATION"
+  ],
+  "f_next": "Execute locked cross-repository integration gates against this exact candidate before any canonical promotion.",
+  "input_hash_semantics": "EXACT_FILE_BYTES",
+  "observation_sha256": "43753867cd46695c5b204a7263bed571e4d5c7e0055e127dedc7039a373ee1b0",
+  "observed_at": "2026-09-06T22:01:43Z",
+  "promoted": false,
+  "schema": "rafaelia.runtime-lock-refresh-receipt.v1"
+}
