@@ -20,7 +20,6 @@ fun BisectScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val effects by viewModel.effects.collectAsState()
-
     var showStartDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(effects) {
@@ -29,9 +28,7 @@ fun BisectScreen(
                 showStartDialog = false
                 viewModel.clearEffect()
             }
-            is BisectViewModel.BisectEffect.BisectEnded -> {
-                viewModel.clearEffect()
-            }
+            is BisectViewModel.BisectEffect.BisectEnded -> viewModel.clearEffect()
             else -> {}
         }
     }
@@ -69,20 +66,15 @@ fun BisectScreen(
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Error message
             state.error?.let { error ->
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer
                     )
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -98,12 +90,9 @@ fun BisectScreen(
                 }
             }
 
-            // Success message
             state.successMessage?.let { message ->
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer
                     )
@@ -117,18 +106,12 @@ fun BisectScreen(
             }
 
             if (state.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             } else if (!state.isInSession) {
-                // Idle state
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -142,10 +125,7 @@ fun BisectScreen(
                             tint = MaterialTheme.colorScheme.outline
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            "Find regressions with Git Bisect",
-                            style = MaterialTheme.typography.headlineSmall
-                        )
+                        Text("Find regressions with Git Bisect", style = MaterialTheme.typography.headlineSmall)
                         Text(
                             "Start a bisect session to interactively search for the first bad commit",
                             style = MaterialTheme.typography.bodyMedium,
@@ -154,9 +134,7 @@ fun BisectScreen(
                     }
                 }
             } else {
-                // Active bisect session
                 Column(modifier = Modifier.padding(16.dp)) {
-                    // Progress
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
@@ -164,40 +142,24 @@ fun BisectScreen(
                         )
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                "Estimated remaining steps",
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                            Text(
-                                "~${state.estimatedRemaining} steps",
-                                style = MaterialTheme.typography.headlineMedium
-                            )
+                            Text("Estimated remaining steps", style = MaterialTheme.typography.labelSmall)
+                            Text("~${state.estimatedRemaining} steps", style = MaterialTheme.typography.headlineMedium)
                         }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Current commit
                     state.currentCommit?.let { commit ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
                             Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text(
-                                    commit.shortHash,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontFamily = FontFamily.Monospace
-                                )
-                                Text(
-                                    commit.message,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
+                                Text(commit.shortHash, style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace)
+                                Text(commit.message, style = MaterialTheme.typography.titleMedium)
                                 Text(
                                     "${commit.author} • ${commit.date}",
                                     style = MaterialTheme.typography.bodySmall,
@@ -208,7 +170,6 @@ fun BisectScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Action buttons
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -216,9 +177,7 @@ fun BisectScreen(
                             Button(
                                 onClick = { viewModel.markCommitGood(commit.hash) },
                                 modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.tertiary
-                                )
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
                             ) {
                                 Icon(Icons.Filled.CheckCircle, null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -227,9 +186,7 @@ fun BisectScreen(
                             Button(
                                 onClick = { viewModel.markCommitBad(commit.hash) },
                                 modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.error
-                                )
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                             ) {
                                 Icon(Icons.Filled.Cancel, null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -238,9 +195,7 @@ fun BisectScreen(
                             Button(
                                 onClick = { viewModel.skipCommit(commit.hash) },
                                 modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.secondary
-                                )
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                             ) {
                                 Icon(Icons.Filled.MoreHoriz, null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -250,13 +205,9 @@ fun BisectScreen(
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-
-                    // History summary
                     Text("Session summary", style = MaterialTheme.typography.labelMedium)
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         BisectStatsPill("Good", state.goodCommits.size)
@@ -268,29 +219,22 @@ fun BisectScreen(
         }
     }
 
-    // Start bisect dialog
     if (showStartDialog) {
         StartBisectDialog(
             onDismiss = { showStartDialog = false },
-            onStart = { good, bad ->
-                viewModel.startBisect(good, bad)
-            }
+            onStart = { good, bad -> viewModel.startBisect(good, bad) }
         )
     }
 }
 
 @Composable
-fun BisectStatsPill(label: String, count: Int) {
+fun RowScope.BisectStatsPill(label: String, count: Int) {
     Card(
         modifier = Modifier.weight(1f),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(label, style = MaterialTheme.typography.labelSmall)
@@ -319,7 +263,6 @@ fun StartBisectDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-
                 TextField(
                     value = badCommit,
                     onValueChange = { badCommit = it },
@@ -327,7 +270,6 @@ fun StartBisectDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-
                 Text(
                     "Use commit hashes or branch names",
                     style = MaterialTheme.typography.bodySmall,
@@ -346,10 +288,6 @@ fun StartBisectDialog(
                 Text("Start")
             }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }

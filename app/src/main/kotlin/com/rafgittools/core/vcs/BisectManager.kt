@@ -24,6 +24,7 @@ class BisectManager(private val context: Context) {
     private var bisectIndex = 0
 
     fun startBisect(goodCommitHash: String, badCommitHash: String): Result<List<String>> = runCatching {
+        resetBisect()
         val repoPath = context.filesDir.absolutePath
         val git = Git.open(File(repoPath))
         val repo = git.repository
@@ -32,7 +33,6 @@ class BisectManager(private val context: Context) {
         val goodCommit = revWalk.parseCommit(repo.resolve(goodCommitHash))
         val badCommit = revWalk.parseCommit(repo.resolve(badCommitHash))
 
-        // Get all commits between good and bad
         revWalk.markStart(badCommit)
         revWalk.markUninteresting(goodCommit)
 
@@ -41,25 +41,22 @@ class BisectManager(private val context: Context) {
             candidates.add(commit)
         }
 
-        candidates.reverse() // Sort chronologically
+        candidates.reverse()
         revWalk.close()
 
         bisectSession = git
         bisectCandidates = candidates
         bisectIndex = candidates.size / 2
 
-        git.close()
-
-        candidates.map { it.abbreviate(40).name }
+        candidates.map { it.abbreviate(40).name() }
     }
 
     fun markCommitGood(commitHash: String): Result<String?> = runCatching {
-        val git = bisectSession ?: throw IllegalStateException("No bisect session active")
+        bisectSession ?: throw IllegalStateException("No bisect session active")
         val candidates = bisectCandidates ?: throw IllegalStateException("No bisect candidates")
 
-        val currentIndex = candidates.indexOfFirst { it.abbreviate(40).name == commitHash }
+        val currentIndex = candidates.indexOfFirst { it.abbreviate(40).name() == commitHash }
         if (currentIndex >= 0) {
-            // Remove all commits before and including this one
             candidates.subList(0, currentIndex + 1).clear()
         }
 
@@ -67,17 +64,16 @@ class BisectManager(private val context: Context) {
             null
         } else {
             bisectIndex = candidates.size / 2
-            candidates[bisectIndex].abbreviate(40).name
+            candidates[bisectIndex].abbreviate(40).name()
         }
     }
 
     fun markCommitBad(commitHash: String): Result<String?> = runCatching {
-        val git = bisectSession ?: throw IllegalStateException("No bisect session active")
+        bisectSession ?: throw IllegalStateException("No bisect session active")
         val candidates = bisectCandidates ?: throw IllegalStateException("No bisect candidates")
 
-        val currentIndex = candidates.indexOfFirst { it.abbreviate(40).name == commitHash }
+        val currentIndex = candidates.indexOfFirst { it.abbreviate(40).name() == commitHash }
         if (currentIndex >= 0) {
-            // Remove all commits after and including this one
             candidates.subList(currentIndex, candidates.size).clear()
         }
 
@@ -85,14 +81,14 @@ class BisectManager(private val context: Context) {
             null
         } else {
             bisectIndex = candidates.size / 2
-            candidates[bisectIndex].abbreviate(40).name
+            candidates[bisectIndex].abbreviate(40).name()
         }
     }
 
     fun skipCommit(commitHash: String): Result<String?> = runCatching {
         val candidates = bisectCandidates ?: throw IllegalStateException("No bisect candidates")
 
-        val currentIndex = candidates.indexOfFirst { it.abbreviate(40).name == commitHash }
+        val currentIndex = candidates.indexOfFirst { it.abbreviate(40).name() == commitHash }
         if (currentIndex >= 0) {
             candidates.removeAt(currentIndex)
             if (bisectIndex >= candidates.size) {
@@ -103,7 +99,7 @@ class BisectManager(private val context: Context) {
         if (candidates.isEmpty()) {
             null
         } else {
-            candidates[bisectIndex].abbreviate(40).name
+            candidates[bisectIndex].abbreviate(40).name()
         }
     }
 
@@ -114,10 +110,8 @@ class BisectManager(private val context: Context) {
             throw IllegalStateException("Bisect did not converge to a single commit")
         }
 
-        val firstBadCommit = candidates.first().abbreviate(40).name
-
+        val firstBadCommit = candidates.first().abbreviate(40).name()
         resetBisect()
-
         firstBadCommit
     }
 
@@ -140,8 +134,8 @@ class BisectManager(private val context: Context) {
         revWalk.close()
 
         BisectCommitInfo(
-            hash = commit.abbreviate(40).name,
-            shortHash = commit.abbreviate(7).name,
+            hash = commit.abbreviate(40).name(),
+            shortHash = commit.abbreviate(7).name(),
             message = commit.shortMessage,
             author = author,
             date = date
@@ -150,7 +144,7 @@ class BisectManager(private val context: Context) {
 
     private fun formatDate(ident: PersonIdent?): String {
         return if (ident != null) {
-            SimpleDateFormat("yyyy-MM-dd HH:mm").format(Date.from(ident.whenAsInstant))
+            SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date.from(ident.whenAsInstant))
         } else {
             "Unknown"
         }
