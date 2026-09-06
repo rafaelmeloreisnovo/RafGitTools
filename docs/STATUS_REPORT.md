@@ -1,140 +1,133 @@
 # RafGitTools — Relatório de Status
 
-**Data:** 2026-08-14  
-**Estado geral:** 🟡 **source-functional avançado + BUILD verificável; DEVICE físico ainda pendente**  
-**Branch observada:** `hardening/first-compile-run-triangle-20260814`  
-**Commit executado:** `bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa`  
-**PR:** #346 (draft na observação)  
-**Matriz executável:** `ECOSYSTEM_RUNTIME_STATE.json`
+**Data de observação:** 2026-09-06  
+**Base auditada:** `main@56f4ce95158e6b8a1dbfa4fd8c029937aea20224`  
+**Estado geral:** 🟡 `SOURCE_ADVANCED / EVIDENCE_GATED / DEVICE_TOKEN_VAZIO`  
+**Escopo desta revisão:** documentação somente  
+**Claim:** `claim_allowed=false`  
+**Release:** `release_allowed=false`
 
 ## Regra de evidência
 
 ```text
-arquivo existente
-!= código integrado
-!= teste executado
-!= APK gerado
-!= runtime em aparelho
-!= release
+SOURCE_OBSERVED
+!= TEST_PROVEN
+!= BUILD_PROVEN
+!= RUNTIME_PROVEN
+!= DEVICE_PROVEN
+!= RELEASE_PROVEN
+
+TOKEN_VAZIO != FAIL != PASS
 ```
 
-Esta regra permanece válida. O que mudou em 2026-08-14 é que os estágios **TEST/BUILD deixaram de ser TOKEN_VAZIO** para o commit observado.
+## O que mudou desde o checkpoint de 2026-08-14
 
-## Execução observada
+O antigo relatório descrevia a branch de PR #346/#347 como fronteira atual. Essa genealogia continua válida como histórico, mas não descreve `main` em 2026-09-06.
 
-GitHub Actions `Android Client Build`:
+Desde então, a linha principal incorporou deltas que incluem:
 
-- run `31821491676` — `success`;
-- job `94835531838` — `Test, lint and build devDebug APK` — `success`;
-- custody/structural tests — PASS;
-- authentication unit tests — PASS;
-- full dev unit tests — PASS;
-- Android lint — PASS;
-- `assembleDevDebug` — PASS;
-- APK verification + build receipt — PASS;
-- artifact upload — PASS.
+- governança de repositório com observação de configuração/security e superfície UI;
+- planejamento de mutação com dry-run, fingerprint, pre-image, reversibilidade e bloqueio por drift;
+- receipts locais append-only encadeados por SHA-256 para governança;
+- reparos de compilação/Hilt ligados a bisect/worktree/kernel bridge;
+- validador FNEXT8 fail-closed para receipts cross-repo;
+- hardening de permissões SARIF e de faixa de commits do TruffleHog;
+- matriz de urgência/gate/gap de 2026-09-06.
 
-Portanto, o antigo estado `BLOCKED_INFRA_BILLING` permanece apenas como histórico de runs anteriores e **não descreve o corte atual**.
+Esses fatos são **estado de fonte integrado**. Cada claim de teste, build, provider, runtime ou device continua dependente de receipt específico.
 
-## Artefato BUILD
+## Evidência executada preservada
 
-| Campo | Valor observado |
+### Checkpoint BUILD 2026-08-14 — histórico, ainda válido no próprio commit
+
+| Campo | Valor |
 |---|---|
-| Actions artifact | `RafGitTools-devDebug` |
-| Artifact id | `9227343409` |
-| Archive digest | `sha256:2f92034fc4a4a1c9242453798c8eae6e1d68b134e8ff39b46ea4c283c976eb09` |
+| Commit | `bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa` |
+| Workflow | Android Client Build `31821491676` |
+| Resultado | `PASS` |
 | APK | `app-dev-debug.apk` |
-| APK bytes | `24,672,130` |
 | APK SHA-256 | `115b9cb1e71f53f16b2648924a09549b8e5e0b9e453280cab2e7f183a411ebf6` |
-| ZIP CRC | PASS |
 | `armeabi-v7a` | PRESENT |
 | `arm64-v8a` | PRESENT |
-| build receipt schema | `rafgittools.android-build-receipt.v1` |
-| build receipt SHA-256 | `f124ac18a9f1e158aa764a12b49a25dbf54cc870cca8359e0355416bee5219a5` |
-| physical runtime | `TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED` |
-| `claim_allowed` | `false` |
-| `release_allowed` | `false` |
+| Device físico | `TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED` |
 
-## Classificação técnica atual
+Esse checkpoint **não é herdado** por `main@56f4ce...`.
 
-| Componente | Status | Evidência/limite |
+### Linha 2026-09-06
+
+Há evidência de execução anterior para o FNEXT8 e para várias etapas de CI nos heads que produziram os PRs integrados. Para a revisão corrente, esses receipts permanecem ligados aos respectivos SHAs/runs; não são rebatizados como “current-main PASS”.
+
+No SHA exato `56f4ce...`, foi diretamente observado o workflow Human Impact Cross-Repo Gate V1 run `34031951218` com `success`. Os demais workflows do mesmo SHA devem ser creditados individualmente somente após readback explícito dos seus resultados.
+
+## Classificação técnica corrente
+
+| Componente | Fonte observada | Estado de evidência atual |
 |---|---|---|
-| Android + Compose + Hilt + Room | `IMPLEMENTED_ADVANCED / BUILD_VERIFIED` | unit tests + lint + assemble PASS; device pendente |
-| P33 L1 | `33/33 SOURCE_FUNCTIONAL` | não equivale a 33/33 runtime |
-| Login PAT | `IMPLEMENTED / TESTS_EXECUTED` | regressão física ainda necessária |
-| Token lifecycle | `IMPLEMENTED / TESTS_EXECUTED / CONFIG_GATED` | rotação real GitHub App requer Client ID/fixture |
-| OAuth Device Flow | `IMPLEMENTED / CONFIG_REQUIRED` | exige Client ID público real |
-| Importação `gh` / Termux | `IMPLEMENTED / RUNTIME_GATED` | prova no device/Termux pendente |
-| SSH | `PARTIAL / RUNTIME_GATED` | matriz real chave/servidor pendente |
-| API GitHub | `PARTIAL_ADVANCED / RUNTIME_GATED` | falta matriz E2E completa |
-| Git local via JGit | `IMPLEMENTED_ADVANCED / BUILD_VERIFIED / RUNTIME_GATED` | fonte compilada/testada; remote/conflict fixtures faltam |
-| Interactive staging | `IMPLEMENTED / TESTS_EXECUTED / DEVICE_GATED` | unit regression PASS; smoke Android pendente |
-| UI GitHub/Git | `PARTIAL_ADVANCED` | telas/fluxos existem; device E2E ainda necessário |
-| Fila offline | `IMPLEMENTED / DEVICE_GATED` | storage/workers presentes; restart/recovery físico pendente |
-| Multi-provider | `IMPLEMENTED / FIXTURE_GATED` | GitLab/Bitbucket/Gitea-Forgejo/Azure DevOps requerem fixtures reais |
-| Git LFS | `IMPLEMENTED / TOKEN_VAZIO_RUNTIME` | exige `git-lfs` + repositório real |
-| Worktree | `IMPLEMENTED / TOKEN_VAZIO_RUNTIME` | filesystem/device matrix pendente |
-| Bisect | `IMPLEMENTED / TOKEN_VAZIO_RUNTIME` | regressão controlada pendente |
-| GPG | `ADAPTER_IMPLEMENTED / TOKEN_VAZIO_RUNTIME` | exige binário/fixture autorizados |
-| Terminal | `BOUNDED_EXECUTOR` | por contrato não é PTY/VT100 |
-| rafaelia JNI bridge | `BRIDGE_IMPLEMENTED / BUILD_VERIFIED` | participa do build atual; kernel experimental não promovido |
-| LLaMA kernel JNI | `BRIDGE_IMPLEMENTED / BLOCKED_EXTERNAL` | headers/runtime externos não pinados/provados |
-| APK verificável | `BUILD_VERIFIED` | hash/ABI/receipt observados |
-| DEVICE físico | `TOKEN_VAZIO` | mesmos bytes ainda não instalados/iniciados com receipt |
-| Release | `BLOCKED` | depende de DEVICE + signing/release gates |
+| Android + Compose + Hilt + Room | avançada | build atual exato: `TOKEN_VAZIO` até receipt individualmente ligado ao SHA corrente |
+| Git/JGit | avançada | fixtures reais/destrutivas/recovery ainda granulares |
+| GitHub API | avançada | provider E2E completo não inferido |
+| Auth | implementada/avançada | credenciais descartáveis/device ainda runtime-gated |
+| Multi-provider | adapters presentes | E2E por provider = `TOKEN_VAZIO_RUNTIME` onde não houver receipt |
+| Offline/recovery | infraestrutura presente | restart/process death/network loss em device = `TOKEN_VAZIO` |
+| Repository Governance | avançada em fonte | writes exigem autoridade + pre-image + rollback + readback |
+| Governance receipt chain | implementada em fonte | chain local != provider acceptance |
+| FNEXT receipt validator | implementado; execução predecessora registrada | validação estrutural != prova física/científica |
+| Interactive staging | fonte presente | device smoke atual = `TOKEN_VAZIO_RUNTIME` |
+| Terminal | `BOUNDED_EXECUTOR` | PTY/VT100 = `TOKEN_VAZIO_PTY` |
+| LFS/worktree/bisect/GPG | fonte/adapters presentes | runtimes externos/fixtures ainda separados |
+| JNI/RAFAELIA | bridge/source presente | device invocation atual = `TOKEN_VAZIO_RUNTIME` |
+| LLaMA/local model | bridge/source presente | dependência/modelo/runtime externo = `TOKEN_VAZIO` |
+| Physical Android device | — | `TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED` |
+| Release | — | `BLOCKED_BY_EVIDENCE` |
 
-## Métricas: como ler corretamente
+## Governança de mutação — contrato observado em fonte
 
-O repositório possui um roadmap amplo de 288 features. A contagem histórica `130 concluídas / 35 em progresso / 123 pendentes` é **baseline de planejamento**, não medição automática do código atual. O código avançou por commits posteriores e várias capacidades mudaram de stub/parcial para implementação integrada.
-
-Para estado atual, usar três dimensões separadas:
-
-1. **source capability** — o que está integrado em `app/src/`;
-2. **build evidence** — o que foi compilado/testado no commit exato;
-3. **runtime evidence** — o que foi executado em device/serviço real.
-
-Não derivar um único percentual sem declarar o denominador.
-
-## Correções de divergência documentação ↔ fonte
-
-- Actions não está atualmente sem execução: run `31821491676` executou integralmente.
-- APK atual não é mais `TOKEN_VAZIO`: o BUILD possui APK + SHA-256 + dual ABI + receipt.
-- Multi-provider não deve continuar rotulado como `STUB_TYPED`; os adapters estão implementados em fonte.
-- Offline queue não deve continuar descrita como sem workers/storage; esses elementos existem, faltando evidence física de recovery.
-- P33 `33/33` é estado de fonte, não autorização para claim de runtime.
-- PTY real, fixtures externas, device físico e release permanecem explicitamente abertos.
-
-## Fonte de verdade
-
-Ordem de precedência:
-
-1. commit exato observado;
-2. código integrado;
-3. testes/lint realmente executados;
-4. APK/hash/ABI/build receipt;
-5. runtime/device receipts;
-6. `ECOSYSTEM_RUNTIME_STATE.json`;
-7. `docs/RAFGITTOOLS_CURRENT_STATE.md`;
-8. este relatório;
-9. roadmap/documentos históricos.
-
-## Triângulo atual
+O planner de governança atual classifica cada mudança como:
 
 ```text
-SOURCE  -> PASS
-BUILD   -> PASS
-DEVICE  -> TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED
-SOURCE' -> só fecha após runtime receipt revalidar commit + APK SHA
+MUTATE
+BLOCKED_TOKEN_VAZIO
+BLOCKED_NON_REVERSIBLE
+BLOCKED_DRIFT
 ```
 
-## Próximo gate
+Um plano só é executável quando a autoridade foi provada, o repositório não está arquivado, não há item bloqueado e todos os itens são reversíveis. Desabilitar proteção de branch existente é tratado como `LOSSY_UNSAFE` quando a restauração fiel não é demonstrável.
 
-Instalar e iniciar **exatamente** o APK SHA-256
-`115b9cb1e71f53f16b2648924a09549b8e5e0b9e453280cab2e7f183a411ebf6`
-em aparelho físico ARM suportado e registrar receipt com commit, APK SHA, package id, ABI/device, install e launch.
+O receipt store V2 mantém sequência, `previous_hash` e `record_hash` SHA-256 e preserva linhas V1 históricas. Ele declara explicitamente que receipt local é registro de observação/tentativa, não prova de aceitação pelo provider.
 
-## Retroalimentar[3]
+## Métricas históricas vs. métricas correntes
 
-- **F_ok:** fonte avançada, regressões executadas, lint PASS, APK compilado e dual ABI comprovado.
-- **F_gap:** DEVICE, fixtures externas e release continuam auditavelmente abertos.
-- **F_next:** fechar o vértice DEVICE sem trocar APK/commit; depois integrar #346 sem regressão.
+A matriz de **288 features / 130 concluídas / 35 em progresso / 123 pendentes** é um baseline de planejamento histórico. Ela não deve aparecer como porcentagem corrente de implementação/runtime sem uma nova enumeração revision-bound.
+
+```text
+current exact feature denominator = TOKEN_VAZIO_RECOUNT_REQUIRED
+current exact Kotlin-file count   = TOKEN_VAZIO_RECOUNT_REQUIRED
+current exact test-file count     = TOKEN_VAZIO_RECOUNT_REQUIRED
+current exact docs-file count     = TOKEN_VAZIO_RECOUNT_REQUIRED
+```
+
+Não converter esses vazios em números aproximados.
+
+## Documentação e máquina de estado
+
+- `docs/RAFGITTOOLS_CURRENT_STATE.md` passa a ser a entrada editorial corrente.
+- `docs/RAFGITTOOLS_ROADMAP_TRUE.md` contém a sequência operacional corrente.
+- `docs/URGENCY_GATE_GAP_20260906.md` permanece append-only como snapshot do seu source revision.
+- `ECOSYSTEM_RUNTIME_STATE.json` foi observado com `observed_at=2026-08-14`; por ser arquivo máquina-legível fora do escopo docs-only, não foi reescrito. Até regeneração: `HISTORICAL_MACHINE_STATE / TOKEN_VAZIO_REGEN_REQUIRED`.
+- `docs/canonical/2026-08-14/*` permanece imutável como evidência histórica.
+
+## Gaps prioritários
+
+1. **U0 — current-head evidence:** inventariar/ligar individualmente CI, build e security ao SHA exato promovido.
+2. **U0 — physical device:** instalar/iniciar o artefato exato e registrar package/ABI/device/logcat/hash.
+3. **U0 — release:** assinatura, provenance e physical acceptance no mesmo artifact chain.
+4. **U0/U1 — provider governance:** autoridade, desired policy, dry-run, reversible apply e authoritative readback.
+5. **U1 — real fixtures:** Git/Auth/providers/offline/recovery.
+6. **U1 — external runtimes:** PTY, LFS/GPG e modelo/LLaMA conforme cada contrato.
+7. **U2 — documentation/machine drift:** manter docs vivas no mesmo ciclo e regenerar estado máquina quando autorizado.
+
+## R3
+
+- **F_ok:** documentação corrente foi desacoplada dos PRs #346/#347; fontes novas de governança e FNEXT8 foram cruzadas com o código; receipts históricos foram preservados sem promoção indevida.
+- **F_gap:** current-head full evidence inventory, máquina de estado regenerada, device, provider-real fixtures e release continuam abertos.
+- **F_next:** nenhuma promoção de status sem revision/artifact-bound receipt; qualquer novo merge deve atualizar status/roadmap/current-state ou registrar `TOKEN_VAZIO_DOC_DRIFT`.
