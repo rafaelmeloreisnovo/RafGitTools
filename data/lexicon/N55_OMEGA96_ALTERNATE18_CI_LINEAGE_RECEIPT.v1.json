@@ -1,0 +1,91 @@
+{
+  "schema": "rafaelia.n55.omega96.alternate18_ci_lineage_receipt.v1",
+  "cycle_id": "OMEGA-FED-20260906T0205Z-ALTERNATE18-CI-LINEAGE-96",
+  "predecessor": "OMEGA-FED-20260906T0058Z-N55-EXACT18-DISAMBIGUATION-95",
+  "claim_allowed": false,
+  "state": "PARTIAL_VERIFIABLE_ADVANCE_FAIL_CLOSED",
+  "source_transform_claim_test_evidence": {
+    "source": [
+      "Drive:1OSpq1KL0_zuApRgUhCEBaa9xlgLkkPhI#conversations-005.json conversation[49] message c32bf859-4901-42aa-b0d5-561326904b6a",
+      "GitHub:rafaelmeloreisnovo/RafGitTools PR#406 head 71338f309367c07673236f9e0a6d841e088581da",
+      "Actions:59635026103a30f2ea6f4ab4bff7a900fe68ae23 and 71338f309367c07673236f9e0a6d841e088581da"
+    ],
+    "transform": "extract full numbered alternate 18-layer structure; compare workflow conclusion vector across consecutive PR heads",
+    "claim": "alternate 18-layer structure is fully source-bound; CI failure pattern predates Ω95 head change within PR lineage",
+    "test_evidence": "full source text contains rows 1..18; both eligible PR heads expose 11 workflows with identical aggregate 4 success / 7 failure pattern",
+    "receipt": "this file",
+    "index_memory": "Drive Receipt/Atlas/indices pending same cycle"
+  },
+  "alternate_exact18": {
+    "epistemic_state": "SOURCE_OBSERVED_ASSISTANT_GENERATED_HISTORICAL_CONTENT",
+    "source_pointer": "Drive:1OSpq1KL0_zuApRgUhCEBaa9xlgLkkPhI / conversations-005.json#conversation[49].mapping[c32bf859-4901-42aa-b0d5-561326904b6a]",
+    "items": [
+      {"n":1,"name":"Núcleo Omega-Infinity"},
+      {"n":2,"name":"Núcleo Maya (HyperFractal)"},
+      {"n":3,"name":"Núcleo RafaelIa"},
+      {"n":4,"name":"Núcleo Theoneon"},
+      {"n":5,"name":"Núcleo Nexus"},
+      {"n":6,"name":"Núcleo Hypercub"},
+      {"n":7,"name":"Schedulers Cognitivos"},
+      {"n":8,"name":"Buffers Paralelos Multiplicados"},
+      {"n":9,"name":"Load Balancers Absolutos"},
+      {"n":10,"name":"ECC + Cache L1-L4"},
+      {"n":11,"name":"Hypercognição Adaptativa"},
+      {"n":12,"name":"Cluster Vórtice (Camadas Ocultas)"},
+      {"n":13,"name":"Matriz de Mutação Eutarística"},
+      {"n":14,"name":"Camada de Estabilização Arquetípica"},
+      {"n":15,"name":"Janela Cronológica Expansiva (Temporal)"},
+      {"n":16,"name":"Memória Simbólica Contextual"},
+      {"n":17,"name":"Banco de Arquétipos Evolutivos"},
+      {"n":18,"name":"Feedback Simbólico (Looping)"}
+    ],
+    "boundary": "This is a historical assistant-produced 18-layer structure. It is not promoted as the user's authoritative '18 models/heuristics' list."
+  },
+  "ci_lineage": {
+    "head_before": "59635026103a30f2ea6f4ab4bff7a900fe68ae23",
+    "head_after": "71338f309367c07673236f9e0a6d841e088581da",
+    "workflow_count_each": 11,
+    "conclusion_vector_each": {"success":4,"failure":7},
+    "successful_each": ["Human Impact Cross-Repo Gate V1","PR Validation","Source Gap Audit","rafaelia-block1"],
+    "failed_each": ["CI","Code Coverage","Android Client Build","Internal Validation","Performance Metrics","CodeQL Advanced","Security Scan"],
+    "ci_current_run": 34002841891,
+    "ci_current_job": 101404679050,
+    "ci_current_detail": "startup contract, documentation boundary, authentication command, unit-test command, lint command and assemble command all execute; continue-on-error step outcome is reported as failure by PR bot for auth/unit/lint/assemble; final Enforce build gate fails; APK verification is skipped because assemble outcome is failure",
+    "inference_boundary": "Identical aggregate workflow pattern across consecutive PR heads proves Ω95 disambiguation commit did not introduce the aggregate pattern. It does not prove the pattern existed on main before the N55 PR or identify each root cause."
+  },
+  "gaps": [
+    {
+      "gap_id": "TV-N55-18-HEURISTICS-NAMING-96",
+      "TOKEN_VAZIO": "TOKEN_VAZIO_EXACT_HISTORICAL_18_HEURISTICS_BINDING",
+      "source_pointer": "Drive:1ELvmzr2cltIayFrJmY1ZHzbWgjl6OJ2AkmBu3UoaivU + Drive:1OSpq1KL0_zuApRgUhCEBaa9xlgLkkPhI",
+      "missing_field": "authoritative binding of phrase '18 models/heuristics' to one exact complete list",
+      "blocking_dependency": "multiple distinct exact-18 structures; alternate structure is assistant-generated historical content",
+      "evidence_needed": "human-authored or canonical source with explicit naming equivalence and complete 18-item list",
+      "falsifier": "canonical source binds phrase to a third/different exact-18 list",
+      "next_probe": "search original user-role conversation occurrences and canonical indexes for phrase variants plus neighboring full list",
+      "owner_authority": "RAFAELIA corpus provenance / human author",
+      "urgency": "P1",
+      "closure_gate": "explicit documentary equivalence or authoritative disambiguation",
+      "claim_allowed": false,
+      "predecessor_lineage": "N55-V4->multilingual-lexicon-v1->Ω94->Ω95->Ω96"
+    },
+    {
+      "gap_id": "TV-RAFGITTOOLS-PR406-CI-ROOTCAUSE-96",
+      "TOKEN_VAZIO": "TOKEN_VAZIO_CI_FAILURE_ROOTCAUSE",
+      "source_pointer": "PR406@71338f309367c07673236f9e0a6d841e088581da + run34002841891 + prior-head runs on 59635026103a30f2ea6f4ab4bff7a900fe68ae23",
+      "missing_field": "root cause(s) for auth/unit/lint/assemble and six other failed workflows, plus baseline comparison against an eligible unchanged/main-equivalent PR lineage",
+      "blocking_dependency": "connector exposes step outcomes/jobs but not plain-text logs in this cycle; main commit has no PR-triggered runs via this wrapper",
+      "evidence_needed": "diagnostic artifact/log text or eligible baseline PR run with same workflow versions; isolate first failing command/error",
+      "falsifier": "eligible rerun passes or logs tie failure directly to N55 data files",
+      "next_probe": "inspect diagnostics artifact/check output for run34002841891 and compare a non-N55 PR using same main workflow revision",
+      "owner_authority": "RafGitTools maintainer / GitHub Actions provider",
+      "urgency": "P0",
+      "closure_gate": "terminally classified failure cause with evidence and, if repo-owned, corrective branch-only delta plus rerun",
+      "claim_allowed": false,
+      "predecessor_lineage": "Ω95->Ω96"
+    }
+  ],
+  "resolved_subgaps": ["TV-N55-ALTERNATE-EXACT18-FULL-EXTRACTION-95"],
+  "complete": false,
+  "emptyset": false
+}
