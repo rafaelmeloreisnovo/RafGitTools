@@ -1,0 +1,55 @@
+{
+  "schema": "rafaelia.n55.omega97.ci_preexistence_baseline_receipt.v1",
+  "cycle_id": "OMEGA-FED-20260906T0300Z-PR406-CI-PREEXISTENCE-CONVERGENCE-97",
+  "predecessor": "OMEGA-FED-20260906T0205Z-ALTERNATE18-CI-LINEAGE-96",
+  "claim_allowed": false,
+  "source": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "pr406_head": "02145e867b9a33f8731fd998a98ffd69daae6e21",
+    "pr406_ci_run": 34005728679,
+    "pr405_head": "990c789c968aef8baa79cc95d5882fe94de1625e",
+    "pr405_ci_run": 33992246006
+  },
+  "observations": {
+    "pr406_real_outcomes": {
+      "authentication_tests": "failure",
+      "unit_tests": "failure",
+      "lint": "failure",
+      "assemble": "failure",
+      "apk_sha256": "skipped"
+    },
+    "pr405_real_outcomes": {
+      "authentication_tests": "failure",
+      "unit_tests": "failure",
+      "lint": "failure",
+      "assemble": "failure",
+      "apk_sha256": "skipped"
+    },
+    "workflow_semantics": "continue-on-error causes step conclusion surfaces to appear successful while steps.<id>.outcome remains failure; Enforce build gate checks outcomes and correctly fails closed"
+  },
+  "classification": {
+    "ci_pattern": "REPRODUCED_PREEXISTING_ON_PREDECESSOR_LINEAGE",
+    "n55_regression_claim": "NOT_SUPPORTED",
+    "root_cause_text": "TOKEN_VAZIO_PROVIDER_LOG_PAYLOAD"
+  },
+  "gap": {
+    "gap_id": "TV-RAFGITTOOLS-CI-FIRST-CAUSE-97",
+    "source_pointer": "PR405/run33992246006 + PR406/run34005728679 + .github/workflows/ci.yml@02145e867b9a33f8731fd998a98ffd69daae6e21",
+    "missing_field": "first textual Gradle failure cause shared by auth/unit/lint/assemble",
+    "blocking_dependency": "raw Actions log/diagnostic artifact payload not exposed by current connector surface",
+    "evidence_needed": "raw log or diagnostics artifact showing first non-wrapper failure",
+    "falsifier": "provider log shows distinct independent causes or a later eligible baseline run passes without code change",
+    "next_probe": "retrieve diagnostics/log artifact through a file-aware provider surface; otherwise compare exact Gradle environment/config against a passing historical run",
+    "owner_authority": "GitHub Actions provider + RafGitTools maintainer",
+    "urgency": "P0",
+    "closure_gate": "first cause identified and reproduced or terminally classified with provider evidence",
+    "claim_allowed": false,
+    "lineage": "PR405→main@b4b0d527→PR406→Ω96→Ω97"
+  },
+  "invariants": [
+    "OBSERVED != EXECUTED != EVIDENCE != CLAIM",
+    "PREEXISTING_PATTERN != ROOT_CAUSE",
+    "CI_FAILURE != N55_REGRESSION",
+    "TOKEN_VAZIO != 0"
+  ]
+}

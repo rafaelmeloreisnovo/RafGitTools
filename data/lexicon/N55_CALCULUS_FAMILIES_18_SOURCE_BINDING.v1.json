@@ -1,0 +1,56 @@
+{
+  "schema": "rafaelia.n55.calculus_families_18_source_binding.v1",
+  "claim_allowed": false,
+  "state": "SOURCE_BOUND_EXACT_18_FAMILIES",
+  "source_pointer": {
+    "provider": "google_drive",
+    "document_id": "1ELvmzr2cltIayFrJmY1ZHzbWgjl6OJ2AkmBu3UoaivU",
+    "title": "RAFAELIA — Memória Matemática de Cálculo Ω — Fórmulas, Derivadas, Antiderivadas e Heurísticas — V1 — 2026-08-22",
+    "revision_id_observed": "ANLCKQmvrtoySIpMiHIf9Q6iQV1IRVu4n8xXZmBfsIW9k2w6F1x0ipY3-uz7XJ5vmUnkHqr-InkHrf6Gr60of1Yg8QRhydDIitLxl34aLEo"
+  },
+  "terminology_boundary": {
+    "source_exact_wording": "camada inicial de 18 famílias calculada",
+    "do_not_promote_to": "historical_exact_18_heuristics_list",
+    "previous_gap": "TOKEN_VAZIO_18_HEURISTICS_EXACT_LIST",
+    "new_state": "PARTIALLY_RESOLVED_BY_EXACT_18_CALCULUS_FAMILIES",
+    "remaining_gap": "Whether a separate canonical list explicitly named '18 heuristics/models' exists remains TOKEN_VAZIO."
+  },
+  "families": [
+    {"id":"C01","expression":"κ=√3/2","type":"CONSTANT"},
+    {"id":"C02","expression":"S(d)=κ^d, κ=√3/2","type":"EXPONENTIAL_SCALE"},
+    {"id":"C03","expression":"r_{n+1}=κ r_n","type":"RECURRENCE"},
+    {"id":"C04","expression":"θ_{n+1}=θ_n+π/φ","type":"RECURRENCE_ANGULAR"},
+    {"id":"C05","expression":"R_{n+1}=R_n+R_{n-1}+1; R_n=F_{n+3}-1","type":"RECURRENCE_KNOWN_EQUIVALENCE"},
+    {"id":"C06","expression":"x_{n+1}=a x_n+b","type":"AFFINE_RECURRENCE"},
+    {"id":"C07","expression":"C_{t+1}=(1-α)C_t+αC_in","type":"FILTERED_UPDATE"},
+    {"id":"C08","expression":"R(t+1)=R(t)·Φ_ethica·E_Verbo·κ^(πφ)","type":"SYMBOLIC_MULTIPLICATIVE_RECURRENCE"},
+    {"id":"C09","expression":"ψ→χ→ρ→Δ→Σ→Ω→ψ","type":"DIRECTED_CYCLE_GRAPH"},
+    {"id":"C10","expression":"θ=2π·Δ(x)","type":"COMPOSED_TRANSFORMATION"},
+    {"id":"C11","expression":"ρ=φ·log(x) mod 2π","type":"LOG_MODULAR_MAP"},
+    {"id":"C12","expression":"θ=arg(z), ρ=log|z| mod 2π, z=x+iy","type":"COMPLEX_PHASE_SCALE_MAP"},
+    {"id":"C13","expression":"Π(n)=(n mod 7,n mod 10,n mod 12,n mod 20)","type":"MODULAR_EMBEDDING"},
+    {"id":"C14","expression":"B=A⊕φ(s)","type":"BOOLEAN_OR_FINITE_FIELD_TRANSFORMATION"},
+    {"id":"C15","expression":"σ_j(X)=Σ_{(u,v)∈S_j} w_{u,v}X_{u,v} mod M","type":"MODULAR_LINEAR_FUNCTIONAL"},
+    {"id":"C16","expression":"C: Z_M^{N×N}→Z_M^{(N-1)×(N-1)}","type":"CONTRACTION_OPERATOR"},
+    {"id":"C17","expression":"ΔX_k=X_{k+1}-X_k; A_n=X_0+Σ_{k=0}^{n-1}ΔX_k=X_n","type":"DISCRETE_DERIVATIVE_LONGITUDINAL_ANTIDERIVATIVE"},
+    {"id":"C18","expression":"μ_V(t)=Σ_i w_i·1[s_i(t)=TOKEN_VAZIO]; L_V(n)=Σ_{t=0}^{n}log(1+μ_V(t))","type":"TYPED_GAP_MEASURE_LONGITUDINAL_ACCUMULATOR"}
+  ],
+  "integration": {
+    "lexicon_branch": "rafaelia/n55-multilingual-relational-lexicon-v1",
+    "lexicon_path": "data/lexicon/N55_MULTILINGUAL_RELATIONAL_LEXICON.v1.json",
+    "relation": "SOURCE_BINDING_COMPLEMENT",
+    "no_merge": true
+  },
+  "gap": {
+    "gap_id": "TV-N55-18-HEURISTICS-NAMING-01",
+    "missing_field": "canonical source explicitly naming an exact set of 18 as heuristics/models",
+    "blocking_dependency": "source discovery / terminology reconciliation",
+    "evidence_needed": "canonical document or repository object enumerating 18 under that explicit label",
+    "falsifier": "evidence that the user's 18-model reference corresponds to C01-C18 despite different source wording",
+    "next_probe": "search canonical indices and formula/heuristic registries for explicit 18-model naming",
+    "owner_authority": "RAFAELIA corpus / user authority",
+    "urgency": "P1",
+    "closure_gate": "source-bound exact naming or explicit equivalence mapping",
+    "claim_allowed": false
+  }
+}

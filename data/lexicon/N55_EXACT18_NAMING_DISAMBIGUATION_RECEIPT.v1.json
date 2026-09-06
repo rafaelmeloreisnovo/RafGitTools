@@ -1,0 +1,50 @@
+{
+  "schema": "rafaelia.n55.exact18.naming_disambiguation_receipt.v1",
+  "cycle_id": "OMEGA-FED-20260906T0058Z-N55-EXACT18-DISAMBIGUATION-95",
+  "predecessor": "OMEGA94-N55-18-FAMILY-SOURCE-BINDING",
+  "claim_allowed": false,
+  "state": "MEASURED_MULTIPLE_DISTINCT_EXACT18_STRUCTURES",
+  "source_pointers": [
+    {
+      "kind": "drive_doc",
+      "id": "1ELvmzr2cltIayFrJmY1ZHzbWgjl6OJ2AkmBu3UoaivU",
+      "title": "RAFAELIA — Memória Matemática de Cálculo Ω — Fórmulas, Derivadas, Antiderivadas e Heurísticas — V1 — 2026-08-22",
+      "observation": "contains exact calculated families C01..C18"
+    },
+    {
+      "kind": "drive_messages_shard",
+      "id": "1OSpq1KL0_zuApRgUhCEBaa9xlgLkkPhI",
+      "title": "MESSAGES-00006.jsonl.txt",
+      "observation": "search evidence shows a distinct numbered structure reaching item 18; item 17=Arquétipos Evolutivos, item 18=Feedback Simbólico (Looping)"
+    }
+  ],
+  "falsified_assumption": "UNIQUE_EXACT18_STRUCTURE_IN_CORPUS",
+  "gap": {
+    "gap_id": "TV-N55-18-HEURISTICS-NAMING-95",
+    "token_vazio": "TOKEN_VAZIO_EXACT_HISTORICAL_18_HEURISTICS_BINDING",
+    "source_pointer": "drive:1ELvmzr2cltIayFrJmY1ZHzbWgjl6OJ2AkmBu3UoaivU + drive:1OSpq1KL0_zuApRgUhCEBaa9xlgLkkPhI",
+    "missing_field": "canonical binding of the user's phrase '18 models/heuristics' to one exact historical 18-item structure",
+    "blocking_dependency": "multiple distinct exact-18 structures exist in the corpus and current search evidence does not establish which historical label is authoritative",
+    "evidence_needed": "source containing explicit naming equivalence between '18 heuristics/models' and a complete 18-item list, with source pointer and lineage",
+    "falsifier": "a canonical source explicitly binds the phrase to a different 18-item list than C01..C18",
+    "next_probe": "extract the complete neighboring rows 1..18 around the MESSAGES-00006 occurrence and search exact phrase variants in original conversation source pointers",
+    "owner_authority": "RAFAELIA corpus provenance / human author",
+    "urgency": "P1",
+    "closure_gate": "explicit documentary equivalence or authoritative disambiguation with complete list",
+    "claim_allowed": false,
+    "lineage": "N55-V4 -> multilingual-lexicon-v1 -> Omega94 -> Omega95"
+  },
+  "ci_observation": {
+    "head_before": "59635026103a30f2ea6f4ab4bff7a900fe68ae23",
+    "aggregate_status": "pending",
+    "status_context_count": 0,
+    "classification": "OBSERVED_ZERO_STATUS_CONTEXTS",
+    "not_inferred": ["CI_PASS", "CI_FAIL", "CI_DISABLED"]
+  },
+  "invariants": [
+    "SOURCE_BOUND_C01_C18 != HISTORICAL_18_HEURISTICS_BINDING",
+    "MULTIPLE_EXACT18_STRUCTURES -> NO_AUTOMATIC_EQUIVALENCE",
+    "SEARCH_MATCH != CANONICAL_AUTHORITY",
+    "TOKEN_VAZIO != ZERO"
+  ]
+}
