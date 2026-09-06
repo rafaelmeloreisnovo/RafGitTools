@@ -1,0 +1,10 @@
+{
+  "schema": "rafaelia.runtime-lock-promotion-authorization.v1",
+  "authorized_at": "2026-09-06T23:36:00Z",
+  "candidate_sha256": "32d35964b934fe159eec51a675f914550db818f69fb1defc46915df94f5d010a",
+  "authorized": true,
+  "scope": "CANONICAL_RUNTIME_LOCK_PROMOTION_AFTER_ALL_TECHNICAL_GATES_PASS",
+  "authority": "repository_owner_interactive_instruction",
+  "semantics": "Authorization permits promotion only after independent technical gates pass; it does not replace build, integration, runtime, device, artifact-hash, or reproducibility evidence.",
+  "claim_allowed": false
+}
