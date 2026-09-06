@@ -23,8 +23,11 @@ class RafaeliaKernelBridge(private val context: Context) {
         private const val LIB_NAME = "rafcore"
 
         init {
-            runCatching { System.loadLibrary(LIB_NAME) }.onFailure {
-                Log.w(TAG, "Native library $LIB_NAME not loaded: ${it.message}")
+            runCatching { System.loadLibrary(LIB_NAME) }.onFailure { error ->
+                // Logging must not make the bridge uninitializable in host-side JVM tests.
+                runCatching {
+                    Log.w(TAG, "Native library $LIB_NAME not loaded: ${error.message}")
+                }
             }
         }
 
