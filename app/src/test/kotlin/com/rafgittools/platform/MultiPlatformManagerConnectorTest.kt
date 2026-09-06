@@ -1,7 +1,5 @@
 package com.rafgittools.platform
 
-import com.rafgittools.data.forgejo.ForgejoRepository
-import com.rafgittools.data.gitea.GiteaSshKey
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
@@ -9,20 +7,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 /**
- * Unit tests for new connectors: Forgejo and Gitea SSH
- *
- * Tests validate:
- * - Token validation logic
- * - URL format validation
- * - Error handling (NotConfigured, AuthenticationError, NetworkError)
- * - Provider enum includes new connectors
+ * Unit tests for Forgejo and Gitea SSH connector validation.
  */
 class MultiPlatformManagerConnectorTest {
 
     @Before
-    fun setup() {
-        // Initialize any test fixtures
-    }
+    fun setup() = Unit
 
     @Test
     fun `Provider enum contains Forgejo`() {
@@ -37,7 +27,7 @@ class MultiPlatformManagerConnectorTest {
     }
 
     @Test
-    fun `queryForgejoRepositories returns NotConfigured when token is blank`() = runBlocking {
+    fun `queryForgejoRepositories returns NotConfigured when token is blank`(): Unit = runBlocking {
         val result = MultiPlatformManager.queryForgejoRepositories(
             token = "",
             baseUrl = "https://forgejo.example.com"
@@ -47,7 +37,7 @@ class MultiPlatformManagerConnectorTest {
     }
 
     @Test
-    fun `queryForgejoRepositories returns NotConfigured when baseUrl is blank`() = runBlocking {
+    fun `queryForgejoRepositories returns NotConfigured when baseUrl is blank`(): Unit = runBlocking {
         val result = MultiPlatformManager.queryForgejoRepositories(
             token = "test-token",
             baseUrl = ""
@@ -57,16 +47,17 @@ class MultiPlatformManagerConnectorTest {
     }
 
     @Test
-    fun `queryForgejoRepositories returns NotConfigured for invalid URL`() = runBlocking {
+    fun `queryForgejoRepositories returns NotConfigured for invalid URL`(): Unit = runBlocking {
         val result = MultiPlatformManager.queryForgejoRepositories(
             token = "test-token",
             baseUrl = "not-a-url"
         )
         assertIs<MultiPlatformManager.ProviderQueryResult.NotConfigured>(result)
+        Unit
     }
 
     @Test
-    fun `queryGiteaSshKeys returns NotConfigured when token is blank`() = runBlocking {
+    fun `queryGiteaSshKeys returns NotConfigured when token is blank`(): Unit = runBlocking {
         val result = MultiPlatformManager.queryGiteaSshKeys(
             token = "",
             baseUrl = "https://gitea.example.com"
@@ -76,7 +67,7 @@ class MultiPlatformManagerConnectorTest {
     }
 
     @Test
-    fun `queryGiteaSshKeys returns NotConfigured when baseUrl is blank`() = runBlocking {
+    fun `queryGiteaSshKeys returns NotConfigured when baseUrl is blank`(): Unit = runBlocking {
         val result = MultiPlatformManager.queryGiteaSshKeys(
             token = "test-token",
             baseUrl = ""
@@ -87,17 +78,13 @@ class MultiPlatformManagerConnectorTest {
 
     @Test
     fun `configuredProviders includes Forgejo when token provided`() {
-        val providers = MultiPlatformManager.configuredProviders(
-            forgejoToken = "test-token"
-        )
+        val providers = MultiPlatformManager.configuredProviders(forgejoToken = "test-token")
         assert(providers.contains(MultiPlatformManager.Provider.FORGEJO))
     }
 
     @Test
     fun `configuredProviders includes Gitea SSH when token provided`() {
-        val providers = MultiPlatformManager.configuredProviders(
-            giteaSshToken = "test-token"
-        )
+        val providers = MultiPlatformManager.configuredProviders(giteaSshToken = "test-token")
         assert(providers.contains(MultiPlatformManager.Provider.GITEA_SSH))
     }
 
