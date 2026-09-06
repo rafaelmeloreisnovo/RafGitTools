@@ -1,6 +1,8 @@
 package com.rafgittools.core.vcs
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import org.eclipse.jgit.api.Git
 import java.io.File
 
@@ -11,7 +13,9 @@ data class WorktreeInfo(
     val isPrunable: Boolean = false
 )
 
-class WorktreeManager(private val context: Context) {
+class WorktreeManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
 
     private fun runGit(repoPath: String, vararg args: String): String {
         val process = ProcessBuilder(listOf("git") + args.toList())
