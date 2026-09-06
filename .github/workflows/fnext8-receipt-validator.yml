@@ -1,0 +1,57 @@
+name: FNEXT8 Receipt Validator
+
+on:
+  push:
+    branches:
+      - rafaelia/fnext8-20260906
+    paths:
+      - 'scripts/rafaelia_receipt_validator.py'
+      - 'tests/test_rafaelia_receipt_validator.py'
+      - 'data/evidence/github/fnext8-20260906.receipts.v1.json'
+      - '.github/workflows/fnext8-receipt-validator.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fnext8-receipt-validator-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-receipts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Run validator unit tests
+        run: python3 tests/test_rafaelia_receipt_validator.py
+
+      - name: Validate FNEXT8 seven-receipt bundle
+        run: |
+          mkdir -p .rafaelia-artifacts/fnext8
+          python3 scripts/rafaelia_receipt_validator.py \
+            data/evidence/github/fnext8-20260906.receipts.v1.json \
+            > .rafaelia-artifacts/fnext8/receipt-validation-report.json
+          cat .rafaelia-artifacts/fnext8/receipt-validation-report.json
+
+      - name: Hash validation inputs and report
+        run: |
+          sha256sum \
+            scripts/rafaelia_receipt_validator.py \
+            tests/test_rafaelia_receipt_validator.py \
+            data/evidence/github/fnext8-20260906.receipts.v1.json \
+            .rafaelia-artifacts/fnext8/receipt-validation-report.json \
+            > .rafaelia-artifacts/fnext8/SHA256SUMS
+          cat .rafaelia-artifacts/fnext8/SHA256SUMS
+
+      - name: Upload fail-closed validation receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: fnext8-receipt-validation-${{ github.sha }}
+          path: .rafaelia-artifacts/fnext8/
+          if-no-files-found: error
+          retention-days: 30

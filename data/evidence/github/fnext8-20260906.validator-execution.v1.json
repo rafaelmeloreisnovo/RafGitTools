@@ -1,0 +1,94 @@
+{
+  "receipt_id": "FNEXT8-20260906-05-VALIDATOR-EXECUTION-001",
+  "schema_version": "rafaelia.validator-execution-receipt.v1",
+  "created_at": "2026-09-06T10:21:06Z",
+  "repo": "rafaelmeloreisnovo/RafGitTools",
+  "branch": "rafaelia/fnext8-20260906",
+  "contract": {
+    "commit_sha": "76b0f2713e6d96ff4311cd55cbae9439ba0d3674",
+    "path": "docs/rafaelia/FNEXT8_20260906_05_RECEIPT_VALIDATOR_CONTRACT.md"
+  },
+  "implementation_chain": [
+    {
+      "commit_sha": "0c18d0d8828f76f525771f5c534f62fafe84c9de",
+      "path": "scripts/rafaelia_receipt_validator.py",
+      "role": "fail_closed_validator"
+    },
+    {
+      "commit_sha": "c55302427987ed828253d9f867aeb3cdd59fe2fc",
+      "path": "tests/test_rafaelia_receipt_validator.py",
+      "role": "negative_and_bundle_tests"
+    },
+    {
+      "commit_sha": "e1fbcd7ee4ba7de1d44b6f6badd019eb9151dd44",
+      "path": "data/evidence/github/fnext8-20260906.receipts.v1.json",
+      "role": "seven_receipt_input_bundle"
+    },
+    {
+      "commit_sha": "f12db1c0cb58bec5be5de3a45215466ef4ffc916",
+      "path": ".github/workflows/fnext8-receipt-validator.yml",
+      "role": "ci_gate"
+    }
+  ],
+  "github_actions": {
+    "workflow_name": "FNEXT8 Receipt Validator",
+    "workflow_run_id": 34027169266,
+    "job_id": 101470093315,
+    "head_sha": "f12db1c0cb58bec5be5de3a45215466ef4ffc916",
+    "status": "completed",
+    "conclusion": "success",
+    "unit_tests": {
+      "count": 8,
+      "result": "PASS"
+    },
+    "bundle_validation": {
+      "receipt_count": 7,
+      "accepted_count": 7,
+      "rejected_count": 0,
+      "state_per_receipt": "VALID_WITH_TOKEN_VAZIO",
+      "claim_promotion_performed": false,
+      "ok": true
+    },
+    "sha256": {
+      "scripts/rafaelia_receipt_validator.py": "ffb6a717dc790f094410ba1bc58478cc4fca4ffacc053975f0bd3bf9e4eeec2f",
+      "tests/test_rafaelia_receipt_validator.py": "6b7edeb358bf5bbde49681106089209845aaf56f5b6455dd4301e5c526275e83",
+      "data/evidence/github/fnext8-20260906.receipts.v1.json": "5f3dcc62d85b4403918052a83536b7369f9145e27ebd8f71e41293dcc4cc2ac4",
+      ".rafaelia-artifacts/fnext8/receipt-validation-report.json": "043bf6705dbcc0bc4496d914793766f8923081bf0515dc992603da15815f1d9f"
+    },
+    "artifact": {
+      "id": 9987420975,
+      "name": "fnext8-receipt-validation-f12db1c0cb58bec5be5de3a45215466ef4ffc916",
+      "size_bytes": 827,
+      "zip_sha256": "e48a4b2853919088a0fbd7cff131a7e4f8a63a23ca2116db1e42c6eee32a933b",
+      "retention_days": 30
+    }
+  },
+  "epistemic_boundary": {
+    "proves": [
+      "validator source executed in GitHub Actions at the recorded head SHA",
+      "8 validator tests passed",
+      "the seven FNEXT Git receipts satisfy the structural fail-closed contract",
+      "all seven remain explicitly VALID_WITH_TOKEN_VAZIO",
+      "the validator performed no claim promotion"
+    ],
+    "does_not_prove": [
+      "Termux physical-device runtime",
+      "Vectras VM guest boot or workload execution",
+      "ChipQuantum physical measurement",
+      "mathematical proof of theorem candidates",
+      "academic novelty or peer review",
+      "independent reproduction of any scientific claim"
+    ]
+  },
+  "claim_allowed": false,
+  "token_vazio": [
+    "TV-TERMUX-PHYSICAL-DEVICE-EXECUTION",
+    "TV-VECTRAS-GUEST-BOOT-WORKLOAD",
+    "TV-CHIPQUANTUM-PHYSICAL-MEASUREMENT",
+    "TV-MATH-FORMAL-PROOF",
+    "TV-PAPERS-NOVELTY-PEER-REVIEW",
+    "TV-INDEPENDENT-REPRODUCTION"
+  ],
+  "next_verifiable_step": "Consume this structural CI receipt only as evidence for validator execution; advance each domain independently with its own exact runtime, device, physical, proof, literature or reproduction receipt.",
+  "append_only": true
+}
