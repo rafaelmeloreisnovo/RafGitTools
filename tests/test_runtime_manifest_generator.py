@@ -67,6 +67,21 @@ class RuntimeManifestGeneratorTest(unittest.TestCase):
                 FIXED_RAFGITTOOLS_SHA,
             )
 
+            locked = {
+                entry["name"]: entry["commit"]
+                for entry in json.loads(LOCK.read_text(encoding="utf-8"))["repositories"]
+            }
+            expected_components = {
+                "termux_rafcodephi_commit": locked["rafaelmeloreisnovo/termux-app-rafacodephi"],
+                "termux_api_rafcodephi_commit": locked["rafaelmeloreisnovo/termux-api_rafcodephi"],
+                "termux_packages_commit": locked["rafaelmeloreisnovo/termux-packages"],
+                "conversations_chunks_commit": locked["rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE"],
+                "llama_rafaelia_commit": locked["rafaelmeloreisnovo/llamaRafaelia"],
+                "rafpolimata_commit": locked["rafaelmeloreisnovo/RafPolimata"],
+            }
+            for key, expected in expected_components.items():
+                self.assertEqual(manifest["components"][key], expected, key)
+
             expected_lock_sha = hashlib.sha256(LOCK.read_bytes()).hexdigest()
             self.assertEqual(manifest["source_lock"]["sha256"], expected_lock_sha)
 
