@@ -1,151 +1,142 @@
 # RAFGITTOOLS_ROADMAP_TRUE
 
-- Status: **ATIVO — fonte de verdade de sequência operacional**
-- Última atualização: **2026-08-14**
-- Regra: `SOURCE != TESTED != BUILD_VERIFIED != DEVICE_VERIFIED != RELEASE`
-- Roadmap histórico de 288 features: referência de planejamento; **não** substitui a realidade observada no código.
+- Status: **ACTIVE — operational roadmap**
+- Observed base: `main@56f4ce95158e6b8a1dbfa4fd8c029937aea20224`
+- Updated: **2026-09-06**
+- Scope of this revision: **documentation only**
+- Rule: `SOURCE_OBSERVED != TEST_PROVEN != BUILD_PROVEN != RUNTIME_PROVEN != DEVICE_PROVEN != RELEASE_PROVEN`
+- Historical 288-feature matrix: planning reference only; it is not the current evidence denominator.
 
-## Estado já alcançado
+## State already reached in source
 
-### SOURCE
+- Android/Kotlin/Compose/Hilt/Room foundation is present.
+- Advanced local Git/JGit and GitHub API surfaces are present.
+- Authentication, offline/recovery, multi-provider and native/JNI surfaces are present at different evidence depths.
+- Repository Governance is present with provider observation/audit, mutation planning, UI and local receipt custody.
+- Governance mutation planning has fail-closed states for unknown pre-state, non-reversible mutations and provider drift.
+- Local governance receipts use an append-only SHA-256 chain while keeping provider acceptance/re-probe as separate evidence.
+- FNEXT cross-repository receipt validation is present and fail-closed; structural validity does not promote physical/scientific claims.
+- Recent CI/security/compile fixes are integrated in the main lineage.
 
-- P33: **33/33 SOURCE_FUNCTIONAL**.
-- Android/Compose/Hilt/Room: implementação avançada.
-- Git local/JGit: implementação avançada, incluindo shallow/single-branch/submodules, amend, pull-rebase, force-with-lease, stash, reflog, blame, config e interactive staging.
-- Auth: PAT, OAuth Device Flow, gh CLI import, SSH, biometria, multi-account e lifecycle capability-aware de tokens.
-- Multi-provider: adapters GitLab, Bitbucket, Gitea/Forgejo e Azure DevOps presentes em fonte.
-- Offline: fila, persistência Room, storage atômico e worker presentes.
-- Terminal: bounded executor implementado; PTY/VT100 completo permanece fora do estado entregue.
-- LFS/worktree/bisect/GPG: implementação/adapters presentes, com runtime externo ainda gated.
-- JNI/RAFAELIA e camada nativa Android integradas ao build.
-- Bridge local/LLM e extensão Kiwi existem em fonte, com runtime real ainda não fechado.
+## Gate P0 — exact-current-head truth
 
-### TESTED + BUILD_VERIFIED
+**State:** `OPEN / PARTIALLY_OBSERVED`.
 
-Checkpoint comprovado para o commit:
+Required:
 
-`bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa`
+1. resolve exact promoted SHA;
+2. enumerate required workflows for that SHA;
+3. bind each workflow result to run/job IDs;
+4. bind build artifacts and hashes to the same SHA;
+5. do not inherit PASS from predecessor commits.
 
-Workflow `Android Client Build` run `31821491676`: **PASS**.
+Current documentation audit directly observed one workflow success on `56f4ce...` (Human Impact Cross-Repo Gate V1 run `34031951218`). The remaining exact-head workflow/build inventory stays `TOKEN_VAZIO` until individually read back.
 
-Passaram:
+## Gate P1 — physical Android device
 
-- custody/structural tests;
-- authentication unit tests;
-- full dev unit tests;
-- Android lint;
-- `assembleDevDebug`;
-- verificação do APK;
-- build receipt;
-- upload do artifact.
+**State:** `TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED`.
 
-APK comprovado:
-
-- `app-dev-debug.apk`;
-- 24,672,130 bytes;
-- SHA-256 `115b9cb1e71f53f16b2648924a09549b8e5e0b9e453280cab2e7f183a411ebf6`;
-- ZIP CRC PASS;
-- `armeabi-v7a` PRESENT;
-- `arm64-v8a` PRESENT.
-
-## Gate 0 — coerência documental/CI
-
-Estado: **EM FECHAMENTO**.
-
-Fechado nesta trilha:
-
-- `CURRENT_STATE`, `STATUS_REPORT`, runtime matrix, P33, Code Reality Matrix e índice reconciliados;
-- evidence append-only do build materializada;
-- alvo hardcoded `issues/236/comments` removido do CI;
-- comentário de build agora é ligado a `github.event.pull_request.number`;
-- teste `tests/test_workflow_pr_binding.py` impede regressão para PR/issue hardcoded.
-
-Gate para fechar:
-
-- CI do head atual deve executar e passar os novos testes/workflows.
-
-## Gate 1 — DEVICE físico
-
-Estado: **TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED**.
-
-Exigir na mesma cadeia:
-
-1. commit escolhido;
-2. APK produzido para esse commit;
-3. SHA-256 do APK;
-4. instalação física;
-5. launch;
-6. runtime receipt;
-7. revalidação commit + SHA-256;
-8. `triangle_closure=PASS`.
-
-Nenhum APK histórico autoriza o DEVICE de um head novo.
-
-## Gate 2 — fixtures reais críticas
-
-Após DEVICE básico:
-
-- PAT/401/reautenticação em Android;
-- GitHub App Device Flow refresh real quando configurado;
-- clone/fetch/pull/push em remote descartável;
-- force-with-lease com remote privado controlado;
-- SSH com chave/servidor real;
-- interactive staging em fixture física;
-- offline enqueue -> restart -> recovery;
-- GitLab/Bitbucket/Gitea-Forgejo/Azure DevOps com credenciais descartáveis.
-
-## Gate 3 — runtimes externos
-
-Fechar isoladamente:
-
-- `git-lfs` + remote fixture;
-- worktree filesystem matrix;
-- bisect regression fixture;
-- GPG binário + assinatura/verificação;
-- Kiwi unpacked + loopback bridge;
-- modelo local/GGUF;
-- LLaMA JNI somente após dependência externa pinada e reproduzível.
-
-## Gate 4 — release
-
-Estado: **BLOCKED_BY_DEVICE_AND_RELEASE_GATES**.
-
-Exigir antes de promover release:
-
-- DEVICE PASS do commit candidato;
-- regressão dos fluxos críticos;
-- assinatura oficial configurada;
-- artefato release + SHA/receipt;
-- política de distribuição definida;
-- `release_allowed=true` emitido por gate explícito, nunca por inferência.
-
-## Prioridade real
+A valid closure requires the same chain:
 
 ```text
-P0  CI/head coerente
-P1  DEVICE físico do APK exato
-P2  Git/Auth/Offline fixtures reais
-P3  providers e runtimes externos
-P4  release/signing/distribuição
-P5  expansões (PTY completo, IA local avançada, extras do roadmap)
+commit
+→ CI/build artifact
+→ artifact SHA-256
+→ physical install
+→ launch
+→ package/ABI/device identity
+→ runtime/logcat receipt
+→ artifact hash revalidation
 ```
 
-Não adicionar nova feature de baixa prioridade se ela deslocar P0/P1 sem justificativa.
+No historical APK closes a current-head device gate.
 
-## Fonte de verdade
+## Gate P2 — provider governance safety
 
-1. `app/src/`;
-2. `app/src/test/` + `tests/`;
-3. `.github/workflows/`;
-4. `docs/RAFGITTOOLS_CODE_REALITY_MATRIX.md`;
-5. `docs/RAFGITTOOLS_CURRENT_STATE.md`;
-6. `ECOSYSTEM_RUNTIME_STATE.json`;
-7. `data/evidence/` + `docs/canonical/`;
-8. este roadmap operacional;
-9. roadmap histórico por último.
+**State:** `SOURCE_READY / PROVIDER_EVIDENCE_GATED`.
 
-## Retroalimentar[3]
+The source already supports a conservative transaction model. Operational closure requires:
 
-- **F_ok:** fonte e BUILD já ultrapassaram amplamente o roadmap antigo.
-- **F_gap:** CI do novo head, DEVICE e fixtures reais ainda delimitam o claim.
-- **F_next:** passar o novo gate CI e produzir o primeiro runtime receipt físico commit-bound.
+1. authoritative observed pre-state;
+2. observed authority;
+3. desired-state plan;
+4. deterministic dry-run/fingerprint;
+5. only losslessly reversible mutations;
+6. provider write;
+7. authoritative re-probe;
+8. append-only receipt;
+9. rollback only if no provider drift occurred.
+
+`TOKEN_VAZIO` pre-state, lossy rollback and drift must remain blockers.
+
+## Gate P3 — real core fixtures
+
+Close independently:
+
+- PAT/OAuth/SSH/gh/GPG authentication paths with disposable authorized fixtures;
+- clone/fetch/pull/push/rebase/force-with-lease/conflict fixtures;
+- worktree/bisect/LFS external runtime fixtures;
+- offline enqueue → process death/restart/network transition → recovery;
+- GitLab, Bitbucket, Gitea/Forgejo and Azure DevOps provider-real paths.
+
+Shared interfaces do not establish provider parity.
+
+## Gate P4 — bounded terminal and external local AI runtimes
+
+- Keep current terminal classified as `BOUNDED_EXECUTOR` until PTY/VT100 lifecycle, resize, signal and escape-sequence evidence exists.
+- Keep LLaMA/local-model paths external-runtime-gated until dependencies, model hashes, native library identity and device execution are bound.
+
+## Gate P5 — release
+
+**State:** `BLOCKED_BY_EVIDENCE`.
+
+Before `release_allowed=true`:
+
+- exact candidate SHA;
+- complete required CI/build gate;
+- signed release artifact;
+- signing identity/digest provenance;
+- exact-artifact physical smoke;
+- critical-flow regression receipts;
+- distribution policy;
+- explicit release decision.
+
+Release is never inferred from source presence or a debug build.
+
+## Documentation gate — permanent
+
+Every source change that changes user-visible behavior, evidence level, build/runtime gate, security boundary or release state must update or explicitly reconcile:
+
+```text
+docs/RAFGITTOOLS_CURRENT_STATE.md
+docs/STATUS_REPORT.md
+docs/RAFGITTOOLS_ROADMAP_TRUE.md
+docs/CODE_TO_DOC_MAP.md (when routing changes)
+docs/INDEX.md (when canonical navigation changes)
+```
+
+If this cannot be done in the same revision, emit `TOKEN_VAZIO_DOC_DRIFT` with an owner and next verifiable step.
+
+Machine-generated/state artifacts are not manually edited merely to match prose. If stale, label them `TOKEN_VAZIO_REGEN_REQUIRED` until their proper generator executes.
+
+## Priority order
+
+```text
+P0 exact-head evidence coherence
+→ P1 physical device
+→ P2 provider-governance readback/safe apply
+→ P3 Git/Auth/Offline/provider fixtures
+→ P4 PTY/external runtimes
+→ P5 release
+→ P6 expansion/optimization
+```
+
+## Historical lineage
+
+The 2026-08-14 BUILD anchor and PR #346/#347 sequence remain evidence/genealogy only. They no longer define the active roadmap head.
+
+## R3
+
+- **F_ok:** roadmap is now source/evidence ordered instead of feature-count ordered; governance and receipt validation are represented at their real source maturity.
+- **F_gap:** full exact-head evidence inventory, physical device, provider-real fixtures and release remain open.
+- **F_next:** close gates in evidence order; expansion must not outrun P0/P1 without an explicit reason and receipt.
