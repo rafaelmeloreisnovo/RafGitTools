@@ -58,7 +58,7 @@ import com.rafgittools.data.github.GovernanceControlState
  * Provider-bound repository governance control center.
  *
  * Configuration, enforcement evidence and audit state are deliberately separated.
- * Nothing is promoted to applied until the provider accepts a mutation and a re-probe runs.
+ * V3 additionally requires a deterministic dry-run + rollback capsule before writes.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -129,6 +129,10 @@ fun RepositoryGovernanceScreen(
             }
 
             item { GovernanceEvidenceCard(state) }
+
+            state.mutationPlan?.let { plan ->
+                item { GovernanceMutationPlanCard(plan) }
+            }
 
             item {
                 OutlinedButton(
@@ -254,12 +258,42 @@ fun RepositoryGovernanceScreen(
                 }
 
                 item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = viewModel::prepareDryRun,
+                            enabled = state.dirtyFields.isNotEmpty() &&
+                                state.evidenceState != GovernanceEvidenceState.APPLYING,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(stringResource(R.string.repo_governance_dry_run))
+                        }
+                        OutlinedButton(
+                            onClick = viewModel::prepareRollback,
+                            enabled = state.canRollback,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(stringResource(R.string.repo_governance_rollback))
+                        }
+                    }
+                }
+
+                item {
                     Button(
                         onClick = { showApplyConfirmation = true },
                         enabled = state.canApply,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(stringResource(R.string.repo_governance_apply_count, state.dirtyFields.size))
+                        val isRollback = state.mutationPlan?.mode == GovernancePlanMode.ROLLBACK
+                        Text(
+                            if (isRollback) {
+                                stringResource(R.string.repo_governance_execute_rollback_count, state.dirtyFields.size)
+                            } else {
+                                stringResource(R.string.repo_governance_apply_count, state.dirtyFields.size)
+                            }
+                        )
                     }
                 }
 
@@ -396,6 +430,65 @@ private fun GovernanceEvidenceCard(state: RepositoryGovernanceUiState) {
                     text = it,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GovernanceMutationPlanCard(plan: GovernanceMutationPlan) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    if (plan.executable) Icons.Default.CheckCircle else Icons.Default.Warning,
+                    contentDescription = null
+                )
+                Text(
+                    stringResource(R.string.repo_governance_plan_title),
+                    modifier = Modifier.padding(start = 8.dp),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            Text(
+                stringResource(
+                    R.string.repo_governance_plan_summary,
+                    plan.mode.name,
+                    plan.items.size,
+                    plan.reversibleItems.size,
+                    plan.blockingItems.size
+                ),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                stringResource(R.string.repo_governance_plan_fingerprint, plan.fingerprint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                if (plan.executable) {
+                    stringResource(R.string.repo_governance_plan_ready)
+                } else {
+                    stringResource(R.string.repo_governance_plan_blocked)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = if (plan.executable) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.error
+                }
+            )
+            plan.items.forEach { item ->
+                Text(
+                    text = "${item.field.name}: ${item.before ?: "TOKEN_VAZIO"} → ${item.after} · ${item.disposition.name} · ${item.rollbackClass.name}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (item.disposition == GovernancePlanDisposition.MUTATE) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    }
                 )
             }
         }

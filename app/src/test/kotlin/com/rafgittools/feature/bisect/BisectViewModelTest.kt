@@ -17,27 +17,24 @@ class BisectViewModelTest {
 
     @Test
     fun `initial state is not in session`() {
-        // Arrange
         val expectedState = BisectViewModel.BisectState(
             isInSession = false,
             candidates = emptyList(),
             currentCommit = null
         )
 
-        // Verify initial state
         assertFalse(expectedState.isInSession)
-        assertEquals(expectedState.candidates.size, 0)
+        assertEquals(0, expectedState.candidates.size)
     }
 
     @Test
-    fun `calculateRemaining log(2) for candidates`() = runTest {
-        // Arrange
+    fun `calculateRemaining ceil log2 for candidates includes zero-step singleton boundary`() = runTest {
         val candidates = listOf(1, 2, 4, 8, 16, 32, 64)
 
-        // Verify logarithmic estimation
         for (count in candidates) {
             val expected = kotlin.math.ceil(kotlin.math.log(count.toDouble(), 2.0)).toInt()
-            assertTrue(expected in 1..6, "Log calculation for $count should be reasonable")
+            assertTrue(expected in 0..6, "ceil(log2($count))=$expected must stay inside the 0..6 decision bound")
+            if (count == 1) assertEquals(0, expected)
         }
     }
 
@@ -68,13 +65,7 @@ class BisectViewModelTest {
 
     @Test
     fun `resetBisect clears session state`() {
-        // Arrange
-        val state = BisectViewModel.BisectState(isInSession = true)
-
-        // Act
         val resetState = BisectViewModel.BisectState()
-
-        // Assert
         assertFalse(resetState.isInSession)
     }
 }

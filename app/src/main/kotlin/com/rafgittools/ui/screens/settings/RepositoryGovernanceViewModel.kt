@@ -98,6 +98,8 @@ data class RepositoryGovernanceUiState(
     val observed: ObservedRepositoryGovernance? = null,
     val desired: DesiredRepositoryGovernance? = null,
     val dirtyFields: Set<GovernanceField> = emptySet(),
+    val mutationPlan: GovernanceMutationPlan? = null,
+    val lastAppliedPlan: GovernanceMutationPlan? = null,
     val auditReport: GovernanceAuditReport? = null,
     val receiptChainStatus: RepositoryGovernanceReceiptStore.GovernanceReceiptChainStatus? = null,
     val evidenceState: GovernanceEvidenceState = GovernanceEvidenceState.TOKEN_VAZIO,
@@ -115,6 +117,15 @@ data class RepositoryGovernanceUiState(
         get() = adminAuthorityProven &&
             selectedRepository?.archived != true &&
             dirtyFields.isNotEmpty() &&
+            mutationPlan?.executable == true &&
+            mutationPlan.items.map { it.field }.toSet() == dirtyFields &&
+            evidenceState != GovernanceEvidenceState.APPLYING
+
+    val canRollback: Boolean
+        get() = adminAuthorityProven &&
+            selectedRepository?.archived != true &&
+            observed != null &&
+            lastAppliedPlan != null &&
             evidenceState != GovernanceEvidenceState.APPLYING
 }
 
@@ -133,7 +144,11 @@ class RepositoryGovernanceViewModel @Inject constructor(
 
     fun refreshRepositories() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoadingRepositories = true, message = null)
+            _uiState.value = _uiState.value.copy(
+                isLoadingRepositories = true,
+                mutationPlan = null,
+                message = null
+            )
             runCatching { listAllRepositories() }
                 .onSuccess { repositories ->
                     val ordered = repositories.sortedWith(
@@ -173,6 +188,8 @@ class RepositoryGovernanceViewModel @Inject constructor(
             observed = null,
             desired = null,
             dirtyFields = emptySet(),
+            mutationPlan = null,
+            lastAppliedPlan = null,
             auditReport = null,
             isLoadingRepository = true,
             evidenceState = GovernanceEvidenceState.TOKEN_VAZIO,
@@ -183,7 +200,11 @@ class RepositoryGovernanceViewModel @Inject constructor(
 
     fun refreshSelected() {
         val repository = _uiState.value.selectedRepository ?: return
-        _uiState.value = _uiState.value.copy(isLoadingRepository = true, message = null)
+        _uiState.value = _uiState.value.copy(
+            isLoadingRepository = true,
+            mutationPlan = null,
+            message = null
+        )
         viewModelScope.launch { probe(repository, preserveDirty = true) }
     }
 
@@ -191,6 +212,7 @@ class RepositoryGovernanceViewModel @Inject constructor(
         val repository = _uiState.value.selectedRepository ?: return
         _uiState.value = _uiState.value.copy(
             isAuditing = true,
+            mutationPlan = null,
             message = "Running provider-bound governance audit…"
         )
         viewModelScope.launch {
@@ -213,6 +235,7 @@ class RepositoryGovernanceViewModel @Inject constructor(
         _uiState.value = state.copy(
             desired = updated,
             dirtyFields = dirty,
+            mutationPlan = null,
             evidenceState = if (dirty.isEmpty()) GovernanceEvidenceState.OBSERVED else GovernanceEvidenceState.READY,
             message = if (observedValue(field, observed) == null) {
                 "TOKEN_VAZIO: ${field.name} provider pre-state is not proven; mutation will remain blocked."
@@ -274,6 +297,7 @@ class RepositoryGovernanceViewModel @Inject constructor(
         _uiState.value = state.copy(
             desired = desired,
             dirtyFields = dirty,
+            mutationPlan = null,
             evidenceState = if (dirty.isEmpty()) GovernanceEvidenceState.OBSERVED else GovernanceEvidenceState.READY,
             message = buildString {
                 append("Conservative baseline staged without destructive policy replacement.")
@@ -287,8 +311,99 @@ class RepositoryGovernanceViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             desired = desiredFromObserved(observed),
             dirtyFields = emptySet(),
+            mutationPlan = null,
             evidenceState = GovernanceEvidenceState.OBSERVED,
             message = "Staged changes discarded; provider state unchanged."
+        )
+    }
+
+    /**
+     * Produces the mandatory fail-closed dry-run capsule. No provider mutation occurs here.
+     */
+    fun prepareDryRun() {
+        val state = _uiState.value
+        val repository = state.selectedRepository ?: return
+        val observed = state.observed ?: return
+        val desired = state.desired ?: return
+        if (state.dirtyFields.isEmpty()) return
+
+        val plan = RepositoryGovernanceMutationPlanner.buildApplyPlan(
+            repository = repository.fullName,
+            observed = observed,
+            desired = desired,
+            dirtyFields = state.dirtyFields,
+            authorityProven = state.adminAuthorityProven,
+            archived = repository.archived
+        )
+        publishDryRun(state, observed, plan, "repository_governance_dry_run")
+    }
+
+    /**
+     * Builds a rollback from the exact last applied transaction and the latest provider readback.
+     * Drift, TOKEN_VAZIO or lossy restoration blocks the rollback before any write.
+     */
+    fun prepareRollback() {
+        val state = _uiState.value
+        val repository = state.selectedRepository ?: return
+        val observed = state.observed ?: return
+        val applied = state.lastAppliedPlan ?: return
+
+        val plan = RepositoryGovernanceMutationPlanner.buildRollbackPlan(
+            repository = repository.fullName,
+            appliedPlan = applied,
+            currentObserved = observed,
+            authorityProven = state.adminAuthorityProven,
+            archived = repository.archived
+        )
+        val desired = RepositoryGovernanceMutationPlanner.applyPlanToDesired(
+            desiredFromObserved(observed),
+            plan
+        )
+        val dirty = plan.items
+            .filter { it.disposition == GovernancePlanDisposition.MUTATE }
+            .map { it.field }
+            .toSet()
+        val receipt = receiptStore.appendDetailed(
+            repository = repository.fullName,
+            operation = "repository_governance_rollback_dry_run",
+            outcome = if (plan.executable) "DRY_RUN_READY" else "DRY_RUN_BLOCKED",
+            details = plan.receiptDetails(),
+            beforeSnapshot = providerSnapshot(observed),
+            gaps = plan.blockingItems.map { "${it.field.name}:${it.reason}" }
+        )
+        _uiState.value = state.copy(
+            desired = desired,
+            dirtyFields = dirty,
+            mutationPlan = plan,
+            evidenceState = if (plan.executable) GovernanceEvidenceState.READY else GovernanceEvidenceState.TOKEN_VAZIO,
+            message = planMessage(plan),
+            lastReceiptId = receipt,
+            receiptPath = receiptStore.path(),
+            receiptChainStatus = receiptStore.verifyChain()
+        )
+    }
+
+    private fun publishDryRun(
+        state: RepositoryGovernanceUiState,
+        observed: ObservedRepositoryGovernance,
+        plan: GovernanceMutationPlan,
+        operation: String
+    ) {
+        val receipt = receiptStore.appendDetailed(
+            repository = plan.repository,
+            operation = operation,
+            outcome = if (plan.executable) "DRY_RUN_READY" else "DRY_RUN_BLOCKED",
+            details = plan.receiptDetails(),
+            beforeSnapshot = providerSnapshot(observed),
+            gaps = plan.blockingItems.map { "${it.field.name}:${it.reason}" }
+        )
+        _uiState.value = state.copy(
+            mutationPlan = plan,
+            evidenceState = if (plan.executable) GovernanceEvidenceState.READY else GovernanceEvidenceState.TOKEN_VAZIO,
+            message = planMessage(plan),
+            lastReceiptId = receipt,
+            receiptPath = receiptStore.path(),
+            receiptChainStatus = receiptStore.verifyChain()
         )
     }
 
@@ -297,16 +412,21 @@ class RepositoryGovernanceViewModel @Inject constructor(
         val repository = state.selectedRepository ?: return
         val observed = state.observed ?: return
         val desired = state.desired ?: return
-        val dirty = state.dirtyFields
-        if (dirty.isEmpty()) return
+        val plan = state.mutationPlan
+
+        if (state.dirtyFields.isEmpty()) return
+        if (plan == null) {
+            prepareDryRun()
+            return
+        }
 
         if (!state.adminAuthorityProven || repository.archived) {
             val reason = if (repository.archived) "ARCHIVED_REPOSITORY" else "ADMIN_AUTHORITY_NOT_PROVEN"
             val receipt = receiptStore.appendDetailed(
                 repository = repository.fullName,
-                operation = "repository_governance_apply",
+                operation = transactionOperation(plan.mode, "apply"),
                 outcome = "BLOCKED",
-                details = "$reason; no mutation attempted.",
+                details = "$reason; no mutation attempted; plan=${plan.fingerprint}",
                 beforeSnapshot = providerSnapshot(observed),
                 gaps = listOf(reason)
             )
@@ -324,18 +444,62 @@ class RepositoryGovernanceViewModel @Inject constructor(
             return
         }
 
+        val rebuilt = when (plan.mode) {
+            GovernancePlanMode.APPLY -> RepositoryGovernanceMutationPlanner.buildApplyPlan(
+                repository = repository.fullName,
+                observed = observed,
+                desired = desired,
+                dirtyFields = state.dirtyFields,
+                authorityProven = state.adminAuthorityProven,
+                archived = repository.archived
+            )
+            GovernancePlanMode.ROLLBACK -> {
+                val applied = state.lastAppliedPlan
+                if (applied == null || applied.fingerprint != plan.sourceFingerprint) null else {
+                    RepositoryGovernanceMutationPlanner.buildRollbackPlan(
+                        repository = repository.fullName,
+                        appliedPlan = applied,
+                        currentObserved = observed,
+                        authorityProven = state.adminAuthorityProven,
+                        archived = repository.archived
+                    )
+                }
+            }
+        }
+
+        if (rebuilt == null || rebuilt.fingerprint != plan.fingerprint || !plan.executable) {
+            val receipt = receiptStore.appendDetailed(
+                repository = repository.fullName,
+                operation = transactionOperation(plan.mode, "apply"),
+                outcome = "BLOCKED_STALE_PLAN",
+                details = "Dry-run fingerprint is stale or non-executable; no mutation attempted. expected=${plan.fingerprint}; rebuilt=${rebuilt?.fingerprint ?: "TOKEN_VAZIO"}",
+                beforeSnapshot = providerSnapshot(observed),
+                gaps = listOf("DRY_RUN_STALE_OR_NON_EXECUTABLE")
+            )
+            _uiState.value = state.copy(
+                mutationPlan = null,
+                evidenceState = GovernanceEvidenceState.TOKEN_VAZIO,
+                message = "TOKEN_VAZIO: provider state or staged delta changed after dry-run. Generate a new dry-run.",
+                lastReceiptId = receipt,
+                receiptPath = receiptStore.path(),
+                receiptChainStatus = receiptStore.verifyChain()
+            )
+            return
+        }
+
         _uiState.value = state.copy(
             evidenceState = GovernanceEvidenceState.APPLYING,
-            message = "Applying ${dirty.size} staged governance field(s)…"
+            message = "Executing ${plan.mode.name} transaction ${plan.fingerprint.take(12)} with ${state.dirtyFields.size} field(s)…"
         )
-        viewModelScope.launch { applyProviderChanges(repository, observed, desired, dirty) }
+        viewModelScope.launch { applyProviderChanges(repository, observed, desired, state.dirtyFields, plan) }
     }
 
     private suspend fun applyProviderChanges(
         repository: GovernanceRepositorySummary,
         observed: ObservedRepositoryGovernance,
         desired: DesiredRepositoryGovernance,
-        dirty: Set<GovernanceField>
+        dirty: Set<GovernanceField>,
+        plan: GovernanceMutationPlan
     ) {
         val coordinates = repositoryCoordinates(repository.fullName)
         if (coordinates == null) {
@@ -411,27 +575,37 @@ class RepositoryGovernanceViewModel @Inject constructor(
             succeeded.isEmpty() -> "FAILED"
             else -> "PARTIAL"
         }
+        val appliedSubset = if (succeeded.isEmpty()) null else {
+            plan.copy(items = plan.items.filter { it.field in succeeded })
+        }
         val receipt = receiptStore.appendDetailed(
             repository = repository.fullName,
-            operation = "repository_governance_apply",
+            operation = transactionOperation(plan.mode, "apply"),
             outcome = outcome,
-            details = "dirty=${dirty.sortedBy { it.name }.joinToString(",")}; " +
+            details = "plan=${plan.fingerprint}; dirty=${dirty.sortedBy { it.name }.joinToString(",")}; " +
                 "succeeded=${succeeded.sortedBy { it.name }.joinToString(",")}; " +
-                "failures=${failures.joinToString(" | ")}",
+                "failures=${failures.joinToString(" | ")}; capsule=${appliedSubset?.receiptDetails() ?: "NONE"}",
             beforeSnapshot = providerSnapshot(observed),
             afterSnapshot = "AUTHORITATIVE_REPROBE_PENDING",
             gaps = failures
         )
 
+        val previousAppliedPlan = _uiState.value.lastAppliedPlan
         _uiState.value = _uiState.value.copy(
             dirtyFields = dirty - succeeded,
+            mutationPlan = null,
+            lastAppliedPlan = when {
+                plan.mode == GovernancePlanMode.APPLY && appliedSubset != null -> appliedSubset
+                plan.mode == GovernancePlanMode.ROLLBACK && failures.isEmpty() -> null
+                else -> previousAppliedPlan
+            },
             evidenceState = when {
                 failures.isEmpty() -> GovernanceEvidenceState.APPLIED
                 succeeded.isEmpty() -> GovernanceEvidenceState.FAILED
                 else -> GovernanceEvidenceState.TOKEN_VAZIO
             },
             message = if (failures.isEmpty()) {
-                "Provider accepted staged operations. Re-probing authoritative state…"
+                "Provider accepted ${plan.mode.name} transaction. Re-probing authoritative state…"
             } else {
                 "${succeeded.size} field(s) accepted; unresolved: ${failures.joinToString(" | ")}"
             },
@@ -444,7 +618,7 @@ class RepositoryGovernanceViewModel @Inject constructor(
             preserveDirty = true,
             preserveMessage = failures.isNotEmpty(),
             writeAuditReceipt = true,
-            auditOperation = "repository_governance_post_apply_reprobe"
+            auditOperation = transactionOperation(plan.mode, "post_apply_reprobe")
         )
     }
 
@@ -566,6 +740,7 @@ class RepositoryGovernanceViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(
                 isLoadingRepository = false,
                 isAuditing = false,
+                mutationPlan = null,
                 evidenceState = GovernanceEvidenceState.FAILED,
                 message = "Invalid repository identity: ${repository.fullName}"
             )
@@ -618,6 +793,7 @@ class RepositoryGovernanceViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(
                 isLoadingRepository = false,
                 isAuditing = false,
+                mutationPlan = null,
                 evidenceState = GovernanceEvidenceState.TOKEN_VAZIO,
                 message = "TOKEN_VAZIO: provider probe failed (${providerMessage(error)}).",
                 lastReceiptId = receipt ?: _uiState.value.lastReceiptId,
@@ -669,6 +845,7 @@ class RepositoryGovernanceViewModel @Inject constructor(
             observed = observed,
             desired = if (preserveDirty && previous.desired != null) previous.desired else desiredFromObserved(observed),
             dirtyFields = if (preserveDirty) previous.dirtyFields else emptySet(),
+            mutationPlan = null,
             auditReport = audit,
             receiptChainStatus = receiptStore.verifyChain(),
             isLoadingRepository = false,
@@ -862,6 +1039,24 @@ class RepositoryGovernanceViewModel @Inject constructor(
             append("Audit ${audit.scorePercent}%: ${audit.passCount} PASS, ${audit.failCount} FAIL, ${audit.gapCount} TOKEN_VAZIO.")
             if (gaps.isNotEmpty()) append(" Provider gaps: ${gaps.joinToString(", ")}.")
         }
+    }
+
+    private fun planMessage(plan: GovernanceMutationPlan): String = buildString {
+        append(plan.mode.name).append(" dry-run ")
+        append(plan.fingerprint.take(12)).append(": ")
+        append(plan.items.size).append(" delta(s), ")
+        append(plan.reversibleItems.size).append(" reversible, ")
+        append(plan.blockingItems.size).append(" blocked.")
+        if (plan.executable) {
+            append(" Receipt written; provider write is now eligible after confirmation.")
+        } else {
+            append(" No provider write is permitted.")
+        }
+    }
+
+    private fun transactionOperation(mode: GovernancePlanMode, suffix: String): String = when (mode) {
+        GovernancePlanMode.APPLY -> "repository_governance_$suffix"
+        GovernancePlanMode.ROLLBACK -> "repository_governance_rollback_$suffix"
     }
 
     private fun providerSnapshot(observed: ObservedRepositoryGovernance): String = buildString {

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="repo_governance_dry_run">Generar dry-run</string>
+    <string name="repo_governance_rollback">Preparar rollback</string>
+    <string name="repo_governance_plan_title">Plan transaccional</string>
+    <string name="repo_governance_plan_summary">%1$s · %2$d deltas · %3$d reversibles · %4$d bloqueados</string>
+    <string name="repo_governance_plan_fingerprint">Plan SHA-256: %1$s</string>
+    <string name="repo_governance_plan_ready">READY: existe receipt del dry-run y cada delta tiene rollback sin pérdida.</string>
+    <string name="repo_governance_plan_blocked">BLOCKED: no se permite ningún write al provider hasta resolver todos los gaps.</string>
+    <string name="repo_governance_execute_rollback_count">Ejecutar rollback (%1$d)</string>
+</resources>

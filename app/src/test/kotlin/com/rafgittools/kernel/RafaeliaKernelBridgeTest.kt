@@ -1,32 +1,20 @@
 package com.rafgittools.kernel
 
-import android.content.Context
 import kotlinx.coroutines.test.runTest
-import org.junit.Before
 import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class RafaeliaKernelBridgeTest {
 
-    private lateinit var mockContext: Context
-    private lateinit var bridge: RafaeliaKernelBridge
-
-    @Before
-    fun setup() {
-        // Note: Full test requires Android context and native library loaded
-        // This is a structural test only (TOKEN_VAZIO_RUNNER)
+    @Test
+    fun `kernel bridge initialization remains TOKEN_VAZIO without Android context`() {
+        // Native/context initialization is intentionally not promoted by a JVM-only unit test.
     }
 
     @Test
-    fun `kernel bridge initializes without error`() {
-        // Structural validation: bridge can be instantiated
-        // Requires Android context + native library
-    }
-
-    @Test
-    fun `parseToolResponse handles tool_use type`() = runTest {
-        // Arrange: Mock JSON response with tool_use type
+    fun `parseToolResponse handles tool_use type and object input`() = runTest {
         val json = """
             {
                 "type": "tool_use",
@@ -35,13 +23,14 @@ class RafaeliaKernelBridgeTest {
             }
         """.trimIndent()
 
-        // This test validates JSON parsing logic (Kotlin layer, no JNI)
-        assertTrue(json.contains("\"type\":\"tool_use\""))
+        val parsed = RafaeliaKernelBridge.parseToolResponse(json)
+        val request = assertIs<ToolLoopIteration.ToolRequest>(parsed)
+        assertEquals("execute_command", request.toolName)
+        assertEquals("{\"command\":\"ls -la\"}", request.arguments)
     }
 
     @Test
-    fun `parseToolResponse handles text response type`() = runTest {
-        // Arrange: Mock JSON response with text type
+    fun `parseToolResponse handles text response type with whitespace`() = runTest {
         val json = """
             {
                 "type": "text",
@@ -49,35 +38,30 @@ class RafaeliaKernelBridgeTest {
             }
         """.trimIndent()
 
-        // Validates text response parsing
-        assertTrue(json.contains("\"type\":\"text\""))
+        val parsed = RafaeliaKernelBridge.parseToolResponse(json)
+        val response = assertIs<ToolLoopIteration.FinalResponse>(parsed)
+        assertEquals("The directory listing is complete.", response.text)
     }
 
     @Test
-    fun `extractJsonString extracts quoted values`() {
-        // Structural test: regex pattern validity
-        // Full test requires bridge instance with actual JSON
+    fun `parseToolResponse preserves unknown type as explicit error`() {
+        val parsed = RafaeliaKernelBridge.parseToolResponse("""{"type":"future_type"}""")
+        assertIs<ToolLoopIteration.Error>(parsed)
     }
 
     @Test
     fun `executeToolLoop respects maxIterations`() = runTest {
-        // Arrange: Loop with maxIterations = 3
-        // Requires mock native layer
-        // Currently TOKEN_VAZIO: nativeRunToolLoop depends on llama.h
+        // Requires mock native layer; remains TOKEN_VAZIO until a JNI test double is bound.
     }
 
     @Test
     fun `executeToolLoop handles native initialization error`() = runTest {
-        // Arrange: Context initialization fails
-        // Requires mock native layer with error condition
+        // Requires mock native layer with error condition.
     }
 
     @Test
     fun `isNativeAssemblerCoreReady returns boolean`() {
-        // Verify health check function signature
-        val result = runCatching {
-            isNativeAssemblerCoreReady()
-        }
+        val result = runCatching { isNativeAssemblerCoreReady() }
         assertNotNull(result)
     }
 }

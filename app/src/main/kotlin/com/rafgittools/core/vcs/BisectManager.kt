@@ -1,6 +1,8 @@
 package com.rafgittools.core.vcs
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.revwalk.RevCommit
@@ -17,7 +19,9 @@ data class BisectCommitInfo(
     val date: String
 )
 
-class BisectManager(private val context: Context) {
+class BisectManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
 
     private var bisectSession: Git? = null
     private var bisectCandidates: MutableList<RevCommit>? = null
