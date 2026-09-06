@@ -60,6 +60,8 @@ else
   exit 2
 fi
 TERMUX_COMMIT="$(python3 "${LOCK_TOOL}" get "${LOCK_FILE}" rafaelmeloreisnovo/termux-app-rafacodephi commit)"
+TERMUX_API_COMMIT="$(python3 "${LOCK_TOOL}" get "${LOCK_FILE}" rafaelmeloreisnovo/termux-api_rafcodephi commit)"
+TERMUX_PACKAGES_COMMIT="$(python3 "${LOCK_TOOL}" get "${LOCK_FILE}" rafaelmeloreisnovo/termux-packages commit)"
 CONVERSATIONS_COMMIT="$(python3 "${LOCK_TOOL}" get "${LOCK_FILE}" rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE commit)"
 LLAMA_COMMIT="$(python3 "${LOCK_TOOL}" get "${LOCK_FILE}" rafaelmeloreisnovo/llamaRafaelia commit)"
 RAFPOLIMATA_COMMIT="$(python3 "${LOCK_TOOL}" get "${LOCK_FILE}" rafaelmeloreisnovo/RafPolimata commit)"
@@ -110,6 +112,8 @@ python3 - \
   "${RUN_ID}" \
   "${RAFGITTOOLS_COMMIT}" \
   "${TERMUX_COMMIT}" \
+  "${TERMUX_API_COMMIT}" \
+  "${TERMUX_PACKAGES_COMMIT}" \
   "${CONVERSATIONS_COMMIT}" \
   "${LLAMA_COMMIT}" \
   "${RAFPOLIMATA_COMMIT}" \
@@ -126,6 +130,8 @@ from pathlib import Path
     run_id,
     rafgittools_commit,
     termux_commit,
+    termux_api_commit,
+    termux_packages_commit,
     conversations_commit,
     llama_commit,
     rafpolimata_commit,
@@ -155,6 +161,8 @@ manifest = {
     "components": {
         "rafgittools_commit": rafgittools_commit,
         "termux_rafcodephi_commit": termux_commit,
+        "termux_api_rafcodephi_commit": termux_api_commit,
+        "termux_packages_commit": termux_packages_commit,
         "conversations_chunks_commit": conversations_commit,
         "llama_rafaelia_commit": llama_commit,
         "rafpolimata_commit": rafpolimata_commit,
