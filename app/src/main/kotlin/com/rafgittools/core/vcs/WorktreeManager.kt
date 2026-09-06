@@ -2,8 +2,6 @@ package com.rafgittools.core.vcs
 
 import android.content.Context
 import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.lib.Ref
-import org.eclipse.jgit.lib.Repository
 import java.io.File
 
 data class WorktreeInfo(
@@ -14,6 +12,19 @@ data class WorktreeInfo(
 )
 
 class WorktreeManager(private val context: Context) {
+
+    private fun runGit(repoPath: String, vararg args: String): String {
+        val process = ProcessBuilder(listOf("git") + args.toList())
+            .directory(File(repoPath))
+            .redirectErrorStream(true)
+            .start()
+        val output = process.inputStream.bufferedReader().readText()
+        val exitCode = process.waitFor()
+        if (exitCode != 0) {
+            throw IllegalStateException("git ${args.joinToString(" ")} failed ($exitCode): ${output.trim()}")
+        }
+        return output
+    }
 
     fun listWorktrees(): Result<List<WorktreeInfo>> = runCatching {
         val repoPath = context.filesDir.absolutePath
@@ -31,7 +42,7 @@ class WorktreeManager(private val context: Context) {
                     val wtGit = Git.open(File(wtPath))
                     val branch = wtGit.repository.branch
                     val headRef = wtGit.repository.findRef("HEAD")
-                    val commitHash = headRef?.objectId?.abbreviate(40)?.name ?: "unknown"
+                    val commitHash = headRef?.objectId?.abbreviate(40)?.name() ?: "unknown"
 
                     worktrees.add(
                         WorktreeInfo(
@@ -56,51 +67,33 @@ class WorktreeManager(private val context: Context) {
         commitHash: String? = null
     ): Result<WorktreeInfo> = runCatching {
         val repoPath = context.filesDir.absolutePath
-        val git = Git.open(File(repoPath))
-
         val wtFile = File(path)
-        if (!wtFile.parentFile?.exists()!!) {
-            wtFile.parentFile?.mkdirs()
-        }
-
-        val worktreeApi = git.worktreeAdd()
-            .setPath(path)
-            .setCheckoutBranch(branchName)
+        wtFile.parentFile?.mkdirs()
 
         if (commitHash != null) {
-            worktreeApi.setCommitish(commitHash)
+            runGit(repoPath, "worktree", "add", "-b", branchName, path, commitHash)
+        } else {
+            runGit(repoPath, "worktree", "add", path, branchName)
         }
-
-        worktreeApi.call()
 
         val wtGit = Git.open(wtFile)
         val branch = wtGit.repository.branch
         val headRef = wtGit.repository.findRef("HEAD")
-        val commitId = headRef?.objectId?.abbreviate(40)?.name ?: "unknown"
+        val commitId = headRef?.objectId?.abbreviate(40)?.name() ?: "unknown"
+        wtGit.close()
 
-        val result = WorktreeInfo(
+        WorktreeInfo(
             path = path,
             branch = branch,
             commitHash = commitId,
             isPrunable = false
         )
-
-        wtGit.close()
-        git.close()
-
-        result
     }
 
     fun deleteWorktree(path: String): Result<Unit> = runCatching {
         val repoPath = context.filesDir.absolutePath
-        val git = Git.open(File(repoPath))
-
-        git.worktreeRemove()
-            .setForce(false)
-            .setPath(path)
-            .call()
-
-        git.close()
+        runGit(repoPath, "worktree", "remove", path)
+        Unit
     }
 
     fun getBranchInfo(worktreePath: String): Result<String> = runCatching {
@@ -113,14 +106,10 @@ class WorktreeManager(private val context: Context) {
 
     fun pruneWorktrees(): Result<Int> = runCatching {
         val repoPath = context.filesDir.absolutePath
-        val git = Git.open(File(repoPath))
-
-        val prunedCount = git.worktreeRemove()
-            .setForce(true)
-            .call()
-            .size
-
-        git.close()
-        prunedCount
+        val adminDir = File(File(repoPath, ".git"), "worktrees")
+        val before = adminDir.listFiles()?.size ?: 0
+        runGit(repoPath, "worktree", "prune")
+        val after = adminDir.listFiles()?.size ?: 0
+        (before - after).coerceAtLeast(0)
     }
 }

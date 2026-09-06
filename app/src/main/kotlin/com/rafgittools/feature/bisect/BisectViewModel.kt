@@ -56,13 +56,35 @@ class BisectViewModel @Inject constructor(
     private val _effects = MutableStateFlow<BisectEffect?>(null)
     val effects: StateFlow<BisectEffect?> = _effects.asStateFlow()
 
+    private fun String.toBisectCommit(): BisectCommit {
+        val info = bisectManager.getCommitInfo(this).getOrNull()
+        return if (info != null) {
+            BisectCommit(
+                hash = info.hash,
+                shortHash = info.shortHash,
+                message = info.message,
+                author = info.author,
+                date = info.date
+            )
+        } else {
+            BisectCommit(
+                hash = this,
+                shortHash = take(7),
+                message = "",
+                author = "",
+                date = ""
+            )
+        }
+    }
+
     fun startBisect(goodCommitHash: String, badCommitHash: String) {
         viewModelScope.launch(Dispatchers.IO) {
             _state.value = _state.value.copy(isLoading = true, error = null)
 
             val result = bisectManager.startBisect(goodCommitHash, badCommitHash)
 
-            result.onSuccess { commits ->
+            result.onSuccess { commitHashes ->
+                val commits = commitHashes.map { it.toBisectCommit() }
                 _state.value = _state.value.copy(
                     isInSession = true,
                     isLoading = false,
@@ -86,15 +108,15 @@ class BisectViewModel @Inject constructor(
 
             val result = bisectManager.markCommitGood(commitHash)
 
-            result.onSuccess { nextCommit ->
-                if (nextCommit != null) {
+            result.onSuccess { nextCommitHash ->
+                if (nextCommitHash != null) {
                     val goodCommits = _state.value.goodCommits + (
                         _state.value.currentCommit?.copy(status = BisectStatus.GOOD)
                             ?: return@launch
                     )
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        currentCommit = nextCommit,
+                        currentCommit = candidateFor(nextCommitHash),
                         goodCommits = goodCommits,
                         estimatedRemaining = calculateRemaining(_state.value.candidates.size)
                     )
@@ -117,15 +139,15 @@ class BisectViewModel @Inject constructor(
 
             val result = bisectManager.markCommitBad(commitHash)
 
-            result.onSuccess { nextCommit ->
-                if (nextCommit != null) {
+            result.onSuccess { nextCommitHash ->
+                if (nextCommitHash != null) {
                     val badCommits = _state.value.badCommits + (
                         _state.value.currentCommit?.copy(status = BisectStatus.BAD)
                             ?: return@launch
                     )
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        currentCommit = nextCommit,
+                        currentCommit = candidateFor(nextCommitHash),
                         badCommits = badCommits,
                         estimatedRemaining = calculateRemaining(_state.value.candidates.size)
                     )
@@ -148,15 +170,15 @@ class BisectViewModel @Inject constructor(
 
             val result = bisectManager.skipCommit(commitHash)
 
-            result.onSuccess { nextCommit ->
-                if (nextCommit != null) {
+            result.onSuccess { nextCommitHash ->
+                if (nextCommitHash != null) {
                     val skippedCommits = _state.value.skippedCommits + (
                         _state.value.currentCommit?.copy(status = BisectStatus.SKIPPED)
                             ?: return@launch
                     )
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        currentCommit = nextCommit,
+                        currentCommit = candidateFor(nextCommitHash),
                         skippedCommits = skippedCommits,
                         estimatedRemaining = calculateRemaining(_state.value.candidates.size)
                     )
@@ -210,6 +232,9 @@ class BisectViewModel @Inject constructor(
     fun clearEffect() {
         _effects.value = null
     }
+
+    private fun candidateFor(hash: String): BisectCommit =
+        _state.value.candidates.firstOrNull { it.hash == hash } ?: hash.toBisectCommit()
 
     private fun calculateRemaining(total: Int): Int {
         return if (total > 0) {
