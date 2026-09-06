@@ -5,6 +5,8 @@ import androidx.room.Room
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
 import com.rafgittools.BuildConfig
+import com.rafgittools.core.vcs.BisectManager
+import com.rafgittools.core.vcs.WorktreeManager
 import com.rafgittools.data.auth.AuthInterceptor
 import com.rafgittools.data.cache.CacheDao
 import com.rafgittools.data.cache.CacheDatabase
@@ -176,4 +178,14 @@ object KernelModule {
     @Singleton
     fun provideGovernanceGate(@ApplicationContext context: Context): GovernanceGate =
         GovernanceGate(context)
+
+    @Provides
+    @Singleton
+    fun provideBisectManager(@ApplicationContext context: Context): BisectManager =
+        BisectManager(context)
+
+    @Provides
+    @Singleton
+    fun provideWorktreeManager(@ApplicationContext context: Context): WorktreeManager =
+        WorktreeManager(context)
 }
