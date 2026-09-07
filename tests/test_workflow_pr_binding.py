@@ -6,7 +6,10 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
+# The predecessor CI workflow is preserved as a historical fixture. START does
+# not post PR comments, so these tests remain useful only to prove the archived
+# implementation never used a hardcoded issue target.
+CI_WORKFLOW = ROOT / ".github" / "workflows-legacy-20260907" / "ci.yml"
 
 
 class WorkflowPullRequestBindingTest(unittest.TestCase):
@@ -18,7 +21,7 @@ class WorkflowPullRequestBindingTest(unittest.TestCase):
         self.assertEqual(
             matches,
             [],
-            f"CI workflow must not publish to hardcoded issue/PR targets: {matches}",
+            f"legacy CI fixture must not publish to hardcoded issue/PR targets: {matches}",
         )
 
     def test_comment_target_is_bound_to_current_pull_request_event(self) -> None:

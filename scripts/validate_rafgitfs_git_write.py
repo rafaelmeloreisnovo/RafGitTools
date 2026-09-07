@@ -24,7 +24,7 @@ FILES = (
     "app/src/main/kotlin/com/rafgittools/ui/screens/rafgitfs/WorkspaceEditorScreen.kt",
     "app/src/main/kotlin/com/rafgittools/ui/screens/rafgitfs/VirtualFileBrowserScreen.kt",
     "app/src/main/kotlin/com/rafgittools/RafGitFsActivity.kt",
-    ".github/workflows/rafgitfs-room-v6-validation.yml",
+    ".github/workflows-legacy-20260907/rafgitfs-room-v6-validation.yml",
 )
 
 class ValidationError(ValueError): pass
@@ -48,7 +48,8 @@ def validate(root: Path) -> dict:
         '@POST("repos/{owner}/{repo}/pulls")',
     ):
         if marker not in api: raise ValidationError(f"write endpoint missing: {marker}")
-    if re.search(r"@DELETE\b", api): raise ValidationError("DELETE endpoint is forbidden")
+    if re.search(r"@(?:retrofit2\.http\.)?DELETE\b", api):
+        raise ValidationError("DELETE endpoint is forbidden")
     if re.search(r"/merges?|/merge\b", api, re.IGNORECASE): raise ValidationError("merge endpoint is forbidden")
     if "val force: Boolean = false" not in api: raise ValidationError("non-force ref default missing")
     if "val draft: Boolean = true" not in api: raise ValidationError("draft PR default missing")
@@ -108,7 +109,7 @@ def validate(root: Path) -> dict:
         "validate_rafgitfs_git_write.py", "test_validate_rafgitfs_git_write.py",
         "RafGitFsWriteContractsTest",
     ):
-        if marker not in workflow: raise ValidationError(f"Prompt 7 workflow gate missing: {marker}")
+        if marker not in workflow: raise ValidationError(f"legacy Prompt 7 workflow gate missing: {marker}")
 
     digest = hashlib.sha256()
     for path in sorted(FILES): digest.update((path + "\0" + src[path]).encode())
