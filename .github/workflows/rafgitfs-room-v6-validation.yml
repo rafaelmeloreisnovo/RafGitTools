@@ -100,7 +100,7 @@ jobs:
         with: { persist-credentials: false }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '17' }
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Compile devDebug Kotlin, Compose and Room KSP
         run: ./gradlew --no-daemon :app:compileDevDebugKotlin
       - name: Compile Android instrumented test sources
