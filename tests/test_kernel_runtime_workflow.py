@@ -6,7 +6,10 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WORKFLOW = ROOT / ".github" / "workflows" / "kernel-architecture.yml"
+# Historical workflow body remains an audit fixture after START becomes the
+# sole active trigger root. These tests validate that no kernel safeguards
+# were lost from the archived predecessor while execution migrates to START.
+WORKFLOW = ROOT / ".github" / "workflows-legacy-20260907" / "kernel-architecture.yml"
 
 
 class KernelRuntimeWorkflowTest(unittest.TestCase):
