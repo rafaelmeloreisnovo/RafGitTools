@@ -75,13 +75,18 @@ def validate(root: Path) -> dict[str, Any]:
     if "canonicalPath" not in store or "CACHE_PATH_ESCAPE" not in store:
         raise ValidationError("path traversal defense missing")
 
-    if "entry.pinned" not in maintenance or "evictionCandidates" not in maintenance:
-        raise ValidationError("pinned-safe LRU missing")
+    # Require the exact pin guard rather than a generic occurrence of entry.pinned.
+    if "if (entry.pinned) return false" not in maintenance:
+        raise ValidationError("pinned-safe LRU guard missing")
+    if "evictionCandidates" not in maintenance:
+        raise ValidationError("pinned-safe LRU candidate selection missing")
     if "ensureCapacity" not in maintenance or "maxCacheBytes" not in maintenance:
         raise ValidationError("storage budget gate missing")
 
     for marker in (
-        "verifyGitBlob", "writeAtomic", "CACHE_BUDGET_EXHAUSTED", "OFFLINE_CACHE_MISS",
+        "RafGitFsChecksums.verifyGitBlob(snapshot.bytes, identity.blobSha)",
+        "RafGitFsChecksums.verifyGitBlob(bytes, entry.gitSha)",
+        "writeAtomic", "CACHE_BUDGET_EXHAUSTED", "OFFLINE_CACHE_MISS",
         "markOlderGenerationsStale", "PINNED_ENTRY_REQUIRES_UNPIN",
     ):
         if marker not in manager:
@@ -106,7 +111,7 @@ def validate(root: Path) -> dict[str, Any]:
             raise ValidationError(f"viewer offline action missing: {marker}")
 
     forbidden_remote_mutation = re.compile(
-        r"@(POST|PUT|PATCH|DELETE)|createPullRequest\s*\(|\bpush\s*\(|\bcommit\s*\(",
+        r"@(?:retrofit2\.http\.)?(POST|PUT|PATCH|DELETE)|createPullRequest\s*\(|\bpush\s*\(|\bcommit\s*\(",
         re.IGNORECASE,
     )
     if forbidden_remote_mutation.search(all_cache):
