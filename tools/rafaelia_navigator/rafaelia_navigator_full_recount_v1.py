@@ -88,6 +88,8 @@ def sha256_file(path: Path) -> str:
 
 
 def discover_shards(source: Path, first: int, last: int) -> list[tuple[int, Path]]:
+    if first < 0 or last < first or last > 999:
+        raise RecountBlocked(f"invalid shard range: first={first} last={last}")
     by_number: dict[int, Path] = {}
     duplicate_names: list[str] = []
     for path in sorted(source.rglob("conversations-*.json")):
@@ -115,6 +117,7 @@ def recount(source: Path, first: int, last: int, expected_roots: int | None = No
     conversation_ids: set[str] = set()
     node_keys: set[tuple[str, str]] = set()
     seen_messages: dict[str, tuple[str, int, str]] = {}
+    duplicated_message_ids: set[str] = set()
     canonical_messages: dict[str, tuple[str, int, str]] = {}
     observed_roles: Counter[str] = Counter()
     content_types: Counter[str] = Counter()
@@ -198,6 +201,7 @@ def recount(source: Path, first: int, last: int, expected_roots: int | None = No
 
                 if message_id in seen_messages:
                     duplicate_message_excess += 1
+                    duplicated_message_ids.add(message_id)
                     prior_conversation, prior_shard, _ = seen_messages[message_id]
                     if prior_conversation == conversation_id:
                         duplicate_same_conversation += 1
@@ -239,23 +243,13 @@ def recount(source: Path, first: int, last: int, expected_roots: int | None = No
         )
 
     canonical_roles = Counter(item[2] for item in canonical_messages.values())
-    duplicate_id_count = sum(
-        1
-        for message_id in seen_messages
-        if sum(1 for _ in ())  # kept intentionally side-effect free; count derived below
-    )
-    # `seen_messages` stores first occurrence only. Distinct duplicated IDs are reconstructed
-    # from the per-observation excess tracker in a second compact set during the scan below.
-    # The public command does not need private IDs, so emit only excess and relation planes.
-    del duplicate_id_count
-
     source_set_digest = hashlib.sha256("".join(source_lines).encode("utf-8")).hexdigest()
     return {
         "schema": SCHEMA,
         "status": "PASS_SCOPED_STRUCTURAL_RECOUNT",
         "scope": f"conversations-{first:03d}..{last:03d}",
         "source_shards": len(shards),
-        "source_bytes": sum(row[1].stat().st_size for row in shards),
+        "source_bytes": sum(path.stat().st_size for _, path in shards),
         "source_set_digest_sha256": source_set_digest,
         "root_conversations_observed": root_conversations,
         "unique_conversation_ids": len(conversation_ids),
@@ -263,6 +257,7 @@ def recount(source: Path, first: int, last: int, expected_roots: int | None = No
         "unique_conversation_node_pairs": len(node_keys),
         "message_bearing_nodes_observed": message_nodes,
         "unique_effective_message_ids": len(seen_messages),
+        "distinct_duplicated_effective_message_ids": len(duplicated_message_ids),
         "duplicate_effective_message_id_observations": duplicate_message_excess,
         "duplicates_same_conversation_excess": duplicate_same_conversation,
         "duplicates_cross_conversation_excess": duplicate_cross_conversation,
