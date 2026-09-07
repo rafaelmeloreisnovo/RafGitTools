@@ -86,7 +86,7 @@ jobs:
 
       - name: Upload private provider access receipt
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
         with:
           name: private-provider-access-${{ github.run_id }}
           path: artifacts/private-provider-access-receipt.json
