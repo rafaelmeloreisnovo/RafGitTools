@@ -2,8 +2,8 @@
 # Canonical dependency-free gate for RAFAELIA longitudinal, content validity,
 # toroidal research-cycle, GitHub Actions execution-evidence, platform assurance,
 # evidence-backed compliance, uncertainty/urgency/ethics/license boundaries,
-# executable gap-closure invariants, federated work-service entry, and
-# human-AI bivalent privacy contracts.
+# executable gap-closure invariants, federated work-service entry, program-mission
+# source cohesion, and human-AI bivalent privacy contracts.
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -97,6 +97,15 @@ python3 -m unittest discover -s tests \
 python3 scripts/validate_federated_work_item.py \
   examples/federated_work_item.fgap-fnext-20260819.json \
   --report artifacts/federated-work-item-report.json
+
+# Program-mission source cohesion gate. Dataset is context, model output is a
+# proposal, LEARN is append-only memory, and none of those planes can become
+# mission or execution authority. Structural PASS does not authorize training,
+# weight updates, runtime/device execution or claim promotion.
+python3 -m unittest discover -s tests \
+  -p 'test_program_mission_source_cohesion.py' -v
+python3 scripts/check_program_mission_source_cohesion.py \
+  | tee artifacts/program-mission-source-cohesion-report.json
 
 # Human-AI bivalent privacy middleware: tests and semantic validation are part
 # of the existing canonical gate, not a competing workflow.  The generated

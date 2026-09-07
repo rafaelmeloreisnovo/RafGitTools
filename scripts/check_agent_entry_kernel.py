@@ -37,10 +37,17 @@ REQUIRED_INDICES = {
     "gap_contract",
     "gap_ledger",
     "local_agent_router",
+    "program_mission_source_cohesion",
     "mapa_work_service_contract",
     "mapa_fgap_fnext_transit_index",
 }
-LOCAL_INDEX_KEYS = {"federation_topology", "gap_contract", "gap_ledger", "local_agent_router"}
+LOCAL_INDEX_KEYS = {
+    "federation_topology",
+    "gap_contract",
+    "gap_ledger",
+    "local_agent_router",
+    "program_mission_source_cohesion",
+}
 MAPA_INDEX_KEYS = {"mapa_work_service_contract", "mapa_fgap_fnext_transit_index"}
 REQUIRED_STEPS = {
     "E01_BIND",
@@ -129,6 +136,11 @@ def validate(data: dict) -> list[str]:
         errors.append("principles must contain at least 12 invariants")
     elif not any("privacy" in p.lower() and "security" in p.lower() for p in principles if isinstance(p, str)):
         errors.append("principles must preserve explicit privacy/security boundary")
+    if isinstance(principles, list) and not any(
+        "mission" in p.lower() and "dataset" in p.lower() and "learn" in p.lower()
+        for p in principles if isinstance(p, str)
+    ):
+        errors.append("principles must preserve mission/dataset/model/LEARN authority separation")
 
     axes = data.get("orthogonal_axes")
     if not isinstance(axes, dict) or set(axes) != REQUIRED_AXES:
@@ -195,6 +207,11 @@ def validate(data: dict) -> list[str]:
                 if label == "local_agent_router":
                     if pointer != "AGENTS.md":
                         errors.append("local_agent_router must be AGENTS.md")
+                elif label == "program_mission_source_cohesion":
+                    if pointer != "configs/program-mission-source-cohesion.v1.json":
+                        errors.append("program_mission_source_cohesion must point to the canonical local contract")
+                    elif not (ROOT / pointer).exists():
+                        errors.append(f"canonical index {label} missing: {pointer}")
                 elif not (ROOT / pointer).exists():
                     errors.append(f"canonical index {label} missing: {pointer}")
             elif label in MAPA_INDEX_KEYS and not pointer.startswith("github:rafaelmeloreisnovo/Mapa/"):
@@ -221,6 +238,11 @@ def validate(data: dict) -> list[str]:
         errors.append("forbidden_shortcuts must remain explicit")
     elif not any("hardcode" in item.lower() and "security" in item.lower() for item in forbidden if isinstance(item, str)):
         errors.append("forbidden_shortcuts must reject hardcoded security success")
+    if isinstance(forbidden, list) and not any(
+        "mission" in item.lower() and "dataset" in item.lower() and "learn" in item.lower()
+        for item in forbidden if isinstance(item, str)
+    ):
+        errors.append("forbidden_shortcuts must reject mission authority inference from dataset/model/LEARN")
 
     return errors
 
