@@ -1,11 +1,16 @@
 ---
 name: control-plane-pattern-leaf
-description: Apply reusable architecture patterns to deterministic routing, gates, ledgers, receipts, service classification, or cross-repository orchestration without importing producer authority. Use when a prior system architecture suggests a better trigger, state-machine, validation, rollback, logging, or workflow mechanism.
+description: >-
+  Apply reusable architecture patterns to routing, gates, ledgers, receipts,
+  service classification, or cross-repository orchestration without importing
+  producer authority. Use when a prior architecture suggests a better trigger,
+  state-machine, validation, rollback, logging, or workflow mechanism.
 ---
 
 # Control-Plane Pattern Leaf
 
-Read `AGENTS.md` first. RafGitTools owns routing/executor mechanics, not another producer's runtime or scientific truth.
+Read `AGENTS.md` first. RafGitTools owns routing/executor mechanics, not another
+producer's runtime or scientific truth.
 
 ## Local projection
 
@@ -21,8 +26,11 @@ extracted mechanism
 
 Reference transfers:
 
-- Pascal-like discipline -> typed work envelopes, explicit state values, range/schema validation, initialized defaults and deterministic error states.
-- InterBase-like trigger discipline -> event-conditioned transitions, guarded ledger updates, durable audit events and post-transition actions with rollback/parent linkage.
+- Pascal-like discipline -> typed work envelopes, explicit state values,
+  range/schema validation, initialized defaults and deterministic error states.
+- InterBase-like trigger discipline -> event-conditioned transitions, guarded
+  ledger updates, durable audit events and post-transition actions with
+  rollback/parent linkage.
 
 ## Preserve
 
@@ -43,8 +51,12 @@ pattern reuse != authority transfer
 skill != evidence
 ```
 
-A private seed may provide only a sanitized mechanism. Do not copy private prompts, corpus, personal data, secrets or private locators into this public repository.
+A private seed may provide only a sanitized mechanism. Do not copy private
+prompts, corpus, personal data, secrets or private locators into this public
+repository.
 
 ## Completion
 
-Record `source_pattern`, `control_plane_leaf`, authority boundary, falsifier, transition/receipt path, `F_ok`, `F_gap`, `F_next`, rollback and `claim_allowed`.
+Record `source_pattern`, `control_plane_leaf`, authority boundary, falsifier,
+transition/receipt path, `F_ok`, `F_gap`, `F_next`, rollback and
+`claim_allowed`.
