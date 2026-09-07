@@ -1,0 +1,688 @@
+name: START · RAFAELIA Orchestrated Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*.*.*']
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '35 3 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Pipeline lane'
+        required: true
+        default: auto
+        type: choice
+        options:
+          - auto
+          - fast
+          - full
+          - android
+          - federation
+          - security
+          - docs
+          - release
+      release_version:
+        description: 'Release version without leading v (required for manual release mode)'
+        required: false
+        default: ''
+        type: string
+      publish_github_release:
+        description: 'Publish GitHub Release after a signed release build'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: start-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PIPELINE_SCHEMA: RAFAELIA_START_V1
+  CLAIM_ALLOWED: 'false'
+  AUTOMATIC_PROMOTION: 'false'
+  TRAINING_EXECUTED: 'false'
+  PYTHONUNBUFFERED: '1'
+  APP_CLIENT_ID_DEV: ${{ vars.APP_CLIENT_ID_DEV || 'local-dev-client-id' }}
+  APP_CLIENT_ID_PRODUCTION: ${{ vars.APP_CLIENT_ID_PRODUCTION || 'local-production-client-id' }}
+
+jobs:
+  plan:
+    name: '00 · Plan / roteamento'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      mode: ${{ steps.route.outputs.mode }}
+      android: ${{ steps.route.outputs.android }}
+      federation: ${{ steps.route.outputs.federation }}
+      security: ${{ steps.route.outputs.security }}
+      docs: ${{ steps.route.outputs.docs }}
+      release: ${{ steps.route.outputs.release }}
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Resolve execution lane
+        id: route
+        shell: bash
+        env:
+          REQUESTED_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'auto' }}
+        run: |
+          set -euo pipefail
+          mode="${REQUESTED_MODE:-auto}"
+          android=false
+          federation=false
+          security=false
+          docs=false
+          release=false
+
+          case "${GITHUB_EVENT_NAME}" in
+            schedule)
+              mode=full
+              ;;
+            push)
+              if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+                mode=release
+              fi
+              ;;
+          esac
+
+          if [[ "$mode" == auto ]]; then
+            # Auto is intentionally conservative: core + Android always run.
+            android=true
+            security=true
+
+            base=""
+            if [[ "${GITHUB_EVENT_NAME}" == pull_request ]]; then
+              base="${{ github.event.pull_request.base.sha }}"
+            elif git rev-parse HEAD^ >/dev/null 2>&1; then
+              base="HEAD^"
+            fi
+
+            if [[ -n "$base" ]]; then
+              changed="$(git diff --name-only "$base" HEAD || true)"
+            else
+              changed="$(git ls-files)"
+            fi
+
+            if grep -Eq '^(configs/|schemas/|scripts/federation/|tests/federation/|docs/federation/|workflow-master-index\.json|workflows/)' <<<"$changed"; then
+              federation=true
+            fi
+            if grep -Eq '^(docs/|README\.md|.*\.md$)' <<<"$changed"; then
+              docs=true
+            fi
+          fi
+
+          case "$mode" in
+            fast)
+              ;;
+            full)
+              android=true; federation=true; security=true; docs=true
+              ;;
+            android)
+              android=true
+              ;;
+            federation)
+              federation=true
+              ;;
+            security)
+              security=true
+              ;;
+            docs)
+              docs=true
+              ;;
+            release)
+              android=true; security=true; release=true
+              ;;
+            auto)
+              ;;
+            *)
+              echo "::error::unsupported pipeline mode: $mode"
+              exit 2
+              ;;
+          esac
+
+          {
+            echo "mode=$mode"
+            echo "android=$android"
+            echo "federation=$federation"
+            echo "security=$security"
+            echo "docs=$docs"
+            echo "release=$release"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo '## START routing'
+            echo
+            echo "- mode: \`$mode\`"
+            echo "- android: \`$android\`"
+            echo "- federation: \`$federation\`"
+            echo "- security: \`$security\`"
+            echo "- docs: \`$docs\`"
+            echo "- release: \`$release\`"
+            echo '- claim_allowed: `false`'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  topology:
+    name: '01 · Workflow topology / single-root invariant'
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Assert START is the only active YAML workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t active < <(find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) -print | sort)
+          printf '%s\n' "${active[@]}"
+          test "${#active[@]}" -eq 1
+          test "${active[0]}" = '.github/workflows/START.yml'
+          test -d .github/workflows-legacy-20260907
+
+      - name: Run workflow graph audit
+        uses: ./.github/actions/workflow-graph-audit
+        with:
+          mode: report
+          output-json: artifacts/workflow-graph-audit.json
+
+      - name: Upload workflow topology receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: start-01-topology-${{ github.run_id }}
+          path: artifacts/workflow-graph-audit.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  coherence:
+    name: '02 · Coherence / anti-regression'
+    needs: [plan, topology]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Validate RAFAELIA coherence boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          sh scripts/validate_rafaelia_workflow.sh
+          if [[ -f scripts/validate_documentation_claim_boundary.py ]]; then
+            python3 scripts/validate_documentation_claim_boundary.py --strict
+          fi
+      - name: Compile Python sources and tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import py_compile
+          roots = [Path('scripts'), Path('tools'), Path('tests')]
+          files = []
+          for root in roots:
+              if root.exists():
+                  files.extend(root.rglob('*.py'))
+          for path in sorted(files):
+              py_compile.compile(str(path), doraise=True)
+          print(f'compiled_python_files={len(files)}')
+          PY
+      - name: Upload coherence artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: start-02-coherence-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 30
+
+  python_tests:
+    name: '03 · Python / deterministic tests'
+    needs: [plan, coherence]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Run unittest discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_*.py' -v
+
+  federation:
+    name: '04 · Federation / master-index + provenance'
+    needs: [plan, coherence]
+    if: needs.plan.outputs.federation == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Install pinned federation audit dependencies
+        if: ${{ hashFiles('requirements/federation-audit.lock') != '' }}
+        run: python3 -m pip install --disable-pip-version-check -r requirements/federation-audit.lock
+      - name: Validate federation control plane
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          python3 scripts/federation/watchdog.py \
+            --manifest configs/rafaelia-federation.json \
+            --report artifacts/federation-watchdog.json
+          python3 scripts/federation/validate_master_index.py \
+            --index configs/workflow-master-index.json \
+            --report artifacts/master-index-report.json
+          if [[ -f scripts/federation/validate_workflow_master_crosswalk.py ]]; then
+            python3 scripts/federation/validate_workflow_master_crosswalk.py \
+              --semantic workflow-master-index.json \
+              --control configs/workflow-master-index.json \
+              --crosswalk configs/workflow-master-index.crosswalk.v1.json \
+              --report artifacts/workflow-master-crosswalk-report.json
+          fi
+      - name: Run federation tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          if python3 -c 'import pytest' >/dev/null 2>&1; then
+            python3 -m pytest -q tests/federation
+          else
+            python3 -m unittest discover -s tests/federation -p 'test_*.py' -v
+          fi
+      - name: Upload federation receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: start-04-federation-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 30
+
+  docs:
+    name: '05 · Documentation / claim boundary'
+    needs: [plan, coherence]
+    if: needs.plan.outputs.docs == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate docs policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f scripts/validate_documentation_claim_boundary.py ]]; then
+            python3 scripts/validate_documentation_claim_boundary.py --strict
+          fi
+          test -f README.md
+          test -s README.md
+
+  android:
+    name: '06 · Android / test + lint + devDebug APK'
+    needs: [plan, coherence]
+    if: needs.plan.outputs.android == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Java 17
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+      - name: Prepare build environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          [[ -f scripts/gradlew_with_java17.sh ]] && chmod +x scripts/gradlew_with_java17.sh || true
+          [[ -f scripts/prepare_local_properties.sh ]] && chmod +x scripts/prepare_local_properties.sh || true
+          [[ -f scripts/apply_formula_ci_zip.sh ]] && chmod +x scripts/apply_formula_ci_zip.sh || true
+          if [[ -f formula_ci.zip && -x scripts/apply_formula_ci_zip.sh ]]; then
+            ./scripts/apply_formula_ci_zip.sh formula_ci.zip
+          fi
+          if [[ -x scripts/prepare_local_properties.sh ]]; then
+            ./scripts/prepare_local_properties.sh
+          else
+            echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+          fi
+      - name: Unit tests
+        run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
+      - name: Android lint
+        run: ./gradlew --no-daemon lintDevDebug --stacktrace
+      - name: Assemble devDebug
+        run: ./gradlew --no-daemon assembleDevDebug --stacktrace
+      - name: Verify APK and SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find app/build/outputs/apk/dev/debug -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          test -s "$APK"
+          sha256sum "$APK" | tee app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+      - name: Upload APK
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: start-06-devDebug-${{ github.run_id }}
+          path: |
+            app/build/outputs/apk/dev/debug/*.apk
+            app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload Android diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: start-06-android-diagnostics-${{ github.run_id }}
+          path: |
+            app/build/reports/
+            app/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  security:
+    name: '07 · CodeQL / ${{ matrix.language }}'
+    needs: [plan, coherence]
+    if: needs.plan.outputs.security == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            build-mode: none
+          - language: java-kotlin
+            build-mode: manual
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Java 17
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Android SDK
+        if: matrix.language == 'java-kotlin'
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+      - name: Generate local.properties
+        if: matrix.language == 'java-kotlin'
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+      - name: Build for Java/Kotlin CodeQL
+        if: matrix.language == 'java-kotlin'
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew assembleDevDebug --stacktrace
+      - name: Analyze
+        uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
+        with:
+          category: '/language:${{ matrix.language }}'
+
+  release:
+    name: '08 · Signed release'
+    needs: [plan, coherence, android, security]
+    if: >-
+      ${{
+        always() &&
+        needs.plan.outputs.release == 'true' &&
+        needs.coherence.result == 'success' &&
+        needs.android.result == 'success' &&
+        needs.security.result == 'success'
+      }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    permissions:
+      contents: write
+    env:
+      ALLOW_UNSIGNED_RELEASE: 'false'
+      RELEASE_STORE_FILE_BASE64: ${{ secrets.RELEASE_STORE_FILE_BASE64 }}
+      RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+      RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+      RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Java 17
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+      - name: Resolve version and validate signing authority
+        id: release_meta
+        shell: bash
+        env:
+          MANUAL_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.release_version || '' }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            version="${GITHUB_REF#refs/tags/v}"
+          else
+            version="${MANUAL_VERSION:-}"
+          fi
+          test -n "$version" || { echo '::error::manual release requires release_version'; exit 2; }
+          for key in RELEASE_STORE_FILE_BASE64 RELEASE_STORE_PASSWORD RELEASE_KEY_ALIAS RELEASE_KEY_PASSWORD; do
+            [[ -n "${!key:-}" ]] || { echo "::error::missing signing secret: $key"; exit 3; }
+          done
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Prepare signed release build
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          [[ -f scripts/gradlew_with_java17.sh ]] && chmod +x scripts/gradlew_with_java17.sh || true
+          [[ -f scripts/prepare_local_properties.sh ]] && chmod +x scripts/prepare_local_properties.sh || true
+          store_file="$RUNNER_TEMP/release.keystore"
+          printf '%s' "$RELEASE_STORE_FILE_BASE64" | base64 --decode > "$store_file"
+          test -s "$store_file"
+          {
+            echo "RELEASE_STORE_FILE=$store_file"
+            echo "RELEASE_STORE_PASSWORD=$RELEASE_STORE_PASSWORD"
+            echo "RELEASE_KEY_ALIAS=$RELEASE_KEY_ALIAS"
+            echo "RELEASE_KEY_PASSWORD=$RELEASE_KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+          if [[ -x scripts/prepare_local_properties.sh ]]; then
+            ./scripts/prepare_local_properties.sh
+          else
+            echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+          fi
+      - name: Assemble signed production release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -x scripts/gradlew_with_java17.sh ]]; then
+            ./scripts/gradlew_with_java17.sh assembleProductionRelease --stacktrace --info
+          else
+            ./gradlew --no-daemon assembleProductionRelease --stacktrace --info
+          fi
+      - name: Package release + changelog
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          version='${{ steps.release_meta.outputs.version }}'
+          apk="$(find app/build/outputs/apk/production/release -type f -name '*.apk' -print -quit)"
+          test -s "$apk"
+          out="app/build/outputs/apk/production/release/RafGitTools-${version}-release.apk"
+          mv "$apk" "$out"
+          sha256sum "$out" > "${out}.sha256"
+          git log --pretty=format:'- %s' "$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo HEAD~10)"..HEAD > CHANGELOG.md || true
+          test -s CHANGELOG.md || echo '- Release generated by START pipeline.' > CHANGELOG.md
+          echo "apk=$out" >> "$GITHUB_OUTPUT"
+      - name: Upload signed release artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: start-08-release-${{ steps.release_meta.outputs.version }}
+          path: |
+            ${{ steps.package.outputs.apk }}
+            ${{ steps.package.outputs.apk }}.sha256
+            CHANGELOG.md
+          if-no-files-found: error
+          retention-days: 90
+      - name: Publish GitHub Release
+        if: github.event_name != 'workflow_dispatch' || inputs.publish_github_release == true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version='${{ steps.release_meta.outputs.version }}'
+          tag="v${version}"
+          if ! git rev-parse "$tag" >/dev/null 2>&1; then
+            git tag "$tag" "$GITHUB_SHA"
+            git push origin "$tag"
+          fi
+          gh release create "$tag" \
+            '${{ steps.package.outputs.apk }}' \
+            '${{ steps.package.outputs.apk }}.sha256' \
+            --title "Release $tag" \
+            --notes-file CHANGELOG.md
+
+  receipt:
+    name: '09 · Final receipt / fechamento'
+    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, release]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      PLAN_RESULT: ${{ needs.plan.result }}
+      TOPOLOGY_RESULT: ${{ needs.topology.result }}
+      COHERENCE_RESULT: ${{ needs.coherence.result }}
+      PYTHON_RESULT: ${{ needs.python_tests.result }}
+      FEDERATION_RESULT: ${{ needs.federation.result }}
+      DOCS_RESULT: ${{ needs.docs.result }}
+      ANDROID_RESULT: ${{ needs.android.result }}
+      SECURITY_RESULT: ${{ needs.security.result }}
+      RELEASE_RESULT: ${{ needs.release.result }}
+      ROUTE_MODE: ${{ needs.plan.outputs.mode }}
+    steps:
+      - name: Emit append-only pipeline receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          python3 - <<'PY'
+          import json, os
+          keys = {
+              'plan': os.environ['PLAN_RESULT'],
+              'topology': os.environ['TOPOLOGY_RESULT'],
+              'coherence': os.environ['COHERENCE_RESULT'],
+              'python_tests': os.environ['PYTHON_RESULT'],
+              'federation': os.environ['FEDERATION_RESULT'],
+              'docs': os.environ['DOCS_RESULT'],
+              'android': os.environ['ANDROID_RESULT'],
+              'security': os.environ['SECURITY_RESULT'],
+              'release': os.environ['RELEASE_RESULT'],
+          }
+          mapped = {
+              k: ('TOKEN_VAZIO_NOT_SELECTED' if v == 'skipped' else v.upper())
+              for k, v in keys.items()
+          }
+          failures = [k for k, v in keys.items() if v in {'failure', 'cancelled'}]
+          receipt = {
+              'schema': os.environ['PIPELINE_SCHEMA'],
+              'mode': os.environ.get('ROUTE_MODE') or 'TOKEN_VAZIO_ROUTE',
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'sha': os.environ['GITHUB_SHA'],
+              'ref': os.environ['GITHUB_REF'],
+              'run_id': os.environ['GITHUB_RUN_ID'],
+              'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'event': os.environ['GITHUB_EVENT_NAME'],
+              'state': 'FAIL' if failures else 'PASS_WITH_TYPED_SKIPS',
+              'stages': mapped,
+              'claim_allowed': False,
+              'automatic_promotion': False,
+              'training_executed': False,
+              'append_only': True,
+              'legacy_workflows_active': False,
+              'legacy_archive': '.github/workflows-legacy-20260907',
+          }
+          with open('artifacts/START_RECEIPT.json', 'w', encoding='utf-8') as f:
+              json.dump(receipt, f, ensure_ascii=False, indent=2, sort_keys=True)
+              f.write('\n')
+          print(json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True))
+          if failures:
+              raise SystemExit('failed stages: ' + ', '.join(failures))
+          PY
+      - name: Publish receipt summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## START final receipt'
+            echo
+            echo '- single active workflow: `START.yml`'
+            echo '- claim_allowed: `false`'
+            echo '- automatic_promotion: `false`'
+            echo '- training_executed: `false`'
+            echo '- skipped optional lanes are typed as `TOKEN_VAZIO_NOT_SELECTED`'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload final receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: start-09-receipt-${{ github.run_id }}
+          path: artifacts/START_RECEIPT.json
+          if-no-files-found: error
+          retention-days: 90
