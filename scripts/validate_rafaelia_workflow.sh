@@ -3,8 +3,8 @@
 # toroidal research-cycle, GitHub Actions execution-evidence, platform assurance,
 # evidence-backed compliance, uncertainty/urgency/ethics/license boundaries,
 # executable gap-closure invariants, federated work-service entry, program-mission
-# source cohesion, provider-enforcement policy scope, and human-AI bivalent
-# privacy contracts.
+# source cohesion, provider-enforcement policy scope, NOVOexport structural recount,
+# and human-AI bivalent privacy contracts.
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -107,6 +107,14 @@ python3 -m unittest discover -s tests \
   -p 'test_program_mission_source_cohesion.py' -v
 python3 scripts/check_program_mission_source_cohesion.py \
   | tee artifacts/program-mission-source-cohesion-report.json
+
+# NOVOexport full-recount mechanics gate. This uses only synthetic fixtures in
+# CI: the private 000..050 corpus remains external evidence. Tests require a
+# contiguous shard set, fail closed on malformed/ambiguous identity, separate
+# observations from unique/duplicated IDs, omit message bodies from receipts,
+# and preserve DATASET_INFORMS != MISSION_AUTHORITY with no training or weights.
+python3 -m unittest discover -s tests \
+  -p 'test_novoexport_full_recount.py' -v
 
 # Prepared provider-enforcement policy gate. A required check may be global only
 # when its real pull_request workflow is universally spawn-capable for main.
