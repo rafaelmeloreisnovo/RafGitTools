@@ -12,25 +12,33 @@ on:
       - "native/rafcode_federation_v1/**"
       - ".github/workflows/rafcode-federation-freestanding.yml"
       - "Makefile"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: rafcode-federation-freestanding-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   freestanding:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Fetch exact source without external actions
         shell: bash
         run: |
+          set -euo pipefail
           git init .
           git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
           git fetch --depth=1 origin "${GITHUB_SHA}"
           git checkout --detach FETCH_HEAD
+
       - name: Bind toolchain
         shell: bash
         run: |
+          set -euo pipefail
           clang --version
           if ! command -v ld.lld >/dev/null 2>&1; then
             raf_lld_source=$(find "$(rustc --print sysroot)" -type f -name rust-lld -print -quit)
@@ -43,12 +51,16 @@ jobs:
           fi
           ld.lld --version
           readelf --version
+
       - name: Host compile, execution and ELF gates
         run: |
+          set -euo pipefail
           make -C native/rafcode_federation_v1 clean
           make -C native/rafcode_federation_v1 host test audit HOST_CC=clang
+
       - name: ARM32 and ARM64 freestanding link gates
         run: |
+          set -euo pipefail
           make -C native/rafcode_federation_v1 armv7 ARMV7_CC=clang
           make -C native/rafcode_federation_v1 aarch64 AARCH64_CC=clang
           (cd native/rafcode_federation_v1 && sh tools/audit_elf.sh build/armv7/rafcode-federation ARM)
