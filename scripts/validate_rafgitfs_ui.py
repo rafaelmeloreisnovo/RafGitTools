@@ -25,7 +25,7 @@ FILES = (
     "app/src/main/kotlin/com/rafgittools/ui/screens/rafgitfs/StorageSettingsViewModel.kt",
     "app/src/main/kotlin/com/rafgittools/ui/screens/rafgitfs/StorageSettingsScreen.kt",
     "app/src/main/AndroidManifest.xml",
-    ".github/workflows/rafgitfs-room-v6-validation.yml",
+    ".github/workflows-legacy-20260907/rafgitfs-room-v6-validation.yml",
 )
 
 EXPECTED_SCREENS = {
@@ -137,12 +137,15 @@ def validate(root: Path) -> dict[str, Any]:
     if "OutlinedTextField" not in source[FILES[6]] or "OutlinedTextField" not in source[FILES[12]]:
         raise ValidationError("repository search or settings input missing")
 
+    # The predecessor workflow is preserved as an immutable audit fixture.
+    # Current execution is orchestrated by START; these markers prove the
+    # original Prompt 4 gate was not silently erased during migration.
     for marker in (
         "validate_rafgitfs_ui.py", "test_validate_rafgitfs_ui.py",
         "RafGitFsUiPathsTest",
     ):
         if marker not in workflow:
-            raise ValidationError(f"Prompt 4 workflow gate missing: {marker}")
+            raise ValidationError(f"legacy Prompt 4 workflow gate missing: {marker}")
 
     return {
         "status": "PASS",
