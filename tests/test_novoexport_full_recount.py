@@ -7,6 +7,7 @@ from io import StringIO
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+EVIDENCE = ROOT / "evidence" / "novoexport" / "full-recount-000-050.safe.v1.json"
 SPEC = importlib.util.spec_from_file_location(
     "rafaelia_navigator_full_recount_v1",
     ROOT / "tools" / "rafaelia_navigator" / "rafaelia_navigator_full_recount_v1.py",
@@ -97,6 +98,35 @@ class NovoexportFullRecountTests(unittest.TestCase):
             self.assertFalse(report["claim_allowed"])
             self.assertIn("DATASET_INFORMS != MISSION_AUTHORITY", report["invariants"])
             self.assertIn("RECOUNT != TRAINING", report["invariants"])
+
+    def test_safe_evidence_binds_exact_full_recount_without_semantic_promotion(self):
+        evidence = json.loads(EVIDENCE.read_text(encoding="utf-8"))
+
+        self.assertEqual("conversations-000..050", evidence["scope"])
+        self.assertEqual(51, evidence["source_shards"])
+        self.assertEqual(1107289897, evidence["source_bytes"])
+        self.assertEqual(5054, evidence["root_conversations_observed"])
+        self.assertEqual(307043, evidence["mapping_nodes_observed"])
+        self.assertEqual(301991, evidence["message_bearing_nodes_observed"])
+        self.assertEqual(296794, evidence["unique_effective_message_ids"])
+        self.assertEqual(2988, evidence["distinct_duplicated_effective_message_ids"])
+        self.assertEqual(5197, evidence["duplicate_effective_message_id_observations"])
+        self.assertEqual(0, evidence["duplicates_same_conversation_excess"])
+        self.assertEqual(5197, evidence["duplicates_cross_conversation_excess"])
+        self.assertEqual(
+            "ba27012377c5ec7d3603a8c0eb42f12c83ac700c85b9d2b2ef9ff514860b122d",
+            evidence["source_set_digest_sha256"],
+        )
+        self.assertEqual(
+            "TV-MESSAGE-ID-CROSS-CONVERSATION-REUSE-CAUSE-20260907",
+            evidence["residual_token_vazio"],
+        )
+        self.assertFalse(evidence["semantic_full_ingestion_proven"])
+        self.assertFalse(evidence["training_executed"])
+        self.assertFalse(evidence["weight_update_executed"])
+        self.assertFalse(evidence["mission_authority_from_dataset"])
+        self.assertFalse(evidence["claim_allowed"])
+        self.assertIn("STRUCTURAL_CARDINALITY != SEMANTIC_EXHAUSTIVITY", evidence["invariants"])
 
     def test_missing_shard_blocks_contiguous_scope(self):
         with tempfile.TemporaryDirectory() as directory:
