@@ -18,41 +18,65 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: repository-view-${{ github.repository_id }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   repository-view:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Checkout target repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
+          persist-credentials: false
 
-      - name: Checkout RAFAELIA navigation generator
-        uses: actions/checkout@v4
+      - name: Checkout pinned RAFAELIA navigation generator
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: rafaelmeloreisnovo/RafGitTools
-          ref: main
+          # Control-plane source is deliberately immutable. Update this pin in a
+          # reviewed workflow change when repository_view.py must advance.
+          ref: 9f4e916fa92aa04c7e77a08044c774487072bfb8
           path: .rafaelia-control/RafGitTools
           fetch-depth: 1
+          persist-credentials: false
 
-      - name: Generate recursive repository map
+      - name: Validate shard bound
         env:
           MAX_RECORDS: ${{ inputs.max-records-per-shard || '5000' }}
+        shell: bash
         run: |
+          set -euo pipefail
+          case "$MAX_RECORDS" in
+            ''|*[!0-9]*)
+              echo "max-records-per-shard must be a positive integer" >&2
+              exit 2
+              ;;
+          esac
+          if [ "$MAX_RECORDS" -lt 1 ] || [ "$MAX_RECORDS" -gt 100000 ]; then
+            echo "max-records-per-shard must be in [1,100000]" >&2
+            exit 2
+          fi
+          echo "MAX_RECORDS_VALIDATED=$MAX_RECORDS" >> "$GITHUB_ENV"
+
+      - name: Generate recursive repository map
+        run: |
+          set -euo pipefail
           python3 .rafaelia-control/RafGitTools/scripts/navigation/repository_view.py \
             --root . \
             --output-dir .rafaelia-artifacts/repository-map \
-            --max-records-per-shard "$MAX_RECORDS"
+            --max-records-per-shard "$MAX_RECORDS_VALIDATED"
 
       - name: Publish map summary
-        run: |
-          cat .rafaelia-artifacts/repository-map/TREE.md >> "$GITHUB_STEP_SUMMARY"
+        run: cat .rafaelia-artifacts/repository-map/TREE.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload recursive repository map
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: rafaelia-repository-view-${{ github.repository_id }}-${{ github.sha }}
+          name: rafaelia-repository-view-${{ github.repository_id }}-${{ github.sha }}-${{ github.run_id }}
           path: .rafaelia-artifacts/repository-map/
           if-no-files-found: error
           retention-days: 30
