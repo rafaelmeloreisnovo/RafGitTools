@@ -38,6 +38,22 @@ class KernelRuntimeWorkflowTest(unittest.TestCase):
             with self.subTest(library=library):
                 self.assertIn(library, self.workflow)
 
+    def test_private_provider_requires_explicit_access_receipt(self) -> None:
+        self.assertIn("scripts/private_provider_access_gate.py", self.workflow)
+        self.assertIn("private-provider-access-receipt.json", self.workflow)
+        self.assertIn("Upload private provider access receipt", self.workflow)
+        self.assertIn("--repo rafaelmeloreisnovo/llamaRafaelia", self.workflow)
+
+    def test_private_llama_checkout_has_no_repo_scoped_token_fallback(self) -> None:
+        self.assertNotIn("secrets.RAF_CROSS_REPO_TOKEN || github.token", self.workflow)
+        self.assertIn("token: ${{ secrets.RAF_CROSS_REPO_TOKEN }}", self.workflow)
+        self.assertIn("repository: rafaelmeloreisnovo/RafPolimata", self.workflow)
+        self.assertIn("token: ${{ github.token }}", self.workflow)
+
+    def test_private_provider_gate_tests_are_executed(self) -> None:
+        self.assertIn("test_private_provider_access_gate.py", self.workflow)
+        self.assertIn("python3 -m unittest discover -s tests -p 'test_private_provider_access_gate.py' -v", self.workflow)
+
 
 if __name__ == "__main__":
     unittest.main()
