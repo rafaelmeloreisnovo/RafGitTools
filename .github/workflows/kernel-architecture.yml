@@ -14,11 +14,13 @@ on:
       - 'scripts/termux_runtime_handoff.sh'
       - 'scripts/runtime_lock_contract.py'
       - 'scripts/runtime_lock_promotion_gate.py'
+      - 'scripts/private_provider_access_gate.py'
       - 'tests/test_runtime_lock_contract.py'
       - 'tests/test_runtime_lock_promotion_gate.py'
       - 'tests/test_runtime_manifest_generator.py'
       - 'tests/test_kernel_runtime_workflow.py'
       - 'tests/test_termux_runtime_handoff.py'
+      - 'tests/test_private_provider_access_gate.py'
       - '.github/workflows/kernel-architecture.yml'
   pull_request:
     branches: ['main']
@@ -33,11 +35,13 @@ on:
       - 'scripts/termux_runtime_handoff.sh'
       - 'scripts/runtime_lock_contract.py'
       - 'scripts/runtime_lock_promotion_gate.py'
+      - 'scripts/private_provider_access_gate.py'
       - 'tests/test_runtime_lock_contract.py'
       - 'tests/test_runtime_lock_promotion_gate.py'
       - 'tests/test_runtime_manifest_generator.py'
       - 'tests/test_kernel_runtime_workflow.py'
       - 'tests/test_termux_runtime_handoff.py'
+      - 'tests/test_private_provider_access_gate.py'
       - '.github/workflows/kernel-architecture.yml'
   workflow_dispatch:
 
@@ -56,7 +60,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Test runtime contracts
-        run: python3 -m unittest discover -s tests -p 'test_*runtime*.py' -v
+        run: |
+          python3 -m unittest discover -s tests -p 'test_*runtime*.py' -v
+          python3 -m unittest discover -s tests -p 'test_private_provider_access_gate.py' -v
 
       - name: Validate and parse runtime-lock.json
         id: lock
@@ -66,13 +72,33 @@ jobs:
             runtime-lock.json \
             --github-output "$GITHUB_OUTPUT"
 
+      - name: Verify private llamaRafaelia read authority at locked commit
+        env:
+          RAF_CROSS_REPO_TOKEN: ${{ secrets.RAF_CROSS_REPO_TOKEN }}
+          LLAMA_COMMIT: ${{ steps.lock.outputs.llama_commit }}
+        run: |
+          set -euo pipefail
+          python3 scripts/private_provider_access_gate.py \
+            --repo rafaelmeloreisnovo/llamaRafaelia \
+            --commit "$LLAMA_COMMIT" \
+            --token-env RAF_CROSS_REPO_TOKEN \
+            --receipt artifacts/private-provider-access-receipt.json
+
+      - name: Upload private provider access receipt
+        if: always()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
+        with:
+          name: private-provider-access-${{ github.run_id }}
+          path: artifacts/private-provider-access-receipt.json
+          if-no-files-found: warn
+
       - name: Checkout llamaRafaelia @ locked commit
         uses: actions/checkout@v4
         with:
           repository: rafaelmeloreisnovo/llamaRafaelia
           ref: ${{ steps.lock.outputs.llama_commit }}
           path: runtime-src/llama-rafaelia
-          token: ${{ secrets.RAF_CROSS_REPO_TOKEN || github.token }}
+          token: ${{ secrets.RAF_CROSS_REPO_TOKEN }}
           persist-credentials: false
 
       - name: Checkout RafPolimata @ locked commit
@@ -81,7 +107,7 @@ jobs:
           repository: rafaelmeloreisnovo/RafPolimata
           ref: ${{ steps.lock.outputs.rafpolimata_commit }}
           path: runtime-src/rafpolimata
-          token: ${{ secrets.RAF_CROSS_REPO_TOKEN || github.token }}
+          token: ${{ github.token }}
           persist-credentials: false
 
       - name: Verify locked native source checkouts
