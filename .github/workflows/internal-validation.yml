@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       gradle_args:
-        description: 'Extra Gradle args'
+        description: 'Extra Gradle flag arguments (flags only; prefer --key=value)'
         required: false
         default: '--stacktrace --info'
         type: string
@@ -12,6 +12,16 @@ on:
     branches:
       - main
       - develop
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: internal-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   APP_CLIENT_ID_DEV: ${{ vars.APP_CLIENT_ID_DEV || 'local-dev-client-id' }}
@@ -21,34 +31,65 @@ env:
 jobs:
   unsigned-validation:
     name: Unsigned Production Validation Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Configure Java 17
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: temurin
           java-version: '17'
           cache: gradle
-      - uses: android-actions/setup-android@v4
-      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh
+
+      - name: Configure Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+
+      - name: Prepare executable helpers
+        run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh
+
       - name: Generate local.properties
         run: ./scripts/prepare_local_properties.sh
+
       - name: Test fail-closed Android runtime receipt contract
         run: python3 -m unittest discover -s tests -p 'test_android_runtime_receipt.py' -v
+
       - name: Build production release (unsigned validation)
-        run: ./scripts/gradlew_with_java17.sh assembleProductionRelease ${{ inputs.gradle_args || '--stacktrace --info' }}
+        shell: bash
+        env:
+          GRADLE_ARGS_INPUT: ${{ inputs.gradle_args || '--stacktrace --info' }}
+        run: |
+          set -euo pipefail
+          read -r -a gradle_args <<< "$GRADLE_ARGS_INPUT"
+          test "${#gradle_args[@]}" -gt 0
+          for arg in "${gradle_args[@]}"; do
+            case "$arg" in
+              -*) ;;
+              *) echo "gradle_args accepts flags only; rejected positional token" >&2; exit 2 ;;
+            esac
+          done
+          ./scripts/gradlew_with_java17.sh assembleProductionRelease "${gradle_args[@]}"
+
       - name: Validate formulas and CI graph consistency
         run: python3 scripts/ci/validate_formulas_graph.py
+
       - name: Upload formula/graph validation artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: internal-validation-formulas-graph
+          name: internal-validation-formulas-graph-${{ github.run_id }}
           path: build/ci-validation/*
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Upload unsigned validation artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: internal-validation-unsigned-apk
+          name: internal-validation-unsigned-apk-${{ github.run_id }}
           path: app/build/outputs/apk/production/release/*.apk
+          if-no-files-found: error
+          retention-days: 30
