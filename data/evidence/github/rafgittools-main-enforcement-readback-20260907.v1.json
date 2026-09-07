@@ -1,0 +1,82 @@
+{
+  "schema": "rafaelia.rafgittools-main-enforcement-readback.v1",
+  "event_id": "RGT-MAIN-ENFORCEMENT-READBACK-20260907-001",
+  "observed_at": "2026-09-07T08:56:19Z",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "branch": "main",
+  "observed_main_sha": "22f2be45c8e1c1fb39de95cbbc09aca5536ca4e8",
+  "claim_allowed": false,
+  "provider_enforcement_active": false,
+  "state": "TOKEN_VAZIO_ADMINISTRATION_WRITE_SURFACE",
+  "provider_readback": {
+    "protected": false,
+    "protection_enabled": false,
+    "required_status_checks_enforcement_level": "off",
+    "required_status_check_contexts": [],
+    "required_status_checks": [],
+    "repository_rulesets": []
+  },
+  "canonical_policy_source": {
+    "path": "contracts/MAIN_PROVIDER_ENFORCEMENT_PLAN_20260830.v1.json",
+    "schema": "rafaelia.rafgittools-main-provider-enforcement-plan.v1",
+    "mode": "PREPARED_NOT_APPLIED",
+    "required_policy": {
+      "pull_request_required": true,
+      "direct_main_write_forbidden": true,
+      "force_push_forbidden": true,
+      "branch_deletion_forbidden": true,
+      "human_review_required": true,
+      "minimum_approving_reviews": 1,
+      "dismiss_stale_approvals_on_new_commits": true
+    },
+    "required_status_checks": [
+      "Human Impact Cross-Repo Gate V1 / validate-human-impact-contract",
+      "Auditor Closure Gate V1 / auditor-closure",
+      "Documentation / Validate Documentation"
+    ],
+    "required_when_candidate_is_ready_for_review": [
+      "PR Validation / Validate Pull Request"
+    ],
+    "recommended_security_checks": [
+      "Security Scan",
+      "CodeQL Advanced",
+      "Source Gap Audit"
+    ]
+  },
+  "provider_mutation_boundary": {
+    "connected_surface_can_read_provider_state": true,
+    "connected_surface_exposes_branch_protection_write": false,
+    "connected_surface_exposes_ruleset_write": false,
+    "administration_write_proven": false,
+    "provider_mutation_performed": false,
+    "reason": "The connected GitHub surface exposes branch/ruleset readback but no administration mutation action for branch protection or rulesets."
+  },
+  "existing_producer": {
+    "repository": "rafaelmeloreisnovo/Mapa",
+    "path": "scripts/apply_main_branch_protection.py",
+    "blob": "87e98d96ede76d47253326345d03b5769c92fad1",
+    "note": "This producer can apply a protection payload when invoked from a surface carrying an explicit Administration:write credential. Its default Mapa context must not be blindly substituted for the RafGitTools-specific required checks in the canonical RafGitTools policy."
+  },
+  "closure_gate": [
+    "Authorized administrative surface applies the canonical RafGitTools policy or an equivalent/stronger provider policy.",
+    "Re-read main and require unchanged expected SHA during configuration transaction.",
+    "Provider readback reports protected=true or an effective ruleset covering main.",
+    "Required status checks are actually bound.",
+    "At least one approving review is required.",
+    "Force-push and deletion protections are observed.",
+    "A bounded negative PR proves the provider refuses merge when a required check fails or review is absent."
+  ],
+  "falsifier": "Any fresh readback with protected=false, no effective ruleset, missing required checks, missing review requirement, or a merge accepted despite a deliberately failed required gate keeps provider enforcement unresolved.",
+  "f_ok": [
+    "Canonical RafGitTools provider policy already exists and names repository-specific required checks.",
+    "Current main SHA and exact provider state were re-read after PR 423 merged.",
+    "The lack of provider enforcement is now separated from source/CI success."
+  ],
+  "f_gap": [
+    "Administration:write mutation is not exposed in the connected execution surface.",
+    "main remains unprotected and has no rulesets.",
+    "No zero-approval or failed-check server rejection receipt exists for the current policy."
+  ],
+  "f_next": "Apply the existing canonical RafGitTools provider policy from an authorized administration-capable surface, immediately re-read provider state, then perform the bounded negative merge-rejection test and append its receipt.",
+  "automatic_promotion": false
+}
