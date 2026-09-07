@@ -3,7 +3,7 @@ name: RafGitFS Validation
 on:
   workflow_dispatch:
   push:
-    branches: ['feature/rafgitfs-*']
+    branches: ['main', 'feature/rafgitfs-*']
     paths:
       - 'app/src/main/kotlin/com/rafgittools/rafgitfs/**'
       - 'app/src/main/kotlin/com/rafgittools/ui/screens/rafgitfs/**'
@@ -45,13 +45,20 @@ concurrency:
 
 jobs:
   structural-gates:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-        with: { persist-credentials: false }
-      - uses: actions/setup-python@v7
-        with: { python-version: '3.12' }
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Configure Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
       - name: Validate Prompt 1 foundation
         run: python3 scripts/validate_rafgitfs_foundation.py
       - name: Test Prompt 1 foundation
@@ -84,23 +91,35 @@ jobs:
         run: python3 scripts/validate_rafgitfs_industrial_closeout.py --write-report artifacts/rafgitfs-industrial-closeout-validation.json
       - name: Test Prompt 8 adversarial gate
         run: python3 -m unittest tests/test_validate_rafgitfs_industrial_closeout.py -v
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload structural evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
-          name: rafgitfs-structural-reports
+          name: rafgitfs-structural-reports-${{ github.run_id }}
           path: artifacts/rafgitfs-*-validation.json
           if-no-files-found: warn
           retention-days: 30
 
   android-room-compile:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
-        with: { persist-credentials: false }
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: '17' }
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Configure Java 17
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configure Gradle cache/build action
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
       - name: Compile devDebug Kotlin, Compose and Room KSP
         run: ./gradlew --no-daemon :app:compileDevDebugKotlin
       - name: Compile Android instrumented test sources
