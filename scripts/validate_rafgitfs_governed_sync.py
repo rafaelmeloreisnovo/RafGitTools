@@ -17,7 +17,7 @@ FILES = (
     "app/src/main/kotlin/com/rafgittools/rafgitfs/sync/RafGitFsGovernedSyncEngine.kt",
     "app/src/main/kotlin/com/rafgittools/rafgitfs/sync/RafGitFsSyncModule.kt",
     "app/src/main/kotlin/com/rafgittools/rafgitfs/data/RafGitFsOperationDaos.kt",
-    ".github/workflows/rafgitfs-room-v6-validation.yml",
+    ".github/workflows-legacy-20260907/rafgitfs-room-v6-validation.yml",
 )
 PHASES = ("SCAN", "DIFF", "PLAN", "DRY_RUN", "APPROVE", "EXECUTE", "RECEIPT")
 
@@ -53,8 +53,11 @@ def validate(root: Path) -> dict:
     governed = "RafGitFsGithubBranchWriter" in module
     if blocked == governed:
         raise ValidationError("exactly one remote-write capability binding is required")
+    # The predecessor workflow is a read-only audit fixture after START became
+    # the sole active trigger root. Its markers prove the original gate existed;
+    # current execution is owned by START's global Python/Android lanes.
     for marker in ("validate_rafgitfs_governed_sync.py", "test_validate_rafgitfs_governed_sync.py", "RafGitFsGovernedSyncTest"):
-        if marker not in workflow: raise ValidationError(f"workflow gate missing: {marker}")
+        if marker not in workflow: raise ValidationError(f"legacy workflow gate missing: {marker}")
     digest = hashlib.sha256()
     for p in sorted(FILES): digest.update((p + "\0" + src[p]).encode())
     return {
