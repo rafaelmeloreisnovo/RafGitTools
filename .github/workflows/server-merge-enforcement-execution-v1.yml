@@ -10,35 +10,65 @@ on:
       - "data/evidence/github/mapa-server-merge-enforcement-delta-20260825.v1.json"
       - "docs/federation/SERVER_MERGE_ENFORCEMENT_EXECUTION_V1.md"
       - ".github/workflows/server-merge-enforcement-execution-v1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "configs/server-merge-enforcement-execution.v1.json"
+      - "scripts/federation/validate_server_merge_enforcement_execution.py"
+      - "tests/federation/test_server_merge_enforcement_execution.py"
+      - "data/evidence/github/mapa-server-merge-enforcement-delta-20260825.v1.json"
+      - "docs/federation/SERVER_MERGE_ENFORCEMENT_EXECUTION_V1.md"
+      - ".github/workflows/server-merge-enforcement-execution-v1.yml"
 
 permissions:
   contents: read
 
+concurrency:
+  group: server-merge-enforcement-plan-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-plan-only:
     name: validate plan-only boundary
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Checkout without persistent credentials
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 1
+
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
+
       - name: Run fail-closed fixtures
         run: python3 -m unittest -v tests.federation.test_server_merge_enforcement_execution
+
       - name: Validate canonical envelope
         run: |
+          set -euo pipefail
           python3 scripts/federation/validate_server_merge_enforcement_execution.py \
             configs/server-merge-enforcement-execution.v1.json \
             --report artifacts/server-merge-enforcement-execution-v1.json
+
       - name: Upload plan-only report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: server-merge-enforcement-execution-v1
+          name: server-merge-enforcement-plan-${{ github.run_id }}
           if-no-files-found: error
           path: artifacts/server-merge-enforcement-execution-v1.json
+          retention-days: 30
+
+      - name: Preserve authority boundary
+        if: always()
+        run: |
+          {
+            echo 'MODE=PLAN_ONLY_FAIL_CLOSED'
+            echo 'PROVIDER_APPLY=false'
+            echo 'ADMINISTRATION_WRITE=TOKEN_VAZIO'
+            echo 'CLAIM_ALLOWED=false'
+          } >> "$GITHUB_STEP_SUMMARY"
