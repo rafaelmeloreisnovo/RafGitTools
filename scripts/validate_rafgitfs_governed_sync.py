@@ -35,14 +35,18 @@ def validate(root: Path) -> dict:
         if phase not in models: raise ValidationError(f"missing phase {phase}")
     for marker in ("planHash", "requiresApproval", "claimAllowed: Boolean = false", "PROTECTED_BRANCH_WRITE", "DESTRUCTIVE_REMOTE"):
         if marker not in models: raise ValidationError(f"model invariant missing: {marker}")
-    for marker in ("SHA-256", "REDACTED", "MessageDigest", "MAX_EVENTS"):
+    for marker in ("SHA-256", "REDACTED_GITHUB_TOKEN", "MessageDigest", "MAX_EVENTS"):
         if marker not in canonical: raise ValidationError(f"canonical/log invariant missing: {marker}")
     for marker in ("DESTRUCTIVE_REMOTE_PERMANENTLY_BLOCKED",):
         if marker not in executor: raise ValidationError(f"executor block missing: {marker}")
-    for marker in ("validateApproval", "PLAN_HASH_MISMATCH", "APPROVAL_REQUIRED", "UNRESOLVED_CONFLICTS", "RETRY_LIMIT_REACHED", "receiptDao.append"):
+    for marker in (
+        "validateApproval", "PLAN_HASH_MISMATCH", "UNRESOLVED_CONFLICTS",
+        "RETRY_LIMIT_REACHED", "receiptDao.append",
+        'if (!approved) return finalizeBlocked(job, plan, "APPROVAL_REQUIRED")',
+        'approval.scope == "EXACT_PLAN"',
+        'approval.confirmation == "APPROVE ${plan.planHash.take(12)}"',
+    ):
         if marker not in engine: raise ValidationError(f"engine gate missing: {marker}")
-    if "confirmation == \"APPROVE ${plan.planHash.take(12)}\"" not in engine:
-        raise ValidationError("exact-plan confirmation missing")
     for marker in ("compareAndSetState", "pause", "cancel", "syncState NOT IN ('CANCELLED','COMPLETE')"):
         if marker not in dao: raise ValidationError(f"DAO transition missing: {marker}")
     if "@Insert(onConflict = OnConflictStrategy.ABORT)" not in dao:
@@ -53,9 +57,6 @@ def validate(root: Path) -> dict:
     governed = "RafGitFsGithubBranchWriter" in module
     if blocked == governed:
         raise ValidationError("exactly one remote-write capability binding is required")
-    # The predecessor workflow is a read-only audit fixture after START became
-    # the sole active trigger root. Its markers prove the original gate existed;
-    # current execution is owned by START's global Python/Android lanes.
     for marker in ("validate_rafgitfs_governed_sync.py", "test_validate_rafgitfs_governed_sync.py", "RafGitFsGovernedSyncTest"):
         if marker not in workflow: raise ValidationError(f"legacy workflow gate missing: {marker}")
     digest = hashlib.sha256()
