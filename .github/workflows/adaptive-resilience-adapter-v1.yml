@@ -1,23 +1,41 @@
 name: Adaptive Resilience Adapter V1
+
 on:
   pull_request:
     paths:
       - 'configs/rafaelia-adaptive-resilience-adapter.v1.json'
       - '.github/workflows/adaptive-resilience-adapter-v1.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'configs/rafaelia-adaptive-resilience-adapter.v1.json'
+      - '.github/workflows/adaptive-resilience-adapter-v1.yml'
+  workflow_dispatch:
+
 permissions:
   contents: read
+
+concurrency:
+  group: adaptive-resilience-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   fail-closed-adapter:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
       - name: Validate fail-closed adapter
         run: |
-          python - <<'PY'
+          python3 - <<'PY'
           import json
           p='configs/rafaelia-adaptive-resilience-adapter.v1.json'
-          d=json.load(open(p))
+          with open(p, encoding='utf-8') as fh:
+              d=json.load(fh)
           assert d['claim_allowed'] is False
           assert d['fail_closed']['p0']=='HOLD'
           assert d['fail_closed']['unknown']=='TOKEN_VAZIO'
