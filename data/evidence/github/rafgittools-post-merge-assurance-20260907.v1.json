@@ -1,0 +1,114 @@
+{
+  "schema": "rafaelia.rafgittools-post-merge-assurance.v1",
+  "event_id": "RGT-POST-MERGE-ASSURANCE-20260907-001",
+  "observed_at": "2026-09-07T08:56:19Z",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "branch": "main",
+  "main_sha": "22f2be45c8e1c1fb39de95cbbc09aca5536ca4e8",
+  "merge_source": {
+    "pull_request": 423,
+    "head_sha": "d441e706eae70a23a1c5450239c7b761620d8f96",
+    "merge_commit_sha": "22f2be45c8e1c1fb39de95cbbc09aca5536ca4e8",
+    "purpose": "program mission source cohesion"
+  },
+  "append_only": true,
+  "claim_allowed": false,
+  "release_allowed": false,
+  "evidence_boundary": [
+    "SOURCE_OBSERVED != BUILD_PROVEN != RUNTIME_PROVEN != DEVICE_PROVEN != RELEASE_PROVEN",
+    "POST_MERGE_CI_SUCCESS != PHYSICAL_DEVICE_PROOF",
+    "APK_BUILD_AND_HASH != INSTALL_LAUNCH_RECOVERY_PROOF",
+    "SECURITY_WORKFLOW_SUCCESS != PROVIDER_BRANCH_PROTECTION",
+    "TOKEN_VAZIO != FAIL != PASS"
+  ],
+  "workflow_receipts": [
+    {"name": "CI", "run_id": 34101086187, "conclusion": "success"},
+    {"name": "Android Client Build", "run_id": 34101086150, "conclusion": "success"},
+    {"name": "Security Scan", "run_id": 34101086197, "conclusion": "success"},
+    {"name": "Source Gap Audit", "run_id": 34101086235, "conclusion": "success"},
+    {"name": "rafaelia-block1", "run_id": 34101086049, "conclusion": "success"},
+    {"name": "Code Coverage", "run_id": 34101086082, "conclusion": "success"},
+    {"name": "Human Impact Cross-Repo Gate V1", "run_id": 34101086140, "conclusion": "success"},
+    {"name": "Performance Metrics", "run_id": 34101086239, "conclusion": "success"},
+    {"name": "CodeQL Advanced", "run_id": 34101086329, "conclusion": "success"},
+    {"name": "Automatic Dependency Submission (Gradle)", "run_id": 34101087208, "conclusion": "success"}
+  ],
+  "ci_detail": {
+    "coherence_job_id": 101675461325,
+    "coherence_gate": "success",
+    "android_ci_job_id": 101675461580,
+    "startup_contract": "success",
+    "documentation_claim_boundary": "success",
+    "authentication_tests": "success",
+    "full_dev_unit_tests": "success",
+    "lint": "success",
+    "assemble_dev_debug": "success",
+    "apk_verification": "success",
+    "build_gate": "success"
+  },
+  "android_build_receipt": {
+    "job_id": 101675460865,
+    "result": "success",
+    "artifact_id": 10011296031,
+    "artifact_name": "RafGitTools-devDebug",
+    "artifact_size_bytes": 24223473,
+    "artifact_zip_digest": "sha256:53aaad3f3a8d53b9b1a12c5a83785e3eaa594b4c14f4596c64ec77e0ebbd4b44",
+    "artifact_head_sha": "22f2be45c8e1c1fb39de95cbbc09aca5536ca4e8",
+    "physical_install_launch_proven": false
+  },
+  "security_detail": {
+    "dependency_vulnerability_scan": "success",
+    "trivy_security_upload": "success",
+    "secret_scanning": "success",
+    "codeql": "success",
+    "license_compliance_workflow": "success"
+  },
+  "supersedes_states": [
+    {
+      "source": "docs/URGENCY_GATE_GAP_20260906.v1.json",
+      "id": "RGT-U0-02",
+      "previous_state": "PREDECESSOR_HEAD_PASS_FINAL_HEAD_REVALIDATION_REQUIRED",
+      "new_state": "CLOSED_EXACT_MAIN_POST_MERGE_REVALIDATED"
+    },
+    {
+      "source": "docs/URGENCY_GATE_GAP_20260906.v1.json",
+      "id": "RGT-U0-05",
+      "previous_state": "PREDECESSOR_HEAD_PASS_FINAL_HEAD_REVALIDATION_REQUIRED",
+      "new_state": "CLOSED_EXACT_MAIN_SECURITY_REVALIDATED"
+    }
+  ],
+  "remaining_gaps": [
+    {
+      "id": "RGT-U0-01",
+      "surface": "github-provider-main-enforcement",
+      "state": "OPEN_PROVIDER_AUTHORITY",
+      "reason": "Fresh provider readback still reports protected=false, protection disabled, required status checks enforcement off and no repository rulesets."
+    },
+    {
+      "id": "RGT-U0-03",
+      "surface": "android-device",
+      "state": "TOKEN_VAZIO_DEVICE_PROOF",
+      "reason": "CI APK build does not prove install, launch, restart or recovery on a physical device."
+    },
+    {
+      "id": "RGT-U0-04",
+      "surface": "release",
+      "state": "BLOCKED_BY_RELEASE_EVIDENCE",
+      "reason": "No signed exact-artifact release plus physical smoke receipt is asserted by this evidence packet."
+    }
+  ],
+  "f_ok": [
+    "Program mission source cohesion is present on main.",
+    "Exact post-merge main passed canonical coherence/anti-regression.",
+    "Exact post-merge main passed Android unit/lint/build and emitted a verified uploaded APK artifact.",
+    "Exact post-merge main passed Source Gap Audit, Security Scan and CodeQL.",
+    "Post-merge CI uncertainty for PR 423 is closed."
+  ],
+  "f_gap": [
+    "Provider-side main enforcement is still absent.",
+    "Physical-device install/launch/restart/recovery remains TOKEN_VAZIO.",
+    "Signed release and physical release smoke remain open."
+  ],
+  "f_next": "Apply provider-side main protection with an Administration:write credential using the canonical Mapa producer, re-read provider state, then preserve a zero-approval rejection receipt. Physical-device and release evidence remain separate gates.",
+  "automatic_promotion": false
+}
