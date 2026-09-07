@@ -8,6 +8,34 @@ on:
         required: false
         default: ""
         type: string
+  push:
+    branches:
+      - main
+    paths:
+      - "workflow-master-index.json"
+      - "configs/rafaelia-federation.json"
+      - "configs/workflow-master-index.json"
+      - "configs/workflow-master-index.crosswalk.v1.json"
+      - "configs/normative-reference-registry.v1.json"
+      - "configs/epistemic-provenance-interop.json"
+      - "configs/knowledge-antiderivative-v1.json"
+      - "configs/backfill-stage-1.json"
+      - "configs/lineage-stage-2.tsv"
+      - "schemas/workflow-master-index.schema.json"
+      - "schemas/workflow-master-index-crosswalk.schema.json"
+      - "schemas/normative-reference-registry.schema.json"
+      - "schemas/epistemic-provenance-interop.schema.json"
+      - "schemas/knowledge-antiderivative-v1.schema.json"
+      - "scripts/federation/**"
+      - "tests/federation/**"
+      - "docs/federation/**"
+      - "docs/WORKFLOW_MASTER_INDEX_RAFAELIA.md"
+      - "docs/COMPLIANCE.md"
+      - "scripts/validate_rafaelia_workflow.sh"
+      - "workflows/WORKFLOW_MASTER_INDEX_RAFAELIA.md"
+      - ".github/actions-lock.json"
+      - "requirements/federation-audit.lock"
+      - ".github/workflows/federation-audit.yml"
   pull_request:
     paths:
       - "workflow-master-index.json"
@@ -44,11 +72,11 @@ concurrency:
 
 jobs:
   contract:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Checkout pinned source
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -150,10 +178,12 @@ jobs:
 
       - name: Simulate requested failure
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.simulate_failure != '' }}
+        env:
+          SIMULATE_FAILURE: ${{ inputs.simulate_failure }}
         run: |
           python3 scripts/federation/recovery_drill.py \
             --index configs/workflow-master-index.json \
-            --node "${{ inputs.simulate_failure }}" \
+            --node "$SIMULATE_FAILURE" \
             --report artifacts/federation-failure-simulation.json
 
       - name: Build checksums and claim boundary
@@ -218,7 +248,7 @@ jobs:
 
       - name: Upload audit evidence
         if: always()
-        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: federation-audit-v7-${{ github.run_id }}
           path: artifacts/

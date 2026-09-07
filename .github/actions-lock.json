@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-09-07T11:31:00Z",
+  "generated_at": "2026-09-07T18:42:00Z",
   "actions": [
     {
       "name": "actions/checkout",
-      "version": "v4.2.2",
-      "sha": "11bd71901bbe5b1630ceea73d27597364c9af683",
+      "version": "v7.0.1",
+      "sha": "3d3c42e5aac5ba805825da76410c181273ba90b1",
       "source": "https://github.com/actions/checkout"
     },
     {
@@ -16,8 +16,8 @@
     },
     {
       "name": "actions/upload-artifact",
-      "version": "v4",
-      "sha": "65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08",
+      "version": "v7.0.1",
+      "sha": "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
       "source": "https://github.com/actions/upload-artifact"
     }
   ],
