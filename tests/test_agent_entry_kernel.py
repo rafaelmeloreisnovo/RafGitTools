@@ -60,6 +60,24 @@ class AgentEntryKernelTests(unittest.TestCase):
         broken["canonical_indices"]["mapa_work_service_contract"] = "configs/local-copy.json"
         self.assertTrue(any("explicit Mapa pointer" in e for e in MODULE.validate(broken)))
 
+    def test_program_mission_cohesion_is_a_canonical_local_index(self):
+        self.assertEqual(
+            "configs/program-mission-source-cohesion.v1.json",
+            self.data["canonical_indices"]["program_mission_source_cohesion"],
+        )
+        principles = "\n".join(self.data["principles"]).lower()
+        forbidden = "\n".join(self.data["forbidden_shortcuts"]).lower()
+        self.assertIn("mission", principles)
+        self.assertIn("dataset", principles)
+        self.assertIn("learn", principles)
+        self.assertIn("mission", forbidden)
+        self.assertIn("dataset", forbidden)
+        self.assertIn("learn", forbidden)
+
+        broken = json.loads(json.dumps(self.data))
+        broken["canonical_indices"]["program_mission_source_cohesion"] = "configs/other.json"
+        self.assertTrue(any("program_mission_source_cohesion" in e for e in MODULE.validate(broken)))
+
     def test_history_receipt_carries_identity_governance_and_stop_reason(self):
         fields = set(self.data["transition_receipt_required"])
         required = {
