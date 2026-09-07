@@ -57,7 +57,7 @@ jobs:
 
     steps:
       - name: Checkout RafGitTools
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Test runtime contracts
         run: |
@@ -93,7 +93,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Checkout llamaRafaelia @ locked commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: rafaelmeloreisnovo/llamaRafaelia
           ref: ${{ steps.lock.outputs.llama_commit }}
@@ -102,7 +102,7 @@ jobs:
           persist-credentials: false
 
       - name: Checkout RafPolimata @ locked commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: rafaelmeloreisnovo/RafPolimata
           ref: ${{ steps.lock.outputs.rafpolimata_commit }}
