@@ -1,28 +1,26 @@
-# For most projects, this workflow file will not need changing; you simply need
-# to commit it to your repository.
-#
-# You may wish to alter this file to override the set of languages analyzed,
-# or to provide custom queries or build logic.
-#
-# ******** NOTE ********
-# We have attempted to detect the languages in your repository. Please check
-# the `language` matrix defined below to confirm you have the correct set of
-# supported CodeQL languages.
-#
 name: "CodeQL Advanced"
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   schedule:
     - cron: '36 11 * * 5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     permissions:
       security-events: write
       packages: read
@@ -33,49 +31,51 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - language: actions
-          build-mode: none
-        - language: java-kotlin
-          build-mode: manual
+          - language: actions
+            build-mode: none
+          - language: java-kotlin
+            build-mode: manual
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-    - name: Set up JDK 17
-      if: matrix.language == 'java-kotlin'
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-        cache: 'gradle'
+      - name: Set up JDK 17
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
 
-    - name: Set up Android SDK
-      if: matrix.language == 'java-kotlin'
-      uses: android-actions/setup-android@v3
+      - name: Set up Android SDK
+        if: matrix.language == 'java-kotlin'
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
 
-    - name: Generate local.properties
-      if: matrix.language == 'java-kotlin'
-      shell: bash
-      run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+      - name: Generate local.properties
+        if: matrix.language == 'java-kotlin'
+        shell: bash
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v4
-      with:
-        languages: ${{ matrix.language }}
-        build-mode: ${{ matrix.build-mode }}
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
 
-    - name: Grant execute permission for gradlew
-      if: matrix.language == 'java-kotlin'
-      shell: bash
-      run: chmod +x gradlew
+      - name: Grant execute permission for gradlew
+        if: matrix.language == 'java-kotlin'
+        shell: bash
+        run: chmod +x gradlew
 
-    - name: Run manual Java/Kotlin build
-      if: matrix.language == 'java-kotlin'
-      shell: bash
-      run: ./gradlew assembleDevDebug
+      - name: Run manual Java/Kotlin build
+        if: matrix.language == 'java-kotlin'
+        shell: bash
+        run: ./gradlew assembleDevDebug
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v4
-      with:
-        category: "/language:${{matrix.language}}"
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
+        with:
+          category: "/language:${{ matrix.language }}"
