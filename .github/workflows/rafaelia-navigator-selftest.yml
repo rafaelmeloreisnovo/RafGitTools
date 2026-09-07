@@ -5,28 +5,47 @@ on:
     paths:
       - 'tools/rafaelia_navigator/**'
       - '.github/workflows/rafaelia-navigator-selftest.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/rafaelia_navigator/**'
+      - '.github/workflows/rafaelia-navigator-selftest.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: rafaelia-navigator-selftest-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   synthetic-selftest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v7
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Configure Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
+
       - name: Run base synthetic private-safe gate
-        run: python tools/rafaelia_navigator/rafaelia_navigator.py selftest
+        run: python3 tools/rafaelia_navigator/rafaelia_navigator.py selftest
+
       - name: Run full-node integrity and resume gate
         working-directory: tools/rafaelia_navigator
-        run: python rafaelia_navigator_integrity_v1.py selftest
+        run: python3 rafaelia_navigator_integrity_v1.py selftest
+
       - name: Run set-based FTS gate
         working-directory: tools/rafaelia_navigator
-        run: python rafaelia_navigator_bulk_v1.py selftest
+        run: python3 rafaelia_navigator_bulk_v1.py selftest
+
       - name: Run deterministic committed-state publication gate
         working-directory: tools/rafaelia_navigator
-        run: python rafaelia_navigator_publish_v1.py selftest
+        run: python3 rafaelia_navigator_publish_v1.py selftest
