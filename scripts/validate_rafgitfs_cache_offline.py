@@ -23,7 +23,7 @@ FILES = (
     "app/src/main/kotlin/com/rafgittools/rafgitfs/data/RafGitFsOperationDaos.kt",
     "app/src/main/kotlin/com/rafgittools/ui/screens/rafgitfs/VirtualFileViewerViewModel.kt",
     "app/src/main/kotlin/com/rafgittools/ui/screens/rafgitfs/VirtualFileViewerScreen.kt",
-    ".github/workflows/rafgitfs-room-v6-validation.yml",
+    ".github/workflows-legacy-20260907/rafgitfs-room-v6-validation.yml",
 )
 
 STATES = {
@@ -120,7 +120,7 @@ def validate(root: Path) -> dict[str, Any]:
         "RafGitFsCacheCoreTest",
     ):
         if marker not in workflow:
-            raise ValidationError(f"workflow gate missing: {marker}")
+            raise ValidationError(f"legacy workflow gate missing: {marker}")
 
     return {
         "status": "PASS",
