@@ -2,33 +2,44 @@ name: Code Coverage
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   workflow_dispatch:
 
 permissions:
   contents: read
-  issues: write
-  pull-requests: write
+
+concurrency:
+  group: coverage-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   coverage:
     name: Test Coverage Report
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '17'
-          cache: 'gradle'
-      - uses: android-actions/setup-android@v4
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+
       - name: Generate local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
@@ -58,6 +69,8 @@ jobs:
       - name: Detect coverage artifacts
         id: coverage_artifacts
         shell: bash
+        env:
+          COVERAGE_AVAILABLE: ${{ steps.coverage_capability.outputs.available }}
         run: |
           set -euo pipefail
           found=false
@@ -69,7 +82,7 @@ jobs:
           echo "found=$found" >> "$GITHUB_OUTPUT"
           if [ "$found" = true ]; then
             echo "evidence_state=EVIDENCED_SCOPED_COVERAGE_REPORT" >> "$GITHUB_OUTPUT"
-          elif [ "${{ steps.coverage_capability.outputs.available }}" = true ]; then
+          elif [ "$COVERAGE_AVAILABLE" = true ]; then
             echo "evidence_state=TOKEN_VAZIO_COVERAGE_REPORT_NOT_EMITTED" >> "$GITHUB_OUTPUT"
           else
             echo "evidence_state=TOKEN_VAZIO_COVERAGE_NOT_CONFIGURED" >> "$GITHUB_OUTPUT"
@@ -77,21 +90,25 @@ jobs:
 
       - name: Upload coverage reports
         if: steps.coverage_artifacts.outputs.found == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: coverage-reports
+          name: coverage-reports-${{ github.run_id }}
           path: |
             app/build/reports/jacoco/
             app/build/reports/coverage/
+          if-no-files-found: error
           retention-days: 30
 
       - name: Comment coverage on PR
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          EVIDENCE_STATE: ${{ steps.coverage_artifacts.outputs.evidence_state }}
+          ARTIFACT_FOUND: ${{ steps.coverage_artifacts.outputs.found }}
         with:
           script: |
-            const evidenceState = '${{ steps.coverage_artifacts.outputs.evidence_state }}';
-            const artifactFound = '${{ steps.coverage_artifacts.outputs.found }}' === 'true';
+            const evidenceState = process.env.EVIDENCE_STATE || 'TOKEN_VAZIO_NOT_OBSERVED';
+            const artifactFound = process.env.ARTIFACT_FOUND === 'true';
 
             let comment = '## 📊 Code Coverage Report\n\n';
             comment += '### Observed state\n';
