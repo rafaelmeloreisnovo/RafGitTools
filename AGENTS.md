@@ -36,7 +36,7 @@ Core invariants:
 - Cross-repository success requires producer + consumer evidence for the claimed boundary.
 - Historical observations are append-only; successors supersede instead of rewriting.
 - Do not copy private/sensitive payload when a typed reference is enough.
-- Security/provenance success must derive from terminal gate evidence; never hardcode it.
+- Security/provenance success must derive from terminal verifier evidence; never hardcode it.
 - High/critical mutation requires concrete rollback before execution.
 
 Canonical federation reference: `docs/AGENT_FEDERATION_ENTRY_V1.md`.
