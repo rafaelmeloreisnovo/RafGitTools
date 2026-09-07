@@ -44,6 +44,16 @@ REQUIRED_EXECUTION_INPUTS = {
     "ROLLBACK_WHEN_MUTATING",
     "GOVERNANCE_DATA_PRIVACY_SECURITY_GATES",
 }
+REQUIRED_FLOW_EDGES = {
+    "MISSION -> ROUTING",
+    "DATASET -> CONTEXT",
+    "CONTEXT -> MODEL_PROPOSAL",
+    "MODEL_PROPOSAL -> EXECUTION_GATE",
+    "MISSION -> EXECUTION_GATE",
+    "EXECUTION_GATE -> BOUNDED_EXECUTION",
+    "BOUNDED_EXECUTION -> RECEIPT",
+    "RECEIPT -> LEARN_APPEND_ONLY",
+}
 
 
 def load() -> dict:
@@ -147,6 +157,15 @@ def validate(data: dict) -> list[str]:
         errors.append("mission cohesion invariants mismatch")
     if set(data.get("forbidden_promotions", [])) != REQUIRED_FORBIDDEN:
         errors.append("forbidden authority promotions mismatch")
+
+    # The declared graph is part of the authority contract. Permission flags and
+    # invariant text cannot compensate for a bypass edge or a missing gate.
+    # Edges are relations, so their order in the JSON array is not significant.
+    flow = data.get("flow")
+    if not isinstance(flow, list) or not all(isinstance(edge, str) for edge in flow):
+        errors.append("flow must be an array of string edges")
+    elif len(flow) != len(REQUIRED_FLOW_EDGES) or set(flow) != REQUIRED_FLOW_EDGES:
+        errors.append("flow must contain each canonical mission/gate/receipt edge exactly once")
 
     stops = data.get("stop_conditions")
     if not isinstance(stops, list) or len(stops) < 5:

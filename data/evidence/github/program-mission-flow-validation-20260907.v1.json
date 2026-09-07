@@ -1,0 +1,136 @@
+{
+  "schema": "rafaelia.program-mission-flow-validation.receipt.v1",
+  "event_id": "RAFGITTOOLS-MISSION-FLOW-VALIDATION-20260907T181831Z",
+  "parent_event_id": "OMEGA-FED-20260907-NAVIGATOR-CANONICALITY-EXACTHEAD17-135",
+  "observed_at": "2026-09-07T18:18:31Z",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "ref": "rafaelia/mission-flow-gate-20260907-1818",
+  "source_commit": "c6cc175ab050c8c72526311a2dcb10753d3a2ee9",
+  "source_tree": "8cf7c54b349bee457018918d4ca4caf1c25d9c9a",
+  "authority": {
+    "program_mission": "Continue the operator-approved program mission; dataset informs context; no model weight training",
+    "local_executor": "rafaelmeloreisnovo/RafGitTools",
+    "federated_routing": "rafaelmeloreisnovo/Mapa",
+    "write_scope": "draft branch; validator, regression tests and new receipt only"
+  },
+  "actor_role": "Codex coding assistant",
+  "gap_or_goal_ids": [
+    "TV-RAFGITTOOLS-MISSION-FLOW-VALIDATION-20260907"
+  ],
+  "urgency": "P0",
+  "risk": "LOW",
+  "governance_class": "SOURCE_ONLY_DRAFT_CHANGE",
+  "data_class": "PUBLIC_SOURCE_AND_SYNTHETIC_FIXTURES",
+  "privacy_class": "NO_PRIVATE_CORPUS_OR_CREDENTIAL_PAYLOAD",
+  "security_class": "STRUCTURAL_AUTHORITY_VALIDATION",
+  "state_before": "MEASURED_LOCAL_FALSE_PASS_ON_UNCHECKED_FLOW",
+  "state_after": "MEASURED_LOCAL_REGRESSION_GATE_PASS",
+  "path_scope": [
+    "scripts/check_program_mission_source_cohesion.py",
+    "tests/test_program_mission_source_cohesion.py",
+    "data/evidence/github/program-mission-flow-validation-20260907.v1.json"
+  ],
+  "contract": {
+    "path": "configs/program-mission-source-cohesion.v1.json",
+    "blob_sha1": "ea4faaf29119ee2aa874a194f91e0430871e28eb",
+    "changed": false
+  },
+  "original_source_blobs": {
+    "scripts/check_program_mission_source_cohesion.py": "3734f31b0625823e2189a5eef740858fa15bd482",
+    "tests/test_program_mission_source_cohesion.py": "0ae4226cc1b94db098c2650d3505c7ddca388fa5"
+  },
+  "tested_source_blobs": {
+    "scripts/check_program_mission_source_cohesion.py": {
+      "blob_sha1": "94556f94e409aa86063932dd8bb4465c29f55943",
+      "sha256": "4e3424c5339a11c01dd40a8cf39e2717da2099933c34b6620b2069eb34c3c560"
+    },
+    "tests/test_program_mission_source_cohesion.py": {
+      "blob_sha1": "bae5ce67d849d4e3b7fdb7c52b84620d951f8d0c",
+      "sha256": "1eafa9f208d1fd31171eafe700abf48eb9e33077bd3690e72aae2c05e9a51721"
+    }
+  },
+  "environment": {
+    "system": "Linux",
+    "machine": "x86_64",
+    "python": "3.12.13",
+    "materialization": "three source files fetched at exact commit; Git blob SHA-1 recomputed and matched; not a full repository checkout"
+  },
+  "action": "Require flow to be a JSON array containing each of the eight canonical mission/context/gate/receipt relations exactly once. Relation order is immaterial.",
+  "baseline_probe": {
+    "canonical": "ACCEPTED",
+    "dataset_direct_execution": "INCORRECTLY_ACCEPTED",
+    "model_direct_execution": "INCORRECTLY_ACCEPTED",
+    "learn_weight_update": "INCORRECTLY_ACCEPTED",
+    "missing_flow": "INCORRECTLY_ACCEPTED"
+  },
+  "falsifier": "Any extra bypass relation, missing gate/receipt relation, duplicate edge, malformed edge or non-array flow obtains PASS.",
+  "tests": [
+    {
+      "command": "python3 -m unittest discover -s tests -p 'test_program_mission_source_cohesion.py' -v",
+      "code": "original validator with added regressions",
+      "test_methods": 15,
+      "failing_assertions_including_subtests": 21,
+      "exit_code": 1,
+      "outcome": "REGRESSION_REPRODUCED"
+    },
+    {
+      "command": "python3 -m unittest discover -s tests -p 'test_program_mission_source_cohesion.py' -v",
+      "code": "corrected validator with added regressions",
+      "test_methods": 15,
+      "failing_assertions_including_subtests": 0,
+      "exit_code": 0,
+      "outcome": "PASS"
+    },
+    {
+      "command": "python3 scripts/check_program_mission_source_cohesion.py",
+      "code": "corrected validator; unchanged canonical contract",
+      "exit_code": 0,
+      "outcome": "PASS"
+    }
+  ],
+  "exit_criterion": "The unchanged canonical contract and reordered equivalent graph pass; all 21 previously accepted invalid fixture assertions reject; existing eight tests remain passing.",
+  "invariants_checked": [
+    "MISSION != DATASET",
+    "MODEL_PROPOSAL != EXECUTION_AUTHORITY",
+    "LEARN == APPEND_ONLY_MEMORY",
+    "WEIGHT_UPDATE != LEARNING_RECEIPT",
+    "TOKEN_VAZIO != PASS",
+    "FLOW_RELATION_ORDER_DOES_NOT_GRANT_AUTHORITY"
+  ],
+  "evidence_refs": [
+    "configs/program-mission-source-cohesion.v1.json",
+    "scripts/check_program_mission_source_cohesion.py",
+    "tests/test_program_mission_source_cohesion.py"
+  ],
+  "training_authorized": false,
+  "weight_updates_executed": false,
+  "remote_ci": "TOKEN_VAZIO_PENDING_NEW_COMMIT_RUN",
+  "runtime_device": "TOKEN_VAZIO_NO_DEVICE_EXECUTION_IN_THIS_CYCLE",
+  "provider_enforcement": {
+    "main_protected": false,
+    "rulesets_count": 0,
+    "scope": "readback at base; not changed by this source patch"
+  },
+  "rollback_ref": "Before merge: close the draft PR; main remains unchanged. After separately authorized merge: revert this change commit and append a successor recording restoration of the known validation gap.",
+  "stop_reason": "Scoped local falsifier resolved; independent CI/promotion and physical/provider gates remain separate.",
+  "uncertainty_delta": "Unchecked structural flow demonstrated and rejected locally; no evidence of an actual unauthorized program execution was asserted.",
+  "f_ok": [
+    "Original false PASS reproduced",
+    "Eight canonical flow edges bound by validator",
+    "15 local test methods PASS",
+    "Canonical contract unchanged"
+  ],
+  "f_gap": [
+    "Candidate remote CI",
+    "Independent promotion/review",
+    "Provider governance and private-repository authority",
+    "Physical device/candidate integration proof"
+  ],
+  "f_next": [
+    "Observe candidate CI on the exact commit",
+    "Review and integrate the bounded source patch through repository policy",
+    "Continue provider/device work only with its required authority/evidence"
+  ],
+  "claim_allowed": false,
+  "completion_scope": "LOCAL_SOURCE_VALIDATION_ONLY"
+}
