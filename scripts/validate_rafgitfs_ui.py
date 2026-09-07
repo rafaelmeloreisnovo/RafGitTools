@@ -132,14 +132,14 @@ def validate(root: Path) -> dict[str, Any]:
     ):
         if marker not in browser_vm + browser_screen:
             raise ValidationError(f"browser capability missing: {marker}")
-    if "readContent" not in viewer_vm or "VirtualFileViewerUiState" not in viewer_vm:
-        raise ValidationError("bounded read-only viewer connection missing")
+    # Viewer evolved from direct readContent to a bounded cache manager path.
+    # Require the exact cache-backed read and the UI state rather than a stale
+    # symbol name from the predecessor implementation.
+    if "cacheManager.read(" not in viewer_vm or "VirtualFileViewerUiState" not in viewer_vm:
+        raise ValidationError("bounded cache-backed viewer connection missing")
     if "OutlinedTextField" not in source[FILES[6]] or "OutlinedTextField" not in source[FILES[12]]:
         raise ValidationError("repository search or settings input missing")
 
-    # The predecessor workflow is preserved as an immutable audit fixture.
-    # Current execution is orchestrated by START; these markers prove the
-    # original Prompt 4 gate was not silently erased during migration.
     for marker in (
         "validate_rafgitfs_ui.py", "test_validate_rafgitfs_ui.py",
         "RafGitFsUiPathsTest",
