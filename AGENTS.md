@@ -5,7 +5,6 @@
 This repository is the RAFAELIA **control-plane executor/tool-router**. `Mapa` is the federated authority for routing and state. `AGENTS.md` is a repository-local entry adapter; it does not replace evidence, contracts, source authority or receipts.
 
 Canonical executor contract: `configs/agent-entry-kernel.v1.json`.  
-Program-mission cohesion contract: `configs/program-mission-source-cohesion.v1.json`.  
 Federated authority contract: `github:rafaelmeloreisnovo/Mapa/data/control-plane/RAFAELIA_FEDERATED_WORK_SERVICE_CONTRACT.v1.json`.
 
 Before acting, answer these twelve questions with exact pointers or typed `TOKEN_VAZIO`:
@@ -33,12 +32,11 @@ Core invariants:
 - Evidence is bound to exact commit/path/artifact/protocol/environment/device.
 - Deferred or ignored-with-reason work remains indexed; it is not silently deleted.
 - Local repository authority governs local internals; Mapa governs federated routing/state; federation contracts govern edges.
-- `MISSION != DATASET != MODEL_PROPOSAL != LEARN != EXECUTION_AUTHORITY`; dataset informs, model proposes, LEARN is append-only memory, and none self-promotes into mission or execution authority.
 - Documentation is not runtime evidence; hash is not scientific validation.
 - Cross-repository success requires producer + consumer evidence for the claimed boundary.
 - Historical observations are append-only; successors supersede instead of rewriting.
 - Do not copy private/sensitive payload when a typed reference is enough.
-- Security/provenance success must derive from terminal verifier evidence; never hardcode it.
+- Security/provenance success must derive from terminal gate evidence; never hardcode it.
 - High/critical mutation requires concrete rollback before execution.
 
 Canonical federation reference: `docs/AGENT_FEDERATION_ENTRY_V1.md`.
@@ -51,7 +49,6 @@ Minimum local entry set:
 
 ```text
 configs/agent-entry-kernel.v1.json
-configs/program-mission-source-cohesion.v1.json
 configs/workflow-master-index.json
 configs/gap-closure-execution.v1.json
 data/evidence/github/cross-repo-gap-closure-20260819.v1.json
@@ -74,7 +71,6 @@ Do not broaden the crawl until these indices cannot reconstruct the requested go
 - Lint: `./scripts/gradlew_with_java17.sh lintDevDebug`
 - Canonical governance gate: `sh scripts/validate_rafaelia_workflow.sh`
 - Agent kernel: `python3 scripts/check_agent_entry_kernel.py`
-- Mission cohesion gate: `python3 scripts/check_program_mission_source_cohesion.py`
 - One work envelope: `python3 scripts/validate_federated_work_item.py <work-item.json>`
 
 A structural `PASS` from these validators is not runtime/device/scientific/privacy-totality proof.
@@ -95,7 +91,6 @@ A structural `PASS` from these validators is not runtime/device/scientific/priva
 - Use minimum necessary data; preserve redaction and access boundaries.
 - Unknown governance/privacy/security classification blocks mutation instead of defaulting to permissive.
 - A receipt from RafGitTools cannot promote another repository's runtime state by itself.
-- Dataset content, model output and LEARN memory cannot silently redefine program mission, authorize execution, training or weight updates.
 
 ## 6. ARM32 / Termux invariant
 
