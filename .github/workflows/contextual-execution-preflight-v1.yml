@@ -10,31 +10,53 @@ on:
       - "tests/test_contextual_execution_preflight.py"
       - "docs/CONTEXTUAL_EXECUTION_PREFLIGHT_V1.md"
       - ".github/workflows/contextual-execution-preflight-v1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "contracts/contextual-execution-request.v1.json"
+      - "examples/contextual-execution-request.wine-formula.json"
+      - "scripts/validate_contextual_execution_request.py"
+      - "tests/test_contextual_execution_preflight.py"
+      - "docs/CONTEXTUAL_EXECUTION_PREFLIGHT_V1.md"
+      - ".github/workflows/contextual-execution-preflight-v1.yml"
 
 permissions:
   contents: read
 
+concurrency:
+  group: contextual-execution-preflight-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   preflight:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v7
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Configure Python 3.13
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13"
+
       - name: Run tests
         run: python3 -m unittest tests.test_contextual_execution_preflight
+
       - name: Evaluate blocked fixture
         run: |
           mkdir -p artifacts
           python3 scripts/validate_contextual_execution_request.py \
             examples/contextual-execution-request.wine-formula.json \
             --out artifacts/contextual-execution-preflight.json
+
       - name: Upload evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: contextual-execution-preflight-v1
+          name: contextual-execution-preflight-v1-${{ github.run_id }}
           if-no-files-found: error
           path: artifacts/contextual-execution-preflight.json
+          retention-days: 30
