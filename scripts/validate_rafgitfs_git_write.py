@@ -48,7 +48,8 @@ def validate(root: Path) -> dict:
         '@POST("repos/{owner}/{repo}/pulls")',
     ):
         if marker not in api: raise ValidationError(f"write endpoint missing: {marker}")
-    if re.search(r"@DELETE\b", api): raise ValidationError("DELETE endpoint is forbidden")
+    if re.search(r"@(?:retrofit2\.http\.)?DELETE\b", api):
+        raise ValidationError("DELETE endpoint is forbidden")
     if re.search(r"/merges?|/merge\b", api, re.IGNORECASE): raise ValidationError("merge endpoint is forbidden")
     if "val force: Boolean = false" not in api: raise ValidationError("non-force ref default missing")
     if "val draft: Boolean = true" not in api: raise ValidationError("draft PR default missing")
