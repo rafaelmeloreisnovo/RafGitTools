@@ -1,0 +1,32 @@
+{
+  "schema": "rafaelia.novoexport-full-recount-safe-evidence/v1",
+  "scope": "conversations-000..050",
+  "source_shards": 51,
+  "source_bytes": 1107289897,
+  "source_set_digest_sha256": "ba27012377c5ec7d3603a8c0eb42f12c83ac700c85b9d2b2ef9ff514860b122d",
+  "root_conversations_observed": 5054,
+  "unique_conversation_ids": 5054,
+  "mapping_nodes_observed": 307043,
+  "message_bearing_nodes_observed": 301991,
+  "unique_effective_message_ids": 296794,
+  "distinct_duplicated_effective_message_ids": 2988,
+  "duplicate_effective_message_id_observations": 5197,
+  "duplicates_same_conversation_excess": 0,
+  "duplicates_cross_conversation_excess": 5197,
+  "parse_errors": 0,
+  "external_receipt_sha256": "8345707415e4195ad1c18706cd22e34255d09a5847a0eac300709bd7d0fac8ff",
+  "duplicate_relation_receipt_sha256": "4688e3e35c27d6ab43b77194fb20e23b82008ace9ba2123cbc112ac90f7282c9",
+  "residual_token_vazio": "TV-MESSAGE-ID-CROSS-CONVERSATION-REUSE-CAUSE-20260907",
+  "semantic_full_ingestion_proven": false,
+  "training_executed": false,
+  "weight_update_executed": false,
+  "mission_authority_from_dataset": false,
+  "claim_allowed": false,
+  "invariants": [
+    "DATASET_INFORMS != MISSION_AUTHORITY",
+    "STRUCTURAL_CARDINALITY != SEMANTIC_EXHAUSTIVITY",
+    "RECOUNT != TRAINING",
+    "PHYSICAL_PARSE != SCIENTIFIC_CLAIM",
+    "TOKEN_VAZIO != PASS"
+  ]
+}
