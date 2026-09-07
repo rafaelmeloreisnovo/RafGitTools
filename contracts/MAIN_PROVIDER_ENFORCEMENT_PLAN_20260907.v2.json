@@ -1,0 +1,147 @@
+{
+  "schema": "rafaelia.rafgittools-main-provider-enforcement-plan.v2",
+  "version": "2.0.0",
+  "generated_at": "2026-09-07",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "target_branch": "main",
+  "supersedes": "contracts/MAIN_PROVIDER_ENFORCEMENT_PLAN_20260830.v1.json",
+  "supersession_reason": "The v1 plan listed path-filtered Documentation and Auditor Closure workflows as global required status checks. A provider-global required check must be able to spawn for every pull request targeting main; otherwise an unrelated pull request can be blocked by a check that never exists.",
+  "mode": "PREPARED_NOT_APPLIED",
+  "provider_enforcement_active": false,
+  "provider_enforcement_state": "TOKEN_VAZIO_ADMINISTRATION_WRITE_SURFACE",
+  "claim_allowed": false,
+  "merge_authorized_from_this_artifact": false,
+  "source_gap_issue": 393,
+  "required_policy": {
+    "pull_request_required": true,
+    "direct_main_write_forbidden": true,
+    "force_push_forbidden": true,
+    "branch_deletion_forbidden": true,
+    "human_review_required": true,
+    "minimum_approving_reviews": 1,
+    "dismiss_stale_approvals_on_new_commits": true,
+    "require_conversation_resolution": true,
+    "require_branch_up_to_date_before_merge": true,
+    "rollback_required_for_breaking_contract_changes": true
+  },
+  "required_status_checks_global": [
+    {
+      "context": "CI / RAFAELIA coherence / anti-regression",
+      "workflow_path": ".github/workflows/ci.yml",
+      "job_id": "coherence-contract",
+      "pull_request_scope": "ALL_PULL_REQUESTS_TO_MAIN",
+      "provider_required_globally": true
+    },
+    {
+      "context": "CI / Test, lint and assemble devDebug",
+      "workflow_path": ".github/workflows/ci.yml",
+      "job_id": "android-client",
+      "pull_request_scope": "ALL_PULL_REQUESTS_TO_MAIN",
+      "provider_required_globally": true
+    },
+    {
+      "context": "Human Impact Cross-Repo Gate V1 / validate-human-impact-contract",
+      "workflow_path": ".github/workflows/human-impact-cross-repo-gate-v1.yml",
+      "job_id": "validate-human-impact-contract",
+      "pull_request_scope": "ALL_PULL_REQUESTS_TO_MAIN",
+      "provider_required_globally": true
+    },
+    {
+      "context": "Source Gap Audit / source-gap-audit",
+      "workflow_path": ".github/workflows/source-gap-audit.yml",
+      "job_id": "source-gap-audit",
+      "pull_request_scope": "ALL_PULL_REQUESTS_TO_MAIN",
+      "provider_required_globally": true
+    }
+  ],
+  "candidate_ready_checks": [
+    {
+      "context": "PR Validation / Validate Pull Request",
+      "workflow_path": ".github/workflows/pr-validation.yml",
+      "job_id": "validate-pr",
+      "provider_required_globally": false,
+      "reason": "The job is intentionally gated by pull_request.draft == false. Preserve it as a ready-for-review gate instead of making it a provider-global context that may be absent/skipped for draft lifecycle states."
+    }
+  ],
+  "specialized_conditional_checks": [
+    {
+      "context": "Auditor Closure Gate V1 / auditor-closure",
+      "workflow_path": ".github/workflows/auditor-closure-gate-v1.yml",
+      "pull_request_scope": "PATH_FILTERED",
+      "provider_required_globally": false,
+      "reason": "The workflow is intentionally triggered only for auditor-closure contract/evidence surfaces."
+    },
+    {
+      "context": "Documentation / Validate Documentation",
+      "workflow_path": ".github/workflows/docs.yml",
+      "pull_request_scope": "PATH_FILTERED",
+      "provider_required_globally": false,
+      "reason": "The workflow is intentionally triggered only for documentation/Markdown/documentation-contract surfaces."
+    }
+  ],
+  "recommended_security_checks": [
+    "Security Scan",
+    "CodeQL Advanced"
+  ],
+  "workflow_scope_invariants": [
+    "A provider-global required status check MUST spawn for every pull request targeting main.",
+    "A workflow with pull_request paths or paths-ignore filtering MUST NOT be configured as a provider-global required status check.",
+    "A job intentionally skipped for draft lifecycle state MUST NOT be treated as an unconditional provider-global required context.",
+    "Conditional specialized gates remain enforced by their own workflow trigger contract when applicable.",
+    "TOKEN_VAZIO != PASS"
+  ],
+  "application_boundary": {
+    "authorized_executor": "TOKEN_VAZIO_GITHUB_ADMIN_OR_PROVIDER_CAPABLE_SURFACE",
+    "administration_write_proven": false,
+    "current_connected_surface_exposes_branch_protection_write": false,
+    "current_connected_surface_exposes_ruleset_write": false,
+    "current_agent_may_self_approve": false,
+    "current_agent_may_fabricate_provider_state": false,
+    "independent_human_review": "TOKEN_VAZIO",
+    "affected_community_review": "TOKEN_VAZIO_WHEN_APPLICABLE",
+    "specialist_review": "TOKEN_VAZIO_WHEN_APPLICABLE"
+  },
+  "required_provider_readback": {
+    "branch_protected_or_effective_ruleset": true,
+    "required_status_checks_enforced": true,
+    "pull_request_rule_observed": true,
+    "review_rule_observed": true,
+    "minimum_approving_reviews_observed": 1,
+    "conversation_resolution_observed": true,
+    "force_push_block_observed": true,
+    "deletion_block_observed": true,
+    "exact_ruleset_or_protection_identifier_required": true
+  },
+  "negative_assurance_test": {
+    "required_when_safely_feasible": true,
+    "destructive_test_allowed": false,
+    "method": "Use a bounded PR/fixture with one globally required check deliberately failing or the required review absent and observe provider refusal to merge without bypass.",
+    "success": "provider blocks merge",
+    "failure": "provider permits merge despite required failure or absent required review"
+  },
+  "application_sequence": [
+    "Re-read canonical main SHA and current provider protection/ruleset state.",
+    "Require an Administration:write-capable authorized surface and a rollback capsule before mutation.",
+    "Apply this v2 policy or an explicitly equivalent/stronger provider policy using only global contexts listed in required_status_checks_global.",
+    "Immediately re-read provider state and bind exact protection/ruleset identifiers.",
+    "Exercise the bounded negative merge-rejection test.",
+    "Append a successor receipt; never rewrite this prepared plan."
+  ],
+  "exit_criteria": [
+    "authorized administrative surface applies equivalent or stronger provider policy",
+    "provider readback proves enforcement on canonical main",
+    "all provider-global required checks are bound and universally spawn-capable",
+    "review and conversation-resolution requirements are observable",
+    "force-push and deletion blocks are observable",
+    "bounded negative assurance proves provider rejection without bypass",
+    "successor receipt records exact provider policy identifiers and observed repository revision"
+  ],
+  "invariants": [
+    "DETECTOR != ENFORCEMENT != PROOF_OF_BLOCKING",
+    "FAILED_GATE != MERGE_AUTHORIZED",
+    "LOCAL_PASS != HUMAN_IMPACT_PASS",
+    "PATH_FILTERED_CHECK != GLOBAL_REQUIRED_CHECK",
+    "TOKEN_VAZIO != PASS",
+    "SELF_REVIEW != INDEPENDENT_REVIEW"
+  ]
+}
