@@ -1,0 +1,72 @@
+{
+  "schema": "rafaelia.cross-repo-candidate-ci-observation.v1",
+  "observed_at": "2026-09-06T23:42:14Z",
+  "candidate_sha256": "32d35964b934fe159eec51a675f914550db818f69fb1defc46915df94f5d010a",
+  "evidence_level": "REMOTE_CHECK_METADATA_ONLY",
+  "integration_result": "BLOCKED",
+  "repositories": [
+    {
+      "name": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "commit": "607137eb50b0b0e4c4d80c20f37f2eaf5827e30f",
+      "state": "BLOCKED",
+      "evidence_ref": "https://github.com/rafaelmeloreisnovo/termux-app-rafacodephi/actions/runs/34056716583",
+      "observed": [
+        "unit tests PASS",
+        "ARM64 debug apt-android-7 PASS",
+        "ARM64 debug apt-android-5 PASS",
+        "Android compatibility PASS",
+        "ARM64 release apt-android-7 FAIL at optional release signing",
+        "ARM64 release apt-android-5 FAIL at optional release signing",
+        "canonical full debug matrix apt-android-7 FAIL",
+        "canonical full debug matrix apt-android-5 FAIL",
+        "Omega terminal gate FAIL"
+      ]
+    },
+    {
+      "name": "rafaelmeloreisnovo/termux-api_rafcodephi",
+      "commit": "3aeb83da3bbb00527a76cd103695ea1c0e062c2d",
+      "state": "CHECKS_OBSERVED_GREEN_NOT_RUNTIME_PROOF",
+      "evidence_ref": "https://api.github.com/repos/rafaelmeloreisnovo/termux-api_rafcodephi/commits/3aeb83da3bbb00527a76cd103695ea1c0e062c2d/check-runs",
+      "observed": ["4 check runs observed", "4 completed success"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/termux-packages",
+      "commit": "0ffb24a5a6be58316236383a6d249544c39eb3e3",
+      "state": "PARTIAL_CHECKS_NOT_ARTIFACT_PROOF",
+      "evidence_ref": "https://api.github.com/repos/rafaelmeloreisnovo/termux-packages/commits/0ffb24a5a6be58316236383a6d249544c39eb3e3/check-runs",
+      "observed": ["Analyze (actions) PASS", "repository-health skipped", "publish skipped", "build skipped"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE",
+      "commit": "6852ec1d81ff1dcde3f07f5c2323af2d674f6967",
+      "state": "BLOCKED",
+      "evidence_ref": "https://github.com/rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE/actions/runs/34026675058",
+      "observed": ["01->06 validation/audit/consolidation check FAIL"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/llamaRafaelia",
+      "commit": "7a667531b3411c63349a22b24ed5a7d7a314f79a",
+      "state": "BLOCKED_MIXED_CHECKS",
+      "evidence_ref": "https://api.github.com/repos/rafaelmeloreisnovo/llamaRafaelia/commits/7a667531b3411c63349a22b24ed5a7d7a314f79a/check-runs",
+      "observed": ["ASan and UBSan PASS", "Host contract clang PASS", "Host contract gcc FAIL", "Lint FAIL", "ARM freestanding compile FAIL"]
+    },
+    {
+      "name": "rafaelmeloreisnovo/RafPolimata",
+      "commit": "87bc929198e96cdb245e381b28a4e5db132ad82f",
+      "state": "PARTIAL_OBSERVED_GREEN_NOT_RUNTIME_PROOF",
+      "evidence_ref": "https://api.github.com/repos/rafaelmeloreisnovo/RafPolimata/commits/87bc929198e96cdb245e381b28a4e5db132ad82f/check-runs",
+      "observed": ["bounded read-only lineage scans observed PASS"]
+    }
+  ],
+  "f_gap": [
+    "TOKEN_VAZIO_TERMUX_APP_CANONICAL_MATRIX_GREEN",
+    "TOKEN_VAZIO_CONVERSATIONS_CHECK_GREEN",
+    "TOKEN_VAZIO_LLAMA_GCC_LINT_ARM_FREESTANDING_GREEN",
+    "TOKEN_VAZIO_TERMUX_PACKAGES_BUILD_ARTIFACT_EVIDENCE",
+    "TOKEN_VAZIO_CROSS_REPO_CANDIDATE_INTEGRATION_EXECUTION",
+    "TOKEN_VAZIO_REQUIRED_ARTIFACT_HASHES"
+  ],
+  "f_next": "Repair or supersede the failing provider checks on the exact candidate lineage, collect concrete artifact digests, then emit a candidate-bound integration-gate receipt. Do not promote runtime-lock.json before that receipt passes.",
+  "canonical_lock_mutated": false,
+  "claim_allowed": false
+}

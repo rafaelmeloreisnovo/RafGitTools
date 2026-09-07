@@ -1,0 +1,40 @@
+{
+  "schema": "rafaelia.runtime-lock-integration-gate-receipt.v1",
+  "candidate_sha256": "32d35964b934fe159eec51a675f914550db818f69fb1defc46915df94f5d010a",
+  "observed_at": "2026-09-06T23:42:14Z",
+  "result": "BLOCKED",
+  "checks": [
+    {
+      "id": "termux-app-rafacodephi",
+      "status": "FAIL",
+      "evidence_ref": "https://github.com/rafaelmeloreisnovo/termux-app-rafacodephi/actions/runs/34056716583"
+    },
+    {
+      "id": "termux-api_rafcodephi",
+      "status": "OBSERVED_NOT_PROOF",
+      "evidence_ref": "https://api.github.com/repos/rafaelmeloreisnovo/termux-api_rafcodephi/commits/3aeb83da3bbb00527a76cd103695ea1c0e062c2d/check-runs"
+    },
+    {
+      "id": "termux-packages",
+      "status": "OBSERVED_NOT_PROOF",
+      "evidence_ref": "https://api.github.com/repos/rafaelmeloreisnovo/termux-packages/commits/0ffb24a5a6be58316236383a6d249544c39eb3e3/check-runs"
+    },
+    {
+      "id": "CONVERSATIONS_CHUNKS_PRIVATE",
+      "status": "FAIL",
+      "evidence_ref": "https://github.com/rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE/actions/runs/34026675058"
+    },
+    {
+      "id": "llamaRafaelia",
+      "status": "FAIL",
+      "evidence_ref": "https://api.github.com/repos/rafaelmeloreisnovo/llamaRafaelia/commits/7a667531b3411c63349a22b24ed5a7d7a314f79a/check-runs"
+    },
+    {
+      "id": "RafPolimata",
+      "status": "OBSERVED_NOT_PROOF",
+      "evidence_ref": "https://api.github.com/repos/rafaelmeloreisnovo/RafPolimata/commits/87bc929198e96cdb245e381b28a4e5db132ad82f/check-runs"
+    }
+  ],
+  "evidence_boundary": "Remote check metadata is observation only; no check is promoted to integration proof without a concrete evidence SHA-256 bound to this candidate.",
+  "claim_allowed": false
+}
