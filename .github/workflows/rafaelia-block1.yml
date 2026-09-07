@@ -3,42 +3,102 @@ name: rafaelia-block1
 on:
   push:
     branches: [ "**" ]
+    paths:
+      - "rafaelia/block1/**"
+      - ".github/workflows/rafaelia-block1.yml"
   pull_request:
+    paths:
+      - "rafaelia/block1/**"
+      - ".github/workflows/rafaelia-block1.yml"
   schedule:
+    # The former */10 schedule was a strict subset of */5 and caused duplicate
+    # invocations every ten minutes. Keep one cadence until a separate cadence
+    # policy changes it with evidence.
     - cron: "*/5 * * * *"
-    - cron: "*/10 * * * *"
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rafaelia-block1-${{ github.ref }}
+  # Scheduled runs must not continually cancel a long-running matrix. GitHub
+  # concurrency keeps at most one running and one pending run for this group.
+  cancel-in-progress: false
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         arch: [x86_64, armv7, aarch64, riscv64]
+    env:
+      TARGET_ARCH: ${{ matrix.arch }}
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Install cross toolchains
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Install only the required cross toolchain
+        if: matrix.arch != 'x86_64'
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu gcc-riscv64-linux-gnu
-      - name: Build by target
-        run: |
-          set -eux
-          case "${{ matrix.arch }}" in
-            x86_64)
-              gcc -O2 -std=c11 -Wall -Wextra -pedantic rafaelia/block1/raf_geom.c rafaelia/block1/raf_geom_demo.c -o raf_geom_demo_x86_64
-              ;;
-            armv7)
-              arm-linux-gnueabihf-gcc -O2 -std=c11 -Wall -Wextra -pedantic rafaelia/block1/raf_geom.c rafaelia/block1/raf_geom_demo.c -o raf_geom_demo_armv7
-              ;;
-            aarch64)
-              aarch64-linux-gnu-gcc -O2 -std=c11 -Wall -Wextra -pedantic rafaelia/block1/raf_geom.c rafaelia/block1/raf_geom_demo.c -o raf_geom_demo_aarch64
-              ;;
-            riscv64)
-              riscv64-linux-gnu-gcc -O2 -std=c11 -Wall -Wextra -pedantic rafaelia/block1/raf_geom.c rafaelia/block1/raf_geom_demo.c -o raf_geom_demo_riscv64
+          set -euo pipefail
+          case "$TARGET_ARCH" in
+            armv7)   package=gcc-arm-linux-gnueabihf ;;
+            aarch64) package=gcc-aarch64-linux-gnu ;;
+            riscv64) package=gcc-riscv64-linux-gnu ;;
+            *)
+              echo "unsupported cross target: $TARGET_ARCH" >&2
+              exit 2
               ;;
           esac
+          sudo apt-get update
+          # Cross GCC meta-packages recommend the matching libc development
+          # headers. Do not suppress recommends here: doing so removes headers
+          # required by stdint.h (for example bits/libc-header-start.h).
+          sudo apt-get install -y "$package"
+
+      - name: Build by target
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$TARGET_ARCH" in
+            x86_64)
+              gcc -O2 -std=c11 -Wall -Wextra -pedantic \
+                rafaelia/block1/raf_geom.c \
+                rafaelia/block1/raf_geom_demo.c \
+                -o raf_geom_demo_x86_64
+              ;;
+            armv7)
+              arm-linux-gnueabihf-gcc -O2 -std=c11 -Wall -Wextra -pedantic \
+                rafaelia/block1/raf_geom.c \
+                rafaelia/block1/raf_geom_demo.c \
+                -o raf_geom_demo_armv7
+              ;;
+            aarch64)
+              aarch64-linux-gnu-gcc -O2 -std=c11 -Wall -Wextra -pedantic \
+                rafaelia/block1/raf_geom.c \
+                rafaelia/block1/raf_geom_demo.c \
+                -o raf_geom_demo_aarch64
+              ;;
+            riscv64)
+              riscv64-linux-gnu-gcc -O2 -std=c11 -Wall -Wextra -pedantic \
+                rafaelia/block1/raf_geom.c \
+                rafaelia/block1/raf_geom_demo.c \
+                -o raf_geom_demo_riscv64
+              ;;
+            *)
+              echo "unsupported target: $TARGET_ARCH" >&2
+              exit 2
+              ;;
+          esac
+
       - name: Run native demo
         if: matrix.arch == 'x86_64'
         run: ./raf_geom_demo_x86_64
