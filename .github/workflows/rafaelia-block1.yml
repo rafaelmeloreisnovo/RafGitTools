@@ -59,7 +59,10 @@ jobs:
               ;;
           esac
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends "$package"
+          # Cross GCC meta-packages recommend the matching libc development
+          # headers. Do not suppress recommends here: doing so removes headers
+          # required by stdint.h (for example bits/libc-header-start.h).
+          sudo apt-get install -y "$package"
 
       - name: Build by target
         shell: bash
