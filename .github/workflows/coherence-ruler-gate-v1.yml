@@ -9,18 +9,31 @@ on:
       - 'tests/test_coherence_ruler_gate.py'
       - 'docs/COHERENCE_RULER_GATE_V1.md'
       - '.github/workflows/coherence-ruler-gate-v1.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'configs/coherence-ruler-gate.v1.json'
+      - 'fixtures/coherence_ruler_gate/positive.v1.json'
+      - 'tools/validate_coherence_ruler_gate.py'
+      - 'tests/test_coherence_ruler_gate.py'
+      - 'docs/COHERENCE_RULER_GATE_V1.md'
+      - '.github/workflows/coherence-ruler-gate-v1.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: coherence-ruler-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ruler-gate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Checkout exact revision
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
