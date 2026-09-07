@@ -24,7 +24,7 @@ FILES = (
     "docs/RAFGITFS_POST_V1_ROADMAP.md",
     "artifacts/rafgitfs-v1-maturity-matrix.json",
     "artifacts/rafgitfs-v1-closeout-receipt.json",
-    ".github/workflows/rafgitfs-room-v6-validation.yml",
+    ".github/workflows-legacy-20260907/rafgitfs-room-v6-validation.yml",
 )
 
 class ValidationError(ValueError): pass
@@ -107,7 +107,7 @@ def validate(root: Path) -> dict:
         "RafGitFsCloseoutTest",
         "compileDevDebugAndroidTestKotlin",
     ):
-        if marker not in workflow: raise ValidationError(f"Prompt 8 workflow gate missing: {marker}")
+        if marker not in workflow: raise ValidationError(f"legacy workflow gate missing: {marker}")
 
     digest = hashlib.sha256()
     for path in sorted(FILES): digest.update((path + "\0" + src[path]).encode())
