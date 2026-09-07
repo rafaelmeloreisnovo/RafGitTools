@@ -17,13 +17,17 @@ on:
         default: false
         type: boolean
       gradle_args:
-        description: "Additional Gradle args"
+        description: "Additional Gradle flags; use --key=value for flags with values"
         required: false
         default: "--stacktrace"
         type: string
 
 permissions:
   contents: read
+
+concurrency:
+  group: debug-apk-${{ inputs.variant }}
+  cancel-in-progress: true
 
 env:
   APP_CLIENT_ID_DEV: ${{ vars.APP_CLIENT_ID_DEV || 'local-dev-client-id' }}
@@ -32,22 +36,25 @@ env:
 jobs:
   build-debug:
     name: Build ${{ inputs.variant }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
 
       - name: Setup Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: temurin
           java-version: '17'
           cache: gradle
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
 
       - name: Prepare scripts
         run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh scripts/apply_formula_ci_zip.sh
@@ -60,34 +67,49 @@ jobs:
 
       - name: Assemble debug APK
         shell: bash
+        env:
+          VARIANT: ${{ inputs.variant }}
+          GRADLE_ARGS_INPUT: ${{ inputs.gradle_args }}
         run: |
           set -euo pipefail
-          case "${{ inputs.variant }}" in
+          case "$VARIANT" in
             devDebug) gradle_task="assembleDevDebug" ;;
             productionDebug) gradle_task="assembleProductionDebug" ;;
             *)
-              echo "::error::Unsupported debug variant: ${{ inputs.variant }}"
+              echo "::error::Unsupported debug variant: $VARIANT"
               exit 2
               ;;
           esac
-          ./scripts/gradlew_with_java17.sh "$gradle_task" ${{ inputs.gradle_args }}
+          read -r -a gradle_args <<< "$GRADLE_ARGS_INPUT"
+          for arg in "${gradle_args[@]}"; do
+            case "$arg" in
+              -*) ;;
+              *)
+                echo "gradle_args accepts flags only; use --key=value for values: $arg" >&2
+                exit 2
+                ;;
+            esac
+          done
+          ./scripts/gradlew_with_java17.sh "$gradle_task" "${gradle_args[@]}"
 
       - name: Resolve APK path
         id: apk
         shell: bash
+        env:
+          VARIANT: ${{ inputs.variant }}
         run: |
           set -euo pipefail
-          case "${{ inputs.variant }}" in
+          case "$VARIANT" in
             devDebug) apk_dir="app/build/outputs/apk/dev/debug" ;;
             productionDebug) apk_dir="app/build/outputs/apk/production/debug" ;;
             *)
-              echo "::error::Unsupported debug variant: ${{ inputs.variant }}"
+              echo "::error::Unsupported debug variant: $VARIANT"
               exit 2
               ;;
           esac
           apk_path=$(find "$apk_dir" -maxdepth 1 -type f -name "*.apk" -print -quit)
           if [ -z "$apk_path" ] || [ ! -s "$apk_path" ]; then
-            echo "::error::Non-empty APK for ${{ inputs.variant }} not found"
+            echo "::error::Non-empty APK for $VARIANT not found"
             exit 1
           fi
           echo "apk_path=$apk_path" >> "$GITHUB_OUTPUT"
@@ -97,22 +119,24 @@ jobs:
       - name: Generate unsigned copy (non-installable / structural)
         if: inputs.generate_unsigned_copy
         shell: bash
+        env:
+          APK_PATH: ${{ steps.apk.outputs.apk_path }}
         run: |
           set -euo pipefail
-          apk="${{ steps.apk.outputs.apk_path }}"
-          unsigned="${apk%.apk}-unsigned-structural.apk"
-          cp "$apk" "$unsigned"
+          unsigned="${APK_PATH%.apk}-unsigned-structural.apk"
+          cp "$APK_PATH" "$unsigned"
           zip -d "$unsigned" 'META-INF/*' >/dev/null || true
           echo "Unsigned structural copy generated: $unsigned"
           ls -lh "$unsigned"
 
       - name: Verify required ABI entries
         shell: bash
+        env:
+          APK_PATH: ${{ steps.apk.outputs.apk_path }}
         run: |
           set -euo pipefail
-          apk="${{ steps.apk.outputs.apk_path }}"
           for abi in armeabi-v7a arm64-v8a; do
-            if ! unzip -l "$apk" | grep -q "lib/${abi}/"; then
+            if ! unzip -l "$APK_PATH" | grep -q "lib/${abi}/"; then
               echo "::error::Required ABI missing from APK: ${abi}"
               exit 1
             fi
@@ -121,15 +145,17 @@ jobs:
 
       - name: Write APK checksum
         shell: bash
+        env:
+          APK_PATH: ${{ steps.apk.outputs.apk_path }}
+          APK_DIR: ${{ steps.apk.outputs.apk_dir }}
         run: |
           set -euo pipefail
-          apk="${{ steps.apk.outputs.apk_path }}"
-          sha256sum "$apk" | tee "${{ steps.apk.outputs.apk_dir }}/SHA256SUMS.txt"
+          sha256sum "$APK_PATH" | tee "$APK_DIR/SHA256SUMS.txt"
 
       - name: Upload APK artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: debug-apk-${{ inputs.variant }}
+          name: debug-apk-${{ inputs.variant }}-${{ github.run_id }}
           path: |
             ${{ steps.apk.outputs.apk_dir }}/*.apk
             ${{ steps.apk.outputs.apk_dir }}/SHA256SUMS.txt
@@ -138,13 +164,20 @@ jobs:
 
       - name: Summary
         shell: bash
+        env:
+          VARIANT: ${{ inputs.variant }}
+          APK_PATH: ${{ steps.apk.outputs.apk_path }}
+          UNSIGNED_REQUESTED: ${{ inputs.generate_unsigned_copy }}
         run: |
-          echo "## Debug APK build result" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Variant: ${{ inputs.variant }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Signed debug APK: ${{ steps.apk.outputs.apk_path }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Required ABIs: armeabi-v7a + arm64-v8a" >> "$GITHUB_STEP_SUMMARY"
-          echo "- SHA-256: recorded in SHA256SUMS.txt" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Unsigned copy requested: ${{ inputs.generate_unsigned_copy }}" >> "$GITHUB_STEP_SUMMARY"
-          if [ "${{ inputs.generate_unsigned_copy }}" = "true" ]; then
-            echo "- Note: unsigned output is for structural inspection and is not installable." >> "$GITHUB_STEP_SUMMARY"
-          fi
+          set -euo pipefail
+          {
+            echo "## Debug APK build result"
+            echo "- Variant: \`$VARIANT\`"
+            echo "- Signed debug APK: \`$APK_PATH\`"
+            echo "- Required ABIs: armeabi-v7a + arm64-v8a"
+            echo "- SHA-256: recorded in SHA256SUMS.txt"
+            echo "- Unsigned copy requested: \`$UNSIGNED_REQUESTED\`"
+            if [ "$UNSIGNED_REQUESTED" = "true" ]; then
+              echo "- Note: unsigned output is for structural inspection and is not installable."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
