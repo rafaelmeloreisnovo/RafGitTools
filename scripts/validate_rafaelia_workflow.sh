@@ -3,7 +3,8 @@
 # toroidal research-cycle, GitHub Actions execution-evidence, platform assurance,
 # evidence-backed compliance, uncertainty/urgency/ethics/license boundaries,
 # executable gap-closure invariants, federated work-service entry, program-mission
-# source cohesion, and human-AI bivalent privacy contracts.
+# source cohesion, provider-enforcement policy scope, and human-AI bivalent
+# privacy contracts.
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -106,6 +107,15 @@ python3 -m unittest discover -s tests \
   -p 'test_program_mission_source_cohesion.py' -v
 python3 scripts/check_program_mission_source_cohesion.py \
   | tee artifacts/program-mission-source-cohesion-report.json
+
+# Prepared provider-enforcement policy gate. A required check may be global only
+# when its real pull_request workflow is universally spawn-capable for main.
+# PASS proves policy coherence only; it never claims GitHub admin application,
+# branch protection/ruleset enforcement, review enforcement or merge rejection.
+python3 -m unittest discover -s tests \
+  -p 'test_main_provider_enforcement_plan_v2.py' -v
+python3 scripts/validate_main_provider_enforcement_plan_v2.py \
+  | tee artifacts/main-provider-enforcement-plan-v2-report.json
 
 # Human-AI bivalent privacy middleware: tests and semantic validation are part
 # of the existing canonical gate, not a competing workflow.  The generated
