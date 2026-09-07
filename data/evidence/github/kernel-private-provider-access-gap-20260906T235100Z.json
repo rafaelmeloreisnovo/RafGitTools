@@ -1,0 +1,23 @@
+{
+  "schema": "rafaelia.private-provider-access-gap-observation.v1",
+  "observed_at": "2026-09-06T23:51:00Z",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "workflow": "Kernel Architecture Build",
+  "workflow_run_id": 34067931921,
+  "job_id": 101579891266,
+  "pr": 418,
+  "pr_head_sha": "2c40c84f495d3d76522d8c4b0d2bba3ab39309c6",
+  "checked_out_merge_sha": "e9f6602229147405a5a2d35022df99879bb0c83a",
+  "provider_repository": "rafaelmeloreisnovo/llamaRafaelia",
+  "provider_visibility_observed": "private",
+  "locked_provider_commit": "ceacf4be5ccf3889b864288423258dbf823a07ad",
+  "failed_step": "Checkout llamaRafaelia @ locked commit",
+  "observed_error": "Repository not found / git fetch exit 128",
+  "predecessor_token_expression": "secrets.RAF_CROSS_REPO_TOKEN || github.token",
+  "interpretation": "The checkout result proves that the credential available to the workflow did not establish read authority for the private provider. It does not prove that the repository or locked commit is absent.",
+  "state": "TOKEN_VAZIO_CROSS_REPO_PRIVATE_ACCESS",
+  "runtime_proven": false,
+  "device_proven": false,
+  "claim_allowed": false,
+  "f_next": "Require an explicit least-privilege private-provider access preflight bound to the exact locked commit before checkout; remove the repository-scoped github.token fallback for the private provider."
+}
