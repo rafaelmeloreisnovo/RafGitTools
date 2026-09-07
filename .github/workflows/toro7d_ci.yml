@@ -2,6 +2,7 @@ name: toro7d-validation
 
 on:
   push:
+    branches: [main]
     paths:
       - "scripts/ci/toro7d_benchmark.py"
       - ".github/workflows/toro7d_ci.yml"
@@ -11,14 +12,30 @@ on:
       - "scripts/ci/toro7d_benchmark.py"
       - ".github/workflows/toro7d_ci.yml"
       - "docs/maths/TORO7D_VALIDATION.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: toro7d-validation-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   benchmark:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v7
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Configure Python 3.11
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
+
       - name: Run Toro7D benchmark
         run: python3 scripts/ci/toro7d_benchmark.py --iterations 420
