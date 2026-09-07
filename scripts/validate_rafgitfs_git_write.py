@@ -24,7 +24,7 @@ FILES = (
     "app/src/main/kotlin/com/rafgittools/ui/screens/rafgitfs/WorkspaceEditorScreen.kt",
     "app/src/main/kotlin/com/rafgittools/ui/screens/rafgitfs/VirtualFileBrowserScreen.kt",
     "app/src/main/kotlin/com/rafgittools/RafGitFsActivity.kt",
-    ".github/workflows/rafgitfs-room-v6-validation.yml",
+    ".github/workflows-legacy-20260907/rafgitfs-room-v6-validation.yml",
 )
 
 class ValidationError(ValueError): pass
@@ -108,7 +108,7 @@ def validate(root: Path) -> dict:
         "validate_rafgitfs_git_write.py", "test_validate_rafgitfs_git_write.py",
         "RafGitFsWriteContractsTest",
     ):
-        if marker not in workflow: raise ValidationError(f"Prompt 7 workflow gate missing: {marker}")
+        if marker not in workflow: raise ValidationError(f"legacy Prompt 7 workflow gate missing: {marker}")
 
     digest = hashlib.sha256()
     for path in sorted(FILES): digest.update((path + "\0" + src[path]).encode())
