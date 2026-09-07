@@ -4,7 +4,8 @@ description: >-
   Apply reusable architecture patterns to routing, gates, ledgers, receipts,
   service classification, or cross-repository orchestration without importing
   producer authority. Use when a prior architecture suggests a better trigger,
-  state-machine, validation, rollback, logging, or workflow mechanism.
+  state-machine, validation, rollback, logging, allocation, or workflow
+  mechanism.
 ---
 
 # Control-Plane Pattern Leaf
@@ -32,6 +33,49 @@ Reference transfers:
   ledger updates, durable audit events and post-transition actions with
   rollback/parent linkage.
 
+## Event and commit geometry
+
+When the source architecture contains add/create, update, delete and commit,
+normalize them as separate transitions:
+
+```text
+EVENT
+-> VALIDATE
+-> APPEND / STAGE
+-> DURABLE COMMIT
+-> SEQUENCE / HASH
+-> INDEX
+-> CURRENT VIEW
+```
+
+For append-only ledgers, an update or delete should normally become a successor
+record, tombstone, supersession or explicit state transition. Do not rewrite
+historical evidence merely to make the current view easier to read.
+
+The control plane must distinguish:
+
+- event acceptance from durable commit;
+- commit from promotion of a claim;
+- identifier allocation from object location;
+- ledger order from wall-clock chronology;
+- current view from immutable event history.
+
+## Identifier and partition geometry
+
+Older auto-number, per-user partitioning or record-placement ideas transfer as:
+
+```text
+scope/owner
+-> allocation namespace
+-> typed sequence or identifier
+-> collision/range guard
+-> durable event identity
+-> index projection
+```
+
+Physical storage placement may influence a cost model, but it must not silently
+change logical identity or authority.
+
 ## Preserve
 
 - `TOKEN_VAZIO != 0 != false != PASS`;
@@ -57,6 +101,6 @@ repository.
 
 ## Completion
 
-Record `source_pattern`, `control_plane_leaf`, authority boundary, falsifier,
-transition/receipt path, `F_ok`, `F_gap`, `F_next`, rollback and
-`claim_allowed`.
+Record `source_pattern`, `control_plane_leaf`, authority boundary, identifier
+scope, event/commit geometry, falsifier, transition/receipt path, `F_ok`,
+`F_gap`, `F_next`, rollback and `claim_allowed`.
