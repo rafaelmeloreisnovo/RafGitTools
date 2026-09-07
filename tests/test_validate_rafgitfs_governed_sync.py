@@ -33,7 +33,11 @@ class GovernedSyncGateTest(unittest.TestCase):
         with self.assertRaises(ValidationError): validate(self.root)
 
     def test_approval_gate_removal_is_rejected(self):
-        self.mutate(FILES[5], "APPROVAL_REQUIRED", "APPROVAL_OPTIONAL")
+        self.mutate(
+            FILES[5],
+            'if (!approved) return finalizeBlocked(job, plan, "APPROVAL_REQUIRED")',
+            'if (!approved) event(job.jobId, RafGitFsSyncPhase.APPROVE, RafGitFsJobState.TOKEN_VAZIO, "APPROVAL_OPTIONAL", null)',
+        )
         with self.assertRaises(ValidationError): validate(self.root)
 
     def test_remote_writer_binding_is_required(self):
