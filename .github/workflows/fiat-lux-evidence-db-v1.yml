@@ -6,6 +6,12 @@ on:
       - 'tools/rafaelia_navigator/fiat_lux_evidence_db_v1.py'
       - 'tools/rafaelia_navigator/fiat_lux_evidence_db_v1.sql'
       - '.github/workflows/fiat-lux-evidence-db-v1.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/rafaelia_navigator/fiat_lux_evidence_db_v1.py'
+      - 'tools/rafaelia_navigator/fiat_lux_evidence_db_v1.sql'
+      - '.github/workflows/fiat-lux-evidence-db-v1.yml'
   workflow_dispatch:
 
 permissions:
@@ -17,16 +23,29 @@ concurrency:
 
 jobs:
   evidence-db-selftest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Configure Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
       - name: Python syntax
         run: python3 -m py_compile tools/rafaelia_navigator/fiat_lux_evidence_db_v1.py
+
       - name: FIAT_LUX SQLite selftest
         run: python3 tools/rafaelia_navigator/fiat_lux_evidence_db_v1.py selftest
+
       - name: MOD9 hot-path smoke
         run: |
+          set -euo pipefail
           test "$(python3 tools/rafaelia_navigator/fiat_lux_evidence_db_v1.py walk 8 forward)" = "0"
           test "$(python3 tools/rafaelia_navigator/fiat_lux_evidence_db_v1.py walk 0 reverse)" = "8"
           test "$(python3 tools/rafaelia_navigator/fiat_lux_evidence_db_v1.py walk 7 bank)" = "1"
