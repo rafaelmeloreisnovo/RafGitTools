@@ -16,17 +16,25 @@ on:
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: documentation-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     name: Validate Documentation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Validate documentation no-regression contract
         run: |
@@ -66,27 +74,33 @@ jobs:
       - name: Resolve changed markdown files
         id: changed-markdown
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
 
-          case "${{ github.event_name }}" in
+          case "$EVENT_NAME" in
             pull_request)
-              BASE="${{ github.event.pull_request.base.sha }}"
-              HEAD="${{ github.event.pull_request.head.sha }}"
+              BASE="$PR_BASE_SHA"
+              HEAD="$PR_HEAD_SHA"
               ;;
             push)
-              BASE="${{ github.event.before }}"
-              HEAD="${{ github.sha }}"
+              BASE="$BEFORE_SHA"
+              HEAD="$CURRENT_SHA"
               if [[ "$BASE" =~ ^0+$ ]]; then
                 BASE="${HEAD}^"
               fi
               ;;
             workflow_dispatch)
-              HEAD="${{ github.sha }}"
+              HEAD="$CURRENT_SHA"
               BASE="${HEAD}^"
               ;;
             *)
-              echo "Unsupported event: ${{ github.event_name }}" >&2
+              echo "Unsupported event: $EVENT_NAME" >&2
               exit 2
               ;;
           esac
@@ -135,7 +149,7 @@ jobs:
           echo 'CI_PASS != DOCUMENTATION_PERFECTION' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Check links
-        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        uses: gaurav-nelson/github-action-markdown-link-check@5c5dfc0ac2e225883c0e5f03a85311ec2830d368 # v1
         with:
           use-quiet-mode: 'yes'
           use-verbose-mode: 'no'
@@ -143,28 +157,34 @@ jobs:
         continue-on-error: true
 
       - name: Spell check
-        uses: rojopolis/spellcheck-github-actions@0.63.0
+        uses: rojopolis/spellcheck-github-actions@e619e00ca22f01ade9d73048dcd6518bedc552f2 # 0.63.0
         with:
           config_path: '.github/spellcheck.yml'
         continue-on-error: true
 
   generate-docs:
     name: Generate API Documentation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     timeout-minutes: 20
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
-      - uses: android-actions/setup-android@v4
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+
       - name: Generate local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
@@ -172,29 +192,31 @@ jobs:
         run: chmod +x gradlew
 
       - name: Generate Dokka documentation
-        run: |
-          # Add Dokka task if available
-          ./gradlew dokkaHtml || echo "Dokka not configured"
+        run: ./gradlew dokkaHtml || echo "Dokka not configured"
 
       - name: Upload documentation
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: api-docs
+          name: api-docs-${{ github.run_id }}
           path: app/build/dokka/
           retention-days: 30
         continue-on-error: true
 
   check-readme:
     name: Check README Completeness
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
 
       - name: Check README sections
         run: |
+          set -euo pipefail
           echo "Checking README.md for required sections..."
 
           REQUIRED_SECTIONS=(
@@ -224,12 +246,18 @@ jobs:
 
       - name: Check for broken internal links
         run: |
+          set -euo pipefail
           echo "Checking for broken internal links in README.md..."
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
 
-          grep -o '\[.*\](\.\/.*\.md)' README.md | grep -o '(\.\/.*\.md)' | tr -d '()' | while read -r link; do
-            if [ ! -f "$link" ]; then
-              echo "⚠️ Broken link: $link"
-            fi
-          done
-
-          echo "✅ Internal link check complete"
+          text = Path('README.md').read_text(encoding='utf-8')
+          broken = []
+          for link in re.findall(r'\[[^]]*\]\((\./[^)]+\.md)\)', text):
+              if not Path(link).is_file():
+                  broken.append(link)
+          for link in broken:
+              print(f'⚠️ Broken link: {link}')
+          print('✅ Internal link check complete')
+          PY
