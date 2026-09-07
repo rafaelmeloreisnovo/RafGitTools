@@ -19,7 +19,7 @@ on:
         default: false
         type: boolean
       gradle_args:
-        description: "Additional Gradle args"
+        description: "Additional Gradle flags; use --key=value for flags with values"
         required: false
         default: "--stacktrace"
         type: string
@@ -42,10 +42,17 @@ on:
         default: false
         type: boolean
       gradle_args:
-        description: "Additional Gradle args"
+        description: "Additional Gradle flags; use --key=value for flags with values"
         required: false
         default: "--stacktrace"
         type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-ci-${{ github.ref }}-${{ inputs.build_mode }}-${{ inputs.run_release_variant }}
+  cancel-in-progress: true
 
 env:
   APP_CLIENT_ID_DEV: ${{ vars.APP_CLIENT_ID_DEV || 'local-dev-client-id' }}
@@ -56,27 +63,48 @@ jobs:
   build:
     name: Build Variants
     if: inputs.build_mode == 'all' || inputs.build_mode == 'build_only'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
+      fail-fast: false
       matrix:
-        variant: [devDebug, productionDebug, devRelease, productionRelease]
+        variant: ${{ fromJSON(inputs.run_release_variant && '["devDebug","productionDebug","devRelease","productionRelease"]' || '["devDebug","productionDebug"]') }}
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Configure Java 17
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: temurin
           java-version: '17'
           cache: gradle
-      - uses: android-actions/setup-android@v4
+
+      - name: Configure Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+
       - name: Apply CI runtime overlay zip
         run: ./scripts/apply_formula_ci_zip.sh formula_ci.zip
+
       - name: Prepare local.properties
         run: ./scripts/prepare_local_properties.sh
-      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh scripts/apply_formula_ci_zip.sh scripts/native/verify_apks.sh
+
+      - name: Prepare executable helpers
+        run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh scripts/apply_formula_ci_zip.sh scripts/native/verify_apks.sh
+
       - name: Validate release-signing policy
-        if: inputs.run_release_variant && !inputs.allow_unsigned_release
+        if: contains(matrix.variant, 'Release') && !inputs.allow_unsigned_release
+        env:
+          RELEASE_STORE_FILE_BASE64: ${{ secrets.RELEASE_STORE_FILE_BASE64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
+          set -euo pipefail
           required=(RELEASE_STORE_FILE_BASE64 RELEASE_STORE_PASSWORD RELEASE_KEY_ALIAS RELEASE_KEY_PASSWORD)
           missing=()
           for key in "${required[@]}"; do
@@ -85,95 +113,197 @@ jobs:
             fi
           done
           if [ "${#missing[@]}" -gt 0 ]; then
-            echo "::error::run_release_variant=true requires signed release configuration in Android CI."
+            echo "::error::A release matrix cell requires signed release configuration."
             echo "::error::Missing secrets: ${missing[*]}"
-            echo "::error::For unsigned pipeline validation, set allow_unsigned_release=true explicitly."
+            echo "::error::For unsigned internal pipeline validation, set allow_unsigned_release=true explicitly."
             exit 1
           fi
+
+      - name: Assemble selected variant
         env:
-          RELEASE_STORE_FILE_BASE64: ${{ secrets.RELEASE_STORE_FILE_BASE64 }}
-          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
-          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-      - name: Assemble ${{ matrix.variant }}
-        if: inputs.run_release_variant || !contains(matrix.variant, 'Release')
-        run: ./scripts/gradlew_with_java17.sh assemble${{ matrix.variant }} ${{ inputs.gradle_args }}
+          GRADLE_ARGS_INPUT: ${{ inputs.gradle_args }}
+          VARIANT: ${{ matrix.variant }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$VARIANT" in
+            devDebug|productionDebug|devRelease|productionRelease) ;;
+            *) echo "unsupported variant: $VARIANT" >&2; exit 2 ;;
+          esac
+          read -r -a gradle_args <<< "$GRADLE_ARGS_INPUT"
+          for arg in "${gradle_args[@]}"; do
+            case "$arg" in
+              -*) ;;
+              *)
+                echo "gradle_args accepts flags only; use --key=value for values: $arg" >&2
+                exit 2
+                ;;
+            esac
+          done
+          ./scripts/gradlew_with_java17.sh "assemble${VARIANT}" "${gradle_args[@]}"
+
       - name: Verify release APK ABI/signature state
-        if: inputs.run_release_variant
+        if: contains(matrix.variant, 'Release')
         run: ./scripts/native/verify_apks.sh
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload APK evidence
         if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: apks-${{ matrix.variant }}
+          name: apks-${{ matrix.variant }}-${{ github.run_id }}
           path: |
             app/build/outputs/apk/**/*.apk
             app/build/reports/apk/*.tsv
+          if-no-files-found: warn
           retention-days: 14
 
   test:
     name: Unit Tests
     if: inputs.build_mode == 'all' || inputs.build_mode == 'tests_only'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Configure Java 17
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: temurin
           java-version: '17'
           cache: gradle
-      - uses: android-actions/setup-android@v4
+
+      - name: Configure Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+
       - name: Apply CI runtime overlay zip
         run: ./scripts/apply_formula_ci_zip.sh formula_ci.zip
+
       - name: Prepare local.properties
         run: ./scripts/prepare_local_properties.sh
-      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh scripts/apply_formula_ci_zip.sh scripts/native/verify_apks.sh
+
+      - name: Prepare executable helpers
+        run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh scripts/apply_formula_ci_zip.sh scripts/native/verify_apks.sh
+
       - name: Run Unit Tests
-        run: ./scripts/gradlew_with_java17.sh testDevDebugUnitTest testProductionDebugUnitTest ${{ inputs.gradle_args }}
-      - uses: actions/upload-artifact@v4
+        env:
+          GRADLE_ARGS_INPUT: ${{ inputs.gradle_args }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          read -r -a gradle_args <<< "$GRADLE_ARGS_INPUT"
+          for arg in "${gradle_args[@]}"; do
+            case "$arg" in
+              -*) ;;
+              *) echo "gradle_args accepts flags only; use --key=value for values: $arg" >&2; exit 2 ;;
+            esac
+          done
+          ./scripts/gradlew_with_java17.sh \
+            testDevDebugUnitTest testProductionDebugUnitTest \
+            "${gradle_args[@]}"
+
+      - name: Upload test evidence
         if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: test-reports
+          name: test-reports-${{ github.run_id }}
           path: |
             app/build/test-results/
             app/build/reports/tests/
+          if-no-files-found: warn
+          retention-days: 14
 
   lint:
     name: Lint
     if: inputs.build_mode == 'all' || inputs.build_mode == 'lint_only'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Configure Java 17
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: temurin
           java-version: '17'
           cache: gradle
-      - uses: android-actions/setup-android@v4
+
+      - name: Configure Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+
       - name: Apply CI runtime overlay zip
         run: ./scripts/apply_formula_ci_zip.sh formula_ci.zip
+
       - name: Prepare local.properties
         run: ./scripts/prepare_local_properties.sh
-      - run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh scripts/apply_formula_ci_zip.sh scripts/native/verify_apks.sh
+
+      - name: Prepare executable helpers
+        run: chmod +x gradlew scripts/gradlew_with_java17.sh scripts/prepare_local_properties.sh scripts/apply_formula_ci_zip.sh scripts/native/verify_apks.sh
+
       - name: Run Lint
-        run: ./scripts/gradlew_with_java17.sh lintDevDebug lintProductionDebug ${{ inputs.gradle_args }}
-      - uses: actions/upload-artifact@v4
+        env:
+          GRADLE_ARGS_INPUT: ${{ inputs.gradle_args }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          read -r -a gradle_args <<< "$GRADLE_ARGS_INPUT"
+          for arg in "${gradle_args[@]}"; do
+            case "$arg" in
+              -*) ;;
+              *) echo "gradle_args accepts flags only; use --key=value for values: $arg" >&2; exit 2 ;;
+            esac
+          done
+          ./scripts/gradlew_with_java17.sh \
+            lintDevDebug lintProductionDebug \
+            "${gradle_args[@]}"
+
+      - name: Upload lint evidence
         if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: lint-reports
+          name: lint-reports-${{ github.run_id }}
           path: |
             app/build/reports/lint-results*.html
             app/build/reports/lint-results*.xml
             app/build/reports/lint-results*.txt
+          if-no-files-found: warn
+          retention-days: 14
 
   summary:
     name: CI Summary
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [build, test, lint]
     steps:
-      - name: Explain configuration and variables
+      - name: Explain configuration and observed job states
+        env:
+          BUILD_MODE: ${{ inputs.build_mode }}
+          RUN_RELEASE_VARIANT: ${{ inputs.run_release_variant }}
+          GRADLE_ARGS_INPUT: ${{ inputs.gradle_args }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+          LINT_RESULT: ${{ needs.lint.result }}
+        shell: bash
         run: |
-          echo "## Android CI Summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "- build_mode: ${{ inputs.build_mode }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- run_release_variant: ${{ inputs.run_release_variant }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- gradle_args: ${{ inputs.gradle_args }}" >> "$GITHUB_STEP_SUMMARY"
+          set -euo pipefail
+          printf -v gradle_args_q '%q' "$GRADLE_ARGS_INPUT"
+          {
+            echo "## Android CI Summary"
+            echo "- build_mode: \`$BUILD_MODE\`"
+            echo "- run_release_variant: \`$RUN_RELEASE_VARIANT\`"
+            echo "- gradle_args(shell-escaped): \`$gradle_args_q\`"
+            echo "- build: \`$BUILD_RESULT\`"
+            echo "- test: \`$TEST_RESULT\`"
+            echo "- lint: \`$LINT_RESULT\`"
+            echo "- claim_allowed: \`false\`"
+          } >> "$GITHUB_STEP_SUMMARY"
