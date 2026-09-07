@@ -7,6 +7,14 @@ name: Workflow Graph Audit
       - '.github/actions/**'
       - '.github/actions-lock.json'
       - 'contracts/workflow-graph-audit.v1.json'
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.github/actions-lock.json'
+      - 'contracts/workflow-graph-audit.v1.json'
   workflow_dispatch:
 
 permissions:
@@ -18,31 +26,45 @@ concurrency:
 
 jobs:
   workflow-graph:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Checkout exact revision
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Self-test analyzer
+      - name: Self-test graph analyzer
         run: python3 .github/actions/workflow-graph-audit/audit.py --self-test
+
+      - name: Self-test hardening ratchet
+        run: python3 .github/actions/workflow-graph-audit/ratchet_v2.py --self-test
 
       - name: Analyze structure, logic and dependencies
         uses: ./.github/actions/workflow-graph-audit
         with:
           mode: strict-changed
-          base-ref: ${{ github.event.pull_request.base.sha }}
+          base-ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           output-json: workflow-graph-audit.json
 
-      - name: Preserve workflow graph evidence
-        if: ${{ always() && hashFiles('workflow-graph-audit.json') != '' }}
-        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
+      - name: Enforce touched-workflow hardening boundary
+        env:
+          BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          python3 .github/actions/workflow-graph-audit/ratchet_v2.py \
+            --base-ref "$BASE_REF" \
+            --output workflow-hardening-ratchet.json \
+            --summary
+
+      - name: Preserve workflow graph and hardening evidence
+        if: ${{ always() && (hashFiles('workflow-graph-audit.json') != '' || hashFiles('workflow-hardening-ratchet.json') != '') }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: workflow-graph-audit-${{ github.run_id }}
-          path: workflow-graph-audit.json
+          path: |
+            workflow-graph-audit.json
+            workflow-hardening-ratchet.json
           if-no-files-found: error
           retention-days: 30
 
@@ -50,7 +72,9 @@ jobs:
         if: ${{ always() }}
         run: |
           echo 'WORKFLOW_GRAPH=LEXICAL_STRUCTURAL_INVENTORY'
+          echo 'HARDENING_RATCHET=CHANGED_WORKFLOWS_ONLY'
+          echo 'LEGACY_DEBT=INVENTORIED_NOT_AUTOMATICALLY_CLEARED'
+          echo 'POST_MERGE_PUSH_GATE=true'
           echo 'FULL_YAML_AST=TOKEN_VAZIO'
-          echo 'LEGACY_MUTABLE_REFS=TRACKED_DEBT'
           echo 'ARTIFACT=EXECUTION_EVIDENCE_NOT_CERTIFICATION'
           echo 'CLAIM_ALLOWED=false'
