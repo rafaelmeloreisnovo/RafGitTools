@@ -3,7 +3,14 @@ name: FNEXT8 Receipt Validator
 on:
   push:
     branches:
+      - main
       - rafaelia/fnext8-20260906
+    paths:
+      - 'scripts/rafaelia_receipt_validator.py'
+      - 'tests/test_rafaelia_receipt_validator.py'
+      - 'data/evidence/github/fnext8-20260906.receipts.v1.json'
+      - '.github/workflows/fnext8-receipt-validator.yml'
+  pull_request:
     paths:
       - 'scripts/rafaelia_receipt_validator.py'
       - 'tests/test_rafaelia_receipt_validator.py'
@@ -20,11 +27,13 @@ concurrency:
 
 jobs:
   validate-receipts:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Checkout exact source
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Run validator unit tests
         run: python3 tests/test_rafaelia_receipt_validator.py
@@ -49,9 +58,9 @@ jobs:
 
       - name: Upload fail-closed validation receipt
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: fnext8-receipt-validation-${{ github.sha }}
+          name: fnext8-receipt-validation-${{ github.run_id }}-${{ github.sha }}
           path: .rafaelia-artifacts/fnext8/
           if-no-files-found: error
           retention-days: 30
