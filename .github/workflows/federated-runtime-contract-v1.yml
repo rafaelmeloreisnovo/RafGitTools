@@ -24,6 +24,14 @@ on:
       - "tests/test_federated_runtime_v1.py"
       - "docs/federation/RAFAELIA_FEDERATED_RUNTIME_INVARIANT_V1.md"
       - ".github/workflows/federated-runtime-contract-v1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "contracts/rafaelia-federated-runtime-v1.json"
+      - "scripts/federation/validate_federated_runtime_v1.py"
+      - "tests/test_federated_runtime_v1.py"
+      - "docs/federation/RAFAELIA_FEDERATED_RUNTIME_INVARIANT_V1.md"
+      - ".github/workflows/federated-runtime-contract-v1.yml"
 
 permissions:
   contents: read
@@ -34,24 +42,33 @@ concurrency:
 
 jobs:
   contract:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Configure Python 3.13
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13"
+
       - name: Validate canonical contract
         run: |
           python3 scripts/federation/validate_federated_runtime_v1.py \
             contracts/rafaelia-federated-runtime-v1.json \
             --report artifacts/federated-runtime-validation.json
+
       - name: Run negative tests
         run: python3 -m unittest tests.test_federated_runtime_v1
+
       - name: Upload bounded evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: federated-runtime-contract-v1
+          name: federated-runtime-contract-v1-${{ github.run_id }}
           if-no-files-found: error
           path: artifacts/federated-runtime-validation.json
+          retention-days: 30
