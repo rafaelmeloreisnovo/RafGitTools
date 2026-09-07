@@ -75,6 +75,50 @@ class ProgramMissionSourceCohesionTests(unittest.TestCase):
         self.assertIn("LEARN -> WEIGHT_UPDATE", self.data["forbidden_promotions"])
         self.assertIn("TOKEN_VAZIO -> PASS", self.data["forbidden_promotions"])
 
+    def test_flow_rejects_direct_execution_and_weight_update_edges(self):
+        for edge in (
+            "DATASET -> BOUNDED_EXECUTION",
+            "MODEL_PROPOSAL -> BOUNDED_EXECUTION",
+            "LEARN -> WEIGHT_UPDATE",
+        ):
+            with self.subTest(edge=edge):
+                broken = json.loads(json.dumps(self.data))
+                broken["flow"].append(edge)
+                self.assertTrue(any("flow" in error for error in MODULE.validate(broken)))
+
+    def test_flow_is_required(self):
+        self.data.pop("flow")
+        self.assertTrue(any("flow" in error for error in MODULE.validate(self.data)))
+
+    def test_flow_requires_every_mission_gate_and_receipt_edge(self):
+        for edge in self.data["flow"]:
+            with self.subTest(edge=edge):
+                broken = json.loads(json.dumps(self.data))
+                broken["flow"].remove(edge)
+                self.assertTrue(any("flow" in error for error in MODULE.validate(broken)))
+
+    def test_flow_rejects_non_array_values_even_when_keys_match(self):
+        for value in (None, " -> ".join(self.data["flow"]), dict.fromkeys(self.data["flow"])):
+            with self.subTest(value=value):
+                broken = json.loads(json.dumps(self.data))
+                broken["flow"] = value
+                self.assertTrue(any("flow" in error for error in MODULE.validate(broken)))
+
+    def test_flow_rejects_non_string_edges_without_raising(self):
+        for value in (None, 0, False, {}, []):
+            with self.subTest(value=value):
+                broken = json.loads(json.dumps(self.data))
+                broken["flow"].append(value)
+                self.assertTrue(any("flow" in error for error in MODULE.validate(broken)))
+
+    def test_flow_rejects_duplicate_edges(self):
+        self.data["flow"].append(self.data["flow"][0])
+        self.assertTrue(any("flow" in error for error in MODULE.validate(self.data)))
+
+    def test_flow_edge_order_does_not_change_authority(self):
+        self.data["flow"].reverse()
+        self.assertEqual([], MODULE.validate(self.data))
+
 
 if __name__ == "__main__":
     unittest.main()
