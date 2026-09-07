@@ -1,0 +1,109 @@
+{
+  "schema": "rafaelia.program-mission-source-cohesion.v1",
+  "version": "1.0.0",
+  "authority": {
+    "program_mission": "explicit operator-approved intent routed through Mapa",
+    "federated_routing": "rafaelmeloreisnovo/Mapa",
+    "local_executor": "rafaelmeloreisnovo/RafGitTools"
+  },
+  "claim_allowed": false,
+  "purpose": "Keep program mission, informational datasets, model proposals, append-only learning memory and execution authority as separate planes so context can improve routing without becoming autonomous authority.",
+  "planes": {
+    "MISSION": {
+      "role": "authoritative_goal_source",
+      "may_inform": ["ROUTING", "MODEL_PROPOSAL", "EXECUTION_GATE"],
+      "may_grant_execution": false,
+      "may_update_weights": false
+    },
+    "DATASET": {
+      "role": "informational_context_only",
+      "may_inform": ["MODEL_PROPOSAL", "EVIDENCE_CLASSIFICATION", "ROUTING"],
+      "may_define_or_rewrite_mission": false,
+      "may_grant_execution": false,
+      "may_update_weights": false
+    },
+    "MODEL_PROPOSAL": {
+      "role": "proposal_only",
+      "may_propose": ["NEXT_ACTION", "ROUTE", "F_GAP", "F_NEXT"],
+      "may_define_or_rewrite_mission": false,
+      "may_self_authorize_execution": false,
+      "may_update_weights": false
+    },
+    "LEARN": {
+      "role": "append_only_memory_only",
+      "append_only": true,
+      "may_store": ["OBSERVATION", "EVIDENCE_REF", "F_OK", "F_GAP", "F_NEXT", "SUPERSESSION_REF"],
+      "may_define_or_rewrite_mission": false,
+      "may_grant_execution": false,
+      "may_update_weights": false,
+      "may_rewrite_history": false
+    },
+    "EXECUTION_GATE": {
+      "role": "bounded_authority_check",
+      "requires": [
+        "EXPLICIT_MISSION_BINDING",
+        "WRITE_SCOPE",
+        "AUTHORITY",
+        "EXIT_CRITERION",
+        "ROLLBACK_WHEN_MUTATING",
+        "GOVERNANCE_DATA_PRIVACY_SECURITY_GATES"
+      ],
+      "dataset_is_not_authority": true,
+      "model_is_not_authority": true,
+      "learn_is_not_authority": true
+    }
+  },
+  "mission_binding": {
+    "accepted_sources": ["EXPLICIT_OPERATOR_INTENT", "MAPA_BOUND_MISSION"],
+    "unknown_state": "TOKEN_VAZIO_MISSION_BINDING",
+    "unknown_behavior": "BLOCK_MUTATION_ROUTE_ONLY",
+    "dataset_copy_is_authoritative": false,
+    "model_inference_is_authoritative": false,
+    "learned_memory_is_authoritative": false
+  },
+  "training_boundary": {
+    "training_or_weight_update_default": "OUT_OF_SCOPE",
+    "explicit_training_authorization_required": true,
+    "this_contract_authorizes_training": false,
+    "this_contract_authorizes_weight_updates": false
+  },
+  "flow": [
+    "MISSION -> ROUTING",
+    "DATASET -> CONTEXT",
+    "CONTEXT -> MODEL_PROPOSAL",
+    "MODEL_PROPOSAL -> EXECUTION_GATE",
+    "MISSION -> EXECUTION_GATE",
+    "EXECUTION_GATE -> BOUNDED_EXECUTION",
+    "BOUNDED_EXECUTION -> RECEIPT",
+    "RECEIPT -> LEARN_APPEND_ONLY"
+  ],
+  "forbidden_promotions": [
+    "DATASET -> MISSION_AUTHORITY",
+    "MODEL_PROPOSAL -> MISSION_AUTHORITY",
+    "MODEL_PROPOSAL -> SELF_AUTHORIZED_EXECUTION",
+    "LEARN -> MISSION_AUTHORITY",
+    "LEARN -> EXECUTION_AUTHORITY",
+    "LEARN -> WEIGHT_UPDATE",
+    "RECEIPT -> CLAIM_PROMOTION_WITHOUT_GATE",
+    "TOKEN_VAZIO -> PASS"
+  ],
+  "invariants": [
+    "MISSION != DATASET",
+    "MISSION != MODEL_PROPOSAL",
+    "MISSION != LEARN",
+    "DATASET != EXECUTION_AUTHORITY",
+    "MODEL_PROPOSAL != EXECUTION_AUTHORITY",
+    "LEARN != EXECUTION_AUTHORITY",
+    "LEARN == APPEND_ONLY_MEMORY",
+    "TRAINING != PROGRAM_EXECUTION",
+    "WEIGHT_UPDATE != LEARNING_RECEIPT",
+    "TOKEN_VAZIO != PASS"
+  ],
+  "stop_conditions": [
+    "Mission binding is TOKEN_VAZIO for a requested mutation.",
+    "Write authority is absent or ambiguous.",
+    "Governance, data, privacy or security gate blocks the action.",
+    "The requested next action would require model self-authorization, history rewrite or weight update.",
+    "The bounded exit criterion has been observed; emit receipt and stop scope expansion."
+  ]
+}
