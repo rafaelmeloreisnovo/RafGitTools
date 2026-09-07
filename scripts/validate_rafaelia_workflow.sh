@@ -116,17 +116,18 @@ python3 scripts/check_program_mission_source_cohesion.py \
 python3 -m unittest discover -s tests \
   -p 'test_novoexport_full_recount.py' -v
 
-# Prepared provider-enforcement policy gate. A required check may be global only
-# when its real pull_request workflow is universally spawn-capable for main.
-# PASS proves policy coherence only; it never claims GitHub admin application,
-# branch protection/ruleset enforcement, review enforcement or merge rejection.
+# START single-root provider-enforcement policy gate. V1/V2 remain preserved as
+# append-only historical snapshots; V3 is the live topology contract. PASS here
+# proves only source/governance coherence of the prepared provider policy. It
+# never proves GitHub administration application, ruleset enforcement, review
+# enforcement, merge rejection, physical runtime, model training or claims.
 python3 -m unittest discover -s tests \
-  -p 'test_main_provider_enforcement_plan_v2.py' -v
-python3 scripts/validate_main_provider_enforcement_plan_v2.py \
-  | tee artifacts/main-provider-enforcement-plan-v2-report.json
+  -p 'test_main_provider_enforcement_plan_v3.py' -v
+python3 scripts/validate_main_provider_enforcement_plan_v3.py \
+  | tee artifacts/main-provider-enforcement-plan-v3-report.json
 
 # Human-AI bivalent privacy middleware: tests and semantic validation are part
-# of the existing canonical gate, not a competing workflow.  The generated
+# of the existing canonical gate, not a competing workflow. The generated
 # report proves contract evaluation only; it never promotes target runtime.
 python3 -m unittest discover -s tests \
   -p 'test_human_ai_middleware.py' -v
