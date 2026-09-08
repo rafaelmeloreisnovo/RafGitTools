@@ -8,6 +8,7 @@ manifest. Missing/duplicate shards fail before build.
 
 SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM
 TOKEN_VAZIO != PASS
+MESSAGE_IDENTITY != MESSAGE_OBSERVATION
 """
 from __future__ import annotations
 
@@ -152,6 +153,7 @@ def verify_message_segments(output: Path, expected_paths: set[str], segment_reco
     rows = []
     total_records = 0
     observed_paths: set[str] = set()
+    message_ids: set[str] = set()
     for p in files:
         try:
             ordinal = int(p.stem.split("-")[-1].split(".")[0])
@@ -180,7 +182,11 @@ def verify_message_segments(output: Path, expected_paths: set[str], segment_reco
                     fail("claim_allowed_regression", detail={"file": p.name, "line": line_no})
                 if not item.get("source_pointer"):
                     fail("source_pointer_missing", detail={"file": p.name, "line": line_no})
+                message_id = item.get("message_id")
+                if not message_id:
+                    fail("message_id_missing", detail={"file": p.name, "line": line_no})
                 observed_paths.add(source_path)
+                message_ids.add(str(message_id))
                 n += 1
         if n <= 0 or n > segment_records:
             fail("segment_record_count_invalid", detail={"file": p.name, "records": n, "limit": segment_records})
@@ -191,10 +197,13 @@ def verify_message_segments(output: Path, expected_paths: set[str], segment_reco
     if ordinals != expected_ordinals:
         fail("non_contiguous_messages_segments", detail={"observed": ordinals, "expected": expected_ordinals})
 
+    unique_message_ids = len(message_ids)
     return {
         "segments": rows,
         "segment_count": len(rows),
         "records": total_records,
+        "unique_message_ids": unique_message_ids,
+        "duplicate_message_observations": total_records - unique_message_ids,
         "observed_message_source_paths": sorted(observed_paths),
         "source_paths_without_messages": sorted(expected_paths - observed_paths),
     }
@@ -255,10 +264,14 @@ def main() -> int:
     expected_paths = {row["relative_path"] for row in src_rows}
     message_state = verify_message_segments(output, expected_paths, args.segment_records)
 
-    if sqlite_state["counts"]["messages"] != message_state["records"]:
+    if sqlite_state["counts"]["messages"] != message_state["unique_message_ids"]:
         fail(
-            "sqlite_messages_vs_segments_mismatch",
-            detail={"sqlite": sqlite_state["counts"]["messages"], "segments": message_state["records"]},
+            "sqlite_unique_messages_vs_segment_unique_ids_mismatch",
+            detail={
+                "sqlite_unique_messages": sqlite_state["counts"]["messages"],
+                "segment_unique_message_ids": message_state["unique_message_ids"],
+                "segment_observations": message_state["records"],
+            },
         )
 
     manifest = {
@@ -279,6 +292,7 @@ def main() -> int:
             "SOURCE!=ARTIFACT!=EXECUTION!=EVIDENCE!=CLAIM",
             "TOKEN_VAZIO!=PASS",
             "DERIVED_SUFFIX!=SOURCE_SHARD_IDENTITY",
+            "MESSAGE_IDENTITY!=MESSAGE_OBSERVATION",
             "SOURCE_PATH_AND_POINTER_REQUIRED",
             "CLAIM_ALLOWED_FALSE",
         ],
@@ -291,7 +305,8 @@ def main() -> int:
     target.write_text(json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     print("CANONICAL_GATE=PASS")
     print(f"manifest={target}")
-    print(f"messages={message_state['records']}")
+    print(f"message_observations={message_state['records']}")
+    print(f"unique_message_ids={message_state['unique_message_ids']}")
     print(f"segments={message_state['segment_count']}")
     return 0
 
