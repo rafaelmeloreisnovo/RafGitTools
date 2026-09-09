@@ -1,0 +1,58 @@
+{
+  "schema": "rafaelia.navigator-canonical-51-execution.receipt.v1",
+  "event_id": "NAVIGATOR-CANONICAL-51-EXECUTION-20260909",
+  "observed_at": "2026-09-09",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "source_pr": 449,
+  "source_merge_commit": "fed080d29775d2279df0b0c1a02b8680d0508fb8",
+  "source_start_run": 34291471527,
+  "source_start_conclusion": "success",
+  "raw_sources": {
+    "count": 51,
+    "expected_count": 51,
+    "bytes_exact": 1107289897,
+    "sha256_exact_count": 51,
+    "canonical_source_preflight": "PASS"
+  },
+  "canonical_projection": {
+    "conversations": 5054,
+    "message_observations": 301991,
+    "unique_message_identities": 296794,
+    "message_id_reuse": 5197,
+    "segments": 61,
+    "source_paths": 51,
+    "gate": "PASS"
+  },
+  "canonical_manifest": {
+    "name": "CANONICAL_NAVIGATOR_MANIFEST_V1.json",
+    "sha256": "f73d290a90fb24f1da537ee7a2b00829feabc28ea6d96a8a4f546bc4ac03484d",
+    "content_hash_without_timestamp": "eb7fdae8",
+    "status": "BOUND_AND_READ_BACK"
+  },
+  "execution_receipt": {
+    "name": "RAFAELIA_NAVIGATOR_51_CANONICAL_EXECUTION_RECEIPT_V1.json",
+    "sha256": "f73162a3cf7293e21671857941ce44fd7af991c2ce3f7abd95c8ae5040cd7440",
+    "status": "APPEND_ONLY_BOUND"
+  },
+  "recovery_note": {
+    "partial_uncommitted_jsonl_rows_discarded": 3497,
+    "last_confirmed_boundary": "shard_038",
+    "reapplied_shards": "039..050",
+    "rule": "ARTEFACT_PARTIAL != COMMITTED_STATE"
+  },
+  "closure": {
+    "TV-MESSAGES-FULL-COVERAGE": "CLOSED_FOR_CANONICAL_000_050_PROJECTION_SCOPE",
+    "TV-INDEX-INGEST-000-050": "OPEN_SEMANTIC_EXHAUSTIVITY",
+    "fresh_full_parser_execution": "TOKEN_VAZIO_RUNTIME_BUDGET",
+    "exact_build_resume_readback": "PASS",
+    "claim_allowed": false
+  },
+  "invariants": [
+    "SOURCE!=ARTEFACT!=EXECUTION!=EVIDENCE!=CLAIM",
+    "MESSAGE_IDENTITY!=MESSAGE_OBSERVATION",
+    "CI_SUCCESS!=FULL_CORPUS_EXECUTION",
+    "FRESH_FULL_PARSE!=EXACT_RESUME_READBACK",
+    "TOKEN_VAZIO!=0"
+  ],
+  "next": "Validate this successor artifact on the branch and bind its provider readback; keep semantic exhaustivity and external provider/device gates independent."
+}
