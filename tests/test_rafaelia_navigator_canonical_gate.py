@@ -13,9 +13,9 @@ HERE = ROOT / "tools" / "rafaelia_navigator"
 GATE = HERE / "rafaelia_navigator_canonical_gate.py"
 
 
-def conversation(shard: int) -> list[dict]:
+def conversation(shard: int, message_id: str | None = None) -> list[dict]:
     cid = f"conv-{shard}"
-    mid = f"msg-{shard}"
+    mid = message_id or f"msg-{shard}"
     nid = f"node-{shard}"
     return [
         {
@@ -80,10 +80,35 @@ class CanonicalGateTest(unittest.TestCase):
             self.assertEqual(manifest["source_range"], {"start": 0, "end": 2, "count": 3})
             self.assertEqual(manifest["navigator"]["counts"]["messages"], 3)
             self.assertEqual(manifest["messages_projection"]["records"], 3)
+            self.assertEqual(manifest["messages_projection"]["unique_message_ids"], 3)
+            self.assertEqual(manifest["messages_projection"]["duplicate_message_observations"], 0)
             self.assertEqual(manifest["messages_projection"]["segment_count"], 2)
             self.assertEqual(manifest["messages_projection"]["source_paths_without_messages"], [])
             for seg in manifest["messages_projection"]["segments"]:
                 self.assertEqual(len(seg["sha256"]), 64)
+
+    def test_cross_conversation_message_id_reuse_preserves_observations(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            src = root / "src"
+            out = root / "out"
+            src.mkdir()
+            total = 0
+            for i in range(2):
+                p = src / f"conversations-{i:03d}.json"
+                p.write_text(json.dumps(conversation(i, "shared-message-id"), ensure_ascii=False), encoding="utf-8")
+                total += p.stat().st_size
+            cp = self.run_gate(
+                str(src), str(out), "--start", "0", "--end", "1",
+                "--segment-records", "2", "--expected-total-bytes", str(total)
+            )
+            self.assertEqual(cp.returncode, 0, cp.stderr + cp.stdout)
+            manifest = json.loads((out / "CANONICAL_NAVIGATOR_MANIFEST_V1.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["navigator"]["counts"]["messages"], 1)
+            self.assertEqual(manifest["messages_projection"]["records"], 2)
+            self.assertEqual(manifest["messages_projection"]["unique_message_ids"], 1)
+            self.assertEqual(manifest["messages_projection"]["duplicate_message_observations"], 1)
+            self.assertIn("MESSAGE_IDENTITY!=MESSAGE_OBSERVATION", manifest["invariants"])
 
     def test_missing_shard_fails_before_build(self):
         with tempfile.TemporaryDirectory() as td:
