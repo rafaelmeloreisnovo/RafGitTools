@@ -1,0 +1,50 @@
+{
+  "schema_id": "rafaelia.memory_epoch_receipt",
+  "schema_version": 1,
+  "producer": {
+    "repo": "rafaelmeloreisnovo/RafGitTools",
+    "commit": "ffffffffffffffffffffffffffffffffffffffff",
+    "adapter_id": "fixture.synthetic.v1",
+    "adapter_version": 1
+  },
+  "artifact": {
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "memory_epoch": {
+    "id": "epoch-fixture-001",
+    "claimed_scope": "PROCESS",
+    "evidenced_scope": "RUNTIME"
+  },
+  "reset": {
+    "class": "PROCESS",
+    "evidence_refs": ["fixture://reset/process/001"]
+  },
+  "test_corpus": {
+    "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "policy": {
+    "version": "memory-epoch-v1",
+    "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "observer": {
+    "id": "fixture-external-observer",
+    "independent": true,
+    "runtime_can_modify_control_plane": false
+  },
+  "cross_epoch_probe": {
+    "marker_owner": "EXTERNAL_OBSERVER",
+    "authorized_interface": true,
+    "unexpected_correlation": true,
+    "reproduced": true
+  },
+  "residual_state": false,
+  "replay_binding": {
+    "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "epoch_id": "epoch-fixture-001",
+    "reset_class": "PROCESS",
+    "test_corpus_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "policy_version": "memory-epoch-v1"
+  },
+  "decision": "PROMOTE",
+  "claim_allowed": false
+}
