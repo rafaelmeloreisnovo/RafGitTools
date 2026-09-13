@@ -93,6 +93,15 @@ python3 -m unittest discover -s tests \
   -p 'test_agent_entry_kernel.py' -v
 python3 scripts/check_agent_entry_kernel.py \
   | tee artifacts/agent-entry-kernel-report.json
+
+# Seven knowledge/work guards projection. This adapter is owned by RafGitTools
+# and consumes the merged Mapa knowledge-work-house contract by reference.
+# Structural readiness is not producer/runtime/scientific claim approval.
+python3 -m unittest discover -s tests \
+  -p 'test_knowledge_work_seven_guards.py' -v
+python3 scripts/validate_knowledge_work_seven_guards.py \
+  examples/knowledge-work-seven-guards.example.json \
+  | tee artifacts/knowledge-work-seven-guards-report.json
 python3 -m unittest discover -s tests \
   -p 'test_federated_work_item.py' -v
 python3 scripts/validate_federated_work_item.py \
