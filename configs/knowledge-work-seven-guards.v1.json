@@ -1,0 +1,75 @@
+{
+  "schema": "rafaelia.rafgittools.knowledge-work-seven-guards.v1",
+  "version": "1.0.0",
+  "authority": "rafaelmeloreisnovo/RafGitTools",
+  "federated_authority": "rafaelmeloreisnovo/Mapa",
+  "claim_allowed": false,
+  "source_contract": {
+    "repository": "rafaelmeloreisnovo/Mapa",
+    "pull_request": 619,
+    "merge_commit_sha": "3a2821d44d555c28cd041ba029cfa940fe3d4c0a",
+    "contract_path": "data/control-plane/knowledge-work-house.v1.json",
+    "schema_path": "schemas/knowledge-work-house.v1.schema.json"
+  },
+  "purpose": "Project the seven knowledge-work guards into RafGitTools as a deterministic fail-closed control-plane adapter without copying producer evidence or promoting domain claims.",
+  "guards": [
+    {
+      "id": "G01_PROVENANCE",
+      "key": "provenance",
+      "required": ["source_provider", "repository", "ref", "path", "object_hash", "observed_at", "authority"]
+    },
+    {
+      "id": "G02_CONTEXT",
+      "key": "context",
+      "required": ["intent", "scope", "boundary", "observed_at", "dependencies"]
+    },
+    {
+      "id": "G03_EVIDENCE",
+      "key": "evidence",
+      "required": ["ref", "type", "scope"]
+    },
+    {
+      "id": "G04_CONTRADICTION",
+      "key": "contradictions",
+      "required": ["id", "state", "comparison_scope", "ref"]
+    },
+    {
+      "id": "G05_UNCERTAINTY",
+      "key": "uncertainty",
+      "required": ["id", "state", "evidence_needed", "falsifier", "next_probe"]
+    },
+    {
+      "id": "G06_REPRODUCTION",
+      "key": "reproduction",
+      "required": ["status", "procedure", "environment_ref", "input_ref", "output_ref"]
+    },
+    {
+      "id": "G07_ROLLBACK",
+      "key": "rollback",
+      "required": ["state", "predecessor", "procedure", "verification"]
+    }
+  ],
+  "transversal_requirements": {
+    "reconstruction_pointer": "Required pointer to the producer or receipt chain; reconstruction remains cross-cutting rather than an eighth adapter guard.",
+    "source_artifact_execution_evidence_claim_separation": true,
+    "append_only_supersession": true,
+    "typed_TOKEN_VAZIO": true
+  },
+  "allowed_states": {
+    "contradiction": ["OPEN", "RESOLVED", "SUPERSEDED"],
+    "uncertainty": ["TOKEN_VAZIO", "BLOCKED", "PARTIAL", "NOT_APPLICABLE", "CLOSED"],
+    "reproduction": ["TOKEN_VAZIO", "BLOCKED", "PASS", "FAIL", "NOT_APPLICABLE"],
+    "rollback": ["TOKEN_VAZIO", "READY", "EXECUTED", "NOT_APPLICABLE"]
+  },
+  "decision_states": ["BLOCKED", "READY_FOR_DOMAIN_REVIEW"],
+  "fail_closed_rules": [
+    "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "TOKEN_VAZIO != 0",
+    "OPEN contradiction blocks READY_FOR_DOMAIN_REVIEW",
+    "TOKEN_VAZIO/BLOCKED/PARTIAL uncertainty blocks READY_FOR_DOMAIN_REVIEW",
+    "reproduction TOKEN_VAZIO/BLOCKED/FAIL blocks READY_FOR_DOMAIN_REVIEW",
+    "mutation requires rollback READY or EXECUTED",
+    "RafGitTools structural readiness never promotes another repository claim",
+    "claim_allowed must remain false"
+  ]
+}
