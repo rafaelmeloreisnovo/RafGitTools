@@ -23,7 +23,13 @@
     "Frida observes bounded runtime/receipt events and does not promote physical-device claims.",
     "Termux/Vectras physical execution remains TOKEN_VAZIO until exact-device receipt exists."
   ],
-  "state": "IMPLEMENTED_UNTESTED",
-  "F_gap": ["provider_ci", "termux_typed_operation", "vectras_consumer", "physical_device_receipt"],
-  "F_next": "provider CI on exact PR heads, then typed Termux adapter without arbitrary command strings"
+  "state": "READY_TO_TEST",
+  "F_gap": [
+    "provider_ci",
+    "termux_typed_operation",
+    "vectras_consumer",
+    "physical_device_receipt"
+  ],
+  "F_next": "provider CI on exact PR heads, then typed Termux adapter without arbitrary command strings",
+  "provider_observation": "Successor START required after Android SDK provider-drift correction; claim_allowed remains false."
 }
