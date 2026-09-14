@@ -370,6 +370,8 @@ jobs:
           cache: gradle
       - name: Android SDK
         uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        with:
+          packages: ""
       - name: Prepare build environment
         shell: bash
         run: |
@@ -454,6 +456,8 @@ jobs:
       - name: Android SDK
         if: matrix.language == 'java-kotlin'
         uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        with:
+          packages: ""
       - name: Generate local.properties
         if: matrix.language == 'java-kotlin'
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
@@ -509,6 +513,8 @@ jobs:
           cache: gradle
       - name: Android SDK
         uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        with:
+          packages: ""
       - name: Resolve version and validate signing authority
         id: release_meta
         shell: bash

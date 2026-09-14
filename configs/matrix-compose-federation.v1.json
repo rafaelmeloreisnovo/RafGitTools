@@ -1,0 +1,35 @@
+{
+  "schema": "rafaelia.matrix-compose-federation.v1",
+  "version": "1.0.0",
+  "claim_allowed": false,
+  "roles": {
+    "control_plane": "rafaelmeloreisnovo/RafGitTools",
+    "producer": "rafaelmeloreisnovo/RafPolimata",
+    "observer": "rafaelmeloreisnovo/frida-desktop",
+    "device_runtime": "rafaelmeloreisnovo/termux-app-rafacodephi",
+    "vm_consumer": "rafaelmeloreisnovo/Vectras-VM-Android"
+  },
+  "contracts": {
+    "job_schema": "schemas/rafaelia_matrix_compose_job.v1.schema.json",
+    "producer_script": "github:rafaelmeloreisnovo/RafPolimata/scripts/matrix_compose_v1.py",
+    "producer_receipt_schema": "rafaelia.matrix-compose.receipt.v1",
+    "observer_receipt_schema": "rafaelia.frida.matrix-compose-observer.receipt.v1"
+  },
+  "invariants": [
+    "SOURCE!=IMPLEMENTATION!=EXECUTION!=EVIDENCE!=CLAIM",
+    "TOKEN_VAZIO!=0",
+    "RafGitTools routes and validates; it does not perform arbitrary shell execution.",
+    "RafPolimata owns deterministic composition semantics.",
+    "Frida observes bounded runtime/receipt events and does not promote physical-device claims.",
+    "Termux/Vectras physical execution remains TOKEN_VAZIO until exact-device receipt exists."
+  ],
+  "state": "READY_TO_TEST",
+  "F_gap": [
+    "provider_ci",
+    "termux_typed_operation",
+    "vectras_consumer",
+    "physical_device_receipt"
+  ],
+  "F_next": "provider CI on exact PR heads, then typed Termux adapter without arbitrary command strings",
+  "provider_observation": "Successor START required after Android SDK provider-drift correction; claim_allowed remains false."
+}
