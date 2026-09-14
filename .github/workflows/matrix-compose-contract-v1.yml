@@ -1,0 +1,32 @@
+name: Matrix Compose Federation Contract V1
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "schemas/rafaelia_matrix_compose_job.v1.schema.json"
+      - "configs/matrix-compose-federation.v1.json"
+      - "scripts/validate_matrix_compose_contract.py"
+      - "tests/test_matrix_compose_contract.py"
+      - ".github/workflows/matrix-compose-contract-v1.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: JSON syntax
+        run: |
+          python3 -m json.tool schemas/rafaelia_matrix_compose_job.v1.schema.json >/dev/null
+          python3 -m json.tool configs/matrix-compose-federation.v1.json >/dev/null
+      - name: Contract validator
+        run: python3 scripts/validate_matrix_compose_contract.py
+      - name: Unit gate
+        run: python3 -m unittest tests.test_matrix_compose_contract
