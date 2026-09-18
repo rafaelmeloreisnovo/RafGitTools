@@ -2,9 +2,9 @@
 
 - Status: **ACTIVE — source advanced / current documentation reconciled against main**
 - Observed repository: `rafaelmeloreisnovo/RafGitTools`
-- Observed base revision: `56f4ce95158e6b8a1dbfa4fd8c029937aea20224`
-- Observed date: **2026-09-06**
-- Documentation audit scope: **docs-only**
+- Observed base revision: `2e69dae6d45dd23c6252eee9b42cd230d1bd6bac`
+- Observed date: **2026-09-18**
+- Reconciliation scope: **code + tests + delivery architecture + documentation**
 - `claim_allowed=false`
 - `release_allowed=false`
 
@@ -18,6 +18,26 @@ HISTORICAL_RECEIPT != CURRENT_HEAD_RECEIPT
 ```
 
 This document describes the current source/documentation relationship. Historical receipts remain valid only for the exact revisions and artifacts to which they were originally bound.
+
+## 2026-09-18 controlling delta
+
+Observed main is `2e69dae6d45dd23c6252eee9b42cd230d1bd6bac`. Candidate branch is `audit/drive-github-responsive-delivery-20260918`.
+
+New source in the candidate is classified `IMPLEMENTED_UNTESTED` until the exact candidate workflow terminates:
+
+- responsive layout primitives are pure/testable and the Home/source dashboard consumes `ResponsiveContentFrame`;
+- Drive/SAF staging is fail-closed on byte-count/readback SHA-256 and local receipt creation;
+- the staging receipt preserves GitHub repository/ref/path as `TOKEN_VAZIO_EXPLICIT_TARGET_REQUIRED`;
+- the intended promotion adapter is the existing RafGitFS governed branch/commit/push/draft-PR machinery;
+- a machine-readable development/delivery map and validator are part of the START documentation gate.
+
+No reverse GitHub→Drive synchronization is claimed. Physical device, exact-head provider results and signed release remain separate gates.
+
+Current routing:
+- `RAFGITTOOLS_DEVELOPMENT_DELIVERY_MAP_V1.md`
+- `architecture/RAFGITTOOLS_DRIVE_GITHUB_DELIVERY_ARCHITECTURE_V1.md`
+- `RESPONSIVE_LAYOUT_GATE_V1.md`
+- `RELEASE_NOTES_NEXT.md`
 
 ## Current source observed on main
 
@@ -60,11 +80,11 @@ The 2026-08-14 build remains a valid **historical commit-bound checkpoint**:
 
 It is **not** a build receipt for current `main`.
 
-### 2026-09-06 lineage
+### Historical 2026-09-06 lineage
 
 Recent merged work includes the repository-governance transaction path, compile/Hilt repairs, FNEXT8 validator integration, security/SARIF corrections, urgency/gate/gap reconciliation and the TruffleHog event-range correction. These merges establish **source presence on main**, not automatic device/release proof.
 
-One current-main workflow run was directly observed for revision `56f4ce95158e6b8a1dbfa4fd8c029937aea20224`: Human Impact Cross-Repo Gate V1 run `34031951218` completed with `success`. Other final-head workflow states must be read from provider metadata before being credited individually.
+At the 2026-09-06 revision, one workflow run was directly observed for `56f4ce95158e6b8a1dbfa4fd8c029937aea20224`: Human Impact Cross-Repo Gate V1 run `34031951218` completed with `success`. Other final-head workflow states must be read from provider metadata before being credited individually.
 
 FNEXT8 predecessor execution evidence remains bounded to its executed revision/run: 8/8 unit tests passed, seven receipts were accepted, zero rejected, and all retained their higher-order `TOKEN_VAZIO` boundaries. Structural receipt validity does not establish physical/scientific/runtime claims.
 

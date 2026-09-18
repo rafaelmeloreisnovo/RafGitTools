@@ -2,16 +2,20 @@
 
 ## Fonte de verdade — ordem de leitura
 
-1. [`RAFGITTOOLS_CURRENT_STATE.md`](RAFGITTOOLS_CURRENT_STATE.md) — estado editorial corrente, observado contra `main@56f4ce95158e6b8a1dbfa4fd8c029937aea20224`.
+1. [`RAFGITTOOLS_CURRENT_STATE.md`](RAFGITTOOLS_CURRENT_STATE.md) — estado editorial corrente, observado contra `main@2e69dae6d45dd23c6252eee9b42cd230d1bd6bac`.
 2. [`STATUS_REPORT.md`](STATUS_REPORT.md) — classificação técnica/evidencial corrente.
 3. [`RAFGITTOOLS_ROADMAP_TRUE.md`](RAFGITTOOLS_ROADMAP_TRUE.md) — sequência operacional atual.
-4. [`CODE_TO_DOC_MAP.md`](CODE_TO_DOC_MAP.md) — roteamento semântico código → documentação.
-5. [`URGENCY_GATE_GAP_20260906.md`](URGENCY_GATE_GAP_20260906.md) — snapshot append-only de urgências/gates/gaps do seu source revision.
-6. [`RAFGITTOOLS_CODE_REALITY_MATRIX.md`](RAFGITTOOLS_CODE_REALITY_MATRIX.md) — matriz de capacidades; interpretar sempre pelo revision/evidence boundary indicado no próprio documento.
-7. [`FIRST_COMPILE_RUN_TRIANGLE.md`](FIRST_COMPILE_RUN_TRIANGLE.md) — contrato source → build → device.
-8. [`PENDING_33_ITEMS.md`](PENDING_33_ITEMS.md) — backlog histórico/source-functional; não equivale a runtime.
-9. [`canonical/2026-08-14/RAFGITTOOLS_SOURCE_BUILD_EVIDENCE_V1.md`](canonical/2026-08-14/RAFGITTOOLS_SOURCE_BUILD_EVIDENCE_V1.md) — checkpoint BUILD append-only de 2026-08-14.
-10. [`DOCUMENTATION_AUDIT_RECEIPT_2026-09-06.md`](DOCUMENTATION_AUDIT_RECEIPT_2026-09-06.md) — proveniência desta reconciliação docs-only.
+4. [`RAFGITTOOLS_DEVELOPMENT_DELIVERY_MAP_V1.md`](RAFGITTOOLS_DEVELOPMENT_DELIVERY_MAP_V1.md) — mapa gate-first de desenvolvimento e entrega.
+5. [`architecture/RAFGITTOOLS_DRIVE_GITHUB_DELIVERY_ARCHITECTURE_V1.md`](architecture/RAFGITTOOLS_DRIVE_GITHUB_DELIVERY_ARCHITECTURE_V1.md) — Drive/SAF → staging → RafGitFS → GitHub.
+6. [`RESPONSIVE_LAYOUT_GATE_V1.md`](RESPONSIVE_LAYOUT_GATE_V1.md) — contrato e limites da responsividade.
+7. [`RELEASE_NOTES_NEXT.md`](RELEASE_NOTES_NEXT.md) — notas candidatas, sem equivaler a release receipt.
+8. [`CODE_TO_DOC_MAP.md`](CODE_TO_DOC_MAP.md) — roteamento semântico código → documentação.
+9. [`URGENCY_GATE_GAP_20260906.md`](URGENCY_GATE_GAP_20260906.md) — snapshot append-only histórico de urgências/gates/gaps.
+10. [`RAFGITTOOLS_CODE_REALITY_MATRIX.md`](RAFGITTOOLS_CODE_REALITY_MATRIX.md) — matriz de capacidades; interpretar pelo revision/evidence boundary.
+11. [`FIRST_COMPILE_RUN_TRIANGLE.md`](FIRST_COMPILE_RUN_TRIANGLE.md) — contrato source → build → device.
+12. [`PENDING_33_ITEMS.md`](PENDING_33_ITEMS.md) — backlog histórico/source-functional; não equivale a runtime.
+13. [`canonical/2026-08-14/RAFGITTOOLS_SOURCE_BUILD_EVIDENCE_V1.md`](canonical/2026-08-14/RAFGITTOOLS_SOURCE_BUILD_EVIDENCE_V1.md) — checkpoint BUILD append-only.
+14. [`DOCUMENTATION_AUDIT_RECEIPT_2026-09-06.md`](DOCUMENTATION_AUDIT_RECEIPT_2026-09-06.md) — reconciliação histórica de 2026-09-06.
 
 ### Invariante
 
@@ -40,6 +44,10 @@ Ele não deve ultrapassar `RAFGITTOOLS_CURRENT_STATE.md` ou provider metadata at
 ## Núcleos de estado e auditoria
 
 - `RAFGITTOOLS_CURRENT_STATE.md`
+- `RAFGITTOOLS_DEVELOPMENT_DELIVERY_MAP_V1.md`
+- `architecture/RAFGITTOOLS_DRIVE_GITHUB_DELIVERY_ARCHITECTURE_V1.md`
+- `RESPONSIVE_LAYOUT_GATE_V1.md`
+- `RELEASE_NOTES_NEXT.md`
 - `STATUS_REPORT.md`
 - `RAFGITTOOLS_ROADMAP_TRUE.md`
 - `CODE_TO_DOC_MAP.md`

@@ -1,8 +1,8 @@
 # RafGitTools
 
 **State:** `ACTIVE / SOURCE_ADVANCED / EVIDENCE_GATED`  
-**Observed documentation base:** `main@56f4ce95158e6b8a1dbfa4fd8c029937aea20224`  
-**Documentation cut:** 2026-09-06
+**Observed documentation base:** `main@2e69dae6d45dd23c6252eee9b42cd230d1bd6bac`  
+**Documentation cut:** 2026-09-18
 
 RafGitTools is an Android Git/GitHub client and governance-oriented engineering workspace built around Kotlin, Jetpack Compose, Hilt, Room, JGit, provider APIs and native/JNI integrations.
 
@@ -21,11 +21,28 @@ For current technical truth, read in this order:
 1. [`docs/RAFGITTOOLS_CURRENT_STATE.md`](docs/RAFGITTOOLS_CURRENT_STATE.md)
 2. [`docs/STATUS_REPORT.md`](docs/STATUS_REPORT.md)
 3. [`docs/RAFGITTOOLS_ROADMAP_TRUE.md`](docs/RAFGITTOOLS_ROADMAP_TRUE.md)
-4. [`docs/CODE_TO_DOC_MAP.md`](docs/CODE_TO_DOC_MAP.md)
-5. [`docs/INDEX.md`](docs/INDEX.md)
-6. [`docs/URGENCY_GATE_GAP_20260906.md`](docs/URGENCY_GATE_GAP_20260906.md) — append-only audit snapshot
+4. [`docs/RAFGITTOOLS_DEVELOPMENT_DELIVERY_MAP_V1.md`](docs/RAFGITTOOLS_DEVELOPMENT_DELIVERY_MAP_V1.md)
+5. [`docs/architecture/RAFGITTOOLS_DRIVE_GITHUB_DELIVERY_ARCHITECTURE_V1.md`](docs/architecture/RAFGITTOOLS_DRIVE_GITHUB_DELIVERY_ARCHITECTURE_V1.md)
+6. [`docs/RESPONSIVE_LAYOUT_GATE_V1.md`](docs/RESPONSIVE_LAYOUT_GATE_V1.md)
+7. [`docs/RELEASE_NOTES_NEXT.md`](docs/RELEASE_NOTES_NEXT.md)
+8. [`docs/CODE_TO_DOC_MAP.md`](docs/CODE_TO_DOC_MAP.md)
+9. [`docs/INDEX.md`](docs/INDEX.md)
+10. [`docs/URGENCY_GATE_GAP_20260906.md`](docs/URGENCY_GATE_GAP_20260906.md) — append-only historical audit snapshot
 
 Historical receipts and canonical checkpoints remain valid only for their exact revisions/artifacts.
+
+## 2026-09-18 delivery reconciliation
+
+The source is ahead of the 2026-09-06 documentation cut. This candidate reconciles the gap without promoting evidence:
+
+- the Home/source dashboard now consumes the responsive layout contract instead of merely importing unused helpers;
+- Drive/SAF staging now re-reads the promoted private copy, verifies byte count and SHA-256, and emits a local receipt;
+- GitHub recipient repository/ref/path remains explicit `TOKEN_VAZIO` until a human binds a destination;
+- the downstream Git mutation route is the existing RafGitFS governed workspace → branch → commit → push → draft PR path;
+- `.github/workflows/START.yml` validates the development/delivery map in the documentation lane;
+- exact-head CI, physical-device acceptance and signed release remain evidence gates.
+
+The active development/delivery control surface is `configs/rafgittools-delivery-map.v1.json`; historical feature-count documents do not override it.
 
 ## Current source capabilities
 
@@ -90,7 +107,7 @@ DEVICE       = TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED
 
 It is not a current-main build receipt.
 
-### Current-main boundary
+### Prior 2026-09-06 boundary (historical)
 
 The 2026-09-06 main lineage includes recent governance, receipt-validator, compile/Hilt and security/workflow fixes. One workflow was directly observed on exact current main during this documentation audit: Human Impact Cross-Repo Gate V1 run `34031951218` completed successfully.
 

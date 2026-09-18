@@ -1,5 +1,7 @@
 # Multilingual and Responsive Design Implementation
 
+> **CURRENT SCOPE NOTE (2026-09-18):** responsive utilities exist, but universal adaptive coverage is not claimed. The current candidate wires `ResponsiveContentFrame` into the Home/source dashboard; other screens remain individually gated by `RESPONSIVE_LAYOUT_GATE_V1.md` and physical-device evidence.
+
 ## Overview
 
 This document describes the multilingual and responsive design features implemented in RafGitTools.

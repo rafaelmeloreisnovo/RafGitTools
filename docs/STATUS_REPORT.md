@@ -1,9 +1,9 @@
 # RafGitTools — Relatório de Status
 
-**Data de observação:** 2026-09-06  
-**Base auditada:** `main@56f4ce95158e6b8a1dbfa4fd8c029937aea20224`  
+**Data de observação:** 2026-09-18  
+**Base auditada:** `main@2e69dae6d45dd23c6252eee9b42cd230d1bd6bac`  
 **Estado geral:** 🟡 `SOURCE_ADVANCED / EVIDENCE_GATED / DEVICE_TOKEN_VAZIO`  
-**Escopo desta revisão:** documentação somente  
+**Escopo desta revisão:** reconciliação código + testes + arquitetura de entrega + documentação  
 **Claim:** `claim_allowed=false`  
 **Release:** `release_allowed=false`
 
@@ -19,6 +19,23 @@ SOURCE_OBSERVED
 
 TOKEN_VAZIO != FAIL != PASS
 ```
+
+## Reconciliação 2026-09-18 — delta controlador
+
+Candidate: `audit/drive-github-responsive-delivery-20260918`.
+
+| Superfície | Estado desta branch | Limite |
+|---|---|---|
+| Responsividade do dashboard | `IMPLEMENTED_UNTESTED` | CI + matriz física compact/medium/expanded |
+| Drive/SAF copy gate | `IMPLEMENTED_UNTESTED` | CI + importação em device |
+| Receipt de staging | `IMPLEMENTED_UNTESTED` | prova local; não prova GitHub |
+| Recipient GitHub | `TOKEN_VAZIO_EXPLICIT_TARGET_REQUIRED` | repo/ref/path devem ser escolhidos explicitamente |
+| RafGitFS promotion engine | `SOURCE_OBSERVED_EVIDENCE_GATED` | handoff Drive→workspace ainda não runtime-bound |
+| Exact-head CI | `TOKEN_VAZIO_PENDING_PROVIDER` | observar START no head final |
+| Physical device | `TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED` | mesmo APK/mesmo hash |
+| Release | `BLOCKED_BY_EVIDENCE` | assinatura + device + decisão explícita |
+
+A arquitetura atual coordena Drive e GitHub por proveniência e receipts; não implementa espelhamento cego nem sincronização bidirecional automática.
 
 ## O que mudou desde o checkpoint de 2026-08-14
 
@@ -51,9 +68,9 @@ Esses fatos são **estado de fonte integrado**. Cada claim de teste, build, prov
 | `arm64-v8a` | PRESENT |
 | Device físico | `TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED` |
 
-Esse checkpoint **não é herdado** por `main@56f4ce...`.
+Esse checkpoint **não é herdado** por revisões posteriores de `main`.
 
-### Linha 2026-09-06
+### Linha histórica 2026-09-06
 
 Há evidência de execução anterior para o FNEXT8 e para várias etapas de CI nos heads que produziram os PRs integrados. Para a revisão corrente, esses receipts permanecem ligados aos respectivos SHAs/runs; não são rebatizados como “current-main PASS”.
 

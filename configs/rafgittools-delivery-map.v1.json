@@ -1,0 +1,75 @@
+{
+  "schema": "rafgittools.development-delivery-map/v1",
+  "observed_at": "2026-09-18",
+  "observed_main_sha": "2e69dae6d45dd23c6252eee9b42cd230d1bd6bac",
+  "candidate_branch": "audit/drive-github-responsive-delivery-20260918",
+  "authority": {
+    "implementation": "github:rafaelmeloreisnovo/RafGitTools",
+    "documentary_memory_and_receipts": "google-drive:RAFAELIA",
+    "rule": "GitHub code/spec/test/CI authority; Drive memory/index/receipt authority"
+  },
+  "claim_allowed": false,
+  "release_allowed": false,
+  "gates": [
+    {
+      "id": "RGT-D0-DOC-RECONCILIATION",
+      "state": "IMPLEMENTED_UNTESTED",
+      "evidence": ["current source inventory", "single START workflow topology", "2026-09-18 delivery documents"],
+      "gap": "provider CI for candidate head",
+      "next": "run START docs and code gates on exact PR head"
+    },
+    {
+      "id": "RGT-D1-RESPONSIVE-HOME",
+      "state": "IMPLEMENTED_UNTESTED",
+      "evidence": ["ResponsiveContentFrame", "pure breakpoint functions", "ResponsiveUtilsTest"],
+      "gap": "device and screenshot matrix across compact/medium/expanded",
+      "next": "execute JVM/Android CI then physical layout matrix"
+    },
+    {
+      "id": "RGT-D2-DRIVE-COPY-GATE",
+      "state": "IMPLEMENTED_UNTESTED",
+      "evidence": ["stream SHA-256", "atomic .part promotion", "readback SHA-256", "local staging receipt", "DriveStagingGateTest"],
+      "gap": "provider identity beyond SAF authority and device execution",
+      "next": "execute CI then same-artifact device import"
+    },
+    {
+      "id": "RGT-D3-GITHUB-RECIPIENT-BINDING",
+      "state": "TOKEN_VAZIO_EXPLICIT_TARGET_REQUIRED",
+      "evidence": ["recipient token preserved in staging receipt"],
+      "gap": "repository/ref/path and human approval are intentionally unresolved",
+      "next": "bind explicit target into a RafGitFS governed workspace plan"
+    },
+    {
+      "id": "RGT-D4-RAFGITFS-PROMOTION",
+      "state": "SOURCE_OBSERVED_EVIDENCE_GATED",
+      "evidence": ["RafGitFsGithubBranchWriter", "governed workspace", "branch/commit/push/draft PR path", "rollbackToBase"],
+      "gap": "Drive staging handoff to a concrete workspace is not yet runtime-bound",
+      "next": "add explicit import-to-workspace action after recipient binding"
+    },
+    {
+      "id": "RGT-D5-EXACT-HEAD-CI",
+      "state": "TOKEN_VAZIO_PENDING_PROVIDER",
+      "evidence": [".github/workflows/START.yml"],
+      "gap": "candidate head run/job results not known at commit construction time",
+      "next": "observe workflow run and job receipts for exact PR head"
+    },
+    {
+      "id": "RGT-D6-PHYSICAL-ANDROID",
+      "state": "TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED",
+      "evidence": [],
+      "gap": "same-artifact compact/medium/expanded and Drive import smoke",
+      "next": "install exact CI APK and record device/ABI/layout/import/logcat receipt"
+    },
+    {
+      "id": "RGT-D7-SIGNED-RELEASE",
+      "state": "BLOCKED_BY_EVIDENCE",
+      "evidence": ["START signed release job exists"],
+      "gap": "exact-head CI, signing provenance, physical smoke and explicit release decision",
+      "next": "close D5 and D6 before release promotion"
+    }
+  ],
+  "release_notes": "docs/RELEASE_NOTES_NEXT.md",
+  "human_map": "docs/RAFGITTOOLS_DEVELOPMENT_DELIVERY_MAP_V1.md",
+  "bridge_architecture": "docs/architecture/RAFGITTOOLS_DRIVE_GITHUB_DELIVERY_ARCHITECTURE_V1.md",
+  "responsive_contract": "docs/RESPONSIVE_LAYOUT_GATE_V1.md"
+}
