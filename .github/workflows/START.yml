@@ -348,6 +348,9 @@ jobs:
           if [[ -f scripts/validate_documentation_claim_boundary.py ]]; then
             python3 scripts/validate_documentation_claim_boundary.py --strict
           fi
+          if [[ -f scripts/validate_delivery_map.py ]]; then
+            python3 scripts/validate_delivery_map.py
+          fi
           test -f README.md
           test -s README.md
 
