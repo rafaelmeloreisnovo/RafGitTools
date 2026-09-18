@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafgittools.local/contracts/drive-github-staging-receipt-v1.schema.json",
+  "title": "RafGitTools Drive/SAF Staging Receipt V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sourceKind",
+    "sourceProviderAuthority",
+    "sourceDisplayName",
+    "stagedFileName",
+    "stagedBytes",
+    "sha256",
+    "verifiedByReadback",
+    "recipientProvider",
+    "recipientRepository",
+    "recipientRef",
+    "recipientPath",
+    "promotionState",
+    "promotionAdapter",
+    "claimAllowed",
+    "createdAtEpochMs"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "sourceKind": { "const": "ANDROID_SAF_DOCUMENT" },
+    "sourceProviderAuthority": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "sourceDisplayName": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "stagedFileName": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "stagedBytes": { "type": "integer", "minimum": 0 },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "verifiedByReadback": { "const": true },
+    "recipientProvider": { "const": "GITHUB" },
+    "recipientRepository": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "recipientRef": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "recipientPath": { "type": "string", "minLength": 1, "maxLength": 1024 },
+    "promotionState": {
+      "enum": [
+        "STAGED_VERIFIED",
+        "RECIPIENT_BOUND",
+        "PROMOTION_PLANNED",
+        "PROMOTED_GIT",
+        "BLOCKED"
+      ]
+    },
+    "promotionAdapter": { "const": "RafGitFS" },
+    "claimAllowed": { "const": false },
+    "createdAtEpochMs": { "type": "integer", "minimum": 0 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "promotionState": { "const": "STAGED_VERIFIED" } } },
+      "then": {
+        "properties": {
+          "recipientRepository": { "const": "TOKEN_VAZIO_EXPLICIT_TARGET_REQUIRED" },
+          "recipientRef": { "const": "TOKEN_VAZIO_EXPLICIT_TARGET_REQUIRED" },
+          "recipientPath": { "const": "TOKEN_VAZIO_EXPLICIT_TARGET_REQUIRED" }
+        }
+      }
+    }
+  ]
+}
