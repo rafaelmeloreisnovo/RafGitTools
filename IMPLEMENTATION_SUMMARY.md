@@ -1,5 +1,7 @@
 # Implementation Summary: Multilingual and Responsive Design
 
+> **HISTORICAL PLANNING SUMMARY:** current source/evidence status is routed through `docs/RAFGITTOOLS_CURRENT_STATE.md` and `docs/RAFGITTOOLS_DEVELOPMENT_DELIVERY_MAP_V1.md`. Feature-complete wording below is not a substitute for exact-head test/build/device/release receipts.
+
 > **📊 For complete project status, see [docs/STATUS_REPORT.md](docs/STATUS_REPORT.md)**
 
 ## Task Completion ✅
