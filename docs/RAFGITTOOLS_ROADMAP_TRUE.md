@@ -1,11 +1,34 @@
 # RAFGITTOOLS_ROADMAP_TRUE
 
 - Status: **ACTIVE — operational roadmap**
-- Observed base: `main@56f4ce95158e6b8a1dbfa4fd8c029937aea20224`
-- Updated: **2026-09-06**
-- Scope of this revision: **documentation only**
+- Observed base: `main@2e69dae6d45dd23c6252eee9b42cd230d1bd6bac`
+- Updated: **2026-09-18**
+- Scope of this revision: **source/documentation reconciliation + delivery gates**
 - Rule: `SOURCE_OBSERVED != TEST_PROVEN != BUILD_PROVEN != RUNTIME_PROVEN != DEVICE_PROVEN != RELEASE_PROVEN`
 - Historical 288-feature matrix: planning reference only; it is not the current evidence denominator.
+
+## 2026-09-18 delivery lane
+
+The delivery map is now gate-first:
+
+1. D0 documentation/source reconciliation;
+2. D1 responsive Home/source dashboard;
+3. D2 verified Drive/SAF copy gate;
+4. D3 explicit GitHub recipient binding;
+5. D4 staged-file → RafGitFS workspace promotion;
+6. D5 exact-head START evidence;
+7. D6 same-artifact physical Android acceptance;
+8. D7 signed release.
+
+D1 and D2 are source candidates and remain `IMPLEMENTED_UNTESTED` until provider CI closes.
+D3 is deliberately `TOKEN_VAZIO_EXPLICIT_TARGET_REQUIRED`; a generic import must not guess repository/ref/path.
+D4 reuses RafGitFS instead of creating another Git writer.
+
+Canonical detail:
+- `RAFGITTOOLS_DEVELOPMENT_DELIVERY_MAP_V1.md`
+- `architecture/RAFGITTOOLS_DRIVE_GITHUB_DELIVERY_ARCHITECTURE_V1.md`
+- `RESPONSIVE_LAYOUT_GATE_V1.md`
+- `RELEASE_NOTES_NEXT.md`
 
 ## State already reached in source
 
@@ -30,7 +53,7 @@ Required:
 4. bind build artifacts and hashes to the same SHA;
 5. do not inherit PASS from predecessor commits.
 
-Current documentation audit directly observed one workflow success on `56f4ce...` (Human Impact Cross-Repo Gate V1 run `34031951218`). The remaining exact-head workflow/build inventory stays `TOKEN_VAZIO` until individually read back.
+The historical 2026-09-06 audit directly observed one workflow success on `56f4ce...` (Human Impact Cross-Repo Gate V1 run `34031951218`). The remaining exact-head workflow/build inventory stays `TOKEN_VAZIO` until individually read back.
 
 ## Gate P1 — physical Android device
 
@@ -122,7 +145,10 @@ Machine-generated/state artifacts are not manually edited merely to match prose.
 ## Priority order
 
 ```text
-P0 exact-head evidence coherence
+D0/D1/D2 source+docs candidate
+→ D3 explicit recipient
+→ D4 governed RafGitFS handoff
+→ P0 exact-head evidence coherence
 → P1 physical device
 → P2 provider-governance readback/safe apply
 → P3 Git/Auth/Offline/provider fixtures
