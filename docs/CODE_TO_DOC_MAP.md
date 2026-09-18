@@ -1,7 +1,7 @@
 # Mapa código → documentação
 
-**Observed base:** `main@56f4ce95158e6b8a1dbfa4fd8c029937aea20224`  
-**Updated:** 2026-09-06  
+**Observed base:** `main@2e69dae6d45dd23c6252eee9b42cd230d1bd6bac`  
+**Updated:** 2026-09-18  
 **Role:** semantic routing, not exhaustive tree inventory.
 
 ```text
@@ -78,6 +78,19 @@ The validator recognizes evidence levels from `TOKEN_VAZIO` through `INDEPENDENT
 | core screens | `RAFGITTOOLS_UI_NAVIGATION_MAP.md`, manuals | source varies by surface |
 | Repository Governance screen | navigation/manual + current state | newly routed in current documentation |
 | terminal screen/emulator | `RAFGITTOOLS_TERMINAL_STRATEGY.md`, status | `BOUNDED_EXECUTOR`, not PTY/VT100 |
+| `ui/components/ResponsiveUtils.kt` | `RESPONSIVE_LAYOUT_GATE_V1.md` | reusable breakpoint/frame source; candidate execution pending |
+| `ui/screens/home/HomeScreen.kt` | responsive gate + Drive/GitHub delivery architecture | consumes responsive frame; Drive staging executes verified copy gate |
+
+## Drive → local staging → GitHub promotion
+
+| Source surface | Documentation route | State |
+|---|---|---|
+| `ui/screens/home/HomeScreen.kt` SAF import | `architecture/RAFGITTOOLS_DRIVE_GITHUB_DELIVERY_ARCHITECTURE_V1.md` | source stream → private staging |
+| `bridge/DriveStagingGate.kt` | bridge architecture + staging receipt contract | readback SHA-256/bytes + local receipt; candidate execution pending |
+| `contracts/drive-github-staging-receipt-v1.schema.json` | bridge architecture | machine contract for staging receipt |
+| `rafgitfs/write/RafGitFsWorkspaceStore.kt` | `RAFGITFS_ARCHITECTURE_V1.md` + bridge architecture | governed workspace source present |
+| `rafgitfs/write/RafGitFsGithubBranchWriter.kt` | `RAFGITFS_ARCHITECTURE_V1.md` + bridge architecture | branch/commit/push/draft PR + rollback source present |
+| recipient binding action | development/delivery map | `TOKEN_VAZIO_EXPLICIT_TARGET_REQUIRED` |
 
 ## Native/JNI/external runtime
 
