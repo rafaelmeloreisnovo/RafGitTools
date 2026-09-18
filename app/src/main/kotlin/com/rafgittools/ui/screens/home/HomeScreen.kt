@@ -24,6 +24,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.rafgittools.bridge.DriveStagingGate
+import com.rafgittools.ui.components.ResponsiveContentFrame
 import com.rafgittools.domain.model.github.GithubRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -132,7 +134,7 @@ fun HomeScreen(
             )
         }
     ) { padding ->
-        Box(
+        ResponsiveContentFrame(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
@@ -335,6 +337,18 @@ private fun DriveBridgeContent() {
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
+                        Text(
+                            "Gate: STAGED_VERIFIED · GitHub recipient = TOKEN_VAZIO",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "Receipt local: ${item.receiptPath}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
@@ -366,7 +380,8 @@ private data class DriveStageResult(
     val name: String,
     val path: String,
     val bytes: Long,
-    val sha256: String
+    val sha256: String,
+    val receiptPath: String
 )
 
 private suspend fun stageDriveDocument(context: Context, uri: Uri): Result<DriveStageResult> =
@@ -426,11 +441,26 @@ private suspend fun stageDriveDocument(context: Context, uri: Uri): Result<Drive
                 throw IOException("Não foi possível promover o arquivo .part para staging completo")
             }
 
+            val sourceStreamSha256 = digest.digest().joinToString("") { "%02x".format(it) }
+            val receiptFile = try {
+                DriveStagingGate.verifyAndWriteReceipt(
+                    stagedFile = finalFile,
+                    sourceProviderAuthority = uri.authority,
+                    sourceDisplayName = displayName,
+                    expectedBytes = total,
+                    expectedSha256 = sourceStreamSha256
+                )
+            } catch (error: Exception) {
+                finalFile.delete()
+                throw error
+            }
+
             DriveStageResult(
                 name = safeName,
                 path = finalFile.absolutePath,
                 bytes = total,
-                sha256 = digest.digest().joinToString("") { "%02x".format(it) }
+                sha256 = sourceStreamSha256,
+                receiptPath = receiptFile.absolutePath
             )
         }
     }
