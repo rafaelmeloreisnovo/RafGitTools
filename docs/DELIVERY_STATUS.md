@@ -1,5 +1,7 @@
 # Historical implementation inventory — evidence boundary
 
+> **SUPERSEDED CURRENT-STATE WARNING (2026-09-18):** this file contains historical delivery language and legacy percentage/READY claims. Current delivery truth is governed by `RAFGITTOOLS_CURRENT_STATE.md`, `RAFGITTOOLS_DEVELOPMENT_DELIVERY_MAP_V1.md` and exact revision-bound receipts. Do not treat the historical `READY FOR DELIVERY` text below as a current release decision.
+
 > **⚠️ NOTE**: This is a historical document from January 9, 2026.  
 > **📊 For current status, see [STATUS_REPORT.md](STATUS_REPORT.md)**
 
