@@ -475,7 +475,7 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x gradlew
-          ./gradlew assembleDevDebug --stacktrace
+          ./gradlew --no-daemon --no-build-cache --rerun-tasks assembleDevDebug --stacktrace
       - name: Analyze
         uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
         with:
