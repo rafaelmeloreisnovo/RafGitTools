@@ -33,7 +33,7 @@ def observe(root_build: str, app_build: str) -> dict[str, str]:
     )
 
     mockk_match = re.search(
-        r"testImplementation\s+['\"]io\.mockk:(mockk(?:-jvm)?):([^'\"]+)",
+        r"^\s*testImplementation\s+['\"]io\.mockk:(mockk(?:-jvm)?):([^'\"]+)",
         app_build,
         flags=re.MULTILINE,
     )
