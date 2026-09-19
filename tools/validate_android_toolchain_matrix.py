@@ -32,11 +32,14 @@ def observe(root_build: str, app_build: str) -> dict[str, str]:
         "KSP plugin version",
     )
 
-    mockk = _one(
-        r"testImplementation\s+['\"]io\.mockk:mockk:([^'\"]+)",
+    mockk_match = re.search(
+        r"testImplementation\s+['\"]io\.mockk:(mockk(?:-jvm)?):([^'\"]+)",
         app_build,
-        "MockK test dependency version",
+        flags=re.MULTILINE,
     )
+    if not mockk_match:
+        raise ValueError("missing MockK test dependency")
+    mockk_artifact, mockk = mockk_match.groups()
 
     compose_plugin_match = re.search(
         r"id\s*\(?\s*['\"]org\.jetbrains\.kotlin\.plugin\.compose['\"]\s*\)?"
@@ -66,12 +69,13 @@ def observe(root_build: str, app_build: str) -> dict[str, str]:
         "compose_mode": compose_mode,
         "compose_compiler": compose_compiler,
         "mockk": mockk,
+        "mockk_artifact": mockk_artifact,
     }
 
 
 def validate(observed: dict[str, str], matrix: dict) -> dict:
     approved = matrix.get("approved") or []
-    tuple_fields = ("kotlin", "ksp", "compose_mode", "compose_compiler", "mockk")
+    tuple_fields = ("kotlin", "ksp", "compose_mode", "compose_compiler", "mockk", "mockk_artifact")
 
     for entry in approved:
         if all(observed.get(key) == entry.get(key) for key in tuple_fields):
