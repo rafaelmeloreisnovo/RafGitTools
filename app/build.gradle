@@ -303,7 +303,7 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit:1.9.25'
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3'
-    testImplementation 'io.mockk:mockk:1.14.11'
+    // Keep MockK on the pre-Kotlin-2 line while this project is on Kotlin 1.9.x.\n    // Upgrade only through configs/android-toolchain-matrix.json as an atomic bundle.\n    testImplementation 'io.mockk:mockk:1.13.10'
     testImplementation 'com.google.truth:truth:1.4.5'
     testImplementation 'androidx.arch.core:core-testing:2.2.0'
 
