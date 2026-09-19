@@ -31,6 +31,7 @@ class AndroidToolchainMatrixTest(unittest.TestCase):
             "compose_mode": "legacy_extension",
             "compose_compiler": "1.5.14",
             "mockk": "1.13.10",
+            "mockk_artifact": "mockk-jvm",
         }
         result = MOD.validate(observed, matrix)
         self.assertEqual(result["status"], "FAIL")
@@ -50,6 +51,23 @@ class AndroidToolchainMatrixTest(unittest.TestCase):
             "compose_mode": "legacy_extension",
             "compose_compiler": "1.5.14",
             "mockk": "1.14.11",
+            "mockk_artifact": "mockk-jvm",
+        }
+        result = MOD.validate(observed, matrix)
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("UNAPPROVED_ATOMIC_TOOLCHAIN_TUPLE", result["reasons"])
+
+    def test_mockk_facade_artifact_is_rejected_for_governed_jvm_baseline(self):
+        matrix = json.loads(
+            (ROOT / "configs" / "android-toolchain-matrix.json").read_text(encoding="utf-8")
+        )
+        observed = {
+            "kotlin": "1.9.24",
+            "ksp": "1.9.24-1.0.20",
+            "compose_mode": "legacy_extension",
+            "compose_compiler": "1.5.14",
+            "mockk": "1.13.10",
+            "mockk_artifact": "mockk",
         }
         result = MOD.validate(observed, matrix)
         self.assertEqual(result["status"], "FAIL")
@@ -65,6 +83,7 @@ class AndroidToolchainMatrixTest(unittest.TestCase):
             "compose_mode": "compose_plugin",
             "compose_compiler": "9.9.9",
             "mockk": "9.9.9",
+            "mockk_artifact": "mockk-jvm",
         }
         result = MOD.validate(observed, matrix)
         self.assertEqual(result["status"], "FAIL")
