@@ -9,7 +9,8 @@
       "compose_mode": "legacy_extension",
       "compose_compiler": "1.5.14",
       "state": "PASS_BASELINE",
-      "mockk": "1.13.10"
+      "mockk": "1.13.10",
+      "mockk_artifact": "mockk-jvm"
     }
   ],
   "horizons": [
@@ -33,6 +34,7 @@
   "invariants": [
     "KOTLIN_BUMP != ATOMIC_TOOLCHAIN_MIGRATION",
     "TEST_DEPENDENCY_BUMP != METADATA_COMPATIBILITY",
+    "DEPENDENCY_VERSION != ARTIFACT_IDENTITY",
     "CI_BUILD_FAILURE != SOURCE_CODE_REGRESSION_WITHOUT_CAUSAL_EVIDENCE",
     "UNKNOWN_TOOLCHAIN_TUPLE == FAIL_CLOSED",
     "TOKEN_VAZIO != PASS"
