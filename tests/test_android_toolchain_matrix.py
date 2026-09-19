@@ -73,6 +73,16 @@ class AndroidToolchainMatrixTest(unittest.TestCase):
         self.assertEqual(result["status"], "FAIL")
         self.assertIn("UNAPPROVED_ATOMIC_TOOLCHAIN_TUPLE", result["reasons"])
 
+    def test_commented_mockk_declaration_is_not_observed(self):
+        root_build = "classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24'\n" \
+            "id 'com.google.devtools.ksp' version '1.9.24-1.0.20' apply false\n"
+        app_build = (
+            'kotlinCompilerExtensionVersion "1.5.14"\n'
+            "// accidental literal escape \\n testImplementation 'io.mockk:mockk-jvm:1.13.10'\n"
+        )
+        with self.assertRaises(ValueError):
+            MOD.observe(root_build, app_build)
+
     def test_unknown_tuple_is_never_promoted(self):
         matrix = json.loads(
             (ROOT / "configs" / "android-toolchain-matrix.json").read_text(encoding="utf-8")
