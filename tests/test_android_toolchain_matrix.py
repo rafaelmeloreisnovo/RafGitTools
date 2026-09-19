@@ -30,6 +30,7 @@ class AndroidToolchainMatrixTest(unittest.TestCase):
             "ksp": "1.9.24-1.0.20",
             "compose_mode": "legacy_extension",
             "compose_compiler": "1.5.14",
+            "mockk": "1.13.10",
         }
         result = MOD.validate(observed, matrix)
         self.assertEqual(result["status"], "FAIL")
@@ -63,6 +64,7 @@ class AndroidToolchainMatrixTest(unittest.TestCase):
             "ksp": "9.9.9",
             "compose_mode": "compose_plugin",
             "compose_compiler": "9.9.9",
+            "mockk": "9.9.9",
         }
         result = MOD.validate(observed, matrix)
         self.assertEqual(result["status"], "FAIL")
