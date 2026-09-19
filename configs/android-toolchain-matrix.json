@@ -8,7 +8,8 @@
       "ksp": "1.9.24-1.0.20",
       "compose_mode": "legacy_extension",
       "compose_compiler": "1.5.14",
-      "state": "PASS_BASELINE"
+      "state": "PASS_BASELINE",
+      "mockk": "1.13.10"
     }
   ],
   "horizons": [
@@ -18,16 +19,20 @@
       "requirements": [
         "replace legacy Compose compiler extension with org.jetbrains.kotlin.plugin.compose aligned to Kotlin",
         "select and validate a KSP release compatible with the chosen Kotlin/Gradle/AGP stack",
-        "run unit tests, Android lint, devDebug assembly, CodeQL java-kotlin and receipt gate on the exact bundle"
+        "run unit tests, Android lint, devDebug assembly, CodeQL java-kotlin and receipt gate on the exact bundle",
+        "validate test-runtime Kotlin metadata including MockK/coroutines before promotion"
       ]
     }
   ],
   "sources": [
     "https://kotlinlang.org/docs/compose-compiler-migration-guide.html",
-    "https://github.com/google/ksp/issues/2965"
+    "https://github.com/google/ksp/issues/2965",
+    "https://repo1.maven.org/maven2/io/mockk/mockk-jvm/1.14.11/mockk-jvm-1.14.11.pom",
+    "https://repo1.maven.org/maven2/io/mockk/mockk/1.13.10/mockk-1.13.10.pom"
   ],
   "invariants": [
     "KOTLIN_BUMP != ATOMIC_TOOLCHAIN_MIGRATION",
+    "TEST_DEPENDENCY_BUMP != METADATA_COMPATIBILITY",
     "CI_BUILD_FAILURE != SOURCE_CODE_REGRESSION_WITHOUT_CAUSAL_EVIDENCE",
     "UNKNOWN_TOOLCHAIN_TUPLE == FAIL_CLOSED",
     "TOKEN_VAZIO != PASS"
