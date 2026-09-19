@@ -39,6 +39,21 @@ class AndroidToolchainMatrixTest(unittest.TestCase):
         )
         self.assertIn("LEGACY_KSP_KOTLIN_PREFIX_MISMATCH", result["reasons"])
 
+    def test_mockk_kotlin2_metadata_line_is_rejected_on_kotlin19(self):
+        matrix = json.loads(
+            (ROOT / "configs" / "android-toolchain-matrix.json").read_text(encoding="utf-8")
+        )
+        observed = {
+            "kotlin": "1.9.24",
+            "ksp": "1.9.24-1.0.20",
+            "compose_mode": "legacy_extension",
+            "compose_compiler": "1.5.14",
+            "mockk": "1.14.11",
+        }
+        result = MOD.validate(observed, matrix)
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("UNAPPROVED_ATOMIC_TOOLCHAIN_TUPLE", result["reasons"])
+
     def test_unknown_tuple_is_never_promoted(self):
         matrix = json.loads(
             (ROOT / "configs" / "android-toolchain-matrix.json").read_text(encoding="utf-8")
