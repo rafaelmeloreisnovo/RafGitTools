@@ -32,6 +32,12 @@ def observe(root_build: str, app_build: str) -> dict[str, str]:
         "KSP plugin version",
     )
 
+    mockk = _one(
+        r"testImplementation\s+['\"]io\.mockk:mockk:([^'\"]+)",
+        app_build,
+        "MockK test dependency version",
+    )
+
     compose_plugin_match = re.search(
         r"id\s*\(?\s*['\"]org\.jetbrains\.kotlin\.plugin\.compose['\"]\s*\)?"
         r"(?:\s+version\s+['\"]([^'\"]+)['\"])?",
@@ -59,6 +65,7 @@ def observe(root_build: str, app_build: str) -> dict[str, str]:
         "ksp": ksp,
         "compose_mode": compose_mode,
         "compose_compiler": compose_compiler,
+        "mockk": mockk,
     }
 
 
