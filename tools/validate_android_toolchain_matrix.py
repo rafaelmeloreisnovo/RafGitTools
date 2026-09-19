@@ -64,7 +64,7 @@ def observe(root_build: str, app_build: str) -> dict[str, str]:
 
 def validate(observed: dict[str, str], matrix: dict) -> dict:
     approved = matrix.get("approved") or []
-    tuple_fields = ("kotlin", "ksp", "compose_mode", "compose_compiler")
+    tuple_fields = ("kotlin", "ksp", "compose_mode", "compose_compiler", "mockk")
 
     for entry in approved:
         if all(observed.get(key) == entry.get(key) for key in tuple_fields):
