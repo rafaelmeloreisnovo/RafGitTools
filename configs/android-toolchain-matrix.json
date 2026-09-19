@@ -1,0 +1,35 @@
+{
+  "schema": "rafgittools.android-toolchain-matrix.v1",
+  "policy": "ATOMIC_TOOLCHAIN_BUNDLE_ONLY",
+  "claim_allowed": false,
+  "approved": [
+    {
+      "kotlin": "1.9.24",
+      "ksp": "1.9.24-1.0.20",
+      "compose_mode": "legacy_extension",
+      "compose_compiler": "1.5.14",
+      "state": "PASS_BASELINE"
+    }
+  ],
+  "horizons": [
+    {
+      "kotlin": "2.4.20",
+      "state": "BLOCKED_PENDING_ATOMIC_MIGRATION",
+      "requirements": [
+        "replace legacy Compose compiler extension with org.jetbrains.kotlin.plugin.compose aligned to Kotlin",
+        "select and validate a KSP release compatible with the chosen Kotlin/Gradle/AGP stack",
+        "run unit tests, Android lint, devDebug assembly, CodeQL java-kotlin and receipt gate on the exact bundle"
+      ]
+    }
+  ],
+  "sources": [
+    "https://kotlinlang.org/docs/compose-compiler-migration-guide.html",
+    "https://github.com/google/ksp/issues/2965"
+  ],
+  "invariants": [
+    "KOTLIN_BUMP != ATOMIC_TOOLCHAIN_MIGRATION",
+    "CI_BUILD_FAILURE != SOURCE_CODE_REGRESSION_WITHOUT_CAUSAL_EVIDENCE",
+    "UNKNOWN_TOOLCHAIN_TUPLE == FAIL_CLOSED",
+    "TOKEN_VAZIO != PASS"
+  ]
+}
