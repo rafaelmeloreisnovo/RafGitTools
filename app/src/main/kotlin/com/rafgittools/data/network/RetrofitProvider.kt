@@ -8,7 +8,16 @@ import retrofit2.converter.gson.GsonConverterFactory
 object RetrofitProvider {
 
     fun create(baseUrl: String, credentialManager: CredentialManager): Retrofit {
+        val networkGuard = RafNetworkGuardInterceptor(
+            policy = RafNetworkGuardPolicy.forBaseUrl(
+                baseUrl = baseUrl,
+                mode = RafNetworkGuardMode.ENFORCE
+            ),
+            sink = AndroidRafNetworkAuditSink
+        )
         val client = OkHttpClient.Builder()
+            // Keep the destination gate before bearer-token injection.
+            .addInterceptor(networkGuard)
             .addInterceptor { chain ->
                 val requestBuilder = chain.request().newBuilder()
                 credentialManager.loadToken()?.takeIf { it.isNotBlank() }?.let { token ->
