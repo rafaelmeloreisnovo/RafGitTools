@@ -15,6 +15,10 @@ import com.rafgittools.data.cache.RepositoryNameCacheDao
 import com.rafgittools.data.cache.UserCacheDao
 import com.rafgittools.data.github.GithubApiService
 import com.rafgittools.data.github.RepositoryGovernanceApiService
+import com.rafgittools.data.network.AndroidRafNetworkAuditSink
+import com.rafgittools.data.network.RafNetworkGuardInterceptor
+import com.rafgittools.data.network.RafNetworkGuardMode
+import com.rafgittools.data.network.RafNetworkGuardPolicy
 import com.rafgittools.data.repository.GitRepositoryImpl
 import com.rafgittools.domain.repository.GitRepository
 import com.rafgittools.offline.OfflineOperationDao
@@ -54,13 +58,23 @@ object NetworkModule {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             redactHeader("Authorization")
             redactHeader("Proxy-Authorization")
-            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
+            // Metadata-only: request/response bodies can contain credentials, code or PII.
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC
                     else HttpLoggingInterceptor.Level.NONE
         }
+        val networkGuard = RafNetworkGuardInterceptor(
+            policy = RafNetworkGuardPolicy.forBaseUrl(
+                baseUrl = BuildConfig.API_BASE_URL,
+                mode = RafNetworkGuardMode.ENFORCE
+            ),
+            sink = AndroidRafNetworkAuditSink
+        )
         // FIX N2: removed CertificatePinner with placeholder hash (sha256/AAAA…)
         //   A placeholder pin triggers SSLPeerUnverifiedException on every call.
         //   Re-add with the real sha256 public-key pin when releasing to production.
         return OkHttpClient.Builder()
+            // Security ordering is intentional: destination authorization precedes credentials.
+            .addInterceptor(networkGuard)
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
