@@ -208,11 +208,19 @@ class ContextBroker @Inject constructor() {
         annotations: Map<String, Any> = mapOf(
             "claim_allowed" to false,
             "context_broker" to "ContextBroker"
-        )
+        ),
+        routeBinding: ManifoldRouteBinding? = null
     ): ContextBundleV2 {
         require(bundleId.isNotBlank()) { "bundleId must not be blank" }
         require(objective.isNotBlank()) { "objective must not be blank" }
         require(createdAt.isNotBlank()) { "createdAt must not be blank" }
+
+        val routeAnnotations = routeBinding?.toAnnotations().orEmpty()
+        val collisions = annotations.keys.intersect(routeAnnotations.keys)
+        require(collisions.isEmpty()) {
+            "route annotation keys are reserved: " + collisions.sorted().joinToString(",")
+        }
+        val bundleAnnotations = annotations + routeAnnotations
 
         val snapshot = _state.value
         val resources = snapshot.segments
@@ -255,7 +263,7 @@ class ContextBroker @Inject constructor() {
             },
             evidenceRefs = evidenceRefs,
             constraints = constraints,
-            annotations = annotations,
+            annotations = bundleAnnotations,
             compatibility = ContextBundleV2Compatibility(
                 sourceSchema = "rafaelia.context_bundle.v2",
                 sourceVariant = "native-v2",
