@@ -1,0 +1,142 @@
+{
+  "schema": "rafgittools.context-workbench.integration-map.v1",
+  "observed_at": "2026-09-23",
+  "state": "AUDIT_INTEGRATION_SPEC",
+  "claim_allowed": false,
+  "control_plane": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "ref": "main@ddac77615d857cb2d7f05dd5450d04f8e5fc39ee"
+  },
+  "repositories": [
+    {
+      "id": "rafgittools",
+      "repo": "rafaelmeloreisnovo/RafGitTools",
+      "ref": "main@ddac77615d857cb2d7f05dd5450d04f8e5fc39ee",
+      "role": "workspace_control_plane",
+      "visibility": "public"
+    },
+    {
+      "id": "llama",
+      "repo": "rafaelmeloreisnovo/llamaRafaelia",
+      "ref": "master@04fbf7ba523f67f5deebb2e77d6d0e4f25270ee2",
+      "role": "local_model_context_consumer",
+      "visibility": "private"
+    },
+    {
+      "id": "gaia",
+      "repo": "rafaelmeloreisnovo/GAIA_phi",
+      "ref": "main@fdcf3f367cf8c22850199478fac4f5de62e381f4",
+      "role": "bounded_semantic_vector_adapter",
+      "visibility": "private"
+    },
+    {
+      "id": "private",
+      "repo": "rafaelmeloreisnovo/Rafaelia_Private",
+      "ref": "main@0652c7f3110d6a7e76a93fa319a7c09d7e584093",
+      "role": "private_policy_research_provider",
+      "visibility": "private"
+    },
+    {
+      "id": "polimata",
+      "repo": "rafaelmeloreisnovo/RafPolimata",
+      "ref": "main@f22efc099ac530d946ff2ec34954455f75632e92",
+      "role": "deterministic_parser_validator",
+      "visibility": "public"
+    },
+    {
+      "id": "floris",
+      "repo": "rafaelmeloreisnovo/florisboard",
+      "ref": "main@dc47e1ff9c426adcc685b4b188324e47f297930a",
+      "role": "keyboard_clipboard_surface",
+      "visibility": "public"
+    },
+    {
+      "id": "chunks",
+      "repo": "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE",
+      "ref": "main@bf80ef1a5992d37619d12bd8506a4d170489d5b6",
+      "role": "private_index_pointer_memory_authority",
+      "visibility": "private"
+    }
+  ],
+  "blockers": [
+    {
+      "id": "P0_CONTEXT_BUNDLE_COLLISION",
+      "severity": "P0",
+      "evidence": [
+        "RafGitTools/docs/contracts/context_bundle.schema.json requires chunks+created_at",
+        "llamaRafaelia/docs/contracts/context_bundle.schema.json requires conversation_chunks+generated_at",
+        "CONVERSATIONS_CHUNKS_PRIVATE/docs/contracts/context_bundle.schema.json requires chunk_refs+intent_candidates"
+      ],
+      "invariant": "all identify as rafaelia.context_bundle.v1 but are incompatible",
+      "next": "create successor v2 plus explicit v1 adapters"
+    },
+    {
+      "id": "P0_RAFAYAK_EXACT_IDENTITY",
+      "severity": "P0",
+      "evidence": [
+        "no accessible exact repository match for RafaelYA/Rafael-YA/RafaelYak/YACTO in this audit"
+      ],
+      "next": "bind spoken name to exact repo/ref before adapter creation"
+    },
+    {
+      "id": "P1_SHARED_WORKSPACE",
+      "severity": "P1",
+      "next": "unify MainActivity file browser, RafGitFsActivity, RafBridgeActivity and Drive staging through WorkspaceSessionStore"
+    },
+    {
+      "id": "P1_TABBED_EDITOR",
+      "severity": "P1",
+      "next": "tabs + quick-open + jump stack + hardware/touch commands"
+    },
+    {
+      "id": "P2_NOVO_ANDROID_PROVIDER",
+      "severity": "P2",
+      "next": "wrap existing rafaelia_navigator query as read-only Android provider"
+    },
+    {
+      "id": "P3_LLAMA_RUNTIME",
+      "severity": "P3",
+      "next": "ContextBundle-aware internal provider; preserve /v1/chat compatibility"
+    },
+    {
+      "id": "P4_PATCH_HANDOFF",
+      "severity": "P4",
+      "next": "PatchProposal -> validator -> RafGitFS staging/dry-run/approval"
+    },
+    {
+      "id": "P5_PROVIDER_FIXTURES",
+      "severity": "P5",
+      "next": "GAIA/Private/Polimata scoped capabilities and fixtures"
+    },
+    {
+      "id": "P6_FLORIS_INTEGRATION",
+      "severity": "P6",
+      "next": "system clipboard + optional explicit Floris actions; never auto-ingest history"
+    },
+    {
+      "id": "P7_DEVICE_E2E",
+      "severity": "P7",
+      "next": "same-artifact physical-device end-to-end receipt"
+    }
+  ],
+  "existing_components": [
+    "RafGitFS governed branch/commit/push/draft-PR writer",
+    "FileBrowser/Diff/Search/navigation screens",
+    "RafBridgeService loopback chat",
+    "RafModelClient OpenAI-compatible local model client",
+    "Human-AI bivalent middleware contract and validator",
+    "rafaelia_navigator NOVOexport SQLite/FTS indexer",
+    "DriveStagingGate SAF import/readback",
+    "FlorisBoard clipboard history/expiry"
+  ],
+  "target_objects": [
+    "ResourceRef",
+    "WorkspaceTab",
+    "SelectionEnvelope",
+    "ContextBundleV2",
+    "PatchProposal",
+    "JumpEntry"
+  ],
+  "write_boundary": "model proposals never write directly; Git mutations remain behind RafGitFS dry-run + exact human approval + draft PR",
+  "next_vertical_slice": "FileBrowser -> WorkspaceTab -> NOVOexport query -> ContextBundleV2 -> llama answer with source refs"
+}
