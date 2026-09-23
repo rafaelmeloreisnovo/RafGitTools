@@ -22,7 +22,7 @@ class RafGitFsPrivateStorageInstrumentedTest {
 
         assertTrue(cache.canonicalPath.startsWith(prefix))
         assertTrue(workspace.canonicalPath.startsWith(prefix))
-        context.externalFilesDir?.canonicalFile?.let { external ->
+        context.getExternalFilesDir(null)?.canonicalFile?.let { external ->
             val externalPrefix = external.canonicalPath + File.separator
             assertFalse(cache.canonicalPath.startsWith(externalPrefix))
             assertFalse(workspace.canonicalPath.startsWith(externalPrefix))
