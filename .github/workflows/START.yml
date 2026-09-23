@@ -422,6 +422,8 @@ jobs:
           fi
       - name: Unit tests
         run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
+      - name: Compile device route instrumentation APK
+        run: ./gradlew --no-daemon assembleDevDebugAndroidTest --stacktrace
       - name: Android lint
         run: ./gradlew --no-daemon lintDevDebug --stacktrace
       - name: Assemble devDebug
