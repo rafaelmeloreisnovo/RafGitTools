@@ -68,7 +68,8 @@ public final class RafBridgeContract {
 
     private static boolean isAllowedSource(String source) {
         return "kiwi-extension".equals(source)
-                || "tampermonkey-userscript".equals(source);
+                || "tampermonkey-userscript".equals(source)
+                || "rafgittools-workbench".equals(source);
     }
 
     private static boolean looksLikeCredential(String message) {
