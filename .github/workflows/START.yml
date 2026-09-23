@@ -247,6 +247,22 @@ jobs:
               py_compile.compile(str(path), doraise=True)
           print(f'compiled_python_files={len(files)}')
           PY
+      - name: RafCode Route V1 freestanding gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -d native/rafcode_route_v1 ]]; then
+            clang --version
+            nm --version
+            readelf --version
+            make -C native/rafcode_route_v1 clean
+            make -C native/rafcode_route_v1 host-test audit HOST_CC=clang
+            make -C native/rafcode_route_v1 armv7-object ARMV7_CC=clang
+            make -C native/rafcode_route_v1 aarch64-object AARCH64_CC=clang
+          else
+            echo 'TOKEN_VAZIO: native/rafcode_route_v1 not present'
+          fi
+
       - name: Upload coherence artifacts
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
