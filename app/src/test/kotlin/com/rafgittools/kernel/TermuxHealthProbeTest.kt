@@ -13,10 +13,10 @@ import java.net.URL
 class TermuxHealthProbeTest {
     @Test
     fun normalizeEndpoint_acceptsOnlyLoopbackHealthPaths() {
-        assertThat(TermuxHealthProbe.normalizeEndpoint("http://127.0.0.1:8765/health"))
-            .isEqualTo("http://127.0.0.1:8765/health")
+        assertThat(TermuxHealthProbe.normalizeEndpoint("http://127.0.0.1:8766/health"))
+            .isEqualTo("http://127.0.0.1:8766/health")
         assertThat(TermuxHealthProbe.normalizeEndpoint("http://localhost/v1/health"))
-            .isEqualTo("http://localhost:8765/v1/health")
+            .isEqualTo("http://localhost:8766/v1/health")
         assertThat(TermuxHealthProbe.normalizeEndpoint("http://[::1]:9876/health"))
             .isEqualTo("http://[::1]:9876/health")
     }
@@ -24,12 +24,12 @@ class TermuxHealthProbeTest {
     @Test
     fun normalizeEndpoint_rejectsNonLoopbackAndAmbiguousUris() {
         listOf(
-            "https://127.0.0.1:8765/health",
-            "http://example.com:8765/health",
+            "https://127.0.0.1:8766/health",
+            "http://example.com:8766/health",
             "http://127.0.0.1:80/health",
-            "http://user@127.0.0.1:8765/health",
-            "http://127.0.0.1:8765/health?secret=1",
-            "http://127.0.0.1:8765/admin",
+            "http://user@127.0.0.1:8766/health",
+            "http://127.0.0.1:8766/health?secret=1",
+            "http://127.0.0.1:8766/admin",
         ).forEach { endpoint ->
             assertThrows(IllegalArgumentException::class.java) {
                 TermuxHealthProbe.normalizeEndpoint(endpoint)
@@ -40,7 +40,7 @@ class TermuxHealthProbeTest {
     @Test
     fun probe_returnsPassForSuccessfulBoundedResponse() {
         val connection = FakeConnection(
-            url = URI("http://127.0.0.1:8765/health").toURL(),
+            url = URI("http://127.0.0.1:8766/health").toURL(),
             code = 200,
             payload = "{\"status\":\"ok\"}".toByteArray(),
         )
@@ -64,7 +64,7 @@ class TermuxHealthProbeTest {
     @Test
     fun probe_returnsFailWhenRuntimeAnswersUnhealthy() {
         val connection = FakeConnection(
-            url = URI("http://127.0.0.1:8765/health").toURL(),
+            url = URI("http://127.0.0.1:8766/health").toURL(),
             code = 503,
             payload = "degraded".toByteArray(),
         )
@@ -84,7 +84,7 @@ class TermuxHealthProbeTest {
     @Test
     fun probe_preservesUnreachableRuntimeAsTokenVazio() {
         val connection = FakeConnection(
-            url = URI("http://127.0.0.1:8765/health").toURL(),
+            url = URI("http://127.0.0.1:8766/health").toURL(),
             code = 0,
             payload = byteArrayOf(),
             responseFailure = IOException("connection refused"),
@@ -112,7 +112,7 @@ class TermuxHealthProbeTest {
             },
         )
 
-        val result = probe.probe("http://example.com:8765/health")
+        val result = probe.probe("http://example.com:8766/health")
 
         assertThat(result.state).isEqualTo(TermuxHealthProbe.State.ERROR)
         assertThat(result.reason).startsWith("invalid_endpoint:")
@@ -123,7 +123,7 @@ class TermuxHealthProbeTest {
     fun responseBodyIsBoundedToFourKilobytes() {
         val payload = ByteArray(TermuxHealthProbe.MAX_BODY_BYTES + 512) { 'x'.code.toByte() }
         val connection = FakeConnection(
-            url = URI("http://127.0.0.1:8765/health").toURL(),
+            url = URI("http://127.0.0.1:8766/health").toURL(),
             code = 200,
             payload = payload,
         )

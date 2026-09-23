@@ -146,7 +146,8 @@ class TermuxHealthProbe(
     }
 
     companion object {
-        const val DEFAULT_ENDPOINT = "http://127.0.0.1:8765/health"
+        const val DEFAULT_ENDPOINT = "http://127.0.0.1:8766/health"
+        const val DEFAULT_PORT = 8766
         const val DEFAULT_TIMEOUT_MS = 350
         const val MIN_TIMEOUT_MS = 50
         const val MAX_TIMEOUT_MS = 1_000
@@ -170,7 +171,7 @@ class TermuxHealthProbe(
             val host = uri.host?.lowercase() ?: throw IllegalArgumentException("host_missing")
             require(host in ALLOWED_HOSTS) { "host_not_loopback" }
 
-            val port = if (uri.port == -1) 8765 else uri.port
+            val port = if (uri.port == -1) DEFAULT_PORT else uri.port
             require(port in 1_024..65_535) { "port_out_of_range" }
 
             val path = if (uri.path.isNullOrBlank()) "/health" else uri.path
