@@ -83,11 +83,11 @@ class ContextBrokerTest {
             createdAt = "2026-09-23T04:40:00Z"
         ).toJson()
 
-        assertThat(json).contains("\\"bundle_id\\":\\"b1\\"")
-        assertThat(json).contains("\\"created_at\\":")
-        assertThat(json).contains("\\"privacy_class\\":\\"PRIVATE\\"")
-        assertThat(json).contains("\\"chunk_refs\\":")
-        assertThat(json).contains("\\"source_variant\\":\\"native-v2\\"")
+        assertThat(json).contains("\"bundle_id\":\"b1\"")
+        assertThat(json).contains("\"created_at\":")
+        assertThat(json).contains("\"privacy_class\":\"PRIVATE\"")
+        assertThat(json).contains("\"chunk_refs\":")
+        assertThat(json).contains("\"source_variant\":\"native-v2\"")
     }
 
     @Test
