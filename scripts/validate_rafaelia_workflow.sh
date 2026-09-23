@@ -145,5 +145,14 @@ python3 scripts/validate_human_ai_middleware.py \
   --adapters configs/human-ai-middleware/adapters.v1.json \
   --report artifacts/human-ai-middleware-checkout-validation.json
 
+
+# ContextBundle V2 compatibility gate. This closes only the source-contract
+# collision discovered across three historical V1 variants. It does not prove
+# downstream consumer migration, model runtime, Android wiring, or Git writes.
+python3 -m unittest discover -s tests \
+  -p 'test_context_bundle_v2.py' -v
+python3 scripts/context_bundle_v2.py validate \
+  examples/context-bundle-v2/native.example.json
+
 make -C rafaelia/block1 clean check
 make -C rafaelia/block1 clean
