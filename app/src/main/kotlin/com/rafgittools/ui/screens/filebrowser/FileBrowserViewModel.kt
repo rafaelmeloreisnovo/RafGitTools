@@ -7,6 +7,8 @@ import com.rafgittools.domain.model.FileContent
 import com.rafgittools.domain.model.GitBranch
 import com.rafgittools.domain.model.GitFile
 import com.rafgittools.domain.model.GitTag
+import com.rafgittools.workspace.ContextAddState
+import com.rafgittools.workspace.ContextBroker
 import com.rafgittools.workspace.ResourceRef
 import com.rafgittools.workspace.ResourceVisibility
 import com.rafgittools.workspace.WorkspaceSessionStore
@@ -27,7 +29,8 @@ import javax.inject.Inject
 @HiltViewModel
 class FileBrowserViewModel @Inject constructor(
     private val jGitService: JGitService,
-    private val workspaceSessionStore: WorkspaceSessionStore
+    private val workspaceSessionStore: WorkspaceSessionStore,
+    private val contextBroker: ContextBroker
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<FileBrowserUiState>(FileBrowserUiState.Loading)
@@ -59,6 +62,10 @@ class FileBrowserViewModel @Inject constructor(
     val availableTags: StateFlow<List<GitTag>> = _availableTags.asStateFlow()
 
     val workspaceSession = workspaceSessionStore.state
+    val contextState = contextBroker.state
+
+    private val _contextStatus = MutableStateFlow<String?>(null)
+    val contextStatus: StateFlow<String?> = _contextStatus.asStateFlow()
 
     private var repoPath: String = ""
 
@@ -211,6 +218,40 @@ class FileBrowserViewModel @Inject constructor(
                     )
                 }
         }
+    }
+
+    fun addCurrentFileToContext() {
+        val tab = workspaceSessionStore.state.value.activeTab
+            ?: return setContextStatus("TOKEN_VAZIO: no active workspace resource")
+        val content = _fileContent.value
+            ?: return setContextStatus("TOKEN_VAZIO: no loaded file content")
+
+        val outcome = contextBroker.addText(
+            resource = tab.resource,
+            text = content.content,
+            isBinary = content.isBinary
+        )
+        val message = when (outcome.state) {
+            ContextAddState.ADDED -> "Context added"
+            ContextAddState.ALREADY_PRESENT -> "Already in context"
+            ContextAddState.REJECTED_EMPTY -> "Context rejected: empty file"
+            ContextAddState.REJECTED_BINARY -> "Context rejected: binary file"
+            ContextAddState.REJECTED_SEGMENT_LIMIT ->
+                "Context rejected: file exceeds ${ContextBroker.MAX_SEGMENT_CHARS} characters"
+            ContextAddState.REJECTED_TOTAL_LIMIT ->
+                "Context rejected: bundle exceeds ${ContextBroker.MAX_TOTAL_CHARS} characters"
+            ContextAddState.REJECTED_COUNT_LIMIT ->
+                "Context rejected: maximum ${ContextBroker.MAX_SEGMENTS} segments"
+        }
+        setContextStatus(message)
+    }
+
+    fun clearContextStatus() {
+        _contextStatus.value = null
+    }
+
+    private fun setContextStatus(message: String) {
+        _contextStatus.value = message
     }
 
     fun closeFile() {
