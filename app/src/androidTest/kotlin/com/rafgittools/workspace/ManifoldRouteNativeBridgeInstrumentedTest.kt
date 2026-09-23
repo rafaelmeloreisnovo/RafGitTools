@@ -2,7 +2,8 @@ package com.rafgittools.workspace
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import com.google.common.truth.Truth.assertThat
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -12,7 +13,7 @@ class ManifoldRouteNativeBridgeInstrumentedTest {
 
     @Test
     fun native_route_library_loads_and_resolves_code_runtime() {
-        assertThat(ManifoldRouteNativeBridge.isAvailable()).isTrue()
+        assertTrue(ManifoldRouteNativeBridge.isAvailable())
 
         val result = ManifoldRouteNativeBridge.resolve(
             triggerCode = 4,
@@ -26,15 +27,15 @@ class ManifoldRouteNativeBridgeInstrumentedTest {
         )
 
         val resolved = result as NativeRouteResult.Resolved
-        assertThat(resolved.binding.routeId).isEqualTo("R0004")
-        assertThat(resolved.binding.routeCode).isEqualTo(4)
-        assertThat(resolved.binding.triggerCode).isEqualTo(4)
-        assertThat(resolved.binding.routeTagHex).hasLength(8)
+        assertEquals("R0004", resolved.binding.routeId)
+        assertEquals(4, resolved.binding.routeCode)
+        assertEquals(4, resolved.binding.triggerCode)
+        assertEquals(8, resolved.binding.routeTagHex.length)
     }
 
     @Test
     fun native_route_library_rejects_ambiguous_trigger_fail_closed() {
-        assertThat(ManifoldRouteNativeBridge.isAvailable()).isTrue()
+        assertTrue(ManifoldRouteNativeBridge.isAvailable())
 
         val result = ManifoldRouteNativeBridge.resolve(
             triggerCode = 7,
@@ -49,7 +50,7 @@ class ManifoldRouteNativeBridgeInstrumentedTest {
         )
 
         val rejected = result as NativeRouteResult.Rejected
-        assertThat(rejected.triggerCode).isEqualTo(7)
-        assertThat(rejected.errorMask and 0x10).isNotEqualTo(0)
+        assertEquals(7, rejected.triggerCode)
+        assertTrue((rejected.errorMask and 0x10) != 0)
     }
 }
