@@ -263,6 +263,19 @@ jobs:
             echo 'TOKEN_VAZIO: native/rafcode_route_v1 not present'
           fi
 
+      - name: RafCode Route Federation Bridge V1 gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -d native/rafcode_route_federation_bridge_v1 ]]; then
+            make -C native/rafcode_route_federation_bridge_v1 clean
+            make -C native/rafcode_route_federation_bridge_v1 test audit CC=clang
+            make -C native/rafcode_route_federation_bridge_v1 armv7-object CC=clang
+            make -C native/rafcode_route_federation_bridge_v1 aarch64-object CC=clang
+          else
+            echo 'TOKEN_VAZIO: native/rafcode_route_federation_bridge_v1 not present'
+          fi
+
       - name: Upload coherence artifacts
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
