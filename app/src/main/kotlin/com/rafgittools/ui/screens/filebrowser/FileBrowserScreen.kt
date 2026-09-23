@@ -59,6 +59,8 @@ fun FileBrowserScreen(
     val availableBranches by viewModel.availableBranches.collectAsStateWithLifecycle()
     val availableTags by viewModel.availableTags.collectAsStateWithLifecycle()
     val workspaceSession by viewModel.workspaceSession.collectAsStateWithLifecycle()
+    val contextState by viewModel.contextState.collectAsStateWithLifecycle()
+    val contextStatus by viewModel.contextStatus.collectAsStateWithLifecycle()
 
     var showRefPicker by remember { mutableStateOf(false) }
 
@@ -268,7 +270,13 @@ fun FileBrowserScreen(
                     }
                     is FileBrowserUiState.FileView -> {
                         fileContent?.let { content ->
-                            FileViewer(content = content)
+                            FileViewer(
+                                content = content,
+                                contextCount = contextState.count,
+                                contextStatus = contextStatus,
+                                onAddToContext = viewModel::addCurrentFileToContext,
+                                onDismissContextStatus = viewModel::clearContextStatus
+                            )
                         }
                     }
                 }
@@ -509,7 +517,13 @@ private fun FileItem(
 }
 
 @Composable
-private fun FileViewer(content: FileContent) {
+private fun FileViewer(
+    content: FileContent,
+    contextCount: Int,
+    contextStatus: String?,
+    onAddToContext: () -> Unit,
+    onDismissContextStatus: () -> Unit
+) {
     // Pre-compute syntax-highlighted lines once per file (P33-12).
     val extension = content.name.substringAfterLast(".", "")
     val highlightedLines: List<AnnotatedString> = remember(content.content, extension) {
@@ -556,18 +570,58 @@ private fun FileViewer(content: FileContent) {
                     }
                 }
 
-                if (content.isBinary) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     AssistChip(
-                        onClick = { },
-                        label = { Text("Binary") },
+                        onClick = onAddToContext,
+                        enabled = !content.isBinary,
+                        label = { Text("Context + ($contextCount)") },
                         leadingIcon = {
                             Icon(
-                                Icons.Default.FilePresent,
+                                Icons.Default.Add,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
                     )
+                    contextStatus?.let { status ->
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = status,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = onDismissContextStatus) {
+                        Text("Dismiss")
+                    }
+                }
+            }
+        }
+
+        if (content.isBinary) {
+                        AssistChip(
+                            onClick = { },
+                            label = { Text("Binary") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.FilePresent,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        )
+                    }
                 }
             }
         }
