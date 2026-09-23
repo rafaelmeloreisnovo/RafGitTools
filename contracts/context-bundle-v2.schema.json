@@ -1,0 +1,346 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafcode.local/contracts/context-bundle-v2.schema.json",
+  "title": "RAFAELIA ContextBundle V2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "bundle_id",
+    "created_at",
+    "intent",
+    "privacy_class",
+    "resources",
+    "chunk_refs",
+    "segments",
+    "evidence_refs",
+    "constraints",
+    "annotations",
+    "compatibility"
+  ],
+  "properties": {
+    "schema": {
+      "const": "rafaelia.context_bundle.v2"
+    },
+    "bundle_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "created_at": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "const": "TOKEN_VAZIO"
+        }
+      ]
+    },
+    "intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objective",
+        "request_id",
+        "state"
+      ],
+      "properties": {
+        "objective": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "request_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "state": {
+          "enum": [
+            "OBSERVED",
+            "DECLARED",
+            "TOKEN_VAZIO"
+          ]
+        }
+      }
+    },
+    "privacy_class": {
+      "enum": [
+        "PUBLIC",
+        "INTERNAL",
+        "PRIVATE",
+        "SENSITIVE",
+        "TOKEN_VAZIO"
+      ]
+    },
+    "source_generation": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "generation_id"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "generation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "manifest_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 4096
+        },
+        "manifest_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{64}$"
+            },
+            {
+              "const": "TOKEN_VAZIO"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "resources": {
+      "type": "array",
+      "maxItems": 512,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "resource_id",
+          "provider",
+          "source",
+          "locator",
+          "visibility",
+          "epistemic_state"
+        ],
+        "properties": {
+          "resource_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "provider": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "locator": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "object_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1024
+          },
+          "ref": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1024
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{64}$"
+              },
+              {
+                "const": "TOKEN_VAZIO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "visibility": {
+            "enum": [
+              "LOCAL_ONLY",
+              "PRIVATE",
+              "INTERNAL",
+              "PUBLIC",
+              "TOKEN_VAZIO"
+            ]
+          },
+          "mime_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 512
+          },
+          "epistemic_state": {
+            "enum": [
+              "SOURCE_OBSERVED",
+              "INDEX_REF",
+              "MATERIALIZED",
+              "TOKEN_VAZIO"
+            ]
+          }
+        }
+      }
+    },
+    "chunk_refs": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096
+      }
+    },
+    "segments": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "segment_id",
+          "source_ref",
+          "text",
+          "text_sha256",
+          "privacy_class"
+        ],
+        "properties": {
+          "segment_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "source_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 32768
+          },
+          "text_sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{64}$"
+              },
+              {
+                "const": "TOKEN_VAZIO"
+              }
+            ]
+          },
+          "privacy_class": {
+            "enum": [
+              "PUBLIC",
+              "INTERNAL",
+              "PRIVATE",
+              "SENSITIVE",
+              "TOKEN_VAZIO"
+            ]
+          }
+        }
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096
+      }
+    },
+    "annotations": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_schema",
+        "source_variant",
+        "adapter",
+        "unresolved_fields",
+        "unmapped_keys"
+      ],
+      "properties": {
+        "source_schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "source_variant": {
+          "enum": [
+            "native-v2",
+            "rafgittools.docs-v1",
+            "llamarafaelia.docs-v1",
+            "conversation-chunks-private.docs-v1"
+          ]
+        },
+        "adapter": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "unresolved_fields": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "unmapped_keys": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        }
+      }
+    }
+  }
+}
