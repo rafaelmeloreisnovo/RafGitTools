@@ -107,7 +107,7 @@ class ContextBundleV2Tests(unittest.TestCase):
         self.assertEqual(out["annotations"]["legacy_intent_candidates"], [{"label": "candidate"}])
         self.assertEqual(out["annotations"]["legacy_annotations"], {"route": "NOVO"})
         self.assertEqual(out["compatibility"]["unmapped_keys"], ["future_key"])
-        self.assertNotIn("future_key", json.dumps(out))
+        self.assertNotIn("future_key", out["annotations"])
         MODULE.validate_v2(out)
 
     def test_invalid_sha_is_rejected(self):
