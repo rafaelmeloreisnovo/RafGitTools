@@ -7,6 +7,10 @@ import com.rafgittools.domain.model.FileContent
 import com.rafgittools.domain.model.GitBranch
 import com.rafgittools.domain.model.GitFile
 import com.rafgittools.domain.model.GitTag
+import com.rafgittools.workspace.ResourceRef
+import com.rafgittools.workspace.ResourceVisibility
+import com.rafgittools.workspace.WorkspaceSessionStore
+import com.rafgittools.workspace.WorkspaceTab
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +26,8 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class FileBrowserViewModel @Inject constructor(
-    private val jGitService: JGitService
+    private val jGitService: JGitService,
+    private val workspaceSessionStore: WorkspaceSessionStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<FileBrowserUiState>(FileBrowserUiState.Loading)
@@ -52,6 +57,8 @@ class FileBrowserViewModel @Inject constructor(
 
     private val _availableTags = MutableStateFlow<List<GitTag>>(emptyList())
     val availableTags: StateFlow<List<GitTag>> = _availableTags.asStateFlow()
+
+    val workspaceSession = workspaceSessionStore.state
 
     private var repoPath: String = ""
 
@@ -117,6 +124,18 @@ class FileBrowserViewModel @Inject constructor(
 
             jGitService.getFileContent(repoPath, file.path, ref = _currentRef.value)
                 .onSuccess { content ->
+                    workspaceSessionStore.openTab(
+                        resource = ResourceRef(
+                            provider = "LOCAL_GIT",
+                            repositoryOrCorpus = repoPath,
+                            refOrGeneration = _currentRef.value,
+                            pathOrLocator = file.path,
+                            objectId = file.sha,
+                            visibility = ResourceVisibility.LOCAL_ONLY
+                        ),
+                        title = file.name,
+                        baseObjectId = file.sha
+                    )
                     _fileContent.value = content
                     _uiState.value = FileBrowserUiState.FileView
                 }
@@ -128,10 +147,80 @@ class FileBrowserViewModel @Inject constructor(
         }
     }
 
+    fun activateWorkspaceTab(tabId: String) {
+        val tab = workspaceSessionStore.activateTab(tabId) ?: return
+        loadWorkspaceTab(tab)
+    }
+
+    fun closeWorkspaceTab(tabId: String) {
+        val wasActive = workspaceSessionStore.state.value.activeTabId == tabId
+        val next = workspaceSessionStore.closeTab(tabId)
+        if (!wasActive) return
+        if (next == null) {
+            closeFile()
+        } else {
+            loadWorkspaceTab(next)
+        }
+    }
+
+    fun navigateWorkspaceBack() {
+        workspaceSessionStore.navigateBack()?.let(::loadWorkspaceTab)
+    }
+
+    fun navigateWorkspaceForward() {
+        workspaceSessionStore.navigateForward()?.let(::loadWorkspaceTab)
+    }
+
+    private fun loadWorkspaceTab(tab: WorkspaceTab) {
+        val resource = tab.resource
+        if (resource.provider != "LOCAL_GIT") {
+            _uiState.value = FileBrowserUiState.Error(
+                "Workspace provider not wired in FileBrowser: ${resource.provider}"
+            )
+            return
+        }
+
+        val targetRepoPath = resource.repositoryOrCorpus
+        val targetRef = resource.refOrGeneration
+        val targetPath = resource.pathOrLocator
+        val targetParent = targetPath.substringBeforeLast("/", "")
+
+        repoPath = targetRepoPath
+        _currentRef.value = targetRef
+        _currentPath.value = targetParent
+        updateBreadcrumbs(targetParent)
+
+        viewModelScope.launch {
+            _uiState.value = FileBrowserUiState.Loading
+            jGitService.getFileContent(targetRepoPath, targetPath, ref = targetRef)
+                .onSuccess { content ->
+                    _selectedFile.value = GitFile(
+                        name = content.name,
+                        path = content.path,
+                        isDirectory = false,
+                        size = content.size,
+                        mode = "",
+                        sha = resource.objectId
+                    )
+                    _fileContent.value = content
+                    _uiState.value = FileBrowserUiState.FileView
+                }
+                .onFailure { error ->
+                    _uiState.value = FileBrowserUiState.Error(
+                        error.message ?: "Failed to reload workspace tab"
+                    )
+                }
+        }
+    }
+
     fun closeFile() {
         _selectedFile.value = null
         _fileContent.value = null
-        _uiState.value = FileBrowserUiState.FileList
+        if (repoPath.isNotEmpty()) {
+            navigateTo(_currentPath.value)
+        } else {
+            _uiState.value = FileBrowserUiState.FileList
+        }
     }
 
     fun refresh() {
