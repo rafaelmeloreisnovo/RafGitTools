@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
@@ -29,6 +30,7 @@ import com.rafgittools.domain.model.GitBranch
 import com.rafgittools.domain.model.GitFile
 import com.rafgittools.domain.model.GitTag
 import com.rafgittools.ui.components.SyntaxHighlighter
+import com.rafgittools.workspace.WorkspaceTab
 
 /**
  * File browser screen for exploring repository files.
@@ -56,6 +58,7 @@ fun FileBrowserScreen(
     val currentRef by viewModel.currentRef.collectAsStateWithLifecycle()
     val availableBranches by viewModel.availableBranches.collectAsStateWithLifecycle()
     val availableTags by viewModel.availableTags.collectAsStateWithLifecycle()
+    val workspaceSession by viewModel.workspaceSession.collectAsStateWithLifecycle()
 
     var showRefPicker by remember { mutableStateOf(false) }
 
@@ -216,6 +219,19 @@ fun FileBrowserScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            if (workspaceSession.tabs.isNotEmpty()) {
+                WorkspaceTabStrip(
+                    tabs = workspaceSession.tabs,
+                    activeTabId = workspaceSession.activeTabId,
+                    canGoBack = workspaceSession.canGoBack,
+                    canGoForward = workspaceSession.canGoForward,
+                    onActivate = viewModel::activateWorkspaceTab,
+                    onClose = viewModel::closeWorkspaceTab,
+                    onBack = viewModel::navigateWorkspaceBack,
+                    onForward = viewModel::navigateWorkspaceForward
+                )
+            }
+
             // Breadcrumb navigation (P33-15)
             if (breadcrumbs.isNotEmpty() && selectedFile == null) {
                 BreadcrumbBar(
@@ -253,6 +269,92 @@ fun FileBrowserScreen(
                     is FileBrowserUiState.FileView -> {
                         fileContent?.let { content ->
                             FileViewer(content = content)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WorkspaceTabStrip(
+    tabs: List<WorkspaceTab>,
+    activeTabId: String?,
+    canGoBack: Boolean,
+    canGoForward: Boolean,
+    onActivate: (String) -> Unit,
+    onClose: (String) -> Unit,
+    onBack: () -> Unit,
+    onForward: () -> Unit
+) {
+    Surface(
+        tonalElevation = 2.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = onBack,
+                enabled = canGoBack,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    Icons.Default.KeyboardArrowLeft,
+                    contentDescription = "Previous workspace location"
+                )
+            }
+            IconButton(
+                onClick = onForward,
+                enabled = canGoForward,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    Icons.Default.KeyboardArrowRight,
+                    contentDescription = "Next workspace location"
+                )
+            }
+
+            LazyRow(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                items(tabs, key = { it.tabId }) { tab ->
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        tonalElevation = if (tab.tabId == activeTabId) 4.dp else 0.dp,
+                        color = if (tab.tabId == activeTabId) {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.surface
+                        }
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(
+                                onClick = { onActivate(tab.tabId) },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                            ) {
+                                Text(
+                                    text = if (tab.dirty) "${tab.title} *" else tab.title,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.widthIn(max = 160.dp)
+                                )
+                            }
+                            IconButton(
+                                onClick = { onClose(tab.tabId) },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Close ${tab.title}",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
                         }
                     }
                 }
