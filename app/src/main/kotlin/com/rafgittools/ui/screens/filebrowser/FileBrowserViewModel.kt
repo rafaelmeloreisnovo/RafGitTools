@@ -11,6 +11,8 @@ import com.rafgittools.workspace.ContextAddState
 import com.rafgittools.workspace.ContextBroker
 import com.rafgittools.workspace.ResourceRef
 import com.rafgittools.workspace.ResourceVisibility
+import com.rafgittools.workspace.WorkbenchModelResultState
+import com.rafgittools.workspace.WorkbenchModelService
 import com.rafgittools.workspace.WorkspaceSessionStore
 import com.rafgittools.workspace.WorkspaceTab
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,7 +32,8 @@ import javax.inject.Inject
 class FileBrowserViewModel @Inject constructor(
     private val jGitService: JGitService,
     private val workspaceSessionStore: WorkspaceSessionStore,
-    private val contextBroker: ContextBroker
+    private val contextBroker: ContextBroker,
+    private val workbenchModelService: WorkbenchModelService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<FileBrowserUiState>(FileBrowserUiState.Loading)
@@ -66,6 +69,18 @@ class FileBrowserViewModel @Inject constructor(
 
     private val _contextStatus = MutableStateFlow<String?>(null)
     val contextStatus: StateFlow<String?> = _contextStatus.asStateFlow()
+
+    private val _modelQuestion = MutableStateFlow("")
+    val modelQuestion: StateFlow<String> = _modelQuestion.asStateFlow()
+
+    private val _modelResponse = MutableStateFlow<String?>(null)
+    val modelResponse: StateFlow<String?> = _modelResponse.asStateFlow()
+
+    private val _modelStatus = MutableStateFlow<String?>(null)
+    val modelStatus: StateFlow<String?> = _modelStatus.asStateFlow()
+
+    private val _modelBusy = MutableStateFlow(false)
+    val modelBusy: StateFlow<Boolean> = _modelBusy.asStateFlow()
 
     private var repoPath: String = ""
 
@@ -252,6 +267,48 @@ class FileBrowserViewModel @Inject constructor(
 
     private fun setContextStatus(message: String) {
         _contextStatus.value = message
+    }
+
+    fun setModelQuestion(value: String) {
+        _modelQuestion.value = value
+    }
+
+    fun askLocalModel() {
+        val question = _modelQuestion.value.trim()
+        if (question.isEmpty()) {
+            _modelStatus.value = "Question required"
+            return
+        }
+        if (_modelBusy.value) return
+
+        viewModelScope.launch {
+            _modelBusy.value = true
+            _modelStatus.value = "Asking local llamaRafaelia..."
+            _modelResponse.value = null
+            val result = workbenchModelService.ask(question)
+            when (result.state) {
+                WorkbenchModelResultState.SUCCESS -> {
+                    _modelResponse.value = result.reply
+                    _modelStatus.value = result.bundleId?.let { "Context bundle $it" }
+                        ?: "Local model response"
+                }
+                WorkbenchModelResultState.TOKEN_VAZIO_CONTEXT -> {
+                    _modelStatus.value = "TOKEN_VAZIO: add explicit context first"
+                }
+                WorkbenchModelResultState.REJECTED_POLICY -> {
+                    _modelStatus.value = "Model request blocked: ${result.reason ?: "policy"}"
+                }
+                WorkbenchModelResultState.MODEL_ERROR -> {
+                    _modelStatus.value = "Local model unavailable: ${result.reason ?: "runtime"}"
+                }
+            }
+            _modelBusy.value = false
+        }
+    }
+
+    fun clearModelOutput() {
+        _modelResponse.value = null
+        _modelStatus.value = null
     }
 
     fun closeFile() {
