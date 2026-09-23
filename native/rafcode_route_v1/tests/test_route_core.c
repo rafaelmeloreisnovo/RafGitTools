@@ -70,12 +70,25 @@ int main(void)
     {
         raf_route_request request = valid_request(RAF_ROUTE_TRIGGER_SCIENCE_CLAIMS);
         raf_route_receipt receipt;
+        request.source_digest[0] = 0u;
+        request.source_digest[1] = 0u;
+        request.source_digest[2] = 0u;
+        request.source_digest[3] = 0u;
+        raf_route_resolve(&request, &receipt);
+        failed += expect_true(receipt.status == 1u);
+        failed += expect_true((receipt.error_mask & RAF_ROUTE_ERROR_SOURCE_ID) != 0u);
+    }
+
+    {
+        raf_route_request request = valid_request(RAF_ROUTE_TRIGGER_SCIENCE_CLAIMS);
+        raf_route_receipt receipt;
         request.source_digest[3] = request.source_digest[0] ^
                                    request.source_digest[1] ^
                                    request.source_digest[2];
         raf_route_resolve(&request, &receipt);
-        failed += expect_true(receipt.status == 1u);
-        failed += expect_true((receipt.error_mask & RAF_ROUTE_ERROR_SOURCE_ID) != 0u);
+        failed += expect_true(receipt.status == 0u);
+        failed += expect_true(receipt.source_fold == 0u);
+        failed += expect_true(receipt.route_code == RAF_ROUTE_ID_SCIENCE_CLAIMS);
     }
 
     {
