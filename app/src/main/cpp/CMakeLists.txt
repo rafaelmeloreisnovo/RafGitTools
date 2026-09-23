@@ -44,6 +44,25 @@ target_compile_options(rafaelia PRIVATE -Wall -Wextra -O2 -ffunction-sections -f
 target_link_libraries(rafaelia PRIVATE ${log-lib})
 
 # ---------------------------------------------------------------------------
+# Manifold route JNI adapter.
+#
+# Hosted boundary only: JNI/dynamic loading belongs here. The resolver source
+# remains independently audited as freestanding under native/rafcode_route_v1.
+# ---------------------------------------------------------------------------
+set(RAF_ROUTE_NATIVE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../native/rafcode_route_v1")
+
+add_library(rafroute SHARED
+    raf_route_jni.c
+    "${RAF_ROUTE_NATIVE_DIR}/src/rafcode_route_core.c"
+)
+target_include_directories(rafroute PRIVATE
+    "${RAF_ROUTE_NATIVE_DIR}/include"
+)
+target_compile_options(rafroute PRIVATE
+    -Wall -Wextra -Werror -O2 -fno-builtin -fno-stack-protector
+)
+
+# ---------------------------------------------------------------------------
 # RAF Kernel: llamaRafaelia cognitive kernel via add_subdirectory.
 # runtime-src/ is populated by CI from runtime-lock.json — not committed.
 # If absent (local dev), this block is silently skipped; only rafcore is built.
