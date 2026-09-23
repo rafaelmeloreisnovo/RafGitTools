@@ -29,6 +29,10 @@ void raf_route_resolve(const void *request_pointer, void *receipt_pointer)
                                       request->source_digest[1] ^
                                       request->source_digest[2] ^
                                       request->source_digest[3];
+    const raf_route_u32 source_present = request->source_digest[0] |
+                                         request->source_digest[1] |
+                                         request->source_digest[2] |
+                                         request->source_digest[3];
     const raf_route_u32 source_bound = flags & RAF_ROUTE_FLAG_SOURCE_BOUND;
     const raf_route_u32 ambiguous = flags & RAF_ROUTE_FLAG_AMBIGUOUS;
     const raf_route_u32 trigger_error =
@@ -41,7 +45,7 @@ void raf_route_resolve(const void *request_pointer, void *receipt_pointer)
         ((1u ^ raf_route_nz(source_bound)) * RAF_ROUTE_ERROR_SOURCE_BOUND) |
         (raf_route_nz(ambiguous) * RAF_ROUTE_ERROR_AMBIGUOUS) |
         (raf_route_nz(flags & (0u - (RAF_ROUTE_FLAG_KNOWN + 1u))) * RAF_ROUTE_ERROR_FLAGS) |
-        ((1u ^ raf_route_nz(source_fold)) * RAF_ROUTE_ERROR_SOURCE_ID) |
+        ((1u ^ raf_route_nz(source_present)) * RAF_ROUTE_ERROR_SOURCE_ID) |
         (raf_route_nz(request->reserved) * RAF_ROUTE_ERROR_RESERVED);
     const raf_route_u32 status = raf_route_nz(error_mask);
     const raf_route_u32 route_code = trigger * (1u ^ status);
