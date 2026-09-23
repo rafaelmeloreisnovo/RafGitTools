@@ -3,8 +3,10 @@ package com.rafgittools.core.security
 import android.util.Base64
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.google.common.truth.Truth.assertThat
 import java.security.MessageDigest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -22,16 +24,16 @@ class SecurityManagerBase64CompatibilityTest {
         val expectedHash = MessageDigest.getInstance("SHA-256").digest(input.toByteArray(Charsets.UTF_8))
         val expected = Base64.encodeToString(expectedHash, Base64.NO_WRAP)
 
-        assertThat(actual).isEqualTo(expected)
-        assertThat(actual).doesNotContain("\n")
+        assertEquals(expected, actual)
+        assertFalse(actual.contains("\n"))
     }
 
     @Test
     fun generateSecureRandomString_hasExpectedLengthAndNoLineBreaks() {
         val generated = securityManager.generateSecureRandomString(48)
 
-        assertThat(generated).hasLength(48)
-        assertThat(generated).doesNotContain("\n")
+        assertEquals(48, generated.length)
+        assertFalse(generated.contains("\n"))
     }
 
     @Test
@@ -39,16 +41,16 @@ class SecurityManagerBase64CompatibilityTest {
         val plaintext = "payload-123-ç"
 
         val encrypted = securityManager.encryptData(plaintext)
-        assertThat(encrypted.isSuccess).isTrue()
+        assertTrue(encrypted.isSuccess)
 
         val ciphertext = encrypted.getOrThrow()
-        assertThat(ciphertext).doesNotContain("\n")
+        assertFalse(ciphertext.contains("\n"))
 
         val combined = Base64.decode(ciphertext, Base64.NO_WRAP)
-        assertThat(combined.size).isGreaterThan(12)
+        assertTrue(combined.size > 12)
 
         val decrypted = securityManager.decryptData(ciphertext)
-        assertThat(decrypted.isSuccess).isTrue()
-        assertThat(decrypted.getOrThrow()).isEqualTo(plaintext)
+        assertTrue(decrypted.isSuccess)
+        assertEquals(plaintext, decrypted.getOrThrow())
     }
 }
