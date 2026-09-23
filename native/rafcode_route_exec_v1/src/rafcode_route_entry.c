@@ -36,9 +36,7 @@ void raf_route_entry(void)
         (raf_route_u32)transferred ^ (raf_route_u32)sizeof(request)
     );
 
-    if (read_error != 0u) {
-        request.magic = 0u;
-    }
+    request.magic *= (1u ^ read_error);
 
     raf_route_resolve(&request, &receipt);
 
