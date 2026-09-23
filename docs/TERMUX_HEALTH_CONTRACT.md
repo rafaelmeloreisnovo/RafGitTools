@@ -41,8 +41,10 @@ O registro `app/src/main/assets/kernel/protocol/tool_registry.json` já autoriza
 
 ## Endpoint padrão
 
+> Porta 8766 é reservada ao health read-only do Termux. A porta 8765 permanece reservada ao Raf Bridge/Kiwi (`GET /health` + `POST /v1/chat`). Os dois serviços compartilham o namespace de rede loopback do dispositivo e não podem disputar o mesmo bind.
+
 ```text
-http://127.0.0.1:8765/health
+http://127.0.0.1:8766/health
 ```
 
 Também são aceitos:
