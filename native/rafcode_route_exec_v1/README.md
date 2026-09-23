@@ -32,6 +32,14 @@ make -C native/rafcode_route_exec_v1 aarch64 audit-aarch64
 
 The ARM outputs target the Android API-24 syscall ABI and are intended as direct Termux/ADB proof artifacts.
 
+For an actual device receipt, execute on the target device/Termux environment:
+
+```sh
+sh native/rafcode_route_exec_v1/tests/device_smoke.sh /path/to/rafcode-route
+```
+
+The runner records ABI/SDK/model, ELF SHA-256, valid/ambiguous receipt hashes and exit codes. It does not upload anything automatically.
+
 ## Evidence boundary
 
 ```text
