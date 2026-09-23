@@ -4,6 +4,8 @@ import androidx.room.testing.MigrationTestHelper
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,20 +35,20 @@ class CacheDatabaseMigrationTest {
             close()
         }
 
-        helper.runMigrationsAndValidate(
+        val db = helper.runMigrationsAndValidate(
             testDb,
             2,
             true,
             CacheDatabase.MIGRATION_1_2
         )
 
-        helper.openDatabase(testDb).use { db ->
-            db.query("SELECT createdAt, lastAccessedAt FROM cache_entries WHERE `key` = 'cache_key'").use { cursor ->
-                assert(cursor.moveToFirst())
+        db.use {
+            it.query("SELECT createdAt, lastAccessedAt FROM cache_entries WHERE `key` = 'cache_key'").use { cursor ->
+                assertTrue(cursor.moveToFirst())
                 val createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("createdAt"))
                 val lastAccessedAt = cursor.getLong(cursor.getColumnIndexOrThrow("lastAccessedAt"))
-                assert(createdAt == 111L)
-                assert(lastAccessedAt == createdAt)
+                assertEquals(111L, createdAt)
+                assertEquals(createdAt, lastAccessedAt)
             }
         }
     }
