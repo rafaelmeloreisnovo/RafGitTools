@@ -59,6 +59,8 @@ fun FileBrowserScreen(
     val availableBranches by viewModel.availableBranches.collectAsStateWithLifecycle()
     val availableTags by viewModel.availableTags.collectAsStateWithLifecycle()
     val workspaceSession by viewModel.workspaceSession.collectAsStateWithLifecycle()
+    val contextState by viewModel.contextState.collectAsStateWithLifecycle()
+    val contextStatus by viewModel.contextStatus.collectAsStateWithLifecycle()
 
     var showRefPicker by remember { mutableStateOf(false) }
 
@@ -268,7 +270,13 @@ fun FileBrowserScreen(
                     }
                     is FileBrowserUiState.FileView -> {
                         fileContent?.let { content ->
-                            FileViewer(content = content)
+                            FileViewer(
+                                content = content,
+                                contextCount = contextState.count,
+                                contextStatus = contextStatus,
+                                onAddToContext = viewModel::addCurrentFileToContext,
+                                onDismissContextStatus = viewModel::clearContextStatus
+                            )
                         }
                     }
                 }
@@ -509,8 +517,13 @@ private fun FileItem(
 }
 
 @Composable
-private fun FileViewer(content: FileContent) {
-    // Pre-compute syntax-highlighted lines once per file (P33-12).
+private fun FileViewer(
+    content: FileContent,
+    contextCount: Int,
+    contextStatus: String?,
+    onAddToContext: () -> Unit,
+    onDismissContextStatus: () -> Unit
+) {
     val extension = content.name.substringAfterLast(".", "")
     val highlightedLines: List<AnnotatedString> = remember(content.content, extension) {
         if (content.isBinary) emptyList()
@@ -520,7 +533,6 @@ private fun FileViewer(content: FileContent) {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // File info header
         Surface(
             tonalElevation = 1.dp,
             modifier = Modifier.fillMaxWidth()
@@ -538,9 +550,7 @@ private fun FileViewer(content: FileContent) {
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Text(
                             text = formatFileSize(content.size),
                             style = MaterialTheme.typography.bodySmall,
@@ -556,18 +566,58 @@ private fun FileViewer(content: FileContent) {
                     }
                 }
 
-                if (content.isBinary) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     AssistChip(
-                        onClick = { },
-                        label = { Text("Binary") },
+                        onClick = onAddToContext,
+                        enabled = !content.isBinary,
+                        label = { Text("Context + ($contextCount)") },
                         leadingIcon = {
                             Icon(
-                                Icons.Default.FilePresent,
+                                Icons.Default.Add,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
                     )
+                    if (content.isBinary) {
+                        AssistChip(
+                            onClick = { },
+                            label = { Text("Binary") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.FilePresent,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        contextStatus?.let { status ->
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = status,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = onDismissContextStatus) {
+                        Text("Dismiss")
+                    }
                 }
             }
         }
@@ -594,8 +644,6 @@ private fun FileViewer(content: FileContent) {
                 }
             }
         } else {
-            // Code viewer with line numbers (P33-13) and syntax highlighting (P33-12).
-            // Each Row keeps the line number gutter and the highlighted code line in sync.
             SelectionContainer {
                 LazyColumn(
                     modifier = Modifier
@@ -608,7 +656,6 @@ private fun FileViewer(content: FileContent) {
                             modifier = Modifier.padding(vertical = 2.dp),
                             verticalAlignment = Alignment.Top
                         ) {
-                            // Line number gutter — fixed width, right-aligned
                             Text(
                                 text = "${index + 1}",
                                 style = MaterialTheme.typography.bodySmall,
@@ -618,7 +665,6 @@ private fun FileViewer(content: FileContent) {
                                 textAlign = TextAlign.End
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            // Syntax-highlighted code line
                             Text(
                                 text = annotatedLine,
                                 style = MaterialTheme.typography.bodySmall,
