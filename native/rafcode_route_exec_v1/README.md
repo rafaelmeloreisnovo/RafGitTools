@@ -1,6 +1,6 @@
 # RafCode Route Executable V1
 
-State: `IMPLEMENTED_SOURCE / CI_PENDING`  
+State: `IMPLEMENTED_SOURCE / HOSTED_START_PASS / PHYSICAL_DEVICE_TOKEN_VAZIO`  
 Core authority: `../rafcode_route_v1`  
 claim_allowed: `false`
 
@@ -15,6 +15,12 @@ stdin 32-byte raf_route_request
 ```
 
 Exit status is `0` for an accepted route receipt, `2` for a fail-closed request, and `3` when the receipt write does not complete.
+
+## Hosted verification
+
+Canonical START run [35838637759](https://github.com/rafaelmeloreisnovo/RafGitTools/actions/runs/35838637759) completed successfully on PR #489 head `69cf8346bf8a796090238bc3dcd34116cb6f3573`. The coherence job passed the route core, route-federation bridge, and freestanding executable gates. Android unit tests, instrumentation APK compilation, lint, devDebug APK verification, and Java/Kotlin CodeQL also passed.
+
+This is hosted CI evidence for that source head. It does not demonstrate execution on an Android device.
 
 ## Runtime boundary
 
@@ -43,6 +49,7 @@ The runner records ABI/SDK/model, ELF SHA-256, valid/ambiguous receipt hashes an
 ## Evidence boundary
 
 ```text
+HOSTED_START_PASS != PHYSICAL_DEVICE_EXECUTION
 CROSS_COMPILED_ELF != PHYSICAL_DEVICE_EXECUTION
 TERMUX_COMPATIBLE_TARGET != TERMUX_RECEIPT
 SHELL_EXECUTION != JNI_EXECUTION
