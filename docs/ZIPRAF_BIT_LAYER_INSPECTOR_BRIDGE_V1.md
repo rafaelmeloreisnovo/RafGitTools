@@ -1,6 +1,6 @@
 # ZIPRAF Bit Layer Inspector Bridge V1
 
-State: TOOLING_BRIDGE  
+State: TOOLING_BRIDGE / PHASE_A_INSPECTOR_IMPLEMENTED_UNTESTED  
 claim_allowed=false
 
 RafGitTools is an inspector/debug/conversion surface, not the format authority.
@@ -25,4 +25,12 @@ RafGitTools is an inspector/debug/conversion surface, not the format authority.
 Inspector output must distinguish SOURCE, ARTIFACT, EXECUTION, EVIDENCE and CLAIM.
 No visual similarity may promote decoder correctness.
 
-F_next: add read-only inspector adapters after canonical vectors are merged.
+## Phase A consumer
+
+The producer-side Phase A vectors are now merged in RafPolimata at `d52afbc38acf6d9580b32cbf9f7f259fa4afdf4b`.
+
+RafGitTools consumes them only through an explicitly supplied JSON file and the pinned authority contract in `configs/zipraf-bit-layer-inspector-v1.json`.
+
+The inspector validates contract identity, byte bit-planes and q reconstruction, but preserves `M`, `G(M)` and T-BL-010 as TOKEN_VAZIO. It does not fetch, rewrite or promote producer state.
+
+F_next: exact-head START gate; after PASS, wire optional UI presentation without moving format authority into RafGitTools.
