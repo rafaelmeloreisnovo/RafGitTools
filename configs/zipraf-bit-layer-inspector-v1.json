@@ -1,0 +1,20 @@
+{
+  "schema": "rafgittools.zipraf_bit_layer_inspector.v1",
+  "mode": "READ_ONLY",
+  "claim_allowed": false,
+  "mutations_allowed": false,
+  "authority": {
+    "repository": "rafaelmeloreisnovo/RafPolimata",
+    "merge_commit": "d52afbc38acf6d9580b32cbf9f7f259fa4afdf4b",
+    "path": "canonical/zipraf-hw-v1/vectors/bit_layer_reference_vectors_phase_a_v1.json",
+    "git_blob_sha": "4c3ba2202afb6f62bb465d435273031ebb16c3b3",
+    "contract": "ZIPRAF-BIT-LAYER-REFERENCE-VECTORS-V1",
+    "parent_contract": "ZIPRAF-BIT-LAYER-PROGRESSIVE-RASTER-V1",
+    "phase": "A_BITPLANES_ONLY"
+  },
+  "accepted_widths": [30, 60],
+  "accepted_q_values": [1, 2, 4, 8],
+  "required_governed_gaps": ["M", "G(M)", "T-BL-010"],
+  "geometry_policy": "PRESERVE_UPSTREAM_TOKEN_VAZIO",
+  "output_scope": "INSPECTION_RECEIPT_ONLY"
+}
