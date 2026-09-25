@@ -4,7 +4,7 @@
 **Observed documentation base:** `main@2e69dae6d45dd23c6252eee9b42cd230d1bd6bac`  
 **Documentation cut:** 2026-09-18
 
-RafGitTools is an Android Git/GitHub client and governance-oriented engineering workspace built around Kotlin, Jetpack Compose, Hilt, Room, JGit, provider APIs and native/JNI integrations.
+> **License authority notice — 2026-09-25:** the root `LICENSE` is the GPLv3-or-later project license surface. The root `LICENSE.md` is an observed C/source artifact with symbolic/legal commentary and must not be treated as a replacement license. See [License Authority Reconciliation](docs/legal/LICENSE_AUTHORITY_RECONCILIATION_20260925.md).\n\nRafGitTools is an Android Git/GitHub client and governance-oriented engineering workspace built around Kotlin, Jetpack Compose, Hilt, Room, JGit, provider APIs and native/JNI integrations.
 
 The repository uses a strict evidence boundary:
 
