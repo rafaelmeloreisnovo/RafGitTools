@@ -170,3 +170,15 @@ data class RepositoryRulesetSummary(
     val enforcement: String? = null,
     @SerializedName("node_id") val nodeId: String? = null
 )
+
+
+/**
+ * GitHub Actions workflow_dispatch request.
+ *
+ * Acceptance by the provider means only that the dispatch request was accepted.
+ * It is not evidence that the workflow ran or passed.
+ */
+data class WorkflowDispatchRequest(
+    val ref: String,
+    val inputs: Map<String, String> = emptyMap()
+)
