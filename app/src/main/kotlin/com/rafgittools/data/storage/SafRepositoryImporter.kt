@@ -140,7 +140,11 @@ class SafRepositoryImporter @Inject constructor(
                 } catch (t: Throwable) {
                     tempDir.deleteRecursively()
                     if (published) {
-                        runCatching { localRepositoryDao.delete(finalDir.absolutePath) }
+                        try {
+                            localRepositoryDao.delete(finalDir.absolutePath)
+                        } catch (_: Exception) {
+                            // Best-effort rollback: filesystem cleanup still proceeds.
+                        }
                         finalDir.deleteRecursively()
                     }
                     throw t
