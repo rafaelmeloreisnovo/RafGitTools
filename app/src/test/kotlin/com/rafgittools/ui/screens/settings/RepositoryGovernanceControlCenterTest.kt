@@ -8,7 +8,6 @@ import com.rafgittools.data.github.GovernanceOwner
 import com.rafgittools.data.github.GovernancePermissions
 import com.rafgittools.data.github.GovernanceRepositoryDetails
 import com.rafgittools.data.github.GovernanceRepositorySummary
-import com.rafgittools.data.github.ObservedRepositoryGovernance
 import com.rafgittools.data.github.RepositoryRulesetSummary
 import com.rafgittools.data.github.RequiredStatusChecksSnapshot
 import org.junit.Assert.assertEquals
