@@ -141,7 +141,8 @@ fun RepositoryGovernanceScreen(
                     onRollback = viewModel::prepareRollback,
                     onOpenProvider = {
                         controlCenter.providerSettingsUrl?.let(uriHandler::openUri)
-                    }
+                    },
+                    onDispatchProviderGate = viewModel::dispatchCanonicalProviderGate
                 )
             }
 
