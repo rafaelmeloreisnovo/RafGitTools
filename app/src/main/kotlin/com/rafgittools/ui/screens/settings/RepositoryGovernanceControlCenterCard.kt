@@ -9,7 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Undo
+import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -145,7 +145,7 @@ fun GovernanceControlCenterCard(
                     enabled = snapshot.canRollback,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Default.Undo, contentDescription = null)
+                    Icon(Icons.Default.Restore, contentDescription = null)
                     Text(stringResource(R.string.repo_governance_action_rollback))
                 }
                 OutlinedButton(
