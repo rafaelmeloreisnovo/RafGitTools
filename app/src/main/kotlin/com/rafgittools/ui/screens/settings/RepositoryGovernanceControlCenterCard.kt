@@ -38,7 +38,8 @@ fun GovernanceControlCenterCard(
     onDryRun: () -> Unit,
     onApply: () -> Unit,
     onRollback: () -> Unit,
-    onOpenProvider: () -> Unit
+    onOpenProvider: () -> Unit,
+    onDispatchProviderGate: () -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
@@ -155,6 +156,27 @@ fun GovernanceControlCenterCard(
                     Icon(Icons.Default.OpenInNew, contentDescription = null)
                     Text(stringResource(R.string.repo_governance_action_provider))
                 }
+            }
+
+            Text(
+                text = stringResource(
+                    R.string.repo_governance_dispatch_state,
+                    snapshot.providerDispatchState.name
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Button(
+                onClick = onDispatchProviderGate,
+                enabled = snapshot.providerWorkflowRoute != null &&
+                    snapshot.providerDispatchState != ProviderDispatchState.DISPATCHING,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    snapshot.providerWorkflowRoute?.label
+                        ?.let { stringResource(R.string.repo_governance_action_dispatch, it) }
+                        ?: stringResource(R.string.repo_governance_action_dispatch_unavailable)
+                )
             }
         }
     }
