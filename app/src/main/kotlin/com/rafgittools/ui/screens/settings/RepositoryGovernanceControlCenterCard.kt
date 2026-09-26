@@ -173,9 +173,14 @@ fun GovernanceControlCenterCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    snapshot.providerWorkflowRoute?.label
-                        ?.let { stringResource(R.string.repo_governance_action_dispatch, it) }
-                        ?: stringResource(R.string.repo_governance_action_dispatch_unavailable)
+                    if (snapshot.providerWorkflowRoute != null) {
+                        stringResource(
+                            R.string.repo_governance_action_dispatch,
+                            snapshot.providerWorkflowRoute.label
+                        )
+                    } else {
+                        stringResource(R.string.repo_governance_action_dispatch_unavailable)
+                    }
                 )
             }
         }
