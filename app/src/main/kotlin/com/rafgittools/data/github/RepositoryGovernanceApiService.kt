@@ -6,6 +6,7 @@ import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.PATCH
+import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -73,6 +74,15 @@ interface RepositoryGovernanceApiService {
         @Path("owner") owner: String,
         @Path("repo") repo: String
     ): Response<List<RepositoryRulesetSummary>>
+
+    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
+    @POST("repos/{owner}/{repo}/actions/workflows/{workflow}/dispatches")
+    suspend fun dispatchWorkflow(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("workflow") workflow: String,
+        @Body request: WorkflowDispatchRequest
+    ): Response<Unit>
 
     @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
     @GET("repos/{owner}/{repo}/actions/permissions")
