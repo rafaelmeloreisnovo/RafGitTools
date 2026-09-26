@@ -2,6 +2,7 @@ package com.rafgittools.ui.screens.settings
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -34,8 +36,10 @@ fun SettingsScreen(
     val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
     val currentLanguage by viewModel.currentLanguage.collectAsStateWithLifecycle()
     val gitConfig by viewModel.gitConfig.collectAsStateWithLifecycle()
+    val repositoryTreeUri by viewModel.repositoryTreeUri.collectAsStateWithLifecycle()
 
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
     LaunchedEffect(viewModel) {
         viewModel.navEvent.collect { event ->
             when (event) {
@@ -47,7 +51,20 @@ fun SettingsScreen(
 
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
-    ) { _ -> /* URI received; persist as needed */ }
+    ) { uri ->
+        if (uri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            } catch (_: SecurityException) {
+                // The provider may grant only the current session. Persist the
+                // selection itself so the UI never silently discards it.
+            }
+            viewModel.setRepositoryTreeUri(uri.toString())
+        }
+    }
 
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showGitConfigDialog by remember { mutableStateOf(false) }
@@ -175,7 +192,11 @@ fun SettingsScreen(
                 ClickableSettingsItem(
                     icon = Icons.Default.Folder,
                     title = stringResource(R.string.settings_repository_location),
-                    subtitle = stringResource(R.string.settings_repository_location_path),
+                    subtitle = if (repositoryTreeUri.isBlank()) {
+                        "TOKEN_VAZIO — nenhuma pasta persistida"
+                    } else {
+                        "Selecionada: $repositoryTreeUri · configuração persistida; indexação Git continua separada"
+                    },
                     onClick = { folderPickerLauncher.launch(null) }
                 )
             }
