@@ -46,9 +46,13 @@ class SettingsViewModel @Inject constructor(
     private val _gitConfig = MutableStateFlow(GitConfig())
     val gitConfig: StateFlow<GitConfig> = _gitConfig.asStateFlow()
 
+    private val _repositoryTreeUri = MutableStateFlow("")
+    val repositoryTreeUri: StateFlow<String> = _repositoryTreeUri.asStateFlow()
+
     init {
         observePreferences()
         loadGitConfig()
+        loadRepositoryTreeUri()
     }
 
     private fun observePreferences() {
@@ -68,6 +72,19 @@ class SettingsViewModel @Inject constructor(
             val userEmail   = preferencesRepository.getString("git_user_email", "")
             val signCommits = preferencesRepository.getBoolean("git_sign_commits", false)
             _gitConfig.value = GitConfig(userName, userEmail, signCommits)
+        }
+    }
+
+    private fun loadRepositoryTreeUri() {
+        viewModelScope.launch {
+            _repositoryTreeUri.value = preferencesRepository.getString(REPOSITORY_TREE_URI_KEY, "")
+        }
+    }
+
+    fun setRepositoryTreeUri(uri: String) {
+        viewModelScope.launch {
+            preferencesRepository.setString(REPOSITORY_TREE_URI_KEY, uri)
+            _repositoryTreeUri.value = uri
         }
     }
 
@@ -117,6 +134,7 @@ class SettingsViewModel @Inject constructor(
 
     companion object {
         private const val PRIVACY_POLICY_URL = "https://rafgittools.example.com/privacy"
+        private const val REPOSITORY_TREE_URI_KEY = "repository_tree_uri"
     }
 }
 

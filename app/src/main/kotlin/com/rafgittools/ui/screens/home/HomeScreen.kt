@@ -59,6 +59,8 @@ fun HomeScreen(
     val remoteRepositories by viewModel.remoteRepositories.collectAsStateWithLifecycle()
     val localRepositories by viewModel.localRepositories.collectAsStateWithLifecycle()
     val activeTab by viewModel.activeTab.collectAsStateWithLifecycle()
+    val githubProbeState by viewModel.githubProbeState.collectAsStateWithLifecycle()
+    val remoteReceiptState by viewModel.remoteReceiptState.collectAsStateWithLifecycle()
     var showMenu by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -153,10 +155,14 @@ fun HomeScreen(
                     isGithubAuthenticated = isAuthenticated,
                     remoteRepositories = remoteRepositories,
                     localRepositories = localRepositories,
+                    githubProbeState = githubProbeState,
+                    remoteReceiptState = remoteReceiptState,
                     onTabSelected = viewModel::setActiveTab,
                     onNavigateToAuth = onNavigateToAuth,
                     onRepositoryClick = onNavigateToRepository,
-                    onLocalRepositoryClick = onNavigateToLocalRepo
+                    onLocalRepositoryClick = onNavigateToLocalRepo,
+                    onRunGithubTest = viewModel::runGithubConnectivityTest,
+                    onCreateRemoteReceipt = viewModel::createRemoteConnectivityReceipt
                 )
             }
         }
@@ -169,10 +175,14 @@ private fun SourceDashboard(
     isGithubAuthenticated: Boolean,
     remoteRepositories: List<GithubRepository>,
     localRepositories: List<LocalRepoSummary>,
+    githubProbeState: GithubConnectivityState,
+    remoteReceiptState: RemoteReceiptState,
     onTabSelected: (HomeViewModel.HomeTab) -> Unit,
     onNavigateToAuth: () -> Unit,
     onRepositoryClick: (GithubRepository) -> Unit,
-    onLocalRepositoryClick: (String) -> Unit
+    onLocalRepositoryClick: (String) -> Unit,
+    onRunGithubTest: () -> Unit,
+    onCreateRemoteReceipt: () -> Unit
 ) {
     Column(Modifier.fillMaxSize()) {
         TabRow(selectedTabIndex = activeTab.ordinal) {
@@ -196,7 +206,14 @@ private fun SourceDashboard(
         when (activeTab) {
             HomeViewModel.HomeTab.REMOTE -> {
                 if (isGithubAuthenticated) {
-                    RepositoryList(remoteRepositories, onRepositoryClick)
+                    RepositoryList(
+                        repositories = remoteRepositories,
+                        githubProbeState = githubProbeState,
+                        remoteReceiptState = remoteReceiptState,
+                        onRunGithubTest = onRunGithubTest,
+                        onCreateRemoteReceipt = onCreateRemoteReceipt,
+                        onRepositoryClick = onRepositoryClick
+                    )
                 } else {
                     GithubDisconnectedContent(onNavigateToAuth)
                 }
@@ -273,11 +290,11 @@ private fun DriveBridgeContent() {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Cloud, null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(8.dp))
-                        Text("Google Drive → staging local", style = MaterialTheme.typography.titleMedium)
+                        Text("Drive / SAF → staging local", style = MaterialTheme.typography.titleMedium)
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Use o seletor do Android para abrir sua conta do Google Drive. A senha e a sessão Google ficam no provedor do sistema; o RafGitTools recebe somente acesso de leitura ao arquivo escolhido.",
+                        "Este botão abre o seletor de documentos do Android; ele não faz login Google dentro do RafGitTools. Se o provedor Google Drive estiver instalado e com conta disponível no aparelho, ele aparece no seletor. O app recebe somente acesso de leitura ao arquivo escolhido.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -307,7 +324,7 @@ private fun DriveBridgeContent() {
                         } else {
                             Icon(Icons.Default.CloudDownload, null)
                             Spacer(Modifier.width(8.dp))
-                            Text("Abrir Google Drive / escolher arquivo")
+                            Text("Abrir seletor de arquivos")
                         }
                     }
                 }
@@ -336,6 +353,11 @@ private fun DriveBridgeContent() {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            "Provider: ${item.providerAuthority}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             "Gate: STAGED_VERIFIED · GitHub recipient = TOKEN_VAZIO",
@@ -381,7 +403,8 @@ private data class DriveStageResult(
     val path: String,
     val bytes: Long,
     val sha256: String,
-    val receiptPath: String
+    val receiptPath: String,
+    val providerAuthority: String
 )
 
 private suspend fun stageDriveDocument(context: Context, uri: Uri): Result<DriveStageResult> =
@@ -460,7 +483,8 @@ private suspend fun stageDriveDocument(context: Context, uri: Uri): Result<Drive
                 path = finalFile.absolutePath,
                 bytes = total,
                 sha256 = sourceStreamSha256,
-                receiptPath = receiptFile.absolutePath
+                receiptPath = receiptFile.absolutePath,
+                providerAuthority = uri.authority ?: "TOKEN_VAZIO"
             )
         }
     }
@@ -468,6 +492,10 @@ private suspend fun stageDriveDocument(context: Context, uri: Uri): Result<Drive
 @Composable
 private fun RepositoryList(
     repositories: List<GithubRepository>,
+    githubProbeState: GithubConnectivityState,
+    remoteReceiptState: RemoteReceiptState,
+    onRunGithubTest: () -> Unit,
+    onCreateRemoteReceipt: () -> Unit,
     onRepositoryClick: (GithubRepository) -> Unit
 ) {
     LazyColumn(
@@ -475,6 +503,14 @@ private fun RepositoryList(
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        item {
+            GithubConnectivityCard(
+                probeState = githubProbeState,
+                receiptState = remoteReceiptState,
+                onRunProbe = onRunGithubTest,
+                onCreateRemoteReceipt = onCreateRemoteReceipt
+            )
+        }
         item {
             Text(
                 "Repositórios (${repositories.size})",
@@ -487,6 +523,170 @@ private fun RepositoryList(
         }
     }
 }
+
+@Composable
+private fun GithubConnectivityCard(
+    probeState: GithubConnectivityState,
+    receiptState: RemoteReceiptState,
+    onRunProbe: () -> Unit,
+    onCreateRemoteReceipt: () -> Unit
+) {
+    ElevatedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.VerifiedUser, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text("Diagnóstico GitHub", style = MaterialTheme.typography.titleMedium)
+            }
+            Text(
+                "READ faz uma chamada remota sem aceitar cache. WRITE cria, somente após seu toque, uma Issue de receipt no próprio RafGitTools. Nenhum token, arquivo local ou conteúdo do Drive é enviado.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            when (probeState) {
+                GithubConnectivityState.Idle -> Text("GitHub READ: TOKEN_VAZIO")
+                GithubConnectivityState.Running -> Text("GitHub READ: testando…")
+                is GithubConnectivityState.Passed ->
+                    Text("GitHub READ: PASS · @${probeState.login} · ${probeState.loadedRepositories} repositórios carregados")
+                is GithubConnectivityState.Failed ->
+                    Text("GitHub READ: FAIL · ${probeState.message}", color = MaterialTheme.colorScheme.error)
+            }
+
+            when (receiptState) {
+                RemoteReceiptState.Idle -> Text("GitHub WRITE receipt: TOKEN_VAZIO")
+                RemoteReceiptState.Running -> Text("GitHub WRITE receipt: enviando…")
+                is RemoteReceiptState.Passed ->
+                    Text("GitHub WRITE receipt: PASS · Issue #${receiptState.issueNumber}")
+                is RemoteReceiptState.Failed ->
+                    Text("GitHub WRITE receipt: FAIL · ${receiptState.message}", color = MaterialTheme.colorScheme.error)
+            }
+
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onRunProbe,
+                    enabled = probeState !is GithubConnectivityState.Running,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.NetworkCheck, null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Testar READ")
+                }
+                Button(
+                    onClick = onCreateRemoteReceipt,
+                    enabled = receiptState !is RemoteReceiptState.Running,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.Upload, null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Receipt WRITE")
+                }
+            }
+        }
+    }
+}
+
+private data class LocalPrivateStorageResult(
+    val path: String,
+    val sha256: String,
+    val bytes: Long
+)
+
+@Composable
+private fun LocalPrivateStorageTestCard() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var running by remember { mutableStateOf(false) }
+    var result by remember { mutableStateOf<LocalPrivateStorageResult?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    ElevatedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.FactCheck, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text("Teste de armazenamento privado", style = MaterialTheme.typography.titleMedium)
+            }
+            Text(
+                "Grava um receipt pequeno em files/connectivity-receipts/, relê o arquivo e confere SHA-256. Não publica nada.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            result?.let {
+                Text("LOCAL PRIVATE: PASS · ${it.bytes} B")
+                Text(
+                    it.path,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text("SHA-256 ${it.sha256.take(16)}…", style = MaterialTheme.typography.bodySmall)
+            } ?: Text(if (running) "LOCAL PRIVATE: testando…" else "LOCAL PRIVATE: TOKEN_VAZIO")
+            error?.let {
+                Text("LOCAL PRIVATE: FAIL · $it", color = MaterialTheme.colorScheme.error)
+            }
+            Button(
+                onClick = {
+                    running = true
+                    error = null
+                    scope.launch {
+                        runLocalPrivateStorageTest(context)
+                            .onSuccess { result = it }
+                            .onFailure { error = it.message ?: "Falha no armazenamento privado" }
+                        running = false
+                    }
+                },
+                enabled = !running,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Save, null)
+                Spacer(Modifier.width(8.dp))
+                Text("Testar e gerar receipt local")
+            }
+        }
+    }
+}
+
+private suspend fun runLocalPrivateStorageTest(context: Context): Result<LocalPrivateStorageResult> =
+    withContext(Dispatchers.IO) {
+        runCatching {
+            val dir = File(context.filesDir, "connectivity-receipts")
+            if (!dir.exists() && !dir.mkdirs()) {
+                throw IOException("Não foi possível criar connectivity-receipts")
+            }
+
+            val epochMs = System.currentTimeMillis()
+            val payload = buildString {
+                appendLine("RAFGITTOOLS_LOCAL_PRIVATE_RECEIPT_V1")
+                appendLine("epoch_ms=$epochMs")
+                appendLine("storage=ANDROID_APP_PRIVATE_FILES")
+                appendLine("write=REQUESTED_BY_USER")
+                appendLine("claim_allowed=false")
+            }.toByteArray(Charsets.UTF_8)
+
+            val file = File(dir, "connectivity-$epochMs.receipt")
+            file.outputStream().use { it.write(payload) }
+
+            val readBack = file.inputStream().use { it.readBytes() }
+            if (!payload.contentEquals(readBack)) {
+                file.delete()
+                throw IOException("Read-back diferente do payload gravado")
+            }
+
+            val sha256 = MessageDigest.getInstance("SHA-256")
+                .digest(readBack)
+                .joinToString("") { "%02x".format(it) }
+
+            LocalPrivateStorageResult(
+                path = file.absolutePath,
+                sha256 = sha256,
+                bytes = readBack.size.toLong()
+            )
+        }
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -558,6 +758,9 @@ private fun LocalRepositoryList(
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        item {
+            LocalPrivateStorageTestCard()
+        }
         item {
             Column {
                 Text("Workspace local (${repositories.size})", style = MaterialTheme.typography.titleMedium)

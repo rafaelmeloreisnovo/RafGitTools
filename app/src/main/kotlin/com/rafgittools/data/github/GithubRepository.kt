@@ -283,6 +283,46 @@ class GithubDataRepository @Inject constructor(
     }
 
     /**
+     * Live GitHub probe. Unlike getAuthenticatedUserSync(), this never falls
+     * back to cache: PASS therefore means the remote API answered now.
+     */
+    suspend fun probeAuthenticatedUserLive(): Result<GithubUser> {
+        return try {
+            Result.success(githubApiService.getAuthenticatedUser())
+        } catch (e: Exception) {
+            Result.failure(e.toAppError())
+        }
+    }
+
+    /**
+     * Explicit remote write used by the user-triggered connectivity receipt.
+     * No secrets or local file contents are copied into the issue body.
+     */
+    suspend fun createConnectivityReceiptIssue(
+        owner: String,
+        repo: String,
+        title: String,
+        body: String
+    ): Result<GithubIssue> {
+        return try {
+            Result.success(
+                githubApiService.createIssue(
+                    owner = owner,
+                    repo = repo,
+                    issue = CreateIssueRequest(
+                        title = title,
+                        body = body,
+                        labels = null,
+                        assignees = null
+                    )
+                )
+            )
+        } catch (e: Exception) {
+            Result.failure(e.toAppError())
+        }
+    }
+
+    /**
      * Clear all cached data
      */
     suspend fun clearCache() {
