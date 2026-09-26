@@ -133,6 +133,22 @@ class RepositoryGovernanceControlCenterTest {
     }
 
     @Test
+    fun termuxRepository_hasAllowlistedProviderRouteOnly() {
+        val route = canonicalProviderWorkflowRoute(
+            "rafaelmeloreisnovo/termux-app-rafacodephi"
+        )
+
+        assertEquals("00_START_HERE.yml", route?.workflow)
+        assertEquals("master", route?.ref)
+        assertEquals("10_PROVIDER", route?.inputs?.get("route"))
+        assertEquals("true", route?.inputs?.get("strict_governance"))
+        assertEquals(
+            null,
+            canonicalProviderWorkflowRoute("rafaelmeloreisnovo/RafGitTools")
+        )
+    }
+
+    @Test
     fun providerSettingsUrl_isDerivedOnlyFromSelectedRepository() {
         val snapshot = buildGovernanceControlCenterSnapshot(
             RepositoryGovernanceUiState(selectedRepository = repository())
