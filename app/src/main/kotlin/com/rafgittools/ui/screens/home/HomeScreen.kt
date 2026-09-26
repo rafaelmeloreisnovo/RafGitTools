@@ -290,7 +290,7 @@ private fun DriveBridgeContent() {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Cloud, null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(8.dp))
-                        Text("Google Drive → staging local", style = MaterialTheme.typography.titleMedium)
+                        Text("Drive / SAF → staging local", style = MaterialTheme.typography.titleMedium)
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
