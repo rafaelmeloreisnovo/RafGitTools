@@ -92,7 +92,7 @@ class SafRepositoryImporter @Inject constructor(
 
                     val entity = LocalRepositoryEntity(
                         path = finalDir.absolutePath,
-                        name = rootName,
+                        name = safeRootName,
                         remoteUrl = null,
                         currentBranch = branch,
                         syncState = SyncState.SYNCED.name,
@@ -114,7 +114,7 @@ class SafRepositoryImporter @Inject constructor(
                         appendLine("source_uri_sha256=$uriHash")
                         appendLine("source_uri_raw=NOT_RECORDED")
                         appendLine("source_mutation=NONE")
-                        appendLine("root_name=$rootName")
+                        appendLine("root_name=$safeRootName")
                         appendLine("files=${counter.files}")
                         appendLine("directories=${counter.directories}")
                         appendLine("bytes=${counter.bytes}")
@@ -127,7 +127,7 @@ class SafRepositoryImporter @Inject constructor(
                     receiptFile.writeText(receiptBody, Charsets.UTF_8)
 
                     SafRepositoryImportReceipt(
-                        repositoryName = rootName,
+                        repositoryName = safeRootName,
                         repositoryPath = finalDir.absolutePath,
                         branch = branch,
                         fileCount = counter.files,
@@ -260,6 +260,9 @@ class SafRepositoryImporter @Inject constructor(
         if (counter.files > MAX_FILES) {
             throw IOException("SAF import exceeds file limit ($MAX_FILES)")
         }
+        if (counter.directories > MAX_DIRECTORIES) {
+            throw IOException("SAF import exceeds directory limit ($MAX_DIRECTORIES)")
+        }
         if (counter.bytes > MAX_BYTES) {
             throw IOException("SAF import exceeds byte limit ($MAX_BYTES)")
         }
@@ -281,6 +284,7 @@ class SafRepositoryImporter @Inject constructor(
         private const val RECEIPT_DIR = "connectivity-receipts"
         private const val COPY_BUFFER_BYTES = 64 * 1024
         private const val MAX_FILES = 50_000
+        private const val MAX_DIRECTORIES = 20_000
         private const val MAX_BYTES = 512L * 1024L * 1024L
         private const val MAX_NAME_CHARS = 180
     }
