@@ -50,4 +50,17 @@
     <string name="repo_governance_admin_unproven">Admin authority not proven — writes blocked</string>
     <string name="repo_governance_admin">Admin</string>
     <string name="repo_governance_read_only">Read-only / authority unproven</string>
+    <string name="repo_governance_control_center">Governance Control Center</string>
+    <string name="repo_governance_surface">Protection</string>
+    <string name="repo_governance_rulesets">Rulesets</string>
+    <string name="repo_governance_required_checks">Required checks</string>
+    <string name="repo_governance_actions_short">Actions</string>
+    <string name="repo_governance_ruleset_count">Rulesets: %1$s · active: %2$s</string>
+    <string name="repo_governance_status_contexts">Required status contexts: %1$s</string>
+    <string name="repo_governance_action_refresh">Refresh</string>
+    <string name="repo_governance_action_audit">Audit</string>
+    <string name="repo_governance_action_dry_run">Dry-run</string>
+    <string name="repo_governance_action_apply">Apply</string>
+    <string name="repo_governance_action_rollback">Rollback</string>
+    <string name="repo_governance_action_provider">GitHub</string>
 </resources>
