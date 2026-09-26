@@ -45,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -67,6 +68,8 @@ fun RepositoryGovernanceScreen(
     viewModel: RepositoryGovernanceViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val uriHandler = LocalUriHandler.current
+    val controlCenter = remember(state) { buildGovernanceControlCenterSnapshot(state) }
     var repositoryMenuExpanded by remember { mutableStateOf(false) }
     var showApplyConfirmation by remember { mutableStateOf(false) }
 
@@ -124,6 +127,20 @@ fun RepositoryGovernanceScreen(
                     onSelect = {
                         repositoryMenuExpanded = false
                         viewModel.selectRepository(it)
+                    }
+                )
+            }
+
+            item {
+                GovernanceControlCenterCard(
+                    snapshot = controlCenter,
+                    onRefresh = viewModel::refreshSelected,
+                    onAudit = viewModel::runDeepAudit,
+                    onDryRun = viewModel::prepareDryRun,
+                    onApply = { showApplyConfirmation = true },
+                    onRollback = viewModel::prepareRollback,
+                    onOpenProvider = {
+                        controlCenter.providerSettingsUrl?.let(uriHandler::openUri)
                     }
                 )
             }
