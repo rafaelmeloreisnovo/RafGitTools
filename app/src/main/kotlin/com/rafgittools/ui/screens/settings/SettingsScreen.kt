@@ -3,6 +3,7 @@ package com.rafgittools.ui.screens.settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,6 +38,7 @@ fun SettingsScreen(
     val currentLanguage by viewModel.currentLanguage.collectAsStateWithLifecycle()
     val gitConfig by viewModel.gitConfig.collectAsStateWithLifecycle()
     val repositoryTreeUri by viewModel.repositoryTreeUri.collectAsStateWithLifecycle()
+    val repositoryImportState by viewModel.repositoryImportState.collectAsStateWithLifecycle()
 
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
@@ -56,7 +58,7 @@ fun SettingsScreen(
             try {
                 context.contentResolver.takePersistableUriPermission(
                     uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
             } catch (_: SecurityException) {
                 // The provider may grant only the current session. Persist the
@@ -195,9 +197,18 @@ fun SettingsScreen(
                     subtitle = if (repositoryTreeUri.isBlank()) {
                         "TOKEN_VAZIO — nenhuma pasta persistida"
                     } else {
-                        "Selecionada: $repositoryTreeUri · configuração persistida; indexação Git continua separada"
+                        val provider = Uri.parse(repositoryTreeUri).authority ?: "TOKEN_VAZIO"
+                        "SAF provider: $provider · permissão de leitura persistida"
                     },
                     onClick = { folderPickerLauncher.launch(null) }
+                )
+            }
+
+            item {
+                RepositoryImportCard(
+                    treeSelected = repositoryTreeUri.isNotBlank(),
+                    state = repositoryImportState,
+                    onImport = viewModel::importSelectedRepositoryTree
                 )
             }
             
@@ -290,6 +301,88 @@ fun SettingsScreen(
         // About Dialog
         if (showAboutDialog) {
             AboutDialog(onDismiss = { showAboutDialog = false })
+        }
+    }
+}
+
+@Composable
+private fun RepositoryImportCard(
+    treeSelected: Boolean,
+    state: RepositoryImportState,
+    onImport: () -> Unit,
+) {
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Inventory2, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Importar workspace Git", style = MaterialTheme.typography.titleMedium)
+            }
+            Text(
+                "Cria um snapshot somente-leitura da origem SAF dentro do armazenamento privado do app, valida .git com JGit e só então registra no workspace Local.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                "Origem SAF: sem escrita · limite: 50.000 arquivos / 512 MiB · cada import gera nova versão",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            when (state) {
+                RepositoryImportState.Idle -> Text("IMPORT: TOKEN_VAZIO")
+                RepositoryImportState.Running -> {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("IMPORT: executando…")
+                    }
+                }
+                is RepositoryImportState.Passed -> {
+                    val receipt = state.receipt
+                    Text("IMPORT: PASS · ${receipt.repositoryName}")
+                    Text(
+                        "${receipt.fileCount} arquivos · ${receipt.directoryCount} diretórios · ${receipt.byteCount} bytes · branch ${receipt.branch}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        "Receipt: ${receipt.receiptPath}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "Workspace: ${receipt.repositoryPath}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                is RepositoryImportState.Failed -> {
+                    Text(
+                        "IMPORT: FAIL · ${state.message}",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
+            Button(
+                onClick = onImport,
+                enabled = treeSelected && state !is RepositoryImportState.Running,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.FileCopy, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Importar snapshot Git")
+            }
         }
     }
 }

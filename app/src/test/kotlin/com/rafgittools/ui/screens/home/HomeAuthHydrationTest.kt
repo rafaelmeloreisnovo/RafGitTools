@@ -10,9 +10,11 @@ import com.rafgittools.domain.model.github.GithubIssue
 import com.rafgittools.domain.model.github.GithubUser
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -34,6 +36,7 @@ class HomeAuthHydrationTest {
     fun setup() {
         Dispatchers.setMain(dispatcher)
         authTokenCache = AuthTokenCache()
+        every { localRepositoryDao.observeAll() } returns flowOf(emptyList())
         coEvery { localRepositoryDao.loadAll() } returns emptyList()
         coEvery { githubRepository.getAuthenticatedUserSync() } returns Result.failure(Exception("fixture"))
         coEvery { githubRepository.getUserRepositoriesSync(any(), any()) } returns Result.failure(Exception("fixture"))

@@ -8,6 +8,8 @@ import com.rafgittools.core.feature.FeatureFlags
 import com.rafgittools.core.localization.Language
 import com.rafgittools.data.cache.AsyncCacheManager
 import com.rafgittools.data.preferences.PreferencesRepository
+import com.rafgittools.data.storage.SafRepositoryImporter
+import com.rafgittools.data.storage.SafRepositoryImportReceipt
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,7 +33,8 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
-    private val cacheManager: AsyncCacheManager
+    private val cacheManager: AsyncCacheManager,
+    private val safRepositoryImporter: SafRepositoryImporter,
 ) : ViewModel() {
 
     private val _navEvent = MutableSharedFlow<SettingsNavEvent>()
@@ -48,6 +51,11 @@ class SettingsViewModel @Inject constructor(
 
     private val _repositoryTreeUri = MutableStateFlow("")
     val repositoryTreeUri: StateFlow<String> = _repositoryTreeUri.asStateFlow()
+
+    private val _repositoryImportState =
+        MutableStateFlow<RepositoryImportState>(RepositoryImportState.Idle)
+    val repositoryImportState: StateFlow<RepositoryImportState> =
+        _repositoryImportState.asStateFlow()
 
     init {
         observePreferences()
@@ -85,6 +93,28 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.setString(REPOSITORY_TREE_URI_KEY, uri)
             _repositoryTreeUri.value = uri
+        }
+    }
+
+    fun importSelectedRepositoryTree() {
+        val rawUri = _repositoryTreeUri.value
+        if (rawUri.isBlank()) {
+            _repositoryImportState.value =
+                RepositoryImportState.Failed("Nenhuma árvore SAF selecionada")
+            return
+        }
+
+        viewModelScope.launch {
+            _repositoryImportState.value = RepositoryImportState.Running
+            safRepositoryImporter.importTree(Uri.parse(rawUri))
+                .onSuccess { receipt ->
+                    _repositoryImportState.value = RepositoryImportState.Passed(receipt)
+                }
+                .onFailure { error ->
+                    _repositoryImportState.value = RepositoryImportState.Failed(
+                        error.message ?: "Falha ao importar snapshot SAF"
+                    )
+                }
         }
     }
 
@@ -147,4 +177,12 @@ data class GitConfig(
 sealed class SettingsNavEvent {
     data class OpenUrl(val url: String) : SettingsNavEvent()
     object OpenLicenses : SettingsNavEvent()
+}
+
+
+sealed class RepositoryImportState {
+    object Idle : RepositoryImportState()
+    object Running : RepositoryImportState()
+    data class Passed(val receipt: SafRepositoryImportReceipt) : RepositoryImportState()
+    data class Failed(val message: String) : RepositoryImportState()
 }

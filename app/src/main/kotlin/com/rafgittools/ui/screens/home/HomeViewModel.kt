@@ -12,6 +12,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
@@ -54,6 +55,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         checkAuthAndLoadData()
+        observeLocalRepositoryRegistry()
     }
 
     /** GitHub is optional: Drive and Local remain usable without a GitHub session. */
@@ -119,6 +121,21 @@ class HomeViewModel @Inject constructor(
                 _uiState.value = HomeUiState.Error(
                     terminalError?.message ?: "Failed to load repositories"
                 )
+            }
+        }
+    }
+
+    private fun observeLocalRepositoryRegistry() {
+        viewModelScope.launch {
+            localRepositoryDao.observeAll().collectLatest { entities ->
+                val localRepos = mutableListOf<LocalRepoSummary>()
+                entities
+                    .map { File(it.path) }
+                    .filter { it.exists() && it.isDirectory }
+                    .forEach { dir ->
+                        buildLocalRepoSummary(dir)?.let { localRepos.add(it) }
+                    }
+                _localRepositories.value = localRepos
             }
         }
     }
