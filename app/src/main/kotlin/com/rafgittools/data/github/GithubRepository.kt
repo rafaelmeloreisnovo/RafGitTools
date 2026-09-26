@@ -309,7 +309,12 @@ class GithubDataRepository @Inject constructor(
                 githubApiService.createIssue(
                     owner = owner,
                     repo = repo,
-                    issue = CreateIssueRequest(title = title, body = body)
+                    issue = CreateIssueRequest(
+                        title = title,
+                        body = body,
+                        labels = null,
+                        assignees = null
+                    )
                 )
             )
         } catch (e: Exception) {
