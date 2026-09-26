@@ -3,11 +3,13 @@ package com.rafgittools.data.storage
 import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
+import android.util.AtomicFile
 import com.rafgittools.data.cache.LocalRepositoryDao
 import com.rafgittools.data.cache.LocalRepositoryEntity
 import com.rafgittools.data.git.JGitService
 import com.rafgittools.domain.model.SyncState
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -36,7 +38,7 @@ class SafRepositoryImporter @Inject constructor(
 ) {
     suspend fun importTree(treeUri: Uri): Result<SafRepositoryImportReceipt> =
         withContext(Dispatchers.IO) {
-            runCatching {
+            val result = runCatching {
                 require(treeUri.scheme == "content") {
                     "SAF import requires a content:// tree URI"
                 }
@@ -124,7 +126,7 @@ class SafRepositoryImporter @Inject constructor(
                         appendLine("dao_registration=PASS")
                         appendLine("claim_allowed=false")
                     }
-                    receiptFile.writeText(receiptBody, Charsets.UTF_8)
+                    writeAtomicReceipt(receiptFile, receiptBody)
 
                     SafRepositoryImportReceipt(
                         repositoryName = safeRootName,
@@ -150,7 +152,24 @@ class SafRepositoryImporter @Inject constructor(
                     throw t
                 }
             }
+            result.exceptionOrNull()?.let { error ->
+                if (error is CancellationException) throw error
+            }
+            result
         }
+
+    private fun writeAtomicReceipt(file: File, body: String) {
+        val atomicFile = AtomicFile(file)
+        val stream = atomicFile.startWrite()
+        try {
+            stream.write(body.toByteArray(Charsets.UTF_8))
+            stream.fd.sync()
+            atomicFile.finishWrite(stream)
+        } catch (t: Throwable) {
+            atomicFile.failWrite(stream)
+            throw t
+        }
+    }
 
     private fun copyChildren(
         treeUri: Uri,
