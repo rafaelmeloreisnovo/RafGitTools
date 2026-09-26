@@ -63,4 +63,7 @@
     <string name="repo_governance_action_apply">Apply</string>
     <string name="repo_governance_action_rollback">Rollback</string>
     <string name="repo_governance_action_provider">GitHub</string>
+    <string name="repo_governance_dispatch_state">Workflow dispatch: %1$s</string>
+    <string name="repo_governance_action_dispatch">Run %1$s</string>
+    <string name="repo_governance_action_dispatch_unavailable">No allowlisted provider route</string>
 </resources>
