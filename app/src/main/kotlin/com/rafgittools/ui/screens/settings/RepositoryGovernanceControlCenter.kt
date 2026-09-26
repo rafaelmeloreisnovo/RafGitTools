@@ -8,6 +8,36 @@ import com.rafgittools.data.github.GovernanceControlState
  * This is a UI projection only:
  * OBSERVATION != POLICY_TARGET != PROVIDER_MUTATION != ENFORCEMENT_CLAIM.
  */
+data class ProviderWorkflowRoute(
+    val repository: String,
+    val workflow: String,
+    val ref: String,
+    val inputs: Map<String, String>,
+    val label: String
+)
+
+enum class ProviderDispatchState {
+    NOT_REQUESTED,
+    DISPATCHING,
+    ACCEPTED,
+    REJECTED,
+    TOKEN_VAZIO
+}
+
+fun canonicalProviderWorkflowRoute(repository: String?): ProviderWorkflowRoute? = when (repository) {
+    "rafaelmeloreisnovo/termux-app-rafacodephi" -> ProviderWorkflowRoute(
+        repository = repository,
+        workflow = "00_START_HERE.yml",
+        ref = "master",
+        inputs = mapOf(
+            "route" to "10_PROVIDER",
+            "strict_governance" to "true"
+        ),
+        label = "10_PROVIDER"
+    )
+    else -> null
+}
+
 data class GovernanceControlCenterSnapshot(
     val repository: String?,
     val protectionSurfaceState: GovernanceControlState,
@@ -22,7 +52,9 @@ data class GovernanceControlCenterSnapshot(
     val canDryRun: Boolean,
     val canApply: Boolean,
     val canRollback: Boolean,
-    val providerSettingsUrl: String?
+    val providerSettingsUrl: String?,
+    val providerWorkflowRoute: ProviderWorkflowRoute?,
+    val providerDispatchState: ProviderDispatchState
 )
 
 fun buildGovernanceControlCenterSnapshot(
@@ -106,6 +138,8 @@ fun buildGovernanceControlCenterSnapshot(
             state.evidenceState != GovernanceEvidenceState.APPLYING,
         canApply = state.canApply,
         canRollback = state.canRollback,
-        providerSettingsUrl = settingsUrl
+        providerSettingsUrl = settingsUrl,
+        providerWorkflowRoute = canonicalProviderWorkflowRoute(repository?.fullName),
+        providerDispatchState = state.providerDispatchState
     )
 }
