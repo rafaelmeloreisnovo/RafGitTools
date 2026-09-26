@@ -19,6 +19,7 @@ import com.rafgittools.data.github.RepositoryRulesetSummary
 import com.rafgittools.data.github.UpdateActionsWorkflowPermissionsRequest
 import com.rafgittools.data.github.UpdateGovernanceSecurityAndAnalysis
 import com.rafgittools.data.github.UpdateRepositoryGovernanceRequest
+import com.rafgittools.data.github.WorkflowDispatchRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -108,7 +109,8 @@ data class RepositoryGovernanceUiState(
     val isAuditing: Boolean = false,
     val message: String? = null,
     val lastReceiptId: String? = null,
-    val receiptPath: String? = null
+    val receiptPath: String? = null,
+    val providerDispatchState: ProviderDispatchState = ProviderDispatchState.NOT_REQUESTED
 ) {
     val adminAuthorityProven: Boolean
         get() = selectedRepository?.permissions?.admin == true || observed?.details?.permissions?.admin == true
@@ -193,7 +195,8 @@ class RepositoryGovernanceViewModel @Inject constructor(
             auditReport = null,
             isLoadingRepository = true,
             evidenceState = GovernanceEvidenceState.TOKEN_VAZIO,
-            message = null
+            message = null,
+            providerDispatchState = ProviderDispatchState.NOT_REQUESTED
         )
         viewModelScope.launch { probe(repository) }
     }
@@ -221,6 +224,111 @@ class RepositoryGovernanceViewModel @Inject constructor(
                 preserveDirty = true,
                 writeAuditReceipt = true,
                 auditOperation = "repository_governance_deep_audit"
+            )
+        }
+    }
+
+    fun dispatchCanonicalProviderGate() {
+        val state = _uiState.value
+        val repository = state.selectedRepository ?: return
+        val route = canonicalProviderWorkflowRoute(repository.fullName)
+
+        if (route == null) {
+            _uiState.value = state.copy(
+                providerDispatchState = ProviderDispatchState.TOKEN_VAZIO,
+                message = "TOKEN_VAZIO: no allowlisted provider workflow route for " + repository.fullName + "."
+            )
+            return
+        }
+
+        val coordinates = repositoryCoordinates(repository.fullName)
+        if (coordinates == null) {
+            _uiState.value = state.copy(
+                providerDispatchState = ProviderDispatchState.TOKEN_VAZIO,
+                message = "TOKEN_VAZIO: invalid repository coordinates; workflow dispatch blocked."
+            )
+            return
+        }
+
+        val (owner, repo) = coordinates
+        _uiState.value = state.copy(
+            providerDispatchState = ProviderDispatchState.DISPATCHING,
+            message = "Dispatching " + route.label + " via " + route.workflow + "…"
+        )
+
+        viewModelScope.launch {
+            runCatching {
+                api.dispatchWorkflow(
+                    owner = owner,
+                    repo = repo,
+                    workflow = route.workflow,
+                    request = WorkflowDispatchRequest(
+                        ref = route.ref,
+                        inputs = route.inputs
+                    )
+                )
+            }.fold(
+                onSuccess = { response ->
+                    val accepted = response.isSuccessful
+                    val outcome = if (accepted) {
+                        "PROVIDER_ACCEPTED"
+                    } else {
+                        "REJECTED_HTTP_" + response.code()
+                    }
+                    val receipt = receiptStore.appendDetailed(
+                        repository = repository.fullName,
+                        operation = "provider_workflow_dispatch",
+                        outcome = outcome,
+                        details = "workflow=" + route.workflow +
+                            "; ref=" + route.ref +
+                            "; route=" + route.label +
+                            "; inputs=" + route.inputs.toSortedMap() +
+                            "; http=" + response.code() +
+                            "; dispatch_acceptance!=workflow_execution!=workflow_pass",
+                        beforeSnapshot = state.observed?.let(::providerSnapshot),
+                        gaps = if (accepted) {
+                            emptyList()
+                        } else {
+                            listOf("WORKFLOW_DISPATCH_HTTP_" + response.code())
+                        }
+                    )
+                    _uiState.value = _uiState.value.copy(
+                        providerDispatchState = if (accepted) {
+                            ProviderDispatchState.ACCEPTED
+                        } else {
+                            ProviderDispatchState.REJECTED
+                        },
+                        message = if (accepted) {
+                            route.label + " dispatch accepted by provider. Workflow execution/result remains separately observable."
+                        } else {
+                            route.label + " dispatch rejected by provider HTTP " + response.code() + "; no workflow PASS claim."
+                        },
+                        lastReceiptId = receipt,
+                        receiptPath = receiptStore.path(),
+                        receiptChainStatus = receiptStore.verifyChain()
+                    )
+                },
+                onFailure = { error ->
+                    val receipt = receiptStore.appendDetailed(
+                        repository = repository.fullName,
+                        operation = "provider_workflow_dispatch",
+                        outcome = "TOKEN_VAZIO_PROVIDER_ERROR",
+                        details = "workflow=" + route.workflow +
+                            "; ref=" + route.ref +
+                            "; route=" + route.label +
+                            "; provider_error=" + providerMessage(error) +
+                            "; no workflow PASS claim",
+                        beforeSnapshot = state.observed?.let(::providerSnapshot),
+                        gaps = listOf("WORKFLOW_DISPATCH_PROVIDER_ERROR")
+                    )
+                    _uiState.value = _uiState.value.copy(
+                        providerDispatchState = ProviderDispatchState.TOKEN_VAZIO,
+                        message = "TOKEN_VAZIO: workflow dispatch observation failed (" + providerMessage(error) + ").",
+                        lastReceiptId = receipt,
+                        receiptPath = receiptStore.path(),
+                        receiptChainStatus = receiptStore.verifyChain()
+                    )
+                }
             )
         }
     }

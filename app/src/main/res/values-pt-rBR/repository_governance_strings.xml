@@ -50,4 +50,20 @@
     <string name="repo_governance_admin_unproven">Autoridade de admin não comprovada — gravações bloqueadas</string>
     <string name="repo_governance_admin">Admin</string>
     <string name="repo_governance_read_only">Somente leitura / autoridade não comprovada</string>
+    <string name="repo_governance_control_center">Central de Governança</string>
+    <string name="repo_governance_surface">Proteção</string>
+    <string name="repo_governance_rulesets">Rulesets</string>
+    <string name="repo_governance_required_checks">Checks exigidos</string>
+    <string name="repo_governance_actions_short">Actions</string>
+    <string name="repo_governance_ruleset_count">Rulesets: %1$s · ativos: %2$s</string>
+    <string name="repo_governance_status_contexts">Contextos de status exigidos: %1$s</string>
+    <string name="repo_governance_action_refresh">Atualizar</string>
+    <string name="repo_governance_action_audit">Auditar</string>
+    <string name="repo_governance_action_dry_run">Dry-run</string>
+    <string name="repo_governance_action_apply">Aplicar</string>
+    <string name="repo_governance_action_rollback">Rollback</string>
+    <string name="repo_governance_action_provider">GitHub</string>
+    <string name="repo_governance_dispatch_state">Disparo do workflow: %1$s</string>
+    <string name="repo_governance_action_dispatch">Executar %1$s</string>
+    <string name="repo_governance_action_dispatch_unavailable">Sem rota de provider autorizada</string>
 </resources>
