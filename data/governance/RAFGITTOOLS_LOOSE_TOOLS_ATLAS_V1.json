@@ -1,0 +1,86 @@
+{
+  "schema": "rafgittools.loose-tools-atlas.v1",
+  "observed_at": "2026-09-27",
+  "claim_allowed": false,
+  "repositories": [
+    {
+      "repository": "rafaelmeloreisnovo/llamaRafaelia",
+      "head": "6a75ec21456c73303a4e0bf4ca987a65b29010eb",
+      "scope": "rmrCti/",
+      "blob_count": 312,
+      "extensionless_count": 41,
+      "same_basename_source_pair_count": 28,
+      "unresolved_by_same_basename_count": 13,
+      "unresolved_by_same_basename": [
+        "rmrCti/omega",
+        "rmrCti/omega_cc",
+        "rmrCti/omega_neon",
+        "rmrCti/omega_v4b",
+        "rmrCti/omega_v4c",
+        "rmrCti/omega_value_top",
+        "rmrCti/omega_zone",
+        "rmrCti/omega_zone_join_conv_off",
+        "rmrCti/omega_zone_join_conv_offfix",
+        "rmrCti/omega_zone_metrics_join_v4",
+        "rmrCti/omega_zone_rank",
+        "rmrCti/ozp",
+        "rmrCti/rafa_graph_patch_2048"
+      ],
+      "key_sources": [
+        "rmrCti/omega_neuro_full.c",
+        "rmrCti/omega_forest.c",
+        "rmrCti/omega_layersbit.c",
+        "rmrCti/omega_frames_export.c",
+        "rmrCti/rmrcti_dataset_mobile.py",
+        "rmrCti/GEOMETRICVETORVERBO_STRUCTURE.md",
+        "rmrCti/RMRCTI_KNOWLEDGE_TREE_CANONICAL_RECORD.md"
+      ],
+      "boundary": "unresolved_by_same_basename != source_absent"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "head": "09923dc8e9d2b547920d7d518fb2fc269d96a975",
+      "scope": "tools/",
+      "blob_count": 465,
+      "extensionless_count": 0,
+      "key_sources": [
+        "tools/vision/visao_index.py",
+        "tools/state_geometry_lab/",
+        "tools/termux-arm64-orchestrator/",
+        "tools/zipraf/"
+      ],
+      "boundary": "tool_presence != executed_evidence"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Rafaelia_Private",
+      "head": "3ef3b6dfc26180538542ad2a03db6767ee39394d",
+      "scope": "tools/ plus neuromorphic sources outside tools/",
+      "tools_blob_count": 21,
+      "key_sources": [
+        "FRAMEWORKRAFAELIA/neuromorphic_core.py",
+        "Low-level/raf_synaptic_core.c",
+        "src/python/raf_synaptic_core.py",
+        "src/c/plasticity_engine.c",
+        "src/c/synapse_registry.c",
+        "tools/amazon_archaeo_multispectral/rvcore/",
+        "native/voynich_impl/tools/"
+      ],
+      "boundary": "private_experimental_code != promoted_library_authority"
+    }
+  ],
+  "classifications": [
+    "SOURCE",
+    "GENERATED_ARTIFACT",
+    "COMPILED_OR_EXECUTABLE_CANDIDATE",
+    "LEGACY_EXPERIMENTAL",
+    "TOOL",
+    "DOCUMENTATION",
+    "TOKEN_VAZIO_PROVENANCE"
+  ],
+  "next_gates": [
+    "content-type inspect unresolved extensionless files before relocation",
+    "match unresolved binaries to git history/build scripts where possible",
+    "do not delete/rename generated artifacts until producer-consumer edges are known",
+    "ingest canonical RMRCTI knowledge record before loose-file reconciliation"
+  ]
+}

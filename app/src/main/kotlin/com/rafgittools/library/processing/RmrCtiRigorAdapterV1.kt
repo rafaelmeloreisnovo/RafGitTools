@@ -27,18 +27,7 @@ object RmrCtiRigorAdapterV1 {
             base.noveltyGapPressure,
             milliToQ16(snapshot.semanticGapMilli, 8000),
             milliToQ16(snapshot.crossEntropyMilli, 8000),
-            snapshot.hammingPerBitQ16?.let(RigorChannelQ16::known)
-        )
-
-        val structureSignal = maxKnownQ16(
-            base.structureCompleteness,
-            snapshot.technicalDensityQ16?.let(RigorChannelQ16::known),
-            snapshot.logicDepthPerByteQ16?.let(RigorChannelQ16::known)
-        )
-
-        val multimodalSignal = maxKnownQ16(
-            base.multimodalCompleteness,
-            snapshot.latentTokenDensityQ16?.let(RigorChannelQ16::known)
+            snapshot.hammingPerBitQ16?.let { RigorChannelQ16.known(it) }
         )
 
         val contradiction = maxKnownQ16(
@@ -46,10 +35,11 @@ object RmrCtiRigorAdapterV1 {
             milliToQ16(snapshot.noiseFloorMilli, 1000)
         )
 
+        // technicalDensity, logicDepth, latentTokenDensity and raw entropy are
+        // intentionally not mapped to completeness in V1. They are measured
+        // fields, but their calibration to "rigor required" is TOKEN_VAZIO.
         return base.copy(
-            structureCompleteness = structureSignal,
             noveltyGapPressure = novelty,
-            multimodalCompleteness = multimodalSignal,
             contradictionPressure = contradiction,
             forestPath = snapshot.forestPath,
             curatedTop = snapshot.curatedTop
