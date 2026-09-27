@@ -145,7 +145,8 @@ class RmrCtiFullMemberStreamV1Test {
                 availableWorkingMemoryBytes = 8L * 1024L * 1024L,
                 batteryPercent = 80,
                 nowEpochMs = 2L
-            )
+            ),
+            biasEnvelope = biasEnvelope()
         )
 
         assertEquals(LibraryJobState.SUCCEEDED, result.execution.receipt.finalState)
@@ -161,6 +162,32 @@ class RmrCtiFullMemberStreamV1Test {
         val gate = LibraryCatalogGate.validate(requireNotNull(result.catalog))
         assertTrue(gate.errors.toString(), gate.allowed)
         assertFalse(result.receipt.claimAllowed)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun tamperedBiasPlanCannotExecuteWithoutOriginalEnvelope() {
+        val p = pack()
+        val bridged = RmrCtiMobilePackBridgeV1.bridge(p, 1L)
+        val plan = RmrCtiFullMemberStreamV1.plan(
+            pack = p,
+            bridged = bridged,
+            targetRigor = LibraryRigorLevel.STRUCTURAL,
+            promotionTrigger = RmrCtiFullMemberPromotionTriggerV1.RIGOR_BIAS,
+            biasEnvelope = biasEnvelope()
+        ).copy(biasEnvelopeSha256 = "0".repeat(64))
+
+        RmrCtiFullMemberStreamV1.execute(
+            pack = p,
+            bridged = bridged,
+            plan = plan,
+            streamSource = source(),
+            environment = LibraryJobEnvironment(
+                availableWorkingMemoryBytes = 8L * 1024L * 1024L,
+                batteryPercent = 80,
+                nowEpochMs = 2L
+            ),
+            biasEnvelope = biasEnvelope()
+        )
     }
 
     @Test(expected = IllegalArgumentException::class)

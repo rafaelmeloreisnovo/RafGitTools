@@ -169,11 +169,33 @@ object RmrCtiFullMemberStreamV1 {
         plan: RmrCtiFullMemberStreamPlanV1,
         streamSource: RepeatableLibraryStreamSourceV1,
         environment: LibraryJobEnvironment,
+        biasEnvelope: RigorBiasDecisionEnvelopeV1? = null,
         stateSink: LibraryJobStateSink = NoOpLibraryJobStateSink
     ): RmrCtiFullMemberStreamResultV1 {
         require(plan.sampleJobId == bridged.job.jobId) { "sample job mismatch" }
         require(plan.packId == pack.packId) { "pack id mismatch" }
         require(plan.sourceMember == pack.sourceMember) { "member mismatch" }
+        require(plan.sourceArchiveLocatorSha256 == bridged.sourceArchiveLocatorSha256) {
+            "archive locator provenance mismatch"
+        }
+        require(plan.expectedMemberBytes == pack.sourceMemberUncompressedBytes) {
+            "member size provenance mismatch"
+        }
+        require(plan.expectedMemberCrc32 == pack.sourceMemberCrc32.lowercase()) {
+            "member CRC provenance mismatch"
+        }
+        require(
+            plan.producerProvenanceIds.contains(
+                "github:rafaelmeloreisnovo/llamaRafaelia:" +
+                    PRODUCER_PATH + "@" + PRODUCER_BLOB
+            )
+        ) { "producer provenance missing" }
+        require(
+            plan.producerProvenanceIds.contains(
+                "github:rafaelmeloreisnovo/llamaRafaelia:" +
+                    ZIPIO_PATH + "@" + ZIPIO_BLOB
+            )
+        ) { "zip reader provenance missing" }
         require(!pack.claimAllowed && !plan.claimAllowed) {
             "claim-allowed source rejected"
         }
@@ -184,6 +206,18 @@ object RmrCtiFullMemberStreamV1 {
             RmrCtiFullMemberPromotionTriggerV1.RIGOR_BIAS -> {
                 require(plan.biasInputSha256 != null && plan.biasEnvelopeSha256 != null) {
                     "bias promotion provenance missing"
+                }
+                require(biasEnvelope != null) {
+                    "bias decision envelope must be replayed at execution"
+                }
+                require(!biasEnvelope.claimAllowed && !biasEnvelope.decision.claimAllowed) {
+                    "claim-allowed bias envelope rejected at execution"
+                }
+                require(biasEnvelope.inputSha256 == plan.biasInputSha256) {
+                    "bias input digest mismatch"
+                }
+                require(hashBiasEnvelope(biasEnvelope) == plan.biasEnvelopeSha256) {
+                    "bias envelope digest mismatch"
                 }
             }
             RmrCtiFullMemberPromotionTriggerV1.EXPLICIT_HUMAN_REQUEST -> {

@@ -111,3 +111,21 @@ sample job -> promotion trigger -> bias/request provenance -> full stream job.
 
 The full-member executor still refuses EVIDENCE. Explicit evidence processing
 belongs to the separate evidence-gated workflow.
+
+
+## Execution-time replay hardening
+
+The serialized plan is not trusted by itself.
+
+For RIGOR_BIAS promotion, execute() requires the original
+RigorBiasDecisionEnvelopeV1 again and recomputes its canonical SHA-256.
+
+Execution also rechecks:
+- archive opaque locator hash against the bounded-sample bridge;
+- member name;
+- uncompressed byte count;
+- CRC32;
+- canonical producer blob/path provenance;
+- canonical ZIP reader blob/path provenance.
+
+A tampered plan therefore fails before consuming the full member stream.
