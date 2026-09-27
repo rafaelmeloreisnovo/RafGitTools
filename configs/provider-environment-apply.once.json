@@ -1,0 +1,31 @@
+{
+  "schema": "rafaelia.provider-environment-apply-once.v1",
+  "operation": "apply_main_protection",
+  "target_repository": "rafaelmeloreisnovo/RafGitTools",
+  "target_branch": "main",
+  "expected_actor": "rafaelmeloreisnovo",
+  "environment": "Pat_environments",
+  "secret_reference": "PAT_ENV",
+  "mutation_allowed": true,
+  "one_shot": true,
+  "claim_allowed": false,
+  "preflight_evidence": {
+    "run_id": 36359250986,
+    "job_id": 108733398068,
+    "artifact_id": 10945320713,
+    "main_sha": "255267cf780f3ce03402066c76b8721c9d92f18d",
+    "state": "PLAN_ONLY_AUTHORITY_AND_SHA_PRECONDITIONS_PASS",
+    "admin_permission_observed": true,
+    "protection_prestate": "ABSENT",
+    "provider_mutation": false
+  },
+  "apply_guards": [
+    "fresh_admin_permission_check",
+    "exact_current_main_sha",
+    "protected_environment_gate",
+    "provider_readback_after_put",
+    "receipt_on_provider_api_failure",
+    "no_secret_value_persistence"
+  ],
+  "successor_required": true
+}
