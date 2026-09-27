@@ -23,6 +23,29 @@ class RigorBiasedLibraryQueueV1Test {
             requestedFloor = floor
         )
 
+    private fun provenance() = mapOf(
+        "IDENTITY" to listOf("LOCAL_IDENTITY"),
+        "PROVENANCE" to listOf("LOCAL_PROVENANCE"),
+        "STRUCTURE" to listOf("LOCAL_STRUCTURE"),
+        "NOVELTY_GAP" to listOf("LOCAL_NOVELTY"),
+        "RELATION" to listOf("LOCAL_RELATION"),
+        "MULTIMODAL" to listOf("LOCAL_MULTIMODAL"),
+        "CONTRADICTION" to listOf("LOCAL_CONTRADICTION"),
+        "REPRODUCIBILITY" to listOf("LOCAL_REPRODUCIBILITY"),
+        "FRESHNESS" to listOf("LOCAL_FRESHNESS")
+    )
+
+    private fun queued(
+        job: LibraryLocalJob,
+        bias: RigorBiasInputV1
+    ) = RigorBiasedQueuedJobV1(
+        job = job,
+        biasInput = bias,
+        signalProvenance = provenance(),
+        forestProvenanceIds = listOf("RMR_FOREST"),
+        sourceRegistryIds = listOf("RAFGITTOOLS_RIGOR_BIAS_CROSSREPO_V1")
+    )
+
     private fun job(id: String, rigor: LibraryRigorLevel) = LibraryLocalJob(
         jobId = id,
         source = LibrarySourceRef(
@@ -58,13 +81,13 @@ class RigorBiasedLibraryQueueV1Test {
         val queue = RigorBiasedLibraryQueueV1(raw)
 
         queue.enqueue(
-            RigorBiasedQueuedJobV1(
+            queued(
                 job("JOB-PROCESSUAL-001", LibraryRigorLevel.QUICK),
                 bias(RmrCtiForestPath.PROCESSUAL, LibraryRigorLevel.QUICK)
             )
         )
         queue.enqueue(
-            RigorBiasedQueuedJobV1(
+            queued(
                 job("JOB-URGENT-0001", LibraryRigorLevel.QUICK),
                 bias(RmrCtiForestPath.URGENT, LibraryRigorLevel.QUICK)
             )
@@ -81,7 +104,7 @@ class RigorBiasedLibraryQueueV1Test {
         val queue = RigorBiasedLibraryQueueV1(raw)
 
         queue.enqueue(
-            RigorBiasedQueuedJobV1(
+            queued(
                 job("JOB-EVIDENCE-001", LibraryRigorLevel.EVIDENCE),
                 bias(RmrCtiForestPath.PROCESSUAL, LibraryRigorLevel.EVIDENCE)
             )
@@ -89,6 +112,39 @@ class RigorBiasedLibraryQueueV1Test {
 
         val selected = queue.dequeueBest()!!
         assertEquals(LibraryRigorLevel.EVIDENCE, selected.effectiveJob.rigor)
+    }
+
+    @Test
+    fun dequeueReturnsDecisionEnvelopeBoundToQueuedProvenance() {
+        val raw = OfflineQueue<RigorBiasedQueuedJobV1>()
+        val queue = RigorBiasedLibraryQueueV1(raw)
+        queue.enqueue(
+            queued(
+                job("JOB-PROVENANCE-001", LibraryRigorLevel.QUICK),
+                bias(RmrCtiForestPath.MENOSPREZADO, LibraryRigorLevel.QUICK)
+            )
+        )
+
+        val selected = queue.dequeueBest()!!
+        assertEquals(selected.decision, selected.decisionEnvelope.decision)
+        assertEquals(64, selected.decisionEnvelope.inputSha256.length)
+        assertTrue(selected.decisionEnvelope.signalProvenance.isNotEmpty())
+        assertFalse(selected.decisionEnvelope.claimAllowed)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun knownBiasChannelWithoutProvenanceIsRejectedAtEnqueue() {
+        val raw = OfflineQueue<RigorBiasedQueuedJobV1>()
+        val queue = RigorBiasedLibraryQueueV1(raw)
+        queue.enqueue(
+            RigorBiasedQueuedJobV1(
+                job = job("JOB-NO-PROV-001", LibraryRigorLevel.QUICK),
+                biasInput = bias(
+                    RmrCtiForestPath.PROCESSUAL,
+                    LibraryRigorLevel.QUICK
+                )
+            )
+        )
     }
 
     @Test

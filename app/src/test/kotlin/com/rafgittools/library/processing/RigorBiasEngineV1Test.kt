@@ -69,16 +69,37 @@ class RigorBiasEngineV1Test {
     }
 
     @Test
-    fun criticalTokenVazioForcesEvidenceInspectionWithoutInventingZero() {
+    fun criticalTokenVazioRequiresEvidenceGateWithoutAutomaticPromotion() {
         val input = complete().copy(
             identityCompleteness = RigorChannelQ16.tokenVazio()
         )
         val decision = RigorBiasEngineV1.evaluate(input)
-        assertEquals(LibraryRigorLevel.EVIDENCE, decision.recommendedRigor)
+        assertEquals(LibraryRigorLevel.MULTIMODAL, decision.recommendedRigor)
+        assertTrue(decision.evidenceGateRequired)
         assertTrue(decision.unknownHeads.contains("IDENTITY"))
         val identity = decision.contributions.first { it.head == "IDENTITY" }
         assertNull(identity.sourceValueQ16)
         assertNull(identity.pressureQ16)
+    }
+
+    @Test
+    fun maximalAutomaticPressureStopsAtMultimodalAndRequiresEvidenceGate() {
+        val high = complete().copy(
+            identityCompleteness = known(0),
+            provenanceCompleteness = known(0),
+            structureCompleteness = known(0),
+            noveltyGapPressure = known(65536),
+            relationSupport = known(0),
+            multimodalCompleteness = known(0),
+            contradictionPressure = known(65536),
+            reproducibilityCompleteness = known(0),
+            freshnessDriftPressure = known(65536),
+            requestedFloor = LibraryRigorLevel.QUICK
+        )
+        val decision = RigorBiasEngineV1.evaluate(high)
+        assertEquals(LibraryRigorLevel.MULTIMODAL, decision.recommendedRigor)
+        assertTrue(decision.evidenceGateRequired)
+        assertFalse(decision.evidencePromotionAllowed)
     }
 
     @Test

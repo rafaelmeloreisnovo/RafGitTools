@@ -63,6 +63,7 @@ data class RigorBiasDecisionV1(
     val unknownHeads: List<String>,
     val contributions: List<RigorHeadContributionV1>,
     val reasons: List<String>,
+    val evidenceGateRequired: Boolean,
     val evidencePromotionAllowed: Boolean = false,
     val claimAllowed: Boolean = false
 )
@@ -147,8 +148,9 @@ object RigorBiasEngineV1 {
                 .toInt()
         }
 
-        var recommended = rigorPressure?.let(::rigorFromPressure)
-            ?: LibraryRigorLevel.EVIDENCE
+        val pressureSuggested = rigorPressure?.let(::rigorFromPressure)
+            ?: LibraryRigorLevel.MULTIMODAL
+        var recommended = capAutomaticRigor(pressureSuggested)
         val reasons = mutableListOf<String>()
 
         if (rigorPressure == null) {
@@ -156,7 +158,6 @@ object RigorBiasEngineV1 {
         }
 
         val unknownFloor = when {
-            unknown.size >= 6 -> LibraryRigorLevel.EVIDENCE
             unknown.size >= 3 -> LibraryRigorLevel.MULTIMODAL
             unknown.isNotEmpty() -> LibraryRigorLevel.STRUCTURAL
             else -> LibraryRigorLevel.QUICK
@@ -169,12 +170,27 @@ object RigorBiasEngineV1 {
         val criticalUnknown = listOf("IDENTITY", "PROVENANCE", "REPRODUCIBILITY")
             .filter(unknown::contains)
         if (criticalUnknown.isNotEmpty()) {
-            recommended = maxRigor(recommended, LibraryRigorLevel.EVIDENCE)
+            recommended = maxRigor(recommended, LibraryRigorLevel.MULTIMODAL)
             reasons += "CRITICAL_EVIDENCE_HEAD_TOKEN_VAZIO=" +
                 criticalUnknown.joinToString(",")
         }
 
-        recommended = maxRigor(recommended, input.requestedFloor)
+        val evidenceGateRequired =
+            input.requestedFloor == LibraryRigorLevel.EVIDENCE ||
+                pressureSuggested == LibraryRigorLevel.EVIDENCE ||
+                unknown.size >= 6 ||
+                criticalUnknown.isNotEmpty()
+
+        if (evidenceGateRequired) {
+            reasons += "EVIDENCE_GATE_REQUIRED_EXPLICIT"
+        }
+
+        recommended = if (input.requestedFloor == LibraryRigorLevel.EVIDENCE) {
+            LibraryRigorLevel.EVIDENCE
+        } else {
+            maxRigor(recommended, capAutomaticRigor(input.requestedFloor))
+        }
+
         if (recommended == input.requestedFloor &&
             input.requestedFloor != LibraryRigorLevel.QUICK
         ) {
@@ -193,6 +209,7 @@ object RigorBiasEngineV1 {
             unknownHeads = unknown.sorted(),
             contributions = contributions,
             reasons = reasons.distinct(),
+            evidenceGateRequired = evidenceGateRequired,
             evidencePromotionAllowed = false,
             claimAllowed = false
         )
@@ -201,8 +218,17 @@ object RigorBiasEngineV1 {
     fun raiseOnly(
         job: LibraryLocalJob,
         decision: RigorBiasDecisionV1
-    ): LibraryLocalJob =
-        job.copy(rigor = maxRigor(job.rigor, decision.recommendedRigor))
+    ): LibraryLocalJob {
+        val safeRecommendation =
+            if (decision.recommendedRigor == LibraryRigorLevel.EVIDENCE &&
+                job.rigor != LibraryRigorLevel.EVIDENCE
+            ) {
+                LibraryRigorLevel.MULTIMODAL
+            } else {
+                decision.recommendedRigor
+            }
+        return job.copy(rigor = maxRigor(job.rigor, safeRecommendation))
+    }
 
     private fun rigorFromPressure(valueQ16: Int): LibraryRigorLevel = when {
         valueQ16 < 16384 -> LibraryRigorLevel.QUICK
@@ -210,6 +236,13 @@ object RigorBiasEngineV1 {
         valueQ16 < 49152 -> LibraryRigorLevel.MULTIMODAL
         else -> LibraryRigorLevel.EVIDENCE
     }
+
+    private fun capAutomaticRigor(value: LibraryRigorLevel): LibraryRigorLevel =
+        if (value == LibraryRigorLevel.EVIDENCE) {
+            LibraryRigorLevel.MULTIMODAL
+        } else {
+            value
+        }
 
     private fun priorityBias(input: RigorBiasInputV1): Int {
         var value = when (input.forestPath) {

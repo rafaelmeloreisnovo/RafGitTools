@@ -1,0 +1,23 @@
+{
+  "schema": "rafgittools.rigor-bias-evidence-boundary-correction.v2",
+  "date": "2026-09-27",
+  "source_main": "5eb9b8f2d1a968f2cb20a794708907f315f058d1",
+  "prepaper_commit": "48f24880e2782426dd1c0d6c6511f2985af92165",
+  "corrections": [
+    "automatic neuromorphic bias capped at MULTIMODAL",
+    "evidenceGateRequired separated from evidence promotion",
+    "explicit EVIDENCE request preserved",
+    "raiseOnly defensively blocks automatic EVIDENCE even for malformed decision",
+    "known bias channels require provenance before queue admission",
+    "forest path requires provenance before queue admission",
+    "dequeue returns deterministic decision envelope bound to queued provenance"
+  ],
+  "invariants": [
+    "AUTO_BIAS_MAX_MULTIMODAL",
+    "EVIDENCE_REQUIRES_EXPLICIT_REQUEST_AND_EXISTING_GATES",
+    "KNOWN_SIGNAL_REQUIRES_PROVENANCE",
+    "BIAS_CHOOSES_ORDER_NOT_TRUTH"
+  ],
+  "ci_state": "PENDING",
+  "claim_allowed": false
+}
