@@ -24,6 +24,7 @@ on:
           - security
           - docs
           - release
+          - provider_environments
       release_version:
         description: 'Release version without leading v (required for manual release mode)'
         required: false
@@ -34,6 +35,19 @@ on:
         required: false
         default: false
         type: boolean
+      provider_operation:
+        description: 'PAT_environments operation; preflight is read-only'
+        required: false
+        default: preflight
+        type: choice
+        options:
+          - preflight
+          - apply_main_protection
+      provider_expected_main_sha:
+        description: 'Optional exact main SHA guard; defaults to workflow-dispatch SHA'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -64,6 +78,7 @@ jobs:
       security: ${{ steps.route.outputs.security }}
       docs: ${{ steps.route.outputs.docs }}
       release: ${{ steps.route.outputs.release }}
+      provider_environments: ${{ steps.route.outputs.provider_environments }}
     steps:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -76,6 +91,7 @@ jobs:
         shell: bash
         env:
           REQUESTED_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'auto' }}
+          REQUESTED_PROVIDER_OPERATION: ${{ github.event_name == 'workflow_dispatch' && inputs.provider_operation || 'preflight' }}
         run: |
           set -euo pipefail
           mode="${REQUESTED_MODE:-auto}"
@@ -541,6 +557,81 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+  provider_environments:
+    name: '08P · Provider environments / main enforcement'
+    needs: [plan, coherence]
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' &&
+        needs.plan.outputs.provider_environments == 'true' &&
+        needs.coherence.result == 'success'
+      }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    environment:
+      name: PAT_environments
+      deployment: false
+    env:
+      PROVIDER_TOKEN: ${{ secrets.PAT_environments }}
+      REQUESTED_PROVIDER_OPERATION: ${{ inputs.provider_operation }}
+      REQUESTED_EXPECTED_MAIN_SHA: ${{ inputs.provider_expected_main_sha }}
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Validate capability routing
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/validate_provider_capability_environments.py             configs/provider-capability-environments.v1.json
+      - name: Enforce manual main-only execution boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${GITHUB_EVENT_NAME}" == workflow_dispatch ]] || {
+            echo '::error::provider environment job is workflow_dispatch-only'
+            exit 2
+          }
+          [[ "${GITHUB_REF}" == refs/heads/main ]] || {
+            echo "::error::provider environment job must dispatch from main; observed ${GITHUB_REF}"
+            exit 2
+          }
+          [[ -n "${PROVIDER_TOKEN:-}" ]] || {
+            echo '::error::PAT_environments secret is unavailable after environment gate'
+            exit 3
+          }
+      - name: Apply or preflight canonical main protection
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          expected="${REQUESTED_EXPECTED_MAIN_SHA:-}"
+          [[ -n "$expected" ]] || expected="${GITHUB_SHA}"
+          args=(
+            --repo "${GITHUB_REPOSITORY}"
+            --branch main
+            --expected-main-sha "$expected"
+            --plan contracts/MAIN_PROVIDER_ENFORCEMENT_PLAN_20260907.v3.json
+            --receipt artifacts/provider-main-enforcement.json
+            --token-env PROVIDER_TOKEN
+          )
+          if [[ "${REQUESTED_PROVIDER_OPERATION}" == apply_main_protection ]]; then
+            args+=(--apply)
+          fi
+          python3 scripts/apply_rafgittools_main_protection.py "${args[@]}"
+      - name: Upload provider enforcement receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: start-08p-provider-environments-${{ github.run_id }}
+          path: artifacts/provider-main-enforcement.json
+          if-no-files-found: warn
+          retention-days: 90
+
   release:
     name: '08 · Signed release'
     needs: [plan, coherence, android, security]
@@ -670,7 +761,7 @@ jobs:
 
   receipt:
     name: '09 · Final receipt / fechamento'
-    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, release]
+    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_environments, release]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
