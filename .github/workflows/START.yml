@@ -100,6 +100,7 @@ jobs:
           security=false
           docs=false
           release=false
+          provider_environments=false
 
           case "${GITHUB_EVENT_NAME}" in
             schedule)
@@ -159,6 +160,20 @@ jobs:
             release)
               android=true; security=true; release=true
               ;;
+            provider_environments)
+              if [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch ]]; then
+                echo "::error::provider_environments is manual-only"
+                exit 2
+              fi
+              case "${REQUESTED_PROVIDER_OPERATION:-preflight}" in
+                preflight|apply_main_protection) ;;
+                *)
+                  echo "::error::unsupported provider operation: ${REQUESTED_PROVIDER_OPERATION}"
+                  exit 2
+                  ;;
+              esac
+              provider_environments=true
+              ;;
             auto)
               ;;
             *)
@@ -174,6 +189,7 @@ jobs:
             echo "security=$security"
             echo "docs=$docs"
             echo "release=$release"
+            echo "provider_environments=$provider_environments"
           } >> "$GITHUB_OUTPUT"
 
           {
@@ -185,6 +201,7 @@ jobs:
             echo "- security: \`$security\`"
             echo "- docs: \`$docs\`"
             echo "- release: \`$release\`"
+            echo "- provider_environments: \`$provider_environments\`"
             echo '- claim_allowed: `false`'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -587,7 +604,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 scripts/validate_provider_capability_environments.py             configs/provider-capability-environments.v1.json
+          python3 scripts/validate_provider_capability_environments.py configs/provider-capability-environments.v1.json
       - name: Enforce manual main-only execution boundary
         shell: bash
         run: |
@@ -774,6 +791,7 @@ jobs:
       DOCS_RESULT: ${{ needs.docs.result }}
       ANDROID_RESULT: ${{ needs.android.result }}
       SECURITY_RESULT: ${{ needs.security.result }}
+      PROVIDER_ENVIRONMENTS_RESULT: ${{ needs.provider_environments.result }}
       RELEASE_RESULT: ${{ needs.release.result }}
       ROUTE_MODE: ${{ needs.plan.outputs.mode }}
     steps:
@@ -793,6 +811,7 @@ jobs:
               'docs': os.environ['DOCS_RESULT'],
               'android': os.environ['ANDROID_RESULT'],
               'security': os.environ['SECURITY_RESULT'],
+              'provider_environments': os.environ['PROVIDER_ENVIRONMENTS_RESULT'],
               'release': os.environ['RELEASE_RESULT'],
           }
           mapped = {
