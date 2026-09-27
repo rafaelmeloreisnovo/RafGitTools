@@ -41,8 +41,9 @@ class ProviderEnvironmentApplyOnceTests(unittest.TestCase):
 
     def test_apply_script_is_fail_closed_and_receipted(self):
         script = (ROOT / "scripts" / "apply_rafgittools_main_protection.py").read_text(encoding="utf-8")
-        self.assertIn("FAIL_PROVIDER_API_APPLY", script)
-        self.assertIn("FAIL_PROVIDER_API_READBACK", script)
+        self.assertIn("record_api_error", script)
+        self.assertIn('phase="APPLY"', script)
+        self.assertIn('phase="READBACK"', script)
         self.assertIn("provider_mutation_known", script)
         self.assertIn("secret_value_recorded", script)
 
