@@ -295,6 +295,26 @@ jobs:
               py_compile.compile(str(path), doraise=True)
           print(f'compiled_python_files={len(files)}')
           PY
+
+      - name: RAFANDROID toolchain shell gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n tools/rafandroid/rafandroid
+          bash tools/rafandroid/tests/selftest.sh
+          python3 -m json.tool tools/rafandroid/toolchain.lock.json >/dev/null
+          if grep -En '\\b(curl|wget)[[:space:]]' tools/rafandroid/rafandroid; then
+            echo '::error::implicit download primitive in rafandroid'
+            exit 1
+          fi
+          if grep -En 'yes[[:space:]]*\\|.*sdkmanager.*--licenses|sdkmanager.*--licenses.*yes' tools/rafandroid/rafandroid; then
+            echo '::error::automatic Android license acceptance in rafandroid'
+            exit 1
+          fi
+          if grep -En '(^|[[:space:];])eval[[:space:]]' tools/rafandroid/rafandroid; then
+            echo '::error::eval is forbidden in rafandroid execution path'
+            exit 1
+          fi
       - name: RafCode Route V1 freestanding gate
         shell: bash
         run: |
