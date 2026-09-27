@@ -24,16 +24,23 @@ def validate(data: dict) -> list[str]:
         cap = str(item.get("capability", ""))
         env = str(item.get("environment", ""))
         secret = str(item.get("secret", ""))
+        scope = str(item.get("storage_scope", ""))
         state = str(item.get("state", ""))
         if not cap or cap in seen_caps:
             errors.append(f"invalid/duplicate capability: {cap!r}")
         seen_caps.add(cap)
-        env_key = env.casefold()
-        if not env or env_key in seen_envs:
-            errors.append(f"invalid/duplicate environment: {env!r}")
-        seen_envs.add(env_key)
         if not secret:
             errors.append(f"{cap}: missing secret name")
+        if scope == "ENVIRONMENT_SECRET":
+            env_key = env.casefold()
+            if not env or env_key in seen_envs:
+                errors.append(f"invalid/duplicate environment: {env!r}")
+            seen_envs.add(env_key)
+        elif scope == "REPOSITORY_SECRET":
+            if env != "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND":
+                errors.append(f"{cap}: repository secret must not claim environment binding")
+        else:
+            errors.append(f"{cap}: unsupported storage_scope {scope!r}")
         if state == "WIRED_MANUAL_ONLY" and cap != "environments":
             errors.append(f"{cap}: only environments capability may be wired in v1")
     env_cap = next((x for x in caps if x.get("capability") == "environments"), None)
@@ -41,9 +48,11 @@ def validate(data: dict) -> list[str]:
         errors.append("missing environments capability")
     else:
         if str(env_cap.get("environment", "")).casefold() != "pat_environments":
-            errors.append("environments capability must bind PAT_environments environment")
-        if str(env_cap.get("secret", "")).casefold() != "pat_environments":
-            errors.append("environments capability must bind PAT_environments secret")
+            errors.append("environments capability must bind Pat_environments environment")
+        if str(env_cap.get("secret", "")).casefold() != "pat_env":
+            errors.append("environments capability must bind PAT_ENV secret")
+        if env_cap.get("storage_scope") != "ENVIRONMENT_SECRET":
+            errors.append("environments capability must use ENVIRONMENT_SECRET")
         ops = set(env_cap.get("allowed_operations") or [])
         if "apply_main_protection" not in ops:
             errors.append("environments capability missing apply_main_protection")
