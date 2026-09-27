@@ -43,6 +43,23 @@ class CustodyTaxonomyTests(unittest.TestCase):
             )
         )
 
+    def test_assistant_cannot_become_connector_provider_executor(self):
+        contract = self.load_contract()
+        contract["actors"]["ASSISTANT_TOOL_OPERATOR"]["may_execute"] = True
+        errors = MODULE.validate(contract, self.load_schema())
+        self.assertTrue(
+            any(
+                "assistant orchestrator must not become connector/provider executor" in error
+                for error in errors
+            )
+        )
+
+    def test_federation_actor_mapping_cannot_conflate_assistant_and_provider(self):
+        contract = self.load_contract()
+        contract["federation_actor_mapping"]["local_to_global"]["ASSISTANT_TOOL_OPERATOR"] = "CONNECTOR_PROVIDER"
+        errors = MODULE.validate(contract, self.load_schema())
+        self.assertTrue(any("federation actor mapping mismatch" in error for error in errors))
+
     def test_claim_default_cannot_auto_promote(self):
         contract = self.load_contract()
         contract["claim_gate"]["claim_allowed_default"] = True
