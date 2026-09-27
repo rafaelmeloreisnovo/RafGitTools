@@ -79,6 +79,7 @@ jobs:
       docs: ${{ steps.route.outputs.docs }}
       release: ${{ steps.route.outputs.release }}
       provider_environments: ${{ steps.route.outputs.provider_environments }}
+      provider_operation: ${{ steps.route.outputs.provider_operation }}
     steps:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -101,6 +102,7 @@ jobs:
           docs=false
           release=false
           provider_environments=false
+          provider_operation="${REQUESTED_PROVIDER_OPERATION:-preflight}"
 
           case "${GITHUB_EVENT_NAME}" in
             schedule)
@@ -136,6 +138,22 @@ jobs:
             fi
             if grep -Eq '^(docs/|README\.md|.*\.md$)' <<<"$changed"; then
               docs=true
+            fi
+            if [[ "${GITHUB_EVENT_NAME}" == push && "${GITHUB_REF}" == refs/heads/main ]] &&
+               grep -Fxq 'configs/provider-environment-preflight.once.json' <<<"$changed"; then
+              operation="$(python3 - <<'PY'
+import json
+from pathlib import Path
+data=json.loads(Path('configs/provider-environment-preflight.once.json').read_text(encoding='utf-8'))
+print(data.get('operation',''))
+PY
+)"
+              [[ "$operation" == preflight ]] || {
+                echo "::error::one-shot provider trigger only permits preflight"
+                exit 2
+              }
+              provider_environments=true
+              provider_operation=preflight
             fi
           fi
 
@@ -173,6 +191,7 @@ jobs:
                   ;;
               esac
               provider_environments=true
+              provider_operation="${REQUESTED_PROVIDER_OPERATION:-preflight}"
               ;;
             auto)
               ;;
@@ -190,6 +209,7 @@ jobs:
             echo "docs=$docs"
             echo "release=$release"
             echo "provider_environments=$provider_environments"
+            echo "provider_operation=$provider_operation"
           } >> "$GITHUB_OUTPUT"
 
           {
@@ -202,6 +222,7 @@ jobs:
             echo "- docs: \`$docs\`"
             echo "- release: \`$release\`"
             echo "- provider_environments: \`$provider_environments\`"
+            echo "- provider_operation: \`$provider_operation\`"
             echo '- claim_allowed: `false`'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -579,9 +600,17 @@ jobs:
     needs: [plan, coherence]
     if: >-
       ${{
-        github.event_name == 'workflow_dispatch' &&
         needs.plan.outputs.provider_environments == 'true' &&
-        needs.coherence.result == 'success'
+        needs.coherence.result == 'success' &&
+        (
+          github.event_name == 'workflow_dispatch' ||
+          (
+            github.event_name == 'push' &&
+            github.ref == 'refs/heads/main' &&
+            github.actor == 'rafaelmeloreisnovo' &&
+            needs.plan.outputs.provider_operation == 'preflight'
+          )
+        )
       }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -592,7 +621,7 @@ jobs:
       deployment: false
     env:
       PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
-      REQUESTED_PROVIDER_OPERATION: ${{ inputs.provider_operation }}
+      REQUESTED_PROVIDER_OPERATION: ${{ needs.plan.outputs.provider_operation }}
       REQUESTED_EXPECTED_MAIN_SHA: ${{ inputs.provider_expected_main_sha }}
     steps:
       - name: Checkout exact source
@@ -609,10 +638,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          [[ "${GITHUB_EVENT_NAME}" == workflow_dispatch ]] || {
-            echo '::error::provider environment job is workflow_dispatch-only'
+          if [[ "${GITHUB_EVENT_NAME}" == push ]]; then
+            [[ "${GITHUB_REF}" == refs/heads/main ]] || {
+              echo '::error::one-shot preflight push must target main'
+              exit 2
+            }
+            [[ "${GITHUB_ACTOR}" == rafaelmeloreisnovo ]] || {
+              echo "::error::unexpected actor for one-shot preflight: ${GITHUB_ACTOR}"
+              exit 2
+            }
+            [[ "${REQUESTED_PROVIDER_OPERATION}" == preflight ]] || {
+              echo '::error::push-triggered provider lane is preflight-only'
+              exit 2
+            }
+          elif [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch ]]; then
+            echo '::error::provider environment job requires workflow_dispatch or bounded main preflight'
             exit 2
-          }
+          fi
           [[ "${GITHUB_REF}" == refs/heads/main ]] || {
             echo "::error::provider environment job must dispatch from main; observed ${GITHUB_REF}"
             exit 2
