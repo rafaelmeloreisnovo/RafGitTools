@@ -62,3 +62,10 @@ provider is selected and governed.
 3. Bind the private Drive directory only through user selection or private provider configuration.
 4. Validate the same golden corpus-intake vectors in Rafaelia_Private.
 5. Publish only sanitized risk projections to Mapa.
+
+## RMR-ZIPRAF custody adapter
+
+The private manifest declares `rmr-zipraf-evidence-envelope-v1` as the custody-envelope contract,
+with authority routed to `rafaelmeloreisnovo/papers`. This app does **not** claim that an envelope
+has been sealed merely because a corpus was staged/cataloged. The default state is
+`TOKEN_VAZIO_NOT_SEALED`; sealing and any external cryptographic/time anchors are separate gates.
