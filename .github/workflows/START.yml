@@ -501,6 +501,13 @@ jobs:
           else
             echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
           fi
+      - name: RAFANDROID bound Android/NDK gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools/rafandroid/rafandroid probe
+          tools/rafandroid/rafandroid shadow
+          tools/rafandroid/rafandroid native-gate tools/rafandroid/templates/minimal-jni/app/src/main/cpp/core.c 24 both
       - name: Unit tests
         run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
       - name: Compile device route instrumentation APK
@@ -517,6 +524,8 @@ jobs:
           test -n "$APK"
           test -s "$APK"
           sha256sum "$APK" | tee app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+          tools/rafandroid/rafandroid dex-gate "$APK"
+          tools/rafandroid/rafandroid apk-gate "$APK"
       - name: Upload APK
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
