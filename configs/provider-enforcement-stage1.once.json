@@ -1,0 +1,17 @@
+{
+  "schema": "rafaelia.provider-enforcement-stage1-once.v1",
+  "operation": "apply_main_protection",
+  "target_repository": "rafaelmeloreisnovo/RafGitTools",
+  "target_branch": "main",
+  "expected_actor": "rafaelmeloreisnovo",
+  "environment": "Pat_environments",
+  "secret_reference": "PAT_ENV",
+  "plan": "contracts/MAIN_PROVIDER_ENFORCEMENT_PLAN_20260927.v4.json",
+  "stage": "STAGE1_CI_AND_PR_BARRIER",
+  "mutation_allowed": true,
+  "automatic_rollback_on_mismatch": true,
+  "independent_review_required": false,
+  "required_approving_reviews": 0,
+  "one_shot": true,
+  "claim_allowed": false
+}
