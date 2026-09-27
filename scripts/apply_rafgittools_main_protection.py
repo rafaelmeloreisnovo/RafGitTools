@@ -2,6 +2,7 @@
 """Fail-closed RafGitTools main branch-protection applicator.
 
 The credential is read only from --token-env and is never written to receipts.
+Provider API failures always emit a sanitized receipt.
 """
 from __future__ import annotations
 
@@ -16,8 +17,18 @@ from typing import Any
 
 API_VERSION = "2026-03-10"
 
+
+class ProviderApiError(RuntimeError):
+    def __init__(self, status: int, method: str, path: str) -> None:
+        super().__init__(f"GitHub API {method} {path} -> {status}")
+        self.status = int(status)
+        self.method = method
+        self.path = path
+
+
 def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
+
 
 def build_payload(plan: dict[str, Any]) -> dict[str, Any]:
     contexts = [str(x["context"]) for x in plan["required_status_checks_global"]]
@@ -41,12 +52,14 @@ def build_payload(plan: dict[str, Any]) -> dict[str, Any]:
         "allow_fork_syncing": True,
     }
 
+
 def enabled(obj: Any) -> bool:
     if isinstance(obj, bool):
         return obj
     if isinstance(obj, dict):
         return obj.get("enabled") is True
     return False
+
 
 def verify_readback(data: dict[str, Any], expected_contexts: list[str]) -> list[str]:
     errors: list[str] = []
@@ -72,12 +85,19 @@ def verify_readback(data: dict[str, Any], expected_contexts: list[str]) -> list[
         errors.append("branch deletions allowed")
     return errors
 
+
 class Api:
     def __init__(self, token: str, base: str) -> None:
         self.token = token
         self.base = base.rstrip("/")
 
-    def request(self, method: str, path: str, payload: dict[str, Any] | None = None, allow_404: bool = False) -> Any:
+    def request(
+        self,
+        method: str,
+        path: str,
+        payload: dict[str, Any] | None = None,
+        allow_404: bool = False,
+    ) -> Any:
         body = None if payload is None else json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(
             self.base + path,
@@ -98,12 +118,37 @@ class Api:
         except urllib.error.HTTPError as exc:
             if allow_404 and exc.code == 404:
                 return None
-            detail = exc.read().decode("utf-8", "replace")[:500]
-            raise RuntimeError(f"GitHub API {method} {path} -> {exc.code}: {detail}") from exc
+            # Deliberately do not persist response bodies: provider errors can
+            # contain request-dependent details that are not needed for custody.
+            raise ProviderApiError(exc.code, method, path) from exc
+
 
 def write_receipt(path: Path, receipt: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def record_api_error(
+    receipt_path: Path,
+    receipt: dict[str, Any],
+    exc: ProviderApiError,
+    *,
+    phase: str,
+    mutation_attempted: bool,
+) -> int:
+    receipt.update(
+        state=f"FAIL_PROVIDER_API_{phase}",
+        provider_api_status=exc.status,
+        provider_api_method=exc.method,
+        provider_api_path=exc.path,
+        mutation_attempted=mutation_attempted,
+        provider_mutation=(None if mutation_attempted else False),
+        provider_mutation_known=(not mutation_attempted),
+    )
+    write_receipt(receipt_path, receipt)
+    print(f"FAIL provider API during {phase}: status={exc.status}", file=sys.stderr)
+    return 9
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -125,6 +170,7 @@ def main() -> int:
         "mode": "APPLY" if args.apply else "PLAN",
         "claim_allowed": False,
         "secret_value_recorded": False,
+        "mutation_attempted": False,
     }
 
     token = os.environ.get(args.token_env, "")
@@ -141,7 +187,23 @@ def main() -> int:
         return 4
 
     api = Api(token, args.api_base)
-    repo_data = api.request("GET", f"/repos/{args.repo}")
+    try:
+        repo_data = api.request("GET", f"/repos/{args.repo}")
+        branch_data = api.request("GET", f"/repos/{args.repo}/branches/{args.branch}")
+        before = api.request(
+            "GET",
+            f"/repos/{args.repo}/branches/{args.branch}/protection",
+            allow_404=True,
+        )
+    except ProviderApiError as exc:
+        return record_api_error(
+            args.receipt,
+            receipt,
+            exc,
+            phase="PREFLIGHT",
+            mutation_attempted=False,
+        )
+
     permissions = repo_data.get("permissions") or {}
     admin = permissions.get("admin") is True
     receipt["admin_permission_observed"] = admin
@@ -150,7 +212,6 @@ def main() -> int:
         write_receipt(args.receipt, receipt)
         return 5
 
-    branch_data = api.request("GET", f"/repos/{args.repo}/branches/{args.branch}")
     before_sha = str((branch_data.get("commit") or {}).get("sha") or "")
     receipt["observed_main_sha_before"] = before_sha
     if before_sha != args.expected_main_sha:
@@ -158,7 +219,6 @@ def main() -> int:
         write_receipt(args.receipt, receipt)
         return 6
 
-    before = api.request("GET", f"/repos/{args.repo}/branches/{args.branch}/protection", allow_404=True)
     receipt["protection_prestate"] = "ABSENT" if before is None else "PRESENT"
 
     payload = build_payload(plan)
@@ -166,24 +226,51 @@ def main() -> int:
     receipt["required_contexts"] = expected_contexts
 
     if not args.apply:
-        receipt.update(state="PLAN_ONLY_AUTHORITY_AND_SHA_PRECONDITIONS_PASS", provider_mutation=False)
+        receipt.update(
+            state="PLAN_ONLY_AUTHORITY_AND_SHA_PRECONDITIONS_PASS",
+            provider_mutation=False,
+            provider_mutation_known=True,
+        )
         write_receipt(args.receipt, receipt)
         print(json.dumps(receipt, sort_keys=True))
         return 0
 
-    api.request("PUT", f"/repos/{args.repo}/branches/{args.branch}/protection", payload)
-    after_branch = api.request("GET", f"/repos/{args.repo}/branches/{args.branch}")
+    receipt["mutation_attempted"] = True
+    try:
+        api.request("PUT", f"/repos/{args.repo}/branches/{args.branch}/protection", payload)
+    except ProviderApiError as exc:
+        return record_api_error(
+            args.receipt,
+            receipt,
+            exc,
+            phase="APPLY",
+            mutation_attempted=True,
+        )
+
+    try:
+        after_branch = api.request("GET", f"/repos/{args.repo}/branches/{args.branch}")
+        after = api.request("GET", f"/repos/{args.repo}/branches/{args.branch}/protection")
+    except ProviderApiError as exc:
+        return record_api_error(
+            args.receipt,
+            receipt,
+            exc,
+            phase="READBACK",
+            mutation_attempted=True,
+        )
+
     after_sha = str((after_branch.get("commit") or {}).get("sha") or "")
     receipt["observed_main_sha_after"] = after_sha
+    receipt["provider_mutation"] = True
+    receipt["provider_mutation_known"] = True
+
     if after_sha != args.expected_main_sha:
-        receipt.update(state="FAIL_MAIN_SHA_CHANGED_DURING_APPLY", provider_mutation=True)
+        receipt.update(state="FAIL_MAIN_SHA_CHANGED_DURING_APPLY")
         write_receipt(args.receipt, receipt)
         return 7
 
-    after = api.request("GET", f"/repos/{args.repo}/branches/{args.branch}/protection")
     errors = verify_readback(after, expected_contexts)
     receipt["readback_errors"] = errors
-    receipt["provider_mutation"] = True
     if errors:
         receipt["state"] = "FAIL_PROVIDER_READBACK_MISMATCH"
         write_receipt(args.receipt, receipt)
@@ -193,6 +280,7 @@ def main() -> int:
     write_receipt(args.receipt, receipt)
     print(json.dumps(receipt, sort_keys=True))
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
