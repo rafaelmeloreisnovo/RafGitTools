@@ -1,0 +1,290 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafgittools.local/contracts/custody-event-v1.schema.json",
+  "title": "RafGitTools Custody Event V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "receiptId",
+    "custodyClass",
+    "actorClass",
+    "provider",
+    "authorityDomain",
+    "sourceRef",
+    "targetRef",
+    "state",
+    "claimAllowed",
+    "evidenceRefs",
+    "gap",
+    "next",
+    "observedAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "receiptId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "previousReceiptRef": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 512
+    },
+    "supersedes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 512
+    },
+    "custodyClass": {
+      "enum": [
+        "C01_SOURCE_IDENTITY",
+        "C02_DOCUMENTARY_CUSTODY",
+        "C03_CODE_CUSTODY",
+        "C04_ARTIFACT_BYTE_CUSTODY",
+        "C05_EXECUTION_CUSTODY",
+        "C06_RECEIPT_CUSTODY",
+        "C07_AUTHORIZATION_CUSTODY",
+        "C08_TRANSFER_BRIDGE_CUSTODY",
+        "C09_HUMAN_OBSERVATION_CUSTODY",
+        "C10_ASSISTANT_TOOL_ACTION_CUSTODY"
+      ]
+    },
+    "actorClass": {
+      "enum": [
+        "HUMAN_AUTHOR",
+        "ASSISTANT_TOOL_OPERATOR",
+        "PROVIDER",
+        "PHYSICAL_DEVICE"
+      ]
+    },
+    "provider": {
+      "enum": [
+        "GOOGLE_DRIVE",
+        "GITHUB",
+        "GITHUB_ACTIONS",
+        "LOCAL_DEVICE",
+        "CHATGPT_CONNECTED_TOOL",
+        "CROSS_PROVIDER",
+        "OTHER_EXPLICIT"
+      ]
+    },
+    "authorityDomain": {
+      "enum": [
+        "DOCUMENTARY",
+        "IMPLEMENTATION",
+        "EXECUTION",
+        "EVIDENCE",
+        "DECISION"
+      ]
+    },
+    "sourceRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "targetRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "revisionRef": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 1024
+    },
+    "contentDigest": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^(TOKEN_VAZIO|sha256:[a-f0-9]{64}|git-blob:[a-f0-9]{40,64})$"
+    },
+    "state": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "NOT_RUN",
+        "PENDING",
+        "AUDIT",
+        "TOKEN_VAZIO",
+        "IMPLEMENTED_UNTESTED",
+        "OBSERVED_UNPROMOTED",
+        "ROUTE_STATE_BLOCKED"
+      ]
+    },
+    "claimAllowed": {
+      "type": "boolean"
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2048
+      },
+      "uniqueItems": true
+    },
+    "gap": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "next": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "observedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "integer",
+          "boolean",
+          "null"
+        ]
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "actorClass": {
+            "const": "ASSISTANT_TOOL_OPERATOR"
+          }
+        },
+        "required": [
+          "actorClass"
+        ]
+      },
+      "then": {
+        "properties": {
+          "provider": {
+            "enum": [
+              "CHATGPT_CONNECTED_TOOL",
+              "CROSS_PROVIDER"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "enum": [
+              "NOT_RUN",
+              "PENDING",
+              "TOKEN_VAZIO",
+              "IMPLEMENTED_UNTESTED",
+              "OBSERVED_UNPROMOTED",
+              "ROUTE_STATE_BLOCKED"
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "claimAllowed": {
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "custodyClass": {
+            "const": "C02_DOCUMENTARY_CUSTODY"
+          }
+        },
+        "required": [
+          "custodyClass"
+        ]
+      },
+      "then": {
+        "properties": {
+          "authorityDomain": {
+            "const": "DOCUMENTARY"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "custodyClass": {
+            "const": "C03_CODE_CUSTODY"
+          }
+        },
+        "required": [
+          "custodyClass"
+        ]
+      },
+      "then": {
+        "properties": {
+          "authorityDomain": {
+            "const": "IMPLEMENTATION"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "custodyClass": {
+            "const": "C05_EXECUTION_CUSTODY"
+          }
+        },
+        "required": [
+          "custodyClass"
+        ]
+      },
+      "then": {
+        "properties": {
+          "authorityDomain": {
+            "const": "EXECUTION"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "custodyClass": {
+            "const": "C07_AUTHORIZATION_CUSTODY"
+          }
+        },
+        "required": [
+          "custodyClass"
+        ]
+      },
+      "then": {
+        "properties": {
+          "authorityDomain": {
+            "const": "DECISION"
+          }
+        }
+      }
+    }
+  ]
+}
