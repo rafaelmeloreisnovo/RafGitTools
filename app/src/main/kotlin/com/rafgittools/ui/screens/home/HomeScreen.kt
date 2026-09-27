@@ -452,7 +452,7 @@ private fun DriveBridgeContent() {
                                 Spacer(Modifier.width(8.dp))
                                 Text("Catalogando…")
                             } else {
-                                Icon(Icons.Default.AccountTree, null)
+                                Icon(Icons.Default.FactCheck, null)
                                 Spacer(Modifier.width(8.dp))
                                 Text("Catalogar corpus (privado)")
                             }
@@ -467,7 +467,7 @@ private fun DriveBridgeContent() {
                 OutlinedCard(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Schema, null, tint = MaterialTheme.colorScheme.primary)
+                            Icon(Icons.Default.FactCheck, null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
                             Text("Catálogo privado pronto", style = MaterialTheme.typography.titleSmall)
                         }
@@ -509,7 +509,7 @@ private fun DriveBridgeContent() {
                                 Spacer(Modifier.width(8.dp))
                                 Text("Exportando…")
                             } else {
-                                Icon(Icons.Default.FolderOpen, null)
+                                Icon(Icons.Default.Upload, null)
                                 Spacer(Modifier.width(8.dp))
                                 Text("Exportar catálogo para pasta privada")
                             }
