@@ -1,0 +1,11 @@
+{
+  "schema": "rafgittools.local-library-processing-correction-receipt.v2",
+  "date": "2026-09-27",
+  "supersedes_commit": "c2dae6597342ffc7994ee6246760f0f138ca227b",
+  "correction": [
+    "blocked receipt descriptor_sha256 restored to null",
+    "checkpointed receipt now carries descriptor sha256 when extraction/vectorization produced a descriptor"
+  ],
+  "state": "SOURCE_CORRECTED_CI_PENDING",
+  "claim_allowed": false
+}
