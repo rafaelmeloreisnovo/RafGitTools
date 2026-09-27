@@ -11,7 +11,8 @@
     "recorded_action != provider_acceptance",
     "assistant_observation != provider_authority",
     "human_authorization != execution_evidence",
-    "cross_provider_reference != payload_duplication"
+    "cross_provider_reference != payload_duplication",
+    "assistant_orchestration != connector_provider_execution"
   ],
   "authority_domains": {
     "DOCUMENTARY": {
@@ -90,9 +91,9 @@
       ]
     },
     "ASSISTANT_TOOL_OPERATOR": {
-      "role": "route, read, write, compare and record through connected tools",
+      "role": "orchestrate reads/writes/comparisons through connected tools under explicit human scope; connector/provider remains the executor and authoritative external readback source",
       "may_authorize": false,
-      "may_execute": "ONLY_WITHIN_EXPLICIT_USER_SCOPE_AND_TOOL_PERMISSION",
+      "may_execute": false,
       "required_evidence": [
         "tool result or connector readback for external mutation claims"
       ],
@@ -101,7 +102,9 @@
         "GitHub/Drive provider truth without readback",
         "physical device execution not observed",
         "claim_allowed without gate"
-      ]
+      ],
+      "may_request_provider_mutation": true,
+      "may_execute_provider_mutation": false
     },
     "PROVIDER": {
       "role": "GitHub/Google Drive/CI service authoritative readback inside its own domain",
@@ -364,5 +367,49 @@
     "automatic_promotion": false,
     "claim_allowed_default": false,
     "rule": "Custody proves bounded identity/lineage/observation only. Claim promotion requires the domain-specific evidence gate."
+  },
+  "federated_authority": {
+    "repository": "rafaelmeloreisnovo/Mapa",
+    "path": "data/control-plane/CUSTODY_CHAIN_TYPE_REGISTRY.v1.json",
+    "observed_merge_commit": "02cc5de3d979546c3dedf0675f0949da2ce269f7",
+    "relation": "LOCAL_EXECUTOR_PROJECTION",
+    "rule": "Mapa governs federated custody semantics; RafGitTools C01-C10 remain a local executor projection and must not become a competing federation authority."
+  },
+  "federated_profile_crosswalk": {
+    "C01_SOURCE_IDENTITY": [
+      "GITHUB_SOURCE_CODE_CUSTODY",
+      "DRIVE_DOCUMENT_REVISION_CUSTODY"
+    ],
+    "C02_DOCUMENTARY_CUSTODY": [
+      "DRIVE_DOCUMENT_REVISION_CUSTODY"
+    ],
+    "C03_CODE_CUSTODY": [
+      "GITHUB_SOURCE_CODE_CUSTODY"
+    ],
+    "C04_ARTIFACT_BYTE_CUSTODY": [
+      "DRIVE_CONTENT_MATERIALIZATION_CUSTODY",
+      "EVIDENCE_CUSTODY"
+    ],
+    "C05_EXECUTION_CUSTODY": [
+      "GITHUB_ACTIONS_EXECUTION_CUSTODY",
+      "TRANSFORMATION_LINEAGE_CUSTODY"
+    ],
+    "C06_RECEIPT_CUSTODY": [
+      "RECEIPT_CHAIN_CUSTODY"
+    ],
+    "C07_AUTHORIZATION_CUSTODY": [
+      "GITHUB_REVIEW_PROMOTION_CUSTODY",
+      "AGENT_ACTION_CUSTODY"
+    ],
+    "C08_TRANSFER_BRIDGE_CUSTODY": [
+      "CROSS_SURFACE_BINDING_CUSTODY"
+    ],
+    "C09_HUMAN_OBSERVATION_CUSTODY": [
+      "AGENT_ACTION_CUSTODY",
+      "EVIDENCE_CUSTODY"
+    ],
+    "C10_ASSISTANT_TOOL_ACTION_CUSTODY": [
+      "AGENT_ACTION_CUSTODY"
+    ]
   }
 }

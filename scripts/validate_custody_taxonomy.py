@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,20 @@ EXPECTED_STATES = {
     "IMPLEMENTED_UNTESTED", "OBSERVED_UNPROMOTED", "ROUTE_STATE_BLOCKED",
 }
 
+ALLOWED_FEDERATED_PROFILES = {
+    "GITHUB_SOURCE_CODE_CUSTODY",
+    "GITHUB_REVIEW_PROMOTION_CUSTODY",
+    "GITHUB_ACTIONS_EXECUTION_CUSTODY",
+    "DRIVE_DOCUMENT_REVISION_CUSTODY",
+    "DRIVE_CONTENT_MATERIALIZATION_CUSTODY",
+    "DRIVE_MOVE_RENAME_CUSTODY",
+    "TRANSFORMATION_LINEAGE_CUSTODY",
+    "EVIDENCE_CUSTODY",
+    "AGENT_ACTION_CUSTODY",
+    "CROSS_SURFACE_BINDING_CUSTODY",
+    "RECEIPT_CHAIN_CUSTODY",
+}
+
 def _load(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -48,16 +63,34 @@ def validate(contract: dict[str, Any], event_schema: dict[str, Any]) -> list[str
         "IMPLEMENTED_UNTESTED != PASS",
         "assistant_observation != provider_authority",
         "human_authorization != execution_evidence",
+        "assistant_orchestration != connector_provider_execution",
     }
     missing = sorted(required_invariants - invariants)
     if missing:
         errors.append(f"missing invariants: {missing}")
+
+    federation = contract.get("federated_authority", {})
+    if federation.get("repository") != "rafaelmeloreisnovo/Mapa":
+        errors.append("federated custody authority must remain Mapa")
+    if federation.get("path") != "data/control-plane/CUSTODY_CHAIN_TYPE_REGISTRY.v1.json":
+        errors.append("unexpected federated custody registry path")
+    if federation.get("relation") != "LOCAL_EXECUTOR_PROJECTION":
+        errors.append("RafGitTools custody taxonomy must remain a local executor projection")
+    merge_commit = federation.get("observed_merge_commit", "")
+    if not isinstance(merge_commit, str) or not re.fullmatch(r"[0-9a-f]{40}", merge_commit):
+        errors.append("federated observed_merge_commit must be a full commit SHA")
 
     actors = contract.get("actors", {})
     assistant = actors.get("ASSISTANT_TOOL_OPERATOR", {})
     human = actors.get("HUMAN_AUTHOR", {})
     if assistant.get("may_authorize") is not False:
         errors.append("assistant must never become human authorization authority")
+    if assistant.get("may_execute") is not False:
+        errors.append("assistant orchestration must not be recorded as provider execution")
+    if assistant.get("may_request_provider_mutation") is not True:
+        errors.append("assistant must explicitly model provider mutation as a request")
+    if assistant.get("may_execute_provider_mutation") is not False:
+        errors.append("assistant cannot become connector/provider mutation executor")
     if human.get("may_authorize") is not True:
         errors.append("human authorization role must remain explicit")
     assistant_forbidden = set(assistant.get("cannot_self_promote", []))
@@ -77,6 +110,21 @@ def validate(contract: dict[str, Any], event_schema: dict[str, Any]) -> list[str
             errors.append(f"{item.get('id')}: authority_domain missing")
         if not item.get("evidence_effect"):
             errors.append(f"{item.get('id')}: evidence_effect missing")
+
+    crosswalk = contract.get("federated_profile_crosswalk", {})
+    if not isinstance(crosswalk, dict):
+        errors.append("federated_profile_crosswalk must be an object")
+    else:
+        keys = set(crosswalk)
+        if keys != EXPECTED_CLASSES:
+            errors.append(f"federated crosswalk class set mismatch: {sorted(keys ^ EXPECTED_CLASSES)}")
+        for class_id, profiles in crosswalk.items():
+            if not isinstance(profiles, list) or not profiles:
+                errors.append(f"{class_id}: federated profile mapping must be non-empty")
+                continue
+            unknown = sorted(set(profiles) - ALLOWED_FEDERATED_PROFILES)
+            if unknown:
+                errors.append(f"{class_id}: unknown federated profiles: {unknown}")
 
     states = set(contract.get("states", []))
     if states != EXPECTED_STATES:

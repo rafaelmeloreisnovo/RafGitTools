@@ -77,3 +77,16 @@ If result/readback is absent, the mutation state remains `PENDING`, `TOKEN_VAZIO
 ## Gate
 
 `claim_allowed=false` is the default. Structural validation of this taxonomy does not promote runtime, security, legal, scientific or physical claims.
+
+
+## Federated authority alignment
+
+The federated custody ontology is owned by `rafaelmeloreisnovo/Mapa:data/control-plane/CUSTODY_CHAIN_TYPE_REGISTRY.v1.json`. This RafGitTools contract is a **local executor projection**, not a second federation authority.
+
+The actor boundary is strict:
+
+`HUMAN_AUTHORITY -> ASSISTANT_ORCHESTRATOR -> CONNECTOR_PROVIDER -> PROVIDER_RESULT -> RUNTIME/REVIEW (when applicable)`
+
+The assistant may request a provider mutation inside explicit human scope, but the provider/connector is the execution authority for that external mutation. Provider readback is therefore evidence distinct from assistant orchestration.
+
+`federated_profile_crosswalk` maps every local `C01..C10` class to one or more canonical Mapa custody profiles so local implementation detail can evolve without silently redefining federation semantics.
