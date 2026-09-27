@@ -588,10 +588,10 @@ jobs:
     permissions:
       contents: read
     environment:
-      name: PAT_environments
+      name: Pat_environments
       deployment: false
     env:
-      PROVIDER_TOKEN: ${{ secrets.PAT_environments }}
+      PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
       REQUESTED_PROVIDER_OPERATION: ${{ inputs.provider_operation }}
       REQUESTED_EXPECTED_MAIN_SHA: ${{ inputs.provider_expected_main_sha }}
     steps:
@@ -618,7 +618,7 @@ jobs:
             exit 2
           }
           [[ -n "${PROVIDER_TOKEN:-}" ]] || {
-            echo '::error::PAT_environments secret is unavailable after environment gate'
+            echo '::error::PAT_ENV secret is unavailable after Pat_environments gate'
             exit 3
           }
       - name: Apply or preflight canonical main protection
