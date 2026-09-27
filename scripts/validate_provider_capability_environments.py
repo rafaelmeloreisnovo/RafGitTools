@@ -34,7 +34,7 @@ def validate(data: dict) -> list[str]:
         seen_envs.add(env_key)
         if not secret:
             errors.append(f"{cap}: missing secret name")
-        if "WIRED" in state and cap != "environments":
+        if state == "WIRED_MANUAL_ONLY" and cap != "environments":
             errors.append(f"{cap}: only environments capability may be wired in v1")
     env_cap = next((x for x in caps if x.get("capability") == "environments"), None)
     if not env_cap:
