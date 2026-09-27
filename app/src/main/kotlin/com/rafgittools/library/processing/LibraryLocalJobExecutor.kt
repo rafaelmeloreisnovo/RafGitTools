@@ -83,7 +83,8 @@ class LibraryLocalJobExecutor(
                 bytesConsumed = bytes.size.toLong()
                 LocalDescriptorEngine.byteVector(
                     bytes = bytes,
-                    includeSha256 = rigor.requireFullContentHash
+                    includeSha256 = rigor.requireFullContentHash &&
+                        job.source.contentScope == LibraryContentScope.FULL_SOURCE
                 )
             }
         } else null
@@ -122,7 +123,11 @@ class LibraryLocalJobExecutor(
         if (rigor.requireByteVector && byteVector == null) {
             requiredGaps += "REQUIRED_BYTE_VECTOR_TOKEN_VAZIO"
         }
-        if (rigor.requireFullContentHash && byteVector?.sha256 == null) {
+        if (rigor.requireFullContentHash &&
+            job.source.contentScope != LibraryContentScope.FULL_SOURCE
+        ) {
+            requiredGaps += "FULL_SOURCE_SCOPE_REQUIRED"
+        } else if (rigor.requireFullContentHash && byteVector?.sha256 == null) {
             requiredGaps += "REQUIRED_FULL_HASH_TOKEN_VAZIO"
         }
         if (rigor.requireTextVectorWhenTextLike && isTextLike && textVector == null) {
@@ -153,7 +158,8 @@ class LibraryLocalJobExecutor(
             visualVector = visualVector,
             evidenceNotes = listOf(
                 "DETERMINISTIC_DESCRIPTOR_V1",
-                "SOURCE_READ_ONLY=" + job.source.readOnly
+                "SOURCE_READ_ONLY=" + job.source.readOnly,
+                "SOURCE_CONTENT_SCOPE=" + job.source.contentScope.name
             ),
             tokenVazio = gaps.distinct()
         )

@@ -17,8 +17,13 @@
     "claim_allowed"
   ],
   "properties": {
-    "schema_version": {"const": "1.0.0"},
-    "job_id": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{8,160}$"},
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "job_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{8,160}$"
+    },
     "source": {
       "type": "object",
       "additionalProperties": false,
@@ -27,10 +32,14 @@
         "source_kind",
         "opaque_locator_hash",
         "display_name",
-        "read_only"
+        "read_only",
+        "content_scope"
       ],
       "properties": {
-        "source_id": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{4,160}$"},
+        "source_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{4,160}$"
+        },
         "source_kind": {
           "enum": [
             "GOOGLE_DRIVE_SAF",
@@ -40,16 +49,53 @@
             "GENERATED_FIXTURE"
           ]
         },
-        "opaque_locator_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-        "display_name": {"type": "string", "minLength": 1, "maxLength": 512},
-        "media_type": {"type": ["string", "null"], "maxLength": 160},
-        "size_bytes": {"type": ["integer", "null"], "minimum": 0},
-        "content_sha256": {
-          "type": ["string", "null"],
+        "opaque_locator_hash": {
+          "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         },
-        "modified_time": {"type": ["string", "null"]},
-        "read_only": {"const": true}
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "media_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 160
+        },
+        "size_bytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "content_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "modified_time": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "read_only": {
+          "const": true
+        },
+        "content_scope": {
+          "enum": [
+            "FULL_SOURCE",
+            "BOUNDED_SAMPLE",
+            "METADATA_ONLY",
+            "TOKEN_VAZIO"
+          ]
+        }
       }
     },
     "requested_stages": {
@@ -68,7 +114,14 @@
         ]
       }
     },
-    "rigor": {"enum": ["QUICK", "STRUCTURAL", "MULTIMODAL", "EVIDENCE"]},
+    "rigor": {
+      "enum": [
+        "QUICK",
+        "STRUCTURAL",
+        "MULTIMODAL",
+        "EVIDENCE"
+      ]
+    },
     "budget": {
       "type": "object",
       "additionalProperties": false,
@@ -83,19 +136,61 @@
         "network_policy"
       ],
       "properties": {
-        "max_bytes": {"type": "integer", "minimum": 1},
-        "max_working_memory_bytes": {"type": "integer", "minimum": 1048576},
-        "max_items": {"type": "integer", "minimum": 1},
-        "max_attempts": {"type": "integer", "minimum": 1, "maximum": 20},
-        "checkpoint_every_bytes": {"type": "integer", "minimum": 1},
-        "min_battery_percent": {"type": "integer", "minimum": 0, "maximum": 100},
-        "thermal_policy": {"enum": ["COOL_ONLY", "NORMAL", "ALLOW_WARM"]},
-        "network_policy": {"enum": ["OFFLINE_ONLY", "READ_ONLY_NETWORK"]}
+        "max_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_working_memory_bytes": {
+          "type": "integer",
+          "minimum": 1048576
+        },
+        "max_items": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "checkpoint_every_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "min_battery_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "thermal_policy": {
+          "enum": [
+            "COOL_ONLY",
+            "NORMAL",
+            "ALLOW_WARM"
+          ]
+        },
+        "network_policy": {
+          "enum": [
+            "OFFLINE_ONLY",
+            "READ_ONLY_NETWORK"
+          ]
+        }
       }
     },
-    "output_namespace": {"type": "string", "pattern": "^[A-Za-z0-9._:/-]{4,240}$"},
-    "idempotency_key": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{16,256}$"},
-    "created_at_epoch_ms": {"type": "integer", "minimum": 0},
-    "claim_allowed": {"const": false}
+    "output_namespace": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:/-]{4,240}$"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{16,256}$"
+    },
+    "created_at_epoch_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "claim_allowed": {
+      "const": false
+    }
   }
 }

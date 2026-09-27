@@ -47,6 +47,13 @@ enum class LibrarySourceKind {
     GENERATED_FIXTURE
 }
 
+enum class LibraryContentScope {
+    FULL_SOURCE,
+    BOUNDED_SAMPLE,
+    METADATA_ONLY,
+    TOKEN_VAZIO
+}
+
 data class LibraryProcessingBudget(
     val maxBytes: Long,
     val maxWorkingMemoryBytes: Long,
@@ -67,6 +74,7 @@ data class LibrarySourceRef(
     val sizeBytes: Long?,
     val contentSha256: String?,
     val modifiedTime: String?,
+    val contentScope: LibraryContentScope = LibraryContentScope.FULL_SOURCE,
     val readOnly: Boolean = true
 )
 
