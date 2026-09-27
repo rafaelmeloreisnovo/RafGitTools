@@ -100,7 +100,7 @@ class LibraryLocalProcessingTest {
         )
 
         assertEquals(LibraryJobState.CHECKPOINTED, result.receipt.finalState)
-        assertTrue(result.receipt.gaps.contains("EVIDENCE_VISUAL_VECTOR_REQUIRED"))
+        assertTrue(result.receipt.gaps.contains("REQUIRED_VISUAL_VECTOR_TOKEN_VAZIO"))
     }
 
     @Test
@@ -117,6 +117,33 @@ class LibraryLocalProcessingTest {
 
         assertEquals(LibraryJobState.BLOCKED_RESOURCE, result.receipt.finalState)
         assertNull(result.descriptors)
+    }
+
+    @Test
+    fun unimplementedMaterializeStageCheckpointsWithoutFalsePass() {
+        val base = job(rigor = LibraryRigorLevel.STRUCTURAL)
+        val requested = base.copy(
+            requestedStages = base.requestedStages + LibraryJobStage.MATERIALIZE
+        )
+
+        val result = LibraryLocalJobExecutor().execute(
+            job = requested,
+            input = LibraryJobInput(
+                bytes = "materialize later".toByteArray(),
+                text = "materialize later"
+            ),
+            environment = LibraryJobEnvironment(
+                availableWorkingMemoryBytes = 8 * 1024 * 1024,
+                batteryPercent = 90,
+                nowEpochMs = 2L
+            )
+        )
+
+        assertEquals(LibraryJobState.CHECKPOINTED, result.receipt.finalState)
+        assertFalse(result.receipt.completedStages.contains(LibraryJobStage.MATERIALIZE))
+        assertTrue(result.receipt.gaps.contains("MATERIALIZE_EXECUTOR_NOT_IMPLEMENTED"))
+        assertNotNull(result.descriptors)
+        assertNotNull(result.receipt.descriptorSha256)
     }
 
     @Test

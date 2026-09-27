@@ -118,26 +118,21 @@ class LibraryLocalJobExecutor(
         completed += LibraryJobStage.EXTRACT
         completed += LibraryJobStage.VECTORIZE
 
-        if (job.rigor == LibraryRigorLevel.EVIDENCE &&
-            rigor.requireFullContentHash &&
-            byteVector?.sha256 == null
-        ) {
-            return checkpointed(
-                job = job,
-                started = started,
-                finished = environment.nowEpochMs,
-                attempt = attempt,
-                completed = completed,
-                bytesConsumed = bytesConsumed,
-                gaps = gaps + "EVIDENCE_FULL_HASH_REQUIRED"
-            )
+        val requiredGaps = mutableListOf<String>()
+        if (rigor.requireByteVector && byteVector == null) {
+            requiredGaps += "REQUIRED_BYTE_VECTOR_TOKEN_VAZIO"
+        }
+        if (rigor.requireFullContentHash && byteVector?.sha256 == null) {
+            requiredGaps += "REQUIRED_FULL_HASH_TOKEN_VAZIO"
+        }
+        if (rigor.requireTextVectorWhenTextLike && isTextLike && textVector == null) {
+            requiredGaps += "REQUIRED_TEXT_VECTOR_TOKEN_VAZIO"
+        }
+        if (rigor.requireVisualVectorWhenImageLike && isImageLike && visualVector == null) {
+            requiredGaps += "REQUIRED_VISUAL_VECTOR_TOKEN_VAZIO"
         }
 
-        if (job.rigor == LibraryRigorLevel.EVIDENCE &&
-            isImageLike &&
-            rigor.requireVisualVectorWhenImageLike &&
-            visualVector == null
-        ) {
+        if (requiredGaps.isNotEmpty()) {
             return checkpointed(
                 job = job,
                 started = started,
@@ -145,7 +140,7 @@ class LibraryLocalJobExecutor(
                 attempt = attempt,
                 completed = completed,
                 bytesConsumed = bytesConsumed,
-                gaps = gaps + "EVIDENCE_VISUAL_VECTOR_REQUIRED"
+                gaps = (gaps + requiredGaps).distinct()
             )
         }
 
@@ -165,10 +160,25 @@ class LibraryLocalJobExecutor(
 
         val descriptorSha = sha256(canonicalDescriptor(descriptors))
         val requested = job.requestedStages.toSet()
+        val unimplementedStageGaps = buildList {
+            if (LibraryJobStage.RELATE in requested) add("RELATE_EXECUTOR_NOT_IMPLEMENTED")
+            if (LibraryJobStage.MATERIALIZE in requested) add("MATERIALIZE_EXECUTOR_NOT_IMPLEMENTED")
+            if (LibraryJobStage.DISTRIBUTE in requested) add("DISTRIBUTE_EXECUTOR_NOT_IMPLEMENTED")
+        }
 
-        if (LibraryJobStage.RELATE in requested) completed += LibraryJobStage.RELATE
-        if (LibraryJobStage.MATERIALIZE in requested) completed += LibraryJobStage.MATERIALIZE
-        if (LibraryJobStage.DISTRIBUTE in requested) completed += LibraryJobStage.DISTRIBUTE
+        if (unimplementedStageGaps.isNotEmpty()) {
+            return checkpointed(
+                job = job,
+                started = started,
+                finished = environment.nowEpochMs,
+                attempt = attempt,
+                completed = completed,
+                bytesConsumed = bytesConsumed,
+                gaps = (gaps + unimplementedStageGaps).distinct(),
+                descriptors = descriptors,
+                descriptorSha256 = descriptorSha
+            )
+        }
 
         val receipt = LibraryJobReceipt(
             jobId = job.jobId,
@@ -226,7 +236,7 @@ class LibraryLocalJobExecutor(
             requestedRigor = job.rigor,
             finalState = state,
             completedStages = emptyList(),
-            descriptorSha256 = null,
+            descriptorSha256 = descriptorSha256,
             bytesConsumed = 0,
             itemsConsumed = 0,
             startedAtEpochMs = started,
@@ -245,7 +255,9 @@ class LibraryLocalJobExecutor(
         attempt: Int,
         completed: List<LibraryJobStage>,
         bytesConsumed: Long,
-        gaps: List<String>
+        gaps: List<String>,
+        descriptors: LibraryDescriptorBundle? = null,
+        descriptorSha256: String? = null
     ): LibraryJobExecutionResult {
         val checkpoint = LibraryJobCheckpoint(
             jobId = job.jobId,
@@ -274,7 +286,7 @@ class LibraryLocalJobExecutor(
         )
         stateSink.checkpoint(checkpoint)
         stateSink.receipt(receipt)
-        return LibraryJobExecutionResult(receipt, checkpoint, null)
+        return LibraryJobExecutionResult(receipt, checkpoint, descriptors)
     }
 
     private fun canonicalDescriptor(value: LibraryDescriptorBundle): String = buildString {

@@ -1,0 +1,12 @@
+{
+  "schema": "rafgittools.local-library-processing-correction-receipt.v1",
+  "date": "2026-09-27",
+  "supersedes_execution_semantics_from": "afa160cbcae59cd434a61328833f6285c056ab6e",
+  "corrections": [
+    "required descriptors now checkpoint when missing for every rigor contract",
+    "RELATE/MATERIALIZE/DISTRIBUTE are not marked completed without executors",
+    "descriptor output is preserved on checkpoint when extraction/vectorization succeeded"
+  ],
+  "invariant": "NO_FALSE_STAGE_PASS",
+  "claim_allowed": false
+}
