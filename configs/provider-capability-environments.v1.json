@@ -2,50 +2,66 @@
   "schema": "rafaelia.provider-capability-environments.v1",
   "observed_at": "2026-09-27",
   "repository": "rafaelmeloreisnovo/RafGitTools",
-  "source": "HUMAN_REPORTED_GITHUB_ENVIRONMENT_AND_PAT_INVENTORY",
-  "provider_environment_readback": "TOKEN_VAZIO_CONNECTOR_ENDPOINT_UNAVAILABLE",
+  "source": "HUMAN_REPORTED_GITHUB_SETTINGS_READBACK",
+  "provider_environment_api_readback": "TOKEN_VAZIO_CONNECTOR_ENDPOINT_UNAVAILABLE",
   "claim_allowed": false,
   "capabilities": [
     {
       "capability": "actions",
-      "environment": "PAT_actions",
-      "secret": "PAT_actions",
+      "storage_scope": "REPOSITORY_SECRET",
+      "environment": "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND",
+      "secret": "PAT_ACTIONS",
       "state": "REGISTERED_NOT_WIRED",
-      "allowed_operations": ["preflight"]
+      "allowed_operations": [
+        "preflight"
+      ]
     },
     {
       "capability": "agents",
-      "environment": "PAT_agents",
-      "secret": "PAT_agents",
+      "storage_scope": "REPOSITORY_SECRET",
+      "environment": "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND",
+      "secret": "PAT_AGENTS",
       "state": "REGISTERED_NOT_WIRED",
-      "allowed_operations": ["preflight"]
+      "allowed_operations": [
+        "preflight"
+      ]
     },
     {
       "capability": "codespaces",
-      "environment": "PAT_codespaces",
-      "secret": "PAT_codespaces",
+      "storage_scope": "REPOSITORY_SECRET",
+      "environment": "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND",
+      "secret": "PAT_CODESPACES",
       "state": "REGISTERED_NOT_WIRED",
-      "allowed_operations": ["preflight"]
+      "allowed_operations": [
+        "preflight"
+      ]
+    },
+    {
+      "capability": "dependabot",
+      "storage_scope": "REPOSITORY_SECRET",
+      "environment": "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND",
+      "secret": "PAT_DEPENDABOT",
+      "state": "REGISTERED_NOT_WIRED",
+      "allowed_operations": [
+        "preflight"
+      ]
     },
     {
       "capability": "environments",
-      "environment": "PAT_environments",
-      "secret": "PAT_environments",
+      "storage_scope": "ENVIRONMENT_SECRET",
+      "environment": "Pat_environments",
+      "secret": "PAT_ENV",
       "state": "WIRED_MANUAL_ONLY",
-      "allowed_operations": ["preflight", "apply_main_protection"],
+      "allowed_operations": [
+        "preflight",
+        "apply_main_protection"
+      ],
       "issue": 393
-    },
-    {
-      "capability": "legacy_generic",
-      "environment": "pat_env",
-      "secret": "pat_env",
-      "state": "REGISTERED_DISABLED_BY_DEFAULT",
-      "allowed_operations": ["preflight"]
     }
   ],
   "invariants": [
     "NON_PRIVILEGED_JOB_USES_GITHUB_TOKEN_ONLY",
-    "PAT_CAPABILITY_MUST_MATCH_ENVIRONMENT",
+    "PAT_CAPABILITY_MUST_MATCH_STORAGE_SCOPE",
     "NO_PAT_FALLBACK_BETWEEN_CAPABILITIES",
     "SECRET_VALUE_NEVER_PERSISTED_OR_PRINTED",
     "PROVIDER_WRITE_REQUIRES_WORKFLOW_DISPATCH",
