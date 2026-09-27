@@ -1,6 +1,6 @@
 package com.rafgittools.library.processing
 
-private const val RIGOR_Q16_ONE = 65536
+internal const val RIGOR_Q16_ONE = 65536
 
 enum class RigorChannelState {
     KNOWN,

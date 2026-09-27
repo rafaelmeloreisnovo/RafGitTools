@@ -1,0 +1,8 @@
+{
+  "schema": "rafgittools.neuromorphic-rigor-bias-correction.v1",
+  "date": "2026-09-27",
+  "supersedes_commit": "194b8d28bd1bc351186d59540819cf799b31b4ac",
+  "correction": "Q16 constant visibility changed from file-private to module-internal for the rmrCti adapter",
+  "state": "SOURCE_CORRECTED_CI_PENDING",
+  "claim_allowed": false
+}
