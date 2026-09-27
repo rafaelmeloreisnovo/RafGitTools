@@ -36,7 +36,7 @@ def validate(contract: dict[str, Any], event_schema: dict[str, Any]) -> list[str
     errors: list[str] = []
     if contract.get("schema") != "rafgittools.custody-taxonomy.v1":
         errors.append("contract schema id mismatch")
-    if contract.get("version") != "1.0.0":
+    if contract.get("version") != "1.0.1":
         errors.append("contract version mismatch")
     if contract.get("authority") != "rafaelmeloreisnovo/RafGitTools":
         errors.append("local authority must remain RafGitTools")
@@ -48,6 +48,7 @@ def validate(contract: dict[str, Any], event_schema: dict[str, Any]) -> list[str
         "IMPLEMENTED_UNTESTED != PASS",
         "assistant_observation != provider_authority",
         "human_authorization != execution_evidence",
+        "assistant_orchestration != connector_provider_execution",
     }
     missing = sorted(required_invariants - invariants)
     if missing:
@@ -58,11 +59,28 @@ def validate(contract: dict[str, Any], event_schema: dict[str, Any]) -> list[str
     human = actors.get("HUMAN_AUTHOR", {})
     if assistant.get("may_authorize") is not False:
         errors.append("assistant must never become human authorization authority")
+    if assistant.get("may_execute") is not False:
+        errors.append("assistant orchestrator must not become connector/provider executor")
     if human.get("may_authorize") is not True:
         errors.append("human authorization role must remain explicit")
     assistant_forbidden = set(assistant.get("cannot_self_promote", []))
     if "human authorization" not in assistant_forbidden:
         errors.append("assistant boundary must forbid self-promotion to human authorization")
+
+    federation = contract.get("federation_authority", {})
+    if federation.get("control_plane") != "rafaelmeloreisnovo/Mapa":
+        errors.append("federation control plane must remain Mapa")
+    if federation.get("registry_path") != "data/control-plane/CUSTODY_CHAIN_TYPE_REGISTRY.v1.json":
+        errors.append("federation registry path mismatch")
+    mapping = contract.get("federation_actor_mapping", {}).get("local_to_global", {})
+    expected_mapping = {
+        "HUMAN_AUTHOR": "HUMAN_AUTHORITY",
+        "ASSISTANT_TOOL_OPERATOR": "ASSISTANT_ORCHESTRATOR",
+        "PROVIDER": "CONNECTOR_PROVIDER",
+        "PHYSICAL_DEVICE": "RUNTIME_EXECUTOR",
+    }
+    if mapping != expected_mapping:
+        errors.append("federation actor mapping mismatch")
 
     classes = contract.get("custody_classes", [])
     class_ids = [item.get("id") for item in classes]
