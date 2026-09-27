@@ -141,13 +141,7 @@ jobs:
             fi
             if [[ "${GITHUB_EVENT_NAME}" == push && "${GITHUB_REF}" == refs/heads/main ]] &&
                grep -Fxq 'configs/provider-environment-preflight.once.json' <<<"$changed"; then
-              operation="$(python3 - <<'PY'
-import json
-from pathlib import Path
-data=json.loads(Path('configs/provider-environment-preflight.once.json').read_text(encoding='utf-8'))
-print(data.get('operation',''))
-PY
-)"
+              operation="$(python3 -c "import json,pathlib; print(json.loads(pathlib.Path('configs/provider-environment-preflight.once.json').read_text(encoding='utf-8')).get('operation',''))")"
               [[ "$operation" == preflight ]] || {
                 echo "::error::one-shot provider trigger only permits preflight"
                 exit 2
