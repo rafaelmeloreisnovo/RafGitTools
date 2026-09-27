@@ -23,16 +23,17 @@ class ProviderEnvironmentRoutingTests(unittest.TestCase):
         self.assertEqual(ENV.validate(data), [])
         routed = {x["capability"]: x for x in data["capabilities"]}
         self.assertEqual(routed["environments"]["environment"].casefold(), "pat_environments")
-        self.assertEqual(routed["environments"]["secret"], "PAT_ENV")
+        self.assertEqual(routed["environments"]["secret"], "PAT_environments")
         self.assertEqual(routed["environments"]["state"], "WIRED_MANUAL_ONLY")
         self.assertEqual(routed["environments"]["storage_scope"], "ENVIRONMENT_SECRET")
-        self.assertEqual(routed["actions"]["secret"], "PAT_ACTIONS")
-        self.assertEqual(routed["agents"]["secret"], "PAT_AGENTS")
-        self.assertEqual(routed["codespaces"]["secret"], "PAT_CODESPACES")
-        self.assertEqual(routed["dependabot"]["secret"], "PAT_DEPENDABOT")
-        for key in ("actions", "agents", "codespaces", "dependabot"):
-            self.assertEqual(routed[key]["storage_scope"], "REPOSITORY_SECRET")
-            self.assertEqual(routed[key]["environment"], "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND")
+        self.assertEqual(routed["actions"]["secret"], "PAT_actions")
+        self.assertEqual(routed["agents"]["secret"], "PAT_agents")
+        self.assertEqual(routed["codespaces"]["secret"], "PAT_codespaces")
+        self.assertEqual(routed["legacy_generic"]["secret"], "pat_env")
+        self.assertNotIn("dependabot", routed)
+        for key in ("legacy_generic", "actions", "agents", "codespaces"):
+            self.assertEqual(routed[key]["storage_scope"], "TOKEN_VAZIO_PROVIDER_STORAGE_SCOPE")
+            self.assertEqual(routed[key]["environment"], "TOKEN_VAZIO_PROVIDER_ENVIRONMENT_NAME_UNVERIFIED")
 
     def test_branch_protection_payload_matches_canonical_start_contexts(self):
         plan = json.loads((ROOT / "contracts" / "MAIN_PROVIDER_ENFORCEMENT_PLAN_20260907.v3.json").read_text())
