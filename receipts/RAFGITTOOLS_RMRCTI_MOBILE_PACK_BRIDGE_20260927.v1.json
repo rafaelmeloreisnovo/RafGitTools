@@ -1,0 +1,26 @@
+{
+  "schema": "rafgittools.rmrcti-mobile-pack-bridge-bootstrap.v1",
+  "date": "2026-09-27",
+  "producer": {
+    "repository": "rafaelmeloreisnovo/llamaRafaelia",
+    "path": "rmrCti/rmrcti_dataset_mobile.py",
+    "blob": "f8e6687ef1994f64db8bcb5ce765f8cd21c842f1",
+    "schema": "rmrcti.content-pack/v1"
+  },
+  "implemented": [
+    "LibraryContentScope",
+    "bounded sample full-hash guard",
+    "RmrCtiMobilePackBridgeV1",
+    "portable job schema content_scope",
+    "regression tests"
+  ],
+  "invariants": [
+    "BOUNDED_SAMPLE_NE_FULL_SOURCE",
+    "SAMPLE_HASH_NE_FULL_CONTENT_HASH",
+    "RAW_ARCHIVE_LOCATOR_NOT_EXPORTED",
+    "QUICK_SAMPLE_PASS_NE_DEEP_RIGOR_PASS"
+  ],
+  "physical_novoexport_run": "NOT_RUN",
+  "ci_state": "PENDING",
+  "claim_allowed": false
+}
