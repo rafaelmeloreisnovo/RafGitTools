@@ -124,7 +124,7 @@ object LocalDescriptorEngine {
                 val quadrant = (if (y * 2 >= height) 2 else 0) +
                     (if (x * 2 >= width) 1 else 0)
                 quadrantSum[quadrant] += value.toLong()
-                quadrantCount[quadrant] += 1
+                quadrantCount[quadrant] = quadrantCount[quadrant] + 1L
 
                 if (x > 0) horizontal += kotlin.math.abs(value - p(x - 1, y)).toLong()
                 if (y > 0) vertical += kotlin.math.abs(value - p(x, y - 1)).toLong()

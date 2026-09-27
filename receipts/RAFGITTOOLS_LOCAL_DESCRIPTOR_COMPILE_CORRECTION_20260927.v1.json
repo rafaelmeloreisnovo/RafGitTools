@@ -1,0 +1,10 @@
+{
+  "schema": "rafgittools.local-descriptor-compile-correction.v1",
+  "date": "2026-09-27",
+  "discovered_by_run": 36294279318,
+  "failure": "LocalDescriptorEngine.kt:127 No set method providing array access",
+  "correction": "replace compound LongArray indexed increment with explicit Long assignment",
+  "source_boundary": "pre-existing in merged PR #500; discovered while validating PR #501",
+  "ci_state": "PENDING",
+  "claim_allowed": false
+}
