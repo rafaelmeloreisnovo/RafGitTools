@@ -36,9 +36,9 @@ def build_payload(plan: dict[str, Any]) -> dict[str, Any]:
             "dismiss_stale_reviews": bool(policy["dismiss_stale_approvals_on_new_commits"]),
             "require_code_owner_reviews": False,
             "required_approving_review_count": int(policy["minimum_approving_reviews"]),
-            "require_last_push_approval": bool(policy["require_last_push_approval"]),
+            "require_last_push_approval": bool(policy.get("require_last_push_approval", True)),
         },
-        "enforce_admins": bool(policy["enforce_admins"]),
+        "enforce_admins": bool(policy.get("enforce_admins", True)),
         "restrictions": None,
         "required_linear_history": False,
         "allow_force_pushes": not bool(policy["force_push_forbidden"]),
@@ -71,7 +71,7 @@ def verify_readback(data: dict[str, Any], plan: dict[str, Any]) -> list[str]:
     if checks.get("strict") is not bool(policy["require_branch_up_to_date_before_merge"]):
         errors.append("strict status-check mode mismatch")
 
-    if enabled(data.get("enforce_admins")) is not bool(policy["enforce_admins"]):
+    if enabled(data.get("enforce_admins")) is not bool(policy.get("enforce_admins", True)):
         errors.append("enforce_admins mismatch")
 
     reviews = data.get("required_pull_request_reviews")
@@ -83,7 +83,7 @@ def verify_readback(data: dict[str, Any], plan: dict[str, Any]) -> list[str]:
             errors.append("required approving review count mismatch")
         if reviews.get("dismiss_stale_reviews") is not bool(policy["dismiss_stale_approvals_on_new_commits"]):
             errors.append("dismiss_stale_reviews mismatch")
-        if reviews.get("require_last_push_approval") is not bool(policy["require_last_push_approval"]):
+        if reviews.get("require_last_push_approval") is not bool(policy.get("require_last_push_approval", True)):
             errors.append("require_last_push_approval mismatch")
 
     if enabled(data.get("required_conversation_resolution")) is not bool(policy["require_conversation_resolution"]):
