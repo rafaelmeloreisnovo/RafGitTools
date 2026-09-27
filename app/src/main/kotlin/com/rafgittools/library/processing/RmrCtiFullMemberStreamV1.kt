@@ -19,6 +19,11 @@ import java.io.IOException
 import java.io.InputStream
 import java.security.MessageDigest
 
+enum class RmrCtiFullMemberPromotionTriggerV1 {
+    RIGOR_BIAS,
+    EXPLICIT_HUMAN_REQUEST
+}
+
 data class RmrCtiFullMemberStreamPlanV1(
     val schemaVersion: String = "1.0.0",
     val sampleJobId: String,
@@ -28,6 +33,10 @@ data class RmrCtiFullMemberStreamPlanV1(
     val expectedMemberBytes: Long,
     val expectedMemberCrc32: String,
     val targetRigor: LibraryRigorLevel,
+    val promotionTrigger: RmrCtiFullMemberPromotionTriggerV1,
+    val biasInputSha256: String?,
+    val biasEnvelopeSha256: String?,
+    val explicitRequestId: String?,
     val maxOutputBytes: Long,
     val chunkBytes: Int,
     val producerProvenanceIds: List<String>,
@@ -41,6 +50,10 @@ data class RmrCtiFullMemberReceiptV1(
     val sourceId: String,
     val contentSha256: String,
     val crc32: String,
+    val promotionTrigger: RmrCtiFullMemberPromotionTriggerV1,
+    val biasInputSha256: String?,
+    val biasEnvelopeSha256: String?,
+    val explicitRequestId: String?,
     val bytesRead: Long,
     val descriptorSha256: String?,
     val catalogId: String?,
@@ -71,6 +84,9 @@ object RmrCtiFullMemberStreamV1 {
         pack: RmrCtiMobileContentPackV1,
         bridged: RmrCtiMobilePackBridgeResultV1,
         targetRigor: LibraryRigorLevel,
+        promotionTrigger: RmrCtiFullMemberPromotionTriggerV1,
+        biasEnvelope: RigorBiasDecisionEnvelopeV1? = null,
+        explicitRequestId: String? = null,
         maxOutputBytes: Long = pack.sourceMemberUncompressedBytes,
         chunkBytes: Int = 64 * 1024
     ): RmrCtiFullMemberStreamPlanV1 {
@@ -81,6 +97,38 @@ object RmrCtiFullMemberStreamV1 {
         }
         require(Regex("^[0-9a-fA-F]{8}$").matches(pack.sourceMemberCrc32)) {
             "RMRCTI member CRC32 must be eight hex digits"
+        }
+
+        val biasHash: String?
+        val biasInputHash: String?
+        when (promotionTrigger) {
+            RmrCtiFullMemberPromotionTriggerV1.RIGOR_BIAS -> {
+                require(biasEnvelope != null) {
+                    "RIGOR_BIAS promotion requires a decision envelope"
+                }
+                require(!biasEnvelope.claimAllowed && !biasEnvelope.decision.claimAllowed) {
+                    "claim-allowed bias envelope rejected"
+                }
+                require(!biasEnvelope.decision.evidencePromotionAllowed) {
+                    "bias envelope must not auto-promote evidence"
+                }
+                val safeRecommended = if (
+                    biasEnvelope.decision.recommendedRigor == LibraryRigorLevel.EVIDENCE
+                ) LibraryRigorLevel.MULTIMODAL
+                else biasEnvelope.decision.recommendedRigor
+                require(rigorRank(targetRigor) <= rigorRank(safeRecommended)) {
+                    "target rigor exceeds bias recommendation"
+                }
+                biasInputHash = biasEnvelope.inputSha256
+                biasHash = hashBiasEnvelope(biasEnvelope)
+            }
+            RmrCtiFullMemberPromotionTriggerV1.EXPLICIT_HUMAN_REQUEST -> {
+                require(!explicitRequestId.isNullOrBlank()) {
+                    "explicit human promotion requires request id"
+                }
+                biasInputHash = null
+                biasHash = null
+            }
         }
         require(pack.sourceMemberUncompressedBytes >= 0L) {
             "RMRCTI member size invalid"
@@ -97,6 +145,10 @@ object RmrCtiFullMemberStreamV1 {
             expectedMemberBytes = pack.sourceMemberUncompressedBytes,
             expectedMemberCrc32 = pack.sourceMemberCrc32.lowercase(),
             targetRigor = targetRigor,
+            promotionTrigger = promotionTrigger,
+            biasInputSha256 = biasInputHash,
+            biasEnvelopeSha256 = biasHash,
+            explicitRequestId = explicitRequestId,
             maxOutputBytes = maxOutputBytes,
             chunkBytes = chunkBytes,
             producerProvenanceIds = (
@@ -127,6 +179,18 @@ object RmrCtiFullMemberStreamV1 {
         }
         require(plan.targetRigor != LibraryRigorLevel.EVIDENCE) {
             "EVIDENCE requires explicit evidence workflow and is not auto-promoted"
+        }
+        when (plan.promotionTrigger) {
+            RmrCtiFullMemberPromotionTriggerV1.RIGOR_BIAS -> {
+                require(plan.biasInputSha256 != null && plan.biasEnvelopeSha256 != null) {
+                    "bias promotion provenance missing"
+                }
+            }
+            RmrCtiFullMemberPromotionTriggerV1.EXPLICIT_HUMAN_REQUEST -> {
+                require(!plan.explicitRequestId.isNullOrBlank()) {
+                    "explicit request provenance missing"
+                }
+            }
         }
 
         val rigor = LibraryRigorLens.contract(plan.targetRigor)
@@ -204,6 +268,10 @@ object RmrCtiFullMemberStreamV1 {
             append(fullSource.sourceId).append('|')
             append(analysis.sha256).append('|')
             append(analysis.crc32).append('|')
+            append(plan.promotionTrigger.name).append('|')
+            append(plan.biasInputSha256.orEmpty()).append('|')
+            append(plan.biasEnvelopeSha256.orEmpty()).append('|')
+            append(plan.explicitRequestId.orEmpty()).append('|')
             append(analysis.bytesRead).append('|')
             append(execution.receipt.descriptorSha256.orEmpty()).append('|')
             append(catalog?.catalogId.orEmpty()).append('|')
@@ -218,6 +286,10 @@ object RmrCtiFullMemberStreamV1 {
             sourceId = fullSource.sourceId,
             contentSha256 = analysis.sha256,
             crc32 = analysis.crc32,
+            promotionTrigger = plan.promotionTrigger,
+            biasInputSha256 = plan.biasInputSha256,
+            biasEnvelopeSha256 = plan.biasEnvelopeSha256,
+            explicitRequestId = plan.explicitRequestId,
             bytesRead = analysis.bytesRead,
             descriptorSha256 = execution.receipt.descriptorSha256,
             catalogId = catalog?.catalogId,
@@ -371,6 +443,39 @@ object RmrCtiFullMemberStreamV1 {
             claimAllowed = false
         )
     }
+
+    private fun rigorRank(value: LibraryRigorLevel): Int = when (value) {
+        LibraryRigorLevel.QUICK -> 0
+        LibraryRigorLevel.STRUCTURAL -> 1
+        LibraryRigorLevel.MULTIMODAL -> 2
+        LibraryRigorLevel.EVIDENCE -> 3
+    }
+
+    private fun hashBiasEnvelope(value: RigorBiasDecisionEnvelopeV1): String =
+        sha256(buildString {
+            append("rigor-bias-envelope-v1|")
+            append(value.inputSha256).append('|')
+            append(value.decision.priorityBiasQ16).append('|')
+            append(value.decision.rigorPressureQ16 ?: -1).append('|')
+            append(value.decision.recommendedRigor.name).append('|')
+            append(value.decision.requestedFloor.name).append('|')
+            append(value.decision.unknownHeads.sorted()).append('|')
+            append(value.decision.reasons.sorted()).append('|')
+            value.decision.contributions.sortedBy { it.head }.forEach { c ->
+                append(c.head).append(':')
+                append(c.sourceValueQ16 ?: -1).append(':')
+                append(c.pressureQ16 ?: -1).append(':')
+                append(c.weightQ16).append(':')
+                append(c.weightedPressure ?: -1L).append(':')
+                append(c.state.name).append('|')
+            }
+            value.signalProvenance.sortedBy { it.head }.forEach { p ->
+                append(p.head).append('=').append(p.sourceIds.sorted()).append('|')
+            }
+            append(value.forestProvenanceIds.sorted()).append('|')
+            append(value.sourceRegistryIds.sorted()).append('|')
+            append("claim_allowed=false")
+        })
 
     private fun sha256(value: String): String =
         MessageDigest.getInstance("SHA-256")

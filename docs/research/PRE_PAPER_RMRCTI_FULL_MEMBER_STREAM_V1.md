@@ -91,3 +91,23 @@ TEXT_UNIQUE_ESTIMATE_SATURATED_AT_8192.
 Run the first physical NOVOexport member through the exact producer stream
 route on the phone and persist the resulting full-member receipt + catalog
 artifact. Then compare the physical result against an independent replay.
+
+
+## Promotion provenance gate
+
+Every full-member read is now typed as one of:
+
+- RIGOR_BIAS
+- EXPLICIT_HUMAN_REQUEST
+
+RIGOR_BIAS requires the full RigorBiasDecisionEnvelopeV1. The plan stores the
+bias input SHA-256 and a canonical SHA-256 of the decision envelope.
+
+EXPLICIT_HUMAN_REQUEST requires a non-empty request identifier.
+
+Therefore the custody edge is explicit:
+
+sample job -> promotion trigger -> bias/request provenance -> full stream job.
+
+The full-member executor still refuses EVIDENCE. Explicit evidence processing
+belongs to the separate evidence-gated workflow.

@@ -50,6 +50,41 @@ class RmrCtiFullMemberStreamV1Test {
         ByteArrayInputStream(payload)
     }
 
+    private fun biasEnvelope(): RigorBiasDecisionEnvelopeV1 {
+        val known = RigorChannelQ16.known(0)
+        val input = RigorBiasInputV1(
+            identityCompleteness = known,
+            provenanceCompleteness = known,
+            structureCompleteness = known,
+            noveltyGapPressure = RigorChannelQ16.known(65536),
+            relationSupport = known,
+            multimodalCompleteness = known,
+            contradictionPressure = RigorChannelQ16.known(65536),
+            reproducibilityCompleteness = known,
+            freshnessDriftPressure = RigorChannelQ16.known(32768),
+            forestPath = RmrCtiForestPath.URGENT,
+            curatedTop = true,
+            requestedFloor = LibraryRigorLevel.QUICK
+        )
+        val provenance = mapOf(
+            "IDENTITY" to listOf("test:identity"),
+            "PROVENANCE" to listOf("test:provenance"),
+            "STRUCTURE" to listOf("test:structure"),
+            "NOVELTY_GAP" to listOf("test:novelty"),
+            "RELATION" to listOf("test:relation"),
+            "MULTIMODAL" to listOf("test:multimodal"),
+            "CONTRADICTION" to listOf("test:contradiction"),
+            "REPRODUCIBILITY" to listOf("test:reproducibility"),
+            "FRESHNESS" to listOf("test:freshness")
+        )
+        return RigorBiasDecisionEnvelopeFactoryV1.evaluate(
+            input = input,
+            signalProvenance = provenance,
+            forestProvenanceIds = listOf("test:forest"),
+            sourceRegistryIds = listOf("test:registry")
+        )
+    }
+
     @Test
     fun streamingByteVectorMatchesInMemoryVector() {
         val analysis = LibraryStreamingDescriptorEngineV1.analyze(
@@ -96,7 +131,9 @@ class RmrCtiFullMemberStreamV1Test {
         val plan = RmrCtiFullMemberStreamV1.plan(
             pack = p,
             bridged = bridged,
-            targetRigor = LibraryRigorLevel.STRUCTURAL
+            targetRigor = LibraryRigorLevel.STRUCTURAL,
+            promotionTrigger = RmrCtiFullMemberPromotionTriggerV1.RIGOR_BIAS,
+            biasEnvelope = biasEnvelope()
         )
 
         val result = RmrCtiFullMemberStreamV1.execute(
@@ -114,6 +151,12 @@ class RmrCtiFullMemberStreamV1Test {
         assertEquals(LibraryJobState.SUCCEEDED, result.execution.receipt.finalState)
         assertEquals(sha256(payload), result.execution.descriptors?.byteVector?.sha256)
         assertEquals(sha256(payload), result.receipt.contentSha256)
+        assertEquals(
+            RmrCtiFullMemberPromotionTriggerV1.RIGOR_BIAS,
+            result.receipt.promotionTrigger
+        )
+        assertNotNull(result.receipt.biasInputSha256)
+        assertNotNull(result.receipt.biasEnvelopeSha256)
         assertNotNull(result.catalog)
         val gate = LibraryCatalogGate.validate(requireNotNull(result.catalog))
         assertTrue(gate.errors.toString(), gate.allowed)
@@ -127,7 +170,9 @@ class RmrCtiFullMemberStreamV1Test {
         RmrCtiFullMemberStreamV1.plan(
             pack = p,
             bridged = bridged,
-            targetRigor = LibraryRigorLevel.EVIDENCE
+            targetRigor = LibraryRigorLevel.EVIDENCE,
+            promotionTrigger = RmrCtiFullMemberPromotionTriggerV1.EXPLICIT_HUMAN_REQUEST,
+            explicitRequestId = "human-test-request"
         )
     }
 
