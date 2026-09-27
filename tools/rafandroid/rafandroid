@@ -1,0 +1,409 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+RAFANDROID_VERSION="1.0.0"
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TEMPLATE_DIR="$SELF_DIR/templates/minimal-jni"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+
+say(){ printf '%s\n' "$*"; }
+die(){ printf 'rafandroid: %s\n' "$*" >&2; exit 2; }
+have(){ command -v "$1" >/dev/null 2>&1; }
+
+json_escape(){
+  local s=${1-}
+  s=${s//\\/\\\\}; s=${s//\"/\\\"}; s=${s//$'\n'/\\n}; s=${s//$'\r'/\\r}; s=${s//$'\t'/\\t}
+  printf '%s' "$s"
+}
+
+first_existing_dir(){
+  local p
+  for p in "$@"; do
+    [[ -n "$p" && -d "$p" ]] && { printf '%s\n' "$p"; return 0; }
+  done
+  return 1
+}
+
+resolve_sdk(){
+  local prop=""
+  if [[ -f "$REPO_ROOT/local.properties" ]]; then
+    prop="$(sed -n 's/^sdk\.dir=//p' "$REPO_ROOT/local.properties" | head -n1 || true)"
+  fi
+  first_existing_dir "${ANDROID_SDK_ROOT:-}" "${ANDROID_HOME:-}" "$prop" \
+    "/usr/local/lib/android/sdk" "/opt/android-sdk" "$HOME/Android/Sdk"
+}
+
+latest_dir(){
+  local root="${1:-}"
+  [[ -d "$root" ]] || return 1
+  find "$root" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | sort -V | tail -n1
+}
+
+resolve_ndk(){
+  local sdk="${1:-}"
+  [[ -n "${ANDROID_NDK_HOME:-}" && -d "${ANDROID_NDK_HOME:-}" ]] && { printf '%s\n' "$ANDROID_NDK_HOME"; return 0; }
+  [[ -n "$sdk" ]] || return 1
+  latest_dir "$sdk/ndk"
+}
+
+resolve_build_tools(){
+  local sdk="${1:-}"
+  [[ -n "$sdk" ]] || return 1
+  latest_dir "$sdk/build-tools"
+}
+
+resolve_cmdline_tools(){
+  local sdk="${1:-}"
+  [[ -x "$sdk/cmdline-tools/latest/bin/sdkmanager" ]] && { printf '%s\n' "$sdk/cmdline-tools/latest"; return 0; }
+  latest_dir "$sdk/cmdline-tools"
+}
+
+resolve_tool(){
+  local name="$1" sdk="${2:-}" bt="${3:-}" ct="${4:-}" ndk="${5:-}" host=""
+  if have "$name"; then command -v "$name"; return 0; fi
+  case "$name" in
+    aapt2|d8|r8|apksigner|zipalign)
+      [[ -x "$bt/$name" ]] && { printf '%s\n' "$bt/$name"; return 0; } ;;
+    sdkmanager|avdmanager)
+      [[ -x "$ct/bin/$name" ]] && { printf '%s\n' "$ct/bin/$name"; return 0; } ;;
+    adb)
+      [[ -x "$sdk/platform-tools/adb" ]] && { printf '%s\n' "$sdk/platform-tools/adb"; return 0; } ;;
+    emulator)
+      [[ -x "$sdk/emulator/emulator" ]] && { printf '%s\n' "$sdk/emulator/emulator"; return 0; } ;;
+    clang|clang++|llvm-nm|llvm-readelf|ld.lld)
+      host="$(find "$ndk/toolchains/llvm/prebuilt" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | head -n1 || true)"
+      [[ -x "$host/bin/$name" ]] && { printf '%s\n' "$host/bin/$name"; return 0; } ;;
+  esac
+  return 1
+}
+
+gradle_command(){
+  if [[ -f "$REPO_ROOT/gradlew" ]]; then
+    [[ -x "$REPO_ROOT/gradlew" ]] && { printf '%s\n' "$REPO_ROOT/gradlew"; return 0; }
+    printf 'bash %q' "$REPO_ROOT/gradlew"; return 0
+  fi
+  have gradle && { command -v gradle; return 0; }
+  return 1
+}
+
+probe_one(){
+  local label="$1" path="${2:-}"
+  if [[ "$path" == bash\ * ]]; then
+    printf '%-18s PASS %s\n' "$label" "$path"
+  elif [[ -n "$path" && ( -x "$path" || -f "$path" || -d "$path" ) ]]; then
+    printf '%-18s PASS %s\n' "$label" "$path"
+  else
+    printf '%-18s TOKEN_VAZIO\n' "$label"
+  fi
+}
+
+context(){
+  SDK="$(resolve_sdk 2>/dev/null || true)"
+  NDK="$(resolve_ndk "$SDK" 2>/dev/null || true)"
+  BT="$(resolve_build_tools "$SDK" 2>/dev/null || true)"
+  CT="$(resolve_cmdline_tools "$SDK" 2>/dev/null || true)"
+  GRADLE="$(gradle_command 2>/dev/null || true)"
+}
+
+cmd_probe(){
+  context
+  say "RAFANDROID_TOOLCHAIN_SHELL_V1"
+  say "version=$RAFANDROID_VERSION"
+  say "repo_root=$REPO_ROOT"
+  probe_one android_sdk "$SDK"
+  probe_one ndk "$NDK"
+  probe_one build_tools "$BT"
+  probe_one cmdline_tools "$CT"
+  probe_one gradle "$GRADLE"
+  local t p
+  for t in java javac cmake ninja clang llvm-nm llvm-readelf aapt2 d8 r8 apksigner zipalign adb emulator qemu-system-arm qemu-system-aarch64 qemu-system-x86_64; do
+    p="$(resolve_tool "$t" "$SDK" "$BT" "$CT" "$NDK" 2>/dev/null || true)"
+    probe_one "$t" "$p"
+  done
+  say "claim_allowed=false"
+}
+
+count_dirs(){
+  local p="$1"
+  [[ -d "$p" ]] || { printf '0\n'; return; }
+  find "$p" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | wc -l | tr -d ' '
+}
+
+cmd_shadow(){
+  context
+  local sdk_roots=0 p bt_count ndk_count ct_count gradle_sources=0
+  for p in "${ANDROID_SDK_ROOT:-}" "${ANDROID_HOME:-}" "/usr/local/lib/android/sdk" "/opt/android-sdk" "$HOME/Android/Sdk"; do
+    [[ -n "$p" && -d "$p" ]] && sdk_roots=$((sdk_roots+1))
+  done
+  bt_count="$(count_dirs "$SDK/build-tools")"
+  ndk_count="$(count_dirs "$SDK/ndk")"
+  ct_count="$(count_dirs "$SDK/cmdline-tools")"
+  [[ -f "$REPO_ROOT/gradlew" ]] && gradle_sources=$((gradle_sources+1))
+  have gradle && gradle_sources=$((gradle_sources+1))
+  say "RAFANDROID_SHADOW_REPORT_V1"
+  say "sdk_root_candidates=$sdk_roots"
+  say "build_tools_versions=$bt_count"
+  say "ndk_versions=$ndk_count"
+  say "cmdline_tools_versions=$ct_count"
+  say "gradle_entrypoints=$gradle_sources"
+  if [[ "$sdk_roots" -le 1 && "$gradle_sources" -le 1 ]]; then say "shadow_state=LOW"; else say "shadow_state=REVIEW"; fi
+  say "claim_allowed=false"
+}
+
+cmd_graph(){
+  cat <<'EOF'
+RAFANDROID_BUILD_GRAPH_V1
+SOURCE
+  -> RESOURCE[AAPT2]
+  -> JVM[JAVAC/KOTLIN]
+  -> BYTECODE[D8 -> DEX]
+  -> NATIVE[C/C++ -> NDK/CLANG -> JNI .so]
+  -> SHRINK[R8 optional/release]
+  -> PACKAGE[APK/AAB]
+  -> ALIGN[ZIPALIGN]
+  -> SIGN[APKSIGNER]
+  -> INSTALL[ADB/package manager]
+  -> RUNTIME[ART/JNI]
+  -> VM_OPTIONAL[Android Emulator/QEMU]
+BOUNDARY: Android/Gradle/AGP/SDK/NDK/AndroidX/QEMU are external authorities.
+BOUNDARY: rafandroid is the authorial discovery/orchestration/gating/receipt layer.
+BOUNDARY: a freestanding project core must pass its own zero-undefined-symbol gate.
+EOF
+}
+
+cmd_bind(){
+  context
+  [[ -n "$SDK" ]] || die "Android SDK = TOKEN_VAZIO; configure an existing SDK explicitly."
+  printf 'sdk.dir=%s\n' "$SDK" > "$REPO_ROOT/local.properties"
+  say "BIND=PASS"
+  say "local_properties=$REPO_ROOT/local.properties"
+  say "sdk=$SDK"
+}
+
+cmd_env(){
+  context
+  [[ -n "$SDK" ]] || die "Android SDK = TOKEN_VAZIO"
+  printf 'export ANDROID_SDK_ROOT=%q\n' "$SDK"
+  printf 'export ANDROID_HOME=%q\n' "$SDK"
+  [[ -n "$NDK" ]] && printf 'export ANDROID_NDK_HOME=%q\n' "$NDK"
+}
+
+cmd_gradle(){
+  context
+  [[ -n "$GRADLE" ]] || die "Gradle wrapper/system Gradle = TOKEN_VAZIO"
+  if [[ "$GRADLE" == bash\ * ]]; then eval "$GRADLE" --no-daemon "$@"; else exec "$GRADLE" --no-daemon "$@"; fi
+}
+
+cmd_exec_tool(){
+  local name="${1:-}"; shift || true
+  case "$name" in
+    sdkmanager|avdmanager|aapt2|d8|r8|apksigner|zipalign|adb|emulator|clang|clang++|llvm-nm|llvm-readelf|ld.lld|qemu-system-arm|qemu-system-aarch64|qemu-system-x86_64) ;;
+    *) die "tool not in allowlist: $name" ;;
+  esac
+  context
+  local p=""
+  p="$(resolve_tool "$name" "$SDK" "$BT" "$CT" "$NDK" 2>/dev/null || true)"
+  [[ -n "$p" ]] || die "$name = TOKEN_VAZIO"
+  exec "$p" "$@"
+}
+
+cmd_provision_plan(){
+  cat <<'EOF'
+RAFANDROID_PROVISION_PLAN_V1
+network_implicit=false
+license_auto_accept=false
+JDK=17
+compileSdk=34
+targetSdk=34
+minSdk=24
+build-tools=34.0.0
+NDK=26.3.11579264
+CMake=3.22.1
+ABIs=armeabi-v7a,arm64-v8a
+explicit_command=rafandroid tool sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;26.3.11579264" "cmake;3.22.1"
+EOF
+}
+
+cmd_androidx(){
+  local files=()
+  while IFS= read -r f; do files+=("$f"); done < <(find "$REPO_ROOT" -maxdepth 4 -type f \( -name 'build.gradle' -o -name 'build.gradle.kts' \) -print 2>/dev/null)
+  say "RAFANDROID_ANDROIDX_INVENTORY_V1"
+  if [[ "${#files[@]}" -eq 0 ]]; then say "state=TOKEN_VAZIO"; return 0; fi
+  grep -hE "['\"][^'\"]*androidx\.[^'\"]*['\"]" "${files[@]}" 2>/dev/null | sed 's/^[[:space:]]*//' | sort -u || true
+  say "inventory_only=true"
+  say "claim_allowed=false"
+}
+
+cmd_qemu(){
+  context
+  say "RAFANDROID_QEMU_PROBE_V1"
+  local t p
+  for t in emulator qemu-system-arm qemu-system-aarch64 qemu-system-x86_64 adb; do
+    p="$(resolve_tool "$t" "$SDK" "$BT" "$CT" "$NDK" 2>/dev/null || true)"
+    probe_one "$t" "$p"
+  done
+  say "boot_claim=TOKEN_VAZIO"
+  say "physical_runtime_claim=TOKEN_VAZIO"
+}
+
+abi_target(){
+  local abi="$1" api="$2"
+  case "$abi" in
+    armeabi-v7a) printf 'armv7a-linux-androideabi%s\n' "$api" ;;
+    arm64-v8a) printf 'aarch64-linux-android%s\n' "$api" ;;
+    x86) printf 'i686-linux-android%s\n' "$api" ;;
+    x86_64) printf 'x86_64-linux-android%s\n' "$api" ;;
+    *) return 1 ;;
+  esac
+}
+
+cmd_native_gate(){
+  local src="${1:-}" api="${2:-29}" abi="${3:-both}"
+  [[ -f "$src" ]] || die "source not found: $src"
+  context
+  [[ -n "$NDK" ]] || die "NDK = TOKEN_VAZIO"
+  local cc nm
+  cc="$(resolve_tool clang "$SDK" "$BT" "$CT" "$NDK" 2>/dev/null || true)"
+  nm="$(resolve_tool llvm-nm "$SDK" "$BT" "$CT" "$NDK" 2>/dev/null || true)"
+  [[ -n "$cc" && -n "$nm" ]] || die "NDK clang/llvm-nm = TOKEN_VAZIO"
+  local abis=() a target obj undef
+  [[ "$abi" == both ]] && abis=(armeabi-v7a arm64-v8a) || abis=("$abi")
+  for a in "${abis[@]}"; do
+    target="$(abi_target "$a" "$api")" || die "unsupported ABI: $a"
+    obj="$(mktemp "${TMPDIR:-/tmp}/rafandroid.XXXXXX.o")"; undef="${obj}.undefined"
+    "$cc" --target="$target" -std=c11 -O3 -ffreestanding -fno-builtin -ffunction-sections -fdata-sections -Wall -Wextra -Werror -c "$src" -o "$obj"
+    "$nm" -u "$obj" > "$undef"
+    if [[ -s "$undef" ]]; then
+      say "NATIVE_GATE=$a:FAIL"; cat "$undef"; rm -f "$obj" "$undef"; return 1
+    fi
+    say "NATIVE_GATE=$a:PASS"; rm -f "$obj" "$undef"
+  done
+}
+
+cmd_jni_gate(){
+  local so="${1:-}"
+  [[ -f "$so" ]] || die "shared library not found: $so"
+  context
+  local nm="" out=""
+  nm="$(resolve_tool llvm-nm "$SDK" "$BT" "$CT" "$NDK" 2>/dev/null || command -v nm 2>/dev/null || true)"
+  [[ -n "$nm" ]] || die "nm = TOKEN_VAZIO"
+  out="$("$nm" -D --defined-only "$so" 2>/dev/null | grep -E ' (Java_|JNI_OnLoad)' || true)"
+  [[ -n "$out" ]] || { say "JNI_GATE=FAIL:no_JNI_exports"; return 1; }
+  say "JNI_GATE=PASS"; printf '%s\n' "$out"
+}
+
+cmd_dex_gate(){
+  local target="${1:-}"
+  [[ -f "$target" ]] || die "target not found: $target"
+  if [[ "$target" == *.apk ]]; then
+    have unzip || die "unzip = TOKEN_VAZIO"
+    local count
+    count="$(unzip -Z1 "$target" | grep -Ec '^classes([0-9]+)?\.dex$' || true)"
+    [[ "$count" -gt 0 ]] || { say "DEX_GATE=FAIL:no_classes.dex"; return 1; }
+    say "DEX_GATE=PASS"; say "dex_files=$count"
+  else
+    local magic
+    magic="$(dd if="$target" bs=1 count=3 2>/dev/null || true)"
+    [[ "$magic" == "dex" ]] || { say "DEX_GATE=FAIL:bad_magic"; return 1; }
+    say "DEX_GATE=PASS"
+  fi
+}
+
+cmd_apk_gate(){
+  local apk="${1:-}"
+  [[ -f "$apk" ]] || die "APK not found: $apk"
+  have unzip || die "unzip = TOKEN_VAZIO"
+  local list abis signer align
+  list="$(unzip -Z1 "$apk")"
+  grep -qx 'AndroidManifest.xml' <<<"$list" || { say "APK_GATE=FAIL:manifest"; return 1; }
+  grep -Eq '^classes([0-9]+)?\.dex$' <<<"$list" || { say "APK_GATE=FAIL:dex"; return 1; }
+  say "APK_STRUCTURE=PASS"
+  abis="$(grep -E '^lib/[^/]+/[^/]+\.so$' <<<"$list" | cut -d/ -f2 | sort -u | paste -sd, - || true)"
+  say "native_abis=${abis:-NONE}"
+  context
+  signer="$(resolve_tool apksigner "$SDK" "$BT" "$CT" "$NDK" 2>/dev/null || true)"
+  align="$(resolve_tool zipalign "$SDK" "$BT" "$CT" "$NDK" 2>/dev/null || true)"
+  if [[ -n "$align" ]]; then "$align" -c 4 "$apk" && say "ZIPALIGN=PASS" || { say "ZIPALIGN=FAIL"; return 1; }; else say "ZIPALIGN=TOKEN_VAZIO"; fi
+  if [[ -n "$signer" ]]; then "$signer" verify "$apk" >/dev/null && say "SIGNATURE=PASS" || say "SIGNATURE=FAIL_OR_UNSIGNED"; else say "SIGNATURE=TOKEN_VAZIO"; fi
+}
+
+cmd_scaffold(){
+  local out="${1:-}" pkg="${2:-io.rafaelia.minimal}"
+  [[ -n "$out" ]] || die "usage: rafandroid scaffold <dir> [package]"
+  [[ "$pkg" =~ ^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+$ ]] || die "invalid package: $pkg"
+  [[ -d "$TEMPLATE_DIR" ]] || die "template directory missing"
+  [[ ! -e "$out" ]] || die "destination exists: $out"
+  mkdir -p "$out"; cp -R "$TEMPLATE_DIR"/. "$out"/
+  local package_path="${pkg//./\/}" jni_package="${pkg//./_}" marker="$out/app/src/main/java/__PACKAGE_PATH__" f
+  mkdir -p "$out/app/src/main/java/$package_path"
+  if [[ -d "$marker" ]]; then
+    find "$marker" -maxdepth 1 -type f -print0 | while IFS= read -r -d '' f; do mv "$f" "$out/app/src/main/java/$package_path/"; done
+    rmdir "$marker"
+  fi
+  while IFS= read -r -d '' f; do
+    sed -i "s/__PACKAGE__/$pkg/g; s/__APPID__/$pkg/g; s/__JNI_PACKAGE__/$jni_package/g" "$f"
+  done < <(find "$out" -type f -print0)
+  say "SCAFFOLD=PASS"; say "path=$out"; say "package=$pkg"; say "androidx_default=OFF"; say "jni=ON"
+}
+
+cmd_receipt(){
+  context
+  local commit branch shadows
+  commit="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || echo TOKEN_VAZIO)"
+  branch="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo TOKEN_VAZIO)"
+  shadows="$(cmd_shadow | tr '\n' ';')"
+  printf '{\n'
+  printf '  "schema":"rafandroid.receipt.v1",\n'
+  printf '  "tool_version":"%s",\n' "$RAFANDROID_VERSION"
+  printf '  "repository":"%s",\n' "$(json_escape "$REPO_ROOT")"
+  printf '  "ref":"%s",\n' "$(json_escape "$branch")"
+  printf '  "source_commit":"%s",\n' "$(json_escape "$commit")"
+  printf '  "android_sdk":"%s",\n' "$(json_escape "${SDK:-TOKEN_VAZIO}")"
+  printf '  "ndk":"%s",\n' "$(json_escape "${NDK:-TOKEN_VAZIO}")"
+  printf '  "build_tools":"%s",\n' "$(json_escape "${BT:-TOKEN_VAZIO}")"
+  printf '  "shadow_report":"%s",\n' "$(json_escape "$shadows")"
+  printf '  "network_implicit":false,\n'
+  printf '  "claim_allowed":false\n'
+  printf '}\n'
+}
+
+usage(){
+  cat <<'EOF'
+rafandroid — RAFAELIA Android Toolchain Shell
+
+probe | shadow | graph | bind | env | provision-plan | androidx | qemu | receipt
+gradle <tasks...>
+tool <sdkmanager|aapt2|d8|r8|apksigner|zipalign|adb|emulator|clang|llvm-nm|...> [args...]
+native-gate <c-source> [api=29] [abi=both]
+jni-gate <lib.so>
+dex-gate <apk|dex>
+apk-gate <apk>
+scaffold <dir> [package]
+
+Policy: no implicit network, no silent SDK bootstrap, no automatic license acceptance,
+and no runtime/physical/QEMU promotion from static discovery.
+EOF
+}
+
+cmd="${1:-help}"; shift || true
+case "$cmd" in
+  probe) cmd_probe "$@" ;;
+  shadow) cmd_shadow "$@" ;;
+  graph) cmd_graph "$@" ;;
+  bind) cmd_bind "$@" ;;
+  env) cmd_env "$@" ;;
+  gradle) cmd_gradle "$@" ;;
+  tool) cmd_exec_tool "$@" ;;
+  provision-plan) cmd_provision_plan "$@" ;;
+  androidx) cmd_androidx "$@" ;;
+  qemu) cmd_qemu "$@" ;;
+  native-gate) cmd_native_gate "$@" ;;
+  jni-gate) cmd_jni_gate "$@" ;;
+  dex-gate) cmd_dex_gate "$@" ;;
+  apk-gate) cmd_apk_gate "$@" ;;
+  scaffold) cmd_scaffold "$@" ;;
+  receipt) cmd_receipt "$@" ;;
+  version|--version) say "$RAFANDROID_VERSION" ;;
+  help|-h|--help) usage ;;
+  *) usage >&2; die "unknown command: $cmd" ;;
+esac

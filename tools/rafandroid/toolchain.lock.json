@@ -1,0 +1,50 @@
+{
+  "schema": "rafandroid.toolchain-lock.v1",
+  "version": "1.0.0",
+  "authority": "rafaelmeloreisnovo/RafGitTools",
+  "claim_allowed": false,
+  "policy": {
+    "network_implicit": false,
+    "silent_sdk_bootstrap": false,
+    "automatic_license_acceptance": false,
+    "project_gradle_wrapper_preferred": true,
+    "dynamic_tool_discovery": true,
+    "runtime_claim_from_static_probe": false,
+    "physical_claim_requires_physical_receipt": true,
+    "external_platforms_are_not_rebranded_as_authorial": true
+  },
+  "preferred_project_contract": {
+    "jdk": 17,
+    "compileSdk": 34,
+    "targetSdk": 34,
+    "minSdk": 24,
+    "buildTools": "34.0.0",
+    "ndk": "26.3.11579264",
+    "cmake": "3.22.1",
+    "abis": ["armeabi-v7a", "arm64-v8a"],
+    "agp_observed": "8.13.2",
+    "gradle_wrapper_observed": "9.5.1",
+    "compatibility_claim": "VERIFY_BY_PROJECT_CI"
+  },
+  "stages": [
+    {"id":"RESOURCE","tools":["aapt2"]},
+    {"id":"JVM","tools":["java","javac","gradle"]},
+    {"id":"BYTECODE","tools":["d8"],"artifact":"classes*.dex"},
+    {"id":"NATIVE","tools":["clang","llvm-nm","cmake","ninja"],"artifact":"*.so"},
+    {"id":"JNI","tools":["llvm-nm","llvm-readelf"],"gate":"JNI_EXPORTS"},
+    {"id":"SHRINK","tools":["r8"],"optional":true},
+    {"id":"PACKAGE","tools":["zipalign","apksigner"],"artifact":"*.apk"},
+    {"id":"DEVICE","tools":["adb"],"runtime_evidence_required":true},
+    {"id":"VM","tools":["emulator","qemu-system-arm","qemu-system-aarch64","qemu-system-x86_64"],"optional":true,"runtime_evidence_required":true},
+    {"id":"ANDROIDX","authority":"Gradle dependency graph","default_scaffold":"OFF","reason":"minimum-friction shell first; enable only when product requirements need it"}
+  ],
+  "friction_invariants": [
+    "one canonical entrypoint: tools/rafandroid/rafandroid",
+    "no implicit downloads",
+    "no hidden license acceptance",
+    "wrapper before system Gradle",
+    "zero undefined symbols for project-declared freestanding cores",
+    "DEX/APK/JNI gates operate on artifacts, not documentation",
+    "multiple installed toolchains are reported as SHADOW_REVIEW, not silently selected as proof"
+  ]
+}

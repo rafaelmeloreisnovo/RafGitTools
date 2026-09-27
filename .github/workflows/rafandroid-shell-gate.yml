@@ -1,0 +1,44 @@
+name: RafAndroid Shell Gate
+
+on:
+  pull_request:
+    paths:
+      - 'tools/rafandroid/**'
+      - 'docs/RAFANDROID_METHOD_V1.md'
+      - '.github/workflows/rafandroid-shell-gate.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'tools/rafandroid/**'
+      - 'docs/RAFANDROID_METHOD_V1.md'
+      - '.github/workflows/rafandroid-shell-gate.yml'
+
+jobs:
+  shell-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bash syntax
+        run: bash -n tools/rafandroid/rafandroid
+
+      - name: Authorial shell self-test
+        run: bash tools/rafandroid/tests/selftest.sh
+
+      - name: Lock schema parse
+        run: python3 -m json.tool tools/rafandroid/toolchain.lock.json >/dev/null
+
+      - name: No implicit network/download primitive in entrypoint
+        run: |
+          if grep -En '\b(curl|wget)[[:space:]]' tools/rafandroid/rafandroid; then
+            echo "Implicit download primitive found in rafandroid entrypoint"
+            exit 1
+          fi
+
+      - name: No automatic Android license acceptance
+        run: |
+          if grep -En 'yes[[:space:]]*\|.*sdkmanager.*--licenses|sdkmanager.*--licenses.*yes' tools/rafandroid/rafandroid; then
+            echo "Automatic license acceptance found"
+            exit 1
+          fi
