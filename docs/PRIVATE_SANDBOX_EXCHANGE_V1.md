@@ -86,3 +86,14 @@ PHYSICAL_PCR_EXECUTION = TOKEN_VAZIO
 RAFPOLIMATA_HANDOFF = TOKEN_VAZIO
 claim_allowed = false
 ```
+
+
+## Ledger-head binding
+
+Before appending a sandbox receipt, the bridge:
+1. verifies the existing governance SHA-256 chain;
+2. reads its current head hash;
+3. requires `envelope.previousReceiptHash` to equal that head (or `GENESIS` for an empty chained ledger);
+4. rejects the exchange on mismatch.
+
+Observation metadata (`outcome`, runner commit and gaps) is independently validated for malformed commits and credential markers before receipt persistence.

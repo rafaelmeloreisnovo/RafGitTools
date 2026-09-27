@@ -24,6 +24,23 @@ class SandboxExchangeReceiptBridge @Inject constructor(
         check(validation.allowed) {
             "Sandbox envelope rejected: " + validation.errors.joinToString(",")
         }
+        val observation = SandboxExchangeProtocol.validateObservation(
+            outcome = outcome,
+            observedRunnerCommit = observedRunnerCommit,
+            gaps = gaps
+        )
+        check(observation.allowed) {
+            "Sandbox observation rejected: " + observation.errors.joinToString(",")
+        }
+
+        val chain = receiptStore.verifyChain()
+        check(chain.valid) {
+            "Governance receipt chain invalid: " + (chain.error ?: "unknown")
+        }
+        val expectedPrevious = chain.headHash ?: "GENESIS"
+        check(envelope.previousReceiptHash == expectedPrevious) {
+            "Sandbox previousReceiptHash does not match current governance ledger head"
+        }
 
         val envelopeHash = SandboxExchangeProtocol.envelopeSha256(envelope)
         val receiptHash = SandboxExchangeProtocol.receiptHash(

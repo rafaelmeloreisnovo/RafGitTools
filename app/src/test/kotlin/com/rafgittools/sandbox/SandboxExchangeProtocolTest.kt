@@ -86,6 +86,28 @@ class SandboxExchangeProtocolTest {
     }
 
     @Test
+    fun observationCredentialMarkerFailsClosed() {
+        val result = SandboxExchangeProtocol.validateObservation(
+            outcome = "PASS",
+            observedRunnerCommit = "89abcdef0123456789abcdef0123456789abcdef",
+            gaps = listOf("authorization: bearer hidden")
+        )
+        assertFalse(result.allowed)
+        assertTrue(result.errors.contains("OBSERVATION_CREDENTIAL_MARKER_BLOCKED"))
+    }
+
+    @Test
+    fun observationRejectsMalformedRunnerCommit() {
+        val result = SandboxExchangeProtocol.validateObservation(
+            outcome = "PASS",
+            observedRunnerCommit = "not-a-commit",
+            gaps = emptyList()
+        )
+        assertFalse(result.allowed)
+        assertTrue(result.errors.contains("INVALID_OBSERVED_RUNNER_COMMIT"))
+    }
+
+    @Test
     fun receiptHashBindsOutcomeAndRunner() {
         val envelope = fixture()
         val one = SandboxExchangeProtocol.receiptHash(

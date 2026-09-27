@@ -167,6 +167,27 @@ object SandboxExchangeProtocol {
         )
     }
 
+    fun validateObservation(
+        outcome: String,
+        observedRunnerCommit: String?,
+        gaps: List<String>
+    ): SandboxValidationResult {
+        val errors = mutableListOf<String>()
+        if (outcome.isBlank() || outcome.length > 128) errors += "INVALID_OUTCOME"
+        if (observedRunnerCommit != null && !hex40.matches(observedRunnerCommit)) {
+            errors += "INVALID_OBSERVED_RUNNER_COMMIT"
+        }
+        if (gaps.size > 128) errors += "TOO_MANY_GAPS"
+        if (gaps.any { it.length > 1024 }) errors += "GAP_TOO_LARGE"
+        if (looksLikeCredential(outcome) || gaps.any(::looksLikeCredential)) {
+            errors += "OBSERVATION_CREDENTIAL_MARKER_BLOCKED"
+        }
+        return SandboxValidationResult(
+            allowed = errors.isEmpty(),
+            errors = errors.distinct()
+        )
+    }
+
     fun envelopeSha256(envelope: SandboxExchangeEnvelope): String =
         sha256(canonicalPayload(envelope))
 
