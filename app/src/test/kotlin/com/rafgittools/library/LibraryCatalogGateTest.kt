@@ -33,6 +33,19 @@ class LibraryCatalogGateTest {
             authorityRefs = listOf(authority.authorityId),
             languageTags = listOf("pt-BR")
         )
+        val expression = LibraryExpressionRecord(
+            expressionId = "EXP-001",
+            workId = work.workId,
+            expressionType = "TEXT",
+            languageTags = listOf("pt-BR")
+        )
+        val manifestation = LibraryManifestationRecord(
+            manifestationId = "MAN-001",
+            expressionRefs = listOf(expression.expressionId),
+            formatLabel = "DIGITAL_FILE",
+            mediaType = "text/plain",
+            versionLabel = "V1"
+        )
         val edition = LibraryEditionRecord(
             editionId = "ED-001",
             workId = work.workId,
@@ -42,6 +55,7 @@ class LibraryCatalogGateTest {
         val item = LibraryItemRecord(
             itemId = "ITEM-001",
             editionId = edition.editionId,
+            manifestationId = manifestation.manifestationId,
             sourceId = source.sourceId,
             sourceRefSha256 = "1".repeat(64),
             displayName = "synthetic.txt",
@@ -65,6 +79,8 @@ class LibraryCatalogGateTest {
             sources = listOf(source),
             authorities = listOf(authority),
             works = listOf(work),
+            expressions = listOf(expression),
+            manifestations = listOf(manifestation),
             editions = listOf(edition),
             items = listOf(item),
             relations = listOf(relation),

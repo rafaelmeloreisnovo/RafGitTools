@@ -73,6 +73,33 @@ data class LibraryWorkRecord(
     val claimAllowed: Boolean = false
 )
 
+data class LibraryExpressionRecord(
+    val expressionId: String,
+    val workId: String,
+    val expressionType: String,
+    val languageTags: List<String> = emptyList(),
+    val sourceRefs: List<String> = emptyList(),
+    val evidenceRefs: List<String> = emptyList(),
+    val claimAllowed: Boolean = false
+)
+
+data class LibraryManifestationRecord(
+    val manifestationId: String,
+    val expressionRefs: List<String>,
+    val formatLabel: String,
+    val mediaType: String? = null,
+    val versionLabel: String? = null,
+    val publisherOrProducer: String? = null,
+    val publicationOrBuildDate: String? = null,
+    val predecessorManifestationId: String? = null,
+    val evidenceRefs: List<String> = emptyList(),
+    val claimAllowed: Boolean = false
+)
+
+/**
+ * Local convenience projection. It may point to one manifestation, but it is
+ * not treated as a replacement for the Work/Expression/Manifestation model.
+ */
 data class LibraryEditionRecord(
     val editionId: String,
     val workId: String,
@@ -86,7 +113,8 @@ data class LibraryEditionRecord(
 
 data class LibraryItemRecord(
     val itemId: String,
-    val editionId: String,
+    val editionId: String? = null,
+    val manifestationId: String? = null,
     val sourceId: String,
     val sourceRefSha256: String,
     val displayName: String,
@@ -102,6 +130,28 @@ data class LibraryItemRecord(
     val evidenceState: LibraryEvidenceState,
     val evidenceRefs: List<String> = emptyList(),
     val gapRefs: List<String> = emptyList(),
+    val claimAllowed: Boolean = false
+)
+
+data class LibraryPreservationEventRecord(
+    val eventId: String,
+    val eventType: String,
+    val objectRef: String,
+    val occurredAt: String,
+    val outcome: String,
+    val agentRefs: List<String> = emptyList(),
+    val evidenceRefs: List<String> = emptyList(),
+    val claimAllowed: Boolean = false
+)
+
+data class LibraryRightsRecord(
+    val rightsId: String,
+    val objectRef: String,
+    val basis: String,
+    val accessStatement: String,
+    val retentionRule: String,
+    val evidenceRefs: List<String> = emptyList(),
+    val evidenceState: LibraryEvidenceState,
     val claimAllowed: Boolean = false
 )
 
@@ -121,8 +171,12 @@ data class LibraryCatalogBundle(
     val sources: List<LibrarySourceBinding>,
     val authorities: List<LibraryAuthorityRecord>,
     val works: List<LibraryWorkRecord>,
-    val editions: List<LibraryEditionRecord>,
+    val expressions: List<LibraryExpressionRecord> = emptyList(),
+    val manifestations: List<LibraryManifestationRecord> = emptyList(),
+    val editions: List<LibraryEditionRecord> = emptyList(),
     val items: List<LibraryItemRecord>,
+    val preservationEvents: List<LibraryPreservationEventRecord> = emptyList(),
+    val rights: List<LibraryRightsRecord> = emptyList(),
     val relations: List<LibraryRelationRecord>,
     val gaps: List<String>,
     val createdAtEpochMs: Long,
