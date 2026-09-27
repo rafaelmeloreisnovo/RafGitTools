@@ -1,0 +1,85 @@
+{
+  "schema": "rafgittools.rigor-bias-crossrepo.v1",
+  "date": "2026-09-27",
+  "claim_allowed": false,
+  "sources": [
+    {
+      "repository": "rafaelmeloreisnovo/llamaRafaelia",
+      "head": "6a75ec21456c73303a4e0bf4ca987a65b29010eb",
+      "artifacts": [
+        {
+          "path": "rmrCti/omega_neuro_full.c",
+          "blob": "1818b52f2b02bb2913bf6077a15ad1922c7109cc",
+          "role": "MEASURED_NEUROMETRICS_SOURCE"
+        },
+        {
+          "path": "rmrCti/omega_forest.c",
+          "blob": "7f8065419a935a1e9a99e4bdcdb7dbe3613c981e",
+          "role": "CURATION_PATH_SOURCE"
+        },
+        {
+          "path": "rmrCti/CTI_MEMORY_INTEGRATION.md",
+          "blob": "91b5924fe9772a41e78ff479129793978cbb1c1a",
+          "role": "RANKING_BONUS_BOUNDARY"
+        },
+        {
+          "path": "rmrCti/rmrcti_dataset_mobile.py",
+          "blob": "f8e6687ef1994f64db8bcb5ce765f8cd21c842f1",
+          "role": "BOUNDED_MOBILE_PROCESSING"
+        },
+        {
+          "path": "tools/cvector-generator/cvector-generator.cpp",
+          "blob": "d2d97e05cebb0eb0cae44b5727800fd575018e9f",
+          "role": "MODEL_CONTROL_VECTOR_ORTHOGONAL_ROUTE"
+        }
+      ]
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Rafaelia_Private",
+      "head": "3ef3b6dfc26180538542ad2a03db6767ee39394d",
+      "artifacts": [
+        {
+          "path": "FRAMEWORKRAFAELIA/neuromorphic_core.py",
+          "blob": "32ad1ca3d9328c89c1944b83bde1e4808b60e63f",
+          "role": "HDC_SDM_HEBBIAN_REFERENCE"
+        },
+        {
+          "path": "Low-level/raf_synaptic_core.c",
+          "blob": "87dc524ace79e4c3f11cd53dd21dcf7783e8b392",
+          "role": "NINE_PLUS_ONE_OBSERVER_REFERENCE"
+        },
+        {
+          "path": "src/c/plasticity_engine.c",
+          "blob": "b705d077ffeab5686f10e3dca62774cd90cea47b",
+          "role": "PERSISTED_PLASTICITY_REFERENCE"
+        }
+      ]
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "head": "09923dc8e9d2b547920d7d518fb2fc269d96a975",
+      "artifacts": [
+        {
+          "path": "tools/vision/visao_index.py",
+          "blob": "a1c1775de8153cfe023311e6e8ce1c3f063bb203",
+          "role": "IMAGE_FLOW_AND_HASH_IDENTITY"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    "PRIORITY_BIAS != EVIDENCE_PROMOTION",
+    "RIGOR_BIAS != MODEL_CONTROL_VECTOR",
+    "URGENT != TRUE",
+    "VECTOR_SIMILARITY != IDENTITY",
+    "TOKEN_VAZIO != ZERO",
+    "EXPLICIT_USER_RIGOR_IS_A_FLOOR"
+  ],
+  "gaps": [
+    "OMEGA_NEURO_FULL_USES_LIBC_HEAP_MATH_NOT_FREESTANDING",
+    "SYNAPTIC_CORE_USES_RANDOM_FLOAT_HEAP_PTHREADS",
+    "HEBBIAN_ACCESS_REINFORCEMENT_NOT_ALLOWED_IN_DETERMINISTIC_RIGOR_V1",
+    "CONTROL_VECTOR_ROUTE_REQUIRES_MODEL_AND_IS_NOT_DATA_EVIDENCE",
+    "PHYSICAL_ANDROID_RIGOR_BIAS_BENCHMARK_NOT_RUN"
+  ]
+}
