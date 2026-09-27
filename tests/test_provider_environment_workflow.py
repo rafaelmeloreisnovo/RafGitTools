@@ -17,23 +17,23 @@ class ProviderEnvironmentWorkflowTests(unittest.TestCase):
         self.assertIn("provider_environments is manual-only", self.text)
 
     def test_only_environment_pat_is_injected_into_active_start(self):
-        self.assertIn("PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}", self.text)
-        self.assertNotIn("secrets.PAT_ACTIONS", self.text)
-        self.assertNotIn("secrets.PAT_AGENTS", self.text)
-        self.assertNotIn("secrets.PAT_CODESPACES", self.text)
-        self.assertNotIn("secrets.PAT_DEPENDABOT", self.text)
+        self.assertIn("PROVIDER_TOKEN: ${{ secrets.PAT_environments }}", self.text)
+        self.assertNotIn("secrets.PAT_actions", self.text)
+        self.assertNotIn("secrets.PAT_agents", self.text)
+        self.assertNotIn("secrets.PAT_codespaces", self.text)
+        self.assertNotIn("secrets.pat_env", self.text)
 
     def test_no_pat_fallback_is_present(self):
-        self.assertNotIn("secrets.PAT_ENV ||", self.text)
-        self.assertNotIn("secrets.PAT_ACTIONS ||", self.text)
-        self.assertNotIn("secrets.PAT_AGENTS ||", self.text)
-        self.assertNotIn("secrets.PAT_CODESPACES ||", self.text)
-        self.assertNotIn("secrets.PAT_DEPENDABOT ||", self.text)
+        self.assertNotIn("secrets.PAT_environments ||", self.text)
+        self.assertNotIn("secrets.PAT_actions ||", self.text)
+        self.assertNotIn("secrets.PAT_agents ||", self.text)
+        self.assertNotIn("secrets.PAT_codespaces ||", self.text)
+        self.assertNotIn("secrets.pat_env ||", self.text)
 
     def test_environment_gate_precedes_secret_use(self):
         self.assertIn("name: Pat_environments", self.text)
         self.assertIn("deployment: false", self.text)
-        self.assertIn("PAT_ENV secret is unavailable after Pat_environments gate", self.text)
+        self.assertIn("PAT_environments secret is unavailable after Pat_environments gate", self.text)
 
     def test_apply_is_sha_guarded_and_receipted(self):
         self.assertIn("--expected-main-sha", self.text)
