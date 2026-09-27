@@ -62,15 +62,15 @@ resolve_tool(){
   local name="$1" sdk="${2:-}" bt="${3:-}" ct="${4:-}" ndk="${5:-}" host=""
   if have "$name"; then command -v "$name"; return 0; fi
   case "$name" in
-    aapt2|d8|r8|apksigner|zipalign)
+    aapt2|d8|r8|apksigner|zipalign|aidl|dexdump)
       [[ -x "$bt/$name" ]] && { printf '%s\n' "$bt/$name"; return 0; } ;;
-    sdkmanager|avdmanager)
+    sdkmanager|avdmanager|apkanalyzer|lint)
       [[ -x "$ct/bin/$name" ]] && { printf '%s\n' "$ct/bin/$name"; return 0; } ;;
     adb)
       [[ -x "$sdk/platform-tools/adb" ]] && { printf '%s\n' "$sdk/platform-tools/adb"; return 0; } ;;
     emulator)
       [[ -x "$sdk/emulator/emulator" ]] && { printf '%s\n' "$sdk/emulator/emulator"; return 0; } ;;
-    clang|clang++|llvm-nm|llvm-readelf|ld.lld)
+    clang|clang++|llvm-nm|llvm-readelf|llvm-objdump|llvm-strip|llvm-ar|ld.lld)
       host="$(find "$ndk/toolchains/llvm/prebuilt" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | head -n1 || true)"
       [[ -x "$host/bin/$name" ]] && { printf '%s\n' "$host/bin/$name"; return 0; } ;;
   esac
@@ -114,7 +114,7 @@ cmd_probe(){
   probe_one cmdline_tools "$CT"
   probe_one gradle "$GRADLE"
   local t p
-  for t in java javac cmake ninja clang llvm-nm llvm-readelf aapt2 d8 r8 apksigner zipalign adb emulator qemu-system-arm qemu-system-aarch64 qemu-system-x86_64; do
+  for t in java javac keytool jarsigner cmake ninja clang llvm-nm llvm-readelf llvm-objdump llvm-strip llvm-ar aapt2 aidl d8 r8 dexdump apkanalyzer lint apksigner zipalign adb emulator qemu-system-arm qemu-system-aarch64 qemu-system-x86_64; do
     p="$(resolve_tool "$t" "$SDK" "$BT" "$CT" "$NDK" 2>/dev/null || true)"
     probe_one "$t" "$p"
   done
@@ -198,7 +198,7 @@ cmd_gradle(){
 cmd_exec_tool(){
   local name="${1:-}"; shift || true
   case "$name" in
-    sdkmanager|avdmanager|aapt2|d8|r8|apksigner|zipalign|adb|emulator|clang|clang++|llvm-nm|llvm-readelf|ld.lld|qemu-system-arm|qemu-system-aarch64|qemu-system-x86_64) ;;
+    sdkmanager|avdmanager|aapt2|aidl|d8|r8|dexdump|apkanalyzer|lint|apksigner|zipalign|adb|emulator|clang|clang++|llvm-nm|llvm-readelf|llvm-objdump|llvm-strip|llvm-ar|ld.lld|qemu-system-arm|qemu-system-aarch64|qemu-system-x86_64) ;;
     *) die "tool not in allowlist: $name" ;;
   esac
   context
@@ -263,10 +263,11 @@ cmd_native_gate(){
   [[ -f "$src" ]] || die "source not found: $src"
   context
   [[ -n "$NDK" ]] || die "NDK = TOKEN_VAZIO"
-  local cc nm
-  cc="$(resolve_tool clang "$SDK" "$BT" "$CT" "$NDK" 2>/dev/null || true)"
-  nm="$(resolve_tool llvm-nm "$SDK" "$BT" "$CT" "$NDK" 2>/dev/null || true)"
-  [[ -n "$cc" && -n "$nm" ]] || die "NDK clang/llvm-nm = TOKEN_VAZIO"
+  local host cc nm
+  host="$(find "$NDK/toolchains/llvm/prebuilt" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | head -n1 || true)"
+  cc="$host/bin/clang"
+  nm="$host/bin/llvm-nm"
+  [[ -x "$cc" && -x "$nm" ]] || die "bound NDK clang/llvm-nm = TOKEN_VAZIO"
   local abis=() a target obj undef
   [[ "$abi" == both ]] && abis=(armeabi-v7a arm64-v8a) || abis=("$abi")
   for a in "${abis[@]}"; do
@@ -379,7 +380,7 @@ rafandroid — RAFAELIA Android Toolchain Shell
 
 probe | shadow | graph | bind | env | provision-plan | androidx | qemu | receipt
 gradle <tasks...>
-tool <sdkmanager|aapt2|d8|r8|apksigner|zipalign|adb|emulator|clang|llvm-nm|...> [args...]
+tool <sdkmanager|aapt2|aidl|d8|r8|dexdump|apkanalyzer|apksigner|zipalign|adb|emulator|clang|llvm-nm|...> [args...]
 native-gate <c-source> [api=29] [abi=both]
 jni-gate <lib.so>
 dex-gate <apk|dex>
