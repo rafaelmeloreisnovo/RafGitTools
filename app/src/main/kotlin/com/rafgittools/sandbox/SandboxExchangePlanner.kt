@@ -28,7 +28,32 @@ object SandboxExchangePlanner {
     fun planAllowed(envelope: SandboxExchangeEnvelope): Boolean {
         val validation = SandboxExchangeProtocol.validate(envelope)
         if (!validation.allowed) return false
-        return allowlistedPlans[envelope.targetRoute]?.contains(envelope.testPlanId) == true
+        if (allowlistedPlans[envelope.targetRoute]?.contains(envelope.testPlanId) != true) {
+            return false
+        }
+
+        val classes = envelope.artifacts.map { it.artifactClass }.toSet()
+        return when (envelope.targetRoute) {
+            SandboxRoute.VECTRA_SANDBOX,
+            SandboxRoute.PCR_SANDBOX ->
+                classes.all {
+                    it == SandboxArtifactClass.SOURCE_PATCH ||
+                        it == SandboxArtifactClass.TEST_FIXTURE ||
+                        it == SandboxArtifactClass.MANIFEST
+                }
+
+            SandboxRoute.RAFPOLIMATA_HANDOFF ->
+                SandboxArtifactClass.RECEIPT in classes &&
+                    classes.all {
+                        it == SandboxArtifactClass.SOURCE_PATCH ||
+                            it == SandboxArtifactClass.TEST_FIXTURE ||
+                            it == SandboxArtifactClass.MANIFEST ||
+                            it == SandboxArtifactClass.RECEIPT ||
+                            it == SandboxArtifactClass.BENCHMARK_RESULT
+                    }
+
+            SandboxRoute.PRIVATE_CUSTODY_ONLY -> true
+        }
     }
 
     fun knownPlans(route: SandboxRoute): Set<String> = allowlistedPlans[route].orEmpty()

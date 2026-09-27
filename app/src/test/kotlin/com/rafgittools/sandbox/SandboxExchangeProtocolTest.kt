@@ -108,6 +108,25 @@ class SandboxExchangeProtocolTest {
     }
 
     @Test
+    fun rafPolimataHandoffRequiresSandboxReceipt() {
+        val base = fixture().copy(
+            targetRoute = SandboxRoute.RAFPOLIMATA_HANDOFF,
+            testPlanId = "RAFPOLIMATA_CROSS_ARCH_OBJECT_AUDIT_V1"
+        )
+        assertFalse(SandboxExchangePlanner.planAllowed(base))
+
+        val receipt = SandboxArtifactDescriptor(
+            artifactId = "receipt-0001",
+            artifactClass = SandboxArtifactClass.RECEIPT,
+            opaqueRef = "opaque:receipt/0001",
+            sha256 = "2".repeat(64),
+            sizeBytes = 256,
+            mediaType = "application/json"
+        )
+        assertTrue(SandboxExchangePlanner.planAllowed(base.copy(artifacts = base.artifacts + receipt)))
+    }
+
+    @Test
     fun receiptHashBindsOutcomeAndRunner() {
         val envelope = fixture()
         val one = SandboxExchangeProtocol.receiptHash(
