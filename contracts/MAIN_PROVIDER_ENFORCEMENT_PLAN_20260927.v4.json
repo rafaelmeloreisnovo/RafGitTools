@@ -1,0 +1,83 @@
+{
+  "schema": "rafaelia.rafgittools-main-provider-enforcement-plan.v4",
+  "version": "4.0.0-stage1",
+  "generated_at": "2026-09-27",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "target_branch": "main",
+  "supersedes": "contracts/MAIN_PROVIDER_ENFORCEMENT_PLAN_20260907.v3.json",
+  "stage": "STAGE1_CI_AND_PR_BARRIER",
+  "mode": "PREPARED_NOT_APPLIED",
+  "claim_allowed": false,
+  "purpose": "Close the observed merge-before-terminal-CI gap without requiring an unevidenced independent reviewer. Stage 2 may raise approvals from 0 to 1 only after reviewer availability is evidenced.",
+  "authority_evidence": {
+    "environment": "Pat_environments",
+    "secret_reference": "PAT_ENV",
+    "preflight_run_id": 36359250986,
+    "preflight_job_id": 108733398068,
+    "preflight_artifact_id": 10945320713,
+    "admin_permission_observed": true,
+    "exact_main_sha_preflight": "255267cf780f3ce03402066c76b8721c9d92f18d",
+    "secret_value_recorded": false
+  },
+  "required_prestate": "ABSENT",
+  "required_policy": {
+    "pull_request_required": true,
+    "direct_main_write_forbidden": true,
+    "force_push_forbidden": true,
+    "branch_deletion_forbidden": true,
+    "human_review_required": false,
+    "minimum_approving_reviews": 0,
+    "dismiss_stale_approvals_on_new_commits": false,
+    "require_last_push_approval": false,
+    "require_conversation_resolution": true,
+    "require_branch_up_to_date_before_merge": true,
+    "enforce_admins": true,
+    "rollback_required": true
+  },
+  "required_status_checks_global": [
+    {
+      "context": "START · RAFAELIA Orchestrated Pipeline / 00 · Plan / roteamento",
+      "job_id": "plan"
+    },
+    {
+      "context": "START · RAFAELIA Orchestrated Pipeline / 01 · Workflow topology / single-root invariant",
+      "job_id": "topology"
+    },
+    {
+      "context": "START · RAFAELIA Orchestrated Pipeline / 02 · Coherence / anti-regression",
+      "job_id": "coherence"
+    },
+    {
+      "context": "START · RAFAELIA Orchestrated Pipeline / 09 · Final receipt / fechamento",
+      "job_id": "receipt"
+    }
+  ],
+  "stage2_gate": {
+    "state": "TOKEN_VAZIO_INDEPENDENT_REVIEWER",
+    "target_minimum_approving_reviews": 1,
+    "promotion_rule": "Do not raise approval count until an independent eligible reviewer is evidenced and a bounded merge path is rehearsed."
+  },
+  "rollback": {
+    "automatic_on_readback_mismatch": true,
+    "automatic_on_main_sha_drift": true,
+    "prestate_restore_mode": "DELETE_PROTECTION_IF_PRESTATE_ABSENT",
+    "manual_operation": "rollback_main_protection",
+    "rollback_receipt_required": true
+  },
+  "negative_assurance": {
+    "required_after_apply": true,
+    "mutation_destructive": false,
+    "method": "Create/use a bounded PR whose required START context is pending or failing and verify provider refuses merge; do not bypass.",
+    "success": "provider rejects merge until required contexts succeed"
+  },
+  "invariants": [
+    "SOURCE != EXECUTION != EVIDENCE != CLAIM",
+    "MERGED != VALIDATED",
+    "DETECTOR != SERVER_BARRIER",
+    "REVIEWER_TOKEN_VAZIO != REVIEWER_AVAILABLE",
+    "STAGE1_APPROVAL_COUNT_0 != STAGE2_APPROVAL_COUNT_1",
+    "PAT_ENV_VALUE_NEVER_PERSISTED",
+    "ROLLBACK_PATH_EXISTS_BEFORE_APPLY",
+    "TOKEN_VAZIO != PASS"
+  ]
+}
