@@ -1,0 +1,13 @@
+{
+  "schema": "rafaelia.provider-environment-preflight-once.v1",
+  "operation": "preflight",
+  "target_repository": "rafaelmeloreisnovo/RafGitTools",
+  "target_branch": "main",
+  "expected_actor": "rafaelmeloreisnovo",
+  "environment": "Pat_environments",
+  "secret_reference": "PAT_ENV",
+  "mutation_allowed": false,
+  "one_shot": true,
+  "claim_allowed": false,
+  "successor_required": true
+}
