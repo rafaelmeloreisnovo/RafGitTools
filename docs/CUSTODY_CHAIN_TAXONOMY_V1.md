@@ -1,6 +1,6 @@
 # Custody Chain Taxonomy V1
 
-Status: `IMPLEMENTED_UNTESTED` until repository CI executes this branch.
+Status: `IMPLEMENTED_UNTESTED` for the v1.0.1 actor-boundary successor until exact-head CI executes. The v1.0.0 predecessor was provider-tested separately.
 
 ## Purpose
 
@@ -43,13 +43,28 @@ When the same logical object appears in both systems, do not duplicate the corpu
 
 **HUMAN_AUTHOR** may provide intent, authorization, decisions and physical observations. Authorization is not execution evidence, and a human statement about provider state remains an observation until independently read back when that distinction matters.
 
-**ASSISTANT_TOOL_OPERATOR** may route, read, write, compare and record only inside explicit user scope and available tool permissions. A tool call proves only the bounded action/result returned by the provider. It does not create human authorization, physical execution or claim validity.
+**ASSISTANT_TOOL_OPERATOR** may route, read, compare, request provider actions and record provider results only inside explicit user scope. It does **not** execute the external provider mutation itself. The connected provider/API applies the mutation and returns the provider result. A tool call therefore proves only the bounded request/result that is actually read back; it does not create human authorization, physical execution or claim validity.
 
-For an external mutation, the assistant custody path is:
+For an external mutation, the custody path is:
 
-`authorized intent -> tool action -> provider result -> readback/ref -> receipt`
+`HUMAN_AUTHOR authorization -> ASSISTANT_TOOL_OPERATOR orchestration -> PROVIDER execution -> provider readback/ref -> receipt`
 
 If result/readback is absent, the mutation state remains `PENDING`, `TOKEN_VAZIO` or another typed unresolved state; it must not be called `PASS`.
+
+## Federated authority and actor mapping
+
+The cross-surface control plane is `rafaelmeloreisnovo/Mapa:data/control-plane/CUSTODY_CHAIN_TYPE_REGISTRY.v1.json`. RafGitTools remains a producer-specific implementation authority for its own schema, validator, tests and code.
+
+Local-to-federated actor mapping:
+
+- `HUMAN_AUTHOR -> HUMAN_AUTHORITY`
+- `ASSISTANT_TOOL_OPERATOR -> ASSISTANT_ORCHESTRATOR`
+- `PROVIDER -> CONNECTOR_PROVIDER`
+- `PHYSICAL_DEVICE -> RUNTIME_EXECUTOR`
+
+`INDEPENDENT_REVIEWER` and `TOKEN_VAZIO_ACTOR` remain federated-only roles until a local event explicitly needs them. This avoids inventing local actors while preserving the global distinction.
+
+Core execution invariant: `assistant_orchestration != connector_provider_execution`.
 
 ## Existing RafGitTools implementations retained
 
