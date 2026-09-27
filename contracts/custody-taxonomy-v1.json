@@ -1,0 +1,368 @@
+{
+  "schema": "rafgittools.custody-taxonomy.v1",
+  "version": "1.0.0",
+  "authority": "rafaelmeloreisnovo/RafGitTools",
+  "mode": "EVIDENCE_FIRST_FAIL_CLOSED_APPEND_ONLY",
+  "purpose": "Differentiate custody by object, authority, actor and provider without conflating source, artifact, execution, evidence or claim.",
+  "invariants": [
+    "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "TOKEN_VAZIO != 0",
+    "IMPLEMENTED_UNTESTED != PASS",
+    "recorded_action != provider_acceptance",
+    "assistant_observation != provider_authority",
+    "human_authorization != execution_evidence",
+    "cross_provider_reference != payload_duplication"
+  ],
+  "authority_domains": {
+    "DOCUMENTARY": {
+      "primary": "GOOGLE_DRIVE",
+      "proves": [
+        "document identity",
+        "revision lineage",
+        "folder/index placement",
+        "documentary receipt custody"
+      ],
+      "does_not_prove": [
+        "GitHub implementation state",
+        "runtime execution",
+        "scientific claim"
+      ]
+    },
+    "IMPLEMENTATION": {
+      "primary": "GITHUB_PRODUCER_REPOSITORY",
+      "proves": [
+        "repository/path/ref identity",
+        "commit/tree/blob lineage",
+        "PR/workflow implementation state"
+      ],
+      "does_not_prove": [
+        "physical device execution",
+        "human approval unless explicitly recorded",
+        "Drive revision state"
+      ]
+    },
+    "EXECUTION": {
+      "primary": "EXECUTION_PROVIDER_OR_PHYSICAL_DEVICE",
+      "proves": [
+        "environment-bound command/run observation",
+        "exit/result state when executed",
+        "runtime artifact binding when hashed"
+      ],
+      "does_not_prove": [
+        "source authorship by itself",
+        "scientific validity by itself",
+        "human intent"
+      ]
+    },
+    "EVIDENCE": {
+      "primary": "BOUND_RECEIPT_CHAIN",
+      "proves": [
+        "what observation/action was recorded",
+        "predecessor/supersession linkage",
+        "hash/ref-bound evidence references"
+      ],
+      "does_not_prove": [
+        "facts absent from referenced evidence",
+        "provider acceptance without provider readback"
+      ]
+    },
+    "DECISION": {
+      "primary": "AUTHORIZED_HUMAN_OR_PROVIDER_POLICY",
+      "proves": [
+        "explicit authorization/decision within stated scope"
+      ],
+      "does_not_prove": [
+        "execution occurred",
+        "tests passed",
+        "provider state changed"
+      ]
+    }
+  },
+  "actors": {
+    "HUMAN_AUTHOR": {
+      "role": "intent, authorization, physical observation and decision source when explicitly stated",
+      "may_authorize": true,
+      "may_execute": true,
+      "cannot_self_promote": [
+        "provider acceptance",
+        "test PASS without evidence",
+        "external state not observed"
+      ]
+    },
+    "ASSISTANT_TOOL_OPERATOR": {
+      "role": "route, read, write, compare and record through connected tools",
+      "may_authorize": false,
+      "may_execute": "ONLY_WITHIN_EXPLICIT_USER_SCOPE_AND_TOOL_PERMISSION",
+      "required_evidence": [
+        "tool result or connector readback for external mutation claims"
+      ],
+      "cannot_self_promote": [
+        "human authorization",
+        "GitHub/Drive provider truth without readback",
+        "physical device execution not observed",
+        "claim_allowed without gate"
+      ]
+    },
+    "PROVIDER": {
+      "role": "GitHub/Google Drive/CI service authoritative readback inside its own domain",
+      "may_authorize": "ONLY_PROVIDER_POLICY_ACTIONS",
+      "may_execute": true,
+      "cannot_self_promote": [
+        "human intent",
+        "scientific validity"
+      ]
+    },
+    "PHYSICAL_DEVICE": {
+      "role": "physical runtime observation source",
+      "may_authorize": false,
+      "may_execute": true,
+      "cannot_self_promote": [
+        "repository merge state",
+        "document revision history",
+        "scientific validity"
+      ]
+    }
+  },
+  "custody_classes": [
+    {
+      "id": "C01_SOURCE_IDENTITY",
+      "object": "source locator and exact revision",
+      "authority_domain": "DOCUMENTARY_OR_IMPLEMENTATION",
+      "minimum_anchors": [
+        "provider",
+        "source_locator",
+        "revision_ref"
+      ],
+      "optional_anchors": [
+        "content_hash",
+        "owner",
+        "timestamp"
+      ],
+      "evidence_effect": "IDENTITY_ONLY"
+    },
+    {
+      "id": "C02_DOCUMENTARY_CUSTODY",
+      "object": "Drive document/index/receipt lineage",
+      "authority_domain": "DOCUMENTARY",
+      "minimum_anchors": [
+        "drive_file_id",
+        "revision_ref",
+        "parent_or_index_ref"
+      ],
+      "optional_anchors": [
+        "content_hash",
+        "permission_snapshot_ref"
+      ],
+      "evidence_effect": "DOCUMENTARY"
+    },
+    {
+      "id": "C03_CODE_CUSTODY",
+      "object": "GitHub code/schema/spec lineage",
+      "authority_domain": "IMPLEMENTATION",
+      "minimum_anchors": [
+        "repository",
+        "path_or_tree",
+        "commit_ref"
+      ],
+      "optional_anchors": [
+        "blob_sha",
+        "pr_number",
+        "workflow_run_id"
+      ],
+      "evidence_effect": "IMPLEMENTATION"
+    },
+    {
+      "id": "C04_ARTIFACT_BYTE_CUSTODY",
+      "object": "exact bytes crossing build/package/archive boundaries",
+      "authority_domain": "EVIDENCE",
+      "minimum_anchors": [
+        "artifact_id_or_locator",
+        "byte_length",
+        "cryptographic_digest"
+      ],
+      "optional_anchors": [
+        "producer_commit",
+        "archive_digest",
+        "signature_ref"
+      ],
+      "evidence_effect": "BYTE_IDENTITY"
+    },
+    {
+      "id": "C05_EXECUTION_CUSTODY",
+      "object": "execution/run/device observation",
+      "authority_domain": "EXECUTION",
+      "minimum_anchors": [
+        "execution_target",
+        "command_or_run_id",
+        "execution_state"
+      ],
+      "optional_anchors": [
+        "environment_identity",
+        "exit_code",
+        "log_digest",
+        "artifact_digest"
+      ],
+      "evidence_effect": "EXECUTION_ONLY"
+    },
+    {
+      "id": "C06_RECEIPT_CUSTODY",
+      "object": "append-only evidence event",
+      "authority_domain": "EVIDENCE",
+      "minimum_anchors": [
+        "receipt_id",
+        "timestamp",
+        "evidence_refs",
+        "state"
+      ],
+      "optional_anchors": [
+        "previous_receipt_ref",
+        "supersedes",
+        "event_hash"
+      ],
+      "evidence_effect": "RECORDED_EVIDENCE"
+    },
+    {
+      "id": "C07_AUTHORIZATION_CUSTODY",
+      "object": "human/provider authorization and decision",
+      "authority_domain": "DECISION",
+      "minimum_anchors": [
+        "decision_actor",
+        "scope",
+        "decision_state"
+      ],
+      "optional_anchors": [
+        "policy_ref",
+        "timestamp",
+        "rollback_boundary"
+      ],
+      "evidence_effect": "AUTHORIZATION_ONLY"
+    },
+    {
+      "id": "C08_TRANSFER_BRIDGE_CUSTODY",
+      "object": "cross-provider handoff without authority laundering",
+      "authority_domain": "EVIDENCE",
+      "minimum_anchors": [
+        "source_identity",
+        "target_identity",
+        "relation",
+        "bridge_evidence"
+      ],
+      "optional_anchors": [
+        "source_digest",
+        "target_digest",
+        "transfer_receipt"
+      ],
+      "evidence_effect": "ROUTING_AND_IDENTITY"
+    },
+    {
+      "id": "C09_HUMAN_OBSERVATION_CUSTODY",
+      "object": "explicit user observation not independently provider-verified",
+      "authority_domain": "EVIDENCE",
+      "minimum_anchors": [
+        "actor",
+        "statement",
+        "scope",
+        "observation_state"
+      ],
+      "optional_anchors": [
+        "photo_or_log_ref",
+        "device_ref",
+        "timestamp"
+      ],
+      "evidence_effect": "OBSERVED_UNPROMOTED"
+    },
+    {
+      "id": "C10_ASSISTANT_TOOL_ACTION_CUSTODY",
+      "object": "assistant action through connected tool",
+      "authority_domain": "EVIDENCE",
+      "minimum_anchors": [
+        "tool_provider",
+        "action",
+        "target_ref",
+        "tool_result_state"
+      ],
+      "optional_anchors": [
+        "readback_ref",
+        "commit_ref",
+        "revision_ref",
+        "receipt_ref"
+      ],
+      "evidence_effect": "TOOL_OBSERVED",
+      "gate": "external mutation claim requires provider readback; no readback => PENDING_OR_TOKEN_VAZIO"
+    }
+  ],
+  "bridge_rules": [
+    {
+      "id": "BR01",
+      "from": "GOOGLE_DRIVE",
+      "to": "GITHUB",
+      "relation": "DOCUMENTS_OR_RECEIPTS_REFERENCE_IMPLEMENTATION",
+      "required": [
+        "drive_file_id",
+        "drive_revision_ref",
+        "repository",
+        "commit_or_pr_ref"
+      ],
+      "forbidden": [
+        "treating Drive document as GitHub execution evidence"
+      ]
+    },
+    {
+      "id": "BR02",
+      "from": "GITHUB",
+      "to": "GOOGLE_DRIVE",
+      "relation": "IMPLEMENTATION_POINTS_TO_DOCUMENTARY_RECEIPT",
+      "required": [
+        "repository",
+        "commit_or_pr_ref",
+        "drive_file_id"
+      ],
+      "forbidden": [
+        "duplicating full source corpus solely for navigation"
+      ]
+    },
+    {
+      "id": "BR03",
+      "from": "ASSISTANT_TOOL_OPERATOR",
+      "to": "PROVIDER",
+      "relation": "TOOL_ACTION_WITH_READBACK",
+      "required": [
+        "explicit_user_scope",
+        "tool_result",
+        "target_ref"
+      ],
+      "forbidden": [
+        "claiming provider mutation without result/readback"
+      ]
+    },
+    {
+      "id": "BR04",
+      "from": "HUMAN_AUTHOR",
+      "to": "ASSISTANT_TOOL_OPERATOR",
+      "relation": "AUTHORIZED_INTENT",
+      "required": [
+        "intent",
+        "scope"
+      ],
+      "forbidden": [
+        "converting authorization into PASS evidence"
+      ]
+    }
+  ],
+  "states": [
+    "PASS",
+    "FAIL",
+    "NOT_RUN",
+    "PENDING",
+    "AUDIT",
+    "TOKEN_VAZIO",
+    "IMPLEMENTED_UNTESTED",
+    "OBSERVED_UNPROMOTED",
+    "ROUTE_STATE_BLOCKED"
+  ],
+  "claim_gate": {
+    "automatic_promotion": false,
+    "claim_allowed_default": false,
+    "rule": "Custody proves bounded identity/lineage/observation only. Claim promotion requires the domain-specific evidence gate."
+  }
+}
