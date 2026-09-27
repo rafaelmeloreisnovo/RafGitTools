@@ -63,11 +63,12 @@ class ProviderEnvironmentRoutingTests(unittest.TestCase):
             "allow_force_pushes": {"enabled": False},
             "allow_deletions": {"enabled": False},
         }
-        self.assertEqual(APP.verify_readback(readback, contexts), [])
+        self.assertEqual(APP.verify_readback(readback, plan), [])
 
     def test_readback_rejects_missing_context_and_admin_bypass(self):
+        plan = json.loads((ROOT / "contracts" / "MAIN_PROVIDER_ENFORCEMENT_PLAN_20260907.v3.json").read_text())
         errors = APP.verify_readback({
-            "required_status_checks": {"contexts": []},
+            "required_status_checks": {"contexts": [], "strict": False},
             "enforce_admins": {"enabled": False},
             "required_pull_request_reviews": {
                 "required_approving_review_count": 0,
@@ -77,7 +78,7 @@ class ProviderEnvironmentRoutingTests(unittest.TestCase):
             "required_conversation_resolution": {"enabled": False},
             "allow_force_pushes": {"enabled": True},
             "allow_deletions": {"enabled": True},
-        }, ["required/check"])
+        }, plan)
         self.assertGreaterEqual(len(errors), 7)
 
 if __name__ == "__main__":
