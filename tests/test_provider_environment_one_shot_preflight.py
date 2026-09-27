@@ -17,11 +17,13 @@ class ProviderEnvironmentOneShotPreflightTests(unittest.TestCase):
         self.assertFalse(TRIGGER["mutation_allowed"])
         self.assertFalse(TRIGGER["claim_allowed"])
 
-    def test_push_route_is_preflight_only(self):
+    def test_preflight_trigger_remains_read_only_and_separate_from_apply(self):
         self.assertIn("provider-environment-preflight.once.json", WF)
         self.assertIn("one-shot provider trigger only permits preflight", WF)
-        self.assertIn("push-triggered provider lane is preflight-only", WF)
-        self.assertIn("needs.plan.outputs.provider_operation == 'preflight'", WF)
+        self.assertIn("provider_operation=preflight", WF)
+        self.assertIn("provider-environment-apply.once.json", WF)
+        self.assertIn("provider_operation=apply_main_protection", WF)
+        self.assertIn("apply one-shot requires successful preflight evidence", WF)
 
     def test_owner_and_main_are_required(self):
         self.assertIn("github.actor == 'rafaelmeloreisnovo'", WF)
