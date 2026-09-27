@@ -24,6 +24,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.rafgittools.bridge.CatalogTreeExportResult
+import com.rafgittools.bridge.CorpusCatalogTreeGate
+import com.rafgittools.bridge.CorpusIntakeGate
+import com.rafgittools.bridge.CorpusIntakeResult
 import com.rafgittools.bridge.DriveStagingGate
 import com.rafgittools.ui.components.ResponsiveContentFrame
 import com.rafgittools.domain.model.github.GithubRepository
@@ -255,11 +259,55 @@ private fun DriveBridgeContent() {
     val scope = rememberCoroutineScope()
     var staging by remember { mutableStateOf(false) }
     var staged by remember { mutableStateOf<DriveStageResult?>(null) }
+    var cataloging by remember { mutableStateOf(false) }
+    var cataloged by remember { mutableStateOf<CorpusIntakeResult?>(null) }
+    var exportingCatalog by remember { mutableStateOf(false) }
+    var exportedCatalog by remember { mutableStateOf<CatalogTreeExportResult?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+
+    val catalogFolderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            val currentCatalog = cataloged
+            if (currentCatalog == null) {
+                error = "Catalogue o corpus antes de escolher a pasta de exportação"
+            } else {
+                error = null
+                try {
+                    context.contentResolver.takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    )
+                } catch (_: SecurityException) {
+                    // Some providers grant only the current operation; export can still proceed now.
+                }
+
+                scope.launch {
+                    exportingCatalog = true
+                    val result = withContext(Dispatchers.IO) {
+                        runCatching {
+                            CorpusCatalogTreeGate.exportCatalog(
+                                context = context,
+                                treeUri = uri,
+                                artifacts = listOf(
+                                    currentCatalog.manifestFile,
+                                    currentCatalog.publicProjectionFile
+                                )
+                            )
+                        }
+                    }
+                    result.onSuccess { exportedCatalog = it }
+                        .onFailure { error = it.message ?: "Falha ao exportar catálogo privado" }
+                    exportingCatalog = false
+                }
+            }
+        }
+    }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             error = null
+            cataloged = null
+            exportedCatalog = null
             try {
                 context.contentResolver.takePersistableUriPermission(
                     uri,
@@ -371,6 +419,113 @@ private fun DriveBridgeContent() {
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
+                        Spacer(Modifier.height(10.dp))
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    cataloging = true
+                                    error = null
+                                    val result = withContext(Dispatchers.IO) {
+                                        runCatching {
+                                            CorpusIntakeGate.catalog(
+                                                stagedFile = File(item.path),
+                                                sourceProviderAuthority = item.providerAuthority,
+                                                sourceDisplayName = item.name,
+                                                expectedSha256 = item.sha256
+                                            )
+                                        }
+                                    }
+                                    result.onSuccess { cataloged = it }
+                                        .onFailure { error = it.message ?: "Falha ao catalogar corpus" }
+                                    cataloging = false
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !cataloging
+                        ) {
+                            if (cataloging) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("Catalogando…")
+                            } else {
+                                Icon(Icons.Default.FactCheck, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Catalogar corpus (privado)")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        cataloged?.let { result ->
+            item {
+                OutlinedCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.FactCheck, null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Catálogo privado pronto", style = MaterialTheme.typography.titleSmall)
+                        }
+                        Text("Intake: ${result.intakeId}", style = MaterialTheme.typography.bodySmall)
+                        Text("Tipo: ${result.contentKind}", style = MaterialTheme.typography.bodySmall)
+                        result.structuralVector?.let { vector ->
+                            Text(
+                                "Vetor estrutural: obj=${vector.objects}, arrays=${vector.arrays}, nomes=${vector.names}, strings=${vector.strings}, números=${vector.numbers}, depth=${vector.maxDepth}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Text(
+                            "Risk handle público opaco: ${result.publicRiskHandle}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            "Manifesto privado: ${result.manifestFile.absolutePath}",
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            "Embedding semântico: TOKEN_VAZIO_EXPLICIT_PROVIDER_REQUIRED",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Button(
+                            onClick = { catalogFolderPicker.launch(null) },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !exportingCatalog
+                        ) {
+                            if (exportingCatalog) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("Exportando…")
+                            } else {
+                                Icon(Icons.Default.Upload, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Exportar catálogo para pasta privada")
+                            }
+                        }
+                        exportedCatalog?.let { exported ->
+                            Text(
+                                "Export: PASS · ${exported.exportedArtifactCount} artefatos · provider ${exported.destinationProviderAuthority}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Text(
+                                "Receipt local: ${exported.localReceiptFile.absolutePath}",
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
             }
