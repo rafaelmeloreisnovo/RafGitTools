@@ -69,3 +69,25 @@ The private manifest declares `rmr-zipraf-evidence-envelope-v1` as the custody-e
 with authority routed to `rafaelmeloreisnovo/papers`. This app does **not** claim that an envelope
 has been sealed merely because a corpus was staged/cataloged. The default state is
 `TOKEN_VAZIO_NOT_SEALED`; sealing and any external cryptographic/time anchors are separate gates.
+
+## Public Mapa publication route
+
+A sanitized risk projection is **not** pushed from `HomeScreen`. UI code must not bypass the
+governed remote-write boundary.
+
+The allowed route is:
+
+```text
+public-risk candidate JSON
+→ RafGitFS local workspace
+→ diff/plan
+→ explicit approval
+→ CREATE_BRANCH
+→ CREATE_COMMIT
+→ PUSH_BRANCH
+→ OPEN_PULL_REQUEST(draft)
+→ rafaelmeloreisnovo/Mapa/indices/public-risk/
+```
+
+The existing `RafGitFsGithubBranchWriter` is the remote mutation authority for this path.
+Protected/default branches are not direct targets; `claim_allowed=false` remains mandatory.
