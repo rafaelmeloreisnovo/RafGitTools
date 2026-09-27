@@ -1,0 +1,32 @@
+{
+  "schema": "rafgittools.rmrcti-full-member-stream-bootstrap.v1",
+  "date": "2026-09-27",
+  "source_main_head": "0e793ba456d00eb794b81c6ebe4be81c0590f728",
+  "producer": {
+    "repository": "rafaelmeloreisnovo/llamaRafaelia",
+    "path": "rmrCti/rmrcti_dataset_mobile.py",
+    "blob": "f8e6687ef1994f64db8bcb5ce765f8cd21c842f1"
+  },
+  "zipio": {
+    "path": "rmrCti/rmrcti_zipio.py",
+    "blob": "945238b9a4911a715a19a0bfd7217d9870274239"
+  },
+  "implemented": [
+    "bounded-memory full member SHA256 CRC32 byte-vector stream",
+    "repeatable text replay with SHA256 equality gate",
+    "precomputed streaming descriptors accepted by LibraryLocalJobExecutor",
+    "FULL_SOURCE promotion only after full stream verification",
+    "RMRCTI canonical catalog bundle generation",
+    "direct argv ProcessBuilder adapter for producer stream route"
+  ],
+  "invariants": [
+    "BOUNDED_SAMPLE != FULL_SOURCE",
+    "H(sample) != H(full member)",
+    "AUTO_BIAS_MAX = MULTIMODAL",
+    "EVIDENCE != automatic promotion",
+    "private runtime paths != public receipt provenance"
+  ],
+  "ci": "PENDING",
+  "physical_novoexport_execution": "TOKEN_VAZIO",
+  "claim_allowed": false
+}

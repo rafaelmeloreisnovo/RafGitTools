@@ -14,7 +14,10 @@ data class LibraryJobInput(
     val text: String? = null,
     val gray8Pixels: ByteArray? = null,
     val imageWidth: Int? = null,
-    val imageHeight: Int? = null
+    val imageHeight: Int? = null,
+    val precomputedByteVector: ByteVectorV1? = null,
+    val precomputedTextVector: TextVectorV1? = null,
+    val observedBytes: Long? = null
 )
 
 data class LibraryJobExecutionResult(
@@ -43,7 +46,7 @@ class LibraryLocalJobExecutor(
         attempt: Int = 1
     ): LibraryJobExecutionResult {
         val started = environment.nowEpochMs
-        val availableBytes = input.bytes?.size?.toLong() ?: job.source.sizeBytes
+        val availableBytes = input.observedBytes ?: input.bytes?.size?.toLong() ?: job.source.sizeBytes
         val preflight = LibraryRigorLens.canSatisfy(
             job = job,
             availableBytes = availableBytes,
@@ -76,16 +79,25 @@ class LibraryLocalJobExecutor(
 
         val bytes = input.bytes
         val byteVector = if (rigor.requireByteVector) {
-            if (bytes == null) {
-                gaps += "BYTE_SOURCE_TOKEN_VAZIO"
-                null
-            } else {
-                bytesConsumed = bytes.size.toLong()
-                LocalDescriptorEngine.byteVector(
-                    bytes = bytes,
-                    includeSha256 = rigor.requireFullContentHash &&
-                        job.source.contentScope == LibraryContentScope.FULL_SOURCE
-                )
+            when {
+                input.precomputedByteVector != null -> {
+                    bytesConsumed = input.observedBytes
+                        ?: job.source.sizeBytes
+                        ?: input.precomputedByteVector.sizeBytes.toLong()
+                    input.precomputedByteVector
+                }
+                bytes == null -> {
+                    gaps += "BYTE_SOURCE_TOKEN_VAZIO"
+                    null
+                }
+                else -> {
+                    bytesConsumed = bytes.size.toLong()
+                    LocalDescriptorEngine.byteVector(
+                        bytes = bytes,
+                        includeSha256 = rigor.requireFullContentHash &&
+                            job.source.contentScope == LibraryContentScope.FULL_SOURCE
+                    )
+                }
             }
         } else null
 
@@ -94,12 +106,14 @@ class LibraryLocalJobExecutor(
             job.source.mediaType == "application/xml"
 
         val textVector = if (rigor.requireTextVectorWhenTextLike && isTextLike) {
-            val text = input.text ?: bytes?.toString(Charsets.UTF_8)
-            if (text == null) {
-                gaps += "TEXT_DECODE_TOKEN_VAZIO"
-                null
-            } else {
-                LocalDescriptorEngine.textVector(text)
+            input.precomputedTextVector ?: run {
+                val text = input.text ?: bytes?.toString(Charsets.UTF_8)
+                if (text == null) {
+                    gaps += "TEXT_DECODE_TOKEN_VAZIO"
+                    null
+                } else {
+                    LocalDescriptorEngine.textVector(text)
+                }
             }
         } else null
 
@@ -129,6 +143,12 @@ class LibraryLocalJobExecutor(
             requiredGaps += "FULL_SOURCE_SCOPE_REQUIRED"
         } else if (rigor.requireFullContentHash && byteVector?.sha256 == null) {
             requiredGaps += "REQUIRED_FULL_HASH_TOKEN_VAZIO"
+        } else if (
+            rigor.requireFullContentHash &&
+            job.source.contentSha256 != null &&
+            byteVector?.sha256 != job.source.contentSha256
+        ) {
+            requiredGaps += "FULL_SOURCE_HASH_MISMATCH"
         }
         if (rigor.requireTextVectorWhenTextLike && isTextLike && textVector == null) {
             requiredGaps += "REQUIRED_TEXT_VECTOR_TOKEN_VAZIO"
