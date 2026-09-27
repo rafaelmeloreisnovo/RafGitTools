@@ -1,0 +1,183 @@
+{
+  "schema": "rafgittools.open-work-registry.v1",
+  "observed_at": "2026-09-27T02:45:00Z",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "main_head": "083aafaea927980095746f39705eb87224e7be4e",
+  "claim_allowed": false,
+  "open_issue_count": 15,
+  "open_issues": [
+    {
+      "number": 494,
+      "title": "eee",
+      "category": "UNTRIAGED",
+      "state": "OPEN"
+    },
+    {
+      "number": 435,
+      "title": "F_gap: enforce CI ratchet with server-side main ruleset",
+      "category": "GOVERNANCE",
+      "state": "OPEN"
+    },
+    {
+      "number": 421,
+      "title": "ci: Ω120 rebuild dependency upgrades with immutable SHAs",
+      "category": "SUPPLY_CHAIN",
+      "state": "OPEN"
+    },
+    {
+      "number": 420,
+      "title": "ops: provision least-privilege RAF_CROSS_REPO_TOKEN",
+      "category": "AUTHORIZATION",
+      "state": "OPEN"
+    },
+    {
+      "number": 394,
+      "title": "P0 — enforce Ω memory-epoch / residual-state gates as reusable policy",
+      "category": "GOVERNANCE",
+      "state": "OPEN"
+    },
+    {
+      "number": 393,
+      "title": "P0 — enforce canonical main branch protections for human-impact gates",
+      "category": "GOVERNANCE",
+      "state": "OPEN"
+    },
+    {
+      "number": 392,
+      "title": "P0 — produce first LIVE cross-repository human-impact receipt",
+      "category": "PHYSICAL_EVIDENCE",
+      "state": "OPEN"
+    },
+    {
+      "number": 387,
+      "title": "P0: materializar CROSS_REPO_IMPACT_REVIEW com validator e receipt",
+      "category": "CROSS_REPO",
+      "state": "OPEN"
+    },
+    {
+      "number": 357,
+      "title": "Cross-repo bridge V1: RafGitTools ↔ RafPolimata ↔ FlorisBoard",
+      "category": "CROSS_REPO",
+      "state": "OPEN"
+    },
+    {
+      "number": 291,
+      "title": "P0 Ω: integrar middleware IA↔humanos em 8 repositórios com recibos e prova runtime",
+      "category": "FEDERATION",
+      "state": "OPEN"
+    },
+    {
+      "number": 281,
+      "title": "P0: restore observable GitHub Actions execution with steps, logs and artifacts",
+      "category": "CI_OBSERVABILITY",
+      "state": "OPEN"
+    },
+    {
+      "number": 272,
+      "title": "Ω³: rastrear ingresso APK/DEX/ELF e arquivos soltos do Vectras (PR #1053)",
+      "category": "ARTIFACT_CUSTODY",
+      "state": "OPEN"
+    },
+    {
+      "number": 260,
+      "title": "Federated rollout: validate and merge repository contracts",
+      "category": "FEDERATION",
+      "state": "OPEN"
+    },
+    {
+      "number": 246,
+      "title": "P0: runtime-lock e integração multiprojeto com commits fixados",
+      "category": "RUNTIME_LOCK",
+      "state": "OPEN"
+    },
+    {
+      "number": 241,
+      "title": "[Copilot Master] Fechamento interdependente Drive → RafGitTools → Termux → RafPolimata → Llama",
+      "category": "DRIVE_FEDERATION",
+      "state": "OPEN"
+    }
+  ],
+  "open_dependency_pr_count": 14,
+  "dependency_prs": [
+    {
+      "number": 454,
+      "state": "OPEN",
+      "class": "DEPENDENCY_OR_CI_UPDATE"
+    },
+    {
+      "number": 457,
+      "state": "OPEN",
+      "class": "DEPENDENCY_OR_CI_UPDATE"
+    },
+    {
+      "number": 459,
+      "state": "OPEN",
+      "class": "DEPENDENCY_OR_CI_UPDATE"
+    },
+    {
+      "number": 460,
+      "state": "OPEN",
+      "class": "DEPENDENCY_OR_CI_UPDATE"
+    },
+    {
+      "number": 461,
+      "state": "OPEN",
+      "class": "DEPENDENCY_OR_CI_UPDATE"
+    },
+    {
+      "number": 462,
+      "state": "OPEN",
+      "class": "DEPENDENCY_OR_CI_UPDATE"
+    },
+    {
+      "number": 463,
+      "state": "OPEN",
+      "class": "DEPENDENCY_OR_CI_UPDATE"
+    },
+    {
+      "number": 464,
+      "state": "OPEN",
+      "class": "DEPENDENCY_OR_CI_UPDATE"
+    },
+    {
+      "number": 465,
+      "state": "OPEN",
+      "class": "DEPENDENCY_OR_CI_UPDATE"
+    },
+    {
+      "number": 466,
+      "state": "OPEN",
+      "class": "DEPENDENCY_OR_CI_UPDATE"
+    },
+    {
+      "number": 474,
+      "state": "OPEN",
+      "class": "DEPENDENCY_OR_CI_UPDATE"
+    },
+    {
+      "number": 475,
+      "state": "OPEN",
+      "class": "DEPENDENCY_OR_CI_UPDATE"
+    },
+    {
+      "number": 476,
+      "state": "OPEN",
+      "class": "DEPENDENCY_OR_CI_UPDATE"
+    },
+    {
+      "number": 477,
+      "state": "OPEN",
+      "class": "DEPENDENCY_OR_CI_UPDATE"
+    }
+  ],
+  "library_control_plane_gaps": [
+    "MULTI_DRIVE_SECOND_SOURCE_BINDING_TOKEN_VAZIO",
+    "WHOLE_DRIVE_REENUMERATION_NOT_RUN",
+    "FULL_ITEM_SHA256_COVERAGE_NOT_RUN",
+    "FULL_SEMANTIC_AUTHORITY_SUBJECT_INDEX_NOT_RUN",
+    "REVERSIBLE_PHYSICAL_MOVE_PLANNER_NOT_IMPLEMENTED",
+    "MULTI_SOURCE_CIRCULATION_JOURNAL_NOT_IMPLEMENTED",
+    "LIBRARY_SEARCH_UI_NOT_WIRED",
+    "NO_DELETE_OR_DEDUP_AUTHORIZATION"
+  ]
+}
