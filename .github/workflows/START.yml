@@ -524,6 +524,22 @@ jobs:
         uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4
         with:
           category: '/language:${{ matrix.language }}'
+      - name: Summarize CodeQL SARIF without source excerpts
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/summarize_codeql_sarif.py \
+            --input-dir ../results \
+            --output "artifacts/codeql-summary-${{ matrix.language }}.json"
+      - name: Upload sanitized CodeQL summary
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: start-07-codeql-summary-${{ matrix.language }}-${{ github.run_id }}
+          path: artifacts/codeql-summary-${{ matrix.language }}.json
+          if-no-files-found: warn
+          retention-days: 30
 
   release:
     name: '08 · Signed release'
