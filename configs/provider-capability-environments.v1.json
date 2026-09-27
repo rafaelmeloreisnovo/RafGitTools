@@ -2,15 +2,25 @@
   "schema": "rafaelia.provider-capability-environments.v1",
   "observed_at": "2026-09-27",
   "repository": "rafaelmeloreisnovo/RafGitTools",
-  "source": "HUMAN_REPORTED_GITHUB_SETTINGS_READBACK",
+  "source": "HUMAN_REPORTED_GITHUB_PAT_INVENTORY",
   "provider_environment_api_readback": "TOKEN_VAZIO_CONNECTOR_ENDPOINT_UNAVAILABLE",
   "claim_allowed": false,
   "capabilities": [
     {
+      "capability": "legacy_generic",
+      "storage_scope": "TOKEN_VAZIO_PROVIDER_STORAGE_SCOPE",
+      "environment": "TOKEN_VAZIO_PROVIDER_ENVIRONMENT_NAME_UNVERIFIED",
+      "secret": "pat_env",
+      "state": "REGISTERED_NOT_WIRED",
+      "allowed_operations": [
+        "preflight"
+      ]
+    },
+    {
       "capability": "actions",
-      "storage_scope": "REPOSITORY_SECRET",
-      "environment": "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND",
-      "secret": "PAT_ACTIONS",
+      "storage_scope": "TOKEN_VAZIO_PROVIDER_STORAGE_SCOPE",
+      "environment": "TOKEN_VAZIO_PROVIDER_ENVIRONMENT_NAME_UNVERIFIED",
+      "secret": "PAT_actions",
       "state": "REGISTERED_NOT_WIRED",
       "allowed_operations": [
         "preflight"
@@ -18,9 +28,9 @@
     },
     {
       "capability": "agents",
-      "storage_scope": "REPOSITORY_SECRET",
-      "environment": "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND",
-      "secret": "PAT_AGENTS",
+      "storage_scope": "TOKEN_VAZIO_PROVIDER_STORAGE_SCOPE",
+      "environment": "TOKEN_VAZIO_PROVIDER_ENVIRONMENT_NAME_UNVERIFIED",
+      "secret": "PAT_agents",
       "state": "REGISTERED_NOT_WIRED",
       "allowed_operations": [
         "preflight"
@@ -28,19 +38,9 @@
     },
     {
       "capability": "codespaces",
-      "storage_scope": "REPOSITORY_SECRET",
-      "environment": "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND",
-      "secret": "PAT_CODESPACES",
-      "state": "REGISTERED_NOT_WIRED",
-      "allowed_operations": [
-        "preflight"
-      ]
-    },
-    {
-      "capability": "dependabot",
-      "storage_scope": "REPOSITORY_SECRET",
-      "environment": "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND",
-      "secret": "PAT_DEPENDABOT",
+      "storage_scope": "TOKEN_VAZIO_PROVIDER_STORAGE_SCOPE",
+      "environment": "TOKEN_VAZIO_PROVIDER_ENVIRONMENT_NAME_UNVERIFIED",
+      "secret": "PAT_codespaces",
       "state": "REGISTERED_NOT_WIRED",
       "allowed_operations": [
         "preflight"
@@ -50,7 +50,7 @@
       "capability": "environments",
       "storage_scope": "ENVIRONMENT_SECRET",
       "environment": "Pat_environments",
-      "secret": "PAT_ENV",
+      "secret": "PAT_environments",
       "state": "WIRED_MANUAL_ONLY",
       "allowed_operations": [
         "preflight",
@@ -61,7 +61,8 @@
   ],
   "invariants": [
     "NON_PRIVILEGED_JOB_USES_GITHUB_TOKEN_ONLY",
-    "PAT_CAPABILITY_MUST_MATCH_STORAGE_SCOPE",
+    "HUMAN_REPORTED_SECRET_NAME != PROVIDER_READBACK",
+    "PAT_CAPABILITY_MUST_MATCH_STORAGE_SCOPE_WHEN_OBSERVED",
     "NO_PAT_FALLBACK_BETWEEN_CAPABILITIES",
     "SECRET_VALUE_NEVER_PERSISTED_OR_PRINTED",
     "PROVIDER_WRITE_REQUIRES_WORKFLOW_DISPATCH",
