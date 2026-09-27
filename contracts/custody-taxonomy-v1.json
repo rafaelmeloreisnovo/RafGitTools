@@ -1,6 +1,6 @@
 {
   "schema": "rafgittools.custody-taxonomy.v1",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "authority": "rafaelmeloreisnovo/RafGitTools",
   "mode": "EVIDENCE_FIRST_FAIL_CLOSED_APPEND_ONLY",
   "purpose": "Differentiate custody by object, authority, actor and provider without conflating source, artifact, execution, evidence or claim.",
@@ -11,7 +11,8 @@
     "recorded_action != provider_acceptance",
     "assistant_observation != provider_authority",
     "human_authorization != execution_evidence",
-    "cross_provider_reference != payload_duplication"
+    "cross_provider_reference != payload_duplication",
+    "assistant_orchestration != connector_provider_execution"
   ],
   "authority_domains": {
     "DOCUMENTARY": {
@@ -90,11 +91,12 @@
       ]
     },
     "ASSISTANT_TOOL_OPERATOR": {
-      "role": "route, read, write, compare and record through connected tools",
+      "role": "route, read, compare, request provider actions, and record provider results through connected tools",
       "may_authorize": false,
-      "may_execute": "ONLY_WITHIN_EXPLICIT_USER_SCOPE_AND_TOOL_PERMISSION",
+      "may_execute": false,
       "required_evidence": [
-        "tool result or connector readback for external mutation claims"
+        "explicit user-authorized scope",
+        "connector/provider result or readback for external mutation claims"
       ],
       "cannot_self_promote": [
         "human authorization",
@@ -104,7 +106,7 @@
       ]
     },
     "PROVIDER": {
-      "role": "GitHub/Google Drive/CI service authoritative readback inside its own domain",
+      "role": "connected provider/API/service that applies external mutations or reads and returns authoritative readback inside its own domain",
       "may_authorize": "ONLY_PROVIDER_POLICY_ACTIONS",
       "may_execute": true,
       "cannot_self_promote": [
@@ -273,7 +275,7 @@
     },
     {
       "id": "C10_ASSISTANT_TOOL_ACTION_CUSTODY",
-      "object": "assistant action through connected tool",
+      "object": "assistant orchestration/request through connected tool; provider execution remains separate",
       "authority_domain": "EVIDENCE",
       "minimum_anchors": [
         "tool_provider",
@@ -288,7 +290,7 @@
         "receipt_ref"
       ],
       "evidence_effect": "TOOL_OBSERVED",
-      "gate": "external mutation claim requires provider readback; no readback => PENDING_OR_TOKEN_VAZIO"
+      "gate": "assistant request is not provider execution; external mutation evidence requires connector/provider result or readback; no result => PENDING_OR_TOKEN_VAZIO"
     }
   ],
   "bridge_rules": [
@@ -364,5 +366,24 @@
     "automatic_promotion": false,
     "claim_allowed_default": false,
     "rule": "Custody proves bounded identity/lineage/observation only. Claim promotion requires the domain-specific evidence gate."
+  },
+  "federation_authority": {
+    "control_plane": "rafaelmeloreisnovo/Mapa",
+    "registry_path": "data/control-plane/CUSTODY_CHAIN_TYPE_REGISTRY.v1.json",
+    "registry_schema_version": "rafaelia.custody-chain-type-registry.v1",
+    "local_role": "producer-specific custody taxonomy, schema validation and anti-regression tests",
+    "precedence": "cross-surface actor semantics follow the federated registry; the local contract may specialize but must not contradict it"
+  },
+  "federation_actor_mapping": {
+    "local_to_global": {
+      "HUMAN_AUTHOR": "HUMAN_AUTHORITY",
+      "ASSISTANT_TOOL_OPERATOR": "ASSISTANT_ORCHESTRATOR",
+      "PROVIDER": "CONNECTOR_PROVIDER",
+      "PHYSICAL_DEVICE": "RUNTIME_EXECUTOR"
+    },
+    "global_only": [
+      "INDEPENDENT_REVIEWER",
+      "TOKEN_VAZIO_ACTOR"
+    ]
   }
 }
