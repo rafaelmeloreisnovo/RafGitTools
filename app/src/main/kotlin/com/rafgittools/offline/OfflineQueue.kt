@@ -44,6 +44,38 @@ class OfflineQueue<T>(
         item
     }
 
+    /**
+     * Atomically removes the highest-scoring item while preserving FIFO order
+     * among equal scores. Persistence uses the same rollback boundary as the
+     * ordinary queue operations.
+     */
+    fun dequeueBest(score: (T) -> Int): T? = lock.withLock {
+        val before = queue.toList()
+        if (before.isEmpty()) return null
+
+        var bestIndex = 0
+        var bestScore = score(before[0])
+        for (index in 1 until before.size) {
+            val candidateScore = score(before[index])
+            if (candidateScore > bestScore) {
+                bestIndex = index
+                bestScore = candidateScore
+            }
+        }
+
+        val selected = before[bestIndex]
+        queue.clear()
+        before.forEachIndexed { index, item ->
+            if (index != bestIndex) queue.addLast(item)
+        }
+
+        persistOrRollback {
+            queue.clear()
+            before.forEach(queue::addLast)
+        }
+        selected
+    }
+
     fun peek(): T? = lock.withLock { queue.peekFirst() }
 
     fun isEmpty(): Boolean = lock.withLock { queue.isEmpty() }

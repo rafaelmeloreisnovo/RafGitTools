@@ -1,0 +1,26 @@
+{
+  "schema": "rafgittools.loose-tools-atlas-receipt.v1",
+  "date": "2026-09-27",
+  "source_commit": "f7585994e8e75dc45a86a2bd18bc98b042f0cbc4",
+  "state": "OBSERVED_REPOSITORY_TREES_AND_SELECTED_SOURCE_CONTENT",
+  "exact_binary_content_inspection": "PARTIAL",
+  "extensionless_binary_provenance": "PARTIAL",
+  "claim_allowed": false,
+  "F_ok": [
+    "rmrcti tree counted",
+    "same-basename pairing computed",
+    "neuromorphic source families inspected",
+    "Vectra vision index inspected",
+    "private vector core inspected"
+  ],
+  "F_gap": [
+    "13 rmrCti extensionless files unresolved by same basename",
+    "full content-type inspection of every compiled artifact not run",
+    "git-history producer resolution not run"
+  ],
+  "F_next": [
+    "classify unresolved extensionless files by magic/content metadata",
+    "resolve producer lineage",
+    "feed reconciled atlas into local library source catalog"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "schema": "rafgittools.neuromorphic-rigor-bias-bootstrap.v1",
+  "date": "2026-09-27",
+  "prepaper_commit": "983691ca4a5dcafd3720edf254afbc593e80bd9d",
+  "implementation": [
+    "RigorBiasEngineV1.kt",
+    "RmrCtiRigorAdapterV1.kt",
+    "RigorBiasEngineV1Test.kt",
+    "RAFGITTOOLS_RIGOR_BIAS_CROSSREPO_V1.json",
+    "CROSS_REPO_RIGOR_BIAS_ATLAS_V1.md"
+  ],
+  "state": "SOURCE_IMPLEMENTED_CI_PENDING",
+  "evidence_promotion_allowed": false,
+  "physical_android_benchmark": "NOT_RUN",
+  "claim_allowed": false
+}

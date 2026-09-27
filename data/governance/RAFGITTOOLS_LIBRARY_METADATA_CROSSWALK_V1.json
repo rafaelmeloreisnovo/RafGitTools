@@ -1,0 +1,50 @@
+{
+  "schema": "rafgittools.library-metadata-crosswalk.v1",
+  "observed_at": "2026-09-27",
+  "claim_allowed": false,
+  "status": "APPLICATION_PROFILE_NOT_CERTIFICATION",
+  "external_models": [
+    {
+      "id": "IFLA_LRM",
+      "role": "CONCEPTUAL_BIBLIOGRAPHIC_MODEL",
+      "mapping": [
+        "WORK",
+        "EXPRESSION",
+        "MANIFESTATION",
+        "ITEM"
+      ]
+    },
+    {
+      "id": "DCMI_TERMS",
+      "role": "DESCRIPTIVE_METADATA_CROSSWALK"
+    },
+    {
+      "id": "MARC21_UPDATE_42_MAY_2026",
+      "role": "FUTURE_INTERCHANGE_EXPORT_TARGET",
+      "implemented": false
+    },
+    {
+      "id": "PREMIS_3",
+      "role": "DIGITAL_PRESERVATION_MODEL",
+      "mapping": [
+        "OBJECT",
+        "EVENT",
+        "RIGHTS",
+        "AGENT"
+      ]
+    }
+  ],
+  "invariants": [
+    "APPLICATION_PROFILE != CERTIFICATION",
+    "SHELF != BIBLIOGRAPHIC_IDENTITY",
+    "HASH_EQUALITY != SEMANTIC_EQUIVALENCE",
+    "CATALOG_RECORD != SOURCE_OBJECT"
+  ],
+  "gaps": [
+    "RDA_FULL_MAPPING_TOKEN_VAZIO",
+    "MARC21_EXPORTER_NOT_IMPLEMENTED",
+    "MARC21_ROUNDTRIP_NOT_IMPLEMENTED",
+    "RDF_LINKED_DATA_SERIALIZATION_NOT_IMPLEMENTED",
+    "CONTROLLED_SUBJECT_SCHEME_TOKEN_VAZIO"
+  ]
+}

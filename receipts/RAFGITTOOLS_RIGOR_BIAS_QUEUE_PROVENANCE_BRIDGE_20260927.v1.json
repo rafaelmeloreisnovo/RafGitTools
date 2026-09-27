@@ -1,0 +1,18 @@
+{
+  "schema": "rafgittools.rigor-bias-queue-provenance-bridge.v1",
+  "date": "2026-09-27",
+  "source_commit": "1c5c2ab67b4cf775ae293b76aef1787a3a94de7f",
+  "changes": [
+    "OfflineQueue.dequeueBest stable highest-score removal with persistence rollback",
+    "RigorBiasedLibraryQueueV1 applies priorityBiasQ16 without a second scheduler",
+    "RigorBiasDecisionEnvelopeV1 binds deterministic input digest to per-head and forest provenance"
+  ],
+  "invariants": [
+    "BIAS_CHOOSES_ORDER_NOT_TRUTH",
+    "RESOURCE_GATES_REMAIN_IN_EXECUTOR",
+    "TOKEN_VAZIO_PROVENANCE_SURVIVES_WITHOUT_NUMERIC_IMPUTATION",
+    "EVIDENCE_PROMOTION_ALLOWED_FALSE"
+  ],
+  "claim_allowed": false,
+  "ci_state": "PENDING"
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "rafgittools.bibliotheca-drive-bootstrap-receipt.v1",
+  "date": "2026-09-27",
+  "source_main_head": "083aafaea927980095746f39705eb87224e7be4e",
+  "private_drive_library_map": "OBSERVED_AND_EXTENDED_NON_DESTRUCTIVELY",
+  "new_private_shelf_count": 10,
+  "exact_private_folder_ids_committed_publicly": false,
+  "existing_files_moved": 0,
+  "existing_files_deleted": 0,
+  "code_state": "SOURCE_IMPLEMENTED_CI_PENDING",
+  "second_drive_binding": "TOKEN_VAZIO",
+  "whole_drive_catalog": "NOT_RUN",
+  "claim_allowed": false,
+  "rollback": "revert this Git branch; Drive folders are empty structural additions and source files were not moved"
+}
