@@ -1,0 +1,29 @@
+{
+  "schema": "rafgittools.local-library-processing-bootstrap-receipt.v1",
+  "date": "2026-09-27",
+  "branch": "feat/bibliotheca-drive-control-plane-v1-20260927",
+  "prepaper_commit": "615c1fac373e296bb50f85715e6efb6026cbca7f",
+  "source_basis": [
+    "uploaded:voynich_analysis.py engineering pattern",
+    "existing:OfflineQueue.kt",
+    "existing:BackgroundSyncManager.kt",
+    "existing:CorpusCatalogTreeGate.kt"
+  ],
+  "implementation": [
+    "LibraryProcessingModels.kt",
+    "LibraryRigorLens.kt",
+    "LocalDescriptorEngine.kt",
+    "LibraryLocalJobExecutor.kt",
+    "library-local-job-v1.schema.json",
+    "LibraryLocalProcessingTest.kt"
+  ],
+  "states": {
+    "source": "IMPLEMENTED",
+    "unit_tests": "CI_PENDING",
+    "android_thermal_adapter": "NOT_IMPLEMENTED",
+    "saf_streaming_reader": "NOT_IMPLEMENTED",
+    "persistent_checkpoint_store": "NOT_IMPLEMENTED",
+    "physical_novoexport_pilot": "NOT_RUN"
+  },
+  "claim_allowed": false
+}
