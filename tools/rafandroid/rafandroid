@@ -79,8 +79,8 @@ resolve_tool(){
 
 gradle_command(){
   if [[ -f "$REPO_ROOT/gradlew" ]]; then
-    [[ -x "$REPO_ROOT/gradlew" ]] && { printf '%s\n' "$REPO_ROOT/gradlew"; return 0; }
-    printf 'bash %q' "$REPO_ROOT/gradlew"; return 0
+    printf '%s\n' "$REPO_ROOT/gradlew"
+    return 0
   fi
   have gradle && { command -v gradle; return 0; }
   return 1
@@ -88,9 +88,7 @@ gradle_command(){
 
 probe_one(){
   local label="$1" path="${2:-}"
-  if [[ "$path" == bash\ * ]]; then
-    printf '%-18s PASS %s\n' "$label" "$path"
-  elif [[ -n "$path" && ( -x "$path" || -f "$path" || -d "$path" ) ]]; then
+  if [[ -n "$path" && ( -x "$path" || -f "$path" || -d "$path" ) ]]; then
     printf '%-18s PASS %s\n' "$label" "$path"
   else
     printf '%-18s TOKEN_VAZIO\n' "$label"
@@ -191,7 +189,10 @@ cmd_env(){
 cmd_gradle(){
   context
   [[ -n "$GRADLE" ]] || die "Gradle wrapper/system Gradle = TOKEN_VAZIO"
-  if [[ "$GRADLE" == bash\ * ]]; then eval "$GRADLE" --no-daemon "$@"; else exec "$GRADLE" --no-daemon "$@"; fi
+  if [[ "$GRADLE" == "$REPO_ROOT/gradlew" && ! -x "$GRADLE" ]]; then
+    exec bash "$GRADLE" --no-daemon "$@"
+  fi
+  exec "$GRADLE" --no-daemon "$@"
 }
 
 cmd_exec_tool(){
@@ -324,13 +325,18 @@ cmd_apk_gate(){
   signer="$(resolve_tool apksigner "$SDK" "$BT" "$CT" "$NDK" 2>/dev/null || true)"
   align="$(resolve_tool zipalign "$SDK" "$BT" "$CT" "$NDK" 2>/dev/null || true)"
   if [[ -n "$align" ]]; then "$align" -c 4 "$apk" && say "ZIPALIGN=PASS" || { say "ZIPALIGN=FAIL"; return 1; }; else say "ZIPALIGN=TOKEN_VAZIO"; fi
-  if [[ -n "$signer" ]]; then "$signer" verify "$apk" >/dev/null && say "SIGNATURE=PASS" || say "SIGNATURE=FAIL_OR_UNSIGNED"; else say "SIGNATURE=TOKEN_VAZIO"; fi
+  if [[ -n "$signer" ]]; then
+    "$signer" verify "$apk" >/dev/null || { say "SIGNATURE=FAIL_OR_UNSIGNED"; return 1; }
+    say "SIGNATURE=PASS"
+  else
+    say "SIGNATURE=TOKEN_VAZIO"
+  fi
 }
 
 cmd_scaffold(){
   local out="${1:-}" pkg="${2:-io.rafaelia.minimal}"
   [[ -n "$out" ]] || die "usage: rafandroid scaffold <dir> [package]"
-  [[ "$pkg" =~ ^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+$ ]] || die "invalid package: $pkg"
+  [[ "$pkg" =~ ^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z][A-Za-z0-9]*)+$ ]] || die "invalid package for V1 JNI scaffold (letters/digits only per segment): $pkg"
   [[ -d "$TEMPLATE_DIR" ]] || die "template directory missing"
   [[ ! -e "$out" ]] || die "destination exists: $out"
   mkdir -p "$out"; cp -R "$TEMPLATE_DIR"/. "$out"/
