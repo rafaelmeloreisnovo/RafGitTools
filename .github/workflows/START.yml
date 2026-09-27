@@ -149,6 +149,16 @@ jobs:
               provider_environments=true
               provider_operation=preflight
             fi
+            if [[ "${GITHUB_EVENT_NAME}" == push && "${GITHUB_REF}" == refs/heads/main ]] &&
+               grep -Fxq 'configs/provider-environment-apply.once.json' <<<"$changed"; then
+              operation="$(python3 -c "import json,pathlib; d=json.loads(pathlib.Path('configs/provider-environment-apply.once.json').read_text(encoding='utf-8')); assert d.get('operation')=='apply_main_protection'; assert d.get('preflight_evidence',{}).get('state')=='PLAN_ONLY_AUTHORITY_AND_SHA_PRECONDITIONS_PASS'; assert d.get('preflight_evidence',{}).get('admin_permission_observed') is True; assert d.get('preflight_evidence',{}).get('provider_mutation') is False; print(d.get('operation'))")"
+              [[ "$operation" == apply_main_protection ]] || {
+                echo "::error::apply one-shot requires successful preflight evidence"
+                exit 2
+              }
+              provider_environments=true
+              provider_operation=apply_main_protection
+            fi
           fi
 
           case "$mode" in
@@ -602,7 +612,10 @@ jobs:
             github.event_name == 'push' &&
             github.ref == 'refs/heads/main' &&
             github.actor == 'rafaelmeloreisnovo' &&
-            needs.plan.outputs.provider_operation == 'preflight'
+            (
+              needs.plan.outputs.provider_operation == 'preflight' ||
+              needs.plan.outputs.provider_operation == 'apply_main_protection'
+            )
           )
         )
       }}
@@ -641,10 +654,19 @@ jobs:
               echo "::error::unexpected actor for one-shot preflight: ${GITHUB_ACTOR}"
               exit 2
             }
-            [[ "${REQUESTED_PROVIDER_OPERATION}" == preflight ]] || {
-              echo '::error::push-triggered provider lane is preflight-only'
-              exit 2
-            }
+            case "${REQUESTED_PROVIDER_OPERATION}" in
+              preflight) ;;
+              apply_main_protection)
+                [[ -f configs/provider-environment-apply.once.json ]] || {
+                  echo '::error::push-triggered provider apply requires apply one-shot evidence'
+                  exit 2
+                }
+                ;;
+              *)
+                echo "::error::push-triggered provider lane received unsupported operation"
+                exit 2
+                ;;
+            esac
           elif [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch ]]; then
             echo '::error::provider environment job requires workflow_dispatch or bounded main preflight'
             exit 2
