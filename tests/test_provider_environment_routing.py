@@ -23,9 +23,16 @@ class ProviderEnvironmentRoutingTests(unittest.TestCase):
         self.assertEqual(ENV.validate(data), [])
         routed = {x["capability"]: x for x in data["capabilities"]}
         self.assertEqual(routed["environments"]["environment"].casefold(), "pat_environments")
-        self.assertEqual(routed["environments"]["secret"].casefold(), "pat_environments")
+        self.assertEqual(routed["environments"]["secret"], "PAT_ENV")
         self.assertEqual(routed["environments"]["state"], "WIRED_MANUAL_ONLY")
-        self.assertEqual(routed["legacy_generic"]["state"], "REGISTERED_DISABLED_BY_DEFAULT")
+        self.assertEqual(routed["environments"]["storage_scope"], "ENVIRONMENT_SECRET")
+        self.assertEqual(routed["actions"]["secret"], "PAT_ACTIONS")
+        self.assertEqual(routed["agents"]["secret"], "PAT_AGENTS")
+        self.assertEqual(routed["codespaces"]["secret"], "PAT_CODESPACES")
+        self.assertEqual(routed["dependabot"]["secret"], "PAT_DEPENDABOT")
+        for key in ("actions", "agents", "codespaces", "dependabot"):
+            self.assertEqual(routed[key]["storage_scope"], "REPOSITORY_SECRET")
+            self.assertEqual(routed[key]["environment"], "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND")
 
     def test_branch_protection_payload_matches_canonical_start_contexts(self):
         plan = json.loads((ROOT / "contracts" / "MAIN_PROVIDER_ENFORCEMENT_PLAN_20260907.v3.json").read_text())
