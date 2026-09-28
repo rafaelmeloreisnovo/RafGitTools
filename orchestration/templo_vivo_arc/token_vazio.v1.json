@@ -1,0 +1,24 @@
+{
+  "schema": "rafaelia.templo-vivo.token-vazio-dictionary.v1",
+  "claim_allowed": false,
+  "invariant": "TOKEN_VAZIO != 0 != false != PASS",
+  "tokens": {
+    "TOKEN_VAZIO_SOURCE": "source identity or exact source pointer absent",
+    "TOKEN_VAZIO_SOURCE_HASH": "source hash absent",
+    "TOKEN_VAZIO_AUTHORITY": "operation authority unresolved",
+    "TOKEN_VAZIO_AUTHORIZATION": "authorization receipt absent",
+    "TOKEN_VAZIO_EXECUTION_TARGET": "runner/backend/target unresolved",
+    "TOKEN_VAZIO_EVIDENCE": "required execution evidence absent",
+    "TOKEN_VAZIO_KEY_ID": "key identifier absent; never substitute key bytes or a zero key",
+    "TOKEN_VAZIO_DEOBFUSCATOR": "deobfuscator implementation/version identity absent",
+    "TOKEN_VAZIO_PRIVACY_CLASS": "privacy classification unresolved",
+    "TOKEN_VAZIO_RETENTION": "retention rule unresolved",
+    "TOKEN_VAZIO_PAYLOAD_REF": "opaque/encrypted private payload reference absent",
+    "TOKEN_VAZIO_VISUAL_ANCHOR": "pixel/image provenance anchor absent",
+    "TOKEN_VAZIO_SCHEDULE": "cadence state/rule unresolved",
+    "TOKEN_VAZIO_HOURLY_PROMOTION_RULE": "number of successful hourly cycles before 12-hour cadence not specified",
+    "TOKEN_VAZIO_TWELVE_HOURLY_PROMOTION_RULE": "number of successful 12-hour cycles before daily cadence not specified",
+    "TOKEN_VAZIO_PRIVATE_RUNNER_BINDING": "no proved runner with authorized private repository read binding",
+    "TOKEN_VAZIO_RECEIPT": "append-only transition receipt absent"
+  }
+}
