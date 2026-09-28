@@ -11,8 +11,9 @@ This document provides detailed instructions for building RafGitTools from sourc
    - Download: https://developer.android.com/studio
 
 2. **Java Development Kit (JDK)**
-   - Version: JDK 17 to JDK 21 (recommended: JDK 17)
-   - Android Studio includes JDK, or download from: https://adoptium.net/
+   - Version: **JDK 17** is the current repository baseline.
+   - Other JDK versions are not promoted by this document; change Java/Gradle/AGP/Kotlin/KSP only as a coordinated, tested toolchain update.
+   - Android Studio may include a JDK, but verify the selected runtime before invoking Gradle.
 
 3. **Android SDK**
    - Minimum SDK: API 24 (Android 7.0)
@@ -23,7 +24,7 @@ This document provides detailed instructions for building RafGitTools from sourc
    - Download: https://git-scm.com/
 
 
-> ⚠️ Important: the observed build baseline is `Gradle Wrapper 9.5.1` + `AGP 8.13.2`, with project Java/Kotlin compatibility pinned to JDK 17. Use the repository wrapper/helper rather than assuming a system Gradle version.
+> ⚠️ Important: the observed build baseline is `Gradle Wrapper 9.5.1` + `AGP 8.13.2`, with project Java/Kotlin compatibility pinned to **JDK 17**. Use the repository wrapper/helper rather than assuming either a system Gradle or a different JDK is equivalent.
 > If your machine has multiple JDKs, force JDK 17 before calling `./gradlew`.
 > You can use the helper script, which now auto-detects common JDK 17 installs
 > (including `mise`) and exports `JAVA_HOME` automatically. If `JAVA_HOME`
