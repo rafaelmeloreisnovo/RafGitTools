@@ -2,8 +2,8 @@
 
 - Status: **ACTIVE — source advanced / current documentation reconciled against main**
 - Observed repository: `rafaelmeloreisnovo/RafGitTools`
-- Observed base revision: `2e69dae6d45dd23c6252eee9b42cd230d1bd6bac`
-- Observed date: **2026-09-18**
+- Observed base revision for this reconciliation: `8af97a580e535d2015e8211000850e282b031763`
+- Observed date: **2026-09-28**
 - Reconciliation scope: **code + tests + delivery architecture + documentation**
 - `claim_allowed=false`
 - `release_allowed=false`
@@ -18,6 +18,22 @@ HISTORICAL_RECEIPT != CURRENT_HEAD_RECEIPT
 ```
 
 This document describes the current source/documentation relationship. Historical receipts remain valid only for the exact revisions and artifacts to which they were originally bound.
+
+## 2026-09-28 controlling delta — RAFANDROID + Silicon Light
+
+Two source domains created in this session are now merged into the main lineage with exact-PR-head canonical START evidence:
+
+| Surface | Source state on main | Revision-bound evidence | Boundary |
+|---|---|---|---|
+| RAFANDROID toolchain shell | `MERGED` | PR #521 head `62925c8...`; START #241 / run `36360576045` = SUCCESS | physical Android/QEMU remain separate |
+| Silicon Light L0 | `MERGED` | PR #526 head `40d90c9...`; START #263 / run `36385528436` = SUCCESS | physical ABI execution remains separate |
+| Silicon Light generated minimal APK fixture | `VERIFIED_LIMITED` | generated scaffold → JNI → APK → DEX/APK gates PASS in START #263 | fixture PASS != handset PASS |
+
+RAFANDROID now owns the local discovery/orchestration/gating shell for Gradle/JDK/SDK/NDK/AAPT2/AIDL/D8/R8/JNI/DEX/APK/ADB/emulator/QEMU discovery and related diagnostics. It does not rebrand those external tools as authorial implementations.
+
+Silicon Light provides an L0 freestanding substrate with no system headers, allocator, syscall, JNI/Android API or external undefined runtime symbols in the declared core boundary. The upper Android layers remain external/runtime authorities.
+
+Canonical reconciliation detail: `docs/audit/SESSION_RECONCILIATION_RAFANDROID_SILICON_LIGHT_20260928.md`.
 
 ## 2026-09-18 controlling delta
 
@@ -104,6 +120,8 @@ FNEXT8 predecessor execution evidence remains bounded to its executed revision/r
 | Terminal | `BOUNDED_EXECUTOR` | PTY/VT100 remains separate capability |
 | LFS/worktree/bisect/GPG | `SOURCE_PRESENT / RUNTIME_GATED` | external/runtime fixtures remain open |
 | Local LLM/LLaMA bridge | `SOURCE_PRESENT / EXTERNAL_RUNTIME_GATED` | dependency/model/device evidence remains open |
+| RAFANDROID toolchain shell | `MERGED / VERIFIED_LIMITED` | PR #521 exact-head START PASS; external tool presence/runtime remains separately typed |
+| Silicon Light L0 | `MERGED / VERIFIED_LIMITED` | PR #526 exact-head host + ARMv7/AArch64 + generated APK fixture PASS |
 | Physical Android runtime | `TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED` | exact-artifact install/launch/recovery receipt required |
 | Release | `BLOCKED_BY_EVIDENCE` | signing + exact artifact + physical acceptance required |
 
@@ -152,6 +170,6 @@ Keep documentation synchronized from exact source and evidence boundaries. Any f
 
 ## R3
 
-- **F_ok:** current main source was re-observed; obsolete PR #346/#347 framing is retired from the active state; governance/FNEXT8 surfaces are routed; historical receipts are preserved.
-- **F_gap:** exact-current-head full workflow/build inventory, machine-state regeneration, physical device, provider-real fixtures and release remain evidence-gated.
-- **F_next:** require revision-bound evidence for each promoted state and keep generated/machine state separate from editorial documentation.
+- **F_ok:** current main source was re-observed; obsolete PR #346/#347 framing is retired; governance/FNEXT8 plus RAFANDROID/Silicon Light are routed; PR #521 and #526 terminal CI evidence is preserved without device over-promotion.
+- **F_gap:** exact-current-main full workflow/build inventory, machine-state regeneration, physical device, QEMU/VM runtime, provider-real fixtures and release remain evidence-gated; duplicated low-level primitive migration is not complete.
+- **F_next:** keep RAFANDROID/Silicon Light regression gates in START, migrate only equivalence-proven low-level primitives, and require revision/artifact/device-bound evidence for every higher promotion.
