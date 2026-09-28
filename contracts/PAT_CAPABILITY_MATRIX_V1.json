@@ -1,0 +1,115 @@
+{
+  "schema": "rafgittools.pat-capability-matrix.v1",
+  "version": "1.0.0",
+  "authority": "rafaelmeloreisnovo/RafGitTools",
+  "federated_authority": "rafaelmeloreisnovo/Mapa",
+  "claim_allowed": false,
+  "canonical_environment": "PAT_ENVIRONMENTS",
+  "legacy_environment_case_alias": "Pat_environments",
+  "secret_ids": [
+    "PAT_ACTIONS",
+    "PAT_AGENTS",
+    "PAT_CODESPACES",
+    "PAT_DEPENDABOT",
+    "PAT_ENV"
+  ],
+  "invariants": [
+    "SECRET_IDENTIFIER == UPPERCASE",
+    "SECRET_VALUE_NEVER_PERSISTED_OR_PRINTED",
+    "CAPABILITY != PERMISSION",
+    "REGISTERED != WIRED",
+    "WIRED != EXECUTED",
+    "EXECUTED != PASS_WITHOUT_READBACK",
+    "NO_PAT_FALLBACK",
+    "RafGitTools == PAT_BACKED_EXECUTOR",
+    "Mapa == FEDERATED_ROUTING_AUTHORITY",
+    "TOKEN_VAZIO != PASS"
+  ],
+  "capabilities": [
+    {
+      "secret_id": "PAT_ACTIONS",
+      "storage_scope": "REPOSITORY_SECRET",
+      "provider_surface": "GITHUB_ACTIONS_AND_CROSS_REPO_READ",
+      "current_state": "WIRED_MAIN_ONESHOT_READ_ONLY",
+      "wired_operations": [
+        "preflight",
+        "exact_commit_read_and_test",
+        "exact_sha_private_checkout_read_only",
+        "provider_actions_receipt"
+      ],
+      "candidate_operations": [
+        "actions_run_read",
+        "actions_job_read",
+        "artifact_read"
+      ],
+      "mutation_allowed": false,
+      "permission_state": "PARTIAL_EVIDENCE_ONLY"
+    },
+    {
+      "secret_id": "PAT_AGENTS",
+      "storage_scope": "REPOSITORY_SECRET",
+      "provider_surface": "AGENT_ORCHESTRATION",
+      "current_state": "REGISTERED_NOT_WIRED",
+      "wired_operations": ["preflight"],
+      "candidate_operations": [
+        "repository_read",
+        "issue_pr_coordination",
+        "workflow_dispatch"
+      ],
+      "mutation_allowed": "TOKEN_VAZIO_PERMISSION_PROBE_REQUIRED",
+      "permission_state": "TOKEN_VAZIO_NOT_PROBED"
+    },
+    {
+      "secret_id": "PAT_CODESPACES",
+      "storage_scope": "REPOSITORY_SECRET",
+      "provider_surface": "GITHUB_CODESPACES",
+      "current_state": "REGISTERED_NOT_WIRED",
+      "wired_operations": ["preflight"],
+      "candidate_operations": [
+        "codespace_list_read",
+        "codespace_metadata_read",
+        "codespace_lifecycle"
+      ],
+      "mutation_allowed": "TOKEN_VAZIO_PERMISSION_PROBE_REQUIRED",
+      "permission_state": "TOKEN_VAZIO_NOT_PROBED"
+    },
+    {
+      "secret_id": "PAT_DEPENDABOT",
+      "storage_scope": "REPOSITORY_SECRET",
+      "provider_surface": "GITHUB_DEPENDABOT",
+      "current_state": "REGISTERED_NOT_WIRED",
+      "wired_operations": ["preflight"],
+      "candidate_operations": [
+        "dependabot_alert_read",
+        "dependabot_configuration_read",
+        "dependabot_provider_operations"
+      ],
+      "mutation_allowed": "TOKEN_VAZIO_PERMISSION_PROBE_REQUIRED",
+      "permission_state": "TOKEN_VAZIO_NOT_PROBED"
+    },
+    {
+      "secret_id": "PAT_ENV",
+      "storage_scope": "ENVIRONMENT_SECRET",
+      "provider_surface": "GITHUB_ENVIRONMENTS_AND_MAIN_PROTECTION",
+      "environment": "PAT_ENVIRONMENTS",
+      "current_state": "WIRED_MANUAL_ONLY",
+      "wired_operations": [
+        "preflight",
+        "apply_main_protection",
+        "rollback_main_protection"
+      ],
+      "candidate_operations": [
+        "environment_readback",
+        "environment_policy_mutation",
+        "branch_protection_mutation"
+      ],
+      "mutation_allowed": "MANUAL_GATED_ONLY",
+      "permission_state": "BOUNDED_BY_EXISTING_PROVIDER_ROUTE"
+    }
+  ],
+  "routing": {
+    "executor": "rafaelmeloreisnovo/RafGitTools",
+    "federated_index": "rafaelmeloreisnovo/Mapa",
+    "rule": "All PAT-backed operations execute through bounded RafGitTools lanes; Mapa stores typed capability/routing metadata and evidence pointers, never secret values."
+  }
+}
