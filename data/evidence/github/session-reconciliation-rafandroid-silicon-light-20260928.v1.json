@@ -1,0 +1,100 @@
+{
+  "schema": "rafaelia.documentation-reconciliation.v1",
+  "event_id": "RAFGITTOOLS-DOC-RECONCILE-RAFANDROID-SILICON-LIGHT-20260928",
+  "observed_at": "2026-09-28T03:54:00-03:00",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "observed_main": "8af97a580e535d2015e8211000850e282b031763",
+  "candidate_branch": "docs/reconcile-rafandroid-silicon-light-session-20260928",
+  "claim_allowed": false,
+  "source_events": [
+    {
+      "id": "RAFANDROID_V1",
+      "pr": 521,
+      "head_sha": "62925c8a573f1860a9c278567c1716e153d580f1",
+      "start_run_id": 36360576045,
+      "start_run_number": 241,
+      "conclusion": "SUCCESS",
+      "merge_commit": "f0c192d9c56b2cc794d1ed18e361260a3478f598"
+    },
+    {
+      "id": "SILICON_LIGHT_L0_V1",
+      "pr": 526,
+      "head_sha": "40d90c93bf7bfe6d3299a89585688c0324d25245",
+      "start_run_id": 36385528436,
+      "start_run_number": 263,
+      "conclusion": "SUCCESS",
+      "merge_commit": "0fdfc8a01e9a513facc3873d9002b3bac79af8ae"
+    }
+  ],
+  "documentation_updated": [
+    "docs/audit/SESSION_RECONCILIATION_RAFANDROID_SILICON_LIGHT_20260928.md",
+    "docs/RAFANDROID_METHOD_V1.md",
+    "native/silicon_light_v1/README.md",
+    "docs/architecture/SILICON_LIGHT_LOWLEVEL_V1.md",
+    "docs/RAFGITTOOLS_CURRENT_STATE.md",
+    "docs/STATUS_REPORT.md",
+    "docs/RAFGITTOOLS_ROADMAP_TRUE.md",
+    "docs/ci/START_PIPELINE_V1.md",
+    "docs/BUILD.md",
+    "docs/CODE_TO_DOC_MAP.md",
+    "docs/REPO_MAP.md",
+    "docs/INDEX.md",
+    "tools/rafandroid/README.md"
+  ],
+  "superseded_editorial_states": [
+    "RAFANDROID IMPLEMENTED_UNTESTED",
+    "Silicon Light IMPLEMENTED_SOURCE/CI_PENDING",
+    "Silicon Light architecture IMPLEMENTED_UNTESTED",
+    "START CANDIDATE_SINGLE_ROOT",
+    "BUILD Gradle 8.4 / AGP 8.3.0 baseline"
+  ],
+  "preserved_boundaries": [
+    "physical Android install/launch/restart remains TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED",
+    "QEMU guest boot remains TOKEN_VAZIO_RUNTIME",
+    "Vectras/Termux cross-repository runtime requires producer+consumer evidence",
+    "release acceptance/signing remains separately gated",
+    "Silicon Light structural tag is non-cryptographic",
+    "whole Android application is not dependency-free; only L0 has the stated freestanding runtime contract"
+  ],
+  "complications_closed": [
+    "standalone RAFANDROID workflow violated single-root START topology",
+    "Gradle eval execution path",
+    "signature verifier non-terminal behavior",
+    "generic clang vs selected NDK ambiguity",
+    "duplicate SDK path shadow counting",
+    "uncalibrated friction score promotion",
+    "static QEMU discovery promotion risk",
+    "unrelated pointer-order C semantics",
+    "negative signed-shift portability",
+    "prototype vs exact-Git-blob evidence mismatch"
+  ],
+  "external_complications": [
+    {
+      "id": "DYNAMIC_CODE_SCANNING_AI",
+      "state": "FAIL_INFRA_PROVIDER",
+      "observation": "intermediate dynamic scanner returned HTTP 400 requested model is not supported",
+      "boundary": "not a vulnerability finding and not a security PASS; canonical CodeQL exact-head results are separate"
+    }
+  ],
+  "F_ok": [
+    "RAFANDROID exact-head canonical START PASS and merged",
+    "Silicon Light exact-head canonical START PASS and merged",
+    "host L0 gate + NDK ARMv7/AArch64 gate PASS",
+    "generated minimal Silicon Light JNI/APK fixture PASS",
+    "Android unit/instrumentation/lint/devDebug/APK verification PASS on PR #526 head",
+    "CodeQL Actions and Java/Kotlin PASS on PR #526 head",
+    "documentation routes updated for both domains"
+  ],
+  "F_gap": [
+    "physical Android exact-artifact receipt",
+    "QEMU/VM guest execution receipt",
+    "cross-repository Vectras/Termux runtime evidence",
+    "property/fuzz/equivalence migration of duplicated low-level primitive families",
+    "full repository-map regeneration",
+    "current-main machine-state regeneration",
+    "release/device acceptance chain"
+  ],
+  "F_next": "Use RAFANDROID and Silicon Light as frozen regression anchors; inventory one duplicated deterministic primitive family, freeze reference semantics, add property/fuzz/equivalence tests, then migrate only if exact behavior matches.",
+  "evidence_rule": "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+  "rollback_ref": "8af97a580e535d2015e8211000850e282b031763"
+}
