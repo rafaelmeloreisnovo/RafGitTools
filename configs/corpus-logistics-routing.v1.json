@@ -1,0 +1,16 @@
+{
+  "schema": "rafgittools.corpus-logistics-routing.v1",
+  "enabled": true,
+  "executor": "RafGitTools",
+  "source_adapters": {
+    "CONVERSATIONS": "rafaelia_navigator",
+    "CODEX": "rafaelia_navigator",
+    "CORTEX": "TOKEN_VAZIO_EXACT_SOURCE_UNBOUND"
+  },
+  "private_target": "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE",
+  "federated_map": "rafaelmeloreisnovo/Mapa",
+  "writer": "RafGitFS",
+  "tiers_authority": "Mapa/data/indexes/semantic-carrier-policy.v1.json",
+  "raw_body_default": "EXTERNAL",
+  "claim_allowed": false
+}
