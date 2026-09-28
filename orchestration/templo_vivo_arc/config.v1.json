@@ -1,0 +1,97 @@
+{
+  "schema": "rafaelia.templo-vivo-arc.config.v1",
+  "claim_allowed": false,
+  "root_state": {
+    "phase": "BOOT_1_5",
+    "phase_index": 0,
+    "phase_success_count": 0,
+    "current_interval_minutes": 1,
+    "last_outcome": "TOKEN_VAZIO"
+  },
+  "scheduler": {
+    "advance_only_on": ["PASS"],
+    "hold_on": ["FAIL", "BLOCKED", "PENDING", "AUDIT", "TOKEN_VAZIO", "IMPLEMENTED_UNTESTED"],
+    "phases": [
+      {
+        "id": "BOOT_1_5",
+        "sequence_minutes": [1, 2, 3, 4, 5],
+        "next_phase": "RAMP_1_29"
+      },
+      {
+        "id": "RAMP_1_29",
+        "sequence_minutes": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29],
+        "next_phase": "HOURLY"
+      },
+      {
+        "id": "HOURLY",
+        "interval_minutes": 60,
+        "promotion_after_successes": "TOKEN_VAZIO",
+        "next_phase": "TWELVE_HOURLY"
+      },
+      {
+        "id": "TWELVE_HOURLY",
+        "interval_minutes": 720,
+        "promotion_after_successes": "TOKEN_VAZIO",
+        "next_phase": "DAILY"
+      },
+      {
+        "id": "DAILY",
+        "interval_minutes": 1440,
+        "promotion_after_successes": "TOKEN_VAZIO",
+        "next_phase": "TOKEN_VAZIO"
+      }
+    ],
+    "backends": {
+      "LOCAL_ACTIVE_LOOP": {
+        "minimum_interval_minutes": 1,
+        "best_effort": false,
+        "note": "Requires an actually running local process/service; repository presence is not execution evidence."
+      },
+      "GITHUB_ACTIONS_SCHEDULE": {
+        "minimum_interval_minutes": 5,
+        "best_effort": true,
+        "note": "GitHub scheduled workflows are not exact timers; 1-4 minute cadence is not representable here."
+      }
+    }
+  },
+  "intake_contract": {
+    "private_authority": "rafaelmeloreisnovo/Rafaelia_Private",
+    "private_input_route": "inputs/templo_vivo_arc/queue/",
+    "public_payload_policy": "POINTER_ONLY",
+    "required_fields": [
+      "schema",
+      "intake_id",
+      "source_repository",
+      "source_ref",
+      "source_path",
+      "source_hash",
+      "privacy_class",
+      "purpose",
+      "authorization_ref",
+      "retention",
+      "payload_mode",
+      "payload_ref",
+      "key_id",
+      "deobfuscator_id",
+      "created_at",
+      "claim_allowed"
+    ],
+    "prohibited_fields": [
+      "raw_content",
+      "plaintext",
+      "password",
+      "token",
+      "pat",
+      "private_key",
+      "seed_phrase",
+      "authorization_header"
+    ]
+  },
+  "visual_privacy": {
+    "rule": "If a human can read visible text, assume a capable vision/OCR system may also read it.",
+    "public_visual_mode": "OPAQUE_ANCHOR_OR_REDACTED_SURROGATE",
+    "original_content_location": "PRIVATE_OR_EXTERNAL_ENCRYPTED_STORAGE",
+    "key_material_in_git": false,
+    "key_reference_only": true
+  }
+}
