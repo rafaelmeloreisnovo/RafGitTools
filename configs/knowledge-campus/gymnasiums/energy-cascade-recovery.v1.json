@@ -1,0 +1,129 @@
+{
+  "schema":"rafgittools.knowledge-campus-logistics.v1",
+  "object_id":"GYM-ENERGY-CASCADE-RECOVERY-V1",
+  "kind":"GYMNASIUM",
+  "source_ref":"USER_ENERGY_CASCADE_2026-09-28 + DOE/SAE_REFERENCE_SET",
+  "materialization_state":"IMPLEMENTED_UNTESTED",
+  "characteristics":[
+    {"name":"purpose","value":"track every major energy path and candidate recovery/conversion without violating conservation or safety boundaries","unit":null,"epistemic_state":"DECISION"},
+    {"name":"closed_material_loop_possible","value":"H2O<->H2/O2 as a material-cycle candidate","unit":null,"epistemic_state":"HYPOTHESIS"},
+    {"name":"closed_energy_loop_claim","value":false,"unit":null,"epistemic_state":"FACT"},
+    {"name":"hazardous_reactive_recipe","value":"NOT_ENCODED","unit":null,"epistemic_state":"DECISION"}
+  ],
+  "relations":[
+    {"type":"CONTAINS","target":"SYS-PRIMARY-FUEL-ENERGY","evidence_ref":"DOE-FOTW-1360"},
+    {"type":"CONTAINS","target":"SYS-EXHAUST-ENERGY-RECOVERY","evidence_ref":"SAE-2011-01-0377"},
+    {"type":"CONTAINS","target":"SYS-WASTE-HEAT-RECOVERY","evidence_ref":"DOE-MATERIALS-ENERGY-RECOVERY"},
+    {"type":"CONTAINS","target":"SYS-ELECTRICAL-DC-BUS","evidence_ref":null},
+    {"type":"CONTAINS","target":"SYS-SUPERCAP-TRANSIENT-BUFFER","evidence_ref":"CNT-SUPERCAP-REVIEW-2026"},
+    {"type":"CONTAINS","target":"SYS-HYDROGEN-WATER-MATERIAL-LOOP","evidence_ref":"DOE-ELECTROLYSIS"},
+    {"type":"CONTAINS","target":"SYS-ENERGY-ACCOUNTING","evidence_ref":null}
+  ],
+  "evidence_refs":[
+    "DOE 2024: typical conventional gasoline vehicle about 30% tank-to-wheels depending drive cycle",
+    "DOE: typical ICE can lose about 30% of chemical energy as hot exhaust",
+    "SAE 2011-01-0377: electric turbocompounding can recover exhaust energy with a turbo-generator",
+    "SAE 2020-01-2224: MGU-H style shaft machine can convert excess exhaust energy to electrical energy",
+    "DOE electrolysis: electricity splits water into hydrogen and oxygen",
+    "DOE reversible fuel-cell records: round-trip efficiency is below 100%; system losses remain",
+    "2026 review: CNT/graphene are promising high-conductivity supercapacitor electrode materials but practical energy-density/stability constraints remain"
+  ],
+  "gaps":[
+    "EXACT_ENGINE_ENERGY_MAP",
+    "EXHAUST_ENTHALPY_MAP",
+    "COOLANT_HEAT_MAP",
+    "LUBE_HEAT_MAP",
+    "TURBOCOMPOUND_MATCHING",
+    "TEG_DELTA_T_AND_MATERIALS",
+    "ORC_WORKING_FLUID_AND_CYCLE",
+    "SUPERCAP_BANK_VOLTAGE_CAPACITANCE_ESR",
+    "CNT_ELECTRODE_DEVICE_SCALE_EVIDENCE",
+    "BATTERY_OR_ALT_STORAGE_SELECTION",
+    "ELECTROLYZER_TYPE_AND_OPERATING_ENVELOPE",
+    "HYDROGEN_STORAGE_ARCHITECTURE",
+    "WATER_CONDENSATION_RECOVERY_BALANCE",
+    "MISSION_TRANSIENT_POWER_PROFILE",
+    "FULL_SYSTEM_ROUND_TRIP_EFFICIENCY"
+  ],
+  "routes":[
+    "CHEMICAL_TO_COMBUSTION",
+    "COMBUSTION_TO_SHAFT_WORK",
+    "COMBUSTION_TO_EXHAUST_LOSS",
+    "COMBUSTION_TO_COOLANT_LOSS",
+    "COMBUSTION_TO_FRICTION_RADIATION_LOSS",
+    "EXHAUST_TO_TURBOCHARGER",
+    "EXHAUST_TO_TURBOGENERATOR",
+    "WASTE_HEAT_TO_TEG_CANDIDATE",
+    "WASTE_HEAT_TO_RANKINE_CANDIDATE",
+    "SHAFT_TO_MOTOR_GENERATOR",
+    "REGENERATIVE_EVENT_TO_DC_BUS",
+    "DC_BUS_TO_SUPERCAP",
+    "DC_BUS_TO_BATTERY_OR_STORAGE",
+    "DC_BUS_TO_ELECTRIC_ASSIST",
+    "SURPLUS_ELECTRIC_TO_ELECTROLYZER_CANDIDATE",
+    "RECOVERED_WATER_TO_ELECTROLYZER_FEED_CANDIDATE",
+    "HYDROGEN_TO_FUEL_CELL_OR_COMBUSTION_CANDIDATE",
+    "EVERY_CONVERSION_TO_LOSS_LEDGER"
+  ],
+  "hotness":{"tier":"HOT","access_count":0,"last_access":null,"score":0},
+  "systems":{
+    "SYS-PRIMARY-FUEL-ENERGY":{
+      "components":["FUEL_CHEMICAL_ENERGY","COMBUSTION_CHAMBER","SHAFT_WORK","PUMPING_LOSS","FRICTION_LOSS","COOLANT_HEAT","EXHAUST_ENTHALPY","RADIATED_HEAT"],
+      "boundary":"Vehicle efficiency and engine thermal efficiency are different metrics; no fixed universal percentage is assumed."
+    },
+    "SYS-EXHAUST-ENERGY-RECOVERY":{
+      "components":["TURBOCHARGER","TURBOCOMPOUND_TURBINE","ELECTRIC_TURBOGENERATOR","MGU_H_STYLE_MACHINE","WASTEGATE_BYPASS","EXHAUST_BACKPRESSURE","GENERATOR","RECTIFIER_INVERTER","DC_BUS"],
+      "functions":["BOOST","EXHAUST_POWER_RECOVERY","ELECTRIC_GENERATION"],
+      "boundary":"Recovery is constrained by turbine matching, backpressure, aftertreatment temperature and generator efficiency."
+    },
+    "SYS-WASTE-HEAT-RECOVERY":{
+      "components":["EXHAUST_HEAT_EXCHANGER","COOLANT_HEAT_EXCHANGER","OIL_HEAT_EXCHANGER","THERMOELECTRIC_GENERATOR_CANDIDATE","ORC_RANKINE_CANDIDATE","HIGH_TEMPERATURE_ELECTROLYSIS_HEAT_ASSIST_CANDIDATE"],
+      "boundary":"Waste heat is not all convertible to work; exergy and temperature level matter."
+    },
+    "SYS-ELECTRICAL-DC-BUS":{
+      "components":["MOTOR_GENERATOR","RECTIFIER","INVERTER","DC_LINK","POWER_DISTRIBUTION","SUPERCAP_BANK","BATTERY_OR_ALT_STORAGE","ELECTRIC_COMPRESSOR","STARTER_GENERATOR","AUXILIARIES"],
+      "functions":["POWER_SUMMING","POWER_SPLITTING","TRANSIENT_BUFFERING","REGENERATION","BOOST_ASSIST"]
+    },
+    "SYS-SUPERCAP-TRANSIENT-BUFFER":{
+      "components":["SUPERCAP_CELL","SERIES_PARALLEL_BANK","BALANCING","DC_DC_CONVERTER","ESR","CAPACITANCE","VOLTAGE_WINDOW","THERMAL_PATH","CNT_ELECTRODE_CANDIDATE","GRAPHENE_ELECTRODE_CANDIDATE"],
+      "purpose":"high-power transient buffering for launch/acceleration/boost response and regenerative capture",
+      "boundary":"CNT/graphene are research/material candidates; no claim of a production-ready CNT bank without device-scale evidence."
+    },
+    "SYS-HYDROGEN-WATER-MATERIAL-LOOP":{
+      "components":["RECOVERED_WATER_CANDIDATE","WATER_SEPARATOR_CONDENSER_CANDIDATE","ELECTROLYZER","HYDROGEN_STREAM","OXYGEN_STREAM","HYDROGEN_STORAGE_CANDIDATE","FUEL_CELL_CANDIDATE","HYDROGEN_COMBUSTION_CANDIDATE","WATER_PRODUCT"],
+      "relations":[
+        "ELECTROLYSIS_REQUIRES_EXTERNAL_OR_RECOVERED_ELECTRIC_ENERGY",
+        "HYDROGEN_USE_CAN_RETURN_WATER_AS_PRODUCT",
+        "MATERIAL_LOOP_DOES_NOT_IMPLY_ENERGY_LOOP"
+      ],
+      "boundary":"No H2/O2/N2O mixing ratios, storage pressures, ignition conditions or reactive-gas plumbing recipes."
+    },
+    "SYS-OXIDIZER-CANDIDATES":{
+      "components":["AIR_REFERENCE","OXYGEN_ENRICHMENT_CANDIDATE","NITROUS_OXIDE_CANDIDATE"],
+      "boundary":"Oxidizer nodes only; no enrichment fraction, decomposition procedure, injection recipe or ignition setpoint."
+    },
+    "SYS-ENERGY-ACCOUNTING":{
+      "components":["INPUT_ENERGY","USEFUL_SHAFT_WORK","RECOVERED_EXHAUST_ENERGY","RECOVERED_BRAKING_ENERGY","RECOVERED_HEAT_ELECTRICITY","STORAGE_CHARGE","STORAGE_DISCHARGE","CONVERSION_LOSSES","UNRECOVERABLE_EXERGY","AUXILIARY_LOAD"],
+      "invariants":[
+        "OUTPUT_PLUS_STORED_PLUS_LOSSES <= INPUT_PLUS_RECOVERED_FROM_PREVIOUSLY_ACCOUNTED_STREAMS",
+        "RECOVERED_STREAM_MUST_NOT_BE_DOUBLE_COUNTED",
+        "ROUND_TRIP_EFFICIENCY <= 1",
+        "MATERIAL_RECIRCULATION != ENERGY_CREATION"
+      ]
+    }
+  },
+  "relation_rules":[
+    "WASTE_ENERGY != FULLY_RECOVERABLE_ENERGY",
+    "HEAT != WORK_WITHOUT_CONVERSION_AND_SINK",
+    "ELECTROLYSIS != FREE_HYDROGEN",
+    "WATER_RECOVERY != FREE_ENERGY",
+    "SUPERCAP_HIGH_POWER != HIGH_ENERGY_DENSITY",
+    "CNT_ELECTRODE_CANDIDATE != PRODUCTION_DEVICE",
+    "TURBOCOMPOUND_RECOVERY != ZERO_BACKPRESSURE_COST",
+    "REGENERATIVE_BRAKING != 100_PERCENT_RECOVERY",
+    "ROUND_TRIP_EFFICIENCY < 100_PERCENT_REAL_SYSTEM",
+    "N2O_NODE != OXIDIZER_RECIPE",
+    "ANALOGY != FACT",
+    "CANDIDATE != MATERIALIZED"
+  ]
+}
