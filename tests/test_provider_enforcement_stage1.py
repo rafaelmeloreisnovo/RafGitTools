@@ -92,6 +92,18 @@ class ProviderEnforcementStage1Tests(unittest.TestCase):
         self.assertTrue(self.trigger["automatic_rollback_on_mismatch"])
         self.assertFalse(self.trigger["claim_allowed"])
 
+    def test_retry_evidence_rearms_only_after_observed_cancelled_push(self):
+        retry = self.trigger["retry_evidence"]
+        self.assertEqual(retry["supersedes_cancelled_push_run"], 36363833345)
+        self.assertEqual(retry["cancelled_run_conclusion"], "cancelled")
+        self.assertEqual(retry["cancelled_run_jobs_observed"], 0)
+        self.assertEqual(
+            retry["current_main_observed_sha"],
+            "74f4b5b66469bcfe16aee5253a4ea5d985bce841",
+        )
+        self.assertFalse(retry["branch_protection_observed"])
+        self.assertIn("re-arms", retry["reason"])
+
     def test_workflow_exposes_manual_rollback_before_apply(self):
         self.assertIn("- rollback_main_protection", WORKFLOW)
         self.assertIn("args+=(--rollback)", WORKFLOW)
