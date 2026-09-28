@@ -473,6 +473,12 @@ cmd_scaffold(){
   [[ -d "$TEMPLATE_DIR" ]] || die "template directory missing"
   [[ ! -e "$out" ]] || die "destination exists: $out"
   mkdir -p "$out"; cp -R "$TEMPLATE_DIR"/. "$out"/
+  local silicon_src="$REPO_ROOT/native/silicon_light_v1"
+  [[ -f "$silicon_src/src/raf_silicon_light.c" && -f "$silicon_src/include/raf_silicon_light.h" ]] || \
+    die "canonical Silicon Light L0 source = TOKEN_VAZIO"
+  mkdir -p "$out/app/src/main/cpp/silicon_light"
+  cp "$silicon_src/src/raf_silicon_light.c" "$out/app/src/main/cpp/silicon_light/"
+  cp "$silicon_src/include/raf_silicon_light.h" "$out/app/src/main/cpp/silicon_light/"
   local package_path="${pkg//./\/}" jni_package="${pkg//./_}" marker="$out/app/src/main/java/__PACKAGE_PATH__" f
   mkdir -p "$out/app/src/main/java/$package_path"
   if [[ -d "$marker" ]]; then
@@ -482,7 +488,7 @@ cmd_scaffold(){
   while IFS= read -r -d '' f; do
     sed -i "s/__PACKAGE__/$pkg/g; s/__APPID__/$pkg/g; s/__JNI_PACKAGE__/$jni_package/g" "$f"
   done < <(find "$out" -type f -print0)
-  say "SCAFFOLD=PASS"; say "path=$out"; say "package=$pkg"; say "androidx_default=OFF"; say "jni=ON"
+  say "SCAFFOLD=PASS"; say "path=$out"; say "package=$pkg"; say "androidx_default=OFF"; say "jni=ON"; say "silicon_light_l0=EMBEDDED_FROM_CANONICAL_SOURCE"
 }
 
 cmd_receipt(){
