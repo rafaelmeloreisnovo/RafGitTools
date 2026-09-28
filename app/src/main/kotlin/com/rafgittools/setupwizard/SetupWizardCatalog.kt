@@ -40,8 +40,12 @@ object SetupWizardCatalog {
             title = "Identidade, autenticação e acesso",
             summary = "Cada credencial é tratada como uma capacidade separada. O app não troca automaticamente uma credencial por outra.",
             enables = listOf(
-                "Vincular credenciais a funções específicas.",
-                "Exigir escopo mínimo e alvo explícito.",
+                "PAT_ACTIONS — rota já limitada a leitura/validação por SHA exato; não recebe escrita por padrão.",
+                "PAT_AGENTS — registrado, mas ainda sem endpoint/permissão promovidos; permanece explícito como não ligado até evidência.",
+                "PAT_CODESPACES — registrado para capacidade Codespaces; permissões efetivas precisam de readback antes de habilitar operações.",
+                "PAT_DEPENDABOT — registrado para capacidade Dependabot; permissões efetivas precisam de readback antes de habilitar operações.",
+                "PAT_ENV — rota manual e protegida para Environment/proteção; mudanças exigem gate, alvo exato, readback e rollback.",
+                "Exigir escopo mínimo e alvo explícito para qualquer credencial.",
                 "Bloquear fallback silencioso entre credenciais."
             ),
             risks = listOf(
