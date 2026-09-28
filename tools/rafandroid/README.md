@@ -1,5 +1,11 @@
 # RAFANDROID Toolchain Shell V1
 
+State: `MERGED / VERIFIED_LIMITED`  
+Evidence anchor: PR #521 head `62925c8a573f1860a9c278567c1716e153d580f1`, START #241 / run `36360576045` = `SUCCESS`, merge `f0c192d9c56b2cc794d1ed18e361260a3478f598`.  
+Silicon Light successor evidence: PR #526 START #263 = `SUCCESS`.  
+Physical Android/QEMU guest claims remain separate.
+
+
 `rafandroid` is the RafGitTools authorial **control shell** for the Android build stack.
 
 It does **not** pretend Gradle, Android SDK, AndroidX, NDK, D8/R8, ART, QEMU or the Android platform are authorial implementations. Those remain external authorities. The authorial layer is the deterministic way they are discovered, bound, executed, gated and turned into receipts.
