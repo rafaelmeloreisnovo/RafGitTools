@@ -152,12 +152,22 @@ fun SetupWizardScreen(
                 }
             }
 
+            val allStepsDecided = steps.all { decisions.containsKey(it.id) }
+
+            if (!allStepsDecided) {
+                Text(
+                    text = "Antes de concluir, registre uma escolha em cada passo: concordar, não concordar ou decidir depois.",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+
             Button(
                 onClick = {
                     preferences.setCompleted(true)
                     ledger.append("WIZARD", null, "COMPLETE")
                     onClose()
                 },
+                enabled = allStepsDecided,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Salvar e concluir configuração")
