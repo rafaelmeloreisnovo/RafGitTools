@@ -57,7 +57,7 @@ fun SetupWizardScreen(
             style = MaterialTheme.typography.titleMedium
         )
         LinearProgressIndicator(
-            progress = { (index + 1).toFloat() / steps.size.toFloat() },
+            progress = (index + 1).toFloat() / steps.size.toFloat(),
             modifier = Modifier.fillMaxWidth()
         )
 
