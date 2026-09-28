@@ -84,6 +84,8 @@ def normalize_record(record: dict) -> dict:
     score=slot_score(metrics)
     relations=list(record.get("relations") or [])
     characteristics=list(record.get("characteristics") or [])
+    tokens=stable_tokens(text)
+    token_refs=[{"token_id":"TOK-"+sha256_bytes(t["normalized"].encode("utf-8"))[:24],"kind":t["kind"],"i":t["i"]} for t in tokens]
     return {
         "chunk_id": content_address(source,book,session,text),
         "source_family": source,
@@ -95,7 +97,8 @@ def normalize_record(record: dict) -> dict:
         "materialization_state": str(record.get("materialization_state") or "MATERIALIZED"),
         "tier": tier_for(score),
         "score": score,
-        "token_count": len(stable_tokens(text)),
+        "token_count": len(tokens),
+        "token_refs": token_refs,
         "marks": inferred_marks(record),
         "characteristics": characteristics,
         "relations": relations,
@@ -117,6 +120,13 @@ def build(records: Iterable[dict]) -> dict:
         for rel in c["relations"]:
             edges.append({"from":c["chunk_id"],**rel})
     tier_counts={t:sum(1 for c in chunks if c["tier"]==t) for t in TIERS}
+    token_index={}
+    for c in chunks:
+        for ref in c.get("token_refs") or []:
+            item=token_index.setdefault(ref["token_id"],{"token_id":ref["token_id"],"kinds":set(),"chunks":set(),"occurrences":0})
+            item["kinds"].add(ref["kind"]); item["chunks"].add(c["chunk_id"]); item["occurrences"]+=1
+    tokens=[{"token_id":v["token_id"],"kinds":sorted(v["kinds"]),"chunks":sorted(v["chunks"]),"occurrences":v["occurrences"]} for v in token_index.values()]
+    tokens.sort(key=lambda x:x["token_id"])
     gymnasia={}
     for c in chunks:
         gym=str(next((x.get("value") for x in c["characteristics"] if x.get("name")=="gymnasium"),"GENERAL"))
@@ -134,6 +144,7 @@ def build(records: Iterable[dict]) -> dict:
         "chunks":chunks,
         "edges":edges,
         "gymnasia":gyms,
+        "token_index":tokens,
         "tier_counts":tier_counts,
         "publication_rule":"POINTERS_CHUNKS_INDEXES_ATLAS_ROUTES_RECEIPTS",
     }
