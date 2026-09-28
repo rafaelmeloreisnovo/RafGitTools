@@ -28,7 +28,7 @@ Open next lane:
 
 Do not interpret RLA-1..6 as physical-device or release proof.
 
-## 2026-09-18 delivery lane
+## Historical 2026-09-18 delivery lane
 
 The delivery map is now gate-first:
 
