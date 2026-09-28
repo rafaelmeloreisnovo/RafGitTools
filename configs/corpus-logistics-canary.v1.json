@@ -1,0 +1,47 @@
+{
+  "schema": "rafgittools.corpus-logistics-canary.v1",
+  "canary_id": "NOVOEXPORT-CONVERSATIONS-027",
+  "source": {
+    "provider": "GOOGLE_DRIVE",
+    "source_root": "NOVOexport",
+    "source_generation": "novoexport_g2_38bb97724a432420",
+    "path": "01_SISTEMA_CORPUS_CUSTODIA/02_CONVERSATIONS_CORPUS/conversations-027.json",
+    "provider_id": "1i02ona4EPpUszTWXAHnfoUqFGSUJgsPV",
+    "observed_bytes": 4098254,
+    "content_sha256": "TOKEN_VAZIO_UNVERIFIED_IN_THIS_DELTA"
+  },
+  "intake": {
+    "route": "DriveStagingGate_or_local_readonly_mount",
+    "source_mutation": false,
+    "compute_sha256_before_parse": true,
+    "exact_byte_count_required": true
+  },
+  "transform": [
+    "rafaelia_navigator read-only ingest",
+    "navigator_to_gymnasia_v1",
+    "corpus_logistics_gymnasia_v1",
+    "campus_publication_v1"
+  ],
+  "target": {
+    "repository": "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE",
+    "branch_policy": "new governed branch",
+    "root": "library/campus/generations/CANARY_V1",
+    "raw_body_commit": false,
+    "writer": "RafGitFS",
+    "force_push": false
+  },
+  "gates": [
+    "SOURCE_READBACK",
+    "SHA256_COMPUTED",
+    "NAVIGATOR_COMMIT_COMPLETE",
+    "GYMNASIA_PLAN_VALID",
+    "00_09_TREE_VALID",
+    "HUMAN_PREVIEW",
+    "RAFGITFS_DRY_RUN",
+    "EXACT_APPROVAL",
+    "PRIVATE_PR_READBACK",
+    "RECEIPT"
+  ],
+  "state": "BOUND_METADATA_ONLY_NOT_RUN",
+  "claim_allowed": false
+}
