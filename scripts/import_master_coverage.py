@@ -9,7 +9,7 @@ Expected source packet:
 - program/master_coverage/2026-09-28/DOCUMENT_OBLIGATION_MATRIX_V1.json
 - program/master_coverage/2026-09-28/DOCUMENT_COVERAGE_SNAPSHOT_V2.json
 - program/master_coverage/2026-09-28/DOCUMENT_BACKLINK_GRAPH_V1.json
-- program/master_coverage/2026-09-28/DOCUMENT_AUTHORITY_REGISTRY_V3.json
+- program/master_coverage/2026-09-28/DOCUMENT_AUTHORITY_REGISTRY_V4.json
 - data/governance/rafaelia_active_work_ledger.v2.json
 """
 from __future__ import annotations
