@@ -50,22 +50,16 @@ void raf_sl_copy(void *dst, const void *src, raf_sl_u32 n) {
     const raf_sl_u8 *s = (const raf_sl_u8 *)src;
     raf_sl_u32 i;
 
-    if (d == (raf_sl_u8 *)0 || s == (const raf_sl_u8 *)0) {
+    if (d == (raf_sl_u8 *)0 || s == (const raf_sl_u8 *)0 || d == s) {
         return;
     }
 
-    if (d < s) {
-        for (i = 0u; i < n; ++i) {
-            d[i] = s[i];
-        }
-    } else if (d > s) {
-        i = n;
-        while (i != 0u) {
-            --i;
-            d[i] = s[i];
-        }
-    } else {
-        /* same buffer: no-op */
+    /*
+     * V1 has memcpy semantics: source and destination must not overlap.
+     * Avoid relational pointer comparisons between unrelated C objects.
+     */
+    for (i = 0u; i < n; ++i) {
+        d[i] = s[i];
     }
 }
 
@@ -105,18 +99,25 @@ raf_sl_u32 raf_sl_tag32(const void *data, raf_sl_u32 n, raf_sl_u32 seed) {
 }
 
 raf_sl_i32 raf_sl_q16_mul(raf_sl_i32 a, raf_sl_i32 b) {
-    raf_sl_i64 wide = (raf_sl_i64)a * (raf_sl_i64)b;
+    raf_sl_i64 aa = (raf_sl_i64)a;
+    raf_sl_i64 bb = (raf_sl_i64)b;
+    raf_sl_u64 ua = (aa < 0) ? (raf_sl_u64)(-aa) : (raf_sl_u64)aa;
+    raf_sl_u64 ub = (bb < 0) ? (raf_sl_u64)(-bb) : (raf_sl_u64)bb;
+    raf_sl_u64 scaled = (ua * ub) >> 16u;
+    raf_sl_u32 negative = ((a < 0) != (b < 0)) ? 1u : 0u;
 
-    wide >>= 16;
+    if (negative != 0u) {
+        if (scaled >= (raf_sl_u64)2147483648u) {
+            return (raf_sl_i32)(-2147483647 - 1);
+        }
+        return -(raf_sl_i32)scaled;
+    }
 
-    if (wide > (raf_sl_i64)2147483647) {
+    if (scaled > (raf_sl_u64)2147483647u) {
         return (raf_sl_i32)2147483647;
     }
-    if (wide < (raf_sl_i64)(-2147483647 - 1)) {
-        return (raf_sl_i32)(-2147483647 - 1);
-    }
 
-    return (raf_sl_i32)wide;
+    return (raf_sl_i32)scaled;
 }
 
 raf_sl_u32 raf_sl_state_init(raf_sl_state *s, raf_sl_u32 seed) {
