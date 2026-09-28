@@ -9,6 +9,8 @@ It does **not** pretend Gradle, Android SDK, AndroidX, NDK, D8/R8, ART, QEMU or 
 ```bash
 tools/rafandroid/rafandroid probe
 tools/rafandroid/rafandroid shadow
+tools/rafandroid/rafandroid tails
+tools/rafandroid/rafandroid friction
 tools/rafandroid/rafandroid graph
 tools/rafandroid/rafandroid bind
 tools/rafandroid/rafandroid gradle assembleDevDebug
@@ -76,3 +78,17 @@ The template starts with Java platform Activity + JNI + C11 freestanding core, A
 - external platform code is not relabeled authorial
 
 See `docs/RAFANDROID_METHOD_V1.md`.
+
+
+## Tails e fricção
+
+`shadow` deduplica caminhos de SDK equivalentes antes de sinalizar autoridade concorrente.
+
+`tails` inventaria, sem remover automaticamente:
+- referências AndroidX;
+- code generation (KSP/KAPT/annotation processors);
+- shrink/minification;
+- native build;
+- Compose.
+
+`friction` relata bloqueadores concretos e shadows. O campo `numeric_score` permanece `TOKEN_VAZIO_UNCALIBRATED`: não existe pontuação sintética até haver calibração com builds medidos.
