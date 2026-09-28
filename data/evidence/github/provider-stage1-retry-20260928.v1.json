@@ -1,0 +1,46 @@
+{
+  "schema": "rafaelia.provider-stage1-retry-evidence.v1",
+  "observed_at": "2026-09-28T01:08:00Z",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "claim_allowed": false,
+  "source_state": {
+    "stage1_pr": 519,
+    "stage1_merge_commit": "df16e6dd19c5d8e0350c66b78dbb3edae9ed642c",
+    "stage1_push_run": 36363833345,
+    "stage1_push_run_conclusion": "cancelled",
+    "stage1_jobs_observed": 0,
+    "successor_main_commit": "74f4b5b66469bcfe16aee5253a4ea5d985bce841",
+    "provider_branch_protected": false
+  },
+  "superseded_candidate": {
+    "pr": 520,
+    "head_sha": "71e1b19c94b44d45282be0f9374a0c54fb2b8a80",
+    "pr_ci_run": 36359772953,
+    "pr_ci_conclusion": "success",
+    "disposition": "SUPERSEDED_BY_STAGE1_V4_AND_CURRENT_MAIN_DIVERGENCE"
+  },
+  "correction": {
+    "route": "REARM_EXISTING_STAGE1_ONE_SHOT",
+    "trigger_path": "configs/provider-enforcement-stage1.once.json",
+    "policy": "contracts/MAIN_PROVIDER_ENFORCEMENT_PLAN_20260927.v4.json",
+    "rollback": "existing rollback_main_protection + automatic restore of ABSENT prestate",
+    "new_workflow_added": false,
+    "secret_value_recorded": false
+  },
+  "state": "READY_TO_TEST",
+  "evidence_state": "OBSERVED_UNPROMOTED",
+  "F_ok": [
+    "cancelled push run identified",
+    "current provider protection absent",
+    "stale PR520 separated from merged stage1 contract",
+    "retry trigger bound to exact evidence"
+  ],
+  "F_gap": [
+    "retry exact-head CI",
+    "retry merge push execution",
+    "provider enforcement receipt",
+    "protected=true readback",
+    "negative assurance"
+  ],
+  "F_next": "Run exact-head CI on retry PR; if terminal success, merge and require provider readback before promotion."
+}
