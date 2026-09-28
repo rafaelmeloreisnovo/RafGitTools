@@ -1,0 +1,77 @@
+{
+  "schema": "rafaelia.templo-vivo.transition-receipt.v1",
+  "event_id": "TVA-20260927-2145-03",
+  "parent_event_id": "TOKEN_VAZIO",
+  "observed_at": "2026-09-27T21:45:00-03:00",
+  "actor_role": "control-plane implementation assistant",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "ref": "templo-vivo-arc-v1-20260927",
+  "commit_sha": "dfdf1752a8f2dbbc3e1848a9348362e7170428f9",
+  "path_scope": "orchestration/templo_vivo_arc/",
+  "authority": "RafGitTools local control-plane; Rafaelia_Private private custody",
+  "goal_ids": [
+    "TEMPLO_VIVO_ARC_V1",
+    "PRIVATE_POINTER_INTAKE",
+    "OPAQUE_VISUAL_ANCHOR",
+    "ADAPTIVE_CADENCE"
+  ],
+  "state_before": "TOKEN_VAZIO_MODEL",
+  "state_after": "IMPLEMENTED_UNTESTED_EXACT_HEAD",
+  "urgency": "P1",
+  "risk": "MEDIUM",
+  "governance_class": "FAIL_CLOSED_POINTER_ONLY",
+  "data_class": "PRIVATE_REFERENCE_METADATA_ONLY",
+  "privacy_class": "PRIVATE_RESTRICTED_SOURCE_PUBLIC_POINTER_ONLY",
+  "security_class": "NO_SECRET_MATERIAL_IN_GIT",
+  "action": "Created bounded cross-repository intake model, typed TOKEN_VAZIO dictionary, no-OCR visual anchor and deterministic scheduler.",
+  "falsifier": "Any raw/private body or secret material committed to RafGitTools, any claim that human-readable pixels are AI-unreadable, schedule promotion on non-PASS, or claim of exact runtime without a receipt invalidates the model.",
+  "exit_criterion": "Exact branch tests pass, synthetic private pointer is structurally gated, and public logs contain no raw payload.",
+  "evidence_refs": [
+    "RafGitTools@bd9732071d5da4c1bfdcce184f4043c11a017eff",
+    "RafGitTools@aa41067af6f2d2cae71237e5c57bf029a084c13f",
+    "RafGitTools@d9f376ea1ea6a71ed17e5bc11aed19b4a4b06d0c",
+    "RafGitTools@7fb7d39f710de5083f4aca919743a6f43701ee56",
+    "RafGitTools@6c9a8650f05c48c92fa4127f93ac9ca1847b5685",
+    "RafGitTools@dfdf1752a8f2dbbc3e1848a9348362e7170428f9",
+    "Rafaelia_Private@b6c1cc36a28e74c1695078068c8d309a626e1b6f",
+    "Rafaelia_Private@98faf1a0c1bbea293078a687d4709d793127a6b1",
+    "Rafaelia_Private@c254798e5983d036ee428210098935474d2870da",
+    "Rafaelia_Private@5978111df8824dd6364c15c8d4f008e9341b752c"
+  ],
+  "local_sandbox_test": {
+    "state": "PASS",
+    "command": "python3 -m unittest discover -s /tmp/templo_vivo_arc/tests -p test_*.py -v",
+    "tests": 6,
+    "note": "Executed before Git commit against the same intended file bodies; exact-head CI remains separate evidence."
+  },
+  "F_ok": [
+    "public/private authority split materialized",
+    "raw/secret fields prohibited in public intake",
+    "visual anchor performs no OCR and makes no privacy guarantee",
+    "1-5 and 1-29 minute sequences deterministic",
+    "non-PASS outcomes do not advance cadence",
+    "GitHub Actions sub-5-minute mismatch explicitly blocks instead of clamping silently"
+  ],
+  "F_gap": [
+    "TOKEN_VAZIO_PRIVATE_RUNNER_BINDING",
+    "TOKEN_VAZIO_HOURLY_PROMOTION_RULE",
+    "TOKEN_VAZIO_TWELVE_HOURLY_PROMOTION_RULE",
+    "exact-head CI receipt not yet observed",
+    "no live secret/key/deobfuscator material configured or read"
+  ],
+  "F_next": "Open draft PRs in both repositories and use exact-head CI/review as the next evidence gate.",
+  "uncertainty_delta": {
+    "reduced": [
+      "visual privacy semantics",
+      "public/private payload boundary",
+      "sub-5-minute backend capability"
+    ],
+    "added": [
+      "hourly promotion count",
+      "12-hour promotion count"
+    ]
+  },
+  "rollback_ref": "delete/revert branch templo-vivo-arc-v1-20260927; main remains unchanged",
+  "stop_reason": "Bounded model implemented; runtime activation would require a separate authority/evidence step.",
+  "claim_allowed": false
+}
