@@ -33,7 +33,7 @@ Only L0 is claimed to be runtime-independent. Android cannot be truthfully packa
 
 V1 contains only bounded deterministic primitives:
 
-- byte zero/copy/xor;
+- byte zero/copy/xor; `raf_sl_copy` has memcpy-style non-overlap semantics;
 - constant-work equality loop for equal-length buffers;
 - non-cryptographic 32-bit structural tag;
 - saturating Q16.16 multiplication;
@@ -61,3 +61,8 @@ SOURCE != OBJECT != LINKED ADAPTER != APK != DEVICE EXECUTION != CLAIM
 ```
 
 This module does not replace `native/rafcode_route_v1`. It is a generic low-level substrate that future domain-specific cores may consume only after their own equivalence/regression gates.
+
+
+## C semantics hardening
+
+V1 deliberately avoids relational ordering of unrelated pointers and avoids signed right-shift for negative Q16 values. These are treated as portability shadows even when a specific compiler would produce the expected machine instruction.
