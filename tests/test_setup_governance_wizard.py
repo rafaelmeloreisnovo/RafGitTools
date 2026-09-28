@@ -41,5 +41,10 @@ class SetupGovernanceWizardTests(unittest.TestCase):
     def test_runtime_entry_points_and_clarity_controls_exist(self):
         self.assertEqual(M.validate(self.load()), [])
 
+    def test_completion_requires_every_step_decision(self):
+        data = self.load()
+        data["principles"].remove("EVERY_STEP_REQUIRES_EXPLICIT_DECISION_BEFORE_COMPLETION")
+        self.assertTrue(any("EVERY_STEP_REQUIRES_EXPLICIT_DECISION" in x for x in M.validate(data)))
+
 if __name__ == "__main__":
     unittest.main()
