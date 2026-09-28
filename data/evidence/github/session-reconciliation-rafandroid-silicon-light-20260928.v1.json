@@ -40,7 +40,8 @@
     "docs/CODE_TO_DOC_MAP.md",
     "docs/REPO_MAP.md",
     "docs/INDEX.md",
-    "tools/rafandroid/README.md"
+    "tools/rafandroid/README.md",
+    "docs/RAFGITTOOLS_CODE_REALITY_MATRIX.md"
   ],
   "superseded_editorial_states": [
     "RAFANDROID IMPLEMENTED_UNTESTED",
@@ -48,7 +49,8 @@
     "Silicon Light architecture IMPLEMENTED_UNTESTED",
     "START CANDIDATE_SINGLE_ROOT",
     "BUILD Gradle 8.4 / AGP 8.3.0 baseline",
-    "root README observed documentation base/cut from 2026-09-18"
+    "root README observed documentation base/cut from 2026-09-18",
+    "code reality matrix lacked the 2026-09-28 RAFANDROID/Silicon Light overlay"
   ],
   "preserved_boundaries": [
     "physical Android install/launch/restart remains TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED",
