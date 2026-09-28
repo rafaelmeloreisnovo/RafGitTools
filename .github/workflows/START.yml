@@ -401,6 +401,12 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s tests -p 'test_*.py' -v
 
+      - name: Check enumeration custody tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_audit_commit_checks.py -v
+
   federation:
     name: '04 · Federation / master-index + provenance'
     needs: [plan, coherence]
