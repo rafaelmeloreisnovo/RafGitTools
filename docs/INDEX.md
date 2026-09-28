@@ -2,7 +2,7 @@
 
 ## Fonte de verdade — ordem de leitura
 
-1. [`RAFGITTOOLS_CURRENT_STATE.md`](RAFGITTOOLS_CURRENT_STATE.md) — estado editorial corrente, observado contra `main@2e69dae6d45dd23c6252eee9b42cd230d1bd6bac`.
+1. [`RAFGITTOOLS_CURRENT_STATE.md`](RAFGITTOOLS_CURRENT_STATE.md) — estado editorial corrente; reconciliação de 2026-09-28 observada contra `main@8af97a580e535d2015e8211000850e282b031763`.
 2. [`STATUS_REPORT.md`](STATUS_REPORT.md) — classificação técnica/evidencial corrente.
 3. [`RAFGITTOOLS_ROADMAP_TRUE.md`](RAFGITTOOLS_ROADMAP_TRUE.md) — sequência operacional atual.
 4. [`RAFGITTOOLS_DEVELOPMENT_DELIVERY_MAP_V1.md`](RAFGITTOOLS_DEVELOPMENT_DELIVERY_MAP_V1.md) — mapa gate-first de desenvolvimento e entrega.
@@ -16,6 +16,10 @@
 12. [`PENDING_33_ITEMS.md`](PENDING_33_ITEMS.md) — backlog histórico/source-functional; não equivale a runtime.
 13. [`canonical/2026-08-14/RAFGITTOOLS_SOURCE_BUILD_EVIDENCE_V1.md`](canonical/2026-08-14/RAFGITTOOLS_SOURCE_BUILD_EVIDENCE_V1.md) — checkpoint BUILD append-only.
 14. [`DOCUMENTATION_AUDIT_RECEIPT_2026-09-06.md`](DOCUMENTATION_AUDIT_RECEIPT_2026-09-06.md) — reconciliação histórica de 2026-09-06.
+15. [`RAFANDROID_METHOD_V1.md`](RAFANDROID_METHOD_V1.md) — shell autoral de descoberta/orquestração/gates do toolchain Android.
+16. [`architecture/SILICON_LIGHT_LOWLEVEL_V1.md`](architecture/SILICON_LIGHT_LOWLEVEL_V1.md) — contrato L0 freestanding e fronteira L0→JNI→Android.
+17. [`audit/SESSION_RECONCILIATION_RAFANDROID_SILICON_LIGHT_20260928.md`](audit/SESSION_RECONCILIATION_RAFANDROID_SILICON_LIGHT_20260928.md) — revisão desta sessão, complicações, F_gap/F_next e evidência terminal.
+18. [`ci/START_PIPELINE_V1.md`](ci/START_PIPELINE_V1.md) — single-root pipeline ativo incluindo RAFANDROID/Silicon Light.
 
 ### Invariante
 
@@ -69,6 +73,15 @@ Ele não deve ultrapassar `RAFGITTOOLS_CURRENT_STATE.md` ou provider metadata at
 - `TERMUX_HEALTH_CONTRACT.md`
 - `knowledge/README.md`
 - `knowledge/VECTRAS_VM_ANDROID_ARCHIVE.md`
+
+## Superfícies reconciliadas em 2026-09-28
+
+- `tools/rafandroid/` — merged; exact-head START #241 PASS.
+- `native/silicon_light_v1/` — merged; exact-head START #263 PASS.
+- generated minimal Silicon Light JNI/APK fixture — CI PASS; not physical-device proof.
+- physical Android and QEMU guest runtime remain typed gaps.
+
+See the session reconciliation document for the full custody chain.
 
 ## Novas superfícies que a documentação corrente deve reconhecer
 
