@@ -16,7 +16,7 @@ All secret identifiers are written in uppercase:
 - `PAT_ENV`
 
 The canonical display name for the GitHub Environment is `PAT_ENVIRONMENTS`.
-Historical receipts that recorded `Pat_environments` are preserved as historical evidence and are not rewritten. GitHub treats environment names case-insensitively, so the uppercase display is a naming normalization, not a new capability.
+Historical receipts that recorded `Pat_environments` are preserved as historical evidence and are not rewritten. GitHub Environment names are case-insensitive, so the uppercase display is a naming normalization rather than a second environment.
 
 ## Authority split
 
@@ -36,7 +36,17 @@ Neither repository stores PAT values in documentation, receipts, schemas, logs, 
 | `PAT_DEPENDABOT` | repository | `REGISTERED_NOT_WIRED` | preflight only |
 | `PAT_ENV` | environment `PAT_ENVIRONMENTS` | `WIRED_MANUAL_ONLY` | provider preflight + main-protection apply/rollback |
 
-Candidate operations for unwired PATs remain `TOKEN_VAZIO_PERMISSION_PROBE_REQUIRED` until a provider readback proves the required permission. The presence of a secret never promotes a capability.
+## Provider permission hints
+
+These are endpoint requirements, not proof that any stored PAT currently has them:
+
+- `PAT_ACTIONS`: workflow-run reads require `Actions: read`; private target access must also include the exact target repository.
+- `PAT_CODESPACES`: list/get requires `Codespaces: read`; lifecycle creation/mutation requires `Codespaces: write`.
+- `PAT_DEPENDABOT`: alert reads require `Dependabot alerts: read`; alert updates require `Dependabot alerts: write`.
+- `PAT_ENV`: listing environments uses `Actions: read`; creating/updating environments and updating branch protection require `Administration: write`; reading branch protection requires `Administration: read`.
+- `PAT_AGENTS`: exact provider endpoint/permission mapping remains `TOKEN_VAZIO_UNSPECIFIED_ENDPOINT`; do not infer it from the secret name.
+
+Candidate operations for unwired PATs remain `TOKEN_VAZIO_PERMISSION_PROBE_REQUIRED` until provider readback proves the required permission. The presence of a secret never promotes a capability.
 
 ## Execution rule
 
@@ -53,17 +63,7 @@ All PAT-backed operations must enter through a bounded RafGitTools lane with:
 
 ## Federation projection
 
-Mapa should store only:
-
-- capability ID;
-- executor pointer to RafGitTools;
-- current state;
-- source commit/ref;
-- operation type;
-- evidence/receipt pointer;
-- gap/next.
-
-Mapa must never receive or reproduce PAT values.
+Mapa should store only capability ID, executor pointer, state, source ref, operation type, evidence/receipt pointer, gap and next. Mapa must never receive or reproduce PAT values.
 
 ## R3
 
