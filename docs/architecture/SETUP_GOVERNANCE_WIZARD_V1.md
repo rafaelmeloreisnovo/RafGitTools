@@ -57,9 +57,9 @@ This does **not** pretend to revert remote provider changes. Remote rollback mus
 
 ## Entry point
 
-Dedicated `SetupWizardActivity`, isolated from the main navigation graph. The first implementation is intentionally callable as its own application surface and by `rafgittools://setup` so users can review it again later.
+Dedicated `SetupWizardActivity`, isolated from the main navigation graph. The wizard is callable as its own application surface and by `rafgittools://setup` so users can review it again later.
 
-Automatic first-launch forcing is deferred until this isolated flow has build/runtime evidence.
+On first launch, `MainActivity` opens `SetupWizardActivity` whenever the local completion flag is false. The user can still exit without executing external actions; until the wizard is explicitly completed, it will be offered again on a later app launch.
 
 ## Accessibility and clarity
 
