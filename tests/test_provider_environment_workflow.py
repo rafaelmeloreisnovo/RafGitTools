@@ -19,12 +19,20 @@ class ProviderEnvironmentWorkflowTests(unittest.TestCase):
         self.assertIn("configs/provider-environment-preflight.once.json", self.text)
         self.assertIn("configs/provider-enforcement-stage1.once.json", self.text)
 
-    def test_only_environment_pat_is_injected_into_active_start(self):
+    def test_only_governed_provider_pats_are_injected_into_active_start(self):
         self.assertIn("PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}", self.text)
-        self.assertNotIn("secrets.PAT_ACTIONS", self.text)
+        self.assertIn("PROVIDER_ACTIONS_TOKEN: ${{ secrets.PAT_ACTIONS }}", self.text)
         self.assertNotIn("secrets.PAT_AGENTS", self.text)
         self.assertNotIn("secrets.PAT_CODESPACES", self.text)
         self.assertNotIn("secrets.PAT_DEPENDABOT", self.text)
+
+    def test_actions_lane_is_main_one_shot_exact_sha_and_read_only(self):
+        self.assertIn("configs/provider-actions-preflight.once.json", self.text)
+        self.assertIn("exact_commit_read_and_test", self.text)
+        self.assertIn("scripts/private_provider_access_gate.py", self.text)
+        self.assertIn("TARGET_SHA", self.text)
+        self.assertIn("persist-credentials: false", self.text)
+        self.assertIn("RIVER7_LINEAR_ERASURE_743_CROSSREPO_RECEIPT.json", self.text)
 
     def test_no_pat_fallback_is_present(self):
         self.assertNotIn("secrets.PAT_ENV ||", self.text)
