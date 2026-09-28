@@ -1,13 +1,14 @@
 {
   "schema": "rafaelia.provider-actions-preflight-once.v1",
   "operation": "exact_commit_read_and_test",
-  "target_repository": "rafaelmeloreisnovo/ChipQuantum",
-  "target_commit": "c4188acee100f09fda974ef187a517eee92f49ef",
-  "task": "river7_offline",
+  "target_repository": "rafaelmeloreisnovo/Rafaelia_Private",
+  "target_commit": "8a3dbb7f8ad586c059d3f6687e9d92623a0c98cd",
+  "task": "master_coverage_import",
   "expected_actor": "rafaelmeloreisnovo",
   "write_allowed": false,
   "exact_target_sha_required": true,
   "claim_allowed": false,
-  "parent_run_id": 36386415781,
-  "reason": "RIVER7_V3_BURST_ERASURE_EXACT_SHA_VALIDATION"
+  "source_pr": 261,
+  "source_state": "MERGED_CURRENT_AUTHORITY_V4",
+  "reason": "MASTER_COVERAGE_WAVE0_MERGED_AUTHORITY_V4_EXACT_SHA_IMPORT"
 }
