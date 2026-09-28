@@ -33,6 +33,7 @@ def validate(data: dict) -> list[str]:
         "NO_SECRET_VALUES_IN_LEDGER",
         "ROLLBACK_ONLY_WHEN_DECLARED_AND_VERIFIABLE",
         "REVIEWABLE_ANY_TIME",
+        "EVERY_STEP_REQUIRES_EXPLICIT_DECISION_BEFORE_COMPLETION",
     }:
         if required not in principles:
             errors.append(f"missing principle: {required}")
