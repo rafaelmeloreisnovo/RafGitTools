@@ -2,10 +2,12 @@
   "schema": "rafaelia.provider-actions-preflight-once.v1",
   "operation": "exact_commit_read_and_test",
   "target_repository": "rafaelmeloreisnovo/ChipQuantum",
-  "target_commit": "774b268ff61c7489c19e43ff4b0901203a210a6c",
+  "target_commit": "c4188acee100f09fda974ef187a517eee92f49ef",
   "task": "river7_offline",
   "expected_actor": "rafaelmeloreisnovo",
   "write_allowed": false,
   "exact_target_sha_required": true,
-  "claim_allowed": false
+  "claim_allowed": false,
+  "parent_run_id": 36386415781,
+  "reason": "RIVER7_V3_BURST_ERASURE_EXACT_SHA_VALIDATION"
 }
