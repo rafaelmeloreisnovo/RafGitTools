@@ -1,18 +1,28 @@
 {
   "schema": "RAFGITTOOLS_SESSION_AI_DISPATCH_ADAPTER_V1",
   "version": "1.0.0",
-  "state": "IMPLEMENTED_UNTESTED",
+  "state": "CORRECTED_RETEST_PENDING",
   "claim_allowed": false,
   "authority": "local executor adapter only; Mapa remains federated routing authority",
   "federated_registry": {
     "repo": "rafaelmeloreisnovo/Mapa",
-    "branch": "session/ai-work-dispatch-v1-20260928",
-    "expected_head": "39a8bac6188f46a374176c9826d296bcfebd2ec6",
+    "branch": "main",
+    "expected_head": "ad2efc2b9a4599bdcc37ab416c84bd99dc2a1e09",
     "path": "data/control-plane/SESSION_AI_WORK_DISPATCH_V1.json",
     "expected_blob_sha": "c1d1d8f1692c74957f8b70968fa863f855d93cb0",
     "relation": "consumer_adapter_not_authority_copy",
     "drive_binding_receipt": "receipts/2026-09-28_SESSION_AI_WORK_DISPATCH_DRIVE_BINDING_V2.md",
-    "mapa_ci_repair_receipt": "receipts/2026-09-28_SESSION_AI_WORK_DISPATCH_CI_REPAIR_V3.md"
+    "pin_semantics": "exact merge commit containing SESSION_AI_WORK_DISPATCH_V1; does not assert moving main must remain at this head",
+    "mapa_ci_evidence": {
+      "failing_pr_head": "ce4767c64605e36eee32e1b3537ca734a5480cba",
+      "failing_ci_run": 36396306692,
+      "failing_job": 108843407236,
+      "cause": "Markdown MD022/MD032 on session dispatch docs",
+      "corrected_pr_head": "c71ddf9e48614107d357074e42b91dbb8e49d5e6",
+      "corrected_ci_run": 36396562990,
+      "corrected_ci_conclusion": "success",
+      "merged_commit": "ad2efc2b9a4599bdcc37ab416c84bd99dc2a1e09"
+    }
   },
   "local_sources": [
     {
