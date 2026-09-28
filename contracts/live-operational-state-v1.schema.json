@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rafgittools.live-operational-state.v1",
+  "title": "RAFAELIA Live Operational State V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "intent",
+    "classification",
+    "state",
+    "response",
+    "r3"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "rafgittools.live-operational-state.v1"
+    },
+    "intent": {
+      "type": "string",
+      "minLength": 1
+    },
+    "classification": {
+      "type": "array",
+      "items": {
+        "enum": ["FACT", "INFERENCE", "HYPOTHESIS", "DECISION", "GAP"]
+      },
+      "uniqueItems": true
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "SOURCE",
+        "AUTHORITY",
+        "ARTIFACT",
+        "EXECUTION_TARGET",
+        "EXECUTION",
+        "EVIDENCE_RULE",
+        "EVIDENCE",
+        "CLAIM",
+        "GAPS",
+        "ROUTES",
+        "ROUTE_STATE",
+        "CLAIM_ALLOWED"
+      ],
+      "properties": {
+        "SOURCE": {"$ref": "#/$defs/valueOrTokenVazio"},
+        "AUTHORITY": {"$ref": "#/$defs/valueOrTokenVazio"},
+        "ARTIFACT": {"$ref": "#/$defs/valueOrTokenVazio"},
+        "EXECUTION_TARGET": {"$ref": "#/$defs/valueOrTokenVazio"},
+        "EXECUTION": {"$ref": "#/$defs/executionState"},
+        "EVIDENCE_RULE": {"$ref": "#/$defs/valueOrTokenVazio"},
+        "EVIDENCE": {"$ref": "#/$defs/valueOrTokenVazio"},
+        "CLAIM": {"$ref": "#/$defs/valueOrTokenVazio"},
+        "GAPS": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "ROUTES": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "ROUTE_STATE": {
+          "enum": ["PASS", "PENDING", "AUDIT", "ROUTE_STATE_BLOCKED", "TOKEN_VAZIO"]
+        },
+        "CLAIM_ALLOWED": {
+          "type": "boolean"
+        }
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "EXECUTIVE_SUMMARY",
+        "ACTION_PLAN",
+        "RISK_MATRIX",
+        "MARKED_GAPS",
+        "ATLAS_DELTA",
+        "NEXT_CYCLE"
+      ],
+      "properties": {
+        "EXECUTIVE_SUMMARY": {"$ref": "#/$defs/valueOrTokenVazio"},
+        "ACTION_PLAN": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["step", "owner", "deadline", "metric", "state"],
+            "properties": {
+              "step": {"type": "string", "minLength": 1},
+              "owner": {"$ref": "#/$defs/valueOrTokenVazio"},
+              "deadline": {"$ref": "#/$defs/valueOrTokenVazio"},
+              "metric": {"$ref": "#/$defs/valueOrTokenVazio"},
+              "state": {"$ref": "#/$defs/executionState"}
+            }
+          }
+        },
+        "RISK_MATRIX": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["risk", "probability", "impact", "mitigation", "rollback"],
+            "properties": {
+              "risk": {"type": "string", "minLength": 1},
+              "probability": {"enum": ["LOW", "MEDIUM", "HIGH", "TOKEN_VAZIO"]},
+              "impact": {"enum": ["LOW", "MEDIUM", "HIGH", "TOKEN_VAZIO"]},
+              "mitigation": {"$ref": "#/$defs/valueOrTokenVazio"},
+              "rollback": {"$ref": "#/$defs/valueOrTokenVazio"}
+            }
+          }
+        },
+        "MARKED_GAPS": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "ATLAS_DELTA": {"$ref": "#/$defs/valueOrTokenVazio"},
+        "NEXT_CYCLE": {"$ref": "#/$defs/valueOrTokenVazio"}
+      }
+    },
+    "r3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["F_ok", "F_gap", "F_next"],
+      "properties": {
+        "F_ok": {"$ref": "#/$defs/valueOrTokenVazio"},
+        "F_gap": {"$ref": "#/$defs/valueOrTokenVazio"},
+        "F_next": {"$ref": "#/$defs/valueOrTokenVazio"}
+      }
+    }
+  },
+  "$defs": {
+    "valueOrTokenVazio": {
+      "oneOf": [
+        {"type": "string", "minLength": 1, "not": {"const": "0"}},
+        {"type": "number"},
+        {"type": "boolean"},
+        {"type": "array"},
+        {"type": "object"}
+      ]
+    },
+    "executionState": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "NOT_RUN",
+        "PENDING",
+        "AUDIT",
+        "TOKEN_VAZIO",
+        "IMPLEMENTED_UNTESTED",
+        "OBSERVED_UNPROMOTED",
+        "ROUTE_STATE_BLOCKED"
+      ]
+    }
+  }
+}
