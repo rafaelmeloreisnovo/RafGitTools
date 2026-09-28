@@ -38,5 +38,8 @@ class SetupGovernanceWizardTests(unittest.TestCase):
         data["decisions"] = ["AGREE"]
         self.assertTrue(any("decision set" in x for x in M.validate(data)))
 
+    def test_runtime_entry_points_and_clarity_controls_exist(self):
+        self.assertEqual(M.validate(self.load()), [])
+
 if __name__ == "__main__":
     unittest.main()
