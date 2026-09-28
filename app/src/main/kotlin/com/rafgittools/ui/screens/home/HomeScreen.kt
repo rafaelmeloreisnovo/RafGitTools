@@ -65,6 +65,7 @@ fun HomeScreen(
     val activeTab by viewModel.activeTab.collectAsStateWithLifecycle()
     val githubProbeState by viewModel.githubProbeState.collectAsStateWithLifecycle()
     val remoteReceiptState by viewModel.remoteReceiptState.collectAsStateWithLifecycle()
+    val privateProcessingPublishState by viewModel.privateProcessingPublishState.collectAsStateWithLifecycle()
     var showMenu by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -161,12 +162,14 @@ fun HomeScreen(
                     localRepositories = localRepositories,
                     githubProbeState = githubProbeState,
                     remoteReceiptState = remoteReceiptState,
+                    privateProcessingPublishState = privateProcessingPublishState,
                     onTabSelected = viewModel::setActiveTab,
                     onNavigateToAuth = onNavigateToAuth,
                     onRepositoryClick = onNavigateToRepository,
                     onLocalRepositoryClick = onNavigateToLocalRepo,
                     onRunGithubTest = viewModel::runGithubConnectivityTest,
-                    onCreateRemoteReceipt = viewModel::createRemoteConnectivityReceipt
+                    onCreateRemoteReceipt = viewModel::createRemoteConnectivityReceipt,
+                    onPublishPrivateProcessingReceipt = viewModel::publishPrivateProcessingReceipt
                 )
             }
         }
@@ -181,12 +184,20 @@ private fun SourceDashboard(
     localRepositories: List<LocalRepoSummary>,
     githubProbeState: GithubConnectivityState,
     remoteReceiptState: RemoteReceiptState,
+    privateProcessingPublishState: PrivateProcessingPublishState,
     onTabSelected: (HomeViewModel.HomeTab) -> Unit,
     onNavigateToAuth: () -> Unit,
     onRepositoryClick: (GithubRepository) -> Unit,
     onLocalRepositoryClick: (String) -> Unit,
     onRunGithubTest: () -> Unit,
-    onCreateRemoteReceipt: () -> Unit
+    onCreateRemoteReceipt: () -> Unit,
+    onPublishPrivateProcessingReceipt: (
+        GithubRepository,
+        Long,
+        String,
+        String,
+        CorpusIntakeResult
+    ) -> Unit
 ) {
     Column(Modifier.fillMaxSize()) {
         TabRow(selectedTabIndex = activeTab.ordinal) {
@@ -222,7 +233,11 @@ private fun SourceDashboard(
                     GithubDisconnectedContent(onNavigateToAuth)
                 }
             }
-            HomeViewModel.HomeTab.DRIVE -> DriveBridgeContent()
+            HomeViewModel.HomeTab.DRIVE -> DriveBridgeContent(
+                privateRepositories = remoteRepositories.filter { it.isPrivate },
+                publishState = privateProcessingPublishState,
+                onPublishReceipt = onPublishPrivateProcessingReceipt
+            )
             HomeViewModel.HomeTab.LOCAL -> LocalRepositoryList(localRepositories, onLocalRepositoryClick)
         }
     }
@@ -254,9 +269,17 @@ private fun GithubDisconnectedContent(onNavigateToAuth: () -> Unit) {
 }
 
 @Composable
-private fun DriveBridgeContent() {
+private fun DriveBridgeContent(
+    privateRepositories: List<GithubRepository>,
+    publishState: PrivateProcessingPublishState,
+    onPublishReceipt: (GithubRepository, Long, String, String, CorpusIntakeResult) -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var repositoryMenuExpanded by remember { mutableStateOf(false) }
+    var selectedPrivateRepository by remember(privateRepositories) {
+        mutableStateOf(privateRepositories.firstOrNull())
+    }
     var staging by remember { mutableStateOf(false) }
     var staged by remember { mutableStateOf<DriveStageResult?>(null) }
     var cataloging by remember { mutableStateOf(false) }
@@ -524,6 +547,102 @@ private fun DriveBridgeContent() {
                                 style = MaterialTheme.typography.bodySmall,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        HorizontalDivider()
+                        Text(
+                            "GitHub privado · receipt de atividade",
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        if (privateRepositories.isEmpty()) {
+                            Text(
+                                "Destino: TOKEN_VAZIO — conecte o GitHub e carregue um repositório privado.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            Box {
+                                OutlinedButton(
+                                    onClick = { repositoryMenuExpanded = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(Icons.Default.Lock, null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        selectedPrivateRepository?.fullName
+                                            ?: "Selecionar repositório privado",
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = repositoryMenuExpanded,
+                                    onDismissRequest = { repositoryMenuExpanded = false }
+                                ) {
+                                    privateRepositories.forEach { repository ->
+                                        DropdownMenuItem(
+                                            text = { Text(repository.fullName) },
+                                            onClick = {
+                                                selectedPrivateRepository = repository
+                                                repositoryMenuExpanded = false
+                                            },
+                                            leadingIcon = { Icon(Icons.Default.Lock, null) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            val stage = staged
+                            Button(
+                                onClick = {
+                                    val target = selectedPrivateRepository
+                                    if (target != null && stage != null) {
+                                        onPublishReceipt(
+                                            target,
+                                            stage.bytes,
+                                            stage.sha256,
+                                            stage.providerAuthority,
+                                            result
+                                        )
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = selectedPrivateRepository != null &&
+                                    stage != null &&
+                                    publishState !is PrivateProcessingPublishState.Running
+                            ) {
+                                if (publishState is PrivateProcessingPublishState.Running) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Publicando receipt…")
+                                } else {
+                                    Icon(Icons.Default.Upload, null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Publicar receipt privado")
+                                }
+                            }
+                        }
+
+                        when (publishState) {
+                            PrivateProcessingPublishState.Idle -> Text(
+                                "GitHub privado: TOKEN_VAZIO",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            PrivateProcessingPublishState.Running -> Unit
+                            is PrivateProcessingPublishState.Passed -> Text(
+                                "GitHub privado: PASS · ${publishState.operationId} · commit ${publishState.commitSha.take(12)}…",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            is PrivateProcessingPublishState.Failed -> Text(
+                                "GitHub privado: FAIL · ${publishState.message}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
                             )
                         }
                     }
