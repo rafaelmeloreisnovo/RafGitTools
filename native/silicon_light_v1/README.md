@@ -1,7 +1,8 @@
 # Silicon Light Core V1
 
-State: `IMPLEMENTED_SOURCE / CI_PENDING`  
+State: `VERIFIED_LIMITED / CI_PASS / MERGED`  
 Owner: `rafaelmeloreisnovo/RafGitTools`  
+Evidence anchor: PR #526 head `40d90c93bf7bfe6d3299a89585688c0324d25245`, START run `36385528436` / #263 = `SUCCESS`, merge `0fdfc8a01e9a513facc3873d9002b3bac79af8ae`.  
 Claim gate: `claim_allowed=false`
 
 ## Engineering meaning of “cidade de luz do silício”
@@ -66,3 +67,25 @@ This module does not replace `native/rafcode_route_v1`. It is a generic low-leve
 ## C semantics hardening
 
 V1 deliberately avoids relational ordering of unrelated pointers and avoids signed right-shift for negative Q16 values. These are treated as portability shadows even when a specific compiler would produce the expected machine instruction.
+
+
+## Revision-bound evidence
+
+The canonical START run for the final PR #526 head observed PASS for:
+
+- Silicon Light host self-test and freestanding audit;
+- source/system-header and forbidden-runtime boundaries;
+- NDK-bound ARMv7 and AArch64 Silicon Light gate;
+- generated minimal Silicon Light JNI/APK fixture;
+- Android unit tests, instrumentation APK compile, lint and devDebug assembly;
+- APK/SHA verification;
+- CodeQL Actions and CodeQL Java/Kotlin;
+- final START receipt.
+
+This does **not** establish physical handset execution, QEMU guest execution or release acceptance.
+
+## Current R3
+
+- **F_ok:** L0 source/object boundary, cross-ABI NDK gate and generated L0→JNI→APK fixture are revision-bound PASS and merged.
+- **F_gap:** physical ARM32/ARM64 device execution and broader migration of duplicated low-level primitives remain open.
+- **F_next:** migrate one duplicated primitive family at a time only after reference/equivalence/property tests prove identical semantics.
