@@ -1,0 +1,95 @@
+{
+  "schema": "rafaelia.transition-receipt.v1",
+  "event_id": "RAFGITTOOLS-RAFANDROID-SHELL-V1-20260927T205500-0300",
+  "parent_event_id": "TOKEN_VAZIO_NEW_LOCAL_CAPABILITY",
+  "observed_at": "2026-09-27T20:55:00-03:00",
+  "actor_role": "control-plane executor",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "ref": "feature/rafandroid-toolchain-shell-v1",
+  "commit_sha": "832c942afdcfe7c8ee8e0fa9475ec9cbff03d542",
+  "path_scope": [
+    "tools/rafandroid/",
+    "docs/RAFANDROID_METHOD_V1.md",
+    ".github/workflows/rafandroid-shell-gate.yml"
+  ],
+  "authority": {
+    "local": "rafaelmeloreisnovo/RafGitTools",
+    "federated": "rafaelmeloreisnovo/Mapa",
+    "external_platforms": [
+      "Gradle/AGP",
+      "Android SDK/build-tools",
+      "NDK/LLVM",
+      "AndroidX",
+      "D8/R8",
+      "QEMU/Android Emulator"
+    ]
+  },
+  "gap_or_goal_ids": [
+    "GOAL-RAFANDROID-LOW-FRICTION-TOOLCHAIN-SHELL-V1"
+  ],
+  "state_before": "TOKEN_VAZIO",
+  "state_after": "EVIDENCED_SCOPED",
+  "attention_state_before": "DISCOVERED",
+  "attention_state_after": "ACTIVE",
+  "knowledge_state_before": "TOKEN_VAZIO",
+  "knowledge_state_after": "EVIDENCED_SCOPED",
+  "urgency": "P1",
+  "risk": "MEDIUM",
+  "governance_class": "LOCAL_CONTROL_PLANE_CHANGE",
+  "data_class": "PUBLIC_SOURCE_AND_BUILD_METADATA_ONLY",
+  "privacy_class": "NO_USER_PAYLOAD",
+  "security_class": "TOOLCHAIN_SUPPLY_CHAIN_AND_BUILD_INTEGRITY",
+  "action": "Materialize one bounded Android toolchain shell with explicit external authorities, minimum JNI scaffold, shadow diagnostics and artifact gates.",
+  "falsifier": "Any shell syntax/self-test failure, implicit curl/wget download primitive, automatic sdkmanager license acceptance, invalid JSON lock, or runtime claim promotion from static QEMU discovery invalidates this scoped state.",
+  "exit_criterion": "Exact source commit passes RafAndroid Shell Gate with Bash syntax, authorial self-test, lock parse, no implicit download primitive and no automatic license acceptance.",
+  "evidence_refs": [
+    "RafGitTools:commit:832c942afdcfe7c8ee8e0fa9475ec9cbff03d542",
+    "RafGitTools:workflow-run:36360185325",
+    "RafGitTools:workflow-job:108735683355"
+  ],
+  "invariants_checked": [
+    "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "TOKEN_VAZIO != PASS",
+    "no implicit network",
+    "no silent SDK bootstrap",
+    "no automatic license acceptance",
+    "QEMU discovery != runtime proof",
+    "project wrapper precedes system Gradle",
+    "minimal scaffold keeps armeabi-v7a and arm64-v8a"
+  ],
+  "F_ok": [
+    "rafandroid single entrypoint implemented",
+    "Gradle/SDK/NDK/AAPT2/D8/R8/JNI/APK/ADB/QEMU routes represented",
+    "minimal Java+JNI+C11 scaffold implemented",
+    "AndroidX inventory route implemented with AndroidX disabled by default in minimal scaffold",
+    "shadow diagnostics implemented",
+    "native/JNI/DEX/APK gates implemented",
+    "CI gate passed on exact source commit"
+  ],
+  "F_gap": [
+    "current RafGitTools app has not yet been migrated to consume rafandroid",
+    "physical Android execution is not evidenced by this receipt",
+    "QEMU guest boot remains TOKEN_VAZIO",
+    "full Android scaffold APK build is not exercised by the lightweight shell self-test",
+    "cross-repository Vectras/Termux integration remains under producer authority"
+  ],
+  "F_next": "Add an explicit integration gate that invokes rafandroid against the existing RafGitTools Gradle/NDK project without changing release signing or runtime authority.",
+  "uncertainty_delta": {
+    "reduced": [
+      "single toolchain entrypoint structure",
+      "implicit-network policy",
+      "license-acceptance policy",
+      "minimal scaffold generation",
+      "shell self-test correctness"
+    ],
+    "added": [
+      "project-level integration compatibility",
+      "physical Android runtime evidence"
+    ]
+  },
+  "rollback_ref": "255267cf780f3ce03402066c76b8721c9d92f18d",
+  "stop_reason": "Scoped shell gate observed; next step is project integration, not broader runtime promotion.",
+  "Mapa_transition_target": "TOKEN_VAZIO_NOT_MUTATED_THIS_DELTA",
+  "Drive_reconstruction_target": "TOKEN_VAZIO_NOT_MUTATED_THIS_DELTA",
+  "claim_allowed": false
+}
