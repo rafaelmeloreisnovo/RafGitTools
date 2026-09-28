@@ -1,0 +1,193 @@
+{
+  "schema": "RAFGITTOOLS_SESSION_AI_DISPATCH_ADAPTER_V1",
+  "version": "1.0.0",
+  "state": "IMPLEMENTED_UNTESTED",
+  "claim_allowed": false,
+  "authority": "local executor adapter only; Mapa remains federated routing authority",
+  "federated_registry": {
+    "repo": "rafaelmeloreisnovo/Mapa",
+    "branch": "session/ai-work-dispatch-v1-20260928",
+    "expected_head": "39a8bac6188f46a374176c9826d296bcfebd2ec6",
+    "path": "data/control-plane/SESSION_AI_WORK_DISPATCH_V1.json",
+    "expected_blob_sha": "c1d1d8f1692c74957f8b70968fa863f855d93cb0",
+    "relation": "consumer_adapter_not_authority_copy",
+    "drive_binding_receipt": "receipts/2026-09-28_SESSION_AI_WORK_DISPATCH_DRIVE_BINDING_V2.md",
+    "mapa_ci_repair_receipt": "receipts/2026-09-28_SESSION_AI_WORK_DISPATCH_CI_REPAIR_V3.md"
+  },
+  "local_sources": [
+    {
+      "path": "AGENTS.md",
+      "blob_sha": "439a94a1a9586e0ef3a4a49cc276f7526f81e366"
+    },
+    {
+      "path": "configs/practice-router.v1.json",
+      "blob_sha": "a43e229b19f5dc01b109301f7c15f75f23d7c91a"
+    },
+    {
+      "path": "orchestration/templo_vivo_arc/README.md",
+      "blob_sha": "TOKEN_VAZIO_BLOB_NOT_BOUND_IN_THIS_PACKET"
+    }
+  ],
+  "invariants": [
+    "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "TOKEN_VAZIO != 0",
+    "IMPLEMENTED_UNTESTED != PASS",
+    "AGENT_ASSIGNMENT != AGENT_EXECUTION",
+    "NO_DEFAULT_BRANCH_DIRECT_MUTATION",
+    "NO_PRIVATE_PAYLOAD_IN_PUBLIC_ADAPTER"
+  ],
+  "agent_bindings": [
+    {
+      "agent_id": "AI02_CONTROL_EXECUTOR",
+      "local_role": "branch-pr-test-receipt executor",
+      "allowed_effects": [
+        "READ",
+        "CREATE_BRANCH",
+        "WRITE_BRANCH",
+        "CREATE_DRAFT_PR",
+        "RUN_OR_OBSERVE_GATE"
+      ],
+      "forbidden": [
+        "DIRECT_MAIN_WRITE",
+        "AUTO_MERGE",
+        "AUTO_RELEASE",
+        "SECRET_EXFILTRATION"
+      ]
+    },
+    {
+      "agent_id": "AI05_PROVIDER_CI_STEWARD",
+      "local_role": "CI/provider problem steward",
+      "allowed_effects": [
+        "READ_CI",
+        "READ_PROVIDER_METADATA",
+        "WRITE_BRANCH_FIX",
+        "APPEND_PROBLEM_RECEIPT"
+      ],
+      "forbidden": [
+        "WEAKEN_TESTS",
+        "SUPPRESS_FAILURE",
+        "DIRECT_MAIN_WRITE"
+      ]
+    },
+    {
+      "agent_id": "AI06_VISUAL_PRIVACY_INTAKE",
+      "local_role": "public pointer-only Templo Vivo adapter",
+      "allowed_effects": [
+        "VALIDATE_POINTER",
+        "HASH_VISUAL_BYTES",
+        "SCHEDULE_STATE"
+      ],
+      "forbidden": [
+        "OCR_PRIVACY_CLAIM",
+        "PRIVATE_KEY_IN_GIT",
+        "RAW_PRIVATE_BODY"
+      ]
+    },
+    {
+      "agent_id": "AI11_SEMANTIC_TRANSLATOR",
+      "local_role": "semantic/context normalizer",
+      "allowed_effects": [
+        "NORMALIZE_INTENT",
+        "CLASSIFY_CONTEXT",
+        "ROUTE_CANDIDATE"
+      ],
+      "forbidden": [
+        "CLAIM_PROMOTION",
+        "AUTONOMOUS_MUTATION"
+      ]
+    }
+  ],
+  "packet_bindings": [
+    {
+      "packet_id": "SP01_TEMPLO_VISUAL_PRIVACY",
+      "local_route": "templo-vivo-arc",
+      "source_min": [
+        "orchestration/templo_vivo_arc/00_INDEX/START_HERE.md",
+        "orchestration/templo_vivo_arc/config.v1.json",
+        "orchestration/templo_vivo_arc/engine.py"
+      ],
+      "execution_target": "python3 orchestration/templo_vivo_arc/engine.py validate-intake --config orchestration/templo_vivo_arc/config.v1.json --input <approved-pointer.json>",
+      "evidence_rule": "structural/privacy gate only; raw payload remains private",
+      "state": "ROUTED"
+    },
+    {
+      "packet_id": "SP02_CI_PROVIDER_PROBLEM_LOOP",
+      "local_route": "control-governance",
+      "source_min": [
+        "AGENTS.md",
+        ".github/workflows/START.yml",
+        "docs/audit/"
+      ],
+      "execution_target": "exact failing job/gate named by incident",
+      "evidence_rule": "terminal run/job + exact-head fix + rerun + provider readback when applicable",
+      "state": "ROUTED"
+    },
+    {
+      "packet_id": "SP03_BODY_SOUL_SPIRIT_ARCH_PIN",
+      "local_route": "receipt-evidence",
+      "source_min": [
+        "AGENTS.md",
+        "configs/agent-entry-kernel.v1.json",
+        "scripts/rafaelia_receipt_validator.py"
+      ],
+      "execution_target": "python3 scripts/rafaelia_receipt_validator.py",
+      "evidence_rule": "receipt structure only",
+      "state": "ROUTED"
+    },
+    {
+      "packet_id": "SP06_ATLAS_ROUTES_RECEIPTS",
+      "local_route": "docs-contribution",
+      "source_min": [
+        "AGENTS.md",
+        "configs/practice-router.v1.json",
+        "docs/AI_HUMAN_FAST_ROUTE_V1.md"
+      ],
+      "execution_target": "python3 scripts/validate_practice_router.py configs/practice-router.v1.json",
+      "evidence_rule": "navigation structure only; Drive write/readback is separate",
+      "state": "ROUTED"
+    },
+    {
+      "packet_id": "SP08_SESSION_TO_WORK_PACKETS",
+      "local_route": "session-dispatch-adapter",
+      "source_min": [
+        "AGENTS.md",
+        "configs/practice-router.v1.json",
+        "configs/session-ai-dispatch-adapter.v1.json"
+      ],
+      "execution_target": "python3 scripts/validate_session_ai_dispatch_adapter.py configs/session-ai-dispatch-adapter.v1.json",
+      "evidence_rule": "adapter structure; no claim of background AI execution",
+      "state": "IMPLEMENTED_UNTESTED"
+    }
+  ],
+  "drive_outputs": {
+    "atlas_folder_id": "14eeJ9W8XsnSXrtryAIwqMxMIgPysOi6n",
+    "routes_folder_id": "13xho8rcCljH5EpMcjdtZA2esQFEx1CP3",
+    "edges_folder_id": "1fPV_go4pcfvO478HhX0LKN2IUUuTSEHJ",
+    "evidence_folder_id": "1hgdUlqm9rjp8XHa3UIyE7923ls10tteg",
+    "receipts_folder_id": "1J_snVtxYk_LFuRwHb6ozpLt0NYlI4wJ7",
+    "rule": "RafGitTools emits refs/receipts; Drive remains documentary memory and is not a public raw-payload sink"
+  },
+  "problem_policy": {
+    "when": "CI/test/lint/provider readback yields concrete terminal defect",
+    "action": "smallest reversible correction on existing/successor branch",
+    "required": [
+      "before_state",
+      "after_state",
+      "exact_ref",
+      "expected_observable",
+      "actual_observable",
+      "falsifier",
+      "rollback",
+      "rerun_ref"
+    ],
+    "prohibited": [
+      "weaken_test",
+      "broad_ignore",
+      "secret_log",
+      "invent_reviewer",
+      "direct_default_branch_write",
+      "auto_merge",
+      "auto_release"
+    ]
+  }
+}
