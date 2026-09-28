@@ -6,13 +6,7 @@
   "claim_allowed": false,
   "canonical_environment": "PAT_ENVIRONMENTS",
   "legacy_environment_case_alias": "Pat_environments",
-  "secret_ids": [
-    "PAT_ACTIONS",
-    "PAT_AGENTS",
-    "PAT_CODESPACES",
-    "PAT_DEPENDABOT",
-    "PAT_ENV"
-  ],
+  "secret_ids": ["PAT_ACTIONS","PAT_AGENTS","PAT_CODESPACES","PAT_DEPENDABOT","PAT_ENV"],
   "invariants": [
     "SECRET_IDENTIFIER == UPPERCASE",
     "SECRET_VALUE_NEVER_PERSISTED_OR_PRINTED",
@@ -31,17 +25,12 @@
       "storage_scope": "REPOSITORY_SECRET",
       "provider_surface": "GITHUB_ACTIONS_AND_CROSS_REPO_READ",
       "current_state": "WIRED_MAIN_ONESHOT_READ_ONLY",
-      "wired_operations": [
-        "preflight",
-        "exact_commit_read_and_test",
-        "exact_sha_private_checkout_read_only",
-        "provider_actions_receipt"
-      ],
-      "candidate_operations": [
-        "actions_run_read",
-        "actions_job_read",
-        "artifact_read"
-      ],
+      "wired_operations": ["preflight","exact_commit_read_and_test","exact_sha_private_checkout_read_only","provider_actions_receipt"],
+      "candidate_operations": ["actions_run_read","actions_job_read","artifact_read"],
+      "provider_permission_hints": {
+        "actions_read": "Actions:read",
+        "private_repository_read": "repository access must include exact target"
+      },
       "mutation_allowed": false,
       "permission_state": "PARTIAL_EVIDENCE_ONLY"
     },
@@ -51,11 +40,11 @@
       "provider_surface": "AGENT_ORCHESTRATION",
       "current_state": "REGISTERED_NOT_WIRED",
       "wired_operations": ["preflight"],
-      "candidate_operations": [
-        "repository_read",
-        "issue_pr_coordination",
-        "workflow_dispatch"
-      ],
+      "candidate_operations": ["repository_read","issue_pr_coordination","workflow_dispatch"],
+      "provider_permission_hints": {
+        "status": "TOKEN_VAZIO_UNSPECIFIED_ENDPOINT",
+        "rule": "Do not infer a GitHub permission set until the exact agent operation/endpoint is selected."
+      },
       "mutation_allowed": "TOKEN_VAZIO_PERMISSION_PROBE_REQUIRED",
       "permission_state": "TOKEN_VAZIO_NOT_PROBED"
     },
@@ -65,11 +54,11 @@
       "provider_surface": "GITHUB_CODESPACES",
       "current_state": "REGISTERED_NOT_WIRED",
       "wired_operations": ["preflight"],
-      "candidate_operations": [
-        "codespace_list_read",
-        "codespace_metadata_read",
-        "codespace_lifecycle"
-      ],
+      "candidate_operations": ["codespace_list_read","codespace_metadata_read","codespace_lifecycle"],
+      "provider_permission_hints": {
+        "read": "Codespaces:read",
+        "create_or_mutate": "Codespaces:write"
+      },
       "mutation_allowed": "TOKEN_VAZIO_PERMISSION_PROBE_REQUIRED",
       "permission_state": "TOKEN_VAZIO_NOT_PROBED"
     },
@@ -79,11 +68,11 @@
       "provider_surface": "GITHUB_DEPENDABOT",
       "current_state": "REGISTERED_NOT_WIRED",
       "wired_operations": ["preflight"],
-      "candidate_operations": [
-        "dependabot_alert_read",
-        "dependabot_configuration_read",
-        "dependabot_provider_operations"
-      ],
+      "candidate_operations": ["dependabot_alert_read","dependabot_alert_update","dependabot_provider_operations"],
+      "provider_permission_hints": {
+        "read": "Dependabot alerts:read",
+        "update_alert": "Dependabot alerts:write"
+      },
       "mutation_allowed": "TOKEN_VAZIO_PERMISSION_PROBE_REQUIRED",
       "permission_state": "TOKEN_VAZIO_NOT_PROBED"
     },
@@ -93,16 +82,14 @@
       "provider_surface": "GITHUB_ENVIRONMENTS_AND_MAIN_PROTECTION",
       "environment": "PAT_ENVIRONMENTS",
       "current_state": "WIRED_MANUAL_ONLY",
-      "wired_operations": [
-        "preflight",
-        "apply_main_protection",
-        "rollback_main_protection"
-      ],
-      "candidate_operations": [
-        "environment_readback",
-        "environment_policy_mutation",
-        "branch_protection_mutation"
-      ],
+      "wired_operations": ["preflight","apply_main_protection","rollback_main_protection"],
+      "candidate_operations": ["environment_readback","environment_policy_mutation","branch_protection_read","branch_protection_mutation"],
+      "provider_permission_hints": {
+        "list_environments": "Actions:read",
+        "environment_mutation": "Administration:write",
+        "branch_protection_read": "Administration:read",
+        "branch_protection_mutation": "Administration:write"
+      },
       "mutation_allowed": "MANUAL_GATED_ONLY",
       "permission_state": "BOUNDED_BY_EXISTING_PROVIDER_ROUTE"
     }
