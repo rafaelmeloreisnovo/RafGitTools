@@ -9,6 +9,9 @@
   "exact_target_sha_required": true,
   "claim_allowed": false,
   "source_pr": 261,
-  "source_state": "MERGED_CURRENT_AUTHORITY_V4",
-  "reason": "MASTER_COVERAGE_WAVE0_MERGED_AUTHORITY_V4_EXACT_SHA_IMPORT"
+  "source_state": "REVALIDATION_REQUESTED_FROM_USER_REPORTED_PRIVATE_CI_UNAVAILABLE",
+  "reason": "REVALIDATE_CURRENT_PRIVATE_AUTHORITY_V4_VIA_RAFGITTOOLS_PAT_ACTIONS_READ_ONLY",
+  "revalidation_target_state": "READ_ONLY_EXACT_SHA_PROVIDER_EVIDENCE",
+  "secret_reference": "PAT_ACTIONS",
+  "secret_value_persisted": false
 }
