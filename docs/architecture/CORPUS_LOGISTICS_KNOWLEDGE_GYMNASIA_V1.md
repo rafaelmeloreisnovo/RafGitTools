@@ -94,3 +94,15 @@ F_ok = deterministic content addressing + typed campus topology + gymnasia + tie
 F_gap = exact Cortex source naming, live Drive stream adapter and governed publication runtime are separately evidenced.
 
 F_next = run a bounded canary over one Conversations shard, validate plan, publish only derived private artifacts through RafGitFS, then scale by immutable generation.
+
+## Privacy-preserving token index
+
+Clear lexical tokens are not required in the Git publication. The planner emits `TOK-<sha256(normalized-token)>` references with kind/ordinal and a reverse chunk index. A query hashes the user's local token with the same normalization and resolves matching chunks. This preserves fast token routing while reducing plaintext leakage.
+
+Additional indexes: `TOKENS.json`, `BOOKS.json`, `SESSIONS.json`, `MATERIALIZATION.json`, and `CHARACTERISTICS.json`.
+
+Bounded query:
+
+```bash
+python tools/corpus_logistics/campus_query_v1.py campus-plan.json --token torque --limit 20
+```
