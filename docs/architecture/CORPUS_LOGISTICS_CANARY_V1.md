@@ -4,7 +4,7 @@ Canary: `conversations-027.json` from the current NOVOexport Conversations corpu
 
 Observed provider identity: `1i02ona4EPpUszTWXAHnfoUqFGSUJgsPV`; observed size: 4,098,254 bytes.
 
-This binding does not claim the current content SHA-256. The executor must read the exact source, verify byte count, calculate SHA-256, then parse.
+Exact source receipt reused from the private corpus: SHA-256 `32ecf289497a30799358ac53a794c2d198e8449592a28a19bb9bbab6ff254211`, 4,098,254 bytes, provider ID `1i02ona4EPpUszTWXAHnfoUqFGSUJgsPV`. The executor must still read back the exact object and verify byte count/hash before parsing; prior evidence is an anchor, not a substitute for current execution.
 
 Pipeline:
 
