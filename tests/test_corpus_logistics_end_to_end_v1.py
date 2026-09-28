@@ -28,6 +28,9 @@ class CorpusLogisticsEndToEndTests(unittest.TestCase):
             self.assertEqual(receipt["chunks"],3)
             self.assertEqual(receipt["state"],"PASS_TREE_MATERIALIZED_NOT_GITHUB_PUBLISHED")
             self.assertTrue((r/"campus"/"00_INDEX"/"FORMULAS.json").exists())
+            self.assertTrue((r/"campus"/"00_INDEX"/"TOKENS.json").exists())
+            self.assertTrue((r/"campus"/"00_INDEX"/"BOOKS.json").exists())
+            self.assertTrue((r/"campus"/"00_INDEX"/"SESSIONS.json").exists())
             self.assertTrue((r/"campus"/"06_GAPS"/"TOKEN_VAZIO_AND_GAPS.json").exists())
             self.assertFalse(json.loads((r/"campus"/"07_EVIDENCE"/"BOUNDARY.json").read_text())["claim_allowed"])
 
