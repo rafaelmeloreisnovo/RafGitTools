@@ -1,7 +1,8 @@
 # Architecture — Silicon Light Low-Level V1
 
-Status: `IMPLEMENTED_UNTESTED` until exact-branch CI runs.  
+Status: `VERIFIED_LIMITED / MERGED` for the revision-bound L0 and generated APK-fixture scope.  
 Authority: RafGitTools local source.  
+Evidence: PR #526 head `40d90c93bf7bfe6d3299a89585688c0324d25245`; START #263 / run `36385528436` = `SUCCESS`; merge `0fdfc8a01e9a513facc3873d9002b3bac79af8ae`.  
 `claim_allowed=false`.
 
 ## Principle
@@ -70,3 +71,23 @@ Candidates are not automatically migrated. Each needs equivalence tests before r
 5. memory zero/copy/xor primitives in freestanding cores.
 
 Cryptography, Android permission logic, storage, networking, JGit, Compose, Room, Gradle and QEMU runtime are **not** silently absorbed into this L0.
+
+
+## Verified boundary
+
+The final PR head passed both the host L0 gate and NDK-bound ARMv7/AArch64 gate. The canonical Android lane also generated a fresh minimal scaffold, compiled the embedded Silicon Light L0 behind JNI, produced an APK and passed DEX/APK verification.
+
+Therefore:
+
+```text
+L0_SOURCE -> L0_OBJECT -> JNI_ADAPTER -> GENERATED_MINIMAL_APK = VERIFIED_LIMITED
+PHYSICAL_DEVICE = TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED
+QEMU_GUEST = TOKEN_VAZIO_RUNTIME
+RELEASE_ACCEPTANCE = TOKEN_VAZIO_RELEASE
+```
+
+## Current F3
+
+- **F_ok:** one-way L3→L2→L1→L0 dependency architecture is implemented and CI-verified at the exact PR head.
+- **F_gap:** domain-core migration coverage, property/fuzz equivalence, physical ABI execution and performance/energy measurements are not yet complete.
+- **F_next:** inventory duplicate deterministic helpers and move only the smallest family whose exact semantics can be frozen and proven.
