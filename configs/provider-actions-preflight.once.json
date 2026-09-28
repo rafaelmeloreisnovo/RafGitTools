@@ -1,0 +1,11 @@
+{
+  "schema": "rafaelia.provider-actions-preflight-once.v1",
+  "operation": "exact_commit_read_and_test",
+  "target_repository": "rafaelmeloreisnovo/ChipQuantum",
+  "target_commit": "774b268ff61c7489c19e43ff4b0901203a210a6c",
+  "task": "river7_offline",
+  "expected_actor": "rafaelmeloreisnovo",
+  "write_allowed": false,
+  "exact_target_sha_required": true,
+  "claim_allowed": false
+}
