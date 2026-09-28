@@ -12,9 +12,9 @@ Allow RafGitTools to consume the RAFAELIA whole-program master coverage packet a
 
 ```text
 repository=rafaelmeloreisnovo/Rafaelia_Private
-commit=73695cd8605a84e57a8134cd40d47c9b4a758f90
-source_pr=260
-source_packet=Wave0 Coverage Snapshot V2 + Authority Registry V3 + Ledger V2
+commit=8a3dbb7f8ad586c059d3f6687e9d92623a0c98cd
+source_pr=261
+source_packet=Wave0 Coverage Snapshot V2 + Authority Registry V4 + Ledger V2
 task=master_coverage_import
 write_allowed=false
 ```
@@ -119,9 +119,9 @@ Open PR; reconcile pull-request START checks; after merge, inspect the main one-
 - This is a test-boundary correction; provider runtime authority was not broadened.
 
 Current exact private target:
-`73695cd8605a84e57a8134cd40d47c9b4a758f90`
+`8a3dbb7f8ad586c059d3f6687e9d92623a0c98cd`
 
 Required successor packet:
 - DOCUMENT_COVERAGE_SNAPSHOT_V2.json
-- DOCUMENT_AUTHORITY_REGISTRY_V3.json
+- DOCUMENT_AUTHORITY_REGISTRY_V4.json
 - active-work-ledger.v2.json
