@@ -4,6 +4,33 @@ Generated: 2026-07-20
 
 ---
 
+## 2026-09-28 supplement — not a full map regeneration
+
+The original map below was generated on 2026-07-20 and is preserved as historical structural context. The following merged surfaces must now be included in current navigation:
+
+```text
+tools/
+└── rafandroid/
+    ├── rafandroid                     # single Android toolchain control shell
+    ├── toolchain.lock.json            # explicit external/toolchain stage contract
+    ├── tests/selftest.sh
+    └── templates/minimal-jni/         # Java + JNI + embedded Silicon Light scaffold
+
+native/
+└── silicon_light_v1/
+    ├── include/raf_silicon_light.h
+    ├── src/raf_silicon_light.c
+    ├── tests/test_silicon_light.c
+    └── Makefile
+```
+
+Evidence anchors:
+
+- RAFANDROID PR #521 → START #241 PASS → merge `f0c192d9...`.
+- Silicon Light PR #526 → START #263 PASS → merge `0fdfc8a0...`.
+
+The full recursive repository tree/count is still `TOKEN_VAZIO_REGEN_REQUIRED`; this supplement only closes the known navigation drift created by these two merged domains.
+
 ## Top-Level Layout
 
 ```
