@@ -104,6 +104,26 @@
             </intent-filter>
         </activity>
 
+        <!-- Clear post-install configuration wizard. No privileged operation is executed
+             merely by recording a wizard choice; provider mutations keep their own gates. -->
+        <activity
+            android:name=".SetupWizardActivity"
+            android:exported="true"
+            android:label="Raf Setup"
+            android:theme="@style/Theme.RafGitTools"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="rafgittools" android:host="setup" />
+            </intent-filter>
+        </activity>
+
         <!-- Direct Java control surface for Kiwi <-> APK <-> local model. -->
         <activity
             android:name=".bridge.RafBridgeActivity"
