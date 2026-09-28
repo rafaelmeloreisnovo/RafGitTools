@@ -1,0 +1,78 @@
+{
+  "schema":"rafgittools.knowledge-campus-logistics.v1",
+  "object_id":"GYM-MECHANICAL-POWERTRAIN-V1",
+  "kind":"GYMNASIUM",
+  "source_ref":"USER_CONCEPTUAL_DECOMPOSITION_2026-09-28",
+  "materialization_state":"IMPLEMENTED_UNTESTED",
+  "characteristics":[
+    {"name":"purpose","value":"multi-scale mechanical decomposition and relation exercise","unit":null,"epistemic_state":"DECISION"},
+    {"name":"operational_design_recipe","value":false,"unit":null,"epistemic_state":"DECISION"},
+    {"name":"hazardous_reactive_mix_ratios","value":"NOT_ENCODED","unit":null,"epistemic_state":"DECISION"}
+  ],
+  "relations":[
+    {"type":"CONTAINS","target":"SYS-POWERTRAIN","evidence_ref":null},
+    {"type":"CONTAINS","target":"SYS-THERMAL-MANAGEMENT","evidence_ref":null},
+    {"type":"CONTAINS","target":"SYS-FORCED-INDUCTION","evidence_ref":null},
+    {"type":"CONTAINS","target":"SYS-FUEL-AIR-OXIDIZER","evidence_ref":null},
+    {"type":"CONTAINS","target":"SYS-BALANCE-TORQUE-VIBRATION","evidence_ref":null}
+  ],
+  "evidence_refs":[],
+  "gaps":[
+    "EXACT_ENGINE_ARCHITECTURE",
+    "WATERMELON_TERM_IDENTITY",
+    "DOUBLAUER_TERM_IDENTITY",
+    "DIMENSIONAL_PARAMETERS",
+    "MATERIAL_PROPERTIES",
+    "THERMAL_LIMITS",
+    "SAFE_REACTIVE_MIX_BOUNDARIES"
+  ],
+  "routes":["SYSTEM_TO_SUBSYSTEM","SUBSYSTEM_TO_COMPONENT","COMPONENT_TO_PROPERTY","PROPERTY_TO_FUNCTION","FUNCTION_TO_INTERACTION","INTERACTION_TO_EVIDENCE"],
+  "hotness":{"tier":"WARM","access_count":0,"last_access":null,"score":0},
+  "systems":{
+    "SYS-POWERTRAIN":{
+      "components":[
+        "ENGINE_BLOCK","CYLINDER_HEAD","CRANKSHAFT","MAIN_BEARING","CONNECTING_ROD_BEARING","PISTON","PISTON_PIN","COMPRESSION_RING","OIL_CONTROL_RING","CONNECTING_ROD","CAMSHAFT","CAM_LOBE","VALVE","VALVE_SPRING","VALVE_GUIDE","VALVE_SEAT","TIMING_DRIVE","FLYWHEEL"
+      ]
+    },
+    "SYS-LUBRICATION":{
+      "components":[
+        "OIL_PUMP","PICKUP","FILTER","GALLERY","MAIN_BEARING_OIL_FEED","ROD_BEARING_OIL_FEED","PISTON_COOLING_JET","SUMP","PRESSURE_RELIEF"
+      ]
+    },
+    "SYS-THERMAL-MANAGEMENT":{
+      "components":[
+        "COOLANT_PASSAGES","WATER_PUMP","THERMOSTAT","RADIATOR","OIL_COOLER","INTERCOOLER","FUEL_TEMPERATURE_CONDITIONING","PISTON_CROWN_HEAT_PATH","CYLINDER_WALL_HEAT_PATH"
+      ]
+    },
+    "SYS-FORCED-INDUCTION":{
+      "components":[
+        "TURBOCHARGER","SUPERCHARGER","TWINCHARGING_CANDIDATE","COMPRESSOR","TURBINE","WASTEGATE","BYPASS","CHARGE_COOLING","INTAKE_MANIFOLD"
+      ]
+    },
+    "SYS-FUEL-AIR-OXIDIZER":{
+      "components":[
+        "FUEL_PUMP","INJECTOR","FUEL_RAIL","FUEL_TEMPERATURE_SENSOR","AIR_PATH","THROTTLE","OXYGEN_FRACTION_REFERENCE","HYDROGEN_CANDIDATE","OXYGEN_ENRICHMENT_CANDIDATE","NITROUS_OXIDE_CANDIDATE","WATER_METHANOL_INJECTION_CANDIDATE"
+      ],
+      "safety_boundary":"Conceptual relation nodes only; no reactive-gas or oxidizer mixing ratios, pressure recipes, ignition procedures or tuning instructions are encoded."
+    },
+    "SYS-GEOMETRY":{
+      "components":[
+        "BORE","STROKE","ROD_LENGTH","COMPRESSION_HEIGHT","PISTON_CROWN","DECK_CLEARANCE","COMBUSTION_CHAMBER","VALVE_AREA"
+      ],
+      "candidate_relation":"WIDER_BORE_SHORTER_STROKE"
+    },
+    "SYS-BALANCE-TORQUE-VIBRATION":{
+      "components":[
+        "PRIMARY_BALANCE","SECONDARY_BALANCE","TORSIONAL_VIBRATION","COUNTERWEIGHT","BALANCE_SHAFT","COUNTER_ROTATING_SHAFT_CANDIDATE","ROTATIONAL_INERTIA","REACTION_TORQUE"
+      ]
+    }
+  },
+  "relation_rules":[
+    "PART_DIMENSION != PERFORMANCE_CLAIM",
+    "COUNTER_ROTATION != AUTOMATIC_ZERO_TORQUE",
+    "BOOST != SAFE_POWER_GAIN",
+    "OXIDIZER_NODE != MIXTURE_RECIPE",
+    "THERMAL_CONDITIONING != SAFE_TEMPERATURE_SETPOINT",
+    "ANALOGY != FACT"
+  ]
+}
