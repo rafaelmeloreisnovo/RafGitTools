@@ -5,11 +5,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "START.yml"
+RIVER7_VALIDATOR = ROOT / "scripts" / "validate_river7_crossrepo_receipts.py"
 
 class ProviderEnvironmentWorkflowTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.text = WORKFLOW.read_text(encoding="utf-8")
+        cls.river7_validator = RIVER7_VALIDATOR.read_text(encoding="utf-8")
 
     def test_provider_environment_lane_is_bounded_to_manual_or_owner_main_one_shot(self):
         self.assertIn("- provider_environments", self.text)
@@ -38,8 +40,9 @@ class ProviderEnvironmentWorkflowTests(unittest.TestCase):
         self.assertIn("test_river7_*.py", self.text)
         self.assertIn("simulate_burst_erasure.py", self.text)
         self.assertIn("RIVER7_BURST_ERASURE_PLACEMENT_CROSSREPO_RECEIPT.json", self.text)
-        self.assertIn("search_space_permutations", self.text)
-        self.assertIn("[0, 1, 2, 5, 4, 6, 3]", self.text)
+        self.assertIn("scripts/validate_river7_crossrepo_receipts.py", self.text)
+        self.assertIn("search_space_permutations", self.river7_validator)
+        self.assertIn("[0, 1, 2, 5, 4, 6, 3]", self.river7_validator)
 
     def test_no_pat_fallback_is_present(self):
         self.assertNotIn("secrets.PAT_ENV ||", self.text)
