@@ -81,6 +81,10 @@ jobs:
       release: ${{ steps.route.outputs.release }}
       provider_environments: ${{ steps.route.outputs.provider_environments }}
       provider_operation: ${{ steps.route.outputs.provider_operation }}
+      provider_actions: ${{ steps.route.outputs.provider_actions }}
+      provider_actions_repository: ${{ steps.route.outputs.provider_actions_repository }}
+      provider_actions_sha: ${{ steps.route.outputs.provider_actions_sha }}
+      provider_actions_task: ${{ steps.route.outputs.provider_actions_task }}
     steps:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -104,6 +108,10 @@ jobs:
           release=false
           provider_environments=false
           provider_operation="${REQUESTED_PROVIDER_OPERATION:-preflight}"
+          provider_actions=false
+          provider_actions_repository=""
+          provider_actions_sha=""
+          provider_actions_task=""
 
           case "${GITHUB_EVENT_NAME}" in
             schedule)
@@ -164,6 +172,37 @@ jobs:
               provider_environments=true
               provider_operation=apply_main_protection
             fi
+            if [[ "${GITHUB_EVENT_NAME}" == push && "${GITHUB_REF}" == refs/heads/main ]] &&
+               grep -Fxq 'configs/provider-actions-preflight.once.json' <<<"$changed"; then
+              [[ "$provider_environments" == false ]] || {
+                echo "::error::provider actions one-shot cannot share a commit with provider environment mutation"
+                exit 2
+              }
+              operation="$(python3 -c "import json,pathlib; print(json.loads(pathlib.Path('configs/provider-actions-preflight.once.json').read_text(encoding='utf-8')).get('operation',''))")"
+              target_repo="$(python3 -c "import json,pathlib; print(json.loads(pathlib.Path('configs/provider-actions-preflight.once.json').read_text(encoding='utf-8')).get('target_repository',''))")"
+              target_sha="$(python3 -c "import json,pathlib; print(json.loads(pathlib.Path('configs/provider-actions-preflight.once.json').read_text(encoding='utf-8')).get('target_commit',''))")"
+              target_task="$(python3 -c "import json,pathlib; print(json.loads(pathlib.Path('configs/provider-actions-preflight.once.json').read_text(encoding='utf-8')).get('task',''))")"
+              [[ "$operation" == exact_commit_read_and_test ]] || {
+                echo "::error::provider actions one-shot only permits exact_commit_read_and_test"
+                exit 2
+              }
+              [[ "$target_repo" == rafaelmeloreisnovo/ChipQuantum ]] || {
+                echo "::error::unexpected provider actions target repository"
+                exit 2
+              }
+              [[ "$target_sha" =~ ^[0-9a-f]{40}$ ]] || {
+                echo "::error::provider actions target must be an exact lowercase SHA"
+                exit 2
+              }
+              [[ "$target_task" == river7_offline ]] || {
+                echo "::error::unsupported provider actions task"
+                exit 2
+              }
+              provider_actions=true
+              provider_actions_repository="$target_repo"
+              provider_actions_sha="$target_sha"
+              provider_actions_task="$target_task"
+            fi
           fi
 
           case "$mode" in
@@ -219,6 +258,10 @@ jobs:
             echo "release=$release"
             echo "provider_environments=$provider_environments"
             echo "provider_operation=$provider_operation"
+            echo "provider_actions=$provider_actions"
+            echo "provider_actions_repository=$provider_actions_repository"
+            echo "provider_actions_sha=$provider_actions_sha"
+            echo "provider_actions_task=$provider_actions_task"
           } >> "$GITHUB_OUTPUT"
 
           {
@@ -232,6 +275,10 @@ jobs:
             echo "- release: \`$release\`"
             echo "- provider_environments: \`$provider_environments\`"
             echo "- provider_operation: \`$provider_operation\`"
+            echo "- provider_actions: \`$provider_actions\`"
+            echo "- provider_actions_repository: \`${provider_actions_repository:-TOKEN_VAZIO}\`"
+            echo "- provider_actions_sha: \`${provider_actions_sha:-TOKEN_VAZIO}\`"
+            echo "- provider_actions_task: \`${provider_actions_task:-TOKEN_VAZIO}\`"
             echo '- claim_allowed: `false`'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -664,6 +711,111 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+  provider_actions:
+    name: '08A · Provider actions / exact cross-repo read-only'
+    needs: [plan, coherence]
+    if: >-
+      ${{
+        needs.plan.outputs.provider_actions == 'true' &&
+        needs.coherence.result == 'success' &&
+        github.event_name == 'push' &&
+        github.ref == 'refs/heads/main' &&
+        github.actor == 'rafaelmeloreisnovo'
+      }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    env:
+      PROVIDER_ACTIONS_TOKEN: ${{ secrets.PAT_ACTIONS }}
+      TARGET_REPOSITORY: ${{ needs.plan.outputs.provider_actions_repository }}
+      TARGET_SHA: ${{ needs.plan.outputs.provider_actions_sha }}
+      TARGET_TASK: ${{ needs.plan.outputs.provider_actions_task }}
+    steps:
+      - name: Checkout RafGitTools authority
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Validate actions capability routing
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/validate_provider_capability_environments.py configs/provider-capability-environments.v1.json
+          [[ -n "${PROVIDER_ACTIONS_TOKEN:-}" ]] || {
+            echo '::error::PAT_ACTIONS repository secret is unavailable'
+            exit 3
+          }
+          [[ "$TARGET_REPOSITORY" == rafaelmeloreisnovo/ChipQuantum ]]
+          [[ "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$TARGET_TASK" == river7_offline ]]
+      - name: Prove least-privilege private source access
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          python3 scripts/private_provider_access_gate.py \
+            --repo "$TARGET_REPOSITORY" \
+            --commit "$TARGET_SHA" \
+            --token-env PROVIDER_ACTIONS_TOKEN \
+            --receipt artifacts/private-provider-access-receipt.json
+      - name: Checkout exact target commit read-only
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.TARGET_REPOSITORY }}
+          ref: ${{ env.TARGET_SHA }}
+          token: ${{ secrets.PAT_ACTIONS }}
+          path: target
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify immutable target identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          observed="$(git -C target rev-parse HEAD)"
+          [[ "$observed" == "$TARGET_SHA" ]] || {
+            echo '::error::target checkout SHA mismatch'
+            exit 4
+          }
+      - name: Execute bounded RIVER-7 offline validator
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$TARGET_TASK" == river7_offline ]] || exit 2
+          (
+            cd target
+            python3 -m unittest -v tests/test_river7_erasure_743.py
+            python3 experiments/river7_dual_transport/simulate_linear_erasure_743.py \
+              > ../artifacts/RIVER7_LINEAR_ERASURE_743_CROSSREPO_RECEIPT.json
+          )
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path('artifacts/RIVER7_LINEAR_ERASURE_743_CROSSREPO_RECEIPT.json')
+          receipt = json.loads(path.read_text(encoding='utf-8'))
+          assert receipt['state'] == 'SIMULATION_PASS'
+          assert receipt['physical_network_state'] == 'NOT_RUN'
+          assert receipt['network_io'] == 'NONE'
+          assert receipt['sockets'] == 'NONE'
+          assert receipt['timing_channel_transmission'] == 'DISABLED'
+          assert receipt['claim_allowed'] is False
+          assert receipt['code']['minimum_distance'] == 3
+          assert receipt['code']['guaranteed_erasure_correction'] == 2
+          assert receipt['erasure_matrix']['2']['failures'] == 0
+          assert receipt['erasure_matrix']['3']['failures'] == 7
+          print('PASS: exact-SHA cross-repo RIVER-7 offline validation')
+          PY
+      - name: Upload provider actions evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: start-08a-provider-actions-${{ github.run_id }}
+          path: |
+            artifacts/private-provider-access-receipt.json
+            artifacts/RIVER7_LINEAR_ERASURE_743_CROSSREPO_RECEIPT.json
+          if-no-files-found: error
+          retention-days: 90
   provider_environments:
     name: '08P · Provider environments / main enforcement'
     needs: [plan, coherence]
@@ -906,7 +1058,7 @@ jobs:
 
   receipt:
     name: '09 · Final receipt / fechamento'
-    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_environments, release]
+    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_actions, provider_environments, release]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -919,6 +1071,7 @@ jobs:
       DOCS_RESULT: ${{ needs.docs.result }}
       ANDROID_RESULT: ${{ needs.android.result }}
       SECURITY_RESULT: ${{ needs.security.result }}
+      PROVIDER_ACTIONS_RESULT: ${{ needs.provider_actions.result }}
       PROVIDER_ENVIRONMENTS_RESULT: ${{ needs.provider_environments.result }}
       RELEASE_RESULT: ${{ needs.release.result }}
       ROUTE_MODE: ${{ needs.plan.outputs.mode }}
@@ -939,6 +1092,7 @@ jobs:
               'docs': os.environ['DOCS_RESULT'],
               'android': os.environ['ANDROID_RESULT'],
               'security': os.environ['SECURITY_RESULT'],
+              'provider_actions': os.environ['PROVIDER_ACTIONS_RESULT'],
               'provider_environments': os.environ['PROVIDER_ENVIRONMENTS_RESULT'],
               'release': os.environ['RELEASE_RESULT'],
           }
