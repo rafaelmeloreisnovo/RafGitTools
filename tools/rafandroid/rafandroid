@@ -127,12 +127,30 @@ count_dirs(){
   find "$p" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | wc -l | tr -d ' '
 }
 
+count_unique_existing_dirs(){
+  local seen="|" p real count=0
+  for p in "$@"; do
+    [[ -n "$p" && -d "$p" ]] || continue
+    real="$(cd "$p" 2>/dev/null && pwd -P || printf '%s' "$p")"
+    [[ "$seen" == *"|$real|"* ]] && continue
+    seen="$seen$real|"
+    count=$((count+1))
+  done
+  printf '%s\n' "$count"
+}
+
+count_gradle_pattern(){
+  local pattern="$1" n=0 f
+  while IFS= read -r f; do
+    n=$((n + $(grep -Ec "$pattern" "$f" 2>/dev/null || true)))
+  done < <(find "$REPO_ROOT" -maxdepth 4 -type f \( -name 'build.gradle' -o -name 'build.gradle.kts' \) -print 2>/dev/null)
+  printf '%s\n' "$n"
+}
+
 cmd_shadow(){
   context
-  local sdk_roots=0 p bt_count ndk_count ct_count gradle_sources=0
-  for p in "${ANDROID_SDK_ROOT:-}" "${ANDROID_HOME:-}" "/usr/local/lib/android/sdk" "/opt/android-sdk" "$HOME/Android/Sdk"; do
-    [[ -n "$p" && -d "$p" ]] && sdk_roots=$((sdk_roots+1))
-  done
+  local sdk_roots p bt_count ndk_count ct_count gradle_sources=0
+  sdk_roots="$(count_unique_existing_dirs "${ANDROID_SDK_ROOT:-}" "${ANDROID_HOME:-}" "/usr/local/lib/android/sdk" "/opt/android-sdk" "$HOME/Android/Sdk")"
   bt_count="$(count_dirs "$SDK/build-tools")"
   ndk_count="$(count_dirs "$SDK/ndk")"
   ct_count="$(count_dirs "$SDK/cmdline-tools")"
@@ -145,6 +163,52 @@ cmd_shadow(){
   say "cmdline_tools_versions=$ct_count"
   say "gradle_entrypoints=$gradle_sources"
   if [[ "$sdk_roots" -le 1 && "$gradle_sources" -le 1 ]]; then say "shadow_state=LOW"; else say "shadow_state=REVIEW"; fi
+  say "claim_allowed=false"
+}
+
+cmd_tails(){
+  local androidx codegen shrink native compose
+  androidx="$(count_gradle_pattern 'androidx[.:]')"
+  codegen="$(count_gradle_pattern '(^|[^A-Za-z])(ksp|kapt|annotationProcessor)([^A-Za-z]|$)')"
+  shrink="$(count_gradle_pattern 'minifyEnabled[[:space:]]+true|isMinifyEnabled[[:space:]]*=[[:space:]]*true|shrinkResources[[:space:]]+true')"
+  native="$(count_gradle_pattern 'externalNativeBuild|cmake[[:space:]]*[{(]')"
+  compose="$(count_gradle_pattern 'compose[[:space:]]+true|buildFeatures[[:space:]]*{[^}]*compose|androidx\.compose')"
+  say "RAFANDROID_TAIL_REPORT_V1"
+  say "androidx_refs=$androidx"
+  say "codegen_refs=$codegen"
+  say "shrink_refs=$shrink"
+  say "native_build_refs=$native"
+  say "compose_refs=$compose"
+  say "tail_state=INVENTORY_ONLY"
+  say "claim_allowed=false"
+}
+
+cmd_friction(){
+  context
+  local missing=0 t p sdk_roots gradle_sources=0
+  [[ -n "$SDK" ]] || missing=$((missing+1))
+  [[ -n "$NDK" ]] || missing=$((missing+1))
+  [[ -n "$BT" ]] || missing=$((missing+1))
+  [[ -n "$GRADLE" ]] || missing=$((missing+1))
+  for t in java javac cmake ninja aapt2 d8 apksigner zipalign; do
+    p="$(resolve_tool "$t" "$SDK" "$BT" "$CT" "$NDK" 2>/dev/null || true)"
+    [[ -n "$p" ]] || missing=$((missing+1))
+  done
+  sdk_roots="$(count_unique_existing_dirs "${ANDROID_SDK_ROOT:-}" "${ANDROID_HOME:-}" "/usr/local/lib/android/sdk" "/opt/android-sdk" "$HOME/Android/Sdk")"
+  [[ -f "$REPO_ROOT/gradlew" ]] && gradle_sources=$((gradle_sources+1))
+  have gradle && gradle_sources=$((gradle_sources+1))
+  say "RAFANDROID_FRICTION_REPORT_V1"
+  say "hard_blockers=$missing"
+  say "sdk_root_candidates=$sdk_roots"
+  say "gradle_entrypoints=$gradle_sources"
+  if [[ "$missing" -gt 0 ]]; then
+    say "friction_state=BLOCKED"
+  elif [[ "$sdk_roots" -gt 1 || "$gradle_sources" -gt 1 ]]; then
+    say "friction_state=REVIEW_SHADOWS"
+  else
+    say "friction_state=LOW_OBSERVED"
+  fi
+  say "numeric_score=TOKEN_VAZIO_UNCALIBRATED"
   say "claim_allowed=false"
 }
 
@@ -378,7 +442,7 @@ usage(){
   cat <<'EOF'
 rafandroid — RAFAELIA Android Toolchain Shell
 
-probe | shadow | graph | bind | env | provision-plan | androidx | qemu | receipt
+probe | shadow | tails | friction | graph | bind | env | provision-plan | androidx | qemu | receipt
 gradle <tasks...>
 tool <sdkmanager|aapt2|aidl|d8|r8|dexdump|apkanalyzer|apksigner|zipalign|adb|emulator|clang|llvm-nm|...> [args...]
 native-gate <c-source> [api=29] [abi=both]
@@ -396,6 +460,8 @@ cmd="${1:-help}"; shift || true
 case "$cmd" in
   probe) cmd_probe "$@" ;;
   shadow) cmd_shadow "$@" ;;
+  tails) cmd_tails "$@" ;;
+  friction) cmd_friction "$@" ;;
   graph) cmd_graph "$@" ;;
   bind) cmd_bind "$@" ;;
   env) cmd_env "$@" ;;
