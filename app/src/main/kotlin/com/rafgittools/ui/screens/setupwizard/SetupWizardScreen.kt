@@ -2,7 +2,6 @@ package com.rafgittools.ui.screens.setupwizard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -118,26 +117,22 @@ fun SetupWizardScreen(
             Text("Decidir depois")
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        OutlinedButton(
+            onClick = { if (index > 0) index -= 1 },
+            enabled = index > 0,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            OutlinedButton(
-                onClick = { if (index > 0) index -= 1 },
-                enabled = index > 0,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("Voltar")
-            }
-            OutlinedButton(
-                onClick = {
-                    ledger.append("WIZARD", null, "REVIEW")
-                    index = 0
-                },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("Revisar do início")
-            }
+            Text("Voltar")
+        }
+
+        OutlinedButton(
+            onClick = {
+                ledger.append("WIZARD", null, "REVIEW")
+                index = 0
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Revisar do início")
         }
 
         if (index == steps.lastIndex) {
