@@ -40,7 +40,13 @@ int main(void) {
     }
 
     if (raf_sl_q16_mul(65536, 32768) != 32768) {
-        return fail("q16");
+        return fail("q16 positive");
+    }
+    if (raf_sl_q16_mul(-65536, 32768) != -32768) {
+        return fail("q16 negative");
+    }
+    if (raf_sl_q16_mul(2147483647, 131072) != 2147483647) {
+        return fail("q16 saturation");
     }
 
     puts("SILICON_LIGHT_SELFTEST=PASS");
