@@ -35,7 +35,7 @@ Silicon Light provides an L0 freestanding substrate with no system headers, allo
 
 Canonical reconciliation detail: `docs/audit/SESSION_RECONCILIATION_RAFANDROID_SILICON_LIGHT_20260928.md`.
 
-## 2026-09-18 controlling delta
+## Historical 2026-09-18 controlling delta
 
 Observed main is `2e69dae6d45dd23c6252eee9b42cd230d1bd6bac`. Candidate branch is `audit/drive-github-responsive-delivery-20260918`.
 
