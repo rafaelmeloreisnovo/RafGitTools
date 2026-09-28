@@ -36,13 +36,14 @@ on:
         default: false
         type: boolean
       provider_operation:
-        description: 'PAT_environments operation; preflight is read-only'
+        description: 'Pat_environments / PAT_ENV provider operation'
         required: false
         default: preflight
         type: choice
         options:
           - preflight
           - apply_main_protection
+          - rollback_main_protection
       provider_expected_main_sha:
         description: 'Optional exact main SHA guard; defaults to workflow-dispatch SHA'
         required: false
@@ -149,6 +150,20 @@ jobs:
               provider_environments=true
               provider_operation=preflight
             fi
+            if [[ "${GITHUB_EVENT_NAME}" == push && "${GITHUB_REF}" == refs/heads/main ]] &&
+               grep -Fxq 'configs/provider-enforcement-stage1.once.json' <<<"$changed"; then
+              [[ "$provider_environments" == false ]] || {
+                echo "::error::multiple provider one-shot triggers changed in one commit"
+                exit 2
+              }
+              operation="$(python3 -c "import json,pathlib; print(json.loads(pathlib.Path('configs/provider-enforcement-stage1.once.json').read_text(encoding='utf-8')).get('operation',''))")"
+              [[ "$operation" == apply_main_protection ]] || {
+                echo "::error::stage1 one-shot trigger only permits apply_main_protection"
+                exit 2
+              }
+              provider_environments=true
+              provider_operation=apply_main_protection
+            fi
           fi
 
           case "$mode" in
@@ -178,7 +193,7 @@ jobs:
                 exit 2
               fi
               case "${REQUESTED_PROVIDER_OPERATION:-preflight}" in
-                preflight|apply_main_protection) ;;
+                preflight|apply_main_protection|rollback_main_protection) ;;
                 *)
                   echo "::error::unsupported provider operation: ${REQUESTED_PROVIDER_OPERATION}"
                   exit 2
@@ -631,7 +646,10 @@ jobs:
             github.event_name == 'push' &&
             github.ref == 'refs/heads/main' &&
             github.actor == 'rafaelmeloreisnovo' &&
-            needs.plan.outputs.provider_operation == 'preflight'
+            (
+              needs.plan.outputs.provider_operation == 'preflight' ||
+              needs.plan.outputs.provider_operation == 'apply_main_protection'
+            )
           )
         )
       }}
@@ -670,10 +688,13 @@ jobs:
               echo "::error::unexpected actor for one-shot preflight: ${GITHUB_ACTOR}"
               exit 2
             }
-            [[ "${REQUESTED_PROVIDER_OPERATION}" == preflight ]] || {
-              echo '::error::push-triggered provider lane is preflight-only'
-              exit 2
-            }
+            case "${REQUESTED_PROVIDER_OPERATION}" in
+              preflight|apply_main_protection) ;;
+              *)
+                echo "::error::push-triggered provider lane rejected operation: ${REQUESTED_PROVIDER_OPERATION}"
+                exit 2
+                ;;
+            esac
           elif [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch ]]; then
             echo '::error::provider environment job requires workflow_dispatch or bounded main preflight'
             exit 2
@@ -697,13 +718,24 @@ jobs:
             --repo "${GITHUB_REPOSITORY}"
             --branch main
             --expected-main-sha "$expected"
-            --plan contracts/MAIN_PROVIDER_ENFORCEMENT_PLAN_20260907.v3.json
+            --plan contracts/MAIN_PROVIDER_ENFORCEMENT_PLAN_20260927.v4.json
             --receipt artifacts/provider-main-enforcement.json
             --token-env PROVIDER_TOKEN
           )
-          if [[ "${REQUESTED_PROVIDER_OPERATION}" == apply_main_protection ]]; then
-            args+=(--apply)
-          fi
+          case "${REQUESTED_PROVIDER_OPERATION}" in
+            apply_main_protection)
+              args+=(--apply)
+              ;;
+            rollback_main_protection)
+              args+=(--rollback)
+              ;;
+            preflight)
+              ;;
+            *)
+              echo "::error::unsupported provider operation: ${REQUESTED_PROVIDER_OPERATION}"
+              exit 2
+              ;;
+          esac
           python3 scripts/apply_rafgittools_main_protection.py "${args[@]}"
       - name: Upload provider enforcement receipt
         if: always()
