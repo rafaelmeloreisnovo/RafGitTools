@@ -68,3 +68,11 @@ The UI uses normal headline/body typography for material information. Risk, data
 ## F_next
 
 Compile and test the source, inspect the APK activity entry, launch the wizard on a device/emulator, and only then consider making it the automatic first-launch experience.
+
+## Explicit completion gate
+
+The wizard cannot be marked completed until every step has one explicit state: **Concordo**, **Não concordo**, or **Decidir depois**. Reaching the last screen is not consent.
+
+## Effective capability explanation
+
+The identity/access step names the current governed PAT capability set — `PAT_ACTIONS`, `PAT_AGENTS`, `PAT_CODESPACES`, `PAT_DEPENDABOT`, and `PAT_ENV` — and explains each current state without exposing secret values or treating the existence of a secret as permission proof.
