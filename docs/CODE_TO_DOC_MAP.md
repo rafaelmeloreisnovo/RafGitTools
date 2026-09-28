@@ -1,7 +1,7 @@
 # Mapa código → documentação
 
-**Observed base:** `main@2e69dae6d45dd23c6252eee9b42cd230d1bd6bac`  
-**Updated:** 2026-09-18  
+**Observed base:** `main@8af97a580e535d2015e8211000850e282b031763`  
+**Updated:** 2026-09-28  
 **Role:** semantic routing, not exhaustive tree inventory.
 
 ```text
@@ -92,6 +92,17 @@ The validator recognizes evidence levels from `TOKEN_VAZIO` through `INDEPENDENT
 | `rafgitfs/write/RafGitFsGithubBranchWriter.kt` | `RAFGITFS_ARCHITECTURE_V1.md` + bridge architecture | branch/commit/push/draft PR + rollback source present |
 | recipient binding action | development/delivery map | `TOKEN_VAZIO_EXPLICIT_TARGET_REQUIRED` |
 
+## RAFANDROID / Silicon Light low-level route
+
+| Source surface | Documentation route | State |
+|---|---|---|
+| `tools/rafandroid/rafandroid` | `RAFANDROID_METHOD_V1.md`, `tools/rafandroid/README.md`, session reconciliation | `MERGED / VERIFIED_LIMITED`; PR #521 START #241 PASS |
+| `tools/rafandroid/toolchain.lock.json` | RAFANDROID method + build docs | explicit toolchain/stage contract; no runtime promotion |
+| `tools/rafandroid/templates/minimal-jni/` | RAFANDROID README + Silicon Light architecture | generated Java/JNI/L0 fixture PASS in PR #526 |
+| `native/silicon_light_v1/` | `architecture/SILICON_LIGHT_LOWLEVEL_V1.md`, module README | `MERGED / VERIFIED_LIMITED`; host + NDK ARMv7/AArch64 + fixture PASS |
+| `.github/workflows/START.yml` RAFANDROID/Silicon gates | `ci/START_PIPELINE_V1.md` | canonical single-root execution path |
+| `data/evidence/github/silicon-light-l0-local-validation-20260928.v1.json` | session reconciliation | historical/scoped precursor evidence; superseded for CI promotion by START #263 |
+
 ## Native/JNI/external runtime
 
 | Source surface | Documentation route | State |
@@ -136,6 +147,6 @@ Do not use `implemented`, `complete`, percentages or feature counts as evidence 
 
 ## R3
 
-- **F_ok:** code→docs routing now includes Repository Governance and FNEXT receipt validation and removes obsolete GPG-as-stub wording.
+- **F_ok:** code→docs routing includes Repository Governance, FNEXT, RAFANDROID and Silicon Light with revision-bound routes.
 - **F_gap:** a recursive current-head semantic inventory/count remains `TOKEN_VAZIO_RECOUNT_REQUIRED` until the repository tooling is run against the exact revision.
 - **F_next:** every new source domain must enter this map or explicitly carry `TOKEN_VAZIO_DOC_ROUTE`.
