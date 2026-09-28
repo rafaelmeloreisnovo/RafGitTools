@@ -1,0 +1,166 @@
+{
+  "schema": "rafgittools.live-operational-contract.v1",
+  "version": "1.0.0",
+  "authority": "rafaelmeloreisnovo/RafGitTools",
+  "mode": "FAIL_CLOSED_REVERSIBLE_EVIDENCE_FIRST",
+  "purpose": "Turn each operational response into a bounded state transition that preserves provenance, exposes gaps, reduces avoidable risk, and leaves a reconstructible next state.",
+  "custody_reference": {
+    "path": "contracts/custody-taxonomy-v1.json",
+    "relation": "LOCAL_EXECUTION_POLICY_REFERENCES_EXISTING_CUSTODY_TAXONOMY",
+    "rule": "This contract does not replace custody authority and must not promote documentation, orchestration or coherence into execution evidence."
+  },
+  "invariants": [
+    "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "TOKEN_VAZIO != 0",
+    "IMPLEMENTED_UNTESTED != PASS",
+    "inference != fact",
+    "context_growth != evolution",
+    "authorization != execution_evidence",
+    "coherence != claim_evidence",
+    "missing_evidence blocks claim promotion",
+    "critical_action_requires_owner_metric_risk_mitigation_rollback",
+    "standardize_before_automate",
+    "measure_before_optimize",
+    "validate_before_scale"
+  ],
+  "semantic_sentinels": {
+    "TOKEN_VAZIO": {
+      "meaning": "Expected semantic field exists but no value has been established by an authoritative source or sufficient evidence.",
+      "distinct_from": [
+        "0",
+        "false",
+        "FAIL",
+        "NOT_RUN",
+        "PENDING",
+        "implicit_unknown"
+      ],
+      "claim_effect": "NO_PROMOTION"
+    }
+  },
+  "classification": [
+    "FACT",
+    "INFERENCE",
+    "HYPOTHESIS",
+    "DECISION",
+    "GAP"
+  ],
+  "state_model": {
+    "name": "S_n",
+    "required_fields": [
+      "SOURCE",
+      "AUTHORITY",
+      "ARTIFACT",
+      "EXECUTION_TARGET",
+      "EXECUTION",
+      "EVIDENCE_RULE",
+      "EVIDENCE",
+      "CLAIM",
+      "GAPS",
+      "ROUTES"
+    ],
+    "unknown_required_value": "TOKEN_VAZIO",
+    "rule": "Never fill a required unknown by narrative inference."
+  },
+  "transition_model": {
+    "input": [
+      "S_n",
+      "INTENT_n"
+    ],
+    "output": [
+      "ANSWER_n",
+      "ATLAS_DELTA_n",
+      "S_n_plus_1",
+      "R3_n"
+    ],
+    "equation": "T(S_n, INTENT_n) -> <ANSWER_n, ATLAS_DELTA_n, S_n_plus_1, R3_n>",
+    "material_delta_rule": "If no material state, evidence, decision, relation, risk or gap changed, do not claim evolution."
+  },
+  "pre_execution_gate": {
+    "required": [
+      "SOURCE",
+      "AUTHORITY",
+      "EXECUTION_TARGET",
+      "EVIDENCE_RULE"
+    ],
+    "on_missing": {
+      "ROUTE_STATE": "ROUTE_STATE_BLOCKED",
+      "EXECUTION": "NOT_RUN",
+      "CLAIM_ALLOWED": false,
+      "missing_field_value": "TOKEN_VAZIO"
+    }
+  },
+  "evolution_gate": {
+    "accept_requires": [
+      "all_invariants_preserved",
+      "delta_is_reconstructible",
+      "delta_has_provenance",
+      "at_least_one_operational_gain"
+    ],
+    "operational_gain": [
+      "risk_reduction",
+      "uncertainty_reduction",
+      "avoidable_cost_reduction",
+      "reconstructibility_increase",
+      "evidence_strength_increase",
+      "routing_precision_increase"
+    ],
+    "reject_if": [
+      "unmitigated_high_risk",
+      "claim_promotion_without_gate",
+      "silent_gap_filling",
+      "irreversible_change_without_explicit_need",
+      "automation_of_unstandardized_process"
+    ]
+  },
+  "response_contract": {
+    "sections": [
+      "EXECUTIVE_SUMMARY",
+      "ACTION_PLAN",
+      "RISK_MATRIX",
+      "MARKED_GAPS",
+      "ATLAS_DELTA",
+      "NEXT_CYCLE"
+    ],
+    "rule": "Required unknown values are TOKEN_VAZIO; do not invent owners, deadlines, metrics, evidence or risk facts merely to fill the format.",
+    "action_fields": [
+      "step",
+      "owner",
+      "deadline",
+      "metric",
+      "state"
+    ],
+    "risk_fields": [
+      "risk",
+      "probability",
+      "impact",
+      "mitigation",
+      "rollback"
+    ]
+  },
+  "safe_excellence": [
+    "safety_by_design",
+    "SOP_for_repeatable_tasks",
+    "double_check_critical_points",
+    "logs_audit_versioning",
+    "fail_safe_default",
+    "rollback_when_possible",
+    "premortem_before_critical_change",
+    "postmortem_after_material_failure"
+  ],
+  "claim_gate": {
+    "claim_allowed_default": false,
+    "rule": "Evidence must be sufficient for the exact claim and scale; evidence in one scale or domain does not promote a claim in another without a verifiable bridge."
+  },
+  "stop_conditions": [
+    "high_risk_without_mitigation",
+    "insufficient_data_for_required_decision",
+    "security_or_compliance_conflict",
+    "missing_pre_execution_gate_field"
+  ],
+  "completion_condition": "INTENT and AUTHORITY and SOURCE and EXECUTION_OR_EVIDENCE_STATE and GAP and RECEIPT_OR_RECORD_STATE and NEXT are determined.",
+  "r3": {
+    "F_ok": "observed or completed state with bounded evidence",
+    "F_gap": "explicit uncertainty, conflict, missing source or missing evidence",
+    "F_next": "smallest reversible verifiable next step with highest expected operational value"
+  }
+}
