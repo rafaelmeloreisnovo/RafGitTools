@@ -1,0 +1,67 @@
+{
+  "schema": "rafaelia.session-full-dispatch-adapter.v1",
+  "version": "1.0.0",
+  "authority": "rafaelmeloreisnovo/RafGitTools",
+  "federated_authority": "rafaelmeloreisnovo/Mapa",
+  "upstream": {
+    "repository": "rafaelmeloreisnovo/Mapa",
+    "branch": "dispatch/session-full-fractal-20260928",
+    "atlas_path": "data/dispatch/session_full_20260928/atlas.v1.json",
+    "orders_path": "data/dispatch/session_full_20260928/agent_work_orders.v1.json",
+    "routes_path": "data/dispatch/session_full_20260928/routes.v1.jsonl",
+    "expected_head": "c2c9a49c03aba8dfec1e014ce0344df05b3f35f1"
+  },
+  "local_scope": {
+    "owned_workstreams": [
+      "WS01",
+      "WS03",
+      "WS10"
+    ],
+    "supporting_workstreams": [
+      "WS04",
+      "WS08"
+    ],
+    "forbidden_workstreams": [
+      "WS02_PRIVATE_BODY"
+    ],
+    "private_body_policy": "REFERENCE_ONLY",
+    "secret_policy": "NO_RAW_SECRET_MATERIAL"
+  },
+  "preflight_required": [
+    "SOURCE",
+    "AUTHORITY",
+    "EXECUTION_TARGET",
+    "EVIDENCE_RULE"
+  ],
+  "local_routes": [
+    {
+      "workstream": "WS01",
+      "entry": "GitHub CI/provider/problem report",
+      "action": "smallest reversible branch-only correction",
+      "evidence": "exact run/job/ref + re-run",
+      "rollback": "revert branch commit"
+    },
+    {
+      "workstream": "WS03",
+      "entry": "orchestration/templo_vivo_arc",
+      "action": "visual anchor and public pointer contract only",
+      "evidence": "hashes/tests/receipt",
+      "rollback": "revert branch commit"
+    },
+    {
+      "workstream": "WS10",
+      "entry": "this adapter",
+      "action": "route one Mapa work order into local executor semantics",
+      "evidence": "validator/test/PR",
+      "rollback": "revert branch commit"
+    }
+  ],
+  "invariants": [
+    "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "TOKEN_VAZIO != 0",
+    "IMPLEMENTED_UNTESTED != PASS",
+    "Mapa routing authority is not duplicated locally",
+    "model proposal != write permission"
+  ],
+  "claim_allowed": false
+}
