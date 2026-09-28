@@ -58,6 +58,9 @@ def validate(data: dict) -> list[str]:
                 errors.append(f"{step.get('id')}: missing {field}")
 
     catalog = CATALOG.read_text(encoding="utf-8")
+    for capability in ("PAT_ACTIONS", "PAT_AGENTS", "PAT_CODESPACES", "PAT_DEPENDABOT", "PAT_ENV"):
+        if capability not in catalog:
+            errors.append(f"catalog missing capability explanation: {capability}")
     for step_id in EXPECTED_STEPS:
         if f'id = "{step_id}"' not in catalog:
             errors.append(f"catalog missing step: {step_id}")
@@ -77,6 +80,8 @@ def validate(data: dict) -> list[str]:
         "Rollback",
         "Regra Zero Trust",
         "Sair sem executar ações externas",
+        "enabled = allStepsDecided",
+        "Antes de concluir, registre uma escolha em cada passo",
     ):
         if required not in screen:
             errors.append(f"screen clarity control missing: {required}")
