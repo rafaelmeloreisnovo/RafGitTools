@@ -105,3 +105,61 @@ jobs:
             app/build/outputs/apk/dev/debug/BUILD_RECEIPT.sha256
           if-no-files-found: error
           retention-days: 30
+
+
+  artifact-rebuild:
+    name: Rebuild known-good APK artifact
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Configure Java 17
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Configure Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        with:
+          packages: ""
+
+      - name: Assemble old-source devDebug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDevDebug --stacktrace
+
+      - name: Verify APK identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find app/build/outputs/apk/dev/debug -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          test -s "$APK"
+          sha256sum "$APK" | tee app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+          python3 scripts/runtime/write_android_build_receipt.py \
+            --apk "$APK" \
+            --output app/build/outputs/apk/dev/debug/BUILD_RECEIPT.json \
+            --commit "$GITHUB_SHA" \
+            --variant devDebug \
+            --workflow-run-id "$GITHUB_RUN_ID" \
+            --workflow-run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --require-artifact-pass
+
+      - name: Upload rebuilt APK
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: RafGitTools-known-good-rebuild-${{ github.run_id }}
+          path: |
+            app/build/outputs/apk/dev/debug/*.apk
+            app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+            app/build/outputs/apk/dev/debug/BUILD_RECEIPT.json
+          if-no-files-found: error
+          retention-days: 30
