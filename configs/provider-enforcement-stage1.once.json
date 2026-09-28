@@ -13,5 +13,14 @@
   "independent_review_required": false,
   "required_approving_reviews": 0,
   "one_shot": true,
+  "retry_evidence": {
+    "supersedes_cancelled_push_run": 36363833345,
+    "cancelled_run_head_sha": "df16e6dd19c5d8e0350c66b78dbb3edae9ed642c",
+    "cancelled_run_conclusion": "cancelled",
+    "cancelled_run_jobs_observed": 0,
+    "current_main_observed_sha": "74f4b5b66469bcfe16aee5253a4ea5d985bce841",
+    "branch_protection_observed": false,
+    "reason": "Stage-1 merge push did not reach provider enforcement before a subsequent main push; protection remained absent. Updating this exact one-shot file intentionally re-arms the bounded main-push route."
+  },
   "claim_allowed": false
 }
