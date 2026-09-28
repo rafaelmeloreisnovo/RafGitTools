@@ -1,0 +1,158 @@
+{
+  "schema": "rafaelia.semantic-context-exam.v1",
+  "exam_id": "PARABLE-BRIDGE-REFUSED-TO-LIE-001",
+  "observed_at": "2026-09-28T04:29:00-03:00",
+  "declared_task": "Examine typed context operations without silently converting missing authority into a claim.",
+  "sources": [
+    {
+      "id": "SRC_USER",
+      "locator": "conversation: As Parábolas da Ponte que Recusava Mentir",
+      "state": "OBSERVED"
+    },
+    {
+      "id": "SRC_GLOSSARY",
+      "locator": "docs/SEMANTIC_INVARIANT_GLOSSARY.md",
+      "state": "SOURCE_OBSERVED"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E_PARABLE",
+      "source_ref": "SRC_USER",
+      "locator": "balança/carpinteiro/bambu/oleiro/biblioteca/ferreiro/porta"
+    },
+    {
+      "id": "E_GLOSSARY",
+      "source_ref": "SRC_GLOSSARY",
+      "locator": "TOKEN_VAZIO + token semântico + invariante"
+    },
+    {
+      "id": "E_TEST",
+      "source_ref": "SRC_GLOSSARY",
+      "locator": "synthetic semantic-context exam test execution placeholder"
+    }
+  ],
+  "objects": [
+    {
+      "id": "P_PA",
+      "kind": "VALUE",
+      "semantic_type": "pressure",
+      "value": 36,
+      "unit": "Pa",
+      "dimension": "ENERGY_DENSITY",
+      "source_ref": "SRC_USER",
+      "state": "OBSERVED"
+    },
+    {
+      "id": "RHO_E",
+      "kind": "VALUE",
+      "semantic_type": "energy_density",
+      "value": 9,
+      "unit": "J/m^3",
+      "dimension": "ENERGY_DENSITY",
+      "source_ref": "SRC_USER",
+      "state": "OBSERVED"
+    },
+    {
+      "id": "P_M",
+      "kind": "VALUE",
+      "semantic_type": "pressure_mass_equivalent",
+      "value": 4,
+      "unit": "kg/m^3",
+      "dimension": "MASS_DENSITY",
+      "source_ref": "SRC_USER",
+      "state": "DECLARED"
+    }
+  ],
+  "transforms": [
+    {
+      "id": "T_PA_TO_JM3",
+      "from_unit": "Pa",
+      "to_unit": "J/m^3",
+      "from_dimension": "ENERGY_DENSITY",
+      "to_dimension": "ENERGY_DENSITY",
+      "invariant": "1 Pa = 1 J/m^3",
+      "evidence_ref": "E_PARABLE"
+    },
+    {
+      "id": "T_JM3_TO_KGM3",
+      "from_unit": "J/m^3",
+      "to_unit": "kg/m^3",
+      "from_dimension": "ENERGY_DENSITY",
+      "to_dimension": "MASS_DENSITY",
+      "invariant": "rho_m = rho_E / c^2 for the declared mass-equivalent representation",
+      "evidence_ref": "E_PARABLE"
+    }
+  ],
+  "operations": [
+    {
+      "id": "OP_ENERGY_ADD",
+      "kind": "ADD",
+      "input_bindings": [
+        {
+          "object_ref": "P_PA",
+          "transform_ref": "T_PA_TO_JM3"
+        },
+        {
+          "object_ref": "RHO_E",
+          "transform_ref": null
+        }
+      ],
+      "expected_state": "EXECUTABLE"
+    },
+    {
+      "id": "OP_MIXED_BLOCK",
+      "kind": "ADD",
+      "input_bindings": [
+        {
+          "object_ref": "P_M",
+          "transform_ref": null
+        },
+        {
+          "object_ref": "RHO_E",
+          "transform_ref": null
+        }
+      ],
+      "expected_state": "BLOCKED"
+    }
+  ],
+  "representation_options": [
+    "ENERGY_DENSITY_CONVENTION",
+    "MASS_DENSITY_CONVENTION"
+  ],
+  "physical_representation_selection": "TOKEN_VAZIO",
+  "execution_state": {
+    "implemented": true,
+    "tested": true,
+    "physically_proven": false,
+    "test_evidence_refs": [
+      "E_TEST"
+    ],
+    "physical_evidence_refs": []
+  },
+  "claim_gate": {
+    "test_scope_matches_claim": false,
+    "physical_evidence": "TOKEN_VAZIO",
+    "claim_authority": "TOKEN_VAZIO"
+  },
+  "delivery": {
+    "answer_state": "PARTIAL_SAFE",
+    "what_was_done": "Typed context was checked; one energy-density operation is executable and the mixed-dimension operation is blocked.",
+    "evidence_refs": [
+      "E_PARABLE",
+      "E_GLOSSARY",
+      "E_TEST"
+    ],
+    "limits": [
+      "No physical stress-energy convention is selected.",
+      "Synthetic test evidence is not physical evidence."
+    ],
+    "token_vazio": [
+      "physical_representation_selection",
+      "claim_gate.physical_evidence",
+      "claim_gate.claim_authority"
+    ],
+    "next_executable_action": "Provide explicit physical convention/mechanism evidence before any physical claim promotion."
+  },
+  "claim_allowed": false
+}

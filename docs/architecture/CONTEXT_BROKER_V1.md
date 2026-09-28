@@ -13,6 +13,8 @@ human opens source
 → ContextBroker
 → bounded in-memory segment
 → ContextBundle V2
+→ Semantic Context Exam V1
+→ typed/executable or BLOCKED decision
 ```
 
 ## Limits
@@ -51,4 +53,6 @@ ContextBroker
 └── Rafaelia_Private / RafPolimata typed providers
 ```
 
-The next runtime step is read-only NOVOexport retrieval through the existing governed Termux/RafPolimata architecture, not direct access to another app's private filesystem.
+Before a selected bundle is used for an operation, Semantic Context Exam V1 may validate type/unit/dimension, explicit transforms, invariants, provenance, execution state and claim authority. The broker itself still does not infer those values.
+
+The next runtime step is read-only NOVOexport retrieval through the existing governed Termux/RafPolimata architecture, not direct access to another app's private filesystem. Live model/Android binding of the semantic examiner remains a separate gate.

@@ -1,0 +1,150 @@
+{
+  "schema": "rafaelia.semantic-context-exam-contract.v1",
+  "version": "1.0.0",
+  "authority": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "parent_contracts": [
+      "configs/content_validity_contract.json",
+      "contracts/context-bundle-v2.schema.json",
+      "docs/SEMANTIC_INVARIANT_GLOSSARY.md"
+    ],
+    "rule": "The exam governs context composition and claim boundaries. It does not alter model tokenizer internals or promote physical truth."
+  },
+  "principles": [
+    "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "TOKEN_VAZIO != 0",
+    "IMPLEMENTED_UNTESTED != PASS",
+    "A numeric operation is executable only after semantic type, unit and dimension checks.",
+    "A representation change requires an explicit transform and invariant.",
+    "Multiple coherent representations may coexist without an implicit physical selection.",
+    "Structure or internal coherence cannot by itself promote a domain interpretation.",
+    "Every material answer must expose evidence, limits, TOKEN_VAZIO and next executable action."
+  ],
+  "parable_gates": [
+    {
+      "id": "G01_BALANCE",
+      "parable": "A balança do mercado",
+      "checks": [
+        "TYPE_PRESENT",
+        "UNIT_PRESENT",
+        "DIMENSION_PRESENT",
+        "ADD_SUB_DIMENSION_MATCH"
+      ],
+      "blocks": [
+        "UNTYPED_VALUE",
+        "UNIT_MISSING",
+        "DIMENSION_MISMATCH"
+      ]
+    },
+    {
+      "id": "G02_CARPENTER",
+      "parable": "A ponte do carpinteiro",
+      "checks": [
+        "EXPLICIT_TRANSFORM",
+        "TRANSFORM_INVARIANT",
+        "TRANSFORM_EVIDENCE"
+      ],
+      "blocks": [
+        "SILENT_CONVERSION",
+        "TRANSFORM_WITHOUT_INVARIANT"
+      ]
+    },
+    {
+      "id": "G03_BAMBOO",
+      "parable": "O bambu e os dois caminhos",
+      "checks": [
+        "ALTERNATIVES_PRESERVED",
+        "SELECTION_AUTHORITY_EXPLICIT"
+      ],
+      "blocks": [
+        "IMPLICIT_REPRESENTATION_SELECTION"
+      ]
+    },
+    {
+      "id": "G04_POTTER",
+      "parable": "O oleiro e o barro ainda sem nome",
+      "checks": [
+        "COHERENCE_SEPARATE_FROM_INTERPRETATION"
+      ],
+      "blocks": [
+        "STRUCTURE_PROMOTED_TO_DOMAIN_TRUTH"
+      ]
+    },
+    {
+      "id": "G05_LIBRARY",
+      "parable": "A parábola da biblioteca",
+      "checks": [
+        "SOURCE_PROVENANCE",
+        "EVIDENCE_REFERENTIAL_INTEGRITY"
+      ],
+      "blocks": [
+        "UNSOURCED_PROMOTION"
+      ]
+    },
+    {
+      "id": "G06_BLACKSMITH",
+      "parable": "O mestre ferreiro e a espada",
+      "checks": [
+        "IMPLEMENTED_TESTED_PHYSICAL_SEPARATION"
+      ],
+      "blocks": [
+        "IMPLEMENTED_AS_TESTED",
+        "TESTED_AS_PHYSICALLY_PROVEN"
+      ]
+    },
+    {
+      "id": "G07_DOOR",
+      "parable": "O mestre e a porta",
+      "checks": [
+        "COHERENCE_GATE",
+        "AUTHORITY_EVIDENCE_GATE"
+      ],
+      "blocks": [
+        "CLAIM_WITHOUT_SCOPE_MATCH",
+        "CLAIM_WITH_TOKEN_VAZIO_AUTHORITY"
+      ]
+    }
+  ],
+  "object_kinds": [
+    "VALUE",
+    "FORMULA",
+    "UNIT",
+    "PARAMETER",
+    "RESULT",
+    "GAP",
+    "CLAIM"
+  ],
+  "operation_kinds": [
+    "ADD",
+    "SUBTRACT",
+    "COMPARE",
+    "TRANSFORM",
+    "ASSERT_EQUIVALENCE"
+  ],
+  "epistemic_states": [
+    "OBSERVED",
+    "DECLARED",
+    "IMPLEMENTED",
+    "TESTED",
+    "PHYSICALLY_PROVEN",
+    "TOKEN_VAZIO",
+    "BLOCKED"
+  ],
+  "delivery_required": [
+    "answer_state",
+    "what_was_done",
+    "evidence_refs",
+    "limits",
+    "token_vazio",
+    "next_executable_action"
+  ],
+  "claim_policy": {
+    "allow_only_if": [
+      "test_scope_matches_claim == true",
+      "physical_evidence != TOKEN_VAZIO",
+      "claim_authority != TOKEN_VAZIO",
+      "execution_state.physically_proven == true"
+    ],
+    "default": false
+  }
+}
