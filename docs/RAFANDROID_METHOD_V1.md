@@ -1,8 +1,9 @@
 # RAFANDROID Method V1 — Android Shell with Minimum Friction
 
-State: `IMPLEMENTED_UNTESTED` until CI of the exact branch passes.  
+State: `VERIFIED_LIMITED / MERGED` for the revision-bound shell/build scope.  
 Authority: RafGitTools local control-plane mechanics.  
 Federated authority: Mapa.  
+Evidence anchor: PR #521 head `62925c8a573f1860a9c278567c1716e153d580f1`, START run `36360576045` / #241 = `SUCCESS`, merge `f0c192d9c56b2cc794d1ed18e361260a3478f598`.  
 `claim_allowed=false`.
 
 ## 1. Boundary
@@ -67,8 +68,12 @@ Runtime claims remain with Vectras/qemu/Termux authorities.
 
 The method fails if implicit downloads or silent license acceptance appear, TOKEN_VAZIO becomes PASS, undefined symbols are ignored for a declared freestanding core, static QEMU discovery promotes runtime, or artifact gates claim results without invoking artifact verifiers.
 
-## 9. Initial F3
+## 9. Current evidence and F3
 
-`F_ok`: shell + scaffold become VERIFIED_LIMITED only after exact-branch CI.  
-`F_gap`: RafGitTools app integration, physical Android and QEMU boot remain separate evidence boundaries.  
-`F_next`: consume this shell from legacy build scripts only after this module's CI is green.
+The exact PR #521 canonical START run completed successfully. The observed successful scope includes the single-root topology gate, RAFANDROID shell gate, Python tests, documentation gate, Android unit/instrumentation compile/lint/assemble/APK verification, CodeQL Actions, CodeQL Java/Kotlin and final receipt.
+
+This promotes the **shell/build integration scope only**. It does not promote physical Android, QEMU guest execution or cross-repository runtime.
+
+`F_ok`: RAFANDROID shell, canonical START integration, bound NDK gate and real DEX/APK gates are revision-bound PASS and merged.  
+`F_gap`: physical Android install/launch, QEMU guest boot and Vectras/Termux consumer runtime remain separate evidence boundaries.  
+`F_next`: keep RAFANDROID as the single Android-toolchain control shell and migrate existing build entrypoints only when equivalence/regression evidence exists; do not create parallel wrappers.

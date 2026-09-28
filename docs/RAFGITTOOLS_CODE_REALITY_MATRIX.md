@@ -1,7 +1,7 @@
 # RAFGITTOOLS_CODE_REALITY_MATRIX
 
 Status: **ATIVO — reconciliado com fonte + evidência executada**  
-Última atualização: **2026-08-14**  
+Última atualização editorial: **2026-09-28**  
 Último commit de aplicação com BUILD verificado: `bbdb556a59c06a23cc2f6df6ba0ae7c98466a4fa`  
 Workflow: `Android Client Build` run `31821491676` — PASS  
 Head documental observado depois do build: `8ee151e9ea46f5fb1d2048ab0e8a5574b2e3693d`
@@ -29,6 +29,19 @@ DEVICE_VERIFIED = receipt físico do mesmo APK
 - `armeabi-v7a`: PRESENT;
 - `arm64-v8a`: PRESENT;
 - DEVICE: `TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED`.
+
+## 2026-09-28 revision-bound overlay
+
+The original capability rows below remain a historical/current-source matrix rooted in the 2026-08-14 build checkpoint. This overlay adds later domains with their own exact execution anchors; it does not silently inherit the old APK receipt.
+
+| ID | Área | Fonte | Teste/build observado | Runtime/device | Estado |
+|---|---|---|---|---|---|
+| RAFANDROID-001 | toolchain | `tools/rafandroid/` | PR #521 head `62925c8...`; START #241 SUCCESS; Android unit/instrumentation/lint/assemble/APK + CodeQL PASS | physical Android/QEMU guest separate | `MERGED / VERIFIED_LIMITED` |
+| SILICON-001 | L0 native | `native/silicon_light_v1/` | PR #526 head `40d90c9...`; host freestanding + NDK ARMv7/AArch64 PASS | physical ABI execution separate | `MERGED / VERIFIED_LIMITED` |
+| SILICON-002 | L0→JNI→APK | generated RAFANDROID minimal fixture | START #263 generated scaffold, JNI build, APK, DEX/APK verification PASS | handset execution not run | `BUILD_VERIFIED_FIXTURE` |
+| START-001 | CI topology | `.github/workflows/START.yml` | exact heads #521/#526 terminal SUCCESS | CI only | `ACTIVE_VERIFIED_SINGLE_ROOT` |
+
+The dynamic “Code scanning AI findings” failures seen on intermediate heads returned provider HTTP 400 for an unsupported model. They are typed as `FAIL_INFRA_PROVIDER`; they are neither vulnerability findings nor security PASS. Canonical CodeQL Actions/Java-Kotlin on final #526 head succeeded.
 
 ## Matriz de realidade
 
@@ -109,7 +122,10 @@ A comparação `bbdb556...8ee151e` contém somente alterações em documentaçã
 - `../ECOSYSTEM_RUNTIME_STATE.json`
 - `canonical/2026-08-14/RAFGITTOOLS_SOURCE_BUILD_EVIDENCE_V1.md`
 - `../data/evidence/github/rafgittools_android_build_31821491676.v1.json`
+- `audit/SESSION_RECONCILIATION_RAFANDROID_SILICON_LIGHT_20260928.md`
+- `RAFANDROID_METHOD_V1.md`
+- `architecture/SILICON_LIGHT_LOWLEVEL_V1.md`
 
 ## Próxima ação
 
-Fechar `DEVICE-001` com o APK hash-bound correspondente ao commit escolhido. Depois validar remotes/credenciais/provider/LFS/worktree/bisect em fixtures independentes, sem promover tudo por associação.
+Fechar `DEVICE-001` com um APK hash-bound e receipt físico. Para o low-level, manter RAFANDROID/Silicon Light como regressão canônica e migrar somente helpers duplicados cuja equivalência/property/fuzz seja demonstrada. Depois validar remotes/credenciais/provider/LFS/worktree/bisect em fixtures independentes, sem promoção por associação.

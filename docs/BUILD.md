@@ -11,8 +11,9 @@ This document provides detailed instructions for building RafGitTools from sourc
    - Download: https://developer.android.com/studio
 
 2. **Java Development Kit (JDK)**
-   - Version: JDK 17 to JDK 21 (recommended: JDK 17)
-   - Android Studio includes JDK, or download from: https://adoptium.net/
+   - Version: **JDK 17** is the current repository baseline.
+   - Other JDK versions are not promoted by this document; change Java/Gradle/AGP/Kotlin/KSP only as a coordinated, tested toolchain update.
+   - Android Studio may include a JDK, but verify the selected runtime before invoking Gradle.
 
 3. **Android SDK**
    - Minimum SDK: API 24 (Android 7.0)
@@ -23,7 +24,7 @@ This document provides detailed instructions for building RafGitTools from sourc
    - Download: https://git-scm.com/
 
 
-> ⚠️ Important: with the current Gradle/AGP baseline (`Gradle 8.4` + `AGP 8.3.0`), running with JDK 22+ can break Groovy script compilation (`Unsupported class file major version`).
+> ⚠️ Important: the observed build baseline is `Gradle Wrapper 9.5.1` + `AGP 8.13.2`, with project Java/Kotlin compatibility pinned to **JDK 17**. Use the repository wrapper/helper rather than assuming either a system Gradle or a different JDK is equivalent.
 > If your machine has multiple JDKs, force JDK 17 before calling `./gradlew`.
 > You can use the helper script, which now auto-detects common JDK 17 installs
 > (including `mise`) and exports `JAVA_HOME` automatically. If `JAVA_HOME`
@@ -44,11 +45,17 @@ This document provides detailed instructions for building RafGitTools from sourc
 
 ### Gradle / AGP Compatibility Baseline
 
-- **Android Gradle Plugin (AGP)**: `8.3.0` (defined in `build.gradle`)
-- **Gradle Wrapper**: `8.4` (defined in `gradle/wrapper/gradle-wrapper.properties`)
+Observed on 2026-09-28:
 
-> Keep AGP/Kotlin/KSP aligned as one compatibility set. Do **not** partially mix
-> AGP 8.3.0 with Gradle 9.x without a coordinated plugin/toolchain upgrade.
+- **Android Gradle Plugin (AGP)**: `8.13.2` in root `build.gradle`
+- **Gradle Wrapper**: `9.5.1` in `gradle/wrapper/gradle-wrapper.properties`
+- **Kotlin Gradle plugin**: `1.9.24`
+- **KSP**: `1.9.24-1.0.20`
+- **Java compatibility**: `17`
+- **compileSdk / targetSdk / minSdk**: `34 / 34 / 24`
+- **native ABIs**: `armeabi-v7a`, `arm64-v8a`
+
+Keep AGP/Gradle/Kotlin/KSP as one tested compatibility set. Do not partially move one component and infer compatibility from version numbers alone.
 
 ### System Requirements
 
@@ -119,6 +126,32 @@ RafGitTools has multiple build variants:
 To select a build variant:
 1. Open **Build Variants** panel (View → Tool Windows → Build Variants)
 2. Select desired variant from dropdown
+
+### 4.1 RAFANDROID toolchain shell
+
+The repository now has one bounded Android toolchain control shell:
+
+```bash
+tools/rafandroid/rafandroid probe
+tools/rafandroid/rafandroid shadow
+tools/rafandroid/rafandroid tails
+tools/rafandroid/rafandroid friction
+tools/rafandroid/rafandroid graph
+```
+
+For the low-level L0 boundary:
+
+```bash
+tools/rafandroid/rafandroid silicon-gate native/silicon_light_v1 24 both
+```
+
+For a generated minimal Java/JNI/Silicon Light fixture:
+
+```bash
+tools/rafandroid/rafandroid scaffold /tmp/RafMinimal io.rafaelia.minimal
+```
+
+The scaffold uses Android/Gradle/NDK at the **build/adapter layers**. Only the Silicon Light L0 core is claimed runtime-independent from libc/system headers/heap/syscalls/JNI/Android API. Whole-APK independence from Android is not claimed.
 
 ### 5. Build the Project
 
