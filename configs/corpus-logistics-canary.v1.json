@@ -8,7 +8,8 @@
     "path": "01_SISTEMA_CORPUS_CUSTODIA/02_CONVERSATIONS_CORPUS/conversations-027.json",
     "provider_id": "1i02ona4EPpUszTWXAHnfoUqFGSUJgsPV",
     "observed_bytes": 4098254,
-    "content_sha256": "TOKEN_VAZIO_UNVERIFIED_IN_THIS_DELTA"
+    "content_sha256": "32ecf289497a30799358ac53a794c2d198e8449592a28a19bb9bbab6ff254211",
+    "evidence_ref": "CONVERSATIONS_CHUNKS_PRIVATE/auditoria/RAFAELIA_NOVOEXPORT_V2_REAL_019_027_EXECUTION_RECEIPT_20260814.json"
   },
   "intake": {
     "route": "DriveStagingGate_or_local_readonly_mount",
@@ -42,6 +43,6 @@
     "PRIVATE_PR_READBACK",
     "RECEIPT"
   ],
-  "state": "BOUND_METADATA_ONLY_NOT_RUN",
+  "state": "BOUND_EXACT_SOURCE_NOT_RUN",
   "claim_allowed": false
 }
