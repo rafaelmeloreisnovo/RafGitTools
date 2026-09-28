@@ -1,6 +1,6 @@
 # RAFAELIA START Pipeline V1
 
-State: `CANDIDATE_SINGLE_ROOT`
+State: `ACTIVE_VERIFIED_SINGLE_ROOT`
 
 `claim_allowed=false`
 
@@ -25,11 +25,19 @@ START
   00 plan
   01 topology
   02 coherence
+     - RAFANDROID shell/self-test
+     - Silicon Light host freestanding gate
+     - RafCode native gates
   03 python tests
   04 federation [conditional]
   05 docs [conditional]
   06 android [conditional]
+     - bound SDK/NDK + RAFANDROID ARMv7/AArch64 gate
+     - generated minimal Silicon Light JNI/APK fixture
+     - unit tests / instrumentation compile / lint / devDebug / APK verification
   07 security [conditional]
+     - CodeQL Actions
+     - CodeQL Java/Kotlin
   08 signed release [explicit]
   09 receipt
 ```
@@ -64,3 +72,17 @@ This refactor can prove only orchestration/source CI properties. It cannot prove
 ## Rollback
 
 Revert the migration commit, or replace `.github/workflows` with tree `d4cb73f43297f6b38dd5ead0cd32998910794ec9`.
+
+
+## 2026-09-28 evidence update
+
+The single-root topology and the new low-level/toolchain gates are no longer candidate-only.
+
+Revision-bound anchors:
+
+- RAFANDROID PR #521 head `62925c8a573f1860a9c278567c1716e153d580f1`: START #241 / run `36360576045` = `SUCCESS`.
+- Silicon Light PR #526 head `40d90c93bf7bfe6d3299a89585688c0324d25245`: START #263 / run `36385528436` = `SUCCESS`.
+
+START #263 observed successful topology, coherence, RAFANDROID, Silicon Light host gate, NDK ARMv7/AArch64 gate, generated minimal JNI/APK fixture, Android tests/lint/build/APK verification, CodeQL Actions, CodeQL Java/Kotlin and final receipt.
+
+This remains CI/build evidence, not physical-device proof.
