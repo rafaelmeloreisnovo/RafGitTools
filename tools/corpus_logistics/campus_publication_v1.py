@@ -20,7 +20,7 @@ def materialize(plan_path:Path,root:Path)->dict:
     plan=json.loads(plan_path.read_text(encoding="utf-8"))
     if plan.get("schema")!="rafgittools.corpus-logistics-gymnasia.v1": raise ValueError("schema mismatch")
     if plan.get("raw_body_embedded") is not False: raise ValueError("raw bodies forbidden")
-    chunks=plan.get("chunks") or []; edges=plan.get("edges") or []; gyms=plan.get("gymnasia") or []
+    chunks=plan.get("chunks") or []; edges=plan.get("edges") or []; gyms=plan.get("gymnasia") or []; tokens=plan.get("token_index") or []
     by_tier={t:[] for t in ("HOT","WARM","COLD","ARCHIVE")}
     gaps=[]; formulas=[]; parables=[]
     for c in chunks:
@@ -32,9 +32,24 @@ def materialize(plan_path:Path,root:Path)->dict:
         prefix=c["chunk_id"].replace("CHK-","")[:2]
         write_json(root/"09_CONVERSATION_CHUNKS"/prefix/(c["chunk_id"]+".json"),c)
     write_json(root/"00_INDEX"/"TIERS.json",by_tier)
+    write_json(root/"00_INDEX"/"TOKENS.json",tokens)
+    books={}
+    sessions={}
+    materialization={}
+    characteristics=[]
+    for c in chunks:
+        books.setdefault(c["book_id"],[]).append(c["chunk_id"])
+        sessions.setdefault(c["session_id"],[]).append(c["chunk_id"])
+        materialization.setdefault(c["materialization_state"],[]).append(c["chunk_id"])
+        for ch in c.get("characteristics") or []:
+            characteristics.append({"chunk_id":c["chunk_id"],**ch})
+    write_json(root/"00_INDEX"/"BOOKS.json",books)
+    write_json(root/"00_INDEX"/"SESSIONS.json",sessions)
+    write_json(root/"00_INDEX"/"MATERIALIZATION.json",materialization)
     write_json(root/"00_INDEX"/"FORMULAS.json",formulas)
     write_json(root/"00_INDEX"/"PARABLES.json",parables)
     write_json(root/"01_ATLAS"/"GYMNASIA.json",gyms)
+    write_json(root/"01_ATLAS"/"CHARACTERISTICS.json",characteristics)
     write_json(root/"02_ROUTES"/"EDGES.json",edges)
     write_json(root/"03_MANIFOLD"/"CAMPUS.json",{"gymnasia":gyms,"tiers":by_tier})
     write_json(root/"05_EDGES"/"ALL_EDGES.json",edges)
@@ -44,7 +59,7 @@ def materialize(plan_path:Path,root:Path)->dict:
       "claim_allowed":False,"raw_body_embedded":False,
       "source_plan":plan_path.name,"source_plan_sha256":hashlib.sha256(plan_path.read_bytes()).hexdigest(),
       "manifest_sha256":plan.get("manifest_sha256"),"chunks":len(chunks),"edges":len(edges),
-      "gymnasia":len(gyms),"gaps":len(gaps),
+      "gymnasia":len(gyms),"tokens":len(tokens),"gaps":len(gaps),
       "state":"PASS_TREE_MATERIALIZED_NOT_GITHUB_PUBLISHED"
     }
     write_json(root/"08_RECEIPTS"/"PUBLICATION_TREE_RECEIPT.json",receipt)
