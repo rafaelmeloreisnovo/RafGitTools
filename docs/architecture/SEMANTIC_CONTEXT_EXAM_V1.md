@@ -1,6 +1,6 @@
 # Semantic Context Exam V1 — from parable to executable context discipline
 
-State: `IMPLEMENTED_SOURCE / TEST_PENDING`  
+State: `IMPLEMENTED_SOURCE / EXACT_HEAD_CI_PASS / MAIN_MERGED`  
 Authority: `rafaelmeloreisnovo/RafGitTools`  
 claim_allowed: `false`
 
@@ -136,3 +136,34 @@ It does not mean:
 - external evidence was independently replicated.
 
 Those remain separate evidence gates.
+
+## Observed execution
+
+Canonical PR: `#533`  
+Tested head: `d8cbade9f1f999763336afda1cb6377068e59969`  
+Main merge: `b5831fd07f44561b9b79f7e7f291b1f6266cee6d`  
+Workflow run: `36393361561` — `SUCCESS`
+
+Focused evidence:
+
+```text
+semantic_context_exam_tests = 9/9 PASS
+contract_validation = PASS
+example_state = PASS_SAFE_CONTEXT_EXAM
+example_operations = 1 EXECUTABLE + 1 BLOCKED
+claim_allowed = false
+execution_state = TESTED_NOT_PHYSICALLY_PROVEN
+```
+
+Repository-wide execution on the same tested head also completed successfully:
+workflow topology, coherence/anti-regression, deterministic Python tests,
+federation/provenance, documentation boundary, CodeQL actions,
+CodeQL Java/Kotlin, and Android test/lint/devDebug APK gates. Conditional
+provider/release lanes remained skipped by policy.
+
+Main readback confirmed all nine PR-changed paths are byte-identical to the
+tested head.
+
+This execution promotes only the semantic/context contract to tested source
+state. Live ContextBroker/model binding and any physical/domain claim remain
+separate gates.
