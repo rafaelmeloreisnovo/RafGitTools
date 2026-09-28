@@ -3,6 +3,7 @@ project(rafminimal C)
 
 set(RAF_L0_FLAGS
     -Os
+    -nostdinc
     -ffreestanding
     -fno-builtin
     -fno-stack-protector
