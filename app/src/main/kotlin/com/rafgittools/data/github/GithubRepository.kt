@@ -1,5 +1,6 @@
 package com.rafgittools.data.github
 
+import android.util.Base64
 import com.rafgittools.data.auth.AuthRepository
 import com.rafgittools.data.cache.AsyncCacheManager
 import com.rafgittools.data.cache.RepositoryNameCache
@@ -314,6 +315,48 @@ class GithubDataRepository @Inject constructor(
                         body = body,
                         labels = null,
                         assignees = null
+                    )
+                )
+            )
+        } catch (e: Exception) {
+            Result.failure(e.toAppError())
+        }
+    }
+
+    suspend fun createPrivateProcessingFile(
+        owner: String,
+        repo: String,
+        path: String,
+        utf8Content: String,
+        message: String,
+        branch: String? = null
+    ): Result<GithubContentWriteResponse> {
+        return try {
+            require(path.startsWith("memory_bridge/private_processing/")) {
+                "private-processing writes are namespace constrained"
+            }
+            val bytes = utf8Content.toByteArray(Charsets.UTF_8)
+            require(bytes.size <= 512 * 1024) {
+                "private-processing artifact exceeds bounded 512 KiB limit"
+            }
+            require(!utf8Content.contains("\"raw_payload\"", ignoreCase = true)) {
+                "raw payload field is forbidden"
+            }
+
+            val liveTarget = githubApiService.getRepository(owner, repo)
+            require(liveTarget.isPrivate) {
+                "target repository must be private at write-time readback"
+            }
+
+            Result.success(
+                githubApiService.putRepositoryContent(
+                    owner = owner,
+                    repo = repo,
+                    path = path,
+                    request = GithubPutContentRequest(
+                        message = message,
+                        content = Base64.encodeToString(bytes, Base64.NO_WRAP),
+                        branch = branch ?: liveTarget.defaultBranch
                     )
                 )
             )
