@@ -1,6 +1,7 @@
 package com.rafgittools
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -22,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.rafgittools.core.localization.Language
+import com.rafgittools.setupwizard.SetupWizardPreferences
 import com.rafgittools.core.localization.LocalizationEntryPoint
 import com.rafgittools.core.localization.LocalizationManager
 import com.rafgittools.data.preferences.PreferencesRepository
@@ -96,6 +98,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        if (!SetupWizardPreferences(applicationContext).isCompleted()) {
+            startActivity(Intent(this, SetupWizardActivity::class.java))
+        }
         
         setContent {
             val currentLanguage = remember { mutableStateOf(Language.ENGLISH) }
