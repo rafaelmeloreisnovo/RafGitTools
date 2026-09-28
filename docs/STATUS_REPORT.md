@@ -33,7 +33,7 @@ TOKEN_VAZIO != FAIL != PASS
 
 Detalhe: `docs/audit/SESSION_RECONCILIATION_RAFANDROID_SILICON_LIGHT_20260928.md`.
 
-## Reconciliação 2026-09-18 — delta controlador
+## Historical reconciliation 2026-09-18 — former controlling delta
 
 Candidate: `audit/drive-github-responsive-delivery-20260918`.
 
