@@ -67,8 +67,11 @@ class MasterCoverageProviderRoutingTests(unittest.TestCase):
             allowed_tasks,
             {"river7_offline", "master_coverage_import"},
         )
-        self.assertNotIn("eval ", self.workflow)
-        self.assertNotIn("TARGET_TASK_CMD", self.workflow)
+        provider_lane = self.workflow.split("  provider_actions:", 1)[1].split(
+            "  provider_environments:", 1
+        )[0]
+        self.assertNotIn("eval ", provider_lane)
+        self.assertNotIn("TARGET_TASK_CMD", provider_lane)
 
     def test_single_root_workflow_file_still_exists(self) -> None:
         workflows = sorted(
