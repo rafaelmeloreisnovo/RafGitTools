@@ -1,0 +1,58 @@
+name: audit-check-enumeration-v1
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/audit_commit_checks.py'
+      - 'scripts/test_audit_commit_checks.py'
+      - '.github/workflows/audit-check-enumeration.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+
+      - name: Unit tests
+        run: python3 scripts/test_audit_commit_checks.py -v
+
+      - name: Audit frozen BLAKE3 commit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 scripts/audit_commit_checks.py \
+            --owner rafaelmeloreisnovo \
+            --repo BLAKE3 \
+            --sha b1c8cab1d75943a628e447fa72bb06ebeb348489 \
+            --output commit-check-audit.json
+
+      - name: Enforce complete enumeration
+        run: |
+          python3 - <<'PY'
+          import json
+          p = "commit-check-audit.json"
+          d = json.load(open(p, encoding="utf-8"))
+          c = d["checks_api"]
+          assert c["complete_enumeration"] is True, c
+          assert c["snapshot_unstable"] is False, c
+          assert c["returned_unique_count"] == c["total_count"], c
+          assert c["total_count"] > 30, c
+          assert c["failure_count"] >= 1, c
+          assert d["claim_allowed"] is False
+          print("RAFGITTOOLS_CHECK_ENUMERATION_GATE=PASS")
+          print("checks_total=", c["total_count"])
+          print("checks_state=", c["state"])
+          print("legacy_status_count=", d["legacy_status_api"]["status_count"])
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rafgittools-check-enumeration-receipt
+          if-no-files-found: error
+          path: commit-check-audit.json
