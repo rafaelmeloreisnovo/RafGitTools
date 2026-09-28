@@ -7,11 +7,12 @@
   "federated_registry": {
     "repo": "rafaelmeloreisnovo/Mapa",
     "branch": "session/ai-work-dispatch-v1-20260928",
-    "expected_head": "ce4767c64605e36eee32e1b3537ca734a5480cba",
+    "expected_head": "39a8bac6188f46a374176c9826d296bcfebd2ec6",
     "path": "data/control-plane/SESSION_AI_WORK_DISPATCH_V1.json",
     "expected_blob_sha": "c1d1d8f1692c74957f8b70968fa863f855d93cb0",
     "relation": "consumer_adapter_not_authority_copy",
-    "drive_binding_receipt": "receipts/2026-09-28_SESSION_AI_WORK_DISPATCH_DRIVE_BINDING_V2.md"
+    "drive_binding_receipt": "receipts/2026-09-28_SESSION_AI_WORK_DISPATCH_DRIVE_BINDING_V2.md",
+    "mapa_ci_repair_receipt": "receipts/2026-09-28_SESSION_AI_WORK_DISPATCH_CI_REPAIR_V3.md"
   },
   "local_sources": [
     {
