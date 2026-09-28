@@ -154,5 +154,18 @@ python3 -m unittest discover -s tests \
 python3 scripts/context_bundle_v2.py validate \
   examples/context-bundle-v2/native.example.json
 
+# Semantic Context Exam V1. This gate operates above tokenizer internals:
+# type/unit/dimension, transform/invariant, provenance, execution state and
+# claim authority. PASS means safe context-operation semantics only; it does
+# not prove model runtime, physical interpretation or external validity.
+python3 -m unittest discover -s tests \
+  -p 'test_semantic_context_exam.py' -v
+python3 scripts/semantic_context_exam.py validate-contract \
+  configs/semantic_context_exam_contract.v1.json
+python3 scripts/semantic_context_exam.py evaluate \
+  configs/semantic_context_exam_contract.v1.json \
+  examples/semantic-context-exam/bridge-that-refused-to-lie.example.json \
+  --report artifacts/semantic-context-exam-report.json
+
 make -C rafaelia/block1 clean check
 make -C rafaelia/block1 clean
