@@ -11,10 +11,13 @@
       "storage_scope": "REPOSITORY_SECRET",
       "environment": "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND",
       "secret": "PAT_ACTIONS",
-      "state": "REGISTERED_NOT_WIRED",
+      "state": "WIRED_MAIN_ONESHOT_READ_ONLY",
       "allowed_operations": [
-        "preflight"
-      ]
+        "preflight",
+        "exact_commit_read_and_test"
+      ],
+      "write_allowed": false,
+      "exact_target_sha_required": true
     },
     {
       "capability": "agents",
@@ -68,6 +71,8 @@
     "PROVIDER_WRITE_REQUIRES_ENVIRONMENT_PROTECTION_PASS",
     "PROVIDER_WRITE_REQUIRES_EXACT_MAIN_SHA",
     "PROVIDER_WRITE_REQUIRES_READBACK",
-    "TOKEN_VAZIO != PASS"
+    "TOKEN_VAZIO != PASS",
+    "ACTIONS_CROSS_REPO_EXECUTION_IS_READ_ONLY",
+    "ACTIONS_EXACT_TARGET_SHA_REQUIRED"
   ]
 }
