@@ -330,6 +330,14 @@ jobs:
             echo '::error::eval is forbidden in rafandroid execution path'
             exit 1
           fi
+      - name: Silicon Light L0 freestanding gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C native/silicon_light_v1 clean
+          make -C native/silicon_light_v1 host-test audit HOST_CC=clang NM=nm READELF=readelf
+          make -C native/silicon_light_v1 clean
+
       - name: RafCode Route V1 freestanding gate
         shell: bash
         run: |
@@ -523,6 +531,7 @@ jobs:
           tools/rafandroid/rafandroid probe
           tools/rafandroid/rafandroid shadow
           tools/rafandroid/rafandroid native-gate tools/rafandroid/templates/minimal-jni/app/src/main/cpp/core.c 24 both
+          tools/rafandroid/rafandroid silicon-gate native/silicon_light_v1 24 both
       - name: Unit tests
         run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
       - name: Compile device route instrumentation APK
