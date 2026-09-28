@@ -2,7 +2,7 @@
 
 date=2026-09-28
 claim_allowed=false
-state=IMPLEMENTED_UNTESTED_REMOTE_IMPORT
+state=IMPLEMENTED_PR_VALIDATION_IN_PROGRESS
 
 ## Purpose
 
@@ -12,8 +12,9 @@ Allow RafGitTools to consume the RAFAELIA whole-program master coverage packet a
 
 ```text
 repository=rafaelmeloreisnovo/Rafaelia_Private
-commit=b586d5bc4274b2ba49fe3e9a781f006b71ea27e4
+commit=73695cd8605a84e57a8134cd40d47c9b4a758f90
 source_pr=260
+source_packet=Wave0 Coverage Snapshot V2 + Authority Registry V3 + Ledger V2
 task=master_coverage_import
 write_allowed=false
 ```
@@ -108,3 +109,19 @@ Remote import becomes PASS only after a main push run proves:
 ## F_next
 
 Open PR; reconcile pull-request START checks; after merge, inspect the main one-shot provider-actions run and freeze the exact import receipt.
+
+
+## Successor correction log
+
+- Initial provider-routing test incorrectly searched the entire START workflow for the token `eval `.
+- Existing unrelated/legacy workflow content caused that guard to fail even though the provider lane introduced no generic executor.
+- Successor test scopes the invariant to the `provider_actions` block only.
+- This is a test-boundary correction; provider runtime authority was not broadened.
+
+Current exact private target:
+`73695cd8605a84e57a8134cd40d47c9b4a758f90`
+
+Required successor packet:
+- DOCUMENT_COVERAGE_SNAPSHOT_V2.json
+- DOCUMENT_AUTHORITY_REGISTRY_V3.json
+- active-work-ledger.v2.json
