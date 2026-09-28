@@ -11,7 +11,6 @@ import argparse
 import hashlib
 import json
 import re
-from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Iterable, Iterator
 
@@ -76,24 +75,7 @@ def tier_for(score: float) -> str:
     if score >= 0: return "COLD"
     return "ARCHIVE"
 
-@dataclass
-class Chunk:
-    chunk_id: str
-    source_family: str
-    book_id: str
-    session_id: str
-    text_sha256: str
-    bytes: int
-    privacy_class: str
-    materialization_state: str
-    tier: str
-    score: float
-    token_count: int
-    marks: list[dict]
-    characteristics: list[dict]
-    relations: list[dict]
-
-def normalize_record(record: dict) -> Chunk:
+def normalize_record(record: dict) -> dict:
     source=str(record.get("source_family") or "TOKEN_VAZIO")
     book=str(record.get("book_id") or "TOKEN_VAZIO")
     session=str(record.get("session_id") or "TOKEN_VAZIO")
@@ -102,46 +84,46 @@ def normalize_record(record: dict) -> Chunk:
     score=slot_score(metrics)
     relations=list(record.get("relations") or [])
     characteristics=list(record.get("characteristics") or [])
-    return Chunk(
-        chunk_id=content_address(source,book,session,text),
-        source_family=source,
-        book_id=book,
-        session_id=session,
-        text_sha256=text_hash(text),
-        bytes=len(text.encode("utf-8")),
-        privacy_class=str(record.get("privacy_class") or "PRIVATE_DEFAULT_DENY"),
-        materialization_state=str(record.get("materialization_state") or "MATERIALIZED"),
-        tier=tier_for(score),
-        score=score,
-        token_count=len(stable_tokens(text)),
-        marks=inferred_marks(record),
-        characteristics=characteristics,
-        relations=relations,
-    )
+    return {
+        "chunk_id": content_address(source,book,session,text),
+        "source_family": source,
+        "book_id": book,
+        "session_id": session,
+        "text_sha256": text_hash(text),
+        "bytes": len(text.encode("utf-8")),
+        "privacy_class": str(record.get("privacy_class") or "PRIVATE_DEFAULT_DENY"),
+        "materialization_state": str(record.get("materialization_state") or "MATERIALIZED"),
+        "tier": tier_for(score),
+        "score": score,
+        "token_count": len(stable_tokens(text)),
+        "marks": inferred_marks(record),
+        "characteristics": characteristics,
+        "relations": relations,
+    }
 
 def build(records: Iterable[dict]) -> dict:
     chunks=[normalize_record(x) for x in records]
-    chunks.sort(key=lambda x:(x.source_family,x.book_id,x.session_id,x.chunk_id))
+    chunks.sort(key=lambda x:(x["source_family"],x["book_id"],x["session_id"],x["chunk_id"]))
     # adjacency replaces duplicated overlap bytes
     edges=[]
     groups={}
     for c in chunks:
-        groups.setdefault((c.source_family,c.book_id,c.session_id),[]).append(c)
+        groups.setdefault((c["source_family"],c["book_id"],c["session_id"]),[]).append(c)
     for values in groups.values():
         for a,b in zip(values,values[1:]):
-            edges.append({"type":"NEXT","from":a.chunk_id,"to":b.chunk_id})
-            edges.append({"type":"PREVIOUS","from":b.chunk_id,"to":a.chunk_id})
+            edges.append({"type":"NEXT","from":a["chunk_id"],"to":b["chunk_id"]})
+            edges.append({"type":"PREVIOUS","from":b["chunk_id"],"to":a["chunk_id"]})
     for c in chunks:
-        for rel in c.relations:
-            edges.append({"from":c.chunk_id,**rel})
-    tier_counts={t:sum(1 for c in chunks if c.tier==t) for t in TIERS}
+        for rel in c["relations"]:
+            edges.append({"from":c["chunk_id"],**rel})
+    tier_counts={t:sum(1 for c in chunks if c["tier"]==t) for t in TIERS}
     gymnasia={}
     for c in chunks:
-        gym=str(next((x.get("value") for x in c.characteristics if x.get("name")=="gymnasium"),"GENERAL"))
+        gym=str(next((x.get("value") for x in c["characteristics"] if x.get("name")=="gymnasium"),"GENERAL"))
         item=gymnasia.setdefault(gym,{"id":gym,"chunks":[],"kinds":set(),"states":set()})
-        item["chunks"].append(c.chunk_id)
-        item["kinds"].update(m.get("kind") for m in c.marks)
-        item["states"].add(c.materialization_state)
+        item["chunks"].append(c["chunk_id"])
+        item["kinds"].update(m.get("kind") for m in c["marks"])
+        item["states"].add(c["materialization_state"])
     gyms=[{"id":v["id"],"chunks":v["chunks"],"kinds":sorted(x for x in v["kinds"] if x),"materialization_states":sorted(v["states"])} for v in gymnasia.values()]
     gyms.sort(key=lambda x:x["id"])
     body={
@@ -149,7 +131,7 @@ def build(records: Iterable[dict]) -> dict:
         "privacy_class":"PRIVATE_DEFAULT_DENY",
         "claim_allowed":False,
         "raw_body_embedded":False,
-        "chunks":[asdict(c) for c in chunks],
+        "chunks":chunks,
         "edges":edges,
         "gymnasia":gyms,
         "tier_counts":tier_counts,
