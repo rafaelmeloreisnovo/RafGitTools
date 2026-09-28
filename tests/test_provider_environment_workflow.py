@@ -34,6 +34,13 @@ class ProviderEnvironmentWorkflowTests(unittest.TestCase):
         self.assertIn("persist-credentials: false", self.text)
         self.assertIn("RIVER7_LINEAR_ERASURE_743_CROSSREPO_RECEIPT.json", self.text)
 
+    def test_actions_lane_validates_all_river7_tests_and_burst_receipt(self):
+        self.assertIn("test_river7_*.py", self.text)
+        self.assertIn("simulate_burst_erasure.py", self.text)
+        self.assertIn("RIVER7_BURST_ERASURE_PLACEMENT_CROSSREPO_RECEIPT.json", self.text)
+        self.assertIn("search_space_permutations", self.text)
+        self.assertIn("[0, 1, 2, 5, 4, 6, 3]", self.text)
+
     def test_no_pat_fallback_is_present(self):
         self.assertNotIn("secrets.PAT_ENV ||", self.text)
         self.assertNotIn("secrets.PAT_ACTIONS ||", self.text)
