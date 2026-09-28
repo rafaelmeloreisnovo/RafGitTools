@@ -27,6 +27,7 @@
     }
   ],
   "documentation_updated": [
+    "README.md",
     "docs/audit/SESSION_RECONCILIATION_RAFANDROID_SILICON_LIGHT_20260928.md",
     "docs/RAFANDROID_METHOD_V1.md",
     "native/silicon_light_v1/README.md",
@@ -46,7 +47,8 @@
     "Silicon Light IMPLEMENTED_SOURCE/CI_PENDING",
     "Silicon Light architecture IMPLEMENTED_UNTESTED",
     "START CANDIDATE_SINGLE_ROOT",
-    "BUILD Gradle 8.4 / AGP 8.3.0 baseline"
+    "BUILD Gradle 8.4 / AGP 8.3.0 baseline",
+    "root README observed documentation base/cut from 2026-09-18"
   ],
   "preserved_boundaries": [
     "physical Android install/launch/restart remains TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED",
@@ -66,7 +68,8 @@
     "static QEMU discovery promotion risk",
     "unrelated pointer-order C semantics",
     "negative signed-shift portability",
-    "prototype vs exact-Git-blob evidence mismatch"
+    "prototype vs exact-Git-blob evidence mismatch",
+    "root README omitted merged RAFANDROID/Silicon Light and contained a literal escaped newline in the license notice"
   ],
   "external_complications": [
     {
