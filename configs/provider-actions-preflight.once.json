@@ -2,13 +2,13 @@
   "schema": "rafaelia.provider-actions-preflight-once.v1",
   "operation": "exact_commit_read_and_test",
   "target_repository": "rafaelmeloreisnovo/Rafaelia_Private",
-  "target_commit": "b586d5bc4274b2ba49fe3e9a781f006b71ea27e4",
+  "target_commit": "73695cd8605a84e57a8134cd40d47c9b4a758f90",
   "task": "master_coverage_import",
   "expected_actor": "rafaelmeloreisnovo",
   "write_allowed": false,
   "exact_target_sha_required": true,
   "claim_allowed": false,
   "source_pr": 260,
-  "source_state": "PROPOSED_ON_BRANCH",
-  "reason": "MASTER_COVERAGE_LEDGER_V2_BACKLINK_EXACT_SHA_IMPORT"
+  "source_state": "WAVE0_SUCCESSOR_VALIDATED_ON_BRANCH",
+  "reason": "MASTER_COVERAGE_WAVE0_V2_V3_EXACT_SHA_IMPORT"
 }
