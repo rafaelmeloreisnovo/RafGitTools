@@ -41,8 +41,8 @@ def validate(data: dict) -> list[str]:
                 errors.append(f"{cap}: repository secret must not claim environment binding")
         else:
             errors.append(f"{cap}: unsupported storage_scope {scope!r}")
-        if state == "WIRED_MANUAL_ONLY" and cap != "environments":
-            errors.append(f"{cap}: only environments capability may be wired in v1")
+        if state.startswith("WIRED") and cap not in {"environments", "actions"}:
+            errors.append(f"{cap}: unsupported wired capability in v1")
     env_cap = next((x for x in caps if x.get("capability") == "environments"), None)
     if not env_cap:
         errors.append("missing environments capability")
@@ -56,6 +56,26 @@ def validate(data: dict) -> list[str]:
         ops = set(env_cap.get("allowed_operations") or [])
         if "apply_main_protection" not in ops:
             errors.append("environments capability missing apply_main_protection")
+    actions_cap = next((x for x in caps if x.get("capability") == "actions"), None)
+    if not actions_cap:
+        errors.append("missing actions capability")
+    else:
+        if actions_cap.get("storage_scope") != "REPOSITORY_SECRET":
+            errors.append("actions capability must use REPOSITORY_SECRET")
+        if str(actions_cap.get("environment", "")) != "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND":
+            errors.append("actions capability must not claim environment binding")
+        if str(actions_cap.get("secret", "")).casefold() != "pat_actions":
+            errors.append("actions capability must bind PAT_ACTIONS secret")
+        if actions_cap.get("state") != "WIRED_MAIN_ONESHOT_READ_ONLY":
+            errors.append("actions capability must be WIRED_MAIN_ONESHOT_READ_ONLY")
+        if actions_cap.get("write_allowed") is not False:
+            errors.append("actions cross-repo lane must be read-only")
+        if actions_cap.get("exact_target_sha_required") is not True:
+            errors.append("actions cross-repo lane must require exact target SHA")
+        actions_ops = set(actions_cap.get("allowed_operations") or [])
+        if "exact_commit_read_and_test" not in actions_ops:
+            errors.append("actions capability missing exact_commit_read_and_test")
+
     invariants = set(data.get("invariants") or [])
     for required in (
         "NO_PAT_FALLBACK_BETWEEN_CAPABILITIES",
@@ -65,6 +85,8 @@ def validate(data: dict) -> list[str]:
         "PROVIDER_WRITE_REQUIRES_EXACT_MAIN_SHA",
         "PROVIDER_WRITE_REQUIRES_READBACK",
         "TOKEN_VAZIO != PASS",
+        "ACTIONS_CROSS_REPO_EXECUTION_IS_READ_ONLY",
+        "ACTIONS_EXACT_TARGET_SHA_REQUIRED",
     ):
         if required not in invariants:
             errors.append(f"missing invariant: {required}")
