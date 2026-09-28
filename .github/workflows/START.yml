@@ -812,41 +812,9 @@ jobs:
                 python3 experiments/river7_dual_transport/simulate_burst_erasure.py \
                   > ../artifacts/RIVER7_BURST_ERASURE_PLACEMENT_CROSSREPO_RECEIPT.json
               )
-              python3 - <<'PY'
-              import json
-              from pathlib import Path
-              path = Path('artifacts/RIVER7_LINEAR_ERASURE_743_CROSSREPO_RECEIPT.json')
-              receipt = json.loads(path.read_text(encoding='utf-8'))
-              assert receipt['state'] == 'SIMULATION_PASS'
-              assert receipt['physical_network_state'] == 'NOT_RUN'
-              assert receipt['network_io'] == 'NONE'
-              assert receipt['sockets'] == 'NONE'
-              assert receipt['timing_channel_transmission'] == 'DISABLED'
-              assert receipt['claim_allowed'] is False
-              assert receipt['code']['minimum_distance'] == 3
-              assert receipt['code']['guaranteed_erasure_correction'] == 2
-              assert receipt['erasure_matrix']['2']['failures'] == 0
-              assert receipt['erasure_matrix']['3']['failures'] == 7
-
-              burst_path = Path(
-                  'artifacts/RIVER7_BURST_ERASURE_PLACEMENT_CROSSREPO_RECEIPT.json'
-              )
-              burst = json.loads(burst_path.read_text(encoding='utf-8'))
-              assert burst['state'] == 'SIMULATION_PASS'
-              assert burst['physical_network_state'] == 'NOT_RUN'
-              assert burst['network_io'] == 'NONE'
-              assert burst['sockets'] == 'NONE'
-              assert burst['covert_carrier'] == 'DISABLED'
-              assert burst['claim_allowed'] is False
-              assert burst['search_space_permutations'] == 5040
-              assert burst['base_cyclic']['3']['successes'] == 5
-              assert burst['base_cyclic']['3']['failures'] == 2
-              assert burst['optimized_order'] == [0, 1, 2, 5, 4, 6, 3]
-              assert burst['optimized_cyclic']['3']['successes'] == 7
-              assert burst['optimized_cyclic']['3']['failures'] == 0
-              assert burst['optimized_cyclic']['4']['successes'] == 0
-              print('PASS: exact-SHA cross-repo RIVER-7 V3 offline validation')
-              PY
+              python3 scripts/validate_river7_crossrepo_receipts.py \
+                --linear artifacts/RIVER7_LINEAR_ERASURE_743_CROSSREPO_RECEIPT.json \
+                --burst artifacts/RIVER7_BURST_ERASURE_PLACEMENT_CROSSREPO_RECEIPT.json
               ;;
             master_coverage_import)
               python3 scripts/import_master_coverage.py \
