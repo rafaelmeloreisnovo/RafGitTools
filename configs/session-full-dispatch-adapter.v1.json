@@ -5,11 +5,11 @@
   "federated_authority": "rafaelmeloreisnovo/Mapa",
   "upstream": {
     "repository": "rafaelmeloreisnovo/Mapa",
-    "branch": "dispatch/session-full-fractal-20260928",
+    "branch": "main",
     "atlas_path": "data/dispatch/session_full_20260928/atlas.v1.json",
     "orders_path": "data/dispatch/session_full_20260928/agent_work_orders.v1.json",
     "routes_path": "data/dispatch/session_full_20260928/routes.v1.jsonl",
-    "expected_head": "c2c9a49c03aba8dfec1e014ce0344df05b3f35f1"
+    "expected_head": "c0591a6dc4257a59947a93ce8820c0a466ff3bb7"
   },
   "local_scope": {
     "owned_workstreams": [
