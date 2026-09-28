@@ -105,8 +105,21 @@ FileBrowser
 → ContextBroker
 → NOVOexport Provider
 → ContextBundle V2
+→ Semantic Context Exam V1
 → llamaRafaelia
-→ source-linked answer
+→ source-linked answer with evidence/limits/TOKEN_VAZIO/next action
 ```
 
 Patch/write routing remains a later gate through RafGitFS.
+
+## Downstream semantic examination
+
+ContextBundle V2 transports bounded selected context. It does not decide whether
+an arithmetic/comparison/claim operation is valid. The downstream
+`Semantic Context Exam V1` consumes explicit semantic objects and enforces the
+parable-derived gates without mutating this V2 compatibility contract.
+
+```text
+CONTEXT_TRANSPORT != SEMANTIC_OPERATION_APPROVAL
+SEMANTIC_OPERATION_PASS != PHYSICAL_CLAIM
+```
