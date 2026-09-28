@@ -9,6 +9,7 @@ trap 'rm -rf "$TMP"' EXIT
 bash -n "$RAF"
 test "$("$RAF" version)" = "1.0.0"
 "$RAF" graph | grep -q 'D8 -> DEX'
+"$RAF" help | grep -q 'silicon-gate'
 "$RAF" provision-plan | grep -q 'network_implicit=false'
 "$RAF" probe | grep -q 'claim_allowed=false'
 "$RAF" shadow | grep -q 'RAFANDROID_SHADOW_REPORT_V1'
