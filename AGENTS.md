@@ -57,6 +57,19 @@ AGENTS.md
 
 Do not broaden the crawl until these indices cannot reconstruct the requested goal.
 
+### Practice fast lane
+
+For bounded human/AI contribution routing, use:
+
+```text
+docs/AI_HUMAN_FAST_ROUTE_V1.md
+configs/practice-router.v1.json
+scripts/validate_practice_router.py
+```
+
+This is a local adapter to the federated Practice ATLAS in `Mapa`; it does not replace Mapa authority.
+Prefer one named route and <=3 source files before broad repository search.
+
 ## 2. Build
 
 - Primary dev build: `./scripts/gradlew_with_java17.sh assembleDevDebug`

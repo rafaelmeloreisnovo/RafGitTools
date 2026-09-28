@@ -6,6 +6,15 @@ First off, thank you for considering contributing to RafGitTools! 🎉
 
 This project adheres to a code of conduct. By participating, you are expected to uphold this code. Please be respectful and constructive in all interactions.
 
+## Fast route before contributing
+
+Before a broad repository search, read `AGENTS.md` and choose a bounded route from
+`configs/practice-router.v1.json`. The human-readable entry is
+`docs/AI_HUMAN_FAST_ROUTE_V1.md`.
+
+A contribution should be able to state: `INTENT → AUTHORITY → SOURCE_MIN → GATE → EVIDENCE → GAP → NEXT`.
+Use `TOKEN_VAZIO` or `NOT_RUN` rather than inferring missing authority/evidence.
+
 ## How Can I Contribute?
 
 ### Reporting Bugs
