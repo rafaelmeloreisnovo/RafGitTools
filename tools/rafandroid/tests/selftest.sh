@@ -12,6 +12,8 @@ test "$("$RAF" version)" = "1.0.0"
 "$RAF" provision-plan | grep -q 'network_implicit=false'
 "$RAF" probe | grep -q 'claim_allowed=false'
 "$RAF" shadow | grep -q 'RAFANDROID_SHADOW_REPORT_V1'
+"$RAF" tails | grep -q 'tail_state=INVENTORY_ONLY'
+"$RAF" friction | grep -q 'numeric_score=TOKEN_VAZIO_UNCALIBRATED'
 "$RAF" qemu | grep -q 'boot_claim=TOKEN_VAZIO'
 "$RAF" receipt > "$TMP/receipt.json"
 python3 -m json.tool "$TMP/receipt.json" >/dev/null
