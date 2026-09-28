@@ -1,0 +1,39 @@
+{
+  "schema": "rafgittools.private-processing-capability-bootstrap/v1",
+  "observed_at": "2026-09-28",
+  "branch": "feature/private-processing-capability-v1-20260928",
+  "state": "IMPLEMENTED_UNTESTED",
+  "claim_allowed": false,
+  "materialized": [
+    "configs/private-processing-capability.v1.json",
+    "docs/PRIVATE_PROCESSING_CAPABILITY_V1.md",
+    "app/src/main/kotlin/com/rafgittools/bridge/PrivateProcessingReceiptV1.kt",
+    "app/src/main/kotlin/com/rafgittools/data/github/GithubApiService.kt",
+    "app/src/main/kotlin/com/rafgittools/data/github/GithubRepository.kt",
+    "app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeViewModel.kt",
+    "app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen.kt",
+    "app/src/test/kotlin/com/rafgittools/bridge/PrivateProcessingReceiptV1Test.kt",
+    "tests/test_private_processing_capability_contract.py"
+  ],
+  "source_boundary": "GOOGLE_DRIVE_READ_ONLY_VIA_ANDROID_SAF",
+  "output_boundary": "PRIVATE_GITHUB_RECEIPT_ONLY",
+  "raw_payload_uploaded": false,
+  "secret_lane": {
+    "state": "TOKEN_VAZIO_UNWIRED_SECRET",
+    "secret_reference": "PAT_PRIVATE_PROCESSING",
+    "fallbacks_forbidden": true
+  },
+  "evidence_state": {
+    "source_implementation": "MATERIALIZED",
+    "ci": "NOT_RUN",
+    "device_e2e": "NOT_RUN",
+    "private_target_bootstrap": "MATERIALIZED_SEPARATE_PRIVATE_BRANCH"
+  },
+  "gaps": [
+    "CI_NOT_RUN",
+    "DEVICE_E2E_NOT_RUN",
+    "DEVICE_APK_SHA256_NOT_BOUND",
+    "PAT_PRIVATE_PROCESSING_UNPROVISIONED"
+  ],
+  "next": "open PR, observe CI, reconcile failures before any PASS promotion"
+}
