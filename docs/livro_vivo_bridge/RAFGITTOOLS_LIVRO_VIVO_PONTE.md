@@ -68,3 +68,78 @@ proximo_passo: "criar RAFGITTOOLS_OPERATIONAL_SAFETY.md"
 - **F_ok:** RafGitTools recebe ponte para automação com escopo, log e reversão.
 - **F_gap:** falta inventário real das ferramentas, permissões e comandos destrutivos.
 - **F_next:** criar `RAFGITTOOLS_OPERATIONAL_SAFETY.md` com dry-run, allowlist e rollback.
+
+
+## Ponte canônica — Rotas Humanas Lúdicas
+
+Fonte autoral em revisão humana:
+
+- repositório: `rafaelmeloreisnovo/templo-vivo-arcs`
+- branch: `docs/livro-vivo-rotas-humanas-v1-20260927`
+- head observado: `2f2cb9f44eafa373b515aecae1987d5f7afe1d4e`
+- arquivo: `docs/livro_vivo/ROTAS_HUMANAS_LUDICAS_V1.md`
+- PR: `#41` (draft no momento desta ponte)
+
+RafGitTools **não duplica** o caderno. Ele registra a rota e traduz seus princípios para controles operacionais.
+
+### Tradução para controle
+
+| Rota humana | Controle operacional |
+|---|---|
+| Sete Lanternas | múltiplas fontes/rotas não são promovidas automaticamente a uma única verdade |
+| Árvore | registrar impacto e custo futuro antes de mutação irreversível |
+| Pedra Imperfeita | `TOKEN_VAZIO != 0` |
+| Rio Reversível | before/after + replay + rollback |
+| Cartógrafo | oferecer alternativas e riscos; preservar decisão humana |
+| Três Espelhos | BODY/SOUL/SPIRIT como classes independentes |
+| Porta Pequena | maior dever de cuidado em contexto infantil/vulnerável |
+| Jardim | pluralismo e não discriminação sem apagar diferenças |
+
+### Gate de uso
+
+```text
+PARABLE -> EXPLANATION
+EXPLANATION -> ROUTE
+ROUTE -> SOURCE/EVIDENCE
+SOURCE/EVIDENCE -> DECISION
+```
+
+Nunca:
+
+```text
+PARABLE -> CLAIM
+TRADITION -> TECHNICAL_PROOF
+PERSPECTIVE -> LAW
+```
+
+### Auditabilidade e reconstrução
+
+Toda automação que materialize um princípio desta ponte deve registrar, quando aplicável:
+
+```yaml
+route_id: string
+source_ref: string
+owner: string
+authority: string
+before_state: ref
+action: bounded_action
+after_state: ref
+evidence_ref: ref
+receipt_ref: ref
+replay_recipe: string
+rollback_procedure: string
+rollback_test: string
+privacy_class: string
+human_review_required: boolean
+claim_allowed: boolean
+```
+
+Se a rota não puder ser reconstruída por outra pessoa/IA autorizada a partir das referências registradas, usar `TOKEN_VAZIO_RECONSTRUCTION`.
+
+### Fronteira jurídica e normativa
+
+RafGitTools pode **mapear** normas, requisitos e controles; não deve declarar certificação ou conformidade integral por simples presença de documentação. Uma referência normativa precisa de identidade, versão/data, escopo/aplicabilidade e evidência correspondente.
+
+Material envolvendo dados pessoais, crença, crianças, saúde ou conteúdo cultural sensível deve permanecer fail-closed para publicação quando a base de autorização, finalidade, privacidade ou direitos de terceiros estiver incompleta.
+
+`SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM`
