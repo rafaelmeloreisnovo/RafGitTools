@@ -16,9 +16,14 @@
     "NO_SECRET_VALUES_IN_LEDGER",
     "ROLLBACK_ONLY_WHEN_DECLARED_AND_VERIFIABLE",
     "CORRECTIONS_APPEND_NOT_REWRITE",
-    "REVIEWABLE_ANY_TIME"
+    "REVIEWABLE_ANY_TIME",
+    "EVERY_STEP_REQUIRES_EXPLICIT_DECISION_BEFORE_COMPLETION"
   ],
-  "decisions": ["AGREE", "DISAGREE", "LATER"],
+  "decisions": [
+    "AGREE",
+    "DISAGREE",
+    "LATER"
+  ],
   "local_storage": {
     "preferences": "APP_PRIVATE_SHARED_PREFERENCES",
     "custody_ledger": "APP_PRIVATE_FILES/setup_wizard/custody.jsonl",
@@ -27,14 +32,81 @@
   },
   "privileged_action_rule": "Wizard decision records intent/configuration only; privileged execution requires a separate capability-specific gate and evidence.",
   "steps": [
-    {"id":"WELCOME","risk":"LOW","rollback":"EXIT_WITHOUT_EXTERNAL_ACTION","data_touched":"LOCAL_WIZARD_STATE","zero_trust":"NOTHING_ENABLED_BY_DEFAULT"},
-    {"id":"PRIVACY","risk":"MEDIUM","rollback":"LOCAL_DECISION_REVERSIBLE_EXTERNAL_SEPARATE","data_touched":"DECISION_METADATA_ONLY","zero_trust":"SECRET_PRESENT_NE_PERMISSION"},
-    {"id":"IDENTITY_AND_ACCESS","risk":"HIGH","rollback":"LOCAL_UNBIND_PLUS_PROVIDER_REVOCATION_WHEN_APPLICABLE","data_touched":"CAPABILITY_METADATA_NO_SECRET_VALUES","zero_trust":"CAPABILITY_NE_PERMISSION_NE_EXECUTION"},
-    {"id":"EXTERNAL_MODULES","risk":"HIGH","rollback":"DISABLE_MODULE_IF_SUPPORTED","data_touched":"DECLARED_MODULE_DATA_ONLY","zero_trust":"KNOWN_ORIGIN_NE_TRUSTED_BEHAVIOR"},
-    {"id":"READ_WRITE_BOUNDARY","risk":"HIGH","rollback":"ONLY_WITH_VERIFIABLE_PRIOR_STATE_AND_SAFE_INVERSE","data_touched":"TARGET_CHANGE_PRIOR_STATE_RECEIPT","zero_trust":"AVAILABLE_NE_AUTHORIZED"},
-    {"id":"AUDIT_AND_CUSTODY","risk":"MEDIUM","rollback":"APPEND_CORRECTION_EVENT","data_touched":"STEP_DECISION_EVENT_TIME_HASH_CHAIN","zero_trust":"INTENT_NE_EXECUTION_NE_EVIDENCE_NE_CLAIM"},
-    {"id":"AUTOMATION","risk":"HIGH","rollback":"DISABLE_AUTOMATION_PLUS_OPERATION_SPECIFIC_ROLLBACK","data_touched":"MINIMUM_TASK_METADATA_AND_RECEIPTS","zero_trust":"STANDARDIZE_BEFORE_AUTOMATE"},
-    {"id":"REVIEW_AND_ROLLBACK","risk":"MEDIUM","rollback":"LOCAL_REVERSAL_SEPARATE_FROM_EXTERNAL_ROLLBACK","data_touched":"DECISION_HISTORY_AND_RECEIPT_REFS","zero_trust":"ROLLBACK_MUST_BE_DECLARED_AND_VERIFIABLE"},
-    {"id":"FINAL_REVIEW","risk":"LOW","rollback":"REOPEN_AND_APPEND_NEW_DECISIONS","data_touched":"FINAL_WIZARD_STATE_AND_LOCAL_RECEIPTS","zero_trust":"COMPLETE_NE_PERMISSION_NE_EXECUTION"}
-  ]
+    {
+      "id": "WELCOME",
+      "risk": "LOW",
+      "rollback": "EXIT_WITHOUT_EXTERNAL_ACTION",
+      "data_touched": "LOCAL_WIZARD_STATE",
+      "zero_trust": "NOTHING_ENABLED_BY_DEFAULT"
+    },
+    {
+      "id": "PRIVACY",
+      "risk": "MEDIUM",
+      "rollback": "LOCAL_DECISION_REVERSIBLE_EXTERNAL_SEPARATE",
+      "data_touched": "DECISION_METADATA_ONLY",
+      "zero_trust": "SECRET_PRESENT_NE_PERMISSION"
+    },
+    {
+      "id": "IDENTITY_AND_ACCESS",
+      "risk": "HIGH",
+      "rollback": "LOCAL_UNBIND_PLUS_PROVIDER_REVOCATION_WHEN_APPLICABLE",
+      "data_touched": "CAPABILITY_METADATA_NO_SECRET_VALUES",
+      "zero_trust": "CAPABILITY_NE_PERMISSION_NE_EXECUTION"
+    },
+    {
+      "id": "EXTERNAL_MODULES",
+      "risk": "HIGH",
+      "rollback": "DISABLE_MODULE_IF_SUPPORTED",
+      "data_touched": "DECLARED_MODULE_DATA_ONLY",
+      "zero_trust": "KNOWN_ORIGIN_NE_TRUSTED_BEHAVIOR"
+    },
+    {
+      "id": "READ_WRITE_BOUNDARY",
+      "risk": "HIGH",
+      "rollback": "ONLY_WITH_VERIFIABLE_PRIOR_STATE_AND_SAFE_INVERSE",
+      "data_touched": "TARGET_CHANGE_PRIOR_STATE_RECEIPT",
+      "zero_trust": "AVAILABLE_NE_AUTHORIZED"
+    },
+    {
+      "id": "AUDIT_AND_CUSTODY",
+      "risk": "MEDIUM",
+      "rollback": "APPEND_CORRECTION_EVENT",
+      "data_touched": "STEP_DECISION_EVENT_TIME_HASH_CHAIN",
+      "zero_trust": "INTENT_NE_EXECUTION_NE_EVIDENCE_NE_CLAIM"
+    },
+    {
+      "id": "AUTOMATION",
+      "risk": "HIGH",
+      "rollback": "DISABLE_AUTOMATION_PLUS_OPERATION_SPECIFIC_ROLLBACK",
+      "data_touched": "MINIMUM_TASK_METADATA_AND_RECEIPTS",
+      "zero_trust": "STANDARDIZE_BEFORE_AUTOMATE"
+    },
+    {
+      "id": "REVIEW_AND_ROLLBACK",
+      "risk": "MEDIUM",
+      "rollback": "LOCAL_REVERSAL_SEPARATE_FROM_EXTERNAL_ROLLBACK",
+      "data_touched": "DECISION_HISTORY_AND_RECEIPT_REFS",
+      "zero_trust": "ROLLBACK_MUST_BE_DECLARED_AND_VERIFIABLE"
+    },
+    {
+      "id": "FINAL_REVIEW",
+      "risk": "LOW",
+      "rollback": "REOPEN_AND_APPEND_NEW_DECISIONS",
+      "data_touched": "FINAL_WIZARD_STATE_AND_LOCAL_RECEIPTS",
+      "zero_trust": "COMPLETE_NE_PERMISSION_NE_EXECUTION"
+    }
+  ],
+  "completion_rule": "Every step must have AGREE, DISAGREE or LATER before the wizard can be marked completed.",
+  "effective_capability_explanation": {
+    "source": "RafGitTools PAT capability registry",
+    "secret_values_displayed": false,
+    "capabilities": [
+      "PAT_ACTIONS",
+      "PAT_AGENTS",
+      "PAT_CODESPACES",
+      "PAT_DEPENDABOT",
+      "PAT_ENV"
+    ],
+    "rule": "Explain current state and limits without treating secret presence as permission proof."
+  }
 }
