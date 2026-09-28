@@ -67,8 +67,12 @@ class MasterCoverageProviderRoutingTests(unittest.TestCase):
             allowed_tasks,
             {"river7_offline", "master_coverage_import"},
         )
-        provider_lane = self.workflow.split("  provider_actions:", 1)[1].split(
-            "  provider_environments:", 1
+        provider_job_marker = (
+            "\n  provider_actions:\n"
+            "    name: '08A · Provider actions / exact cross-repo read-only'\n"
+        )
+        provider_lane = self.workflow.split(provider_job_marker, 1)[1].split(
+            "\n  provider_environments:\n", 1
         )[0]
         self.assertNotIn("eval ", provider_lane)
         self.assertNotIn("TARGET_TASK_CMD", provider_lane)
