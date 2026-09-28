@@ -1,7 +1,7 @@
 # RafGitTools — Relatório de Status
 
-**Data de observação:** 2026-09-18  
-**Base auditada:** `main@2e69dae6d45dd23c6252eee9b42cd230d1bd6bac`  
+**Data de observação:** 2026-09-28  
+**Base auditada para este delta:** `main@8af97a580e535d2015e8211000850e282b031763`  
 **Estado geral:** 🟡 `SOURCE_ADVANCED / EVIDENCE_GATED / DEVICE_TOKEN_VAZIO`  
 **Escopo desta revisão:** reconciliação código + testes + arquitetura de entrega + documentação  
 **Claim:** `claim_allowed=false`  
@@ -19,6 +19,19 @@ SOURCE_OBSERVED
 
 TOKEN_VAZIO != FAIL != PASS
 ```
+
+## Reconciliação 2026-09-28 — RAFANDROID + Silicon Light
+
+| Superfície | Estado | Evidência terminal | Limite |
+|---|---|---|---|
+| RAFANDROID V1 | `MERGED / VERIFIED_LIMITED` | PR #521 head `62925c8...`; START #241 SUCCESS | toolchain/runtime externo continua separado |
+| Silicon Light L0 | `MERGED / VERIFIED_LIMITED` | PR #526 head `40d90c9...`; START #263 SUCCESS | device físico não provado |
+| ARMv7 + AArch64 L0 gate | `PASS_CI_BOUNDED` | NDK-bound gate no START #263 | object compile != physical execution |
+| Minimal L0→JNI→APK fixture | `PASS_CI_BOUNDED` | scaffold gerado, APK construído, DEX/APK gates PASS | fixture != app inteiro/device |
+| Dynamic Code Scanning AI | `FAIL_INFRA_PROVIDER` em heads intermediários | HTTP 400 “requested model is not supported” | não é finding de código nem PASS de segurança |
+| Canonical CodeQL Actions + Java/Kotlin | `PASS` no head final #526 | START #263 | CI security != runtime/device security |
+
+Detalhe: `docs/audit/SESSION_RECONCILIATION_RAFANDROID_SILICON_LIGHT_20260928.md`.
 
 ## Reconciliação 2026-09-18 — delta controlador
 
@@ -93,6 +106,8 @@ No SHA exato `56f4ce...`, foi diretamente observado o workflow Human Impact Cros
 | Terminal | `BOUNDED_EXECUTOR` | PTY/VT100 = `TOKEN_VAZIO_PTY` |
 | LFS/worktree/bisect/GPG | fonte/adapters presentes | runtimes externos/fixtures ainda separados |
 | JNI/RAFAELIA | bridge/source presente | device invocation atual = `TOKEN_VAZIO_RUNTIME` |
+| RAFANDROID | shell/gates/scaffold integrados | exact-head CI PASS; device/QEMU runtime separado |
+| Silicon Light L0 | freestanding L0 integrado | host + NDK ARMv7/AArch64 + minimal APK fixture PASS; physical device aberto |
 | LLaMA/local model | bridge/source presente | dependência/modelo/runtime externo = `TOKEN_VAZIO` |
 | Physical Android device | — | `TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED` |
 | Release | — | `BLOCKED_BY_EVIDENCE` |
@@ -135,13 +150,14 @@ Não converter esses vazios em números aproximados.
 
 ## Gaps prioritários
 
-1. **U0 — current-head evidence:** inventariar/ligar individualmente CI, build e security ao SHA exato promovido.
+1. **U0 — current-head evidence:** manter CI/build/security ligados ao SHA exato; PR #521/#526 estão fechados, mas sucessores de main exigem novo binding.
 2. **U0 — physical device:** instalar/iniciar o artefato exato e registrar package/ABI/device/logcat/hash.
 3. **U0 — release:** assinatura, provenance e physical acceptance no mesmo artifact chain.
 4. **U0/U1 — provider governance:** autoridade, desired policy, dry-run, reversible apply e authoritative readback.
 5. **U1 — real fixtures:** Git/Auth/providers/offline/recovery.
 6. **U1 — external runtimes:** PTY, LFS/GPG e modelo/LLaMA conforme cada contrato.
 7. **U2 — documentation/machine drift:** manter docs vivas no mesmo ciclo e regenerar estado máquina quando autorizado.
+8. **U1 — low-level equivalence:** inventariar helpers duplicados e migrar somente famílias com referência, property/fuzz e equivalência comprovada.
 
 ## R3
 
