@@ -346,6 +346,74 @@ cmd_native_gate(){
   done
 }
 
+cmd_silicon_gate(){
+  local root="${1:-native/silicon_light_v1}" api="${2:-24}" abi="${3:-both}"
+  local core="$root/src/raf_silicon_light.c" inc="$root/include"
+  [[ -f "$core" && -d "$inc" ]] || die "Silicon Light source tree not found: $root"
+
+  if grep -REn '#[[:space:]]*include[[:space:]]*<' "$root/src" "$root/include"; then
+    die "Silicon Light L0 contains a system/external include"
+  fi
+  if grep -REn '\b(malloc|calloc|realloc|free|syscall|open|close|read|write|socket|connect|pthread_|dlopen|dlsym|JNIEnv|JavaVM)\b' "$root/src" "$root/include"; then
+    die "Silicon Light L0 contains a forbidden runtime primitive"
+  fi
+
+  context
+  [[ -n "$NDK" ]] || die "NDK = TOKEN_VAZIO"
+  local host cc nm readelf
+  host="$(find "$NDK/toolchains/llvm/prebuilt" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | head -n1 || true)"
+  cc="$host/bin/clang"
+  nm="$host/bin/llvm-nm"
+  readelf="$host/bin/llvm-readelf"
+  [[ -x "$cc" && -x "$nm" && -x "$readelf" ]] || die "bound NDK clang/llvm-nm/llvm-readelf = TOKEN_VAZIO"
+
+  local abis=() a target obj undef
+  [[ "$abi" == both ]] && abis=(armeabi-v7a arm64-v8a) || abis=("$abi")
+
+  for a in "${abis[@]}"; do
+    target="$(abi_target "$a" "$api")" || die "unsupported ABI: $a"
+    obj="$(mktemp "${TMPDIR:-/tmp}/raf-silicon-light.XXXXXX.o")"
+    undef="${obj}.undefined"
+
+    args=(
+      --target="$target"
+      -nostdinc
+      -I"$inc"
+      -DRAF_SILICON_LIGHT_FREESTANDING=1
+      -std=c11 -Os -ffreestanding -fno-builtin -fno-stack-protector
+      -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-ident -fno-common
+      -fvisibility=hidden -fno-vectorize -fno-slp-vectorize
+      -ffunction-sections -fdata-sections -fomit-frame-pointer
+      -fno-strict-aliasing -fwrapv
+      -Wall -Wextra -Werror -Wshadow -Wconversion -Wsign-conversion -Wundef
+      -Wstrict-prototypes -Wmissing-prototypes -Wold-style-definition -Wcast-align
+    )
+    case "$a" in
+      armeabi-v7a) args+=(-march=armv7-a -mfloat-abi=softfp -mfpu=neon-vfpv4) ;;
+      arm64-v8a) args+=(-march=armv8-a) ;;
+    esac
+
+    "$cc" "${args[@]}" -c "$core" -o "$obj"
+    "$nm" -u "$obj" > "$undef"
+    if [[ -s "$undef" ]]; then
+      say "SILICON_GATE=$a:FAIL_UNDEFINED"
+      cat "$undef"
+      rm -f "$obj" "$undef"
+      return 1
+    fi
+
+    say "SILICON_GATE=$a:PASS"
+    "$readelf" -h "$obj" | grep -E 'Class:|Machine:' | sed 's/^[[:space:]]*//'
+    rm -f "$obj" "$undef"
+  done
+
+  say "system_headers=0"
+  say "forbidden_runtime_primitives=0"
+  say "external_undefined_symbols=0"
+  say "runtime_dependency_claim=L0_ONLY"
+  say "claim_allowed=false"
+}
+
 cmd_jni_gate(){
   local so="${1:-}"
   [[ -f "$so" ]] || die "shared library not found: $so"
@@ -405,6 +473,12 @@ cmd_scaffold(){
   [[ -d "$TEMPLATE_DIR" ]] || die "template directory missing"
   [[ ! -e "$out" ]] || die "destination exists: $out"
   mkdir -p "$out"; cp -R "$TEMPLATE_DIR"/. "$out"/
+  local silicon_src="$REPO_ROOT/native/silicon_light_v1"
+  [[ -f "$silicon_src/src/raf_silicon_light.c" && -f "$silicon_src/include/raf_silicon_light.h" ]] || \
+    die "canonical Silicon Light L0 source = TOKEN_VAZIO"
+  mkdir -p "$out/app/src/main/cpp/silicon_light"
+  cp "$silicon_src/src/raf_silicon_light.c" "$out/app/src/main/cpp/silicon_light/"
+  cp "$silicon_src/include/raf_silicon_light.h" "$out/app/src/main/cpp/silicon_light/"
   local package_path="${pkg//./\/}" jni_package="${pkg//./_}" marker="$out/app/src/main/java/__PACKAGE_PATH__" f
   mkdir -p "$out/app/src/main/java/$package_path"
   if [[ -d "$marker" ]]; then
@@ -414,7 +488,7 @@ cmd_scaffold(){
   while IFS= read -r -d '' f; do
     sed -i "s/__PACKAGE__/$pkg/g; s/__APPID__/$pkg/g; s/__JNI_PACKAGE__/$jni_package/g" "$f"
   done < <(find "$out" -type f -print0)
-  say "SCAFFOLD=PASS"; say "path=$out"; say "package=$pkg"; say "androidx_default=OFF"; say "jni=ON"
+  say "SCAFFOLD=PASS"; say "path=$out"; say "package=$pkg"; say "androidx_default=OFF"; say "jni=ON"; say "silicon_light_l0=EMBEDDED_FROM_CANONICAL_SOURCE"
 }
 
 cmd_receipt(){
@@ -446,6 +520,7 @@ probe | shadow | tails | friction | graph | bind | env | provision-plan | androi
 gradle <tasks...>
 tool <sdkmanager|aapt2|aidl|d8|r8|dexdump|apkanalyzer|apksigner|zipalign|adb|emulator|clang|llvm-nm|...> [args...]
 native-gate <c-source> [api=29] [abi=both]
+silicon-gate [root=native/silicon_light_v1] [api=24] [abi=both]
 jni-gate <lib.so>
 dex-gate <apk|dex>
 apk-gate <apk>
@@ -471,6 +546,7 @@ case "$cmd" in
   androidx) cmd_androidx "$@" ;;
   qemu) cmd_qemu "$@" ;;
   native-gate) cmd_native_gate "$@" ;;
+  silicon-gate) cmd_silicon_gate "$@" ;;
   jni-gate) cmd_jni_gate "$@" ;;
   dex-gate) cmd_dex_gate "$@" ;;
   apk-gate) cmd_apk_gate "$@" ;;

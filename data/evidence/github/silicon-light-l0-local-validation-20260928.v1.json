@@ -1,0 +1,95 @@
+{
+  "schema": "rafaelia.transition-receipt.v1",
+  "event_id": "RAFGITTOOLS-SILICON-LIGHT-L0-LOCAL-VALIDATION-20260928T015900-0300",
+  "parent_event_id": "RAFGITTOOLS-RAFANDROID-SHELL-V1-20260927T205500-0300",
+  "observed_at": "2026-09-28T01:59:00-03:00",
+  "actor_role": "control-plane executor / local validation",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "ref": "feature/silicon-light-lowlevel-v1",
+  "source_commit": "1d70a9e290de0bfd42a25cebddb7288a90a56cd8",
+  "path_scope": [
+    "native/silicon_light_v1/",
+    "tools/rafandroid/rafandroid",
+    "tools/rafandroid/templates/minimal-jni/",
+    ".github/workflows/START.yml"
+  ],
+  "authority": {
+    "local": "rafaelmeloreisnovo/RafGitTools",
+    "federated": "rafaelmeloreisnovo/Mapa",
+    "runtime_boundary": "L0 object-only; Android/NDK-bound START evidence remains separate"
+  },
+  "state_before": "READY_TO_TEST",
+  "state_after": "EVIDENCED_SCOPED",
+  "urgency": "P1",
+  "risk": "MEDIUM",
+  "governance_class": "LOCAL_LOW_LEVEL_SUBSTRATE",
+  "data_class": "PUBLIC_SOURCE_AND_BUILD_METADATA_ONLY",
+  "privacy_class": "NO_USER_PAYLOAD",
+  "security_class": "RUNTIME_DEPENDENCY_AND_OBJECT_INTEGRITY",
+  "exact_blob_binding": {
+    "native/silicon_light_v1/include/raf_silicon_light.h": {
+      "git_blob_sha": "7977fba123a340af6adea47b69ce63c329ce5f00",
+      "sha256": "a600c878752512f260f38b4add83ab329d6976adb7c9ad669fd3f3b84d948348"
+    },
+    "native/silicon_light_v1/src/raf_silicon_light.c": {
+      "git_blob_sha": "d7bf846eb3275f89b104bd7e987c172f38ba16b0",
+      "sha256": "b76bc3195086ce04d08ae9fb2dd177bf3d34408afe18eabf4b61bbe233de5d87"
+    },
+    "native/silicon_light_v1/Makefile": {
+      "git_blob_sha": "487e34a3579f0f094cb58d04ebdabfc32d902f48",
+      "sha256": "17869a9f84586c5045488779ab2df07d9fc5c3617e739a0a1d36e0a4c8fe39b9"
+    },
+    "native/silicon_light_v1/tests/test_silicon_light.c": {
+      "git_blob_sha": "0e57fb33fef3d5d8e621d174982f16f0d10c5c8c",
+      "sha256": "84d6c5076317c2409b7f77e509653603e18b9a200a1960e3c460e515b630705b"
+    }
+  },
+  "execution_environment": {
+    "os": "Linux 6.18.44 x86_64",
+    "clang": "17.0.0",
+    "nm": "GNU Binutils 2.44",
+    "readelf": "GNU Binutils 2.44",
+    "ndk_bound": false
+  },
+  "observed_results": {
+    "host_selftest": "PASS",
+    "system_headers": 0,
+    "forbidden_runtime_primitives": 0,
+    "host_undefined_symbols": 0,
+    "host_relocations": 0,
+    "armv7_object_compile": "PASS",
+    "armv7_undefined_symbols": 0,
+    "armv7_object_sha256": "0e11a87ca7a4fe56be6f26c41a852b7f43a6578f8ae39e5400c5b8e2c8bfb251",
+    "armv7_relocations": "8 local R_ARM_PREL31 entries in .ARM.exidx metadata; no undefined external symbols",
+    "aarch64_object_compile": "PASS",
+    "aarch64_undefined_symbols": 0,
+    "aarch64_relocations": 0,
+    "aarch64_object_sha256": "4ba19f5d74ac741d2123520da2c960ac736423be4e3a61edb33a9502259a680e"
+  },
+  "falsifier": "Any exact-source mismatch, system header, forbidden runtime primitive, undefined external symbol, host relocation, deterministic self-test failure, NDK-bound cross-ABI failure, Android build failure, or physical runtime failure invalidates the corresponding scoped claim.",
+  "exit_criterion": "Exact Git blobs reproduce host PASS with zero undefined symbols/host relocations and cross-target ARMv7/AArch64 objects with zero undefined symbols.",
+  "evidence_refs": [
+    "git-blobs:7977fba123a340af6adea47b69ce63c329ce5f00,d7bf846eb3275f89b104bd7e987c172f38ba16b0,487e34a3579f0f094cb58d04ebdabfc32d902f48,0e57fb33fef3d5d8e621d174982f16f0d10c5c8c",
+    "local-execution:exact-blob-reconstruction:2026-09-28T01:59:00-03:00",
+    "GitHub-Actions:START-run-255:36380004965:PENDING_AT_OBSERVATION"
+  ],
+  "F_ok": [
+    "Exact Git blob identity reproduced locally",
+    "Host deterministic self-test PASS",
+    "L0 system headers=0",
+    "L0 forbidden runtime primitives=0",
+    "Host undefined symbols=0",
+    "Host relocations=0",
+    "ARMv7 cross-target object undefined symbols=0",
+    "AArch64 cross-target object undefined symbols=0"
+  ],
+  "F_gap": [
+    "NDK-bound silicon-gate on exact PR head is pending in START",
+    "Full minimal JNI scaffold APK compile remains pending in START",
+    "Physical Android install/start remains TOKEN_VAZIO",
+    "ARMv7 .ARM.exidx local metadata relocations are retained and are not treated as external dependencies"
+  ],
+  "F_next": "Consume terminal START result for the exact successor head and promote only the NDK-bound/Android scopes actually observed.",
+  "rollback_ref": "ff4b60b05eb9ffd47188a84744dd66e81a0f2b8c",
+  "claim_allowed": false
+}

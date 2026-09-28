@@ -92,3 +92,23 @@ See `docs/RAFANDROID_METHOD_V1.md`.
 - Compose.
 
 `friction` relata bloqueadores concretos e shadows. O campo `numeric_score` permanece `TOKEN_VAZIO_UNCALIBRATED`: não existe pontuação sintética até haver calibração com builds medidos.
+
+
+## Silicon Light L0
+
+O núcleo autoral independente fica em `native/silicon_light_v1`.
+
+```bash
+make -C native/silicon_light_v1 host-test audit
+tools/rafandroid/rafandroid silicon-gate native/silicon_light_v1 24 both
+```
+
+O gate exige no L0:
+
+- zero headers de sistema;
+- zero heap/allocator;
+- zero syscall;
+- zero JNI/Android API;
+- zero símbolos externos indefinidos em ARMv7 e AArch64.
+
+A independência é do **runtime L0**. Clang/NDK são ferramentas de construção, e Android continua sendo autoridade externa para APK, ART, permissões, UI, armazenamento e instalação.

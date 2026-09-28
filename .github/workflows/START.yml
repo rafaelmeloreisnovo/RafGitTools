@@ -330,6 +330,14 @@ jobs:
             echo '::error::eval is forbidden in rafandroid execution path'
             exit 1
           fi
+      - name: Silicon Light L0 freestanding gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C native/silicon_light_v1 clean
+          make -C native/silicon_light_v1 host-test audit HOST_CC=clang NM=nm READELF=readelf
+          make -C native/silicon_light_v1 clean
+
       - name: RafCode Route V1 freestanding gate
         shell: bash
         run: |
@@ -529,6 +537,23 @@ jobs:
           tools/rafandroid/rafandroid probe
           tools/rafandroid/rafandroid shadow
           tools/rafandroid/rafandroid native-gate tools/rafandroid/templates/minimal-jni/app/src/main/cpp/core.c 24 both
+          tools/rafandroid/rafandroid silicon-gate native/silicon_light_v1 24 both
+      - name: RAFANDROID minimal Silicon Light APK fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          FIXTURE="$RUNNER_TEMP/rafandroid-silicon-fixture"
+          rm -rf "$FIXTURE"
+          tools/rafandroid/rafandroid scaffold "$FIXTURE" io.rafaelia.siliconfixture
+          printf 'sdk.dir=%s\n' "$ANDROID_SDK_ROOT" > "$FIXTURE/local.properties"
+          ./gradlew --no-daemon -p "$FIXTURE" assembleDebug --stacktrace
+          APK="$(find "$FIXTURE/app/build/outputs/apk/debug" -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          test -s "$APK"
+          tools/rafandroid/rafandroid dex-gate "$APK"
+          tools/rafandroid/rafandroid apk-gate "$APK"
+          sha256sum "$APK" | tee "$RUNNER_TEMP/rafandroid-silicon-fixture.sha256"
+
       - name: Unit tests
         run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
       - name: Compile device route instrumentation APK
