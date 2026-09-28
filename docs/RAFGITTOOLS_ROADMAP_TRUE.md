@@ -1,11 +1,32 @@
 # RAFGITTOOLS_ROADMAP_TRUE
 
 - Status: **ACTIVE — operational roadmap**
-- Observed base: `main@2e69dae6d45dd23c6252eee9b42cd230d1bd6bac`
-- Updated: **2026-09-18**
+- Observed base for this reconciliation: `main@8af97a580e535d2015e8211000850e282b031763`
+- Updated: **2026-09-28**
 - Scope of this revision: **source/documentation reconciliation + delivery gates**
 - Rule: `SOURCE_OBSERVED != TEST_PROVEN != BUILD_PROVEN != RUNTIME_PROVEN != DEVICE_PROVEN != RELEASE_PROVEN`
 - Historical 288-feature matrix: planning reference only; it is not the current evidence denominator.
+
+## 2026-09-28 low-level/toolchain lane
+
+Completed, revision-bound:
+
+1. **RLA-1 RAFANDROID shell** — PR #521 merged; START #241 SUCCESS.
+2. **RLA-2 single-root CI integration** — standalone workflow removed; RAFANDROID lives inside canonical START.
+3. **RLA-3 toolchain hardening** — no `eval`, bound NDK selection, explicit DEX/APK/signature gates, shadows/tails/friction diagnostics.
+4. **RLA-4 Silicon Light L0** — PR #526 merged; host freestanding + NDK ARMv7/AArch64 gates PASS.
+5. **RLA-5 generated minimal Android fixture** — canonical L0 copied into scaffold; JNI adapter and APK build/DEX/APK verification PASS.
+6. **RLA-6 security/build closure** — final #526 head passed Android unit/instrumentation/lint/assemble plus CodeQL Actions and Java/Kotlin.
+
+Open next lane:
+
+7. **RLA-7 equivalence inventory** — find duplicated deterministic byte/fixed-point/state helpers.
+8. **RLA-8 property/fuzz** — prove ranges, overflow, aliasing/non-overlap contract and deterministic equivalence before migration.
+9. **RLA-9 physical Android** — same exact APK/hash install/launch/restart receipt.
+10. **RLA-10 QEMU/VM producer evidence** — guest boot/readback remains owned by its runtime producer.
+11. **RLA-11 reproducibility** — independent environment/toolchain identity + object/artifact digest comparison.
+
+Do not interpret RLA-1..6 as physical-device or release proof.
 
 ## 2026-09-18 delivery lane
 
