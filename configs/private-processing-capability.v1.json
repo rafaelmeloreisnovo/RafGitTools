@@ -1,0 +1,66 @@
+{
+  "schema": "rafgittools.private-processing-capability/v1",
+  "observed_at": "2026-09-28",
+  "claim_allowed": false,
+  "authority": {
+    "source_alias": "GOOGLE_DRIVE_NOVOEXPORT_ACTIVE",
+    "source_role": "READ_ONLY_SOURCE",
+    "target_alias": "PRIVATE_MEMORY_BRIDGE",
+    "target_role": "PRIVATE_DERIVED_CUSTODY",
+    "exact_private_provider_ids": "PRIVATE_SOURCE_LOCK_ONLY"
+  },
+  "lanes": [
+    {
+      "id": "ANDROID_EXPLICIT_USER",
+      "state": "IMPLEMENTED_SOURCE_PENDING_DEVICE",
+      "drive_access": "ANDROID_SAF_USER_SELECTION",
+      "github_auth": "EXISTING_USER_AUTHENTICATED_SESSION",
+      "allowed_outputs": [
+        "PRIVATE_ACTIVITY_RECEIPT_ONLY"
+      ],
+      "raw_payload_upload": false
+    },
+    {
+      "id": "SECRET_AUTOMATION",
+      "state": "TOKEN_VAZIO_UNWIRED_SECRET",
+      "secret_reference": "PAT_PRIVATE_PROCESSING",
+      "environment": "TOKEN_VAZIO_NOT_CREATED",
+      "allowed_outputs": [
+        "RECEIPT",
+        "SANITIZED_MANIFEST",
+        "INDEX"
+      ],
+      "raw_payload_upload": false,
+      "fallback_secrets_forbidden": [
+        "PAT_ENV",
+        "PAT_ACTIONS",
+        "PAT_AGENTS",
+        "PAT_CODESPACES",
+        "PAT_DEPENDABOT"
+      ]
+    }
+  ],
+  "invariants": [
+    "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "TOKEN_VAZIO != PASS",
+    "PRIVATE_TARGET_LIVE_READBACK_REQUIRED",
+    "RAW_CORPUS_UPLOAD_FORBIDDEN",
+    "BOUNDED_SAMPLE != FULL_SOURCE",
+    "SECRET_VALUE_NEVER_PERSISTED_OR_PRINTED",
+    "NO_SECRET_FALLBACK_BETWEEN_CAPABILITIES"
+  ],
+  "evidence": {
+    "android_stage": "HomeScreen.stageDriveDocument",
+    "corpus_gate": "CorpusIntakeGate",
+    "private_receipt_gate": "PrivateProcessingReceiptGateV1",
+    "private_publisher": "GithubDataRepository.createPrivateProcessingFile",
+    "rmrcti_bridge": "RmrCtiMobilePackBridgeV1",
+    "rmrcti_full_stream": "RmrCtiFullMemberStreamV1"
+  },
+  "gaps": [
+    "PHYSICAL_DEVICE_END_TO_END_NOT_RUN_FOR_THIS_DELTA",
+    "PAT_PRIVATE_PROCESSING_NOT_PROVISIONED_BY_AVAILABLE_TOOLING",
+    "DEVICE_APK_SHA256_NOT_BOUND_TO_ACTIVITY_RECEIPT"
+  ],
+  "next": "merge after CI, then execute one explicit Android Drive selection and verify private Git commit readback"
+}

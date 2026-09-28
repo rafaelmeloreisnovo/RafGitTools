@@ -1,5 +1,6 @@
 package com.rafgittools.ui.screens.home
 
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rafgittools.data.auth.AuthRepository
@@ -7,6 +8,8 @@ import com.rafgittools.data.auth.AuthTokenCache
 import com.rafgittools.data.cache.LocalRepositoryDao
 import com.rafgittools.data.git.JGitService
 import com.rafgittools.data.github.GithubDataRepository
+import com.rafgittools.bridge.CorpusIntakeResult
+import com.rafgittools.bridge.PrivateProcessingReceiptGateV1
 import com.rafgittools.domain.model.github.GithubUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,6 +55,11 @@ class HomeViewModel @Inject constructor(
     private val _remoteReceiptState =
         MutableStateFlow<RemoteReceiptState>(RemoteReceiptState.Idle)
     val remoteReceiptState: StateFlow<RemoteReceiptState> = _remoteReceiptState.asStateFlow()
+
+    private val _privateProcessingPublishState =
+        MutableStateFlow<PrivateProcessingPublishState>(PrivateProcessingPublishState.Idle)
+    val privateProcessingPublishState: StateFlow<PrivateProcessingPublishState> =
+        _privateProcessingPublishState.asStateFlow()
 
     init {
         checkAuthAndLoadData()
@@ -272,6 +280,69 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun publishPrivateProcessingReceipt(
+        target: GithubRepoModel,
+        sourceBytes: Long,
+        sourceSha256: String,
+        sourceProviderAuthority: String,
+        intake: CorpusIntakeResult
+    ) {
+        if (!_isAuthenticated.value) {
+            _privateProcessingPublishState.value =
+                PrivateProcessingPublishState.Failed("GitHub não autenticado")
+            return
+        }
+        if (!target.isPrivate) {
+            _privateProcessingPublishState.value =
+                PrivateProcessingPublishState.Failed("Destino precisa estar privado")
+            return
+        }
+
+        viewModelScope.launch {
+            _privateProcessingPublishState.value = PrivateProcessingPublishState.Running
+            val receipt = runCatching {
+                PrivateProcessingReceiptGateV1.build(
+                    sourceProviderAuthority = sourceProviderAuthority,
+                    sourceSha256 = sourceSha256,
+                    bytesRead = sourceBytes,
+                    intake = intake,
+                    destinationRepositoryFullName = target.fullName,
+                    androidSdk = Build.VERSION.SDK_INT,
+                    androidAbis = Build.SUPPORTED_ABIS.toList()
+                )
+            }.getOrElse { error ->
+                _privateProcessingPublishState.value =
+                    PrivateProcessingPublishState.Failed(
+                        error.message ?: "Falha ao montar receipt privado"
+                    )
+                return@launch
+            }
+
+            val path = PrivateProcessingReceiptGateV1.destinationPath(receipt)
+            val body = PrivateProcessingReceiptGateV1.toJson(receipt)
+            githubRepository.createPrivateProcessingFile(
+                owner = target.owner.login,
+                repo = target.name,
+                path = path,
+                utf8Content = body,
+                message = "receipt(private-processing): " + receipt.operationId,
+                branch = target.defaultBranch
+            ).onSuccess { result ->
+                _privateProcessingPublishState.value =
+                    PrivateProcessingPublishState.Passed(
+                        operationId = receipt.operationId,
+                        commitSha = result.commit.sha,
+                        path = path
+                    )
+            }.onFailure { error ->
+                _privateProcessingPublishState.value =
+                    PrivateProcessingPublishState.Failed(
+                        error.message ?: "Falha ao publicar receipt privado"
+                    )
+            }
+        }
+    }
+
     fun refresh() {
         if (_isAuthenticated.value) {
             loadUserData()
@@ -332,4 +403,15 @@ sealed class RemoteReceiptState {
     object Running : RemoteReceiptState()
     data class Passed(val issueNumber: Int, val url: String) : RemoteReceiptState()
     data class Failed(val message: String) : RemoteReceiptState()
+}
+
+sealed class PrivateProcessingPublishState {
+    object Idle : PrivateProcessingPublishState()
+    object Running : PrivateProcessingPublishState()
+    data class Passed(
+        val operationId: String,
+        val commitSha: String,
+        val path: String
+    ) : PrivateProcessingPublishState()
+    data class Failed(val message: String) : PrivateProcessingPublishState()
 }

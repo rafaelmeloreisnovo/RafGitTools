@@ -257,6 +257,14 @@ interface GithubApiService {
         @Path("repo") repo: String,
         @Query("ref") ref: String? = null
     ): GithubContent
+
+    @PUT("repos/{owner}/{repo}/contents/{path}")
+    suspend fun putRepositoryContent(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("path", encoded = true) path: String,
+        @Body request: GithubPutContentRequest
+    ): GithubContentWriteResponse
     
     // Branches
     @GET("repos/{owner}/{repo}/branches")
@@ -432,6 +440,22 @@ interface GithubApiService {
         @Path("hookId") hookId: Long
     )
 }
+
+data class GithubPutContentRequest(
+    val message: String,
+    val content: String,
+    val branch: String? = null
+)
+
+data class GithubContentWriteCommit(
+    val sha: String,
+    val html_url: String? = null
+)
+
+data class GithubContentWriteResponse(
+    val content: GithubContent?,
+    val commit: GithubContentWriteCommit
+)
 
 /**
  * Search response wrapper

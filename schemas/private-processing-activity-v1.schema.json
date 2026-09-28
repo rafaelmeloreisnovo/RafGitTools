@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafgittools.local/schemas/private-processing-activity-v1.schema.json",
+  "title": "RafGitTools Private Processing Activity V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "operationId",
+    "sourceProviderAuthority",
+    "sourceSha256",
+    "sourceScope",
+    "bytesRead",
+    "intakeId",
+    "contentKind",
+    "processorSource",
+    "processorArtifactSha256",
+    "androidSdk",
+    "androidAbis",
+    "destinationRepositorySha256",
+    "outputMode",
+    "rawPayloadUploaded",
+    "publicationState",
+    "gaps",
+    "receiptSha256",
+    "claimAllowed",
+    "createdAtEpochMs"
+  ],
+  "properties": {
+    "schema": {
+      "const": "rafgittools.private-processing-activity/v1"
+    },
+    "operationId": {
+      "type": "string",
+      "pattern": "^PP-[0-9a-f]{24}$"
+    },
+    "sourceProviderAuthority": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "sourceScope": {
+      "const": "FULL_SOURCE"
+    },
+    "bytesRead": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "intakeId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contentKind": {
+      "type": "string",
+      "minLength": 1
+    },
+    "structuralVector": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "objects",
+            "arrays",
+            "names",
+            "strings",
+            "numbers",
+            "booleans",
+            "nulls",
+            "maxDepth"
+          ],
+          "properties": {
+            "objects": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "arrays": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "names": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "strings": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "numbers": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "booleans": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "nulls": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "maxDepth": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      ]
+    },
+    "processorSource": {
+      "const": "RafGitTools/CorpusIntakeGate"
+    },
+    "processorArtifactSha256": {
+      "type": "string",
+      "minLength": 1
+    },
+    "androidSdk": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "androidAbis": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "destinationRepositorySha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "outputMode": {
+      "const": "PRIVATE_ACTIVITY_RECEIPT_ONLY"
+    },
+    "rawPayloadUploaded": {
+      "const": false
+    },
+    "publicationState": {
+      "const": "PENDING_PRIVATE_GITHUB_WRITE"
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "receiptSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "claimAllowed": {
+      "const": false
+    },
+    "createdAtEpochMs": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}
