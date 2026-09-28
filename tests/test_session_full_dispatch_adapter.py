@@ -12,6 +12,7 @@ class AdapterTests(unittest.TestCase):
         out=v.validate(ROOT/"configs"/"session-full-dispatch-adapter.v1.json")
         self.assertEqual(out["status"],"PASS")
         self.assertEqual(out["owned_workstreams"],["WS01","WS03","WS10"])
+        self.assertEqual(out["authority_commit"],"959a64d497c87bc84b35b70dc6918fe036f79147")
         self.assertFalse(out["claim_allowed"])
 
 if __name__=="__main__":
