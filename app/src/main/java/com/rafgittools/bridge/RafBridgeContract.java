@@ -80,7 +80,7 @@ public final class RafBridgeContract {
                 || "tampermonkey-userscript".equals(source);
     }
 
-    private static boolean looksLikeCredential(String message) {
+    static boolean looksLikeCredential(String message) {
         String lower = message.toLowerCase(Locale.ROOT);
         return message.contains("ghp_")
                 || message.contains("github_pat_")
