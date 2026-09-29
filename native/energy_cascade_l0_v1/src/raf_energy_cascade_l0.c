@@ -6,6 +6,27 @@ static raf_ec_u64 raf_ec_sat_add_u64(raf_ec_u64 a, raf_ec_u64 b) {
     return a+b;
 }
 
+static raf_ec_u64 raf_ec_div_u64(raf_ec_u64 numerator, raf_ec_u64 denominator) {
+    raf_ec_u64 quotient=0u;
+    raf_ec_u64 bit=1u;
+    raf_ec_u64 shifted=denominator;
+    raf_ec_u64 maxv=(raf_ec_u64)(~(raf_ec_u64)0);
+    if (denominator==0u) return 0u;
+    while (shifted<=numerator && shifted<=(maxv>>1u)) {
+        shifted<<=1u;
+        bit<<=1u;
+    }
+    while (bit!=0u) {
+        if (numerator>=shifted) {
+            numerator-=shifted;
+            quotient|=bit;
+        }
+        shifted>>=1u;
+        bit>>=1u;
+    }
+    return quotient;
+}
+
 raf_ec_u64 raf_ec_apply_efficiency_q16(raf_ec_u64 input_q16, raf_ec_u32 efficiency_q16) {
     raf_ec_u64 hi;
     raf_ec_u64 lo;
@@ -16,15 +37,11 @@ raf_ec_u64 raf_ec_apply_efficiency_q16(raf_ec_u64 input_q16, raf_ec_u32 efficien
 }
 
 raf_ec_u32 raf_ec_roundtrip_efficiency_q16(raf_ec_u64 input_q16, raf_ec_u64 returned_q16) {
-    raf_ec_u64 whole;
-    raf_ec_u64 rem;
-    raf_ec_u64 frac;
+    raf_ec_u64 scaled;
     if (input_q16==0u) return 0u;
     if (returned_q16>=input_q16) return 65536u;
-    whole=returned_q16/input_q16;
-    rem=returned_q16%input_q16;
-    frac=(rem<<16u)/input_q16;
-    return (raf_ec_u32)((whole<<16u)+frac);
+    scaled=returned_q16<<16u;
+    return (raf_ec_u32)raf_ec_div_u64(scaled,input_q16);
 }
 
 raf_ec_u32 raf_ec_ledger_init(raf_ec_ledger *ledger, raf_ec_u64 external_input_q16) {
