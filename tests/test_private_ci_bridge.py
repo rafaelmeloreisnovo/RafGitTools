@@ -98,6 +98,23 @@ class PrivateCiBridgeTests(unittest.TestCase):
                 allowed_executables={"python3"},
             )
 
+    def test_manifest_rejects_source_yaml_blob_mismatch(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / ".github/workflows").mkdir(parents=True)
+            (root / ".github/workflows/unit.yml").write_text("name: unit\n", encoding="utf-8")
+            doc = manifest()
+            doc["workflows"][0]["source_yaml_git_blob_sha1"] = "0" * 40
+            with self.assertRaisesRegex(ValueError, "git blob mismatch"):
+                bridge.validate_manifest(
+                    doc,
+                    expected_target_id="private-core",
+                    expected_repository="owner/private-core",
+                    allowed_workflow_ids={"unit"},
+                    allowed_executables={"python3"},
+                    source_root=root,
+                )
+
     def test_manifest_rejects_secret_like_step_env_name(self):
         doc = manifest(
             {
