@@ -62,3 +62,18 @@ certificate_match=PASS != scientific validation
 hash_match=PASS != legal ownership proof by itself
 public receipt != private signing material
 ```
+
+
+## Local public-page gate
+
+The canonical `scripts/validate_rafaelia_workflow.sh` invokes
+`scripts/validate_rafaelia_signing_contract.sh`. The gate parses the JSON
+receipt, enforces the V1 field set and schema, requires the current
+`AWAITING_REAL_SIGNING_RECEIPT` state with typed `TOKEN_VAZIO` values, checks
+text/JSON parity, validates public-variable and secret-placeholder metadata,
+and scans the Pages folder for private-key material.
+
+A future signed, rejected, or otherwise promoted receipt requires a versioned
+contract successor and tests. V1 does not validate GitHub secret configuration,
+perform APK signing, prove a Pages deployment, or establish physical-device
+acceptance. These remain separate gates.
