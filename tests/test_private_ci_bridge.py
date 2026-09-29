@@ -171,6 +171,45 @@ class PrivateCiBridgeTests(unittest.TestCase):
             )
             self.assertFalse(verified["claim_allowed"])
 
+    def test_execute_plan_fails_closed_when_network_isolation_is_unavailable(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / ".github/workflows").mkdir(parents=True)
+            (root / ".github/workflows/unit.yml").write_text(
+                "name: unit\n",
+                encoding="utf-8",
+            )
+            (root / "emit.py").write_text("print('never-run')\n", encoding="utf-8")
+            receipt = root / "receipt.json"
+            clean_env = {
+                k: v
+                for k, v in os.environ.items()
+                if k not in bridge.FORBIDDEN_SECRET_NAMES
+            }
+            with (
+                mock.patch.dict(os.environ, clean_env, clear=True),
+                mock.patch.object(
+                    bridge,
+                    "probe_network_isolation",
+                    side_effect=ValueError("network isolation unavailable"),
+                ) as probe,
+                mock.patch("subprocess.run") as run,
+            ):
+                with self.assertRaisesRegex(ValueError, "network isolation unavailable"):
+                    bridge.execute_plan(
+                        registry=registry(),
+                        manifest=manifest(),
+                        target_id="private-core",
+                        workflow_id="unit",
+                        commit=SHA,
+                        source_root=root,
+                        receipt_path=receipt,
+                    )
+
+            probe.assert_called_once_with()
+            run.assert_not_called()
+            self.assertFalse(receipt.exists())
+
     def test_execution_hashes_private_output_without_persisting_it(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -188,7 +227,27 @@ class PrivateCiBridgeTests(unittest.TestCase):
                 for k, v in os.environ.items()
                 if k not in bridge.FORBIDDEN_SECRET_NAMES
             }
-            with mock.patch.dict(os.environ, clean_env, clear=True):
+            isolation = {
+                "method": bridge.NETWORK_ISOLATION_METHOD,
+                "state": "PASS",
+                "external_ipv4_tcp_connect_blocked": True,
+                "probe_stdout_sha256": hashlib.sha256(b"").hexdigest(),
+                "probe_stderr_sha256": hashlib.sha256(b"").hexdigest(),
+                "claim_allowed": False,
+            }
+            with (
+                mock.patch.dict(os.environ, clean_env, clear=True),
+                mock.patch.object(
+                    bridge,
+                    "probe_network_isolation",
+                    return_value=isolation,
+                ),
+                mock.patch.object(
+                    bridge,
+                    "network_isolation_argv",
+                    side_effect=lambda argv: argv,
+                ),
+            ):
                 out = bridge.execute_plan(
                     registry=registry(),
                     manifest=manifest(),
