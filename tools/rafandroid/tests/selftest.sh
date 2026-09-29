@@ -8,14 +8,22 @@ trap 'rm -rf "$TMP"' EXIT
 
 bash -n "$RAF"
 test "$("$RAF" version)" = "1.0.0"
-"$RAF" graph | grep -q 'D8 -> DEX'
-"$RAF" help | grep -q 'silicon-gate'
-"$RAF" provision-plan | grep -q 'network_implicit=false'
-"$RAF" probe | grep -q 'claim_allowed=false'
-"$RAF" shadow | grep -q 'RAFANDROID_SHADOW_REPORT_V1'
-"$RAF" tails | grep -q 'tail_state=INVENTORY_ONLY'
-"$RAF" friction | grep -q 'numeric_score=TOKEN_VAZIO_UNCALIBRATED'
-"$RAF" qemu | grep -q 'boot_claim=TOKEN_VAZIO'
+assert_output_contains() {
+  local needle="$1"
+  shift
+  local output
+  output="$("$@")"
+  grep -Fq -- "$needle" <<<"$output"
+}
+
+assert_output_contains 'D8 -> DEX' "$RAF" graph
+assert_output_contains 'silicon-gate' "$RAF" help
+assert_output_contains 'network_implicit=false' "$RAF" provision-plan
+assert_output_contains 'claim_allowed=false' "$RAF" probe
+assert_output_contains 'RAFANDROID_SHADOW_REPORT_V1' "$RAF" shadow
+assert_output_contains 'tail_state=INVENTORY_ONLY' "$RAF" tails
+assert_output_contains 'numeric_score=TOKEN_VAZIO_UNCALIBRATED' "$RAF" friction
+assert_output_contains 'boot_claim=TOKEN_VAZIO' "$RAF" qemu
 "$RAF" receipt > "$TMP/receipt.json"
 python3 -m json.tool "$TMP/receipt.json" >/dev/null
 
