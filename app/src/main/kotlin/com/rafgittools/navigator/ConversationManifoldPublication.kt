@@ -26,7 +26,7 @@ object ConversationManifoldPublication {
         val parts: List<Part>,
         val planSha256: String
     )
-    data class Published(val driveUris: List<String>, val githubPaths: List<String>, val artifactSha256: String)
+    data class Published(val driveUris: List<String>, val githubPaths: List<String>, val githubCommitShas: List<String>, val artifactSha256: String)
 
     fun plan(
         generationId: String,
@@ -61,7 +61,7 @@ object ConversationManifoldPublication {
         resolver: ContentResolver,
         plan: Plan,
         confirmedPlanSha256: String,
-        githubWrite: suspend (owner: String, repository: String, path: String, content: String, message: String) -> Result<Unit>
+        githubWrite: suspend (owner: String, repository: String, path: String, content: String, message: String) -> Result<String>
     ): Published {
         require(plan.planSha256 == confirmedPlanSha256) { "Publication plan confirmation does not match" }
         val artifact = File(plan.sourceArtifactPath)
@@ -73,12 +73,13 @@ object ConversationManifoldPublication {
         val githubBase = "memory_bridge/private_processing/conversation_manifold/${plan.generationId}"
         val driveUris = mutableListOf<String>()
         val githubPaths = mutableListOf<String>()
+        val commitShas = mutableListOf<String>()
         val aggregate = MessageDigest.getInstance("SHA-256")
 
         forEachPart(artifact) { index, content ->
             val expected = plan.parts.getOrNull(index) ?: error("Part count changed after planning")
             val bytes = content.toByteArray(Charsets.UTF_8)
-            require(expected.filename == partName(artifact, index) &&
+            require(expected.filename == partName(artifact, plan.generationId, index) &&
                 expected.bytes == bytes.size.toLong() && expected.sha256 == sha256(bytes)) {
                 "Part changed after plan confirmation"
             }
@@ -94,16 +95,18 @@ object ConversationManifoldPublication {
             driveUris += driveUri.toString()
 
             val path = "$githubBase/${expected.filename}"
-            githubWrite(plan.githubOwner, plan.githubRepository, path, content,
+            val commitSha = githubWrite(plan.githubOwner, plan.githubRepository, path, content,
                 "RafGitTools: publish derived manifold part ${index + 1}/${plan.parts.size}")
                 .getOrElse { throw it }
+            commitShas += commitSha
             githubPaths += path
             aggregate.update(bytes)
         }
         require(plan.parts.size == githubPaths.size) { "Part count changed during publication" }
 
         val partsHash = aggregate.digest().hex()
-        val manifest = """{"schema":"rafgittools.conversation-manifold-publication/v1","generation_id":"${plan.generationId}","parts":${plan.parts.size},"parts_sha256":"$partsHash","plan_sha256":"${plan.planSha256}","state":"PUBLISHED_UNVERIFIED_READBACK_PENDING","claim_allowed":false}"""
+        val commitList = commitShas.joinToString(prefix = "[\"", postfix = "\"]", separator = "\",\"")
+        val manifest = """{"schema":"rafgittools.conversation-manifold-publication/v1","generation_id":"${plan.generationId}","parts":${plan.parts.size},"parts_sha256":"$partsHash","github_commit_shas":$commitList,"plan_sha256":"${plan.planSha256}","state":"PUBLISHED_UNVERIFIED_READBACK_PENDING","claim_allowed":false}"""
         val manifestName = "PUBLICATION_COMPLETE.${plan.planSha256.take(16)}.json"
         val manifestUri = DocumentsContract.createDocument(resolver, tree, "application/json", manifestName)
             ?: error("Drive/provider refused completion manifest")
@@ -113,15 +116,16 @@ object ConversationManifoldPublication {
         driveUris += manifestUri.toString()
 
         val manifestPath = "$githubBase/$manifestName"
-        githubWrite(plan.githubOwner, plan.githubRepository, manifestPath, manifest,
+        val manifestCommit = githubWrite(plan.githubOwner, plan.githubRepository, manifestPath, manifest,
             "RafGitTools: close derived conversation manifold publication")
             .getOrElse { throw it }
         githubPaths += manifestPath
-        return Published(driveUris, githubPaths, sha256(manifest.toByteArray(Charsets.UTF_8)))
+        commitShas += manifestCommit
+        return Published(driveUris, githubPaths, commitShas, sha256(manifest.toByteArray(Charsets.UTF_8)))
     }
 
-    private fun partName(artifact: File, index: Int) =
-        "${artifact.nameWithoutExtension}-part-${index.toString().padStart(5, '0')}.jsonl"
+    private fun partName(artifact: File, generationId: String, index: Int) =
+        "${artifact.nameWithoutExtension}-${generationId}-part-${index.toString().padStart(5, '0')}.jsonl"
 
     private fun forEachPart(file: File, consume: (Int, String) -> Unit) {
         var index = 0
