@@ -1096,6 +1096,16 @@ jobs:
             --source-root target \
             --receipt artifacts/private-ci-replay-receipt.json
 
+      - name: Pack and verify deterministic ZIPRAF receipt envelope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/private_ci_bridge.py pack-receipt \
+            --receipt artifacts/private-ci-replay-receipt.json \
+            --output artifacts/private-ci-replay-receipt.zipraf
+          python3 scripts/private_ci_bridge.py verify-receipt \
+            --zipraf artifacts/private-ci-replay-receipt.zipraf
+
       - name: Assert public artifact boundary
         if: always()
         shell: bash
@@ -1128,6 +1138,7 @@ jobs:
           path: |
             artifacts/private-provider-access-receipt.json
             artifacts/private-ci-replay-receipt.json
+            artifacts/private-ci-replay-receipt.zipraf
           if-no-files-found: warn
           retention-days: 90
 
