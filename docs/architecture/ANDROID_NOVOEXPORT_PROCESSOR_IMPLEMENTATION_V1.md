@@ -55,5 +55,5 @@ The Drive tab in `app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen
 ## R3
 
 F_ok: per-file processor/publisher/UI and synthetic tests are merged through PRs #575 and #576; workflow routing/topology/coherence stages observed successful.
-F_gap: Android job still queued in run 36558610755; recursive SAF inventory, persistent resumable batch queue, provider readback, physical handset canary and measured corpus inventory remain unproven.
-F_next: obtain terminal Android CI result, then implement recursive inventory/queue and validate a small on-device canary before scaling.
+F_gap: final receipt job remains queued in run 36558610755; recursive SAF inventory, persistent resumable batch queue, provider readback, physical handset canary and measured corpus inventory remain unproven.
+F_next: close the final workflow receipt, then implement recursive inventory/queue and validate a small on-device canary before scaling.
