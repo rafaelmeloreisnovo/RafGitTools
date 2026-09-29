@@ -65,6 +65,12 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def git_blob_sha1_file(path: Path) -> str:
+    data = path.read_bytes()
+    header = b"blob " + str(len(data)).encode("ascii") + b"\x00"
+    return hashlib.sha1(header + data).hexdigest()
+
+
 def _assert_no_secret_values(obj: Any, ctx: str = "root") -> None:
     if isinstance(obj, dict):
         for key, value in obj.items():
@@ -245,8 +251,21 @@ def validate_manifest(
         if workflow_id not in allowed_workflow_ids:
             raise ValueError(f"private manifest workflow not public-allowlisted: {workflow_id}")
         source_yaml = str(workflow.get("source_yaml", ""))
+        source_yaml_path: Path | None = None
         if source_root is not None:
-            _safe_relative(source_root, source_yaml, ctx=f"{workflow_id}.source_yaml")
+            source_yaml_path = _safe_relative(source_root, source_yaml, ctx=f"{workflow_id}.source_yaml")
+            if not source_yaml_path.is_file():
+                raise ValueError(f"{workflow_id}: source_yaml is missing from exact checkout")
+            expected_blob = workflow.get("source_yaml_git_blob_sha1")
+            if expected_blob is not None:
+                if not isinstance(expected_blob, str) or not SHA40_RE.fullmatch(expected_blob):
+                    raise ValueError(f"{workflow_id}: invalid source_yaml_git_blob_sha1")
+                observed_blob = git_blob_sha1_file(source_yaml_path)
+                if observed_blob != expected_blob:
+                    raise ValueError(
+                        f"{workflow_id}: source YAML git blob mismatch "
+                        f"(expected {expected_blob}, observed {observed_blob})"
+                    )
         elif (
             not source_yaml
             or Path(source_yaml).is_absolute()
