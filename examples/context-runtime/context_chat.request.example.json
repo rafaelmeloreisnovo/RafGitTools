@@ -1,0 +1,88 @@
+{
+  "schema": "raf.client.envelope.v1",
+  "request_id": "CTX-READONLY-EXAMPLE-001",
+  "action": "context_chat",
+  "intent": "Explain only the explicitly selected RafGitTools context within its evidence limits.",
+  "data_class": "private",
+  "source": "kiwi-extension",
+  "consent": true,
+  "message": "Summarize what is proven, what is TOKEN_VAZIO, and the next executable action.",
+  "semantic_exam": {
+    "schema": "rafaelia.semantic-context-exam.v1",
+    "exam_id": "CTX-READONLY-EXAM-001",
+    "observed_at": "2026-09-29T14:08:00-03:00",
+    "declared_task": "Read selected context without claim promotion.",
+    "sources": [
+      {
+        "id": "SRC",
+        "locator": "ContextBroker explicit selection",
+        "state": "SOURCE_OBSERVED"
+      }
+    ],
+    "evidence": [
+      {
+        "id": "E_SEM",
+        "source_ref": "SRC",
+        "locator": "explicit semantic declaration"
+      }
+    ],
+    "objects": [
+      {
+        "id": "CTX",
+        "kind": "RESULT",
+        "semantic_type": "selected_context",
+        "unit": "TEXT",
+        "dimension": "SEMANTIC_CONTEXT",
+        "source_ref": "SRC",
+        "state": "DECLARED"
+      }
+    ],
+    "transforms": [],
+    "operations": [
+      {
+        "id": "OP_READ",
+        "kind": "COMPARE",
+        "input_bindings": [
+          {
+            "object_ref": "CTX",
+            "transform_ref": null
+          }
+        ],
+        "expected_state": "EXECUTABLE"
+      }
+    ],
+    "representation_options": [
+      "READ_ONLY_CONTEXT"
+    ],
+    "physical_representation_selection": "TOKEN_VAZIO",
+    "execution_state": {
+      "implemented": true,
+      "tested": false,
+      "physically_proven": false,
+      "test_evidence_refs": [],
+      "physical_evidence_refs": []
+    },
+    "claim_gate": {
+      "test_scope_matches_claim": false,
+      "physical_evidence": "TOKEN_VAZIO",
+      "claim_authority": "TOKEN_VAZIO"
+    },
+    "delivery": {
+      "answer_state": "PARTIAL_SAFE",
+      "what_was_done": "Selected context was prepared for read-only model consumption.",
+      "evidence_refs": [
+        "E_SEM"
+      ],
+      "limits": [
+        "No external action permission.",
+        "No physical claim."
+      ],
+      "token_vazio": [
+        "claim_gate.physical_evidence",
+        "claim_gate.claim_authority"
+      ],
+      "next_executable_action": "Return a source-linked answer without promoting missing evidence."
+    },
+    "claim_allowed": false
+  }
+}
