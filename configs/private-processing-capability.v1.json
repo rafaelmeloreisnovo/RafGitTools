@@ -9,6 +9,17 @@
     "target_role": "PRIVATE_DERIVED_CUSTODY",
     "exact_private_provider_ids": "PRIVATE_SOURCE_LOCK_ONLY"
   },
+  "seed_contract": {
+    "schema_ref": "contracts/private-processing-seed-v1.schema.json",
+    "validator_ref": "scripts/validate_private_processing_seed_v1.py",
+    "example_ref": "examples/private-processing-seed.example.json",
+    "test_ref": "tests/test_private_processing_seed_v1.py",
+    "architecture_state": "DETERMINED",
+    "execution_state": "NOT_RUN",
+    "evidence_state": "TOKEN_VAZIO",
+    "claim_state": "BLOCKED",
+    "token_vazio_semantics": "EXPECTED_FIELD_IDENTIFIED_BUT_VALUE_NOT_ESTABLISHED_BY_EVIDENCE"
+  },
   "lanes": [
     {
       "id": "ANDROID_EXPLICIT_USER",
@@ -42,7 +53,11 @@
   ],
   "invariants": [
     "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "TOKEN_VAZIO != NULL != 0 != FALSE != NOT_RUN != FAIL",
     "TOKEN_VAZIO != PASS",
+    "ARCHITECTURE_DETERMINED != EXECUTION_PROVEN",
+    "EXECUTION_PROVEN != EVIDENCE_PROVEN",
+    "EVIDENCE_PROVEN != CLAIM_ALLOWED",
     "PRIVATE_TARGET_LIVE_READBACK_REQUIRED",
     "RAW_CORPUS_UPLOAD_FORBIDDEN",
     "BOUNDED_SAMPLE != FULL_SOURCE",
@@ -55,12 +70,16 @@
     "private_receipt_gate": "PrivateProcessingReceiptGateV1",
     "private_publisher": "GithubDataRepository.createPrivateProcessingFile",
     "rmrcti_bridge": "RmrCtiMobilePackBridgeV1",
-    "rmrcti_full_stream": "RmrCtiFullMemberStreamV1"
+    "rmrcti_full_stream": "RmrCtiFullMemberStreamV1",
+    "seed_schema": "contracts/private-processing-seed-v1.schema.json",
+    "seed_validator": "scripts/validate_private_processing_seed_v1.py",
+    "seed_tests": "tests/test_private_processing_seed_v1.py"
   },
   "gaps": [
     "PHYSICAL_DEVICE_END_TO_END_NOT_RUN_FOR_THIS_DELTA",
     "PAT_PRIVATE_PROCESSING_NOT_PROVISIONED_BY_AVAILABLE_TOOLING",
-    "DEVICE_APK_SHA256_NOT_BOUND_TO_ACTIVITY_RECEIPT"
+    "DEVICE_APK_SHA256_NOT_BOUND_TO_ACTIVITY_RECEIPT",
+    "SEED_CONTRACT_REMOTE_CI_NOT_RUN"
   ],
-  "next": "merge after CI, then execute one explicit Android Drive selection and verify private Git commit readback"
+  "next": "run the seed validator/tests in repository CI or an independently recorded environment, then execute one explicit Android Drive selection and verify private Git commit readback without promoting a claim before evidence closes the gate"
 }
