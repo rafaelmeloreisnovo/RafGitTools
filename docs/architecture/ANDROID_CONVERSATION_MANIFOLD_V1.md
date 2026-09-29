@@ -1,6 +1,6 @@
 # RafGitTools Android Conversation Manifold V1
 
-State: `SPEC_MATERIALIZED / PER_FILE_FLOW_MERGED / BATCH_GAPS_OPEN / DEVICE_E2E_NOT_RUN`
+State: `SAF_INVENTORY_AND_QUEUE_CI_PASS / ONE_ITEM_EXECUTOR_SOURCE_IMPLEMENTED_UNTESTED / DEVICE_E2E_NOT_RUN`
 claim_allowed: false
 
 ## Intent
@@ -23,22 +23,25 @@ Already present in RafGitTools source:
 - Python `tools/rafaelia_navigator/` local-first parser, SQLite/FTS, conversation/node/message parent graph, content hashes, append-only checkpoints, deterministic publication and bounded query;
 - source-lock and corpus logistics/canary contracts for Drive/NOVOexport and the private destination.
 
-These facts establish source presence only. They do not prove the APK invokes the Python Navigator, emits its SQLite/FTS/typed graph, completes all Drive items, or has run on a physical phone.
+The native Android path now includes per-file JSON processing/publication, metadata-only recursive SAF inventory and persistent private queue state. PR #583 exact-head CI passed. This does not prove physical Drive enumeration, full-corpus execution, process-death recovery, or integration with the separate Python SQLite/FTS Navigator.
 
-## Missing mobile vertical slice
+## Current mobile vertical slice status
 
-The code and acceptance work must connect these components inside RafGitTools:
+| Component | State | Evidence boundary |
+|---|---|---|
+| Drive-tab file/tree selection | SOURCE_PRESENT | SAF picker and user-granted URI permissions exist |
+| Recursive SAF inventory | SOURCE_CI_PASS | PR #581; metadata only, bounded at 100,000 documents, source bytes stay unopened |
+| App-private queue | SOURCE_CI_PASS | PR #583; stable candidate identity, persisted retry states, interrupted PROCESSING recovery on re-inventory |
+| Foreground one-item executor | SOURCE_IMPLEMENTED_UNTESTED | This branch reads one queued URI, runs the Kotlin processor, and requests explicit per-file publication confirmation |
+| Queue completion | SOURCE_IMPLEMENTED_UNTESTED | COMPLETE is gated on PUBLISHED_READBACK_VERIFIED plus Drive and Git readback flags |
+| Background worker/process-death recovery | NOT_IMPLEMENTED | Foreground coroutine only; re-inventory recovers an interrupted item |
+| Native processor | SOURCE_CI_PASS | One bounded top-level JSON array record at a time; default limits 2 GiB/source and 16 MiB/record |
+| Drive/Git publication readback | SOURCE_CI_PASS | Per-file V2 publication verifies byte count and SHA-256 before completion receipts |
+| Python SQLite/FTS parity in APK | NOT_IMPLEMENTED | Python Navigator remains separate from the Android processor |
+| Physical phone canary | NOT_RUN | No installed APK/device receipt |
+| Measured 25 GB inventory | TOKEN_VAZIO | No physical terminal cursor or reconciled streamed bytes |
 
-1. A dedicated **NOVOexport Navigator** entry in the app UI, with Drive source selection and visible destination binding.
-2. SAF tree/document provider support that enumerates all eligible files under the selected NOVOexport root; no assumption that selecting one file means the corpus is inventoried.
-3. A persistent queue keyed by provider identity + relative logical path + source SHA-256. Unknown provider identities remain `TOKEN_VAZIO`.
-4. Bounded, cancellable, resumable processing with one file/transaction/checkpoint at a time; verify stream byte count and SHA-256 before parse; source remains read-only.
-5. Native Android parser/index implementation or a specifically justified in-process route; the APK must not silently require Termux, shell access, or a server.
-6. Per-conversation structural records: source pointer, conversation/message/node IDs, parent edges (including nodes without messages), role, timestamps, content type, assets/errors, lexical tokens and missing fields. Values absent in source remain `TOKEN_VAZIO`, never fabricated as zero.
-7. Local SQLite/FTS search and typed routes/manifold/atlas projections. Semantic embeddings, model-derived similarity, causal claims and scientific promotion remain separate opt-in gates with explicit model/source authority.
-8. A deterministic private publication plan that writes derived index/chunk artifacts and receipts into the private repository only, using RafGitFS or an audited adapter. Require confirmation over the exact plan hash; perform live visibility/auth/readback and reject public or unexpected targets.
-9. Read-back verification of every published blob/commit and append-only run receipt linking source generation, per-file hashes, parser/schema/app versions, output hashes, checkpoints, gaps and next cursor.
-10. UI states for inventory, queued/processed/blocked counts, bytes, current path, checkpoint, pause/resume/cancel, battery/storage/network constraints and recoverable errors.
+Queue state is runtime state, not evidence that a source file was processed or published. Each queued file needs its own confirmed plan.
 
 ## 25 GB handling contract
 
@@ -56,10 +59,10 @@ No count is complete until an exhaustive provider enumeration and terminal curso
 
 ## Minimum implementation sequence
 
-- **M0 — contract/tests:** schema for job/checkpoint/output manifest; synthetic multi-file fixture; restart/idempotency, source-change, malformed-file, permission-loss, duplicate-node, node-without-message and low-storage tests.
-- **M1 — Android discovery:** dedicated screen, SAF root selection, recursive provider enumeration and persistent inventory/checkpoint; no Git writes.
+- **M0 — contract/tests:** per-file processor and queue-store tests passed the base queue-chain CI. This successor adds interrupted-state recovery and readback-gated completion tests; exact-head CI is pending. Full multi-file integration, source-change, low-storage and process-death tests remain.
+- **M1 — Android discovery:** SAF tree selection, recursive metadata inventory and persistent app-private candidate queue are implemented and passed CI in PRs #581/#583. A dedicated Navigator screen and physical provider-enumeration receipt remain.
 - **M2 — bounded Navigator:** integrate the parser/SQLite/FTS and typed graph in-process; verify small synthetic fixture against Python Navigator reference outputs.
-- **M3 — private publication:** preview exact content-addressed output tree; explicit confirmation; batch commit through RafGitFS; private-target live-readback and post-write readback.
+- **M3 — private publication:** per-file exact-plan confirmation and Drive/Git readback are source-implemented and passed CI. Multi-file batch planning and batch receipt remain.
 - **M4 — device canary:** on the phone, process one small real Drive JSON read-only, compare source hash and local index/output receipt, publish only sanitized receipt first.
 - **M5 — private corpus batch:** user-visible bounded pilot on a small real batch; reconcile and review before larger batch.
 - **M6 — full inventory/process:** only after canary gates pass, continue resumably through every enumerated source item until terminal reconciliation. Do not describe an interrupted or partial scan as complete.
@@ -68,11 +71,11 @@ No count is complete until an exhaustive provider enumeration and terminal curso
 
 | Gate | Required evidence | State now |
 |---|---|---|
-| Source-level Android route | code path from app screen through intake to Navigator | `PARTIAL`: per-file UI → processor path is implemented; recursive batch Navigator route is not |
-| Contract/fixture | schema + meaningful tests | `PARTIAL`: synthetic per-file processor tests exist; batch queue/restart fixture is not implemented |
-| Android job | exact-head unit tests, lint, devDebug APK and APK hash verification | `PASS`; final receipt `PASS` |
+| Source-level Android route | Drive tab through queue URI to processor/publication | `PARTIAL`: per-file route is CI-tested; queue executor source in this branch awaits exact-head CI |
+| Contract/fixture | schema + queue recovery/readback tests | `PARTIAL`: processor and queue-store CI passed; new executor-gate tests await exact-head CI |
+| Android job | unit tests, lint, devDebug APK and APK hash verification | base queue chain `PASS` in run `36565432525`; current executor branch `PENDING` |
 | Device install/launch | installed artifact SHA + device receipt | `NOT_RUN` |
-| Drive exhaustive inventory | all pages/items + terminal cursor | `TOKEN_VAZIO` |
+| Drive exhaustive inventory | provider items + terminal cursor | `NOT_RUN` on phone; source inventory is metadata-only and bounded |
 | End-to-end canary | source/output hashes and private readback | `NOT_RUN` |
 | Full corpus completion | reconciled counts/bytes + terminal cursor + receipts | `NOT_RUN` |
 | Claim/release | applicable independent gates | blocked |
@@ -89,14 +92,14 @@ No count is complete until an exhaustive provider enumeration and terminal curso
 ## R3
 
 F_ok: current app staging/receipt route and Python Navigator tooling are observed in source; destination repository is private and identified.
-F_gap: the full APK-to-Navigator data model, recursive Drive inventory, persistent mobile batch checkpoints, provider readback and physical-device run are not proven; Android CI has passed for the per-file implementation.
-F_next: implement M0/M1 as a reviewable APK feature, then close M2-M4 with synthetic/reference parity and a phone canary before scaling to the reported 25 GB.
+F_gap: exact-head CI for the foreground queue executor, background/process-death recovery, Python SQLite/FTS parity, physical-device canary and measured corpus inventory remain open.
+F_next: close executor CI, then install that exact devDebug APK and run one small Drive JSON through queue, processing, explicit confirmation and both provider readbacks.
 
 
 ## Implementation checkpoint — 2026-09-29
 
-PR #575 introduced the per-file processor, bounded publisher, tests and a Drive-tab Process action. PR #576 fixed Kotlin compilation issues in the processor/publisher and was merged at commit `695bed743c5b22427ebc7f6cf4b71169208001bc`. The app now has a source-level per-file action; it does not yet have recursive NOVOexport tree inventory or a persistent resumable batch queue.
+PR #575/#576 introduced the per-file processor and UI; PR #579 added Drive/Git readback; PR #581 added recursive metadata-only SAF inventory; PR #583 added persistent app-private queue state. Those source changes passed run `36565432525`. This branch wires one queued URI into the processor and gates completion on verified two-provider readback; its exact-head CI is pending.
 
-For workflow run `36558610755`, the Android/test/lint/devDebug APK job `109375861051` completed successfully: unit tests, lint, devDebug assembly and APK hash verification passed. Python deterministic tests and CodeQL Java/Kotlin also passed. The overall run's final receipt job `109382657128` completed successfully; signed release was skipped. The devDebug APK has SHA-256 `4120a8f91a1de47a28c3c8db27b3e1a8fbaa94146c1b044ee7f1ecc3575fac7d` (workflow artifact `11030485325`). No APK installation, phone execution, Drive provider readback, or 25 GB corpus enumeration has been evidenced.
+For run `36565432525` (PR #583), Android tests, instrumentation compilation, lint, devDebug assembly and APK SHA verification passed; Python tests and CodeQL Java/Kotlin/Actions passed. Final receipt `109399071582` is `PASS_WITH_TYPED_SKIPS`; signed release was skipped. APK SHA-256: `a848605f27aee58fe2099ed5fa117d2fe83a1700b3b3045ccf41964e280f4de7` (artifact `11032230928`). No APK install or physical phone execution is evidenced.
 
-Current split: `IMPLEMENTED_SOURCE_PER_FILE`; `BATCH_INVENTORY=NOT_IMPLEMENTED`; `ANDROID_CI=PASS`; `DEVICE_E2E=NOT_RUN`; `MEASURED_CORPUS_BYTES=TOKEN_VAZIO`; `claim_allowed=false`.
+Current split: `PER_FILE_AND_SAF_QUEUE_CHAIN=CI_PASS`; `ONE_ITEM_EXECUTOR=SOURCE_IMPLEMENTED_UNTESTED`; `DEVICE_E2E=NOT_RUN`; `MEASURED_CORPUS_BYTES=TOKEN_VAZIO`; `claim_allowed=false`.
