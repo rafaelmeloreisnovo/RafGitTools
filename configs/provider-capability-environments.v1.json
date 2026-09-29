@@ -18,9 +18,15 @@
       "environment": "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND",
       "secret": "PAT_ACTIONS",
       "state": "WIRED_MAIN_ONESHOT_READ_ONLY",
-      "allowed_operations": ["preflight", "exact_commit_read_and_test"],
+      "allowed_operations": [
+        "preflight",
+        "exact_commit_read_and_test",
+        "private_ci_exact_sha_replay"
+      ],
       "write_allowed": false,
-      "exact_target_sha_required": true
+      "exact_target_sha_required": true,
+      "private_ci_lane_state": "IMPLEMENTED_UNTESTED",
+      "private_ci_secret_scope": "ACCESS_AND_CHECKOUT_STEPS_ONLY"
     },
     {
       "capability": "agents",
@@ -28,7 +34,9 @@
       "environment": "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND",
       "secret": "PAT_AGENTS",
       "state": "REGISTERED_NOT_WIRED",
-      "allowed_operations": ["preflight"],
+      "allowed_operations": [
+        "preflight"
+      ],
       "permission_probe_required": true
     },
     {
@@ -37,7 +45,9 @@
       "environment": "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND",
       "secret": "PAT_CODESPACES",
       "state": "REGISTERED_NOT_WIRED",
-      "allowed_operations": ["preflight"],
+      "allowed_operations": [
+        "preflight"
+      ],
       "permission_probe_required": true
     },
     {
@@ -46,7 +56,9 @@
       "environment": "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND",
       "secret": "PAT_DEPENDABOT",
       "state": "REGISTERED_NOT_WIRED",
-      "allowed_operations": ["preflight"],
+      "allowed_operations": [
+        "preflight"
+      ],
       "permission_probe_required": true
     },
     {
@@ -55,7 +67,11 @@
       "environment": "PAT_ENVIRONMENTS",
       "secret": "PAT_ENV",
       "state": "WIRED_MANUAL_ONLY",
-      "allowed_operations": ["preflight", "apply_main_protection", "rollback_main_protection"],
+      "allowed_operations": [
+        "preflight",
+        "apply_main_protection",
+        "rollback_main_protection"
+      ],
       "issue": 393
     }
   ],
@@ -72,6 +88,9 @@
     "PROVIDER_WRITE_REQUIRES_READBACK",
     "TOKEN_VAZIO != PASS",
     "ACTIONS_CROSS_REPO_EXECUTION_IS_READ_ONLY",
-    "ACTIONS_EXACT_TARGET_SHA_REQUIRED"
+    "ACTIONS_EXACT_TARGET_SHA_REQUIRED",
+    "ACTIONS_PRIVATE_CI_REPLAY_SECRET_IS_STEP_SCOPED",
+    "ACTIONS_PRIVATE_CI_RECEIPT_IS_HASH_ONLY",
+    "ACTIONS_PRIVATE_CI_SOURCE_IS_NOT_PUBLIC_ARTIFACT"
   ]
 }
