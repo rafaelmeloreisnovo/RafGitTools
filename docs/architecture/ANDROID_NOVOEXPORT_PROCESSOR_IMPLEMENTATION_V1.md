@@ -9,7 +9,7 @@ The user's phone runs the RafGitTools APK. RafGitTools reads the existing Drive 
 
 ## Implementation status at main
 
-The per-file processor, publisher, Drive-tab action and tests were introduced by PR #575 and compile/publishing fixes by PR #576. Both PRs are merged. Exact-head pipeline run `36558610755` had routing, topology and coherence stages successful at the latest observation; Android/test/lint/devDebug APK job `109586???` remains queued. (Job ID: 109374? See exact current workflow record.) This is not a terminal Android build or unit-test result. Physical-device execution has not been run.
+The per-file processor, publisher, Drive-tab action and tests were introduced by PR #575 and compile/publishing fixes by PR #576. Both PRs are merged. Exact-head pipeline run `36558610755` had routing, topology and coherence stages successful at the latest observation; Android/test/lint/devDebug APK job `109375861051` remains queued. This is not a terminal Android build or unit-test result. Physical-device execution has not been run.
 
 ## Implemented source
 
