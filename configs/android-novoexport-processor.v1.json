@@ -2,7 +2,7 @@
   "schema": "rafgittools.android-novoexport-processor.v1",
   "state": "PER_FILE_PROCESS_AND_PUBLICATION_UI_MERGED",
   "app_flow": "DRIVE_TAB_PER_FILE_ACTION_SOURCE_PRESENT",
-  "ci": "ANDROID_JOB_QUEUED_RUN_36558610755",
+  "ci": "ANDROID_TEST_LINT_DEVDEBUG_PASS_RUN_36558610755; FINAL_RECEIPT_PENDING",
   "device_execution": "NOT_RUN",
   "claim_allowed": false,
   "source_patterns": [
@@ -35,5 +35,5 @@
     "PHYSICAL_DEVICE_CANARY",
     "MEASURED_CORPUS_INVENTORY"
   ],
-  "next": "await terminal Android CI for run 36558610755; then wire recursive SAF inventory and resumable batch queue before a phone canary"
+  "next": "close final receipt for run 36558610755; then wire recursive SAF inventory and resumable batch queue before a phone canary"
 }
