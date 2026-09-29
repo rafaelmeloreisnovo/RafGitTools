@@ -90,7 +90,7 @@ public final class RafModelClient {
             String message
     ) throws IOException {
         try {
-            JSONObject body = baseBody(model);
+            JSONObject body = baseBody(model, 0.7);
             JSONArray messages = new JSONArray();
             messages.put(system(MORAL_SYSTEM_PROMPT));
             messages.put(system(
@@ -113,7 +113,7 @@ public final class RafModelClient {
             String semanticExamResultJson
     ) throws IOException {
         try {
-            JSONObject body = baseBody(model);
+            JSONObject body = baseBody(model, 0.2);
             JSONArray messages = new JSONArray();
             messages.put(system(MORAL_SYSTEM_PROMPT));
             messages.put(system(READ_ONLY_CONTEXT_SYSTEM_PROMPT));
@@ -130,11 +130,11 @@ public final class RafModelClient {
         }
     }
 
-    private static JSONObject baseBody(String model) throws Exception {
+    private static JSONObject baseBody(String model, double temperature) throws Exception {
         JSONObject body = new JSONObject();
         body.put("model", model);
         body.put("stream", false);
-        body.put("temperature", 0.2);
+        body.put("temperature", temperature);
         return body;
     }
 
