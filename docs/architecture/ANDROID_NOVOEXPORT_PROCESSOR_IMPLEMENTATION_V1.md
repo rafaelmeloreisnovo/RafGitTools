@@ -1,13 +1,17 @@
 # RafGitTools Android NOVOexport Processor — Implementation V1
 
-State: `ANDROID_PROCESSOR_AND_SINGLE_FILE_FLOW_SOURCE_ADDED / BATCH_INVENTORY_NOT_WIRED / CI_PENDING / DEVICE_NOT_RUN`
+State: `PER_FILE_PROCESS_AND_PUBLICATION_UI_MERGED / ANDROID_CI_QUEUED / DEVICE_NOT_RUN / BATCH_INVENTORY_NOT_WIRED`
 claim_allowed: false
 
 ## Correct execution model
 
 The user's phone runs the RafGitTools APK. RafGitTools reads the existing Drive files named `conversation*.json` and `codex*.json`, derives private JSONL index/chunk artifacts, and publishes them to a user-selected Drive folder and the private `CONVERSATIONS_CHUNKS_PRIVATE` repository. The user-mediated Android SAF provider handles Drive account selection and folder permissions. This work does not process the corpus in ChatGPT, Termux, a server, or a model-training job.
 
-## Code added in this branch
+## Implementation status at main
+
+The per-file processor, publisher, Drive-tab action and tests were introduced by PR #575 and compile/publishing fixes by PR #576. Both PRs are merged. Exact-head pipeline run `36558610755` had routing, topology and coherence stages successful at the latest observation; Android/test/lint/devDebug APK job `109586???` remains queued. (Job ID: 109374? See exact current workflow record.) This is not a terminal Android build or unit-test result. Physical-device execution has not been run.
+
+## Implemented source
 
 - `app/src/main/kotlin/com/rafgittools/navigator/ConversationManifoldProcessor.kt`
   - streams a top-level JSON array one record at a time;
@@ -26,20 +30,20 @@ The user's phone runs the RafGitTools APK. RafGitTools reads the existing Drive 
   - writes each derived part to a user-selected Drive SAF folder and a Git private-processing namespace through a caller-supplied writer;
   - writes completion markers with `PUBLISHED_UNVERIFIED_READBACK_PENDING`; they are not evidence of provider readback or a completed corpus.
 
-The Drive tab in `app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen.kt` now exposes a per-file Process action, a user-selected Drive destination, an exact plan-hash confirmation, and publication through `HomeViewModel.publishConversationManifold`. Git writes use `GithubDataRepository.createPrivateProcessingFile`, which checks live repository privacy and enforces the 512 KiB namespace boundary. Commit SHAs are retained. These are source changes; CI and on-device execution have not yet established whether the code compiles or runs on the user's handset.
+The Drive tab in `app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen.kt` exposes a per-file Process action, a user-selected Drive destination, an exact plan-hash confirmation, and publication through `HomeViewModel.publishConversationManifold`. Git writes use `GithubDataRepository.createPrivateProcessingFile`, which checks live repository privacy and enforces the 512 KiB namespace boundary. Commit SHAs are retained. This establishes merged source presence and a single-file UI path; it does not establish a successful Android build, a complete batch workflow, or operation on the user's handset.
 
 ## Still required before the phone can run the full route
 
-1. Add the in-app NOVOexport screen and bind `ACTION_OPEN_DOCUMENT_TREE` for the source and destination with persisted SAF grants.
+1. Add a dedicated NOVOexport batch/inventory screen and bind `ACTION_OPEN_DOCUMENT_TREE` for the source tree with persisted SAF grants. The current Drive-tab action selects one file at a time.
 2. Enumerate descendants of the selected source tree and filter `conversation*.json` and `codex*.json`; persist the queue and per-file status so app restart resumes safely.
 3. Feed each source URI to `ConversationManifoldProcessor` on an IO/background executor and persist checkpoints, cancellation, permission loss and storage errors.
-4. Show generated artifacts and the exact publication plan hash in the app; on explicit confirmation call `ConversationManifoldPublication` with the live-private GitHub writer already gated by repository privacy.
+4. Extend the existing per-file preview/plan confirmation into a batch queue view with per-file status and resume controls; publish only after explicit confirmation through the live-private GitHub writer.
 5. Implement provider readback for each Drive/Git output, compare hashes, then write a final cross-destination receipt. Current publication markers deliberately do not claim this.
-6. Run unit tests and exact-head Android CI; install that exact APK on the phone and pass a small Drive canary before enabling multi-gigabyte batches.
+6. Obtain terminal success for Android unit tests, lint and devDebug APK on exact-head workflow run `36558610755`; then install that exact APK on the phone and pass a small Drive canary before enabling multi-gigabyte batches.
 
 ## Limits and privacy
 
-- The 25 GB value is the user's reported scope. This branch has not enumerated or measured the complete Drive source.
+- The 25 GB value is the user's reported scope. No exhaustive recursive Drive enumeration or measurement exists in this evidence set.
 - No source file is changed or deleted.
 - Corpus-derived text in chunks is private content: publish only to the selected Drive destination and a live-verified private GitHub repository. RafGitTools public source receives code/tests only.
 - The processor currently requires a top-level JSON array and blocks records over its configured limit. Those boundaries must be surfaced in the app and recorded as gaps, never silently skipped.
@@ -48,6 +52,6 @@ The Drive tab in `app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen
 
 ## R3
 
-F_ok: Kotlin processor, bounded derived-artifact publisher and synthetic tests are added on a feature branch.
-F_gap: app screen/SAF enumeration/queue wiring, provider readback, CI, handset run and exhaustive inventory.
-F_next: validate this branch in CI; then wire the screen/Drive tree queue and run a small handset canary before scaling.
+F_ok: per-file processor/publisher/UI and synthetic tests are merged through PRs #575 and #576; workflow routing/topology/coherence stages observed successful.
+F_gap: Android job still queued in run 36558610755; recursive SAF inventory, persistent resumable batch queue, provider readback, physical handset canary and measured corpus inventory remain unproven.
+F_next: obtain terminal Android CI result, then implement recursive inventory/queue and validate a small on-device canary before scaling.
