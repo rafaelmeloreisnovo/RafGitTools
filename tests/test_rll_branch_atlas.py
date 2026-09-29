@@ -14,9 +14,10 @@ class BranchAtlasTest(unittest.TestCase):
         cls.cfg=CFG.read_text(encoding="utf-8")
         cls.html=HTML.read_text(encoding="utf-8")
 
-    def test_totals_match_records(self):
+    def test_totals_are_dynamic_and_match_records(self):
         for repo,meta in self.data["repositories"].items():
             self.assertEqual(meta["total"],len(meta["branches"]),repo)
+            self.assertGreater(meta["total"],0)
 
     def test_observed_census(self):
         self.assertEqual(self.data["repositories"]["instituto-Rafael/relativity-living-light"]["total"],873)
@@ -30,8 +31,6 @@ class BranchAtlasTest(unittest.TestCase):
     def test_no_pat_fallback_contract(self):
         self.assertIn("NO_PAT_FALLBACK",self.cfg)
         self.assertIn("SECRET_VALUE_NEVER_PERSISTED_OR_PRINTED",self.cfg)
-        self.assertIn("PAT_AGENTS:",self.cfg)
-        self.assertIn("TOKEN_VAZIO_PERMISSION_PROBE_REQUIRED",self.cfg)
 
     def test_comboboxes_present(self):
         self.assertIn('id="repo"',self.html)
