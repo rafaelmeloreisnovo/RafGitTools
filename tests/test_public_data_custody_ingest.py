@@ -53,6 +53,24 @@ class PublicDataCustodyIngestTests(unittest.TestCase):
         self.assertNotIn("email", clean["nested"])
         self.assertEqual(clean["nested"]["valor"], 10)
 
+    def test_company_qsa_public_projection_suppresses_natural_person_identity(self) -> None:
+        value = {
+            "capital_social": "100000,00",
+            "natureza_juridica": "2062",
+            "nome_socio": "Pessoa Natural",
+            "cpf_socio": "00000000000",
+            "qualificacao_socio": "49",
+        }
+        clean = self.mod.sanitize_public(value, self.cfg)
+        self.assertIn("capital_social", clean)
+        self.assertIn("natureza_juridica", clean)
+        self.assertIn("qualificacao_socio", clean)
+        self.assertNotIn("nome_socio", clean)
+        self.assertNotIn("cpf_socio", clean)
+        policy = self.cfg["privacy"]["company_ownership_policy"]
+        self.assertFalse(policy["natural_person_owner_names_in_public_artifact"])
+        self.assertFalse(policy["person_centric_cross_company_profile"])
+
     def test_portal_source_is_allowlisted_and_https(self) -> None:
         source = self.mod.validate_source(self.cfg, "PORTAL_DESPESAS_POR_ORGAO")
         url = self.mod.build_url(source, {"ano": 2025, "pagina": 1})
