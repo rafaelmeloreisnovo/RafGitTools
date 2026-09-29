@@ -637,7 +637,7 @@ private fun DriveBridgeContent(
                                         )
                                         result.onSuccess { published ->
                                             manifoldPublishSummary =
-                                                "PUBLISHED_UNVERIFIED_READBACK_PENDING · Drive ${published.driveUris.size} itens · Git ${published.githubPaths.size} caminhos · commits ${published.githubCommitShas.joinToString().take(120)} · receipt SHA-256 ${published.artifactSha256}"
+                                                "${published.state} · Drive readback=${published.driveReadbackVerified} · Git readback=${published.githubReadbackVerified} · Drive ${published.driveUris.size} itens · Git ${published.githubPaths.size} caminhos · commits ${published.githubCommitShas.joinToString().take(120)} · receipt SHA-256 ${published.artifactSha256}"
                                         }.onFailure {
                                             error = it.message ?: "Falha ao publicar o manifold"
                                         }
