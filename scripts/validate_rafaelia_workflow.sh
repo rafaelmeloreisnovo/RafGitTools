@@ -125,6 +125,13 @@ python3 scripts/check_program_mission_source_cohesion.py \
 python3 -m unittest discover -s tests \
   -p 'test_novoexport_full_recount.py' -v
 
+# Public official-data custody gate. This validates allowlisted source routing,
+# privacy minimization, separation of provider API credentials from GitHub PATs,
+# source/projection hashing, salary aggregation and PLECT claim boundaries.
+# PASS here is structural only; it does not prove a live Portal API execution.
+python3 -m unittest discover -s tests \
+  -p 'test_public_data_custody_ingest.py' -v
+
 # START single-root provider-enforcement policy gate. V1/V2 remain preserved as
 # append-only historical snapshots; V3 is the live topology contract. PASS here
 # proves only source/governance coherence of the prepared provider policy. It

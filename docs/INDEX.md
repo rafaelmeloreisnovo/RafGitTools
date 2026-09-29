@@ -124,3 +124,9 @@ Esse bloco é histórico e commit-bound.
 - **F_ok:** índice atual separa estado vivo, snapshots e receipts históricos e roteia as superfícies novas.
 - **F_gap:** machine-state regeneration e contagens integrais revision-bound permanecem abertas.
 - **F_next:** manter a ordem de leitura sincronizada a cada mudança material e preservar `TOKEN_VAZIO` onde a prova não existe.
+
+## RLL branch and presentation atlas
+
+- `navigation/RLL_BRANCH_ATLAS_V1.md` — census, numbered branch taxonomy and fail-closed rename policy.
+- `site/rll-atlas/index.html` — repository/family/branch combobox UI.
+- `../data/navigation/RLL_BRANCH_ATLAS_SNAPSHOT_20260929.json` — canonical machine-readable snapshot.
