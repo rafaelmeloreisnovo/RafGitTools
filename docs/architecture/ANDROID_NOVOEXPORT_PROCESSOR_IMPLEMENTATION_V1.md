@@ -39,7 +39,7 @@ The Drive tab in `app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen
 3. Feed each source URI to `ConversationManifoldProcessor` on an IO/background executor and persist checkpoints, cancellation, permission loss and storage errors.
 4. Extend the existing per-file preview/plan confirmation into a batch queue view with per-file status and resume controls; publish only after explicit confirmation through the live-private GitHub writer.
 5. Implement provider readback for each Drive/Git output, compare hashes, then write a final cross-destination receipt. Current publication markers deliberately do not claim this.
-6. Obtain install the CI-built APK from workflow run `36558610755` on the phone and pass a small Drive canary before enabling multi-gigabyte batches.
+6. Install the CI-built APK from workflow run `36558610755` on the phone and pass a small Drive canary before enabling multi-gigabyte batches.
 
 ## Limits and privacy
 
