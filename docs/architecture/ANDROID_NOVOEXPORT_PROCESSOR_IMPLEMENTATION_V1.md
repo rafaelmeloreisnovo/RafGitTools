@@ -24,19 +24,30 @@ The per-file processor, publisher, Drive-tab action and tests were introduced by
   - synthetic conversation and Codex inputs;
   - large-message reconstruction;
   - malformed/trailing-comma, unexpected source, source-size and record-size rejection.
+- `app/src/main/kotlin/com/rafgittools/navigator/NovoexportSafInventory.kt`
+  - recursively walks only metadata from a user-selected SAF tree using provider document IDs;
+  - never opens source document bytes and never renames, moves or deletes a source;
+  - filters the bounded source families `conversation*.json`, `conversations*.json` and `codex*.json`;
+  - records candidate URIs, MIME types and provider-reported sizes, retaining unknown sizes as `TOKEN_VAZIO_SIZE`;
+  - prevents directory cycles by document ID and fails closed above the configured 100,000-document bound.
+- `app/src/test/kotlin/com/rafgittools/navigator/NovoexportSafInventoryTest.kt`
+  - positive and negative source-family selection gates.
+
 - `app/src/main/kotlin/com/rafgittools/navigator/ConversationManifoldPublication.kt`
   - creates a metadata-only plan with source/output hashes and bounded Git-sized parts;
   - requires the confirmation value to equal the exact plan SHA-256;
   - writes each derived part to a user-selected Drive SAF folder and a Git private-processing namespace through a caller-supplied writer;
-  - writes completion markers with `PUBLISHED_UNVERIFIED_READBACK_PENDING`; they are not evidence of provider readback or a completed corpus.
+  - re-reads every Drive artifact through `ContentResolver.openInputStream` and every private Git artifact through a live Contents API GET; byte count and SHA-256 must match the confirmed plan;
+  - writes a V2 completion receipt with `PUBLISHED_READBACK_VERIFIED` only after all derived parts pass both readbacks, then re-reads the receipt itself on both providers;
+  - any mismatch, permission loss, missing content or non-private Git target fails closed and cannot return a verified publication state.
 
 The Drive tab in `app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen.kt` exposes a per-file Process action, a user-selected Drive destination, an exact plan-hash confirmation, and publication through `HomeViewModel.publishConversationManifold`. Git writes use `GithubDataRepository.createPrivateProcessingFile`, which checks live repository privacy and enforces the 512 KiB namespace boundary. Commit SHAs are retained. This establishes merged source presence, a successful CI build, and a single-file UI path; it does not establish a complete batch workflow or operation on the user's handset.
 
 ## Still required before the phone can run the full route
 
-1. Add a dedicated NOVOexport batch/inventory screen and bind `ACTION_OPEN_DOCUMENT_TREE` for the source tree with persisted SAF grants. The current Drive-tab action selects one file at a time.
-2. Enumerate descendants of the selected source tree and filter `conversation*.json` and `codex*.json`; persist the queue and per-file status so app restart resumes safely.
-3. Feed each source URI to `ConversationManifoldProcessor` on an IO/background executor and persist checkpoints, cancellation, permission loss and storage errors.
+1. Obtain exact-head CI for the recursive SAF inventory successor; `IMPLEMENTED_UNTESTED != PASS`.
+2. Persist the inventoried candidate URI + metadata set as a resumable queue with per-file states, retry/error counters and source identity so app restart resumes safely.
+3. Feed queued source URIs to `ConversationManifoldProcessor` on an IO/background executor and persist checkpoints, cancellation, permission loss and storage errors.
 4. Extend the existing per-file preview/plan confirmation into a batch queue view with per-file status and resume controls; publish only after explicit confirmation through the live-private GitHub writer.
 5. Implement provider readback for each Drive/Git output, compare hashes, then write a final cross-destination receipt. Current publication markers deliberately do not claim this.
 6. Install the CI-built APK from workflow run `36558610755` on the phone and pass a small Drive canary before enabling multi-gigabyte batches.

@@ -9,7 +9,7 @@
     "conversation*.json",
     "codex*.json"
   ],
-  "input_mode": "USER_SELECTED_ANDROID_SAF",
+  "input_mode": "USER_SELECTED_ANDROID_SAF_FILE_OR_TREE",
   "source_mutation": false,
   "parser": {
     "top_level": "JSON_ARRAY",
@@ -25,13 +25,12 @@
     "LIVE_PRIVATE_GITHUB_NAMESPACE"
   ],
   "publisher_plan_confirmation_required": true,
-  "provider_readback": "NOT_IMPLEMENTED",
+  "provider_readback": "SOURCE_IMPLEMENTED_FAIL_CLOSED_DRIVE_AND_PRIVATE_GIT",
   "corpus_scope_bytes": "TOKEN_VAZIO_MEASURED_INVENTORY_REQUIRED",
   "remaining": [
-    "SAF_TREE_ENUMERATION",
+    "EXACT_HEAD_CI_FOR_SAF_INVENTORY_SUCCESSOR",
     "PERSISTENT_RESUMABLE_BATCH_QUEUE",
     "BACKGROUND_EXECUTION_AND_RECOVERY",
-    "DRIVE_AND_GIT_READBACK",
     "PHYSICAL_DEVICE_CANARY",
     "MEASURED_CORPUS_INVENTORY"
   ],

@@ -368,17 +368,26 @@ class HomeViewModel @Inject constructor(
             ConversationManifoldPublication.publish(
                 resolver = resolver,
                 plan = plan,
-                confirmedPlanSha256 = confirmedPlanSha256
-            ) { owner, repo, path, content, message ->
-                githubRepository.createPrivateProcessingFile(
-                    owner = owner,
-                    repo = repo,
-                    path = path,
-                    utf8Content = content,
-                    message = message,
-                    branch = target.defaultBranch
-                ).map { it.commit.sha }
-            }
+                confirmedPlanSha256 = confirmedPlanSha256,
+                githubWrite = { owner, repo, path, content, message ->
+                    githubRepository.createPrivateProcessingFile(
+                        owner = owner,
+                        repo = repo,
+                        path = path,
+                        utf8Content = content,
+                        message = message,
+                        branch = target.defaultBranch
+                    ).map { it.commit.sha }
+                },
+                githubRead = { owner, repo, path ->
+                    githubRepository.readPrivateProcessingFile(
+                        owner = owner,
+                        repo = repo,
+                        path = path,
+                        branch = target.defaultBranch
+                    )
+                }
+            )
         }
     }
 
