@@ -1,8 +1,8 @@
 {
   "schema": "rafgittools.android-novoexport-processor.v1",
-  "state": "PER_FILE_PROCESS_AND_PUBLICATION_UI_MERGED",
-  "app_flow": "DRIVE_TAB_PER_FILE_ACTION_SOURCE_PRESENT",
-  "ci": "ANDROID_TEST_LINT_DEVDEBUG_PASS_RUN_36558610755; FINAL_RECEIPT_PASS",
+  "state": "RESUMABLE_QUEUE_STORE_SOURCE_IMPLEMENTED_UNTESTED",
+  "app_flow": "DRIVE_TAB_PER_FILE_PLUS_RECURSIVE_INVENTORY_PLUS_PRIVATE_QUEUE_SOURCE_PRESENT",
+  "ci": "NEW_STACKED_QUEUE_EXACT_HEAD_CI_NOT_RUN",
   "device_execution": "NOT_RUN",
   "claim_allowed": false,
   "source_patterns": [
@@ -28,24 +28,39 @@
   "provider_readback": "SOURCE_IMPLEMENTED_FAIL_CLOSED_DRIVE_AND_PRIVATE_GIT",
   "corpus_scope_bytes": "TOKEN_VAZIO_MEASURED_INVENTORY_REQUIRED",
   "remaining": [
-    "EXACT_HEAD_CI_FOR_SAF_INVENTORY_SUCCESSOR",
-    "PERSISTENT_RESUMABLE_BATCH_QUEUE",
+    "EXACT_HEAD_CI_FOR_RESUMABLE_QUEUE_SUCCESSOR",
     "BACKGROUND_EXECUTION_AND_RECOVERY",
     "PHYSICAL_DEVICE_CANARY",
     "MEASURED_CORPUS_INVENTORY"
   ],
-  "next": "wire recursive SAF inventory and resumable batch queue before a phone canary",
-  "apk_evidence": {
-    "source_head": "07081ef774d773cf570fb20aaab1058301761155",
-    "merged_commit": "695bed743c5b22427ebc7f6cf4b71169208001bc",
-    "source_compare": "one commit ahead; zero changed files",
-    "workflow_run": 36558610755,
-    "android_job": 109375861051,
-    "result": "PASS",
-    "apk_variant": "devDebug",
-    "apk_sha256": "4120a8f91a1de47a28c3c8db27b3e1a8fbaa94146c1b044ee7f1ecc3575fac7d",
-    "workflow_artifact_id": 11030485325,
-    "device_install": "NOT_RUN",
-    "final_workflow_receipt": "PASS"
+  "next": "close exact-head CI for the stacked queue successor; then wire the queue executor/background recovery loop to process one URI at a time and persist transitions before a physical Drive canary",
+  "saf_inventory": {
+    "state": "SOURCE_IMPLEMENTED_UNTESTED",
+    "mode": "METADATA_ONLY_RECURSIVE",
+    "source_content_opened": false,
+    "max_documents_default": 100000,
+    "accepted_patterns": [
+      "conversation*.json",
+      "conversations*.json",
+      "codex*.json"
+    ],
+    "known_size_aggregation": "PROVIDER_METADATA_ONLY",
+    "unknown_size": "TOKEN_VAZIO_SIZE"
+  },
+  "queue": {
+    "state": "SOURCE_IMPLEMENTED_UNTESTED",
+    "storage": "ANDROID_APP_PRIVATE_FILES",
+    "schema": "rafgittools.novoexport-resumable-queue/v1",
+    "identity": "SHA256_OF_TREE_URI_PLUS_PROVIDER_METADATA",
+    "states": [
+      "PENDING",
+      "PROCESSING",
+      "COMPLETE",
+      "FAILED_RETRYABLE",
+      "BLOCKED"
+    ],
+    "atomic_recovery": "TEMP_PLUS_BACKUP",
+    "preserves_retry_state_on_reinventory": true,
+    "queue_is_evidence": false
   }
 }
