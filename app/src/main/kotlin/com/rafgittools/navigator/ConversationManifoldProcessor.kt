@@ -1,27 +1,23 @@
 package com.rafgittools.navigator
 
 import com.google.gson.Gson
-import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import com.google.gson.stream.JsonReader
+import java.io.ByteArrayOutputStream
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
-import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.io.PushbackInputStream
 import java.security.DigestInputStream
 import java.security.MessageDigest
 
 /**
- * Bounded-per-record, restartable processor for the user's conversations*.json and codex*.json
- * exports. Source streams are read-only. One top-level JSON record is held in memory at a time;
- * output is private derived JSONL, partitioned by input file and content-addressed source digest.
- *
- * The caller owns SAF permission, Drive enumeration, cancellation and publication. This processor
- * never uploads source bytes and never treats a partial file as complete.
+ * Restartable file-level processor for conversations*.json and codex*.json exports.
+ * Reads top-level JSON arrays and holds at most one bounded top-level record in memory.
+ * Source streams are read-only; successful derived JSONL output is private by default.
  */
 class ConversationManifoldProcessor(
     private val outputRoot: File,
@@ -29,134 +25,160 @@ class ConversationManifoldProcessor(
     private val maxRecordUtf8Bytes: Long = 16L * 1024L * 1024L
 ) {
     data class Result(
-        val state: String,
-        val sourceName: String,
-        val sourceSha256: String,
-        val sourceBytes: Long,
-        val records: Long,
-        val nodes: Long,
-        val messages: Long,
-        val codexRecords: Long,
-        val outputFile: File,
-        val outputSha256: String,
-        val checkpointFile: File
+        val state: String, val sourceName: String, val sourceSha256: String, val sourceBytes: Long,
+        val records: Long, val nodes: Long, val messages: Long, val codexRecords: Long,
+        val outputFile: File, val outputSha256: String, val checkpointFile: File
     )
-
     private data class Counts(var records: Long = 0, var nodes: Long = 0, var messages: Long = 0, var codex: Long = 0)
-
     private val gson = Gson()
 
     fun process(sourceName: String, source: InputStream): Result {
         require(sourceName.endsWith(".json", ignoreCase = true)) { "Only JSON source files are supported" }
-        require(sourceName.startsWith("conversations", ignoreCase = true) ||
-            sourceName.startsWith("codex", ignoreCase = true)) {
+        require(sourceName.startsWith("conversations", ignoreCase = true) || sourceName.startsWith("codex", ignoreCase = true)) {
             "Expected conversations*.json or codex*.json"
         }
         if (!outputRoot.exists() && !outputRoot.mkdirs()) error("Cannot create private output directory")
         require(outputRoot.isDirectory) { "Output path is not a directory" }
 
         val safeName = sourceName.substringAfterLast('/').replace(Regex("[^A-Za-z0-9._-]"), "_")
-        val part = File(outputRoot, ".$safeName.part")
-        if (part.exists() && !part.delete()) error("Cannot clear interrupted partial output")
+        val partFile = File(outputRoot, ".$safeName.part")
+        if (partFile.exists() && !partFile.delete()) error("Cannot clear interrupted partial output")
         val digest = MessageDigest.getInstance("SHA-256")
         val counts = Counts()
-        var byteCount = 0L
-        val recordDigest = MessageDigest.getInstance("SHA-256")
+        lateinit var counted: CountingInputStream
 
         try {
-            DigestInputStream(source, digest).use { digestStream ->
-                val counted = CountingInputStream(digestStream, maxSourceBytes)
-                JsonReader(InputStreamReader(counted, Charsets.UTF_8).buffered(64 * 1024)).use { reader ->
-                    reader.isLenient = false
-                    BufferedWriter(OutputStreamWriter(FileOutputStream(part), Charsets.UTF_8), 64 * 1024).use { out ->
-                        when (reader.peek()) {
-                            com.google.gson.stream.JsonToken.BEGIN_ARRAY -> {
-                                reader.beginArray()
-                                while (reader.hasNext()) {
-                                    val element = com.google.gson.JsonParser.parseReader(reader)
-                                    writeRecord(safeName, element, out, counts)
-                                }
-                                reader.endArray()
+            val digesting = DigestInputStream(source, digest)
+            counted = CountingInputStream(digesting, maxSourceBytes)
+            val input = PushbackInputStream(counted, 1)
+            val first = nextNonWhitespace(input)
+            require(first == '['.code) { "Expected top-level JSON array; unsupported source shape is blocked" }
+
+            FileOutputStream(partFile).use { fileOut ->
+                BufferedWriter(OutputStreamWriter(fileOut, Charsets.UTF_8), 64 * 1024).use { out ->
+                    var finished = false
+                    while (!finished) {
+                        val next = nextNonWhitespace(input)
+                        if (next == ']'.code) {
+                            finished = true
+                        } else {
+                            require(next >= 0) { "Unexpected EOF inside JSON array" }
+                            input.unread(next)
+                            val rawRecord = readOneValue(input, maxRecordUtf8Bytes)
+                            val element = com.google.gson.JsonParser.parseString(rawRecord)
+                            writeRecord(safeName, element, out, counts)
+                            when (nextNonWhitespace(input)) {
+                                ','.code -> Unit
+                                ']'.code -> finished = true
+                                else -> error("Expected comma or closing array bracket")
                             }
-                            com.google.gson.stream.JsonToken.BEGIN_OBJECT -> {
-                                val element = com.google.gson.JsonParser.parseReader(reader)
-                                if (element.isJsonObject) {
-                                    val root = element.asJsonObject
-                                    val records = sequenceField(root)
-                                    if (records != null) {
-                                        records.forEach { writeRecord(safeName, it, out, counts) }
-                                    } else {
-                                        writeRecord(safeName, element, out, counts)
-                                    }
-                                } else {
-                                    writeRecord(safeName, element, out, counts)
-                                }
-                            }
-                            else -> error("Expected a top-level JSON array or object")
                         }
-                        if (reader.peek() != com.google.gson.stream.JsonToken.END_DOCUMENT) {
-                            error("Trailing content after top-level JSON value")
-                        }
-                        out.flush()
                     }
-                    byteCount = counted.bytesRead
+                    require(nextNonWhitespace(input) < 0) { "Trailing content after top-level JSON array" }
+                    out.flush()
+                    fileOut.fd.sync()
                 }
             }
         } catch (t: Throwable) {
-            part.delete()
+            partFile.delete()
             throw t
         }
 
         val sourceHash = digest.digest().hex()
-        val outputHash = sha256(part)
-        val finalFile = File(outputRoot, "${safeName}.${sourceHash.take(16)}.derived.jsonl")
+        val sourceBytes = counted.bytesRead
+        val outputHash = sha256(partFile)
+        val finalFile = File(outputRoot, "$safeName.${sourceHash.take(16)}.derived.jsonl")
         if (finalFile.exists() && sha256(finalFile) != outputHash) {
-            part.delete()
+            partFile.delete()
             error("Content-addressed output collision")
         }
-        if (finalFile.exists()) part.delete()
-        else if (!part.renameTo(finalFile)) {
-            part.delete()
+        if (finalFile.exists()) partFile.delete()
+        else if (!partFile.renameTo(finalFile)) {
+            partFile.delete()
             error("Cannot atomically promote processed output")
         }
 
         val checkpoint = File(outputRoot, "CHECKPOINTS.jsonl")
         FileOutputStream(checkpoint, true).bufferedWriter(Charsets.UTF_8).use { writer ->
             writer.append(gson.toJson(mapOf(
-                "event" to "FILE_COMPLETE",
-                "source_name" to safeName,
-                "source_sha256" to sourceHash,
-                "source_bytes" to byteCount,
-                "output_file" to finalFile.name,
-                "output_sha256" to outputHash,
-                "records" to counts.records,
-                "nodes" to counts.nodes,
-                "messages" to counts.messages,
-                "codex_records" to counts.codex,
-                "claim_allowed" to false
+                "event" to "FILE_COMPLETE", "source_name" to safeName, "source_sha256" to sourceHash,
+                "source_bytes" to sourceBytes, "output_file" to finalFile.name, "output_sha256" to outputHash,
+                "records" to counts.records, "nodes" to counts.nodes, "messages" to counts.messages,
+                "codex_records" to counts.codex, "claim_allowed" to false
             ))).append('\n')
         }
-        return Result("COMPLETE", safeName, sourceHash, byteCount, counts.records, counts.nodes,
+        return Result("COMPLETE", safeName, sourceHash, sourceBytes, counts.records, counts.nodes,
             counts.messages, counts.codex, finalFile, outputHash, checkpoint)
+    }
+
+    private fun readOneValue(input: PushbackInputStream, maxBytes: Long): String {
+        val first = input.read()
+        require(first >= 0) { "Unexpected EOF before JSON record" }
+        val out = ByteArrayOutputStream()
+        var depth = 0
+        var inString = false
+        var escaped = false
+        var startedContainer = first == '{'.code || first == '['.code
+        var primitive = !startedContainer && first != '"'.code
+        var endedString = first == '"'.code
+        var endedContainer = false
+
+        fun add(value: Int) {
+            out.write(value)
+            require(out.size().toLong() <= maxBytes) { "Single JSON record exceeds configured memory bound" }
+        }
+        add(first)
+        if (startedContainer) depth = 1
+        if (first == '"'.code) { inString = true; endedString = false }
+
+        while (true) {
+            val value = input.read()
+            if (value < 0) break
+            if (primitive && (value == ','.code || value == ']'.code || value.isWhitespaceByte())) {
+                input.unread(value)
+                break
+            }
+            add(value)
+            if (inString) {
+                if (escaped) escaped = false
+                else if (value == '\\'.code) escaped = true
+                else if (value == '"'.code) {
+                    inString = false
+                    if (!startedContainer) { endedString = true; break }
+                }
+            } else if (value == '"'.code) {
+                inString = true
+            } else if (value == '{'.code || value == '['.code) {
+                depth++
+                startedContainer = true
+            } else if (value == '}'.code || value == ']'.code) {
+                depth--
+                require(depth >= 0) { "Mismatched JSON container" }
+                if (startedContainer && depth == 0) { endedContainer = true; break }
+            }
+        }
+        require((startedContainer && endedContainer) || (!startedContainer && (endedString || primitive))) {
+            "Truncated JSON record"
+        }
+        return out.toString(Charsets.UTF_8.name())
+    }
+
+    private fun Int.isWhitespaceByte() = this == ' '.code || this == '\n'.code || this == '\r'.code || this == '\t'.code
+
+    private fun nextNonWhitespace(input: PushbackInputStream): Int {
+        while (true) {
+            val value = input.read()
+            if (!value.isWhitespaceByte()) return value
+        }
     }
 
     private fun writeRecord(sourceName: String, element: JsonElement, out: BufferedWriter, counts: Counts) {
         val encoded = gson.toJson(element)
-        val size = encoded.toByteArray(Charsets.UTF_8).size.toLong()
-        require(size <= maxRecordUtf8Bytes) { "Single JSON record exceeds configured memory bound" }
         val recordIndex = counts.records++
-        val isConversation = sourceName.startsWith("conversations", ignoreCase = true)
-        if (!isConversation) {
-            val hash = sha256(encoded.toByteArray(Charsets.UTF_8))
-            writeLine(out, mapOf(
-                "kind" to "CODEX_RECORD",
-                "source_name" to sourceName,
-                "record_index" to recordIndex,
-                "record_sha256" to hash,
-                "record" to element,
-                "privacy_class" to "PRIVATE_DEFAULT_DENY",
-                "claim_allowed" to false
-            ))
+        if (!sourceName.startsWith("conversations", ignoreCase = true)) {
+            writeLine(out, mapOf("kind" to "CODEX_RECORD", "source_name" to sourceName,
+                "record_index" to recordIndex, "record_sha256" to sha256(encoded.toByteArray(Charsets.UTF_8)),
+                "record" to element, "privacy_class" to "PRIVATE_DEFAULT_DENY", "claim_allowed" to false))
             counts.codex++
             return
         }
@@ -166,8 +188,7 @@ class ConversationManifoldProcessor(
             return
         }
         val conversation = element.asJsonObject
-        val conversationId = scalar(conversation.get("id") ?: conversation.get("conversation_id"))
-            ?: "TOKEN_VAZIO"
+        val conversationId = scalar(conversation.get("id") ?: conversation.get("conversation_id")) ?: "TOKEN_VAZIO"
         val mapping = conversation.getAsJsonObject("mapping")
         writeLine(out, mapOf("kind" to "CONVERSATION", "source_name" to sourceName,
             "record_index" to recordIndex, "conversation_id" to conversationId,
@@ -180,20 +201,20 @@ class ConversationManifoldProcessor(
             if (!nodeValue.isJsonObject) return@forEach
             val node = nodeValue.asJsonObject
             val parent = scalar(node.get("parent")) ?: "TOKEN_VAZIO"
-            val msg = node.getAsJsonObject("message")
-            writeLine(out, mapOf("kind" to "NODE", "conversation_id" to conversationId,
-                "node_id" to nodeId, "parent_id" to parent, "has_message" to (msg != null),
-                "source_name" to sourceName, "record_index" to recordIndex, "claim_allowed" to false))
+            val message = node.getAsJsonObject("message")
+            writeLine(out, mapOf("kind" to "NODE", "conversation_id" to conversationId, "node_id" to nodeId,
+                "parent_id" to parent, "has_message" to (message != null), "source_name" to sourceName,
+                "record_index" to recordIndex, "claim_allowed" to false))
             counts.nodes++
-            if (msg != null) {
-                val author = msg.getAsJsonObject("author")
-                val content = msg.getAsJsonObject("content")
-                val messageId = scalar(msg.get("id")) ?: nodeId
+            if (message != null) {
+                val author = message.getAsJsonObject("author")
+                val content = message.getAsJsonObject("content")
+                val messageId = scalar(message.get("id")) ?: nodeId
                 val text = content?.get("parts")?.let(::flattenText) ?: "TOKEN_VAZIO"
                 writeLine(out, mapOf("kind" to "MESSAGE_CHUNK", "conversation_id" to conversationId,
                     "message_id" to messageId, "node_id" to nodeId, "parent_id" to parent,
                     "role" to scalar(author?.get("role")) ?: "TOKEN_VAZIO",
-                    "created_at" to scalar(msg.get("create_time")) ?: "TOKEN_VAZIO",
+                    "created_at" to scalar(message.get("create_time")) ?: "TOKEN_VAZIO",
                     "content_type" to scalar(content?.get("content_type")) ?: "TOKEN_VAZIO",
                     "text" to text, "chunk_sha256" to sha256(text.toByteArray(Charsets.UTF_8)),
                     "source_name" to sourceName, "record_index" to recordIndex,
@@ -203,39 +224,24 @@ class ConversationManifoldProcessor(
         }
     }
 
-    private fun sequenceField(root: JsonObject): JsonArray? =
-        listOf("records", "items", "conversations", "data").firstNotNullOfOrNull { key ->
-            root.get(key)?.takeIf { it.isJsonArray }?.asJsonArray
-        }
-
     private fun flattenText(element: JsonElement): String = when {
         element.isJsonNull -> ""
         element.isJsonPrimitive -> element.asJsonPrimitive.asString
         element.isJsonArray -> element.joinToString("\n") { flattenText(it) }
         element.isJsonObject -> element.asJsonObject.get("text")?.let(::flattenText)
-            ?: element.asJsonObject.get("transcript")?.let(::flattenText)
-            ?: ""
+            ?: element.asJsonObject.get("transcript")?.let(::flattenText) ?: ""
         else -> ""
     }
-
     private fun scalar(element: JsonElement?): String? =
         if (element == null || element.isJsonNull || !element.isJsonPrimitive) null else element.asJsonPrimitive.asString
-
-    private fun writeLine(out: BufferedWriter, value: Any) {
-        out.append(gson.toJson(value)).append('\n')
-    }
+    private fun writeLine(out: BufferedWriter, value: Any) { out.append(gson.toJson(value)).append('\n') }
 
     private fun sha256(file: File): String = FileInputStream(file).use { input ->
         val md = MessageDigest.getInstance("SHA-256")
         val buffer = ByteArray(64 * 1024)
-        while (true) {
-            val read = input.read(buffer)
-            if (read < 0) break
-            if (read > 0) md.update(buffer, 0, read)
-        }
+        while (true) { val read = input.read(buffer); if (read < 0) break; if (read > 0) md.update(buffer, 0, read) }
         md.digest().hex()
     }
-
     private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).hex()
     private fun ByteArray.hex(): String = joinToString("") { "%02x".format(it) }
 
