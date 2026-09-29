@@ -644,8 +644,14 @@ private fun DriveBridgeContent(
                                                     } else {
                                                         NovoexportQueueStore.FAILED_RETRYABLE
                                                     }
-                                                    val failureText =
-                                                        "SOURCE_PROCESSING_FAILURE: ${failure.message ?: failure.javaClass.simpleName}"
+                                                    val failureText = when (failure) {
+                                                        is SecurityException ->
+                                                            "SAF_PERMISSION_LOST: ${failure.message ?: failure.javaClass.simpleName}"
+                                                        is IllegalArgumentException ->
+                                                            "SOURCE_REJECTED: ${failure.message ?: failure.javaClass.simpleName}"
+                                                        else ->
+                                                            "SOURCE_PROCESSING_FAILURE: ${failure.message ?: failure.javaClass.simpleName}"
+                                                    }
                                                     val failed = withContext(Dispatchers.IO) {
                                                         runCatching {
                                                             NovoexportQueueStore.transition(
@@ -866,8 +872,11 @@ private fun DriveBridgeContent(
                         Button(
                             onClick = {
                                 val target = selectedPrivateRepository
-                                if (target == null) {
-                                    error = "O repositório privado selecionado desapareceu."
+                                if (target == null || !target.isPrivate ||
+                                    target.owner.login != plan.githubOwner ||
+                                    target.name != plan.githubRepository
+                                ) {
+                                    error = "O destino privado mudou após a confirmação do plano; gere um novo plano."
                                 } else {
                                     scope.launch {
                                         publishingManifold = true
