@@ -18,6 +18,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +27,10 @@ MANIFEST_SCHEMA = "rafaelia.private-ci-manifest.v1"
 RECEIPT_SCHEMA = "rafgittools.private-ci-replay-receipt.v1"
 NETWORK_ISOLATION_METHOD = "LINUX_USER_NAMESPACE_PLUS_NETWORK_NAMESPACE"
 NETWORK_ISOLATION_PREFIX = ["unshare", "--user", "--map-root-user", "--net", "--"]
+ZIPRAF_RECEIPT_SCHEMA = "zipraf.private-ci-sanitized-receipt.v1"
+ZIPRAF_RECEIPT_PATH = "receipt/private-ci-replay-receipt.json"
+ZIPRAF_MANIFEST_PATH = "META-INF/ZIPRAF/MANIFEST.V1.json"
+ZIPRAF_SUMS_PATH = "META-INF/ZIPRAF/SHA256SUMS"
 
 SHA40_RE = re.compile(r"^[0-9a-f]{40}$")
 REPO_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
@@ -539,6 +544,124 @@ def execute_plan(
     return receipt
 
 
+
+def _validate_sanitized_receipt_for_zipraf(receipt: dict[str, Any]) -> None:
+    _assert_no_secret_values(receipt)
+    if receipt.get("schema") != RECEIPT_SCHEMA:
+        raise ValueError("ZIPRAF input receipt schema mismatch")
+    if receipt.get("claim_allowed") is not False:
+        raise ValueError("ZIPRAF input receipt claim_allowed must be false")
+    boundary = receipt.get("privacy_boundary")
+    if not isinstance(boundary, dict):
+        raise ValueError("ZIPRAF input receipt privacy_boundary missing")
+    required_false = (
+        "secret_value_persisted",
+        "secret_available_to_private_subprocess",
+        "raw_private_stdout_persisted",
+        "raw_private_stderr_persisted",
+        "private_source_uploaded_as_public_artifact",
+    )
+    for key in required_false:
+        if boundary.get(key) is not False:
+            raise ValueError(f"ZIPRAF input receipt requires {key}=false")
+    isolation = boundary.get("network_egress_isolation")
+    if not isinstance(isolation, dict) or isolation.get("state") != "PASS":
+        raise ValueError("ZIPRAF input receipt requires PASS network isolation")
+
+
+def _zipinfo(name: str) -> zipfile.ZipInfo:
+    info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+    info.compress_type = zipfile.ZIP_STORED
+    info.create_system = 3
+    info.external_attr = 0o100644 << 16
+    return info
+
+
+def pack_receipt_zipraf(receipt_path: Path, output_path: Path) -> dict[str, Any]:
+    receipt = load_json(receipt_path)
+    _validate_sanitized_receipt_for_zipraf(receipt)
+    receipt_bytes = canonical_bytes(receipt)
+    receipt_sha = sha256_bytes(receipt_bytes)
+    manifest = {
+        "schema": ZIPRAF_RECEIPT_SCHEMA,
+        "profile": "PRIVATE_CI_SANITIZED_RECEIPT_V1",
+        "receipt_path": ZIPRAF_RECEIPT_PATH,
+        "receipt_sha256": receipt_sha,
+        "encryption": False,
+        "signature_state": "TOKEN_VAZIO_NOT_CONFIGURED",
+        "external_signature_required_for_authenticity_claim": True,
+        "container_integrity_claim_only": True,
+        "claim_allowed": False,
+    }
+    manifest_bytes = canonical_bytes(manifest)
+    sums = (
+        f"{receipt_sha}  {ZIPRAF_RECEIPT_PATH}\n"
+        f"{sha256_bytes(manifest_bytes)}  {ZIPRAF_MANIFEST_PATH}\n"
+    ).encode("utf-8")
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(output_path, "w") as zf:
+        zf.writestr(_zipinfo(ZIPRAF_RECEIPT_PATH), receipt_bytes)
+        zf.writestr(_zipinfo(ZIPRAF_MANIFEST_PATH), manifest_bytes)
+        zf.writestr(_zipinfo(ZIPRAF_SUMS_PATH), sums)
+
+    return {
+        "schema": ZIPRAF_RECEIPT_SCHEMA,
+        "output_sha256": sha256_file(output_path),
+        "receipt_sha256": receipt_sha,
+        "signature_state": "TOKEN_VAZIO_NOT_CONFIGURED",
+        "encryption": False,
+        "claim_allowed": False,
+    }
+
+
+def verify_receipt_zipraf(path: Path) -> dict[str, Any]:
+    with zipfile.ZipFile(path, "r") as zf:
+        names = zf.namelist()
+        expected = [ZIPRAF_RECEIPT_PATH, ZIPRAF_MANIFEST_PATH, ZIPRAF_SUMS_PATH]
+        if names != expected:
+            raise ValueError(f"ZIPRAF entry set/order mismatch: {names!r}")
+        for name in names:
+            p = Path(name)
+            if p.is_absolute() or ".." in p.parts:
+                raise ValueError("ZIPRAF contains unsafe entry path")
+        receipt_bytes = zf.read(ZIPRAF_RECEIPT_PATH)
+        manifest_bytes = zf.read(ZIPRAF_MANIFEST_PATH)
+        sums_text = zf.read(ZIPRAF_SUMS_PATH).decode("utf-8")
+
+    receipt = json.loads(receipt_bytes)
+    manifest = json.loads(manifest_bytes)
+    if not isinstance(receipt, dict) or not isinstance(manifest, dict):
+        raise ValueError("ZIPRAF JSON entries must be objects")
+    _validate_sanitized_receipt_for_zipraf(receipt)
+    if manifest.get("schema") != ZIPRAF_RECEIPT_SCHEMA:
+        raise ValueError("ZIPRAF manifest schema mismatch")
+    if manifest.get("encryption") is not False:
+        raise ValueError("ZIPRAF receipt profile must not claim encryption")
+    if manifest.get("signature_state") != "TOKEN_VAZIO_NOT_CONFIGURED":
+        raise ValueError("ZIPRAF signature state mismatch")
+    if manifest.get("claim_allowed") is not False:
+        raise ValueError("ZIPRAF claim_allowed must be false")
+    receipt_sha = sha256_bytes(canonical_bytes(receipt))
+    if manifest.get("receipt_sha256") != receipt_sha:
+        raise ValueError("ZIPRAF receipt hash mismatch")
+    expected_sums = (
+        f"{receipt_sha}  {ZIPRAF_RECEIPT_PATH}\n"
+        f"{sha256_bytes(canonical_bytes(manifest))}  {ZIPRAF_MANIFEST_PATH}\n"
+    )
+    if sums_text != expected_sums:
+        raise ValueError("ZIPRAF SHA256SUMS mismatch")
+    return {
+        "schema": ZIPRAF_RECEIPT_SCHEMA,
+        "zipraf_sha256": sha256_file(path),
+        "receipt_sha256": receipt_sha,
+        "signature_state": manifest["signature_state"],
+        "encryption": False,
+        "claim_allowed": False,
+        "state": "PASS_INTEGRITY_ONLY",
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="command", required=True)
@@ -547,6 +670,13 @@ def main() -> int:
     p.add_argument("--registry", type=Path, required=True)
 
     sub.add_parser("probe-isolation")
+
+    p = sub.add_parser("pack-receipt")
+    p.add_argument("--receipt", type=Path, required=True)
+    p.add_argument("--output", type=Path, required=True)
+
+    p = sub.add_parser("verify-receipt")
+    p.add_argument("--zipraf", type=Path, required=True)
 
     p = sub.add_parser("resolve")
     p.add_argument("--registry", type=Path, required=True)
@@ -576,6 +706,12 @@ def main() -> int:
     try:
         if args.command == "probe-isolation":
             print(json.dumps(probe_network_isolation(), sort_keys=True))
+            return 0
+        if args.command == "pack-receipt":
+            print(json.dumps(pack_receipt_zipraf(args.receipt, args.output), sort_keys=True))
+            return 0
+        if args.command == "verify-receipt":
+            print(json.dumps(verify_receipt_zipraf(args.zipraf), sort_keys=True))
             return 0
 
         registry = load_json(args.registry)
