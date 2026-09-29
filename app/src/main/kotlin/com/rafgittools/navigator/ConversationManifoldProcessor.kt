@@ -176,9 +176,14 @@ class ConversationManifoldProcessor(
         val encoded = gson.toJson(element)
         val recordIndex = counts.records++
         if (!sourceName.startsWith("conversations", ignoreCase = true)) {
-            writeLine(out, mapOf("kind" to "CODEX_RECORD", "source_name" to sourceName,
-                "record_index" to recordIndex, "record_sha256" to sha256(encoded.toByteArray(Charsets.UTF_8)),
-                "record" to element, "privacy_class" to "PRIVATE_DEFAULT_DENY", "claim_allowed" to false))
+            val recordHash = sha256(encoded.toByteArray(Charsets.UTF_8))
+            val pieces = splitUtf8(encoded, 64 * 1024)
+            pieces.forEachIndexed { index, piece ->
+                writeLine(out, mapOf("kind" to "CODEX_RECORD_PART", "source_name" to sourceName,
+                    "record_index" to recordIndex, "part_index" to index, "part_count" to pieces.size,
+                    "record_sha256" to recordHash, "json_fragment" to piece,
+                    "privacy_class" to "PRIVATE_DEFAULT_DENY", "claim_allowed" to false))
+            }
             counts.codex++
             return
         }
@@ -211,17 +216,46 @@ class ConversationManifoldProcessor(
                 val content = message.getAsJsonObject("content")
                 val messageId = scalar(message.get("id")) ?: nodeId
                 val text = content?.get("parts")?.let(::flattenText) ?: "TOKEN_VAZIO"
-                writeLine(out, mapOf("kind" to "MESSAGE_CHUNK", "conversation_id" to conversationId,
-                    "message_id" to messageId, "node_id" to nodeId, "parent_id" to parent,
-                    "role" to scalar(author?.get("role")) ?: "TOKEN_VAZIO",
-                    "created_at" to scalar(message.get("create_time")) ?: "TOKEN_VAZIO",
-                    "content_type" to scalar(content?.get("content_type")) ?: "TOKEN_VAZIO",
-                    "text" to text, "chunk_sha256" to sha256(text.toByteArray(Charsets.UTF_8)),
-                    "source_name" to sourceName, "record_index" to recordIndex,
-                    "privacy_class" to "PRIVATE_DEFAULT_DENY", "claim_allowed" to false))
+                val textParts = splitUtf8(text, 64 * 1024)
+                val wholeTextHash = sha256(text.toByteArray(Charsets.UTF_8))
+                textParts.forEachIndexed { index, textPart ->
+                    writeLine(out, mapOf("kind" to "MESSAGE_CHUNK", "conversation_id" to conversationId,
+                        "message_id" to messageId, "node_id" to nodeId, "parent_id" to parent,
+                        "role" to scalar(author?.get("role")) ?: "TOKEN_VAZIO",
+                        "created_at" to scalar(message.get("create_time")) ?: "TOKEN_VAZIO",
+                        "content_type" to scalar(content?.get("content_type")) ?: "TOKEN_VAZIO",
+                        "chunk_index" to index, "chunk_count" to textParts.size,
+                        "message_sha256" to wholeTextHash, "text" to textPart,
+                        "chunk_sha256" to sha256(textPart.toByteArray(Charsets.UTF_8)),
+                        "source_name" to sourceName, "record_index" to recordIndex,
+                        "privacy_class" to "PRIVATE_DEFAULT_DENY", "claim_allowed" to false))
+                }
                 counts.messages++
             }
         }
+    }
+
+    private fun splitUtf8(value: String, maxBytes: Int): List<String> {
+        require(maxBytes > 0)
+        if (value.isEmpty()) return listOf("")
+        val result = mutableListOf<String>()
+        var start = 0
+        var offset = 0
+        var byteCount = 0
+        while (offset < value.length) {
+            val codePoint = value.codePointAt(offset)
+            val chars = Character.charCount(codePoint)
+            val pieceBytes = String(Character.toChars(codePoint)).toByteArray(Charsets.UTF_8).size
+            if (byteCount + pieceBytes > maxBytes && offset > start) {
+                result += value.substring(start, offset)
+                start = offset
+                byteCount = 0
+            }
+            byteCount += pieceBytes
+            offset += chars
+        }
+        if (start < value.length) result += value.substring(start)
+        return result
     }
 
     private fun flattenText(element: JsonElement): String = when {
