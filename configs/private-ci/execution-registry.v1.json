@@ -5,7 +5,7 @@
   "federated_method_authority": "rafaelmeloreisnovo/Mapa",
   "secret_reference": "PAT_ACTIONS",
   "secret_value_persisted": false,
-  "execution_model": "step_scoped_provider_secret_then_secretless_subprocess",
+  "execution_model": "step_scoped_provider_secret_then_secretless_network_namespaced_subprocess",
   "claim_allowed": false,
   "targets": [
     {
@@ -20,8 +20,11 @@
         "hd-cache-phase1",
         "hd-cache-phase2"
       ],
-      "allowed_executables": ["python3", "make"],
-      "state": "IMPLEMENTED_UNTESTED_PRIVATE_REPLAY_V1"
+      "allowed_executables": [
+        "python3",
+        "make"
+      ],
+      "state": "IMPLEMENTED_TESTING_NETWORK_ISOLATED_REPLAY_V1"
     }
   ],
   "invariants": [
@@ -33,9 +36,11 @@
     "TARGET_COMMIT == EXACT_40_HEX_SHA",
     "WORKFLOW_ID == PUBLIC_ALLOWLIST AND PRIVATE_MANIFEST",
     "SHELL_EXECUTION == false",
-    "NETWORK_EGRESS_ISOLATION == TOKEN_VAZIO_UNTIL_ENFORCED",
     "ZIPRAF_CONTAINER != ENCRYPTION",
     "TOKEN_VAZIO != PASS",
-    "CLAIM_ALLOWED == false"
+    "CLAIM_ALLOWED == false",
+    "NETWORK_EGRESS_ISOLATION == LINUX_USER_NAMESPACE_PLUS_NETWORK_NAMESPACE",
+    "NETWORK_EGRESS_PROBE_REQUIRED_BEFORE_PRIVATE_STEP",
+    "NETWORK_ISOLATION_FAILURE == FAIL_CLOSED"
   ]
 }
