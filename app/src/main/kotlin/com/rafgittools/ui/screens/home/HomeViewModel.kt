@@ -1,6 +1,7 @@
 package com.rafgittools.ui.screens.home
 
 import android.os.Build
+import android.content.ContentResolver
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rafgittools.data.auth.AuthRepository
@@ -11,12 +12,15 @@ import com.rafgittools.data.github.GithubDataRepository
 import com.rafgittools.bridge.CorpusIntakeResult
 import com.rafgittools.bridge.PrivateProcessingReceiptGateV1
 import com.rafgittools.domain.model.github.GithubUser
+import com.rafgittools.navigator.ConversationManifoldPublication
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import java.io.File
 import javax.inject.Inject
 import com.rafgittools.domain.model.github.GithubRepository as GithubRepoModel
@@ -340,6 +344,41 @@ class HomeViewModel @Inject constructor(
                         error.message ?: "Falha ao publicar receipt privado"
                     )
             }
+        }
+    }
+
+    suspend fun publishConversationManifold(
+        target: GithubRepoModel,
+        plan: ConversationManifoldPublication.Plan,
+        confirmedPlanSha256: String,
+        resolver: ContentResolver
+    ): Result<ConversationManifoldPublication.Published> = withContext(Dispatchers.IO) {
+        if (!_isAuthenticated.value) return@withContext Result.failure(
+            IllegalStateException("GitHub não autenticado")
+        )
+        if (!target.isPrivate) return@withContext Result.failure(
+            SecurityException("O destino Git precisa ser privado")
+        )
+        if (plan.githubOwner != target.owner.login || plan.githubRepository != target.name) {
+            return@withContext Result.failure(
+                IllegalArgumentException("O plano não corresponde ao repositório privado selecionado")
+            )
+        }
+        runCatching {
+            ConversationManifoldPublication.publish(
+                resolver = resolver,
+                plan = plan,
+                confirmedPlanSha256 = confirmedPlanSha256
+            ) { owner, repo, path, content, message ->
+                githubRepository.createPrivateProcessingFile(
+                    owner = owner,
+                    repo = repo,
+                    path = path,
+                    utf8Content = content,
+                    message = message,
+                    branch = target.defaultBranch
+                ).map { Unit }
+            }.getOrThrow()
         }
     }
 
