@@ -1,0 +1,127 @@
+{
+  "schema":"rafgittools.knowledge-campus-logistics.v1",
+  "object_id":"GYM-AVIATION-RADIAL-HYBRID-PROPULSION-V1",
+  "kind":"GYMNASIUM",
+  "source_ref":"USER_CONCEPTUAL_DECOMPOSITION_2026-09-28 + FAA/NASM/SAE_REFERENCE_SET",
+  "materialization_state":"IMPLEMENTED_UNTESTED",
+  "characteristics":[
+    {"name":"purpose","value":"decompose radial/rotary reciprocating propulsion, redundancy, torque management, hybrid assist and candidate mechanisms","unit":null,"epistemic_state":"DECISION"},
+    {"name":"operational_build_recipe","value":false,"unit":null,"epistemic_state":"DECISION"},
+    {"name":"hazardous_combustion_setpoints","value":"NOT_ENCODED","unit":null,"epistemic_state":"DECISION"}
+  ],
+  "relations":[
+    {"type":"CONTAINS","target":"SYS-RADIAL-RECIPROCATING","evidence_ref":"FAA-H-8083-32B"},
+    {"type":"CONTAINS","target":"SYS-ROTARY-HISTORICAL","evidence_ref":"NASM-ROTARY-ENGINE"},
+    {"type":"CONTAINS","target":"SYS-AVIATION-REDUNDANCY","evidence_ref":"FAA-PILOT-HANDBOOK"},
+    {"type":"CONTAINS","target":"SYS-HYBRID-TORQUE-MANAGEMENT","evidence_ref":"SAE-AIR8678"},
+    {"type":"CONTAINS","target":"SYS-DRIVEN-BOOST-CVT","evidence_ref":"SAE-2018-01-0970"}
+  ],
+  "evidence_refs":[
+    "FAA-H-8083-32B: hydraulic/liquid lock in lower radial-engine cylinders",
+    "FAA Pilot Handbook: dual magnetos and dual spark plugs",
+    "FAA-H-8083-32B Chapter 1: sodium-filled valve stems transfer heat from valve head toward stem/guide",
+    "National Air and Space Museum: rotary engine rotates engine/cylinder mass around stationary crankshaft",
+    "SAE AIR8678: electrified propulsion architectures and energy-management interfaces",
+    "SAE 2018-01-0970: driven turbo using traction drive with CVT or electric motor"
+  ],
+  "gaps":[
+    "ROTATING_LINER_WEAR_EQUALIZATION_EVIDENCE",
+    "ROLLING_ELEMENT_CRANK_BEARING_TARGET_LOAD_CASE",
+    "EXACT_STAR_DELTA_MOTOR_TOPOLOGY",
+    "BRUSHED_VS_BRUSHLESS_SELECTION",
+    "HYDRAULIC_ACCUMULATOR_PRESSURE_RANGE",
+    "PNEUMATIC_ACCUMULATOR_PRESSURE_RANGE",
+    "FUEL_THERMAL_CONDITIONING_LIMITS",
+    "EXACT_POWERTRAIN_MISSION_PROFILE",
+    "EXACT_PROPELLER_OR_ROTOR_LOAD_MAP"
+  ],
+  "routes":[
+    "HISTORICAL_ARCHITECTURE_TO_MECHANISM",
+    "MECHANISM_TO_FAILURE_MODE",
+    "FAILURE_MODE_TO_REDUNDANCY",
+    "POWER_SOURCE_TO_TORQUE_BUFFER",
+    "TORQUE_BUFFER_TO_TRANSMISSION",
+    "TRANSMISSION_TO_BOOST_OR_PROPULSOR",
+    "CANDIDATE_TO_EVIDENCE_GATE"
+  ],
+  "hotness":{"tier":"WARM","access_count":0,"last_access":null,"score":0},
+  "systems":{
+    "SYS-RADIAL-RECIPROCATING":{
+      "components":[
+        "CYLINDER_STAR","MASTER_ROD_CANDIDATE","ARTICULATING_ROD_CANDIDATE","CRANKCASE","CRANKSHAFT","PISTON","RING_PACK","CYLINDER_FINNING","INTAKE","EXHAUST","LOWER_CYLINDER_OIL_ACCUMULATION","HYDRAULIC_LOCK"
+      ],
+      "proven_relations":[
+        "LOWER_CYLINDER_LIQUID_ACCUMULATION -> HYDRAULIC_LOCK_RISK",
+        "HYDRAULIC_LOCK -> CONNECTING_ROD_DAMAGE_RISK"
+      ]
+    },
+    "SYS-ROTARY-HISTORICAL":{
+      "components":["STATIONARY_CRANKSHAFT","ROTATING_ENGINE_MASS","ROTATING_CYLINDER_BANK","PROPELLER_CO_ROTATION","GYROSCOPIC_EFFECT","AIR_COOLING_EFFECT"],
+      "boundary":"Historical rotary engine architecture is distinct from a conventional stationary-cylinder radial engine."
+    },
+    "SYS-ROTATING-LINER-CANDIDATE":{
+      "components":["ROTATING_CYLINDER_LINER_CANDIDATE","LINER_BEARING_INTERFACE_CANDIDATE","SEALING_INTERFACE_CANDIDATE","LUBRICATION_INTERFACE_CANDIDATE","X_Y_WEAR_DISTRIBUTION_HYPOTHESIS"],
+      "boundary":"Candidate concept only. No claim that liner rotation equalizes wear until tribology, sealing, thermal and durability evidence exists."
+    },
+    "SYS-AVIATION-REDUNDANCY":{
+      "components":["MAGNETO_LEFT","MAGNETO_RIGHT","SPARK_PLUG_A","SPARK_PLUG_B","SEPARATE_IGNITION_LEADS","REDUNDANT_IGNITION_PATH","ENGINE_INSTRUMENTATION","FAULT_ISOLATION"],
+      "proven_relations":["DUAL_MAGNETOS -> INDEPENDENT_IGNITION_PATHS","TWO_SPARK_PLUGS_PER_CYLINDER -> REDUNDANT_IGNITION_AND_COMBUSTION_PATH"]
+    },
+    "SYS-VALVE-THERMAL":{
+      "components":["EXHAUST_VALVE","INTAKE_VALVE","HOLLOW_VALVE_STEM","METALLIC_SODIUM_FILL","VALVE_GUIDE","CYLINDER_HEAD_HEAT_PATH"],
+      "proven_relations":["SODIUM_FILL -> HEAT_TRANSFER_FROM_VALVE_HEAD_TO_STEM_GUIDE_PATH"],
+      "safety_boundary":"Sodium-filled valves are hazardous to cut/open; representation is documentary only."
+    },
+    "SYS-BEARING-ARCHITECTURE":{
+      "components":["PLAIN_BEARING","ROLLING_ELEMENT_BEARING_CANDIDATE","MAIN_JOURNAL","ROD_JOURNAL","THRUST_LOAD","RADIAL_LOAD","SHOCK_LOAD","OIL_FILM","PRELOAD_CANDIDATE","PRECISION_CLASS_CANDIDATE"],
+      "boundary":"Rolling-element substitution is a topology candidate, not a blanket upgrade. Load, speed, impact, lubrication, fatigue and crankshaft assembly constraints govern suitability."
+    },
+    "SYS-HYBRID-TORQUE-MANAGEMENT":{
+      "components":["COMBUSTION_ENGINE","ELECTRIC_MOTOR_GENERATOR","STARTER_GENERATOR","TORQUE_SUMMING_NODE","POWER_ELECTRONICS","ENERGY_STORAGE","THERMAL_MANAGEMENT","CONTROL_STATE_MACHINE"],
+      "functions":["START_ASSIST","TRANSIENT_TORQUE_FILL","REGENERATION_CANDIDATE","BOOST_ASSIST","ACCESSORY_POWER"],
+      "boundary":"No voltage/current/energy-storage construction recipe is encoded."
+    },
+    "SYS-DRIVEN-BOOST-CVT":{
+      "components":["TURBOCHARGER","SUPERCHARGER","DRIVEN_COMPRESSOR","CVT_TRACTION_DRIVE_CANDIDATE","ELECTRIC_TURBO_ASSIST","BYPASS","WASTEGATE","COMPRESSOR_MAP","TURBINE_MAP"],
+      "proven_reference":"Driven turbo architectures using CVT or electric motor exist in published SAE work.",
+      "boundary":"No boost target, shaft speed, pulley ratio or compressor sizing recipe is encoded."
+    },
+    "SYS-START_TRANSIENT_BUFFER":{
+      "components":["FLYWHEEL_BUFFER_CANDIDATE","HYDRAULIC_ACCUMULATOR_CANDIDATE","PNEUMATIC_ACCUMULATOR_CANDIDATE","ELECTRIC_TORQUE_FILL","ONE_WAY_CLUTCH_CANDIDATE","TORQUE_CONVERTER_CANDIDATE","CVT_CANDIDATE"],
+      "purpose":"reduce transient source demand during breakaway/acceleration by staging stored energy and torque paths",
+      "boundary":"Conceptual energy-buffer topology only; no pressure/energy construction setpoints."
+    },
+    "SYS-ELECTRIC-MOTOR-TOPOLOGIES":{
+      "components":["STAR_WINDING_CANDIDATE","DELTA_WINDING_CANDIDATE","BRUSHED_DC_CANDIDATE","BRUSHLESS_PM_CANDIDATE","INDUCTION_MOTOR_CANDIDATE","SWITCHED_RELUCTANCE_CANDIDATE","INVERTER","COMMUTATION_CONTROL"],
+      "boundary":"Star/delta and brushed/brushless are alternative topology families; they are not assumed simultaneously applicable to one exact machine."
+    },
+    "SYS-TORQUE_CURVE-STAGING":{
+      "components":["LOW_SPEED_TORQUE_REGION","MID_SPEED_REGION","HIGH_SPEED_REGION","COMBUSTION_TORQUE_CURVE","ELECTRIC_TORQUE_CURVE","BOOST_RESPONSE","CVT_RATIO_STATE","ACCUMULATOR_ASSIST_STATE","PROPULSOR_LOAD_CURVE"],
+      "goal":"map each source/actuator to the operating region where its torque/power contribution is useful",
+      "boundary":"Optimization target only; no operational setpoints."
+    },
+    "SYS-FUEL-THERMAL-PRECONDITIONING":{
+      "components":["FUEL_TEMPERATURE_SENSOR","FUEL_HEAT_EXCHANGER_CANDIDATE","FUEL_COOLER_CANDIDATE","VAPOR_PRESSURE_RISK","CAVITATION_RISK","INJECTOR_INLET_STATE","COMBUSTION_INLET_STATE"],
+      "boundary":"No fuel-temperature target or pressure recipe; material compatibility and vapor/cavitation limits require exact fuel/system evidence."
+    },
+    "SYS-COMBUSTION-TRIAD":{
+      "components":["FUEL","OXIDIZER","HEAT_IGNITION_SOURCE","AIR_INDUCTION","OXYGEN_CONTENT_REFERENCE","CHARGE_TEMPERATURE","CHARGE_PRESSURE","COMBUSTION_CHAMBER"],
+      "boundary":"Descriptive combustion triad only. No enrichment ratio, H2/O2/N2O proportion, injection pressure or ignition recipe."
+    }
+  },
+  "relation_rules":[
+    "RADIAL_ENGINE != ROTARY_ENGINE",
+    "ROTARY_ENGINE_HISTORY != ROTATING_LINER_WEAR_PROOF",
+    "HYDRAULIC_LOCK != HYDRAULIC_LIFTER",
+    "REDUNDANCY != IMPOSSIBILITY_OF_FAILURE",
+    "ROLLING_ELEMENT_BEARING != UNIVERSAL_REPLACEMENT_FOR_PLAIN_BEARING",
+    "STAR_WINDING != DELTA_WINDING",
+    "BRUSHED_MOTOR != BRUSHLESS_MOTOR",
+    "TRANSIENT_BUFFER != FREE_ENERGY",
+    "TORQUE_FILL != EFFICIENCY_PROOF",
+    "FUEL_THERMAL_CONDITIONING != SAFE_SETPOINT",
+    "COMBUSTION_TRIAD != REACTIVE_MIXTURE_RECIPE",
+    "ANALOGY != FACT",
+    "CANDIDATE != MATERIALIZED"
+  ]
+}

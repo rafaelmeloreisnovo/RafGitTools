@@ -1,0 +1,19 @@
+{
+  "schema":"rafgittools.knowledge-campus-logistics.v1",
+  "object_id":"CAMPUS-RAFAELIA",
+  "kind":"CAMPUS",
+  "source_ref":"RafGitTools",
+  "materialization_state":"IMPLEMENTED_UNTESTED",
+  "characteristics":[
+    {"name":"purpose","value":"federated knowledge navigation and corpus logistics","unit":null,"epistemic_state":"DECISION"},
+    {"name":"private_corpus_authority","value":"CONVERSATIONS_CHUNKS_PRIVATE","unit":null,"epistemic_state":"DECISION"}
+  ],
+  "relations":[
+    {"type":"CONTAINS","target":"GYM-CORPUS-LOGISTICS","evidence_ref":"docs/architecture/KNOWLEDGE_CAMPUS_LOGISTICS_V1.md"},
+    {"type":"CONTAINS","target":"GYM-RELATION-MECHANICS","evidence_ref":"docs/architecture/KNOWLEDGE_CAMPUS_LOGISTICS_V1.md"}
+  ],
+  "evidence_refs":["tools/rafaelia_navigator/README.md"],
+  "gaps":["CORTEX_EXACT_SOURCE_IDENTITY","PRIVATE_PUBLISHER_RUNTIME","E2E_CANARY"],
+  "routes":["NOVOEXPORT_TO_NAVIGATOR","NAVIGATOR_TO_PRIVATE_CHUNKS"],
+  "hotness":{"tier":"HOT","access_count":0,"last_access":null,"score":0}
+}

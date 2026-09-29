@@ -1,0 +1,27 @@
+{
+  "schema":"rafgittools.lowlevel-execution-profile.v1",
+  "claim_allowed":false,
+  "profiles":{
+    "L0_FREESTANDING_REAL":{
+      "authority":"native/silicon_light_v1",
+      "language":["C11","ASM_OPTIONAL"],
+      "forbidden":["LIBC","SYSTEM_HEADERS","MALLOC_FAMILY","JNI","ANDROID_API","UNDEFINED_EXTERNAL_RUNTIME_SYMBOLS"],
+      "state":"REFERENCED"
+    },
+    "L1_KOTLIN_JAVA_RESTRICTED":{
+      "languages":["KOTLIN","JAVA"],
+      "freestanding_claim":false,
+      "managed_runtime_required":true,
+      "forbidden_by_default":["ANDROIDX","THIRD_PARTY_LIBS","JNI_NATIVE_CALLS","REFLECTION","DYNAMIC_CLASS_LOADING","COROUTINES","IMPLICIT_NETWORK","HIDDEN_PERSISTENCE"],
+      "zero_heap_claim":false,
+      "zero_gc_claim":false,
+      "state":"IMPLEMENTED_UNTESTED"
+    }
+  },
+  "invariants":[
+    "KOTLIN_JAVA_RESTRICTED != FREESTANDING_REAL",
+    "NO_EXTERNAL_LIBRARY != NO_RUNTIME_DEPENDENCY",
+    "SOURCE_LEVEL_RESTRICTION != RUNTIME_ZERO_ALLOCATION",
+    "IMPLEMENTED_UNTESTED != PASS"
+  ]
+}
