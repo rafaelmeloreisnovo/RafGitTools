@@ -43,7 +43,7 @@ object ConversationManifoldPublication {
         val parts = mutableListOf<Part>()
         forEachPart(artifact) { index, content ->
             val bytes = content.toByteArray(Charsets.UTF_8)
-            parts += Part(partName(artifact, index), bytes.size.toLong(), sha256(bytes))
+            parts += Part(partName(artifact, plan.generationId, index), bytes.size.toLong(), sha256(bytes))
         }
         val canonicalPlan = (listOf(generationId, driveFolderUri.toString(),
             "$githubOwner/$githubRepository", artifact.absolutePath, artifactHash) +
@@ -78,7 +78,7 @@ object ConversationManifoldPublication {
         forEachPart(artifact) { index, content ->
             val expected = plan.parts.getOrNull(index) ?: error("Part count changed after planning")
             val bytes = content.toByteArray(Charsets.UTF_8)
-            require(expected.filename == partName(artifact, index) &&
+            require(expected.filename == partName(artifact, plan.generationId, index) &&
                 expected.bytes == bytes.size.toLong() && expected.sha256 == sha256(bytes)) {
                 "Part changed after plan confirmation"
             }
@@ -120,8 +120,8 @@ object ConversationManifoldPublication {
         return Published(driveUris, githubPaths, sha256(manifest.toByteArray(Charsets.UTF_8)))
     }
 
-    private fun partName(artifact: File, index: Int) =
-        "${artifact.nameWithoutExtension}-part-${index.toString().padStart(5, '0')}.jsonl"
+    private fun partName(artifact: File, generationId: String, index: Int) =
+        "${artifact.nameWithoutExtension}-${generationId}-part-${index.toString().padStart(5, '0')}.jsonl"
 
     private fun forEachPart(file: File, consume: (Int, String) -> Unit) {
         var index = 0
