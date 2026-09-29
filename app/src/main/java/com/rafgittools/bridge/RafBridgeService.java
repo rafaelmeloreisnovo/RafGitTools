@@ -266,6 +266,33 @@ public final class RafBridgeService extends Service {
             }
 
             String bundleJson = contextBundle.toJson();
+            String semanticExamResultJson = semanticExam.toJson();
+            if (bundleJson.length() > RafModelClient.MAX_CONTEXT_JSON_CHARS) {
+                writeJson(
+                        output,
+                        422,
+                        error(
+                                "context_too_large",
+                                "ContextBundle V2 excede "
+                                        + RafModelClient.MAX_CONTEXT_JSON_CHARS
+                                        + " caracteres"
+                        )
+                );
+                return;
+            }
+            if (semanticExamResultJson.length() > RafModelClient.MAX_EXAM_JSON_CHARS) {
+                writeJson(
+                        output,
+                        422,
+                        error(
+                                "semantic_exam_result_too_large",
+                                "Semantic Context Exam result excede "
+                                        + RafModelClient.MAX_EXAM_JSON_CHARS
+                                        + " caracteres"
+                        )
+                );
+                return;
+            }
             if (RafBridgeContract.looksLikeCredential(bundleJson)) {
                 writeJson(
                         output,
@@ -285,7 +312,7 @@ public final class RafBridgeService extends Service {
                     contract.dataClass,
                     contract.message,
                     bundleJson,
-                    semanticExam.toJson()
+                    semanticExamResultJson
             );
         } else {
             response = modelClient.chat(
