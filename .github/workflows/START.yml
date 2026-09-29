@@ -1127,7 +1127,7 @@ jobs:
 
   receipt:
     name: '09 · Final receipt / fechamento'
-    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_actions, provider_environments, release]
+    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_actions, provider_environments, release, public_data_custody]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -1143,6 +1143,7 @@ jobs:
       PROVIDER_ACTIONS_RESULT: ${{ needs.provider_actions.result }}
       PROVIDER_ENVIRONMENTS_RESULT: ${{ needs.provider_environments.result }}
       RELEASE_RESULT: ${{ needs.release.result }}
+      PUBLIC_DATA_RESULT: ${{ needs.public_data_custody.result }}
       ROUTE_MODE: ${{ needs.plan.outputs.mode }}
     steps:
       - name: Emit append-only pipeline receipt
@@ -1164,6 +1165,7 @@ jobs:
               'provider_actions': os.environ['PROVIDER_ACTIONS_RESULT'],
               'provider_environments': os.environ['PROVIDER_ENVIRONMENTS_RESULT'],
               'release': os.environ['RELEASE_RESULT'],
+              'public_data_custody': os.environ['PUBLIC_DATA_RESULT'],
           }
           mapped = {
               k: ('TOKEN_VAZIO_NOT_SELECTED' if v == 'skipped' else v.upper())
