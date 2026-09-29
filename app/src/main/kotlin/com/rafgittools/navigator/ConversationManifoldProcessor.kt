@@ -57,18 +57,21 @@ class ConversationManifoldProcessor(
             FileOutputStream(partFile).use { fileOut ->
                 BufferedWriter(OutputStreamWriter(fileOut, Charsets.UTF_8), 64 * 1024).use { out ->
                     var finished = false
+                    var afterComma = false
                     while (!finished) {
                         val next = nextNonWhitespace(input)
                         if (next == ']'.code) {
+                            require(!afterComma) { "Trailing comma in JSON array" }
                             finished = true
                         } else {
                             require(next >= 0) { "Unexpected EOF inside JSON array" }
+                            afterComma = false
                             input.unread(next)
                             val rawRecord = readOneValue(input, maxRecordUtf8Bytes)
                             val element = com.google.gson.JsonParser.parseString(rawRecord)
                             writeRecord(safeName, element, out, counts)
                             when (nextNonWhitespace(input)) {
-                                ','.code -> Unit
+                                ','.code -> afterComma = true
                                 ']'.code -> finished = true
                                 else -> error("Expected comma or closing array bracket")
                             }
