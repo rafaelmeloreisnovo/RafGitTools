@@ -1,0 +1,46 @@
+{
+  "schema": "rafgittools.private-ci-catalog-index.v1",
+  "version": "1.0.0",
+  "observed_at": "2026-09-29",
+  "private_repository_count": 35,
+  "workflow_count_discovered": 233,
+  "exhaustive": false,
+  "discovery": {
+    "method": "default-branch GitHub code search for runs-on",
+    "per_repository_topn": 100,
+    "limitation": "Search can miss workflows without runs-on text, disabled/non-YAML workflows, non-default-branch workflows, or matches beyond the search cap."
+  },
+  "shards": [
+    {
+      "path": "configs/private-ci/catalog/part-01.json",
+      "repositories": 9,
+      "workflows_discovered": 124
+    },
+    {
+      "path": "configs/private-ci/catalog/part-02.json",
+      "repositories": 9,
+      "workflows_discovered": 54
+    },
+    {
+      "path": "configs/private-ci/catalog/part-03.json",
+      "repositories": 9,
+      "workflows_discovered": 24
+    },
+    {
+      "path": "configs/private-ci/catalog/part-04.json",
+      "repositories": 8,
+      "workflows_discovered": 31
+    }
+  ],
+  "execution_registry": "configs/private-ci/execution-registry.v1.json",
+  "promoted_for_replay": [
+    {
+      "target_id": "rafaelia-private",
+      "repository": "rafaelmeloreisnovo/Rafaelia_Private",
+      "workflow_count": 5,
+      "state": "IMPLEMENTED_UNTESTED",
+      "private_manifest_path": ".rafaelia/private-ci/manifest.v1.json"
+    }
+  ],
+  "claim_allowed": false
+}
