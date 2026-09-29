@@ -1,0 +1,86 @@
+{
+  "schema": "rafgittools.session-full-gap-fnext-collector.v1",
+  "state": "IMPLEMENTED_UNTESTED",
+  "claim_allowed": false,
+  "authority": {
+    "repo": "rafaelmeloreisnovo/Mapa",
+    "commit": "c67010dcb6ad908b3e878c57742a78e9e993cf03",
+    "files": {
+      "routes": {
+        "path": "session_execution/2026-09-29/02_ROUTES/SESSION_FULL_GAP_FNEXT_ROUTES_V1.jsonl",
+        "blob_sha1": "e21ce47336e8f417d156f2258673b286c6eddb1c"
+      },
+      "evidence": {
+        "path": "session_execution/2026-09-29/07_EVIDENCE/SESSION_FULL_GAP_FNEXT_DRIVE_READBACK_V2.json",
+        "blob_sha1": "bd85aa1c4709b798ec4acda0915ff42b32beb1c5"
+      },
+      "receipt": {
+        "path": "session_execution/2026-09-29/08_RECEIPTS/SESSION_FULL_GAP_FNEXT_RECEIPT_SUCCESSOR_002.json",
+        "blob_sha1": "d8a5cf0814de19b8bf833540dcf7149d6ab39485"
+      },
+      "drive_parity": {
+        "path": "data/atlas/DRIVE_GITHUB_PARITY_REGISTRY_20260929_V1.json",
+        "blob_sha1": "e9902cd22974c2b92ff44be096a14dc3046fff40"
+      }
+    }
+  },
+  "semantics": {
+    "read_only": true,
+    "assignment_is_execution": false,
+    "exact_route_count": 18,
+    "required_route_fields": [
+      "route_id",
+      "workstream_id",
+      "source_ref",
+      "target_ref",
+      "relation_type",
+      "owner",
+      "authority",
+      "predecessor",
+      "successor",
+      "dependency_edges",
+      "evidence_ref",
+      "receipt_ref",
+      "rollback_ref",
+      "replay_recipe",
+      "reproduction_state",
+      "privacy_class",
+      "retention_class",
+      "claim_allowed",
+      "hash_ref"
+    ],
+    "evidence_state": "STRUCTURAL_COLLECTION_ONLY"
+  },
+  "waves": {
+    "0": [
+      "MC-W17",
+      "MC-W18",
+      "MC-W03"
+    ],
+    "1": [
+      "MC-W01",
+      "MC-W02",
+      "MC-W15"
+    ],
+    "2": [
+      "MC-W04",
+      "MC-W05",
+      "MC-W06",
+      "MC-W07",
+      "MC-W14",
+      "MC-W16"
+    ],
+    "3": [
+      "MC-W11",
+      "MC-W12"
+    ],
+    "4": [
+      "MC-W08",
+      "MC-W09",
+      "MC-W13"
+    ],
+    "5": [
+      "MC-W10"
+    ]
+  }
+}
