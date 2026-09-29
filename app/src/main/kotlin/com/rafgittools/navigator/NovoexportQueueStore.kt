@@ -94,13 +94,26 @@ object NovoexportQueueStore {
                 )
             } else {
                 preserved += 1
+                val interrupted = old.state == PROCESSING
+                val permissionRestored = old.state == BLOCKED &&
+                    old.lastError.startsWith("SAF_PERMISSION_LOST:")
                 old.copy(
                     uri = entry.uri,
                     documentId = entry.documentId,
                     name = entry.name,
                     mimeType = entry.mimeType,
                     sizeBytes = entry.sizeBytes,
-                    presentInLatestInventory = true
+                    presentInLatestInventory = true,
+                    state = when {
+                        interrupted -> FAILED_RETRYABLE
+                        permissionRestored -> PENDING
+                        else -> old.state
+                    },
+                    lastError = when {
+                        interrupted -> "APP_RESTART_DURING_PROCESSING_RETRY_FROM_SOURCE"
+                        permissionRestored -> "TOKEN_VAZIO"
+                        else -> old.lastError
+                    }
                 )
             }
         }
@@ -158,6 +171,23 @@ object NovoexportQueueStore {
         val updated = current.copy(updatedEpochMs = nowEpochMs, items = items)
         writeSnapshot(queueFile, updated)
         return updated
+    }
+
+    fun markPublishedComplete(
+        queueFile: File,
+        itemId: String,
+        publishedState: String,
+        driveReadbackVerified: Boolean,
+        githubReadbackVerified: Boolean,
+        nowEpochMs: Long = System.currentTimeMillis()
+    ): Snapshot {
+        require(publishedState == "PUBLISHED_READBACK_VERIFIED") {
+            "Queue item completion requires a readback-verified publication"
+        }
+        require(driveReadbackVerified && githubReadbackVerified) {
+            "Queue item completion requires successful Drive and Git readback"
+        }
+        return transition(queueFile, itemId, COMPLETE, nowEpochMs = nowEpochMs)
     }
 
     internal fun allowedTransition(from: String, to: String): Boolean = when (from) {

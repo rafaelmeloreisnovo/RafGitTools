@@ -50,6 +50,68 @@ class NovoexportQueueStoreTest {
         assertEquals("provider permission lost", resumed.lastError)
     }
 
+    @Test fun reInventoryRecoversAnInterruptedProcessingItemAsRetryable() {
+        val root = Files.createTempDirectory("novoexport-queue-recovery").toFile()
+        val first = NovoexportQueueStore.mergeInventory(root, inventory(), nowEpochMs = 10)
+        val itemId = first.snapshot.items.single().id
+        NovoexportQueueStore.transition(first.queueFile, itemId, NovoexportQueueStore.PROCESSING, nowEpochMs = 20)
+
+        val resumed = NovoexportQueueStore.mergeInventory(root, inventory(), nowEpochMs = 30).snapshot.items.single()
+        assertEquals(NovoexportQueueStore.FAILED_RETRYABLE, resumed.state)
+        assertEquals("APP_RESTART_DURING_PROCESSING_RETRY_FROM_SOURCE", resumed.lastError)
+        assertEquals(1, resumed.attempts)
+    }
+
+    @Test fun reInventoryOnlyRequeuesPermissionBlockedItems() {
+        val root = Files.createTempDirectory("novoexport-queue-permission").toFile()
+        val first = NovoexportQueueStore.mergeInventory(root, inventory(), nowEpochMs = 10)
+        val itemId = first.snapshot.items.single().id
+        NovoexportQueueStore.transition(first.queueFile, itemId, NovoexportQueueStore.BLOCKED,
+            error = "SAF_PERMISSION_LOST: grant revoked", nowEpochMs = 20)
+
+        val afterGrantRefresh = NovoexportQueueStore.mergeInventory(root, inventory(), nowEpochMs = 30)
+            .snapshot.items.single()
+        assertEquals(NovoexportQueueStore.PENDING, afterGrantRefresh.state)
+
+        NovoexportQueueStore.transition(first.queueFile, itemId, NovoexportQueueStore.PROCESSING, nowEpochMs = 40)
+        NovoexportQueueStore.transition(first.queueFile, itemId, NovoexportQueueStore.BLOCKED,
+            error = "SOURCE_REJECTED: malformed JSON", nowEpochMs = 50)
+        val rejected = NovoexportQueueStore.mergeInventory(root, inventory(), nowEpochMs = 60)
+            .snapshot.items.single()
+        assertEquals(NovoexportQueueStore.BLOCKED, rejected.state)
+        assertEquals("SOURCE_REJECTED: malformed JSON", rejected.lastError)
+    }
+
+    @Test fun completionRequiresVerifiedDriveAndGitReadback() {
+        val root = Files.createTempDirectory("novoexport-queue-completion").toFile()
+        val queue = NovoexportQueueStore.mergeInventory(root, inventory(), nowEpochMs = 10)
+        val itemId = queue.snapshot.items.single().id
+        NovoexportQueueStore.transition(queue.queueFile, itemId, NovoexportQueueStore.PROCESSING, nowEpochMs = 20)
+
+        val rejected = runCatching {
+            NovoexportQueueStore.markPublishedComplete(
+                queueFile = queue.queueFile,
+                itemId = itemId,
+                publishedState = "PUBLISHED_READBACK_VERIFIED",
+                driveReadbackVerified = true,
+                githubReadbackVerified = false,
+                nowEpochMs = 30
+            )
+        }
+        assertTrue(rejected.isFailure)
+        assertEquals(NovoexportQueueStore.PROCESSING, NovoexportQueueStore.load(queue.queueFile).items.single().state)
+
+        val completed = NovoexportQueueStore.markPublishedComplete(
+            queueFile = queue.queueFile,
+            itemId = itemId,
+            publishedState = "PUBLISHED_READBACK_VERIFIED",
+            driveReadbackVerified = true,
+            githubReadbackVerified = true,
+            nowEpochMs = 40
+        )
+        assertEquals(NovoexportQueueStore.COMPLETE, completed.items.single().state)
+    }
+
     @Test fun transitionGraphFailsClosed() {
         assertTrue(NovoexportQueueStore.allowedTransition(NovoexportQueueStore.PENDING, NovoexportQueueStore.PROCESSING))
         assertTrue(NovoexportQueueStore.allowedTransition(NovoexportQueueStore.BLOCKED, NovoexportQueueStore.PENDING))

@@ -1,6 +1,6 @@
 # RafGitTools Android NOVOexport Processor — Implementation V1
 
-State: `RESUMABLE_QUEUE_STORE_SOURCE_IMPLEMENTED_UNTESTED / STACKED_QUEUE_CI_NOT_RUN / DEVICE_NOT_RUN / QUEUE_EXECUTOR_NOT_WIRED`
+State: `QUEUE_EXECUTOR_SOURCE_IMPLEMENTED_UNTESTED / BASE_QUEUE_CI_PASS / EXACT_HEAD_CI_PENDING / DEVICE_NOT_RUN`
 claim_allowed: false
 
 ## Correct execution model
@@ -55,10 +55,10 @@ The Drive tab in `app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen
 
 ## Still required before the phone can run the full route
 
-1. Obtain exact-head CI for the stacked readback → SAF inventory → resumable queue chain; `IMPLEMENTED_UNTESTED != PASS`.
-2. Wire a queue executor/background recovery loop that opens exactly one queued SAF URI, moves it `PENDING/FAILED_RETRYABLE → PROCESSING`, invokes `ConversationManifoldProcessor`, and persists `COMPLETE | FAILED_RETRYABLE | BLOCKED` before moving to another item.
-3. Add bounded batch controls for pause/resume/retry and explicit publication confirmation; queue state is runtime state, not evidence.
-4. Install the exact tested APK on the phone and pass a small Drive→inventory→queue→process→Drive/Git canary including V2 readback receipts before scaling.
+1. The readback → SAF inventory → persistent queue chain passed exact-head CI in run `36565432525`; the new queue executor in this branch still needs exact-head CI.
+2. A foreground one-item executor is now source-implemented in this branch: it opens one queued SAF URI, runs `ConversationManifoldProcessor`, then waits for exact per-file plan confirmation and verified Drive/Git readback before `COMPLETE`. Exact-head CI is pending; a background worker and process-death recovery remain open.
+3. The Drive tab exposes one-item processing and explicit plan confirmation. Queue state remains runtime state, not evidence; pause/cancel controls and background scheduling remain open.
+4. After this branch's exact-head CI passes, install its devDebug APK on the phone and pass a small Drive→inventory→queue→process→Drive/Git canary with V2 readback receipts before scaling.
 
 ## Limits and privacy
 
@@ -66,11 +66,18 @@ The Drive tab in `app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen
 - No source file is changed or deleted.
 - Corpus-derived text in chunks is private content: publish only to the selected Drive destination and a live-verified private GitHub repository. RafGitTools public source receives code/tests only.
 - The processor currently requires a top-level JSON array and blocks records over its configured limit. Those boundaries must be surfaced in the app and recorded as gaps, never silently skipped.
-- Per-file checkpoints make a completed file idempotently identifiable by source SHA-256. Cross-file queue persistence is now source-implemented; scheduling, executor recovery and physical process-death behavior remain unproven until exact-head CI and device execution.
+- Per-file checkpoints make a completed file idempotently identifiable by source SHA-256. Cross-file queue persistence passed CI in run `36565432525`. The foreground queue executor is implemented in this branch; its exact-head CI, background scheduling, process-death behavior and device execution remain unproven.
 - No semantic embeddings, model training, truth promotion or causal claims are performed.
 
 ## R3
 
 F_ok: per-file processor/publisher exists; dual-provider readback, recursive SAF metadata inventory and app-private resumable queue storage are source-implemented in the stacked successor chain. Queue transition/retry persistence has focused tests.
-F_gap: exact-head CI for the stacked chain is not yet terminal; queue executor/background recovery, physical handset canary and measured provider inventory remain open.
-F_next: close exact-head CI; then wire one-at-a-time queue execution with persisted transitions before any multi-gigabyte physical run.
+F_gap: exact-head CI for the new queue executor, background scheduling/process-death recovery, physical handset canary and measured provider inventory remain open.
+F_next: close exact-head CI for the queue executor; then run a small physical phone canary with explicit per-file confirmation before scaling.
+
+
+## CI receipt — resumable queue chain (2026-09-29)
+
+PR #583 merged at `cc2363c88260681c58c74189b1d2780384437182`. Exact workflow run `36565432525` tested pull-request merge ref `refs/pull/583/merge` at SHA `98e481c5eb2793ba299f6c230919469414f0a40f`. Android tests, instrumentation compilation, lint, devDebug assembly and APK SHA verification passed; Python tests, CodeQL Java/Kotlin and CodeQL Actions passed. Final receipt `109399071582` is `PASS_WITH_TYPED_SKIPS`; signed release was skipped. APK SHA-256: `a848605f27aee58fe2099ed5fa117d2fe83a1700b3b3045ccf41964e280f4de7` (artifact `11032230928`).
+
+The present branch adds a foreground one-item queue executor and transition recovery. Its exact-head CI is pending. No APK install, physical phone run, full Drive corpus execution or 25 GB byte measurement is evidenced.
