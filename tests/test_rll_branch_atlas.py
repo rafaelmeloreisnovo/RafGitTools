@@ -23,10 +23,12 @@ class BranchAtlasTest(unittest.TestCase):
         self.assertEqual(self.data["repositories"]["instituto-Rafael/relativity-living-light"]["total"],873)
         self.assertEqual(self.data["repositories"]["rafaelmeloreisnovo/RafGitTools"]["total"],325)
 
-    def test_anchor_no_rename(self):
+    def test_root_and_maturity_refs_are_not_renamed(self):
         rll={r["branch"]:r for r in self.data["repositories"]["instituto-Rafael/relativity-living-light"]["branches"]}
-        self.assertEqual(rll["main"]["rename_state"],"NO_RENAME_ANCHOR")
-        self.assertEqual(rll["rll/lab"]["rename_state"],"NO_RENAME_ANCHOR")
+        self.assertEqual(rll["main"]["rename_state"],"NO_RENAME_ROOT")
+        self.assertTrue(rll["main"]["physical_name_preserved"])
+        self.assertEqual(rll["rll/lab"]["rename_state"],"NO_RENAME_MATURITY_REF")
+        self.assertTrue(rll["rll/lab"]["physical_name_preserved"])
 
     def test_no_pat_fallback_contract(self):
         self.assertIn("NO_PAT_FALLBACK",self.cfg)
