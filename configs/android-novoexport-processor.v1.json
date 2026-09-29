@@ -1,12 +1,12 @@
 {
   "schema": "rafgittools.android-novoexport-processor.v1",
-  "state": "ANDROID_PROCESSOR_SOURCE_ADDED",
-  "app_flow": "NOT_WIRED",
+  "state": "ANDROID_PROCESSOR_AND_SINGLE_FILE_FLOW_SOURCE_ADDED",
+  "app_flow": "SOURCE_PRESENT_PER_FILE",
   "ci": "PENDING",
   "device_execution": "NOT_RUN",
   "claim_allowed": false,
   "source_patterns": [
-    "conversations*.json",
+    "conversation*.json",
     "codex*.json"
   ],
   "input_mode": "USER_SELECTED_ANDROID_SAF",
