@@ -7,7 +7,7 @@ claim_allowed: false
 
 Observed repository: `rafaelmeloreisnovo/RafGitTools`, default branch `main`, after PR #576 merge commit `695bed743c5b22427ebc7f6cf4b71169208001bc` (2026-09-29).
 
-A provider directory read returned 53 direct root files and 45 direct root directories. This note classifies root-level filenames that are extensionless, have an unusual extension, or whose suffix conflicts with the apparent content. It does not inventory the contents of the 45 directories and does not mean any item is untracked. Full recursive classification remains `PENDING`.
+A provider root listing returned 53 direct root files and 45 directories. This inventory now includes the root and two directory levels (see addendum); it still does not cover the 52 third-level directories found in the observed listings and does not mean any item is untracked. Full recursive classification remains `PENDING`.
 
 ## Findings
 
