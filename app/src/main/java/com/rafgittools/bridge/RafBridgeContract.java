@@ -33,8 +33,8 @@ public final class RafBridgeContract {
         if (requestId.isEmpty()) {
             return Result.reject("request_id ausente");
         }
-        if (!"chat".equals(action)) {
-            return Result.reject("Apenas action=chat é permitida");
+        if (!"chat".equals(action) && !"context_chat".equals(action)) {
+            return Result.reject("Apenas action=chat ou action=context_chat são permitidas");
         }
         if (intent.isEmpty()) {
             return Result.reject("intent ausente");
@@ -63,7 +63,16 @@ public final class RafBridgeContract {
             return Result.reject("Possível credencial detectada; remova tokens, senhas ou chaves privadas");
         }
 
-        return Result.allow(requestId, intent, dataClass, message);
+        String semanticExamJson = null;
+        if ("context_chat".equals(action)) {
+            JSONObject semanticExam = request.optJSONObject("semantic_exam");
+            if (semanticExam == null) {
+                return Result.reject("semantic_exam é obrigatório para action=context_chat");
+            }
+            semanticExamJson = semanticExam.toString();
+        }
+
+        return Result.allow(requestId, action, intent, dataClass, message, semanticExamJson);
     }
 
     private static boolean isAllowedSource(String source) {
@@ -86,32 +95,54 @@ public final class RafBridgeContract {
         public final boolean allowed;
         public final String error;
         public final String requestId;
+        public final String action;
         public final String intent;
         public final String dataClass;
         public final String message;
+        public final String semanticExamJson;
 
         private Result(
                 boolean allowed,
                 String error,
                 String requestId,
+                String action,
                 String intent,
                 String dataClass,
-                String message
+                String message,
+                String semanticExamJson
         ) {
             this.allowed = allowed;
             this.error = error;
             this.requestId = requestId;
+            this.action = action;
             this.intent = intent;
             this.dataClass = dataClass;
             this.message = message;
+            this.semanticExamJson = semanticExamJson;
         }
 
         static Result reject(String error) {
-            return new Result(false, error, "", "", "", "");
+            return new Result(false, error, "", "", "", "", null);
         }
 
-        static Result allow(String requestId, String intent, String dataClass, String message) {
-            return new Result(true, "", requestId, intent, dataClass, message);
+        static Result allow(
+                String requestId,
+                String action,
+                String intent,
+                String dataClass,
+                String message,
+                String semanticExamJson
+        ) {
+            return new Result(
+                    true,
+                    "",
+                    requestId,
+                    action,
+                    intent,
+                    dataClass,
+                    message,
+                    semanticExamJson
+            );
         }
     }
 }
