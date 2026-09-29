@@ -29,12 +29,15 @@ import com.rafgittools.bridge.CorpusCatalogTreeGate
 import com.rafgittools.bridge.CorpusIntakeGate
 import com.rafgittools.bridge.CorpusIntakeResult
 import com.rafgittools.bridge.DriveStagingGate
+import com.rafgittools.navigator.ConversationManifoldProcessor
+import com.rafgittools.navigator.ConversationManifoldPublication
 import com.rafgittools.ui.components.ResponsiveContentFrame
 import com.rafgittools.domain.model.github.GithubRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileInputStream
 import java.io.IOException
 import java.security.MessageDigest
 
@@ -169,7 +172,8 @@ fun HomeScreen(
                     onLocalRepositoryClick = onNavigateToLocalRepo,
                     onRunGithubTest = viewModel::runGithubConnectivityTest,
                     onCreateRemoteReceipt = viewModel::createRemoteConnectivityReceipt,
-                    onPublishPrivateProcessingReceipt = viewModel::publishPrivateProcessingReceipt
+                    onPublishPrivateProcessingReceipt = viewModel::publishPrivateProcessingReceipt,
+                    onPublishManifold = viewModel::publishConversationManifold
                 )
             }
         }
@@ -197,7 +201,8 @@ private fun SourceDashboard(
         String,
         String,
         CorpusIntakeResult
-    ) -> Unit
+    ) -> Unit,
+    onPublishManifold: suspend (GithubRepository, ConversationManifoldPublication.Plan, String, android.content.ContentResolver) -> Result<ConversationManifoldPublication.Published>
 ) {
     Column(Modifier.fillMaxSize()) {
         TabRow(selectedTabIndex = activeTab.ordinal) {
@@ -236,7 +241,8 @@ private fun SourceDashboard(
             HomeViewModel.HomeTab.DRIVE -> DriveBridgeContent(
                 privateRepositories = remoteRepositories.filter { it.isPrivate },
                 publishState = privateProcessingPublishState,
-                onPublishReceipt = onPublishPrivateProcessingReceipt
+                onPublishReceipt = onPublishPrivateProcessingReceipt,
+                onPublishManifold = onPublishManifold
             )
             HomeViewModel.HomeTab.LOCAL -> LocalRepositoryList(localRepositories, onLocalRepositoryClick)
         }
@@ -272,7 +278,8 @@ private fun GithubDisconnectedContent(onNavigateToAuth: () -> Unit) {
 private fun DriveBridgeContent(
     privateRepositories: List<GithubRepository>,
     publishState: PrivateProcessingPublishState,
-    onPublishReceipt: (GithubRepository, Long, String, String, CorpusIntakeResult) -> Unit
+    onPublishReceipt: (GithubRepository, Long, String, String, CorpusIntakeResult) -> Unit,
+    onPublishManifold: suspend (GithubRepository, ConversationManifoldPublication.Plan, String, android.content.ContentResolver) -> Result<ConversationManifoldPublication.Published>
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -287,6 +294,11 @@ private fun DriveBridgeContent(
     var exportingCatalog by remember { mutableStateOf(false) }
     var exportedCatalog by remember { mutableStateOf<CatalogTreeExportResult?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    var processingManifold by remember { mutableStateOf(false) }
+    var manifoldResult by remember { mutableStateOf<ConversationManifoldProcessor.Result?>(null) }
+    var manifoldPlan by remember { mutableStateOf<ConversationManifoldPublication.Plan?>(null) }
+    var publishingManifold by remember { mutableStateOf(false) }
+    var manifoldPublishSummary by remember { mutableStateOf<String?>(null) }
 
     val catalogFolderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) {
@@ -326,11 +338,47 @@ private fun DriveBridgeContent(
         }
     }
 
+    val manifoldDestinationPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            } catch (_: SecurityException) {
+                error = "O provedor não concedeu acesso persistente de gravação; selecione uma pasta acessível no Drive."
+            }
+            val processed = manifoldResult
+            val target = selectedPrivateRepository
+            if (processed == null) error = "Processe primeiro um conversation*.json ou codex*.json."
+            else if (target == null) error = "Selecione um repositório GitHub privado antes de planejar a publicação."
+            else scope.launch {
+                manifoldPlan = null
+                val planned = withContext(Dispatchers.IO) {
+                    runCatching {
+                        ConversationManifoldPublication.plan(
+                            generationId = "g${System.currentTimeMillis()}",
+                            driveFolderUri = uri,
+                            githubOwner = target.owner.login,
+                            githubRepository = target.name,
+                            artifact = processed.outputFile
+                        )
+                    }
+                }
+                planned.onSuccess { manifoldPlan = it }
+                    .onFailure { error = it.message ?: "Falha ao criar plano de publicação" }
+            }
+        }
+    }
+
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             error = null
             cataloged = null
             exportedCatalog = null
+            manifoldResult = null
+            manifoldPlan = null
+            manifoldPublishSummary = null
             try {
                 context.contentResolver.takePersistableUriPermission(
                     uri,
@@ -481,6 +529,142 @@ private fun DriveBridgeContent(
                             }
                         }
                     }
+                }
+            }
+        }
+
+        staged?.let { stagedItem ->
+            item {
+                OutlinedCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Processar no RafGitTools", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "O telefone lê somente este arquivo selecionado e gera JSONL privado. Para processar outros shards, selecione cada arquivo; inventário recursivo da pasta ainda não está ligado.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    processingManifold = true
+                                    manifoldResult = null
+                                    manifoldPlan = null
+                                    manifoldPublishSummary = null
+                                    error = null
+                                    val result = withContext(Dispatchers.IO) {
+                                        runCatching {
+                                            FileInputStream(File(stagedItem.path)).use { source ->
+                                                ConversationManifoldProcessor(
+                                                    outputRoot = File(context.filesDir, "conversation-manifold")
+                                                ).process(stagedItem.name, source)
+                                            }
+                                        }
+                                    }
+                                    result.onSuccess { manifoldResult = it }
+                                        .onFailure { error = it.message ?: "Falha no processamento JSON" }
+                                    processingManifold = false
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !processingManifold && !publishingManifold
+                        ) {
+                            if (processingManifold) {
+                                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Processando no telefone…")
+                            } else {
+                                Icon(Icons.Default.AccountTree, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Processar JSON selecionado")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        manifoldResult?.let { processed ->
+            item {
+                OutlinedCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text("Processamento local concluído", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            "${processed.sourceName} · ${formatBytes(processed.sourceBytes)} · SHA-256 ${processed.sourceSha256}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            "Registros ${processed.records} · nós ${processed.nodes} · mensagens ${processed.messages} · Codex ${processed.codexRecords}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text("Saída derivada SHA-256: ${processed.outputSha256}", style = MaterialTheme.typography.bodySmall)
+                        Button(
+                            onClick = { manifoldDestinationPicker.launch(null) },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = selectedPrivateRepository?.isPrivate == true && !publishingManifold
+                        ) {
+                            Icon(Icons.Default.CloudUpload, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Escolher pasta de saída no Drive")
+                        }
+                    }
+                }
+            }
+        }
+
+        manifoldPlan?.let { plan ->
+            item {
+                OutlinedCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text("Plano de publicação", style = MaterialTheme.typography.titleSmall)
+                        Text("Destino Git privado: ${plan.githubOwner}/${plan.githubRepository}")
+                        Text("Partes: ${plan.parts.size} · SHA-256 do plano: ${plan.planSha256}", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "Ao confirmar, o APK grava as partes derivadas na pasta Drive selecionada e em memory_bridge/private_processing/conversation_manifold/. A verificação de leitura de volta ainda está pendente.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Button(
+                            onClick = {
+                                val target = selectedPrivateRepository
+                                if (target == null) {
+                                    error = "O repositório privado selecionado desapareceu."
+                                } else {
+                                    scope.launch {
+                                        publishingManifold = true
+                                        error = null
+                                        val result = onPublishManifold(
+                                            target, plan, plan.planSha256, context.contentResolver
+                                        )
+                                        result.onSuccess { published ->
+                                            manifoldPublishSummary =
+                                                "PUBLISHED_UNVERIFIED_READBACK_PENDING · Drive ${published.driveUris.size} itens · Git ${published.githubPaths.size} caminhos · commits ${published.githubCommitShas.joinToString().take(120)} · receipt SHA-256 ${published.artifactSha256}"
+                                        }.onFailure {
+                                            error = it.message ?: "Falha ao publicar o manifold"
+                                        }
+                                        publishingManifold = false
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !publishingManifold && selectedPrivateRepository?.isPrivate == true
+                        ) {
+                            if (publishingManifold) {
+                                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Publicando no Drive e no Git privado…")
+                            } else {
+                                Text("Confirmar plano e publicar")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        manifoldPublishSummary?.let { summary ->
+            item {
+                OutlinedCard(Modifier.fillMaxWidth()) {
+                    Text(summary, Modifier.padding(14.dp), style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
