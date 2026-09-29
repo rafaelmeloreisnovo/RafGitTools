@@ -34,7 +34,7 @@ class ConversationManifoldProcessor(
 
     fun process(sourceName: String, source: InputStream): Result {
         require(sourceName.endsWith(".json", ignoreCase = true)) { "Only JSON source files are supported" }
-        require(sourceName.startsWith("conversations", ignoreCase = true) || sourceName.startsWith("codex", ignoreCase = true)) {
+        require(sourceName.startsWith("conversation", ignoreCase = true) || sourceName.startsWith("codex", ignoreCase = true)) {
             "Expected conversations*.json or codex*.json"
         }
         if (!outputRoot.exists() && !outputRoot.mkdirs()) error("Cannot create private output directory")
@@ -178,7 +178,7 @@ class ConversationManifoldProcessor(
     private fun writeRecord(sourceName: String, element: JsonElement, out: BufferedWriter, counts: Counts) {
         val encoded = gson.toJson(element)
         val recordIndex = counts.records++
-        if (!sourceName.startsWith("conversations", ignoreCase = true)) {
+        if (!sourceName.startsWith("conversation", ignoreCase = true)) {
             val recordHash = sha256(encoded.toByteArray(Charsets.UTF_8))
             val pieces = splitUtf8(encoded, 64 * 1024)
             pieces.forEachIndexed { index, piece ->
