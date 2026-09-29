@@ -26,7 +26,7 @@ REGISTRY_SCHEMA = "rafgittools.private-ci-execution-registry.v1"
 MANIFEST_SCHEMA = "rafaelia.private-ci-manifest.v1"
 RECEIPT_SCHEMA = "rafgittools.private-ci-replay-receipt.v1"
 NETWORK_ISOLATION_METHOD = "LINUX_USER_NAMESPACE_PLUS_NETWORK_NAMESPACE"
-NETWORK_ISOLATION_PREFIX = ["unshare", "--user", "--map-root-user", "--net", "--"]
+NETWORK_ISOLATION_SUDO_METHOD = "LINUX_ROOT_NETNS_DROP_TO_CALLER_NO_NEW_PRIVS"
 ZIPRAF_RECEIPT_SCHEMA = "zipraf.private-ci-sanitized-receipt.v1"
 ZIPRAF_RECEIPT_PATH = "receipt/private-ci-replay-receipt.json"
 ZIPRAF_MANIFEST_PATH = "META-INF/ZIPRAF/MANIFEST.V1.json"
@@ -347,12 +347,56 @@ def _assert_execution_has_no_provider_secret() -> None:
         )
 
 
-def network_isolation_argv(argv: list[str]) -> list[str]:
+def _network_isolation_backends() -> list[tuple[str, list[str]]]:
     if platform.system() != "Linux":
         raise ValueError("network egress isolation requires Linux")
-    if shutil.which("unshare") is None:
+    unshare = shutil.which("unshare")
+    if unshare is None:
         raise ValueError("network egress isolation requires util-linux unshare")
-    return [*NETWORK_ISOLATION_PREFIX, *argv]
+
+    backends: list[tuple[str, list[str]]] = [
+        (
+            NETWORK_ISOLATION_METHOD,
+            [unshare, "--user", "--map-root-user", "--net", "--"],
+        )
+    ]
+
+    sudo = shutil.which("sudo")
+    setpriv = shutil.which("setpriv")
+    if sudo is not None and setpriv is not None and hasattr(os, "getuid") and hasattr(os, "getgid"):
+        backends.append(
+            (
+                NETWORK_ISOLATION_SUDO_METHOD,
+                [
+                    sudo,
+                    "-n",
+                    unshare,
+                    "--net",
+                    "--",
+                    setpriv,
+                    f"--reuid={os.getuid()}",
+                    f"--regid={os.getgid()}",
+                    "--clear-groups",
+                    "--no-new-privs",
+                    "--",
+                ],
+            )
+        )
+    return backends
+
+
+def network_isolation_argv(argv: list[str], *, method: str | None = None) -> list[str]:
+    backends = _network_isolation_backends()
+    if method is None:
+        selected_method, prefix = backends[0]
+    else:
+        try:
+            selected_method, prefix = next(x for x in backends if x[0] == method)
+        except StopIteration as exc:
+            raise ValueError(f"network isolation method unavailable: {method}") from exc
+    if selected_method == NETWORK_ISOLATION_SUDO_METHOD and os.geteuid() == 0:
+        raise ValueError("sudo netns fallback must drop from a non-root caller")
+    return [*prefix, *argv]
 
 
 def probe_network_isolation() -> dict[str, Any]:
@@ -367,26 +411,46 @@ def probe_network_isolation() -> dict[str, Any]:
             "sys.exit(0 if rc != 0 else 41)"
         ),
     ]
-    run = subprocess.run(
-        network_isolation_argv(probe),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        timeout=10,
-        check=False,
-    )
-    if run.returncode != 0:
-        raise ValueError(
-            "network namespace isolation probe failed "
-            f"(returncode={run.returncode}, stderr_sha256={sha256_bytes(run.stderr)})"
+    attempts: list[dict[str, Any]] = []
+    for method, prefix in _network_isolation_backends():
+        run = subprocess.run(
+            [*prefix, *probe],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=10,
+            check=False,
         )
-    return {
-        "method": NETWORK_ISOLATION_METHOD,
-        "state": "PASS",
-        "external_ipv4_tcp_connect_blocked": True,
-        "probe_stdout_sha256": sha256_bytes(run.stdout),
-        "probe_stderr_sha256": sha256_bytes(run.stderr),
-        "claim_allowed": False,
-    }
+        attempt = {
+            "method": method,
+            "returncode": int(run.returncode),
+            "stdout_sha256": sha256_bytes(run.stdout),
+            "stderr_sha256": sha256_bytes(run.stderr),
+        }
+        attempts.append(attempt)
+        if run.returncode == 0:
+            return {
+                "method": method,
+                "state": "PASS",
+                "external_ipv4_tcp_connect_blocked": True,
+                "probe_stdout_sha256": attempt["stdout_sha256"],
+                "probe_stderr_sha256": attempt["stderr_sha256"],
+                "attempt_count": len(attempts),
+                "failed_backend_hashes": [
+                    {
+                        "method": x["method"],
+                        "returncode": x["returncode"],
+                        "stderr_sha256": x["stderr_sha256"],
+                    }
+                    for x in attempts[:-1]
+                ],
+                "claim_allowed": False,
+            }
+
+    rendered = "; ".join(
+        f"{x['method']}:rc={x['returncode']}:stderr_sha256={x['stderr_sha256']}"
+        for x in attempts
+    )
+    raise ValueError(f"network namespace isolation probe failed across all backends ({rendered})")
 
 
 def execute_plan(
@@ -436,7 +500,10 @@ def execute_plan(
 
     for step in workflow["steps"]:
         cwd = _safe_relative(source_root, str(step.get("cwd", ".")), ctx=step["id"])
-        isolated_argv = network_isolation_argv(list(step["argv"]))
+        isolated_argv = network_isolation_argv(
+            list(step["argv"]),
+            method=str(isolation["method"]),
+        )
         run = subprocess.run(
             isolated_argv,
             cwd=cwd,
@@ -452,7 +519,7 @@ def execute_plan(
                 "argv_sha256": sha256_bytes(
                     canonical_bytes(step["argv"])
                 ),
-                "network_isolation_method": NETWORK_ISOLATION_METHOD,
+                "network_isolation_method": isolation["method"],
                 "cwd": str(step.get("cwd", ".")),
                 "returncode": int(run.returncode),
                 "stdout_sha256": sha256_bytes(run.stdout),
