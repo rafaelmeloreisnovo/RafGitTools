@@ -253,7 +253,7 @@ public final class RafBridgeService extends Service {
                 return;
             }
 
-            if (!dataClassCoversPrivacy(contract.dataClass, contextBundle.getPrivacyClass())) {
+            if (!RafContextPrivacyGate.allows(contract.dataClass, contextBundle.getPrivacyClass())) {
                 writeJson(
                         output,
                         422,
@@ -348,31 +348,6 @@ public final class RafBridgeService extends Service {
         );
         formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
         return formatter.format(new Date());
-    }
-
-    private static boolean dataClassCoversPrivacy(String dataClass, String privacyClass) {
-        if ("TOKEN_VAZIO".equals(privacyClass)) {
-            return false;
-        }
-
-        int declaredRank;
-        if ("sensitive".equals(dataClass)) {
-            declaredRank = 2;
-        } else if ("private".equals(dataClass)) {
-            declaredRank = 1;
-        } else {
-            declaredRank = 0;
-        }
-
-        int requiredRank;
-        if ("SENSITIVE".equals(privacyClass)) {
-            requiredRank = 2;
-        } else if ("PRIVATE".equals(privacyClass) || "INTERNAL".equals(privacyClass)) {
-            requiredRank = 1;
-        } else {
-            requiredRank = 0;
-        }
-        return declaredRank >= requiredRank;
     }
 
     private synchronized void stopServer() {
