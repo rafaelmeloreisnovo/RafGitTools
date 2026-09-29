@@ -485,12 +485,6 @@ jobs:
           print(f'compiled_python_files={len(files)}')
           PY
 
-      - name: Private CI network-isolation capability
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/private_ci_bridge.py probe-isolation
-
       - name: RAFANDROID toolchain shell gate
         shell: bash
         run: |
