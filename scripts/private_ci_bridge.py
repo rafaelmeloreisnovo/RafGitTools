@@ -14,6 +14,8 @@ import json
 import os
 import platform
 import re
+import shutil
+import socket
 import subprocess
 import sys
 from pathlib import Path
@@ -22,6 +24,8 @@ from typing import Any
 REGISTRY_SCHEMA = "rafgittools.private-ci-execution-registry.v1"
 MANIFEST_SCHEMA = "rafaelia.private-ci-manifest.v1"
 RECEIPT_SCHEMA = "rafgittools.private-ci-replay-receipt.v1"
+NETWORK_ISOLATION_METHOD = "LINUX_USER_NAMESPACE_PLUS_NETWORK_NAMESPACE"
+NETWORK_ISOLATION_PREFIX = ["unshare", "--user", "--map-root-user", "--net", "--"]
 
 SHA40_RE = re.compile(r"^[0-9a-f]{40}$")
 REPO_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
@@ -338,6 +342,48 @@ def _assert_execution_has_no_provider_secret() -> None:
         )
 
 
+def network_isolation_argv(argv: list[str]) -> list[str]:
+    if platform.system() != "Linux":
+        raise ValueError("network egress isolation requires Linux")
+    if shutil.which("unshare") is None:
+        raise ValueError("network egress isolation requires util-linux unshare")
+    return [*NETWORK_ISOLATION_PREFIX, *argv]
+
+
+def probe_network_isolation() -> dict[str, Any]:
+    probe = [
+        sys.executable,
+        "-c",
+        (
+            "import socket,sys;"
+            "s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);"
+            "s.settimeout(1.0);"
+            "rc=s.connect_ex(('1.1.1.1',443));"
+            "sys.exit(0 if rc != 0 else 41)"
+        ),
+    ]
+    run = subprocess.run(
+        network_isolation_argv(probe),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=10,
+        check=False,
+    )
+    if run.returncode != 0:
+        raise ValueError(
+            "network namespace isolation probe failed "
+            f"(returncode={run.returncode}, stderr_sha256={sha256_bytes(run.stderr)})"
+        )
+    return {
+        "method": NETWORK_ISOLATION_METHOD,
+        "state": "PASS",
+        "external_ipv4_tcp_connect_blocked": True,
+        "probe_stdout_sha256": sha256_bytes(run.stdout),
+        "probe_stderr_sha256": sha256_bytes(run.stderr),
+        "claim_allowed": False,
+    }
+
+
 def execute_plan(
     *,
     registry: dict[str, Any],
@@ -378,14 +424,16 @@ def execute_plan(
     if not source_yaml.is_file():
         raise ValueError(f"source workflow YAML missing: {workflow['source_yaml']}")
 
+    isolation = probe_network_isolation()
     step_receipts: list[dict[str, Any]] = []
     result = "PASS"
-    gaps: list[str] = ["TOKEN_VAZIO_NETWORK_EGRESS_ISOLATION_NOT_ENFORCED"]
+    gaps: list[str] = []
 
     for step in workflow["steps"]:
         cwd = _safe_relative(source_root, str(step.get("cwd", ".")), ctx=step["id"])
+        isolated_argv = network_isolation_argv(list(step["argv"]))
         run = subprocess.run(
-            step["argv"],
+            isolated_argv,
             cwd=cwd,
             env=_safe_execution_env(dict(step.get("env", {}))),
             stdout=subprocess.PIPE,
@@ -399,6 +447,7 @@ def execute_plan(
                 "argv_sha256": sha256_bytes(
                     canonical_bytes(step["argv"])
                 ),
+                "network_isolation_method": NETWORK_ISOLATION_METHOD,
                 "cwd": str(step.get("cwd", ".")),
                 "returncode": int(run.returncode),
                 "stdout_sha256": sha256_bytes(run.stdout),
@@ -476,13 +525,13 @@ def execute_plan(
             "raw_private_stdout_persisted": False,
             "raw_private_stderr_persisted": False,
             "private_source_uploaded_as_public_artifact": False,
-            "network_egress_isolation": "TOKEN_VAZIO_NOT_ENFORCED",
+            "network_egress_isolation": isolation,
         },
         "claim_allowed": False,
         "f_gap": gaps,
         "f_next": (
-            "Promote this exact target/workflow/commit only after the receipt is reviewed; "
-            "network egress isolation remains an explicit gap."
+            "Promote this exact target/workflow/commit only after the receipt is reviewed "
+            "and compared with the source workflow contract."
         ),
     }
     receipt_path.parent.mkdir(parents=True, exist_ok=True)
@@ -496,6 +545,8 @@ def main() -> int:
 
     p = sub.add_parser("validate-registry")
     p.add_argument("--registry", type=Path, required=True)
+
+    sub.add_parser("probe-isolation")
 
     p = sub.add_parser("resolve")
     p.add_argument("--registry", type=Path, required=True)
@@ -523,6 +574,10 @@ def main() -> int:
     args = ap.parse_args()
 
     try:
+        if args.command == "probe-isolation":
+            print(json.dumps(probe_network_isolation(), sort_keys=True))
+            return 0
+
         registry = load_json(args.registry)
         if args.command == "validate-registry":
             validate_registry(registry)
