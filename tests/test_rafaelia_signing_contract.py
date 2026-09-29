@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 GATE = ROOT / "scripts" / "validate_rafaelia_signing_contract.sh"
 
+
 class SigningPageContractTests(unittest.TestCase):
     def setUp(self):
         self.receipt = {
@@ -38,14 +39,16 @@ class SigningPageContractTests(unittest.TestCase):
             },
         }
 
-    def run_gate(self, receipt=None, variables=None, text=None, extra_page_file=None):
+    def run_gate(self, receipt=None, variables=None, json_text=None,
+                 text=None, extra_page_file=None):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp) / "page"
             root.mkdir()
             receipt = self.receipt if receipt is None else receipt
             variables = self.variables if variables is None else variables
+            serialized = json.dumps(receipt)
             (root / "latest.json").write_text(
-                json.dumps(receipt), encoding="utf-8"
+                serialized if json_text is None else json_text, encoding="utf-8"
             )
             rendered = "\n".join(
                 f"{key}={value}" for key, value in receipt.items()
@@ -68,8 +71,9 @@ class SigningPageContractTests(unittest.TestCase):
         self.assertIn("RAFAELIA_SIGNING_PAGE_CONTRACT=PASS", result.stdout)
 
     def test_malformed_json_fails(self):
-        broken = self.run_gate(text="schema=rafaelia.signed-release/v1\n")
-        self.assertNotEqual(broken.returncode, 0)
+        result = self.run_gate(json_text='{"schema": ')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("SIGNING_PAGE_JSON_INVALID", result.stderr)
 
     def test_unknown_schema_fails(self):
         receipt = dict(self.receipt, schema="rafaelia.signed-release/v0")
@@ -84,11 +88,16 @@ class SigningPageContractTests(unittest.TestCase):
         self.assertIn("SIGNING_PAGE_STATE_UNSUPPORTED", result.stderr)
 
     def test_text_and_json_must_match(self):
-        result = self.run_gate(text="schema=rafaelia.signed-release/v1\nprivate_key_material=NEVER_PUBLISH\n")
+        result = self.run_gate(
+            text="schema=rafaelia.signed-release/v1\nprivate_key_material=NEVER_PUBLISH\n"
+        )
         self.assertNotEqual(result.returncode, 0)
+        self.assertIn("SIGNING_PAGE_TEXT_FIELDS_INVALID", result.stderr)
 
     def test_private_key_material_is_rejected(self):
-        result = self.run_gate(extra_page_file="-----BEGIN PRIVATE KEY-----\nsynthetic-test-only")
+        result = self.run_gate(
+            extra_page_file="-----BEGIN PRIVATE KEY-----\nsynthetic-test-only"
+        )
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("PRIVATE_KEY_MATERIAL_DETECTED_IN_PAGES", result.stdout)
 
