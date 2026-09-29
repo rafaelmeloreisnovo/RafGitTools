@@ -1,15 +1,15 @@
 {
   "schema": "rafgittools.android-novoexport-processor.v1",
-  "state": "PROVIDER_READBACK_SOURCE_IMPLEMENTED_UNTESTED",
-  "app_flow": "DRIVE_TAB_PER_FILE_ACTION_SOURCE_PRESENT",
-  "ci": "NEW_EXACT_HEAD_CI_NOT_RUN",
+  "state": "SAF_RECURSIVE_INVENTORY_SOURCE_IMPLEMENTED_UNTESTED",
+  "app_flow": "DRIVE_TAB_PER_FILE_PLUS_RECURSIVE_METADATA_INVENTORY_SOURCE_PRESENT",
+  "ci": "NEW_STACKED_EXACT_HEAD_CI_NOT_RUN",
   "device_execution": "NOT_RUN",
   "claim_allowed": false,
   "source_patterns": [
     "conversation*.json",
     "codex*.json"
   ],
-  "input_mode": "USER_SELECTED_ANDROID_SAF",
+  "input_mode": "USER_SELECTED_ANDROID_SAF_FILE_OR_TREE",
   "source_mutation": false,
   "parser": {
     "top_level": "JSON_ARRAY",
@@ -28,12 +28,24 @@
   "provider_readback": "SOURCE_IMPLEMENTED_FAIL_CLOSED_DRIVE_AND_PRIVATE_GIT",
   "corpus_scope_bytes": "TOKEN_VAZIO_MEASURED_INVENTORY_REQUIRED",
   "remaining": [
-    "EXACT_HEAD_CI_FOR_PROVIDER_READBACK",
-    "SAF_TREE_ENUMERATION",
+    "EXACT_HEAD_CI_FOR_SAF_INVENTORY_SUCCESSOR",
     "PERSISTENT_RESUMABLE_BATCH_QUEUE",
     "BACKGROUND_EXECUTION_AND_RECOVERY",
     "PHYSICAL_DEVICE_CANARY",
     "MEASURED_CORPUS_INVENTORY"
   ],
-  "next": "run exact-head CI for provider-readback successor; if source gate passes, implement recursive SAF inventory plus persistent resumable batch queue before a physical phone canary"
+  "next": "close exact-head CI for stacked SAF inventory; then persist the candidate URI+metadata queue and per-file state so process death/restart resumes safely before any physical large-corpus run",
+  "saf_inventory": {
+    "state": "SOURCE_IMPLEMENTED_UNTESTED",
+    "mode": "METADATA_ONLY_RECURSIVE",
+    "source_content_opened": false,
+    "max_documents_default": 100000,
+    "accepted_patterns": [
+      "conversation*.json",
+      "conversations*.json",
+      "codex*.json"
+    ],
+    "known_size_aggregation": "PROVIDER_METADATA_ONLY",
+    "unknown_size": "TOKEN_VAZIO_SIZE"
+  }
 }
