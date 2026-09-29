@@ -75,6 +75,8 @@ def _assert_no_secret_values(obj: Any, ctx: str = "root") -> None:
     if isinstance(obj, dict):
         for key, value in obj.items():
             key_norm = str(key).casefold()
+            if key_norm == "secret_value_persisted" and value is False:
+                continue
             if any(fragment in key_norm for fragment in FORBIDDEN_KEY_FRAGMENTS):
                 raise ValueError(f"{ctx}: forbidden secret-bearing key {key!r}")
             _assert_no_secret_values(value, f"{ctx}.{key}")
