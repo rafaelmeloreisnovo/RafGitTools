@@ -43,7 +43,7 @@ object ConversationManifoldPublication {
         val parts = mutableListOf<Part>()
         forEachPart(artifact) { index, content ->
             val bytes = content.toByteArray(Charsets.UTF_8)
-            parts += Part(partName(artifact, plan.generationId, index), bytes.size.toLong(), sha256(bytes))
+            parts += Part(partName(artifact, generationId, index), bytes.size.toLong(), sha256(bytes))
         }
         val canonicalPlan = (listOf(generationId, driveFolderUri.toString(),
             "$githubOwner/$githubRepository", artifact.absolutePath, artifactHash) +
@@ -78,7 +78,7 @@ object ConversationManifoldPublication {
         forEachPart(artifact) { index, content ->
             val expected = plan.parts.getOrNull(index) ?: error("Part count changed after planning")
             val bytes = content.toByteArray(Charsets.UTF_8)
-            require(expected.filename == partName(artifact, plan.generationId, index) &&
+            require(expected.filename == partName(artifact, index) &&
                 expected.bytes == bytes.size.toLong() && expected.sha256 == sha256(bytes)) {
                 "Part changed after plan confirmation"
             }
@@ -103,7 +103,7 @@ object ConversationManifoldPublication {
         require(plan.parts.size == githubPaths.size) { "Part count changed during publication" }
 
         val partsHash = aggregate.digest().hex()
-        val manifest = """{"schema":"rafgittools.conversation-manifold-publication/v1","generation_id":"${plan.generationId}","parts":${plan.parts.size},"parts_sha256":"$partsHash","plan_sha256":"${plan.planSha256}","state":"PUBLISHED_BY_APP","claim_allowed":false}"""
+        val manifest = """{"schema":"rafgittools.conversation-manifold-publication/v1","generation_id":"${plan.generationId}","parts":${plan.parts.size},"parts_sha256":"$partsHash","plan_sha256":"${plan.planSha256}","state":"PUBLISHED_UNVERIFIED_READBACK_PENDING","claim_allowed":false}"""
         val manifestName = "PUBLICATION_COMPLETE.${plan.planSha256.take(16)}.json"
         val manifestUri = DocumentsContract.createDocument(resolver, tree, "application/json", manifestName)
             ?: error("Drive/provider refused completion manifest")
@@ -120,8 +120,8 @@ object ConversationManifoldPublication {
         return Published(driveUris, githubPaths, sha256(manifest.toByteArray(Charsets.UTF_8)))
     }
 
-    private fun partName(artifact: File, generationId: String, index: Int) =
-        "${artifact.nameWithoutExtension}-${generationId}-part-${index.toString().padStart(5, '0')}.jsonl"
+    private fun partName(artifact: File, index: Int) =
+        "${artifact.nameWithoutExtension}-part-${index.toString().padStart(5, '0')}.jsonl"
 
     private fun forEachPart(file: File, consume: (Int, String) -> Unit) {
         var index = 0
