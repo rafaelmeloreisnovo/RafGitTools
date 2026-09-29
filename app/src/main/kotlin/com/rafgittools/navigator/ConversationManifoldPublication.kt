@@ -41,7 +41,7 @@ object ConversationManifoldPublication {
         require(artifact.isFile)
         val artifactHash = sha256(artifact)
         val parts = mutableListOf<Part>()
-        forEachPart(artifact) { index, content ->
+        for ((index, content) in partSequence(artifact)) {
             val bytes = content.toByteArray(Charsets.UTF_8)
             parts += Part(partName(artifact, generationId, index), bytes.size.toLong(), sha256(bytes))
         }
@@ -76,7 +76,7 @@ object ConversationManifoldPublication {
         val commitShas = mutableListOf<String>()
         val aggregate = MessageDigest.getInstance("SHA-256")
 
-        forEachPart(artifact) { index, content ->
+        for ((index, content) in partSequence(artifact)) {
             val expected = plan.parts.getOrNull(index) ?: error("Part count changed after planning")
             val bytes = content.toByteArray(Charsets.UTF_8)
             require(expected.filename == partName(artifact, plan.generationId, index) &&
@@ -127,27 +127,28 @@ object ConversationManifoldPublication {
     private fun partName(artifact: File, generationId: String, index: Int) =
         "${artifact.nameWithoutExtension}-${generationId}-part-${index.toString().padStart(5, '0')}.jsonl"
 
-    private fun forEachPart(file: File, consume: (Int, String) -> Unit) {
+    private fun partSequence(file: File): Sequence<Pair<Int, String>> = sequence {
         var index = 0
         val current = StringBuilder()
         var currentBytes = 0
-        file.bufferedReader(Charsets.UTF_8).useLines { lines ->
-            lines.forEach { line ->
-                val encoded = (line + "\n").toByteArray(Charsets.UTF_8)
-                require(encoded.size <= MAX_PART_BYTES) {
-                    "One derived record exceeds GitHub part limit; split before publication"
-                }
-                if (currentBytes + encoded.size > MAX_PART_BYTES && current.isNotEmpty()) {
-                    consume(index++, current.toString())
-                    current.setLength(0)
-                    currentBytes = 0
-                }
-                current.append(line).append('\n')
-                currentBytes += encoded.size
+        val reader = file.bufferedReader(Charsets.UTF_8)
+        while (true) {
+            val line = reader.readLine() ?: break
+            val encoded = (line + "\n").toByteArray(Charsets.UTF_8)
+            require(encoded.size <= MAX_PART_BYTES) {
+                "One derived record exceeds GitHub part limit; split before publication"
             }
+            if (currentBytes + encoded.size > MAX_PART_BYTES && current.isNotEmpty()) {
+                yield(index++ to current.toString())
+                current.setLength(0)
+                currentBytes = 0
+            }
+            current.append(line).append('\n')
+            currentBytes += encoded.size
         }
-        if (current.isNotEmpty()) consume(index, current.toString())
-        if (index == 0 && current.isEmpty() && file.length() == 0L) consume(0, "")
+        reader.close()
+        if (current.isNotEmpty()) yield(index to current.toString())
+        if (index == 0 && current.isEmpty() && file.length() == 0L) yield(0 to "")
     }
 
     private fun sha256(file: File): String = file.inputStream().use { input ->
