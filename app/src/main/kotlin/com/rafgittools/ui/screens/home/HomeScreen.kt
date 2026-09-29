@@ -305,6 +305,7 @@ private fun DriveBridgeContent(
     var treeInventory by remember { mutableStateOf<NovoexportSafInventory.Result?>(null) }
     var queueingInventory by remember { mutableStateOf(false) }
     var queueSummary by remember { mutableStateOf<NovoexportQueueStore.MergeResult?>(null) }
+    var queueProcessingItemId by remember { mutableStateOf<String?>(null) }
 
     val catalogFolderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) {
@@ -535,7 +536,7 @@ private fun DriveBridgeContent(
                         }
                         if (inventory.candidateFiles.size > 6) {
                             Text(
-                                "… +${inventory.candidateFiles.size - 6} candidatos; a fila persistente continua como próximo gate.",
+                                "… +${inventory.candidateFiles.size - 6} candidatos incluídos no inventário.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -583,6 +584,106 @@ private fun DriveBridgeContent(
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
+                            val eligible = queue.snapshot.items.firstOrNull {
+                                it.presentInLatestInventory &&
+                                    (it.state == NovoexportQueueStore.PENDING ||
+                                        it.state == NovoexportQueueStore.FAILED_RETRYABLE)
+                            }
+                            val pendingCount = queue.snapshot.items.count {
+                                it.state == NovoexportQueueStore.PENDING ||
+                                    it.state == NovoexportQueueStore.FAILED_RETRYABLE
+                            }
+                            Text(
+                                "Pendentes/repetíveis: $pendingCount · processamento em série, um arquivo por confirmação.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Button(
+                                onClick = {
+                                    val next = eligible
+                                    if (next == null) {
+                                        error = "Não há item presente no último inventário pronto para processamento."
+                                    } else if (selectedPrivateRepository?.isPrivate != true) {
+                                        error = "Selecione um repositório GitHub privado antes de processar a fila."
+                                    } else {
+                                        scope.launch {
+                                            processingManifold = true
+                                            error = null
+                                            val claimed = withContext(Dispatchers.IO) {
+                                                runCatching {
+                                                    NovoexportQueueStore.transition(
+                                                        queueFile = queue.queueFile,
+                                                        itemId = next.id,
+                                                        newState = NovoexportQueueStore.PROCESSING
+                                                    )
+                                                }
+                                            }
+                                            claimed.onSuccess { snapshot ->
+                                                queueSummary = queue.copy(snapshot = snapshot)
+                                                queueProcessingItemId = next.id
+                                                val processed = withContext(Dispatchers.IO) {
+                                                    runCatching {
+                                                        val input = context.contentResolver.openInputStream(Uri.parse(next.uri))
+                                                            ?: throw IOException("O provedor não abriu o JSON enfileirado")
+                                                        input.use { source ->
+                                                            ConversationManifoldProcessor(
+                                                                outputRoot = File(context.filesDir, "conversation-manifold")
+                                                            ).process(next.name, source)
+                                                        }
+                                                    }
+                                                }
+                                                processed.onSuccess {
+                                                    manifoldResult = it
+                                                    manifoldPlan = null
+                                                    manifoldPublishSummary = null
+                                                }.onFailure { failure ->
+                                                    val failedState = if (
+                                                        failure is SecurityException || failure is IllegalArgumentException
+                                                    ) {
+                                                        NovoexportQueueStore.BLOCKED
+                                                    } else {
+                                                        NovoexportQueueStore.FAILED_RETRYABLE
+                                                    }
+                                                    val failureText =
+                                                        "SOURCE_PROCESSING_FAILURE: ${failure.message ?: failure.javaClass.simpleName}"
+                                                    val failed = withContext(Dispatchers.IO) {
+                                                        runCatching {
+                                                            NovoexportQueueStore.transition(
+                                                                queueFile = queue.queueFile,
+                                                                itemId = next.id,
+                                                                newState = failedState,
+                                                                error = failureText
+                                                            )
+                                                        }
+                                                    }
+                                                    failed.onSuccess { snapshot ->
+                                                        queueSummary = queue.copy(snapshot = snapshot)
+                                                    }
+                                                    queueProcessingItemId = null
+                                                    error = failure.message ?: "Falha ao processar item da fila"
+                                                }
+                                            }.onFailure {
+                                                error = it.message ?: "Falha ao reservar próximo item da fila"
+                                            }
+                                            if (claimed.isFailure) queueProcessingItemId = null
+                                            processingManifold = false
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = eligible != null && !processingManifold && !publishingManifold &&
+                                    selectedPrivateRepository?.isPrivate == true
+                            ) {
+                                if (processingManifold) {
+                                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Processando um arquivo no telefone…")
+                                } else {
+                                    Icon(Icons.Default.PlayArrow, null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Processar próximo arquivo da fila")
+                                }
+                            }
                         }
                     }
                 }
@@ -678,7 +779,7 @@ private fun DriveBridgeContent(
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Processar no RafGitTools", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "O telefone lê somente este arquivo selecionado e gera JSONL privado. Para processar outros shards, selecione cada arquivo; inventário recursivo da pasta ainda não está ligado.",
+                            "O processamento manual lê um arquivo. Para a fila NOVOexport, o APK abre a URI SAF persistida, processa um candidato por vez e aguarda confirmação do plano de publicação.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -758,7 +859,7 @@ private fun DriveBridgeContent(
                         Text("Destino Git privado: ${plan.githubOwner}/${plan.githubRepository}")
                         Text("Partes: ${plan.parts.size} · SHA-256 do plano: ${plan.planSha256}", style = MaterialTheme.typography.bodySmall)
                         Text(
-                            "Ao confirmar, o APK grava as partes derivadas na pasta Drive selecionada e em memory_bridge/private_processing/conversation_manifold/. A verificação de leitura de volta ainda está pendente.",
+                            "Ao confirmar, o APK grava as partes derivadas na pasta Drive selecionada e no destino Git privado, relê ambos os destinos e confere bytes e SHA-256 antes de fechar o recibo.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
