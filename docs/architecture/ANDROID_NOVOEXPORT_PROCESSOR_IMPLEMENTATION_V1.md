@@ -1,6 +1,6 @@
 # RafGitTools Android NOVOexport Processor — Implementation V1
 
-State: `ANDROID_PROCESSOR_SOURCE_ADDED / APP_FLOW_NOT_YET_WIRED / CI_PENDING / DEVICE_NOT_RUN`
+State: `ANDROID_PROCESSOR_AND_SINGLE_FILE_FLOW_SOURCE_ADDED / BATCH_INVENTORY_NOT_WIRED / CI_PENDING / DEVICE_NOT_RUN`
 claim_allowed: false
 
 ## Correct execution model
@@ -26,7 +26,7 @@ The user's phone runs the RafGitTools APK. RafGitTools reads the existing Drive 
   - writes each derived part to a user-selected Drive SAF folder and a Git private-processing namespace through a caller-supplied writer;
   - writes completion markers with `PUBLISHED_UNVERIFIED_READBACK_PENDING`; they are not evidence of provider readback or a completed corpus.
 
-These are source changes. CI and on-device execution have not yet established whether the code compiles or runs on the user's handset.
+The Drive tab in `app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen.kt` now exposes a per-file Process action, a user-selected Drive destination, an exact plan-hash confirmation, and publication through `HomeViewModel.publishConversationManifold`. Git writes use `GithubDataRepository.createPrivateProcessingFile`, which checks live repository privacy and enforces the 512 KiB namespace boundary. Commit SHAs are retained. These are source changes; CI and on-device execution have not yet established whether the code compiles or runs on the user's handset.
 
 ## Still required before the phone can run the full route
 
@@ -39,7 +39,7 @@ These are source changes. CI and on-device execution have not yet established wh
 
 ## Limits and privacy
 
-- The 25 GB value is the user's reported scope. This branch has not enumerated or measured the Drive source.
+- The 25 GB value is the user's reported scope. This branch has not enumerated or measured the complete Drive source.
 - No source file is changed or deleted.
 - Corpus-derived text in chunks is private content: publish only to the selected Drive destination and a live-verified private GitHub repository. RafGitTools public source receives code/tests only.
 - The processor currently requires a top-level JSON array and blocks records over its configured limit. Those boundaries must be surfaced in the app and recorded as gaps, never silently skipped.
