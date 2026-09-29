@@ -70,7 +70,7 @@ No count is complete until an exhaustive provider enumeration and terminal curso
 |---|---|---|
 | Source-level Android route | code path from app screen through intake to Navigator | `TOKEN_VAZIO` |
 | Contract/fixture | schema + meaningful tests | `TOKEN_VAZIO` |
-| Build/CI | exact PR head terminal workflow results | `NOT_RUN` |
+| Android job | exact-head unit tests, lint, devDebug APK and APK hash verification | `PASS`; overall final receipt `PENDING` |
 | Device install/launch | installed artifact SHA + device receipt | `NOT_RUN` |
 | Drive exhaustive inventory | all pages/items + terminal cursor | `TOKEN_VAZIO` |
 | End-to-end canary | source/output hashes and private readback | `NOT_RUN` |
