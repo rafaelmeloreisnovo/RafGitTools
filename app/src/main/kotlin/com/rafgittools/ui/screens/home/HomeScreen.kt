@@ -32,6 +32,7 @@ import com.rafgittools.bridge.DriveStagingGate
 import com.rafgittools.navigator.ConversationManifoldProcessor
 import com.rafgittools.navigator.ConversationManifoldPublication
 import com.rafgittools.navigator.NovoexportSafInventory
+import com.rafgittools.navigator.NovoexportQueueStore
 import com.rafgittools.ui.components.ResponsiveContentFrame
 import com.rafgittools.domain.model.github.GithubRepository
 import kotlinx.coroutines.Dispatchers
@@ -302,6 +303,8 @@ private fun DriveBridgeContent(
     var manifoldPublishSummary by remember { mutableStateOf<String?>(null) }
     var inventoryingTree by remember { mutableStateOf(false) }
     var treeInventory by remember { mutableStateOf<NovoexportSafInventory.Result?>(null) }
+    var queueingInventory by remember { mutableStateOf(false) }
+    var queueSummary by remember { mutableStateOf<NovoexportQueueStore.MergeResult?>(null) }
 
     val catalogFolderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) {
@@ -378,6 +381,7 @@ private fun DriveBridgeContent(
         if (uri != null) {
             error = null
             treeInventory = null
+            queueSummary = null
             try {
                 context.contentResolver.takePersistableUriPermission(
                     uri,
@@ -534,6 +538,50 @@ private fun DriveBridgeContent(
                                 "… +${inventory.candidateFiles.size - 6} candidatos; a fila persistente continua como próximo gate.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    queueingInventory = true
+                                    error = null
+                                    val queued = withContext(Dispatchers.IO) {
+                                        runCatching {
+                                            NovoexportQueueStore.mergeInventory(
+                                                privateRoot = File(context.filesDir, "novoexport-queues"),
+                                                inventory = inventory
+                                            )
+                                        }
+                                    }
+                                    queued.onSuccess { queueSummary = it }
+                                        .onFailure { error = it.message ?: "Falha ao persistir fila NOVOexport" }
+                                    queueingInventory = false
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !queueingInventory && inventory.candidateFiles.isNotEmpty()
+                        ) {
+                            if (queueingInventory) {
+                                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Persistindo fila…")
+                            } else {
+                                Icon(Icons.Default.Save, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Persistir / retomar fila")
+                            }
+                        }
+                        queueSummary?.let { queue ->
+                            Text(
+                                "QUEUE: itens=${queue.snapshot.items.size} · novos=${queue.added} · preservados=${queue.preserved} · ausentes no inventário atual=${queue.absentFromLatestInventory}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Text(
+                                "Arquivo privado: ${queue.queueFile.absolutePath}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
