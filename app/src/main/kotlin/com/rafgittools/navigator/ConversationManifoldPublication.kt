@@ -4,23 +4,28 @@ import android.content.ContentResolver
 import android.net.Uri
 import android.provider.DocumentsContract
 import java.io.File
+import java.io.FileOutputStream
 import java.security.MessageDigest
 
 /**
- * Publishes generated, derived artifacts only. The Drive folder URI must be selected by the user
- * through ACTION_OPEN_DOCUMENT_TREE with persistable read/write permission. Git writes are routed
- * through the app's existing private-target, live-readback API callback.
+ * Publishes generated artifacts only. The user selects the Drive destination with SAF.
+ * Git writes are routed through RafGitTools' existing live-private-target writer.
+ * Publication remains bounded: only one <=480 KiB JSONL part is held in memory at a time.
  */
 object ConversationManifoldPublication {
+    private const val MAX_PART_BYTES = 480 * 1024
+
+    data class Part(val filename: String, val bytes: Long, val sha256: String)
     data class Plan(
         val generationId: String,
         val driveFolderUri: String,
         val githubOwner: String,
         val githubRepository: String,
-        val files: List<Pair<String, String>>,
+        val sourceArtifactPath: String,
+        val sourceArtifactSha256: String,
+        val parts: List<Part>,
         val planSha256: String
     )
-
     data class Published(val driveUris: List<String>, val githubPaths: List<String>, val artifactSha256: String)
 
     fun plan(
@@ -35,21 +40,22 @@ object ConversationManifoldPublication {
         require(githubRepository.matches(Regex("[A-Za-z0-9._-]{1,100}")))
         require(artifact.isFile)
         val artifactHash = sha256(artifact)
-        val entries = splitUtf8Lines(artifact, 480 * 1024)
-        val filenames = entries.mapIndexed { index, _ ->
-            "${artifact.nameWithoutExtension}-part-${index.toString().padStart(5, '0')}.jsonl"
+        val parts = mutableListOf<Part>()
+        forEachPart(artifact) { index, content ->
+            val bytes = content.toByteArray(Charsets.UTF_8)
+            parts += Part(partName(artifact, index), bytes.size.toLong(), sha256(bytes))
         }
-        val planHash = sha256((listOf(
-            generationId, driveFolderUri.toString(), "$githubOwner/$githubRepository", artifactHash
-        ) + filenames.zip(entries).map { (name, content) -> "$name:${sha256(content.toByteArray(Charsets.UTF_8))}" })
-            .joinToString("\n").toByteArray(Charsets.UTF_8))
+        val canonicalPlan = (listOf(generationId, driveFolderUri.toString(),
+            "$githubOwner/$githubRepository", artifact.absolutePath, artifactHash) +
+            parts.map { "${it.filename}:${it.bytes}:${it.sha256}" }).joinToString("\n")
         return Plan(generationId, driveFolderUri.toString(), githubOwner, githubRepository,
-            filenames.zip(entries), planHash)
+            artifact.absolutePath, artifactHash, parts, sha256(canonicalPlan.toByteArray(Charsets.UTF_8)))
     }
 
     /**
-     * Exact-plan confirmation is required. The completion manifest is written last on GitHub so
-     * interrupted publication is detectable and restartable; existing filenames are never replaced.
+     * Call only after displaying the plan and receiving user confirmation of its exact SHA-256.
+     * Each Drive file and Git file is immutable and generation-scoped. A completion manifest is
+     * written to both destinations last; failure leaves an incomplete generation, never a PASS.
      */
     suspend fun publish(
         resolver: ContentResolver,
@@ -58,32 +64,55 @@ object ConversationManifoldPublication {
         githubWrite: suspend (owner: String, repository: String, path: String, content: String, message: String) -> Result<Unit>
     ): Published {
         require(plan.planSha256 == confirmedPlanSha256) { "Publication plan confirmation does not match" }
+        val artifact = File(plan.sourceArtifactPath)
+        require(artifact.isFile && sha256(artifact) == plan.sourceArtifactSha256) {
+            "Derived artifact changed after plan confirmation"
+        }
+
         val tree = Uri.parse(plan.driveFolderUri)
         val githubBase = "memory_bridge/private_processing/conversation_manifold/${plan.generationId}"
         val driveUris = mutableListOf<String>()
         val githubPaths = mutableListOf<String>()
-        var combined = MessageDigest.getInstance("SHA-256")
+        val aggregate = MessageDigest.getInstance("SHA-256")
 
-        plan.files.forEachIndexed { index, (filename, content) ->
-            val driveUri = DocumentsContract.createDocument(resolver, tree, "application/x-ndjson", filename)
-                ?: error("Drive/provider refused artifact creation: $filename")
-            resolver.openOutputStream(driveUri, "w").use { output ->
-                requireNotNull(output) { "Cannot open selected Drive destination" }
-                output.write(content.toByteArray(Charsets.UTF_8))
-                output.flush()
+        forEachPart(artifact) { index, content ->
+            val expected = plan.parts.getOrNull(index) ?: error("Part count changed after planning")
+            val bytes = content.toByteArray(Charsets.UTF_8)
+            require(expected.filename == partName(artifact, index) &&
+                expected.bytes == bytes.size.toLong() && expected.sha256 == sha256(bytes)) {
+                "Part changed after plan confirmation"
+            }
+            val driveUri = DocumentsContract.createDocument(
+                resolver, tree, "application/x-ndjson", expected.filename
+            ) ?: error("Drive/provider refused artifact creation: ${expected.filename}")
+            val stream = resolver.openOutputStream(driveUri, "w")
+                ?: error("Cannot open selected Drive destination")
+            stream.use {
+                it.write(bytes)
+                it.flush()
             }
             driveUris += driveUri.toString()
 
-            val path = "$githubBase/$filename"
+            val path = "$githubBase/${expected.filename}"
             githubWrite(plan.githubOwner, plan.githubRepository, path, content,
-                "RafGitTools: publish derived conversation manifold part ${index + 1}/${plan.files.size}")
+                "RafGitTools: publish derived manifold part ${index + 1}/${plan.parts.size}")
                 .getOrElse { throw it }
             githubPaths += path
-            combined.update(content.toByteArray(Charsets.UTF_8))
+            aggregate.update(bytes)
         }
+        require(plan.parts.size == githubPaths.size) { "Part count changed during publication" }
 
-        val manifestPath = "$githubBase/PUBLICATION_COMPLETE.json"
-        val manifest = """{"schema":"rafgittools.conversation-manifold-publication/v1","generation_id":"${plan.generationId}","files":${plan.files.size},"parts_sha256":"${combined.digest().hex()}","plan_sha256":"${plan.planSha256}","state":"PUBLISHED_BY_APP","claim_allowed":false}"""
+        val partsHash = aggregate.digest().hex()
+        val manifest = """{"schema":"rafgittools.conversation-manifold-publication/v1","generation_id":"${plan.generationId}","parts":${plan.parts.size},"parts_sha256":"$partsHash","plan_sha256":"${plan.planSha256}","state":"PUBLISHED_BY_APP","claim_allowed":false}"""
+        val manifestName = "PUBLICATION_COMPLETE.${plan.planSha256.take(16)}.json"
+        val manifestUri = DocumentsContract.createDocument(resolver, tree, "application/json", manifestName)
+            ?: error("Drive/provider refused completion manifest")
+        val manifestStream = resolver.openOutputStream(manifestUri, "w")
+            ?: error("Cannot open Drive completion manifest")
+        manifestStream.use { it.write(manifest.toByteArray(Charsets.UTF_8)); it.flush() }
+        driveUris += manifestUri.toString()
+
+        val manifestPath = "$githubBase/$manifestName"
         githubWrite(plan.githubOwner, plan.githubRepository, manifestPath, manifest,
             "RafGitTools: close derived conversation manifold publication")
             .getOrElse { throw it }
@@ -91,17 +120,21 @@ object ConversationManifoldPublication {
         return Published(driveUris, githubPaths, sha256(manifest.toByteArray(Charsets.UTF_8)))
     }
 
-    private fun splitUtf8Lines(file: File, maxBytes: Int): List<String> {
-        require(maxBytes > 0)
-        val parts = mutableListOf<String>()
+    private fun partName(artifact: File, index: Int) =
+        "${artifact.nameWithoutExtension}-part-${index.toString().padStart(5, '0')}.jsonl"
+
+    private fun forEachPart(file: File, consume: (Int, String) -> Unit) {
+        var index = 0
         val current = StringBuilder()
         var currentBytes = 0
         file.bufferedReader(Charsets.UTF_8).useLines { lines ->
             lines.forEach { line ->
                 val encoded = (line + "\n").toByteArray(Charsets.UTF_8)
-                require(encoded.size <= maxBytes) { "One derived record exceeds GitHub part limit; split the record before publication" }
-                if (currentBytes + encoded.size > maxBytes && current.isNotEmpty()) {
-                    parts += current.toString()
+                require(encoded.size <= MAX_PART_BYTES) {
+                    "One derived record exceeds GitHub part limit; split before publication"
+                }
+                if (currentBytes + encoded.size > MAX_PART_BYTES && current.isNotEmpty()) {
+                    consume(index++, current.toString())
                     current.setLength(0)
                     currentBytes = 0
                 }
@@ -109,9 +142,8 @@ object ConversationManifoldPublication {
                 currentBytes += encoded.size
             }
         }
-        if (current.isNotEmpty()) parts += current.toString()
-        if (parts.isEmpty()) parts += ""
-        return parts
+        if (current.isNotEmpty()) consume(index, current.toString())
+        if (index == 0 && current.isEmpty() && file.length() == 0L) consume(0, "")
     }
 
     private fun sha256(file: File): String = file.inputStream().use { input ->
