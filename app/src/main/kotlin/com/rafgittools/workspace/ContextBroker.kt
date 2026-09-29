@@ -99,6 +99,7 @@ data class ContextBundleV2(
     val annotations: Map<String, Any>,
     val compatibility: ContextBundleV2Compatibility
 ) {
+    @JvmOverloads
     fun toJson(gson: Gson = Gson()): String = gson.toJson(this)
 }
 
