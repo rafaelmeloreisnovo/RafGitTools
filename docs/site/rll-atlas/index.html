@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RLL Branch Atlas</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;max-width:1100px;margin:auto;padding:24px;line-height:1.45}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+label{display:block;font-weight:700}select{width:100%;padding:10px;margin-top:6px}
+pre{white-space:pre-wrap;border:1px solid #7775;border-radius:10px;padding:14px}.muted{opacity:.72}
+</style>
+</head>
+<body>
+<h1>RLL / RafGitTools · Branch Atlas</h1>
+<p>Inventário navegável. Classificação não executa rename e não promove claim.</p>
+<p class="muted">SOURCE ≠ EXECUTION ≠ EVIDENCE ≠ CLAIM · TOKEN_VAZIO ≠ PASS</p>
+<div class="grid">
+<div><label for="repo">Repositório</label><select id="repo"></select></div>
+<div><label for="family">Família</label><select id="family"></select></div>
+<div><label for="branch">Branch</label><select id="branch"></select></div>
+</div>
+<pre id="detail">carregando…</pre>
+<script>
+let atlas;
+const $=id=>document.getElementById(id);
+const uniq=a=>[...new Set(a)];
+function fill(el,values){el.innerHTML="";for(const v of values){const o=document.createElement("option");o.value=v;o.textContent=v;el.appendChild(o)}}
+function families(){const rows=atlas.repositories[$("repo").value].branches;fill($("family"),uniq(rows.map(x=>x.family)).sort());branches()}
+function branches(){const rows=atlas.repositories[$("repo").value].branches.filter(x=>x.family===$("family").value);fill($("branch"),rows.map(x=>x.branch));detail()}
+function detail(){const rows=atlas.repositories[$("repo").value].branches;const r=rows.find(x=>x.branch===$("branch").value);$("detail").textContent=JSON.stringify(r||{},null,2)}
+fetch("branch-atlas.json").then(r=>r.json()).then(x=>{atlas=x;fill($("repo"),Object.keys(atlas.repositories));families()}).catch(e=>{$("detail").textContent="TOKEN_VAZIO_UI_DATA_LOAD: "+e});
+$("repo").addEventListener("change",families);$("family").addEventListener("change",branches);$("branch").addEventListener("change",detail);
+</script>
+</body>
+</html>
