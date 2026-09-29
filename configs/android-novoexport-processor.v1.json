@@ -1,0 +1,39 @@
+{
+  "schema": "rafgittools.android-novoexport-processor.v1",
+  "state": "ANDROID_PROCESSOR_SOURCE_ADDED",
+  "app_flow": "NOT_WIRED",
+  "ci": "PENDING",
+  "device_execution": "NOT_RUN",
+  "claim_allowed": false,
+  "source_patterns": [
+    "conversations*.json",
+    "codex*.json"
+  ],
+  "input_mode": "USER_SELECTED_ANDROID_SAF",
+  "source_mutation": false,
+  "parser": {
+    "top_level": "JSON_ARRAY",
+    "max_record_bytes": 16777216,
+    "max_source_bytes": 2147483648
+  },
+  "outputs": [
+    "PRIVATE_DERIVED_JSONL",
+    "CHECKPOINTS_JSONL"
+  ],
+  "destinations": [
+    "USER_SELECTED_DRIVE_SAF_FOLDER",
+    "LIVE_PRIVATE_GITHUB_NAMESPACE"
+  ],
+  "publisher_plan_confirmation_required": true,
+  "provider_readback": "NOT_IMPLEMENTED",
+  "corpus_scope_bytes": "TOKEN_VAZIO_MEASURED_INVENTORY_REQUIRED",
+  "remaining": [
+    "SAF_TREE_ENUMERATION",
+    "PERSISTENT_QUEUE",
+    "APP_SCREEN_WIRING",
+    "BACKGROUND_EXECUTION",
+    "DRIVE_AND_GIT_READBACK",
+    "PHYSICAL_DEVICE_CANARY"
+  ],
+  "next": "run exact-head CI, wire APK screen and SAF enumerator, then handset canary"
+}
