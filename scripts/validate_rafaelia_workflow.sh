@@ -176,3 +176,6 @@ python3 scripts/semantic_context_exam.py evaluate \
 
 make -C rafaelia/block1 clean check
 make -C rafaelia/block1 clean
+
+# Public signature page contract: validates JSON, text parity, unbound state and secret placeholders.
+sh scripts/validate_rafaelia_signing_contract.sh
