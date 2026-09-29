@@ -878,6 +878,30 @@ private fun DriveBridgeContent(
                                         result.onSuccess { published ->
                                             manifoldPublishSummary =
                                                 "${published.state} · Drive readback=${published.driveReadbackVerified} · Git readback=${published.githubReadbackVerified} · Drive ${published.driveUris.size} itens · Git ${published.githubPaths.size} caminhos · commits ${published.githubCommitShas.joinToString().take(120)} · receipt SHA-256 ${published.artifactSha256}"
+                                            val queueItemId = queueProcessingItemId
+                                            val currentQueue = queueSummary
+                                            if (queueItemId != null && currentQueue != null) {
+                                                val completed = withContext(Dispatchers.IO) {
+                                                    runCatching {
+                                                        NovoexportQueueStore.markPublishedComplete(
+                                                            queueFile = currentQueue.queueFile,
+                                                            itemId = queueItemId,
+                                                            publishedState = published.state,
+                                                            driveReadbackVerified = published.driveReadbackVerified,
+                                                            githubReadbackVerified = published.githubReadbackVerified
+                                                        )
+                                                    }
+                                                }
+                                                completed.onSuccess { snapshot ->
+                                                    queueSummary = currentQueue.copy(snapshot = snapshot)
+                                                    queueProcessingItemId = null
+                                                    manifoldResult = null
+                                                    manifoldPlan = null
+                                                }.onFailure {
+                                                    error = it.message
+                                                        ?: "Publicação não fechou a transição da fila"
+                                                }
+                                            }
                                         }.onFailure {
                                             error = it.message ?: "Falha ao publicar o manifold"
                                         }
