@@ -350,7 +350,7 @@ private fun DriveBridgeContent(
             }
             val processed = manifoldResult
             val target = selectedPrivateRepository
-            if (processed == null) error = "Processe primeiro um conversations*.json ou codex*.json."
+            if (processed == null) error = "Processe primeiro um conversation*.json ou codex*.json."
             else if (target == null) error = "Selecione um repositório GitHub privado antes de planejar a publicação."
             else scope.launch {
                 manifoldPlan = null
@@ -637,7 +637,7 @@ private fun DriveBridgeContent(
                                         )
                                         result.onSuccess { published ->
                                             manifoldPublishSummary =
-                                                "PUBLISHED_UNVERIFIED_READBACK_PENDING · Drive ${published.driveUris.size} itens · Git ${published.githubPaths.size} caminhos · receipt SHA-256 ${published.artifactSha256}"
+                                                "PUBLISHED_UNVERIFIED_READBACK_PENDING · Drive ${published.driveUris.size} itens · Git ${published.githubPaths.size} caminhos · commits ${published.githubCommitShas.joinToString().take(120)} · receipt SHA-256 ${published.artifactSha256}"
                                         }.onFailure {
                                             error = it.message ?: "Falha ao publicar o manifold"
                                         }
