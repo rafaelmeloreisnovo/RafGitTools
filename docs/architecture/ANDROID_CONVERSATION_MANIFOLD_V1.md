@@ -70,7 +70,7 @@ No count is complete until an exhaustive provider enumeration and terminal curso
 |---|---|---|
 | Source-level Android route | code path from app screen through intake to Navigator | `TOKEN_VAZIO` |
 | Contract/fixture | schema + meaningful tests | `TOKEN_VAZIO` |
-| Android job | exact-head unit tests, lint, devDebug APK and APK hash verification | `PASS`; overall final receipt `PENDING` |
+| Android job | exact-head unit tests, lint, devDebug APK and APK hash verification | `PASS`; final receipt `PASS` |
 | Device install/launch | installed artifact SHA + device receipt | `NOT_RUN` |
 | Drive exhaustive inventory | all pages/items + terminal cursor | `TOKEN_VAZIO` |
 | End-to-end canary | source/output hashes and private readback | `NOT_RUN` |
@@ -97,6 +97,6 @@ F_next: implement M0/M1 as a reviewable APK feature, then close M2-M4 with synth
 
 PR #575 introduced the per-file processor, bounded publisher, tests and a Drive-tab Process action. PR #576 fixed Kotlin compilation issues in the processor/publisher and was merged at commit `695bed743c5b22427ebc7f6cf4b71169208001bc`. The app now has a source-level per-file action; it does not yet have recursive NOVOexport tree inventory or a persistent resumable batch queue.
 
-For workflow run `36558610755`, the Android/test/lint/devDebug APK job `109375861051` completed successfully: unit tests, lint, devDebug assembly and APK hash verification passed. Python deterministic tests and CodeQL Java/Kotlin also passed. The overall run's final receipt job `109382657128` remains queued. The devDebug APK has SHA-256 `4120a8f91a1de47a28c3c8db27b3e1a8fbaa94146c1b044ee7f1ecc3575fac7d` (workflow artifact `11030485325`). No APK installation, phone execution, Drive provider readback, or 25 GB corpus enumeration has been evidenced.
+For workflow run `36558610755`, the Android/test/lint/devDebug APK job `109375861051` completed successfully: unit tests, lint, devDebug assembly and APK hash verification passed. Python deterministic tests and CodeQL Java/Kotlin also passed. The overall run's final receipt job `109382657128` completed successfully; signed release was skipped. The devDebug APK has SHA-256 `4120a8f91a1de47a28c3c8db27b3e1a8fbaa94146c1b044ee7f1ecc3575fac7d` (workflow artifact `11030485325`). No APK installation, phone execution, Drive provider readback, or 25 GB corpus enumeration has been evidenced.
 
-Current split: `IMPLEMENTED_SOURCE_PER_FILE`; `BATCH_INVENTORY=NOT_IMPLEMENTED`; `ANDROID_CI=ANDROID_JOB_PASS_FINAL_RECEIPT_PENDING`; `DEVICE_E2E=NOT_RUN`; `MEASURED_CORPUS_BYTES=TOKEN_VAZIO`; `claim_allowed=false`.
+Current split: `IMPLEMENTED_SOURCE_PER_FILE`; `BATCH_INVENTORY=NOT_IMPLEMENTED`; `ANDROID_CI=PASS`; `DEVICE_E2E=NOT_RUN`; `MEASURED_CORPUS_BYTES=TOKEN_VAZIO`; `claim_allowed=false`.
