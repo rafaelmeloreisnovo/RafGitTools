@@ -1,0 +1,188 @@
+{
+  "schema": "rafgittools.public-data-custody-ingestion/v1",
+  "version": "1.0.0",
+  "claim_allowed": false,
+  "purpose": "Ingest only public official records into hashed, privacy-minimized custody artifacts for reproducible audit. No finding of misconduct is produced by this capability.",
+  "plect_bridge": {
+    "state": "TOKEN_VAZIO_CANONICAL_OPERATOR",
+    "authorial_semantics": [
+      "PRE_INTENTION_PRECURSOR",
+      "DIRECTION_OF_MONEY_FLOW"
+    ],
+    "observed_formula": "A(t)=sum_i((CLEMAX_i*PLECT_i*Tag14_i*Playmax_i*Cluster_i*SC_i*Formulas_i)^Retroalimentacao(n))",
+    "baseline_only": "FIRST_DIFFERENCE_DIRECTION",
+    "rule": "baseline is a falsifier/control and must never be relabeled as canonical PLECT"
+  },
+  "sources": {
+    "PORTAL_DESPESAS_POR_ORGAO": {
+      "provider": "Portal da Transparencia do Governo Federal",
+      "base_url": "https://api.portaldatransparencia.gov.br",
+      "endpoint": "/api-de-dados/despesas/por-orgao",
+      "method": "GET",
+      "auth_header": "chave-api-dados",
+      "secret_reference": "PORTAL_TRANSPARENCIA_API_KEY",
+      "projection": "AGGREGATE_PUBLIC_MONEY",
+      "state": "CONFIGURED"
+    },
+    "PORTAL_SERVIDORES_POR_ORGAO": {
+      "provider": "Portal da Transparencia do Governo Federal",
+      "base_url": "https://api.portaldatransparencia.gov.br",
+      "endpoint": "/api-de-dados/servidores/por-orgao",
+      "method": "GET",
+      "auth_header": "chave-api-dados",
+      "secret_reference": "PORTAL_TRANSPARENCIA_API_KEY",
+      "projection": "AGGREGATE_ONLY",
+      "state": "CONFIGURED"
+    },
+    "PORTAL_BULK_DESPESAS": {
+      "provider": "Portal da Transparencia do Governo Federal",
+      "landing_url": "https://portaldatransparencia.gov.br/download-de-dados/despesas",
+      "mode": "LOCAL_PUBLIC_FILE",
+      "stages": [
+        "empenho",
+        "liquidacao",
+        "pagamento"
+      ],
+      "state": "READY_FOR_SELECTED_PUBLIC_FILE"
+    },
+    "PORTAL_BULK_SERVIDORES": {
+      "provider": "Portal da Transparencia do Governo Federal",
+      "landing_url": "https://portaldatransparencia.gov.br/download-de-dados/servidores",
+      "mode": "LOCAL_PUBLIC_FILE",
+      "projection": "AGGREGATE_ONLY",
+      "state": "READY_FOR_SELECTED_PUBLIC_FILE"
+    },
+    "USASPENDING": {
+      "provider": "U.S. Department of the Treasury",
+      "base_url": "https://api.usaspending.gov",
+      "api_version": "v2",
+      "auth": "NONE_FOR_PUBLIC_API",
+      "projection": "AGGREGATE_AWARD_OR_ACCOUNT_LEVEL",
+      "state": "BASE_CONFIGURED_ENDPOINT_CONTRACT_PENDING"
+    },
+    "PORTAL_HISTORICO_GASTOS_DIRETOS_PAGAMENTOS": {
+      "provider": "Portal da Transparencia do Governo Federal",
+      "landing_url": "https://portaldatransparencia.gov.br/download-de-dados/historico-gastos-diretos-pagamentos/",
+      "mode": "LOCAL_PUBLIC_FILE",
+      "projection": "AGGREGATE_PUBLIC_MONEY",
+      "state": "READY_FOR_SELECTED_PUBLIC_FILE"
+    },
+    "PORTAL_DIRIGENTES": {
+      "provider": "Portal da Transparencia do Governo Federal",
+      "landing_url": "https://portaldatransparencia.gov.br/download-de-dados/dirigentes",
+      "mode": "LOCAL_PUBLIC_FILE",
+      "projection": "AGGREGATE_GOVERNANCE_ROLES_ONLY",
+      "state": "READY_FOR_SELECTED_PUBLIC_FILE",
+      "privacy_note": "Public source may include direct identifiers; public RafGitTools projection must suppress them and retain only aggregate/effective-dated role structure."
+    },
+    "PORTAL_PEP": {
+      "provider": "Portal da Transparencia do Governo Federal",
+      "landing_url": "https://portaldatransparencia.gov.br/download-de-dados/pep",
+      "mode": "LOCAL_PUBLIC_FILE",
+      "projection": "AGGREGATE_GOVERNANCE_ROLES_ONLY",
+      "state": "READY_FOR_SELECTED_PUBLIC_FILE",
+      "privacy_note": "Do not create public person-level dossiers or infer misconduct from PEP status."
+    },
+    "RFB_CNPJ_COMPANY_CENTRIC": {
+      "provider": "Receita Federal do Brasil",
+      "landing_url": "https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/dados-abertos/cadastros",
+      "metadata_url": "https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/convenios-e-transferencias/compartilhamento-de-bases-de-dados-2013-decreto-no-8-789-2016/leiaute-das-bases/dados-da-base-cnpj",
+      "mode": "LOCAL_PUBLIC_FILE",
+      "projection": "COMPANY_CENTRIC_CAPITAL_AND_QSA_STRUCTURE",
+      "state": "READY_FOR_SELECTED_PUBLIC_FILE",
+      "privacy_note": "Keep company-centric public facts such as capital/social-structure counts and role qualifications; suppress natural-person names/CPF/contact fields and do not build person-centric cross-company dossiers."
+    }
+  },
+  "secret_policy": {
+    "allowed_secret_references": [
+      "PORTAL_TRANSPARENCIA_API_KEY"
+    ],
+    "forbidden_fallbacks": [
+      "PAT_ENV",
+      "PAT_ACTIONS",
+      "PAT_AGENTS",
+      "PAT_CODESPACES",
+      "PAT_DEPENDABOT",
+      "PAT_PRIVATE_PROCESSING"
+    ],
+    "never_print_secret": true,
+    "never_persist_secret": true
+  },
+  "privacy": {
+    "default_mode": "AGGREGATE_ONLY",
+    "public_output_forbidden_person_fields": [
+      "cpf",
+      "cpf_servidor",
+      "nis",
+      "nome",
+      "nome_servidor",
+      "email",
+      "e-mail",
+      "telefone",
+      "endereco",
+      "conta",
+      "agencia",
+      "id_servidor_portal",
+      "idservidoraposentadopensionista",
+      "nome_socio",
+      "nome_do_socio",
+      "nome_representante_legal",
+      "cpf_representante_legal",
+      "cpf_socio",
+      "cpf_do_socio",
+      "responsavel_pela_pj_cpf",
+      "responsavel_pela_pj_nome"
+    ],
+    "salary_policy": {
+      "allowed_public_projection": [
+        "orgao",
+        "cargo_ou_funcao_agregada",
+        "periodo",
+        "estatisticas_de_remuneracao",
+        "contagem"
+      ],
+      "direct_person_listing": false,
+      "minimum_group_size": 5
+    },
+    "pseudonymization_note": "Pseudonymization is not anonymization. This public capability does not create a reversible identity map.",
+    "reidentification_authority": "TOKEN_VAZIO_EXTERNAL_LAWFUL_AUTHORITY",
+    "reidentification_implementation": "NOT_IMPLEMENTED_IN_PUBLIC_REPOSITORY",
+    "company_ownership_policy": {
+      "allowed_public_projection": [
+        "company_public_identifier_when_needed",
+        "capital_social",
+        "legal_nature",
+        "company_size",
+        "qsa_role_qualification",
+        "qsa_participant_count",
+        "effective_dates_when_public"
+      ],
+      "natural_person_owner_names_in_public_artifact": false,
+      "person_centric_cross_company_profile": false,
+      "source_pointer_preserved": true,
+      "lawful_specific_company_lookup": "SOURCE_SIDE_OR_AUTHORIZED_PROCESS"
+    }
+  },
+  "custody": {
+    "raw_source_mutation": false,
+    "source_sha256_required": true,
+    "sanitized_projection_sha256_required": true,
+    "retrieved_at_required": true,
+    "source_url_required": true,
+    "append_only_receipts": true
+  },
+  "invariants": [
+    "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "PUBLIC_RECORD != UNRESTRICTED_PERSONAL_REPUBLICATION",
+    "ANOMALY != WRONGDOING",
+    "SALARY != SUSPICION",
+    "CORRELATION != CAUSALITY",
+    "MISSING_RECORD != ZERO",
+    "TOKEN_VAZIO != PASS",
+    "PLECT_BASELINE != PLECT_CANONICAL",
+    "PUBLIC_ROLE != MISCONDUCT",
+    "PEP_STATUS != SUSPICION",
+    "COMPANY_CENTRIC_PUBLIC_RECORD != PERSON_CENTRIC_FINANCIAL_PROFILE",
+    "PUBLIC_QSA != AUTHORIZATION_FOR_CROSS_PERSON_PROFILING"
+  ]
+}

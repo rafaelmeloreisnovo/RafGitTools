@@ -25,6 +25,7 @@ on:
           - docs
           - release
           - provider_environments
+          - public_data
       release_version:
         description: 'Release version without leading v (required for manual release mode)'
         required: false
@@ -48,6 +49,19 @@ on:
         description: 'Optional exact main SHA guard; defaults to workflow-dispatch SHA'
         required: false
         default: ''
+        type: string
+      public_data_source:
+        description: 'Allowlisted aggregate official source'
+        required: false
+        default: PORTAL_DESPESAS_POR_ORGAO
+        type: choice
+        options:
+          - PORTAL_DESPESAS_POR_ORGAO
+          - PORTAL_SERVIDORES_POR_ORGAO
+      public_data_query_json:
+        description: 'JSON query parameters for the allowlisted public endpoint'
+        required: false
+        default: '{"pagina":1}'
         type: string
 
 permissions:
@@ -85,6 +99,7 @@ jobs:
       provider_actions_repository: ${{ steps.route.outputs.provider_actions_repository }}
       provider_actions_sha: ${{ steps.route.outputs.provider_actions_sha }}
       provider_actions_task: ${{ steps.route.outputs.provider_actions_task }}
+      public_data: ${{ steps.route.outputs.public_data }}
     steps:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -112,6 +127,7 @@ jobs:
           provider_actions_repository=""
           provider_actions_sha=""
           provider_actions_task=""
+          public_data=false
 
           case "${GITHUB_EVENT_NAME}" in
             schedule)
@@ -251,6 +267,13 @@ jobs:
               provider_environments=true
               provider_operation="${REQUESTED_PROVIDER_OPERATION:-preflight}"
               ;;
+            public_data)
+              if [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch ]]; then
+                echo "::error::public_data is manual-only"
+                exit 2
+              fi
+              public_data=true
+              ;;
             auto)
               ;;
             *)
@@ -272,6 +295,7 @@ jobs:
             echo "provider_actions_repository=$provider_actions_repository"
             echo "provider_actions_sha=$provider_actions_sha"
             echo "provider_actions_task=$provider_actions_task"
+            echo "public_data=$public_data"
           } >> "$GITHUB_OUTPUT"
 
           {
@@ -289,6 +313,7 @@ jobs:
             echo "- provider_actions_repository: \`${provider_actions_repository:-TOKEN_VAZIO}\`"
             echo "- provider_actions_sha: \`${provider_actions_sha:-TOKEN_VAZIO}\`"
             echo "- provider_actions_task: \`${provider_actions_task:-TOKEN_VAZIO}\`"
+            echo "- public_data: \`$public_data\`"
             echo '- claim_allowed: `false`'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -1102,7 +1127,7 @@ jobs:
 
   receipt:
     name: '09 · Final receipt / fechamento'
-    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_actions, provider_environments, release]
+    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_actions, provider_environments, release, public_data_custody]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -1118,6 +1143,7 @@ jobs:
       PROVIDER_ACTIONS_RESULT: ${{ needs.provider_actions.result }}
       PROVIDER_ENVIRONMENTS_RESULT: ${{ needs.provider_environments.result }}
       RELEASE_RESULT: ${{ needs.release.result }}
+      PUBLIC_DATA_RESULT: ${{ needs.public_data_custody.result }}
       ROUTE_MODE: ${{ needs.plan.outputs.mode }}
     steps:
       - name: Emit append-only pipeline receipt
@@ -1139,6 +1165,7 @@ jobs:
               'provider_actions': os.environ['PROVIDER_ACTIONS_RESULT'],
               'provider_environments': os.environ['PROVIDER_ENVIRONMENTS_RESULT'],
               'release': os.environ['RELEASE_RESULT'],
+              'public_data_custody': os.environ['PUBLIC_DATA_RESULT'],
           }
           mapped = {
               k: ('TOKEN_VAZIO_NOT_SELECTED' if v == 'skipped' else v.upper())
@@ -1191,3 +1218,90 @@ jobs:
           path: artifacts/START_RECEIPT.json
           if-no-files-found: error
           retention-days: 90
+
+  public_data_custody:
+    name: 'Public data custody / PLECT public-money lane'
+    needs: [plan, topology, coherence]
+    if: ${{ needs.plan.outputs.public_data == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: Pat_environments
+    env:
+      PORTAL_TRANSPARENCIA_API_KEY: ${{ secrets.PORTAL_TRANSPARENCIA_API_KEY }}
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Validate public-data custody contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_public_data_custody_ingest.py' -v
+          python3 -m json.tool configs/public-data-custody-ingestion.v1.json >/dev/null
+
+      - name: Render RLL branch atlas
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 scripts/render_rll_branch_atlas.py \
+            --repo instituto-Rafael/relativity-living-light \
+            --output artifacts/rll-branch-atlas.json
+
+      - name: Require dedicated Portal credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${PORTAL_TRANSPARENCIA_API_KEY:-}" ]]; then
+            echo '::error::TOKEN_VAZIO_EXTERNAL_CREDENTIAL: PORTAL_TRANSPARENCIA_API_KEY'
+            exit 2
+          fi
+
+      - name: Snapshot allowlisted aggregate official data
+        shell: bash
+        env:
+          PUBLIC_DATA_SOURCE: ${{ inputs.public_data_source }}
+          PUBLIC_DATA_QUERY_JSON: ${{ inputs.public_data_query_json }}
+        run: |
+          set -euo pipefail
+          python3 scripts/public_data_custody_ingest.py api-snapshot \
+            --source "$PUBLIC_DATA_SOURCE" \
+            --query-json "$PUBLIC_DATA_QUERY_JSON" \
+            --output artifacts/public-data-custody
+
+      - name: Verify privacy and claim boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f artifacts/public-data-custody/receipt.json
+          test -f artifacts/public-data-custody/projection.json
+          test ! -e artifacts/public-data-custody/raw.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          receipt = json.loads(Path('artifacts/public-data-custody/receipt.json').read_text(encoding='utf-8'))
+          assert receipt['claim_allowed'] is False
+          assert receipt['raw_source_persisted'] is False
+          assert len(receipt['source_sha256']) == 64
+          assert len(receipt['projection_sha256']) == 64
+          PY
+
+      - name: Upload custody and RLL-atlas receipts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: public-data-custody-${{ github.run_id }}
+          path: |
+            artifacts/public-data-custody/
+            artifacts/rll-branch-atlas.json
+          if-no-files-found: warn
+          retention-days: 30
+
