@@ -1,8 +1,8 @@
 {
   "schema": "rafgittools.android-novoexport-processor.v1",
-  "state": "SAF_RECURSIVE_INVENTORY_SOURCE_IMPLEMENTED_UNTESTED",
-  "app_flow": "DRIVE_TAB_PER_FILE_PLUS_RECURSIVE_METADATA_INVENTORY_SOURCE_PRESENT",
-  "ci": "NEW_STACKED_EXACT_HEAD_CI_NOT_RUN",
+  "state": "PER_FILE_PROCESS_AND_PUBLICATION_UI_MERGED",
+  "app_flow": "DRIVE_TAB_PER_FILE_ACTION_SOURCE_PRESENT",
+  "ci": "ANDROID_TEST_LINT_DEVDEBUG_PASS_RUN_36558610755; FINAL_RECEIPT_PASS",
   "device_execution": "NOT_RUN",
   "claim_allowed": false,
   "source_patterns": [
@@ -34,18 +34,18 @@
     "PHYSICAL_DEVICE_CANARY",
     "MEASURED_CORPUS_INVENTORY"
   ],
-  "next": "close exact-head CI for stacked SAF inventory; then persist the candidate URI+metadata queue and per-file state so process death/restart resumes safely before any physical large-corpus run",
-  "saf_inventory": {
-    "state": "SOURCE_IMPLEMENTED_UNTESTED",
-    "mode": "METADATA_ONLY_RECURSIVE",
-    "source_content_opened": false,
-    "max_documents_default": 100000,
-    "accepted_patterns": [
-      "conversation*.json",
-      "conversations*.json",
-      "codex*.json"
-    ],
-    "known_size_aggregation": "PROVIDER_METADATA_ONLY",
-    "unknown_size": "TOKEN_VAZIO_SIZE"
+  "next": "wire recursive SAF inventory and resumable batch queue before a phone canary",
+  "apk_evidence": {
+    "source_head": "07081ef774d773cf570fb20aaab1058301761155",
+    "merged_commit": "695bed743c5b22427ebc7f6cf4b71169208001bc",
+    "source_compare": "one commit ahead; zero changed files",
+    "workflow_run": 36558610755,
+    "android_job": 109375861051,
+    "result": "PASS",
+    "apk_variant": "devDebug",
+    "apk_sha256": "4120a8f91a1de47a28c3c8db27b3e1a8fbaa94146c1b044ee7f1ecc3575fac7d",
+    "workflow_artifact_id": 11030485325,
+    "device_install": "NOT_RUN",
+    "final_workflow_receipt": "PASS"
   }
 }

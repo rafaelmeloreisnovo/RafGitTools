@@ -34,7 +34,7 @@ The root also contains `.zip` entries that the provider identifies as binary arc
 
 ## Gaps and next evidence
 
-- `RECURSIVE_FILE_LIST=TOKEN_VAZIO`: the 45 child directories have not been recursively enumerated.
+- `RECURSIVE_FILE_LIST=PARTIAL`: the root and two directory levels were listed; 52 third-level directories remain unread (see addendum).
 - Per-file SHA-256 values and Git blob IDs for the table above: `TOKEN_VAZIO`.
 - Exact encoding validation for the text files: `TOKEN_VAZIO`.
 - Whether `COPYING` and `LICENSE` are intentionally separate license notices: `TOKEN_VAZIO`.

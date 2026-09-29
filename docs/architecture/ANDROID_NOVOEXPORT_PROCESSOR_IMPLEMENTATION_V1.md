@@ -1,6 +1,6 @@
 # RafGitTools Android NOVOexport Processor — Implementation V1
 
-State: `SAF_RECURSIVE_INVENTORY_SOURCE_IMPLEMENTED_UNTESTED / STACKED_EXACT_HEAD_CI_NOT_RUN / DEVICE_NOT_RUN / PERSISTENT_QUEUE_NOT_WIRED`
+State: `PER_FILE_PROCESS_AND_PUBLICATION_UI_MERGED / ANDROID_CI_PASS / FINAL_RECEIPT_PASS / DEVICE_NOT_RUN / BATCH_INVENTORY_NOT_WIRED`
 claim_allowed: false
 
 ## Correct execution model
@@ -9,7 +9,7 @@ The user's phone runs the RafGitTools APK. RafGitTools reads the existing Drive 
 
 ## Implementation status at main
 
-The per-file processor, publisher, Drive-tab action and tests were introduced by PR #575 and compile/publishing fixes by PR #576. Both PRs are merged. The previous exact-head Android job remains non-terminal at the recorded observation. This successor adds fail-closed provider readback source: every derived part is re-read from the selected Drive provider and from the live-verified private GitHub target and checked against its expected byte count and SHA-256. A completion receipt is written only after all parts pass both provider readbacks. New exact-head CI for this successor is `NOT_RUN` until the branch workflow executes; physical-device execution remains `NOT_RUN`.
+The per-file processor, publisher, Drive-tab action and tests were introduced by PR #575 and compile/publishing fixes by PR #576. Both PRs are merged. Exact-head pipeline run `36558610755`: Android/test/lint/devDebug APK job `109375861051` completed successfully, including unit tests, lint, devDebug assembly and APK hash verification; CodeQL Java/Kotlin and Python deterministic tests also completed successfully. Final receipt job `109382657128` completed successfully, closing the workflow run. The signed-release job was skipped. The built devDebug APK SHA-256 is `4120a8f91a1de47a28c3c8db27b3e1a8fbaa94146c1b044ee7f1ecc3575fac7d`, uploaded in workflow artifact `start-06-devDebug-36558610755` (artifact ID `11030485325`). The merge commit `695bed743c5b22427ebc7f6cf4b71169208001bc` is one commit ahead of tested head `07081ef774d773cf570fb20aaab1058301761155` with no changed files in the comparison. This binds source trees, but no APK installation or physical-device execution has been run.
 
 ## Implemented source
 
@@ -41,7 +41,7 @@ The per-file processor, publisher, Drive-tab action and tests were introduced by
   - writes a V2 completion receipt with `PUBLISHED_READBACK_VERIFIED` only after all derived parts pass both readbacks, then re-reads the receipt itself on both providers;
   - any mismatch, permission loss, missing content or non-private Git target fails closed and cannot return a verified publication state.
 
-The Drive tab in `app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen.kt` exposes a per-file Process action, a user-selected Drive destination, an exact plan-hash confirmation, and publication through `HomeViewModel.publishConversationManifold`. Git writes use `GithubDataRepository.createPrivateProcessingFile`, which checks live repository privacy and enforces the 512 KiB namespace boundary. The successor uses `readPrivateProcessingFile` for uncached live readback of the same namespace and verifies the returned UTF-8 bytes before promotion. Commit SHAs are retained. This establishes source implementation of per-file dual-provider readback; it does not establish exact-head CI PASS, a complete batch workflow, or operation on the user's handset.
+The Drive tab in `app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen.kt` exposes a per-file Process action, a user-selected Drive destination, an exact plan-hash confirmation, and publication through `HomeViewModel.publishConversationManifold`. Git writes use `GithubDataRepository.createPrivateProcessingFile`, which checks live repository privacy and enforces the 512 KiB namespace boundary. Commit SHAs are retained. This establishes merged source presence, a successful CI build, and a single-file UI path; it does not establish a complete batch workflow or operation on the user's handset.
 
 ## Still required before the phone can run the full route
 
@@ -49,8 +49,8 @@ The Drive tab in `app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen
 2. Persist the inventoried candidate URI + metadata set as a resumable queue with per-file states, retry/error counters and source identity so app restart resumes safely.
 3. Feed queued source URIs to `ConversationManifoldProcessor` on an IO/background executor and persist checkpoints, cancellation, permission loss and storage errors.
 4. Extend the existing per-file preview/plan confirmation into a batch queue view with per-file status and resume controls; publish only after explicit confirmation through the live-private GitHub writer.
-5. Obtain terminal exact-head CI for the provider-readback successor; `IMPLEMENTED_UNTESTED != PASS`.
-6. Install the exact tested APK on the phone and pass a small Drive→process→Drive/Git canary, including the V2 readback receipt, before enabling multi-gigabyte batches.
+5. Implement provider readback for each Drive/Git output, compare hashes, then write a final cross-destination receipt. Current publication markers deliberately do not claim this.
+6. Install the CI-built APK from workflow run `36558610755` on the phone and pass a small Drive canary before enabling multi-gigabyte batches.
 
 ## Limits and privacy
 
@@ -64,5 +64,5 @@ The Drive tab in `app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen
 ## R3
 
 F_ok: per-file processor/publisher/UI and synthetic tests are merged through PRs #575 and #576; workflow routing/topology/coherence stages observed successful.
-F_gap: final receipt job remains queued in run 36558610755; recursive SAF inventory, persistent resumable batch queue, provider readback, physical handset canary and measured corpus inventory remain unproven.
-F_next: close the final workflow receipt, then implement recursive inventory/queue and validate a small on-device canary before scaling.
+F_gap: recursive SAF inventory, persistent resumable batch queue, provider readback, physical handset canary and measured corpus inventory remain unproven.
+F_next: implement recursive inventory/queue and validate a small on-device canary before scaling.
