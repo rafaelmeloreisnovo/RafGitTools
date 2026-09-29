@@ -122,7 +122,7 @@ public final class RafBridgeContract {
         }
 
         static Result reject(String error) {
-            return new Result(false, error, "", "", "", "", null);
+            return new Result(false, error, "", "", "", "", "", null);
         }
 
         static Result allow(
