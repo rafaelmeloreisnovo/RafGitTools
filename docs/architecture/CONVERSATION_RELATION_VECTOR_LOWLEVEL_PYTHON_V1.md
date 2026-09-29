@@ -81,3 +81,46 @@ Required before promotion:
 6. CI terminal state.
 
 `IMPLEMENTED_UNTESTED != PASS`.
+
+
+## Permanent program / inference / parameter boundary
+
+This artifact is a program that processes governed data and materializes derived
+metadata. It does not, by itself, train an AI model.
+
+Every emitted result carries four independent state planes:
+
+- `PROGRAM_STATE`
+- `MODEL_INFERENCE_STATE`
+- `PARAMETER_UPDATE_STATE`
+- `AI_TRAINING`
+
+For this core, the default and tested state is:
+
+```text
+PROGRAM_STATE          = PROGRAM_OUTPUT_MATERIALIZED
+MODEL_INFERENCE_STATE  = NOT_RUN
+PARAMETER_UPDATE_STATE = NOT_RUN
+AI_TRAINING            = NOT_RUN
+```
+
+The training gate is:
+
+`BLOCKED_NO_PARAMETER_UPDATE_EVIDENCE`
+
+No amount of tokenization, chunking, graph construction, Jaccard overlap,
+Bayesian bookkeeping, state persistence, routing, vector cataloging or μDelta
+generation may promote `AI_TRAINING`.
+
+Promotion requires explicit evidence that trainable parameters were updated,
+including enough provenance to identify the parameter artifact, update
+procedure/objective, input data scope and resulting parameter state.
+
+Permanent invariants:
+
+```text
+PROGRAM_EXECUTION != MODEL_INFERENCE
+MODEL_INFERENCE != PARAMETER_UPDATE
+PARAMETER_UPDATE != AI_TRAINING_CLAIM
+PARAMETER_UPDATE_EVIDENCE_REQUIRED_FOR_AI_TRAINING
+```

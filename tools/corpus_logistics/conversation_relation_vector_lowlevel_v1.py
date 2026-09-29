@@ -511,6 +511,14 @@ def build_lowlevel(plan):
             "canonical_serializer": "AUTHORIAL_CANONICAL_JSON_SUBSET",
             "floating_point_metrics": 0,
         },
+        "state_planes": {
+            "PROGRAM_STATE": "PROGRAM_OUTPUT_MATERIALIZED",
+            "MODEL_INFERENCE_STATE": "NOT_RUN",
+            "PARAMETER_UPDATE_STATE": "NOT_RUN",
+            "AI_TRAINING": "NOT_RUN",
+            "parameter_update_evidence": [],
+            "training_gate": "BLOCKED_NO_PARAMETER_UPDATE_EVIDENCE",
+        },
         "vectors": vectors,
         "microdeltas": microdeltas,
         "boundaries": [
@@ -521,6 +529,10 @@ def build_lowlevel(plan):
             "DIVERGENCE!=ERROR",
             "COOCCURRENCE!=CAUSALITY",
             "SOURCE!=ARTIFACT!=EXECUTION!=EVIDENCE!=CLAIM",
+            "PROGRAM_EXECUTION!=MODEL_INFERENCE",
+            "MODEL_INFERENCE!=PARAMETER_UPDATE",
+            "PARAMETER_UPDATE!=AI_TRAINING_CLAIM",
+            "PARAMETER_UPDATE_EVIDENCE_REQUIRED_FOR_AI_TRAINING",
             "TOKEN_VAZIO!=0",
         ],
     }
@@ -589,6 +601,17 @@ def _selftest():
         raise AssertionError("fail-closed semantic boundary failed")
     if a["raw_body_embedded"] is not False or a["claim_allowed"] is not False:
         raise AssertionError("governance boundary failed")
+    planes = a["state_planes"]
+    if planes["PROGRAM_STATE"] != "PROGRAM_OUTPUT_MATERIALIZED":
+        raise AssertionError("program state boundary failed")
+    if planes["MODEL_INFERENCE_STATE"] != "NOT_RUN":
+        raise AssertionError("model inference boundary failed")
+    if planes["PARAMETER_UPDATE_STATE"] != "NOT_RUN":
+        raise AssertionError("parameter update boundary failed")
+    if planes["AI_TRAINING"] != "NOT_RUN":
+        raise AssertionError("ai training boundary failed")
+    if len(planes["parameter_update_evidence"]) != 0:
+        raise AssertionError("unexpected parameter update evidence")
     print("CONVERSATION_RELATION_VECTOR_LOWLEVEL_V1_SELFTEST_PASS")
 
 
