@@ -5,7 +5,7 @@ claim_allowed: false
 
 ## Correct execution model
 
-The user's phone runs the RafGitTools APK. RafGitTools reads the existing Drive files named `conversations*.json` and `codex*.json`, derives private JSONL index/chunk artifacts, and publishes them to a user-selected Drive folder and the private `CONVERSATIONS_CHUNKS_PRIVATE` repository. The user-mediated Android SAF provider handles Drive account selection and folder permissions. This work does not process the corpus in ChatGPT, Termux, a server, or a model-training job.
+The user's phone runs the RafGitTools APK. RafGitTools reads the existing Drive files named `conversation*.json` and `codex*.json`, derives private JSONL index/chunk artifacts, and publishes them to a user-selected Drive folder and the private `CONVERSATIONS_CHUNKS_PRIVATE` repository. The user-mediated Android SAF provider handles Drive account selection and folder permissions. This work does not process the corpus in ChatGPT, Termux, a server, or a model-training job.
 
 ## Code added in this branch
 
@@ -31,7 +31,7 @@ These are source changes. CI and on-device execution have not yet established wh
 ## Still required before the phone can run the full route
 
 1. Add the in-app NOVOexport screen and bind `ACTION_OPEN_DOCUMENT_TREE` for the source and destination with persisted SAF grants.
-2. Enumerate descendants of the selected source tree and filter `conversations*.json` and `codex*.json`; persist the queue and per-file status so app restart resumes safely.
+2. Enumerate descendants of the selected source tree and filter `conversation*.json` and `codex*.json`; persist the queue and per-file status so app restart resumes safely.
 3. Feed each source URI to `ConversationManifoldProcessor` on an IO/background executor and persist checkpoints, cancellation, permission loss and storage errors.
 4. Show generated artifacts and the exact publication plan hash in the app; on explicit confirmation call `ConversationManifoldPublication` with the live-private GitHub writer already gated by repository privacy.
 5. Implement provider readback for each Drive/Git output, compare hashes, then write a final cross-destination receipt. Current publication markers deliberately do not claim this.
