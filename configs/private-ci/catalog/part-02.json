@@ -1,0 +1,125 @@
+{
+  "schema": "rafgittools.private-ci-catalog-shard.v1",
+  "shard": "02",
+  "observed_at": "2026-09-29",
+  "discovery": "default-branch code search for runs-on; topn=100 per repository",
+  "exhaustive": false,
+  "repositories": [
+    {
+      "repository": "rafaelmeloreisnovo/Img",
+      "workflow_paths": [
+        ".github/workflows/rafmedia-standalone-ci.yml"
+      ],
+      "workflow_count_discovered": 1,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/llamaRafaelia",
+      "workflow_paths": [
+        ".github/workflows/android-abi.yml",
+        ".github/workflows/android-ndk.yml",
+        ".github/workflows/atlas-intent-provider-v1.yml",
+        ".github/workflows/build-amd.yml",
+        ".github/workflows/build-cache.yml",
+        ".github/workflows/build-cmake-pkg.yml",
+        ".github/workflows/build-linux-cross.yml",
+        ".github/workflows/build-riscv-native.yml",
+        ".github/workflows/build.yml",
+        ".github/workflows/close-issue.yml",
+        ".github/workflows/copilot-setup-steps.yml",
+        ".github/workflows/cti-memory-privacy-gate.yml",
+        ".github/workflows/docker.yml",
+        ".github/workflows/editorconfig.yml",
+        ".github/workflows/gguf-publish.yml",
+        ".github/workflows/labeler.yml",
+        ".github/workflows/novoexport-index-ci.yml",
+        ".github/workflows/opcore94-repro.yml",
+        ".github/workflows/pre-tokenizer-hashes.yml",
+        ".github/workflows/python-check-requirements.yml",
+        ".github/workflows/python-lint.yml",
+        ".github/workflows/python-type-check.yml",
+        ".github/workflows/release.yml",
+        ".github/workflows/rll-claim-consumer-pin.yml",
+        ".github/workflows/rmrcti-dataset-mobile.yml",
+        ".github/workflows/rmrcti-delta-p-contract.yml",
+        ".github/workflows/rmrcti-delta-p.yml",
+        ".github/workflows/rmrcti-hardening.yml",
+        ".github/workflows/rmrcti-ones-v3.yml",
+        ".github/workflows/rmrcti-three-ci-replication.yml",
+        ".github/workflows/server.yml",
+        ".github/workflows/update-ops-docs.yml",
+        ".github/workflows/winget.yml"
+      ],
+      "workflow_count_discovered": 33,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Matem-tica-",
+      "workflow_paths": [
+        ".github/workflows/eight-directions-semantic-k8-v1.yml",
+        ".github/workflows/geom-rxd-boundary-v5.yml",
+        ".github/workflows/geom-v5-property.yml",
+        ".github/workflows/geom-v5-reset-qemu.yml",
+        ".github/workflows/k8-composite-cycle-catalog-v1.yml",
+        ".github/workflows/k8-d8-invariant-atlas-v1.yml",
+        ".github/workflows/math-proof-gates.yml",
+        ".github/workflows/octagon-crown-poincare-integer.yml",
+        ".github/workflows/octagon-k8-cycle-prefix.yml",
+        ".github/workflows/session-unified-typed-verifiers.yml"
+      ],
+      "workflow_count_discovered": 10,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/MemRa",
+      "workflow_paths": [],
+      "workflow_count_discovered": 0,
+      "discovery_state": "NO_WORKFLOW_DISCOVERED_BY_SEARCH"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/MemRafcode",
+      "workflow_paths": [
+        ".github/workflows/longitudinal-index.yml"
+      ],
+      "workflow_count_discovered": 1,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/nanoGPT",
+      "workflow_paths": [
+        ".github/workflows/freestanding_triad.yml",
+        ".github/workflows/rafaelia_validation.yml",
+        ".github/workflows/zipraf_omega_ci.yml"
+      ],
+      "workflow_count_discovered": 3,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/new",
+      "workflow_paths": [],
+      "workflow_count_discovered": 0,
+      "discovery_state": "NO_WORKFLOW_DISCOVERED_BY_SEARCH"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/papers",
+      "workflow_paths": [
+        ".github/workflows/c10-claim-promotion.yml",
+        ".github/workflows/ci.yml",
+        ".github/workflows/livro-vivo-bibliography.yml",
+        ".github/workflows/memory-cohesion-validation.yml",
+        ".github/workflows/square-median-x3264-validation.yml"
+      ],
+      "workflow_count_discovered": 5,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/privadoFazendo",
+      "workflow_paths": [
+        ".github/workflows/fcea-c88-security.yml"
+      ],
+      "workflow_count_discovered": 1,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    }
+  ],
+  "claim_allowed": false
+}

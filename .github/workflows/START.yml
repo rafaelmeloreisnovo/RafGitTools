@@ -25,6 +25,7 @@ on:
           - docs
           - release
           - provider_environments
+          - private_ci
           - public_data
       release_version:
         description: 'Release version without leading v (required for manual release mode)'
@@ -50,6 +51,27 @@ on:
         required: false
         default: ''
         type: string
+      private_ci_target_id:
+        description: 'Public registry target id for exact-SHA private CI replay'
+        required: false
+        default: rafaelia-private
+        type: string
+      private_ci_target_sha:
+        description: 'Exact lowercase 40-hex private repository commit SHA'
+        required: false
+        default: ''
+        type: string
+      private_ci_workflow_id:
+        description: 'Allowlisted private workflow replay id'
+        required: false
+        default: documentation-std-mil
+        type: choice
+        options:
+          - documentation-std-mil
+          - current-rafaelia-program-governance-v1
+          - freestanding-l0-v1
+          - hd-cache-phase1
+          - hd-cache-phase2
       public_data_source:
         description: 'Allowlisted aggregate official source'
         required: false
@@ -99,6 +121,12 @@ jobs:
       provider_actions_repository: ${{ steps.route.outputs.provider_actions_repository }}
       provider_actions_sha: ${{ steps.route.outputs.provider_actions_sha }}
       provider_actions_task: ${{ steps.route.outputs.provider_actions_task }}
+      private_ci: ${{ steps.route.outputs.private_ci }}
+      private_ci_target_id: ${{ steps.route.outputs.private_ci_target_id }}
+      private_ci_repository: ${{ steps.route.outputs.private_ci_repository }}
+      private_ci_sha: ${{ steps.route.outputs.private_ci_sha }}
+      private_ci_workflow_id: ${{ steps.route.outputs.private_ci_workflow_id }}
+      private_ci_manifest_path: ${{ steps.route.outputs.private_ci_manifest_path }}
       public_data: ${{ steps.route.outputs.public_data }}
     steps:
       - name: Checkout exact source
@@ -113,6 +141,9 @@ jobs:
         env:
           REQUESTED_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'auto' }}
           REQUESTED_PROVIDER_OPERATION: ${{ github.event_name == 'workflow_dispatch' && inputs.provider_operation || 'preflight' }}
+          REQUESTED_PRIVATE_CI_TARGET_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.private_ci_target_id || '' }}
+          REQUESTED_PRIVATE_CI_TARGET_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.private_ci_target_sha || '' }}
+          REQUESTED_PRIVATE_CI_WORKFLOW_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.private_ci_workflow_id || '' }}
         run: |
           set -euo pipefail
           mode="${REQUESTED_MODE:-auto}"
@@ -127,6 +158,12 @@ jobs:
           provider_actions_repository=""
           provider_actions_sha=""
           provider_actions_task=""
+          private_ci=false
+          private_ci_target_id=""
+          private_ci_repository=""
+          private_ci_sha=""
+          private_ci_workflow_id=""
+          private_ci_manifest_path=""
           public_data=false
 
           case "${GITHUB_EVENT_NAME}" in
@@ -229,6 +266,32 @@ jobs:
               provider_actions_sha="$target_sha"
               provider_actions_task="$target_task"
             fi
+            if [[ "${GITHUB_EVENT_NAME}" == push && "${GITHUB_REF}" == refs/heads/main ]] &&
+               grep -Fxq 'configs/private-ci/replay.once.json' <<<"$changed"; then
+              [[ "$provider_environments" == false && "$provider_actions" == false ]] || {
+                echo "::error::private CI one-shot cannot share a commit with another privileged provider lane"
+                exit 2
+              }
+              private_operation="$(python3 -c "import json,pathlib; print(json.loads(pathlib.Path('configs/private-ci/replay.once.json').read_text(encoding='utf-8')).get('operation',''))")"
+              private_target_id="$(python3 -c "import json,pathlib; print(json.loads(pathlib.Path('configs/private-ci/replay.once.json').read_text(encoding='utf-8')).get('target_id',''))")"
+              private_target_sha="$(python3 -c "import json,pathlib; print(json.loads(pathlib.Path('configs/private-ci/replay.once.json').read_text(encoding='utf-8')).get('target_commit',''))")"
+              private_workflow_id="$(python3 -c "import json,pathlib; print(json.loads(pathlib.Path('configs/private-ci/replay.once.json').read_text(encoding='utf-8')).get('workflow_id',''))")"
+              [[ "$private_operation" == exact_sha_replay ]] || {
+                echo "::error::private CI one-shot only permits exact_sha_replay"
+                exit 2
+              }
+              [[ "$private_target_sha" =~ ^[0-9a-f]{40}$ ]] || {
+                echo "::error::private CI one-shot target must be an exact lowercase SHA"
+                exit 2
+              }
+              resolved="$(python3 scripts/private_ci_bridge.py resolve                 --registry configs/private-ci/execution-registry.v1.json                 --target-id "$private_target_id"                 --workflow-id "$private_workflow_id"                 --commit "$private_target_sha")"
+              private_ci_target_id="$private_target_id"
+              private_ci_repository="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["repository"])' <<<"$resolved")"
+              private_ci_sha="$private_target_sha"
+              private_ci_workflow_id="$private_workflow_id"
+              private_ci_manifest_path="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["manifest_path"])' <<<"$resolved")"
+              private_ci=true
+            fi
           fi
 
           case "$mode" in
@@ -267,6 +330,23 @@ jobs:
               provider_environments=true
               provider_operation="${REQUESTED_PROVIDER_OPERATION:-preflight}"
               ;;
+            private_ci)
+              if [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch ]]; then
+                echo "::error::private_ci is manual-only"
+                exit 2
+              fi
+              [[ "${REQUESTED_PRIVATE_CI_TARGET_SHA:-}" =~ ^[0-9a-f]{40}$ ]] || {
+                echo "::error::private_ci requires an exact lowercase 40-hex target SHA"
+                exit 2
+              }
+              resolved="$(python3 scripts/private_ci_bridge.py resolve --registry configs/private-ci/execution-registry.v1.json --target-id "${REQUESTED_PRIVATE_CI_TARGET_ID}" --workflow-id "${REQUESTED_PRIVATE_CI_WORKFLOW_ID}" --commit "${REQUESTED_PRIVATE_CI_TARGET_SHA}")"
+              private_ci_target_id="${REQUESTED_PRIVATE_CI_TARGET_ID}"
+              private_ci_repository="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read())[\"repository\"])' <<<"$resolved")"
+              private_ci_sha="${REQUESTED_PRIVATE_CI_TARGET_SHA}"
+              private_ci_workflow_id="${REQUESTED_PRIVATE_CI_WORKFLOW_ID}"
+              private_ci_manifest_path="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read())[\"manifest_path\"])' <<<"$resolved")"
+              private_ci=true
+              ;;
             public_data)
               if [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch ]]; then
                 echo "::error::public_data is manual-only"
@@ -295,6 +375,12 @@ jobs:
             echo "provider_actions_repository=$provider_actions_repository"
             echo "provider_actions_sha=$provider_actions_sha"
             echo "provider_actions_task=$provider_actions_task"
+            echo "private_ci=$private_ci"
+            echo "private_ci_target_id=$private_ci_target_id"
+            echo "private_ci_repository=$private_ci_repository"
+            echo "private_ci_sha=$private_ci_sha"
+            echo "private_ci_workflow_id=$private_ci_workflow_id"
+            echo "private_ci_manifest_path=$private_ci_manifest_path"
             echo "public_data=$public_data"
           } >> "$GITHUB_OUTPUT"
 
@@ -313,6 +399,12 @@ jobs:
             echo "- provider_actions_repository: \`${provider_actions_repository:-TOKEN_VAZIO}\`"
             echo "- provider_actions_sha: \`${provider_actions_sha:-TOKEN_VAZIO}\`"
             echo "- provider_actions_task: \`${provider_actions_task:-TOKEN_VAZIO}\`"
+            echo "- private_ci: \`$private_ci\`"
+            echo "- private_ci_target_id: \`${private_ci_target_id:-TOKEN_VAZIO}\`"
+            echo "- private_ci_repository: \`${private_ci_repository:-TOKEN_VAZIO}\`"
+            echo "- private_ci_sha: \`${private_ci_sha:-TOKEN_VAZIO}\`"
+            echo "- private_ci_workflow_id: \`${private_ci_workflow_id:-TOKEN_VAZIO}\`"
+            echo "- private_ci_manifest_path: \`${private_ci_manifest_path:-TOKEN_VAZIO}\`"
             echo "- public_data: \`$public_data\`"
             echo '- claim_allowed: `false`'
           } >> "$GITHUB_STEP_SUMMARY"
@@ -392,6 +484,12 @@ jobs:
               py_compile.compile(str(path), doraise=True)
           print(f'compiled_python_files={len(files)}')
           PY
+
+      - name: Private CI network-isolation capability
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/private_ci_bridge.py probe-isolation
 
       - name: RAFANDROID toolchain shell gate
         shell: bash
@@ -783,7 +881,6 @@ jobs:
       contents: read
       actions: read
     env:
-      PROVIDER_ACTIONS_TOKEN: ${{ secrets.PAT_ACTIONS }}
       TARGET_REPOSITORY: ${{ needs.plan.outputs.provider_actions_repository }}
       TARGET_SHA: ${{ needs.plan.outputs.provider_actions_sha }}
       TARGET_TASK: ${{ needs.plan.outputs.provider_actions_task }}
@@ -817,6 +914,8 @@ jobs:
           esac
       - name: Prove least-privilege private source access
         shell: bash
+        env:
+          PROVIDER_ACTIONS_TOKEN: ${{ secrets.PAT_ACTIONS }}
         run: |
           set -euo pipefail
           mkdir -p artifacts
@@ -885,6 +984,164 @@ jobs:
             artifacts/MASTER_COVERAGE_IMPORT_RECEIPT.json
           if-no-files-found: error
           retention-days: 90
+  private_ci_bridge:
+    name: '08B · Private CI bridge / exact-SHA secretless replay'
+    needs: [plan, coherence]
+    if: >-
+      ${{
+        needs.plan.outputs.private_ci == 'true' &&
+        needs.coherence.result == 'success' &&
+        github.actor == 'rafaelmeloreisnovo' &&
+        (
+          github.event_name == 'workflow_dispatch' ||
+          (
+            github.event_name == 'push' &&
+            github.ref == 'refs/heads/main'
+          )
+        )
+      }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+    env:
+      TARGET_ID: ${{ needs.plan.outputs.private_ci_target_id }}
+      TARGET_REPOSITORY: ${{ needs.plan.outputs.private_ci_repository }}
+      TARGET_SHA: ${{ needs.plan.outputs.private_ci_sha }}
+      TARGET_WORKFLOW_ID: ${{ needs.plan.outputs.private_ci_workflow_id }}
+      TARGET_MANIFEST_PATH: ${{ needs.plan.outputs.private_ci_manifest_path }}
+    steps:
+      - name: Checkout RafGitTools authority
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Validate public private-CI registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/private_ci_bridge.py validate-registry \
+            --registry configs/private-ci/execution-registry.v1.json
+
+      - name: Prove exact private source access
+        shell: bash
+        env:
+          PROVIDER_ACTIONS_TOKEN: ${{ secrets.PAT_ACTIONS }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          [[ -n "${PROVIDER_ACTIONS_TOKEN:-}" ]] || {
+            echo '::error::PAT_ACTIONS repository secret is unavailable'
+            exit 3
+          }
+          python3 scripts/private_provider_access_gate.py \
+            --repo "$TARGET_REPOSITORY" \
+            --commit "$TARGET_SHA" \
+            --token-env PROVIDER_ACTIONS_TOKEN \
+            --receipt artifacts/private-provider-access-receipt.json
+
+      - name: Checkout exact private target commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.TARGET_REPOSITORY }}
+          ref: ${{ env.TARGET_SHA }}
+          token: ${{ secrets.PAT_ACTIONS }}
+          path: target
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Verify immutable source and no persisted checkout credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          observed="$(git -C target rev-parse HEAD)"
+          [[ "$observed" == "$TARGET_SHA" ]] || {
+            echo '::error::private target checkout SHA mismatch'
+            exit 4
+          }
+          if git -C target config --local --get-regexp 'http\..*\.extraheader' >/dev/null 2>&1; then
+            echo '::error::checkout credential header persisted in private target'
+            exit 5
+          fi
+          test -f "target/$TARGET_MANIFEST_PATH"
+
+      - name: Validate private replay manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/private_ci_bridge.py validate-manifest \
+            --registry configs/private-ci/execution-registry.v1.json \
+            --manifest "target/$TARGET_MANIFEST_PATH" \
+            --target-id "$TARGET_ID" \
+            --workflow-id "$TARGET_WORKFLOW_ID" \
+            --commit "$TARGET_SHA" \
+            --source-root target
+
+      - name: Execute secretless bounded replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ -z "${PAT_ACTIONS:-}" ]]
+          [[ -z "${PROVIDER_ACTIONS_TOKEN:-}" ]]
+          [[ -z "${GH_TOKEN:-}" ]]
+          [[ -z "${GITHUB_TOKEN:-}" ]]
+          python3 scripts/private_ci_bridge.py execute \
+            --registry configs/private-ci/execution-registry.v1.json \
+            --manifest "target/$TARGET_MANIFEST_PATH" \
+            --target-id "$TARGET_ID" \
+            --workflow-id "$TARGET_WORKFLOW_ID" \
+            --commit "$TARGET_SHA" \
+            --source-root target \
+            --receipt artifacts/private-ci-replay-receipt.json
+
+      - name: Pack and verify deterministic ZIPRAF receipt envelope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/private_ci_bridge.py pack-receipt \
+            --receipt artifacts/private-ci-replay-receipt.json \
+            --output artifacts/private-ci-replay-receipt.zipraf
+          python3 scripts/private_ci_bridge.py verify-receipt \
+            --zipraf artifacts/private-ci-replay-receipt.zipraf
+
+      - name: Assert public artifact boundary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f artifacts/private-provider-access-receipt.json
+          if [[ -f artifacts/private-ci-replay-receipt.json ]]; then
+            python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d = json.loads(Path('artifacts/private-ci-replay-receipt.json').read_text(encoding='utf-8'))
+          assert d['claim_allowed'] is False
+          b = d['privacy_boundary']
+          assert b['secret_value_persisted'] is False
+          assert b['secret_available_to_private_subprocess'] is False
+          assert b['raw_private_stdout_persisted'] is False
+          assert b['raw_private_stderr_persisted'] is False
+          assert b['private_source_uploaded_as_public_artifact'] is False
+          isolation = b['network_egress_isolation']
+          assert isolation['state'] == 'PASS'
+          assert isolation['external_ipv4_tcp_connect_blocked'] is True
+          PY
+          fi
+
+      - name: Upload sanitized private-CI evidence only
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: start-08b-private-ci-${{ github.run_id }}
+          path: |
+            artifacts/private-provider-access-receipt.json
+            artifacts/private-ci-replay-receipt.json
+            artifacts/private-ci-replay-receipt.zipraf
+          if-no-files-found: warn
+          retention-days: 90
+
   provider_environments:
     name: '08P · Provider environments / main enforcement'
     needs: [plan, coherence]
@@ -1127,7 +1384,7 @@ jobs:
 
   receipt:
     name: '09 · Final receipt / fechamento'
-    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_actions, provider_environments, release, public_data_custody]
+    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_actions, private_ci_bridge, provider_environments, release, public_data_custody]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -1141,6 +1398,7 @@ jobs:
       ANDROID_RESULT: ${{ needs.android.result }}
       SECURITY_RESULT: ${{ needs.security.result }}
       PROVIDER_ACTIONS_RESULT: ${{ needs.provider_actions.result }}
+      PRIVATE_CI_RESULT: ${{ needs.private_ci_bridge.result }}
       PROVIDER_ENVIRONMENTS_RESULT: ${{ needs.provider_environments.result }}
       RELEASE_RESULT: ${{ needs.release.result }}
       PUBLIC_DATA_RESULT: ${{ needs.public_data_custody.result }}
@@ -1163,6 +1421,7 @@ jobs:
               'android': os.environ['ANDROID_RESULT'],
               'security': os.environ['SECURITY_RESULT'],
               'provider_actions': os.environ['PROVIDER_ACTIONS_RESULT'],
+              'private_ci_bridge': os.environ['PRIVATE_CI_RESULT'],
               'provider_environments': os.environ['PROVIDER_ENVIRONMENTS_RESULT'],
               'release': os.environ['RELEASE_RESULT'],
               'public_data_custody': os.environ['PUBLIC_DATA_RESULT'],

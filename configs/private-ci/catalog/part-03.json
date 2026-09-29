@@ -1,0 +1,92 @@
+{
+  "schema": "rafgittools.private-ci-catalog-shard.v1",
+  "shard": "03",
+  "observed_at": "2026-09-29",
+  "discovery": "default-branch code search for runs-on; topn=100 per repository",
+  "exhaustive": false,
+  "repositories": [
+    {
+      "repository": "rafaelmeloreisnovo/RafaelCiencias",
+      "workflow_paths": [],
+      "workflow_count_discovered": 0,
+      "discovery_state": "NO_WORKFLOW_DISCOVERED_BY_SEARCH"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Rafaelia",
+      "workflow_paths": [
+        ".github/workflows/rafyml-ci.yml"
+      ],
+      "workflow_count_discovered": 1,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Rafaelia_Core",
+      "workflow_paths": [
+        ".github/workflows/benchmark-available-arch.yml",
+        ".github/workflows/benchmark-docs.yml",
+        ".github/workflows/ci-multiarch.yml",
+        ".github/workflows/invariant-claims.yml",
+        ".github/workflows/rafnet-invariant-capability-v1.yml"
+      ],
+      "workflow_count_discovered": 5,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/rafaelia_privado",
+      "workflow_paths": [],
+      "workflow_count_discovered": 0,
+      "discovery_state": "NO_WORKFLOW_DISCOVERED_BY_SEARCH"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Rafaelia_Private",
+      "workflow_paths": [
+        ".github/workflows/c09-omega42-descriptor-artifact.yml",
+        ".github/workflows/ci.yml",
+        ".github/workflows/current-rafaelia-program-governance-v1.yml",
+        ".github/workflows/custody-matrix-gate.yml",
+        ".github/workflows/documentation-std-mil.yml",
+        ".github/workflows/freestanding-l0-v1.yml",
+        ".github/workflows/hd-cache-mvp-v2.yml",
+        ".github/workflows/hd-cache-phase1.yml",
+        ".github/workflows/hd-cache-phase2.yml",
+        ".github/workflows/pbip-l1-native-reproduction.yml",
+        ".github/workflows/private-sandbox-exchange-v1.yml",
+        ".github/workflows/rafaelia-integration-lab-l0-v1.yml",
+        ".github/workflows/rafnet-federation-authority-v1.yml",
+        ".github/workflows/work-item-intake-gate-v1.yml",
+        ".github/workflows/work-item-promotion-pr-v1.yml"
+      ],
+      "workflow_count_discovered": 15,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/RafaelIA_Solucoes_Clay",
+      "workflow_paths": [],
+      "workflow_count_discovered": 0,
+      "discovery_state": "NO_WORKFLOW_DISCOVERED_BY_SEARCH"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/RafNet-Core",
+      "workflow_paths": [
+        ".github/workflows/rafnet-private-bridge-v1.yml",
+        ".github/workflows/rafnet-runtime-v2.yml",
+        ".github/workflows/rafnet.yml"
+      ],
+      "workflow_count_discovered": 3,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Seguran-a-informacional-",
+      "workflow_paths": [],
+      "workflow_count_discovered": 0,
+      "discovery_state": "NO_WORKFLOW_DISCOVERED_BY_SEARCH"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Semente",
+      "workflow_paths": [],
+      "workflow_count_discovered": 0,
+      "discovery_state": "NO_WORKFLOW_DISCOVERED_BY_SEARCH"
+    }
+  ],
+  "claim_allowed": false
+}

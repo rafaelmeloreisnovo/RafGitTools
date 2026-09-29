@@ -1,0 +1,95 @@
+{
+  "schema": "rafgittools.private-ci-catalog-shard.v1",
+  "shard": "04",
+  "observed_at": "2026-09-29",
+  "discovery": "default-branch code search for runs-on; topn=100 per repository",
+  "exhaustive": false,
+  "repositories": [
+    {
+      "repository": "rafaelmeloreisnovo/teoremas",
+      "workflow_paths": [],
+      "workflow_count_discovered": 0,
+      "discovery_state": "NO_WORKFLOW_DISCOVERED_BY_SEARCH"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Tora",
+      "workflow_paths": [
+        ".github/workflows/rafaelia-bloco1.yml"
+      ],
+      "workflow_count_discovered": 1,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/UserLAnd",
+      "workflow_paths": [
+        ".github/workflows/android-debug.yml",
+        ".github/workflows/android-release.yml",
+        ".github/workflows/android.yml",
+        ".github/workflows/beta-apk-artifacts.yml",
+        ".github/workflows/build-all-architectures.yml",
+        ".github/workflows/build-apk.yml",
+        ".github/workflows/build-arm64-guaranteed.yml",
+        ".github/workflows/ci.yml",
+        ".github/workflows/codeql-analysis.yml",
+        ".github/workflows/compilation-guarantee.yml",
+        ".github/workflows/download.yml",
+        ".github/workflows/license-check.yml",
+        ".github/workflows/rafaelia-codex-route.yml",
+        ".github/workflows/rafaelia-core-ci.yml",
+        ".github/workflows/sign-release.yml",
+        ".github/workflows/userland-android-ci.yml",
+        ".github/workflows/validate-workflows.yml"
+      ],
+      "workflow_count_discovered": 17,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/V79-1",
+      "workflow_paths": [
+        ".github/workflows/ci.yml"
+      ],
+      "workflow_count_discovered": 1,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/verbum-vivo",
+      "workflow_paths": [],
+      "workflow_count_discovered": 0,
+      "discovery_state": "NO_WORKFLOW_DISCOVERED_BY_SEARCH"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/X0",
+      "workflow_paths": [
+        ".github/workflows/documentation-integrity.yml",
+        ".github/workflows/local-api-security.yml"
+      ],
+      "workflow_count_discovered": 2,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/ZIPRAF_CORE",
+      "workflow_paths": [
+        ".github/workflows/raf-arena-m2b.yml",
+        ".github/workflows/rafaelia-object-link2.yml",
+        ".github/workflows/rafaelia-object-scalar-reloc.yml",
+        ".github/workflows/rafaelia-object-v2-elf-g071.yml",
+        ".github/workflows/rafaelia-object-v2.yml",
+        ".github/workflows/rafaelia-symbol-identity-v1.yml",
+        ".github/workflows/reproducible-ao42-core.yml",
+        ".github/workflows/zipraf-omega7-dual-arch.yml"
+      ],
+      "workflow_count_discovered": 8,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/ZIPRAF_OMEGA_FULL",
+      "workflow_paths": [
+        ".github/workflows/bitraf64-v14.yml",
+        ".github/workflows/ci.yml"
+      ],
+      "workflow_count_discovered": 2,
+      "discovery_state": "DISCOVERED_SEARCH_BOUNDED"
+    }
+  ],
+  "claim_allowed": false
+}
