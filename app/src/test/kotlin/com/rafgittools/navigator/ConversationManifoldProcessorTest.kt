@@ -29,8 +29,20 @@ class ConversationManifoldProcessorTest {
         val root = Files.createTempDirectory("manifold-codex").toFile()
         val result = ConversationManifoldProcessor(root).process("codex-000.json", ByteArrayInputStream("[{\"task\":\"build\"}]".toByteArray()))
         assertEquals(1L, result.codexRecords)
-        assertTrue(result.outputFile.readText().contains("CODEX_RECORD"))
+        assertTrue(result.outputFile.readText().contains("CODEX_RECORD_PART"))
         assertFalse(runCatching { ConversationManifoldProcessor(root).process("other.json", ByteArrayInputStream("[]".toByteArray())) }.isSuccess)
+    }
+
+    @Test fun splitsLongMessageIntoReconstructibleChunks() {
+        val root = Files.createTempDirectory("manifold-long").toFile()
+        val text = "a".repeat(200_000)
+        val source = """[{"id":"c","mapping":{"n":{"parent":null,"message":{"id":"m","author":{"role":"user"},"content":{"content_type":"text","parts":["$text"]}}}}}]"""
+        val result = ConversationManifoldProcessor(root).process("conversations-001.json", ByteArrayInputStream(source.toByteArray()))
+        val lines = result.outputFile.readLines().filter { it.contains("MESSAGE_CHUNK") }
+        assertTrue(lines.size > 1)
+        val chunks = lines.map { Regex("\"text\":\"([^\"]*)\"").find(it)!!.groupValues[1] }
+        assertEquals(text, chunks.joinToString(""))
+        assertTrue(lines.all { it.toByteArray().size < 480 * 1024 })
     }
 
     @Test fun rejectsMalformedJsonAndRemovesPartialOutput() {
@@ -46,6 +58,13 @@ class ConversationManifoldProcessorTest {
         }.isSuccess)
         assertFalse(runCatching {
             ConversationManifoldProcessor(root, maxRecordUtf8Bytes = 4).process("codex.json", ByteArrayInputStream("[{\"a\":1}]".toByteArray()))
+        }.isSuccess)
+    }
+
+    @Test fun rejectsTrailingCommaInsteadOfPromotingMalformedJson() {
+        val root = Files.createTempDirectory("manifold-trailing-comma").toFile()
+        assertFalse(runCatching {
+            ConversationManifoldProcessor(root).process("codex.json", ByteArrayInputStream("[{\"a\":1},]".toByteArray()))
         }.isSuccess)
     }
 }
