@@ -1,8 +1,8 @@
 {
   "schema": "rafgittools.android-novoexport-processor.v1",
-  "state": "PER_FILE_PROCESS_AND_PUBLICATION_UI_MERGED",
+  "state": "PROVIDER_READBACK_SOURCE_IMPLEMENTED_UNTESTED",
   "app_flow": "DRIVE_TAB_PER_FILE_ACTION_SOURCE_PRESENT",
-  "ci": "ANDROID_TEST_LINT_DEVDEBUG_PASS_RUN_36558610755; APK_SHA256_RECORDED; FINAL_RECEIPT_PENDING",
+  "ci": "NEW_EXACT_HEAD_CI_NOT_RUN",
   "device_execution": "NOT_RUN",
   "claim_allowed": false,
   "source_patterns": [
@@ -25,28 +25,15 @@
     "LIVE_PRIVATE_GITHUB_NAMESPACE"
   ],
   "publisher_plan_confirmation_required": true,
-  "provider_readback": "NOT_IMPLEMENTED",
+  "provider_readback": "SOURCE_IMPLEMENTED_FAIL_CLOSED_DRIVE_AND_PRIVATE_GIT",
   "corpus_scope_bytes": "TOKEN_VAZIO_MEASURED_INVENTORY_REQUIRED",
   "remaining": [
+    "EXACT_HEAD_CI_FOR_PROVIDER_READBACK",
     "SAF_TREE_ENUMERATION",
     "PERSISTENT_RESUMABLE_BATCH_QUEUE",
     "BACKGROUND_EXECUTION_AND_RECOVERY",
-    "DRIVE_AND_GIT_READBACK",
     "PHYSICAL_DEVICE_CANARY",
     "MEASURED_CORPUS_INVENTORY"
   ],
-  "next": "close final receipt for run 36558610755; then wire recursive SAF inventory and resumable batch queue before a phone canary",
-  "apk_evidence": {
-    "source_head": "07081ef774d773cf570fb20aaab1058301761155",
-    "merged_commit": "695bed743c5b22427ebc7f6cf4b71169208001bc",
-    "source_compare": "one commit ahead; zero changed files",
-    "workflow_run": 36558610755,
-    "android_job": 109375861051,
-    "result": "PASS",
-    "apk_variant": "devDebug",
-    "apk_sha256": "4120a8f91a1de47a28c3c8db27b3e1a8fbaa94146c1b044ee7f1ecc3575fac7d",
-    "workflow_artifact_id": 11030485325,
-    "device_install": "NOT_RUN",
-    "final_workflow_receipt": "PENDING"
-  }
+  "next": "run exact-head CI for provider-readback successor; if source gate passes, implement recursive SAF inventory plus persistent resumable batch queue before a physical phone canary"
 }

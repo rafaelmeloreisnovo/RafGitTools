@@ -250,6 +250,19 @@ interface GithubApiService {
         @Path("path", encoded = true) path: String,
         @Query("ref") ref: String? = null
     ): List<GithubContent>
+
+    /**
+     * Read one repository file through the Contents API.
+     * Kept separate from directory listing because GitHub returns an object for files
+     * and an array for directories at the same endpoint.
+     */
+    @GET("repos/{owner}/{repo}/contents/{path}")
+    suspend fun getFileContent(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("path", encoded = true) path: String,
+        @Query("ref") ref: String? = null
+    ): GithubContent
     
     @GET("repos/{owner}/{repo}/readme")
     suspend fun getReadme(

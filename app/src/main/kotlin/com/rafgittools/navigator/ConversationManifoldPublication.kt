@@ -26,7 +26,15 @@ object ConversationManifoldPublication {
         val parts: List<Part>,
         val planSha256: String
     )
-    data class Published(val driveUris: List<String>, val githubPaths: List<String>, val githubCommitShas: List<String>, val artifactSha256: String)
+    data class Published(
+        val driveUris: List<String>,
+        val githubPaths: List<String>,
+        val githubCommitShas: List<String>,
+        val artifactSha256: String,
+        val state: String,
+        val driveReadbackVerified: Boolean,
+        val githubReadbackVerified: Boolean
+    )
 
     fun plan(
         generationId: String,
@@ -61,7 +69,8 @@ object ConversationManifoldPublication {
         resolver: ContentResolver,
         plan: Plan,
         confirmedPlanSha256: String,
-        githubWrite: suspend (owner: String, repository: String, path: String, content: String, message: String) -> Result<String>
+        githubWrite: suspend (owner: String, repository: String, path: String, content: String, message: String) -> Result<String>,
+        githubRead: suspend (owner: String, repository: String, path: String) -> Result<String>
     ): Published {
         require(plan.planSha256 == confirmedPlanSha256) { "Publication plan confirmation does not match" }
         val artifact = File(plan.sourceArtifactPath)
@@ -92,12 +101,20 @@ object ConversationManifoldPublication {
                 it.write(bytes)
                 it.flush()
             }
+            val driveReadback = resolver.openInputStream(driveUri)
+                ?.use { it.readBytes() }
+                ?: error("Cannot read back Drive artifact: ${expected.filename}")
+            verifyReadbackBytes(expected.bytes, expected.sha256, driveReadback, "Drive/${expected.filename}")
             driveUris += driveUri.toString()
 
             val path = "$githubBase/${expected.filename}"
             val commitSha = githubWrite(plan.githubOwner, plan.githubRepository, path, content,
                 "RafGitTools: publish derived manifold part ${index + 1}/${plan.parts.size}")
                 .getOrElse { throw it }
+            val githubReadback = githubRead(plan.githubOwner, plan.githubRepository, path)
+                .getOrElse { throw it }
+                .toByteArray(Charsets.UTF_8)
+            verifyReadbackBytes(expected.bytes, expected.sha256, githubReadback, "Git/${expected.filename}")
             commitShas += commitSha
             githubPaths += path
             aggregate.update(bytes)
@@ -106,26 +123,59 @@ object ConversationManifoldPublication {
 
         val partsHash = aggregate.digest().hex()
         val commitList = commitShas.joinToString(prefix = "[\"", postfix = "\"]", separator = "\",\"")
-        val manifest = """{"schema":"rafgittools.conversation-manifold-publication/v1","generation_id":"${plan.generationId}","parts":${plan.parts.size},"parts_sha256":"$partsHash","github_commit_shas":$commitList,"plan_sha256":"${plan.planSha256}","state":"PUBLISHED_UNVERIFIED_READBACK_PENDING","claim_allowed":false}"""
+        val manifest = """{"schema":"rafgittools.conversation-manifold-publication/v2","generation_id":"${plan.generationId}","parts":${plan.parts.size},"parts_sha256":"$partsHash","github_commit_shas":$commitList,"plan_sha256":"${plan.planSha256}","drive_parts_readback":"PASS","github_parts_readback":"PASS","state":"PUBLISHED_READBACK_VERIFIED","claim_allowed":false}"""
+        val manifestBytes = manifest.toByteArray(Charsets.UTF_8)
+        val manifestSha256 = sha256(manifestBytes)
         val manifestName = "PUBLICATION_COMPLETE.${plan.planSha256.take(16)}.json"
         val manifestUri = DocumentsContract.createDocument(resolver, tree, "application/json", manifestName)
             ?: error("Drive/provider refused completion manifest")
         val manifestStream = resolver.openOutputStream(manifestUri, "w")
             ?: error("Cannot open Drive completion manifest")
-        manifestStream.use { it.write(manifest.toByteArray(Charsets.UTF_8)); it.flush() }
+        manifestStream.use { it.write(manifestBytes); it.flush() }
+        val manifestDriveReadback = resolver.openInputStream(manifestUri)
+            ?.use { it.readBytes() }
+            ?: error("Cannot read back Drive completion manifest")
+        verifyReadbackBytes(manifestBytes.size.toLong(), manifestSha256, manifestDriveReadback, "Drive/$manifestName")
         driveUris += manifestUri.toString()
 
         val manifestPath = "$githubBase/$manifestName"
         val manifestCommit = githubWrite(plan.githubOwner, plan.githubRepository, manifestPath, manifest,
-            "RafGitTools: close derived conversation manifold publication")
+            "RafGitTools: close readback-verified conversation manifold publication")
             .getOrElse { throw it }
+        val manifestGithubReadback = githubRead(plan.githubOwner, plan.githubRepository, manifestPath)
+            .getOrElse { throw it }
+            .toByteArray(Charsets.UTF_8)
+        verifyReadbackBytes(manifestBytes.size.toLong(), manifestSha256, manifestGithubReadback, "Git/$manifestName")
         githubPaths += manifestPath
         commitShas += manifestCommit
-        return Published(driveUris, githubPaths, commitShas, sha256(manifest.toByteArray(Charsets.UTF_8)))
+        return Published(
+            driveUris = driveUris,
+            githubPaths = githubPaths,
+            githubCommitShas = commitShas,
+            artifactSha256 = manifestSha256,
+            state = "PUBLISHED_READBACK_VERIFIED",
+            driveReadbackVerified = true,
+            githubReadbackVerified = true
+        )
     }
 
     private fun partName(artifact: File, generationId: String, index: Int) =
         "${artifact.nameWithoutExtension}-${generationId}-part-${index.toString().padStart(5, '0')}.jsonl"
+
+    internal fun verifyReadbackBytes(
+        expectedBytes: Long,
+        expectedSha256: String,
+        readback: ByteArray,
+        label: String
+    ) {
+        require(readback.size.toLong() == expectedBytes) {
+            "$label byte-count mismatch: expected=$expectedBytes actual=${readback.size}"
+        }
+        val actualSha256 = sha256(readback)
+        require(actualSha256 == expectedSha256) {
+            "$label SHA-256 mismatch: expected=$expectedSha256 actual=$actualSha256"
+        }
+    }
 
     private fun partSequence(file: File): Sequence<Pair<Int, String>> = sequence {
         var index = 0
