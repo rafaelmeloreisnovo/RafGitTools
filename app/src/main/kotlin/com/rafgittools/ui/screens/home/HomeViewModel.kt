@@ -378,7 +378,7 @@ class HomeViewModel @Inject constructor(
                     message = message,
                     branch = target.defaultBranch
                 ).map { it.commit.sha }
-            }.getOrThrow()
+            }
         }
     }
 
