@@ -42,6 +42,12 @@ class PrivateCiStartLaneTests(unittest.TestCase):
         self.assertIn("github.event_name == 'workflow_dispatch'", self.text)
         self.assertIn("private_ci_bridge:", self.text)
 
+    def test_private_ci_has_main_one_shot_route(self):
+        self.assertIn("configs/private-ci/replay.once.json", self.text)
+        self.assertIn("exact_sha_replay", self.text)
+        self.assertIn("github.ref == 'refs/heads/main'", self.text)
+        self.assertIn("python3 scripts/private_ci_bridge.py probe-isolation", self.text)
+
     def test_private_ci_executes_hash_only_bridge(self):
         self.assertIn("scripts/private_ci_bridge.py execute", self.text)
         self.assertIn("private-ci-replay-receipt.json", self.text)
