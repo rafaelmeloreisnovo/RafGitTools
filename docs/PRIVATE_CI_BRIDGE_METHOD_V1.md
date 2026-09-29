@@ -1,6 +1,6 @@
 # Private CI Bridge V1 — public control plane, private source
 
-**State:** `IMPLEMENTED_UNTESTED_PRIVATE_REPLAY_V1`  
+**State:** `IMPLEMENTED_UNTESTED_NETWORK_ISOLATION_V2`  
 **Authority:** RafGitTools executes; Mapa describes the route; each private repository owns its private replay manifest.  
 **Claim boundary:** `SOURCE != EXECUTION != EVIDENCE != CLAIM`.
 
@@ -37,7 +37,7 @@ human workflow_dispatch
 9. CWD and artifact paths are constrained to the checked-out source root.
 10. Secret-like environment keys are rejected from private replay steps.
 
-This protects the provider credential and now also wraps replayed commands in a Linux user+network namespace. The executor runs a fail-closed network probe before private steps; if the namespace cannot block outbound IPv4 TCP, replay does not start. This does not claim protection against kernel-level escape or host compromise.
+This protects the provider credential and wraps replayed commands in a network namespace. The preferred backend is an unprivileged Linux user+network namespace. When a hosted runner blocks unprivileged user namespaces, V2 may use a passwordless-sudo-created **network namespace only**, then immediately execute `setpriv` to restore the calling UID/GID, clear supplementary groups and set `no_new_privs` before any private command starts. The executor probes each backend live and accepts only one that demonstrably blocks outbound IPv4 TCP. If every backend fails, replay remains fail-closed. The fallback does not authorize private code to run as root and does not claim protection against kernel-level escape or host compromise.
 
 ## Why not just execute the YAML?
 
@@ -89,8 +89,8 @@ The bridge is additive. Rollback consists of removing the `private_ci` START lan
 
 ## R3
 
-`F_ok`: bounded registry + secretless replay executor + hash-only receipt contract are implemented on the delta branch.
+`F_ok`: bounded registry + secretless replay executor + hash-only receipt contract are implemented; V2 adds a fail-closed runner-compatible network-isolation fallback without changing the private command allowlist.
 
-`F_gap`: target-private manifest merge, the first real private replay receipt and ZIPRAF signed receipt profile are not yet proven. Network namespace isolation is implemented and awaits the fresh public runner gate/replay evidence.
+`F_gap`: the target-private manifest is merged, but the first real exact-SHA private replay receipt and ZIPRAF signed receipt profile are not yet proven. The new isolation fallback remains `IMPLEMENTED_UNTESTED` until a fresh public runner probe passes.
 
-`F_next`: merge the private manifest for one target, then run one exact-SHA manual replay and promote only that workflow from `IMPLEMENTED_UNTESTED` to `PASS` if its receipt closes all required gates.
+`F_next`: run fresh CI on this delta; if the isolation capability gate passes, execute one exact-SHA `documentation-std-mil` replay against the merged private manifest and promote only that exact target/workflow/commit if the sanitized receipt closes every required gate.
