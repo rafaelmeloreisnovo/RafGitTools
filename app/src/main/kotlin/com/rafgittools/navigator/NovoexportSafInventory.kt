@@ -83,7 +83,14 @@ object NovoexportSafInventory {
                     if (!acceptsSourceName(name)) continue
 
                     val size = if (it.isNull(sizeIndex)) null else it.getLong(sizeIndex).takeIf { value -> value >= 0L }
-                    if (size == null) unknownSizes += 1 else knownBytes = Math.addExact(knownBytes, size)
+                    if (size == null) {
+                        unknownSizes += 1
+                    } else {
+                        require(size <= Long.MAX_VALUE - knownBytes) {
+                            "SAF provider size aggregation overflow"
+                        }
+                        knownBytes += size
+                    }
 
                     candidates += Entry(
                         uri = DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId).toString(),
