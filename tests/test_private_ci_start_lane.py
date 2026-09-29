@@ -48,6 +48,17 @@ class PrivateCiStartLaneTests(unittest.TestCase):
         self.assertIn("github.ref == 'refs/heads/main'", self.text)
         self.assertIn("python3 scripts/private_ci_bridge.py probe-isolation", self.text)
 
+    def test_private_ci_network_isolation_is_not_global_coherence_dependency(self):
+        coherence = self.text.split("  coherence:", 1)[1].split("  python_tests:", 1)[0]
+        self.assertNotIn(
+            "python3 scripts/private_ci_bridge.py probe-isolation",
+            coherence,
+        )
+
+        import inspect
+        execute_source = inspect.getsource(bridge.execute_plan)
+        self.assertIn("probe_network_isolation()", execute_source)
+
     def test_private_ci_executes_hash_only_bridge(self):
         self.assertIn("scripts/private_ci_bridge.py execute", self.text)
         self.assertIn("private-ci-replay-receipt.json", self.text)
