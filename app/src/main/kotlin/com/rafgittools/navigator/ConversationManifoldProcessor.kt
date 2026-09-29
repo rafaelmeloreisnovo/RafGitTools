@@ -200,9 +200,9 @@ class ConversationManifoldProcessor(
         val mapping = conversation.getAsJsonObject("mapping")
         writeLine(out, mapOf("kind" to "CONVERSATION", "source_name" to sourceName,
             "record_index" to recordIndex, "conversation_id" to conversationId,
-            "title" to scalar(conversation.get("title")) ?: "TOKEN_VAZIO",
-            "created_at" to scalar(conversation.get("create_time")) ?: "TOKEN_VAZIO",
-            "updated_at" to scalar(conversation.get("update_time")) ?: "TOKEN_VAZIO",
+            "title" to (scalar(conversation.get("title")) ?: "TOKEN_VAZIO"),
+            "created_at" to (scalar(conversation.get("create_time")) ?: "TOKEN_VAZIO"),
+            "updated_at" to (scalar(conversation.get("update_time")) ?: "TOKEN_VAZIO"),
             "claim_allowed" to false))
         if (mapping == null) return
         mapping.entrySet().forEach { (nodeId, nodeValue) ->
@@ -224,9 +224,9 @@ class ConversationManifoldProcessor(
                 textParts.forEachIndexed { index, textPart ->
                     writeLine(out, mapOf("kind" to "MESSAGE_CHUNK", "conversation_id" to conversationId,
                         "message_id" to messageId, "node_id" to nodeId, "parent_id" to parent,
-                        "role" to scalar(author?.get("role")) ?: "TOKEN_VAZIO",
-                        "created_at" to scalar(message.get("create_time")) ?: "TOKEN_VAZIO",
-                        "content_type" to scalar(content?.get("content_type")) ?: "TOKEN_VAZIO",
+                        "role" to (scalar(author?.get("role")) ?: "TOKEN_VAZIO"),
+                        "created_at" to (scalar(message.get("create_time")) ?: "TOKEN_VAZIO"),
+                        "content_type" to (scalar(content?.get("content_type")) ?: "TOKEN_VAZIO"),
                         "chunk_index" to index, "chunk_count" to textParts.size,
                         "message_sha256" to wholeTextHash, "text" to textPart,
                         "chunk_sha256" to sha256(textPart.toByteArray(Charsets.UTF_8)),
@@ -264,7 +264,15 @@ class ConversationManifoldProcessor(
     private fun flattenText(element: JsonElement): String = when {
         element.isJsonNull -> ""
         element.isJsonPrimitive -> element.asJsonPrimitive.asString
-        element.isJsonArray -> element.joinToString("\n") { flattenText(it) }
+        element.isJsonArray -> {
+            val array = element.asJsonArray
+            buildString {
+                for (index in 0 until array.size()) {
+                    if (index > 0) append('\n')
+                    append(flattenText(array[index]))
+                }
+            }
+        }
         element.isJsonObject -> element.asJsonObject.get("text")?.let(::flattenText)
             ?: element.asJsonObject.get("transcript")?.let(::flattenText) ?: ""
         else -> ""
