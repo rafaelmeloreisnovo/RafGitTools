@@ -19,7 +19,7 @@ class BranchAtlasTest(unittest.TestCase):
             self.assertEqual(meta["total"],len(meta["branches"]),repo)
 
     def test_observed_census(self):
-        self.assertEqual(self.data["repositories"]["instituto-Rafael/relativity-living-light"]["total"],872)
+        self.assertEqual(self.data["repositories"]["instituto-Rafael/relativity-living-light"]["total"],873)
         self.assertEqual(self.data["repositories"]["rafaelmeloreisnovo/RafGitTools"]["total"],325)
 
     def test_anchor_no_rename(self):
