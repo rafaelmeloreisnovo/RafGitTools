@@ -590,8 +590,9 @@ private fun DriveBridgeContent(
                                         it.state == NovoexportQueueStore.FAILED_RETRYABLE)
                             }
                             val pendingCount = queue.snapshot.items.count {
-                                it.state == NovoexportQueueStore.PENDING ||
-                                    it.state == NovoexportQueueStore.FAILED_RETRYABLE
+                                it.presentInLatestInventory &&
+                                    (it.state == NovoexportQueueStore.PENDING ||
+                                        it.state == NovoexportQueueStore.FAILED_RETRYABLE)
                             }
                             Text(
                                 "Pendentes/repetíveis: $pendingCount · processamento em série, um arquivo por confirmação.",
@@ -603,6 +604,21 @@ private fun DriveBridgeContent(
                                     val next = eligible
                                     if (next == null) {
                                         error = "Não há item presente no último inventário pronto para processamento."
+                                    } else if (next.sizeBytes != null && next.sizeBytes > 2_147_483_648L) {
+                                        scope.launch {
+                                            val blocked = withContext(Dispatchers.IO) {
+                                                runCatching {
+                                                    NovoexportQueueStore.transition(
+                                                        queueFile = queue.queueFile,
+                                                        itemId = next.id,
+                                                        newState = NovoexportQueueStore.BLOCKED,
+                                                        error = "SOURCE_SIZE_EXCEEDS_2_GIB_PROCESSOR_LIMIT"
+                                                    )
+                                                }
+                                            }
+                                            blocked.onSuccess { queueSummary = queue.copy(snapshot = it) }
+                                            error = "Tamanho informado excede o limite por arquivo de 2 GiB."
+                                        }
                                     } else if (selectedPrivateRepository?.isPrivate != true) {
                                         error = "Selecione um repositório GitHub privado antes de processar a fila."
                                     } else {
