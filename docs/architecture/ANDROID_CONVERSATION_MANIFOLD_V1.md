@@ -68,8 +68,8 @@ No count is complete until an exhaustive provider enumeration and terminal curso
 
 | Gate | Required evidence | State now |
 |---|---|---|
-| Source-level Android route | code path from app screen through intake to Navigator | `TOKEN_VAZIO` |
-| Contract/fixture | schema + meaningful tests | `TOKEN_VAZIO` |
+| Source-level Android route | code path from app screen through intake to Navigator | `PARTIAL`: per-file UI → processor path is implemented; recursive batch Navigator route is not |
+| Contract/fixture | schema + meaningful tests | `PARTIAL`: synthetic per-file processor tests exist; batch queue/restart fixture is not implemented |
 | Android job | exact-head unit tests, lint, devDebug APK and APK hash verification | `PASS`; final receipt `PASS` |
 | Device install/launch | installed artifact SHA + device receipt | `NOT_RUN` |
 | Drive exhaustive inventory | all pages/items + terminal cursor | `TOKEN_VAZIO` |
