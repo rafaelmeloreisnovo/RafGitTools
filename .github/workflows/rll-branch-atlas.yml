@@ -1,0 +1,27 @@
+name: RLL Branch Atlas
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  atlas:
+    runs-on: ubuntu-24.04
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Render branch atlas
+        run: python scripts/render_rll_branch_atlas.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rll-branch-atlas-${{ github.run_id }}
+          path: artifacts/rll-branch-atlas.json
+          retention-days: 30
