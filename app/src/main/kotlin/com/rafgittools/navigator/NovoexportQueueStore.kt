@@ -95,6 +95,8 @@ object NovoexportQueueStore {
             } else {
                 preserved += 1
                 val interrupted = old.state == PROCESSING
+                val permissionRestored = old.state == BLOCKED &&
+                    old.lastError.startsWith("SAF_PERMISSION_LOST:")
                 old.copy(
                     uri = entry.uri,
                     documentId = entry.documentId,
@@ -102,11 +104,15 @@ object NovoexportQueueStore {
                     mimeType = entry.mimeType,
                     sizeBytes = entry.sizeBytes,
                     presentInLatestInventory = true,
-                    state = if (interrupted) FAILED_RETRYABLE else old.state,
-                    lastError = if (interrupted) {
-                        "APP_RESTART_DURING_PROCESSING_RETRY_FROM_SOURCE"
-                    } else {
-                        old.lastError
+                    state = when {
+                        interrupted -> FAILED_RETRYABLE
+                        permissionRestored -> PENDING
+                        else -> old.state
+                    },
+                    lastError = when {
+                        interrupted -> "APP_RESTART_DURING_PROCESSING_RETRY_FROM_SOURCE"
+                        permissionRestored -> "TOKEN_VAZIO"
+                        else -> old.lastError
                     }
                 )
             }
