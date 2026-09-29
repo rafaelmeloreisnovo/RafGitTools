@@ -1,11 +1,78 @@
 # RafGitTools Private Processing Capability V1
 
-State: IMPLEMENTED_SOURCE / DEVICE_E2E_NOT_RUN / SECRET_LANE_TOKEN_VAZIO
+State: IMPLEMENTED_SOURCE / SEED_CONTRACT_MATERIALIZED / DEVICE_E2E_NOT_RUN / SECRET_LANE_TOKEN_VAZIO / REMOTE_CI_NOT_RUN
 claim_allowed: false
 
 ## Intent
 
 Close the existing Drive → private Android staging → catalog → private GitHub custody route without copying raw corpus bytes into RafGitTools or any public repository.
+
+The contract deliberately separates architecture from execution, execution from evidence, and evidence from claim promotion. A route may therefore be structurally determined while physical execution and evidence remain unresolved.
+
+## State separation
+
+The canonical seed state is allowed to be:
+
+```text
+architecture.state = DETERMINED
+execution.state    = NOT_RUN
+evidence.state     = TOKEN_VAZIO
+claim.state        = BLOCKED
+claim_allowed      = false
+```
+
+This is not a contradiction. It means the route is known, but the physical run and its evidence have not been established.
+
+The following promotions are forbidden:
+
+```text
+ARCHITECTURE_DETERMINED -> EXECUTION_PASS       (without run evidence)
+EXECUTION_PASS          -> EVIDENCE_PASS        (without receipt/hash evidence)
+EVIDENCE_PASS           -> CLAIM_ALLOWED        (without the claim gate)
+```
+
+## TOKEN_VAZIO semantics
+
+Three distinct objects must not be collapsed:
+
+1. model/tokenizer padding — internal representation and outside this contract;
+2. ordinary null/empty value — missing data without the protocol sentinel;
+3. `TOKEN_VAZIO` — an expected field whose position is known but whose value has not been established by evidence.
+
+Therefore:
+
+```text
+TOKEN_VAZIO != NULL != 0 != FALSE != NOT_RUN != FAIL != PASS
+```
+
+The sentinel preserves topology without fabricating a value.
+
+## Semantic seed contract
+
+The minimum reconstructible state is now materialized as:
+
+- `contracts/private-processing-seed-v1.schema.json`
+- `examples/private-processing-seed.example.json`
+- `scripts/validate_private_processing_seed_v1.py`
+- `tests/test_private_processing_seed_v1.py`
+
+The seed carries:
+
+```text
+ID
++ architecture/route
++ source authority
++ artifact position
++ execution state
++ evidence state
++ claim state
++ explicit gaps
++ next gate
+```
+
+It does not need to carry the raw corpus.
+
+The validator is dependency-free and fail-closed for claim promotion. Structural validation never proves Drive authority, physical device execution, private publication, or a hash that remains `TOKEN_VAZIO`.
 
 ## Existing route reused
 
@@ -74,12 +141,26 @@ Exact Drive IDs and the exact private destination repository are maintained only
 - receipt containing a `raw_payload` field → FAIL;
 - invalid SHA-256 → FAIL;
 - missing physical device run → NOT_RUN, never PASS;
-- missing automation secret → TOKEN_VAZIO, never fallback.
+- missing evidence value in an expected field → TOKEN_VAZIO, never invented;
+- null/0/false do not substitute for TOKEN_VAZIO;
+- missing automation secret → TOKEN_VAZIO, never fallback;
+- structural validator PASS does not imply physical execution PASS or claim promotion.
+
+## Validation commands
+
+```bash
+python3 scripts/validate_private_processing_seed_v1.py \
+  examples/private-processing-seed.example.json
+
+python3 -m pytest -q tests/test_private_processing_seed_v1.py
+```
+
+These commands validate only the seed contract. Remote CI and physical Android execution remain separate evidence gates.
 
 ## R3
 
-F_ok = Drive full-stream staging + SHA-256 + corpus structural gate + private receipt model + private target live-readback + constrained GitHub contents write are source-materialized.
+F_ok = Drive full-stream staging + SHA-256 + corpus structural gate + private receipt model + private target live-readback + constrained GitHub contents write are source-materialized; the semantic seed schema/validator/example/tests are materialized on the integration branch.
 
-F_gap = Android APK/build hash is not yet bound into the activity receipt; no physical device E2E publication has been observed for this delta; the dedicated automation secret is not provisioned.
+F_gap = remote repository CI for the seed delta is not yet observed; Android APK/build hash is not yet bound into the activity receipt; no physical device E2E publication has been observed for this delta; the dedicated automation secret is not provisioned.
 
-F_next = CI the branch, then on the Android device choose one NOVOexport JSON through Drive/SAF and publish one activity receipt to the private memory bridge; verify returned commit SHA and compare the receipt source hash with local staging evidence.
+F_next = run the seed contract under repository/independent CI, then on the Android device choose one NOVOexport JSON through Drive/SAF and publish one activity receipt to the private memory bridge; verify returned commit SHA and compare the receipt source hash with local staging evidence before any claim promotion.
