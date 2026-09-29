@@ -134,6 +134,43 @@ class PrivateCiBridgeTests(unittest.TestCase):
                 allowed_executables={"python3"},
             )
 
+    def test_zipraf_receipt_profile_is_deterministic_integrity_only(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            receipt = {
+                "schema": bridge.RECEIPT_SCHEMA,
+                "claim_allowed": False,
+                "privacy_boundary": {
+                    "secret_reference": "PAT_ACTIONS",
+                    "secret_value_persisted": False,
+                    "secret_available_to_private_subprocess": False,
+                    "raw_private_stdout_persisted": False,
+                    "raw_private_stderr_persisted": False,
+                    "private_source_uploaded_as_public_artifact": False,
+                    "network_egress_isolation": {
+                        "method": bridge.NETWORK_ISOLATION_METHOD,
+                        "state": "PASS",
+                        "external_ipv4_tcp_connect_blocked": True,
+                        "claim_allowed": False,
+                    },
+                },
+            }
+            receipt_path = root / "receipt.json"
+            receipt_path.write_bytes(bridge.canonical_bytes(receipt))
+            a = root / "a.zipraf"
+            b = root / "b.zipraf"
+            first = bridge.pack_receipt_zipraf(receipt_path, a)
+            second = bridge.pack_receipt_zipraf(receipt_path, b)
+            self.assertEqual(first["output_sha256"], second["output_sha256"])
+            verified = bridge.verify_receipt_zipraf(a)
+            self.assertEqual(verified["state"], "PASS_INTEGRITY_ONLY")
+            self.assertFalse(verified["encryption"])
+            self.assertEqual(
+                verified["signature_state"],
+                "TOKEN_VAZIO_NOT_CONFIGURED",
+            )
+            self.assertFalse(verified["claim_allowed"])
+
     def test_execution_hashes_private_output_without_persisting_it(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
