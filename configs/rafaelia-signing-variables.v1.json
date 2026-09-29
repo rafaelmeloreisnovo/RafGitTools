@@ -1,0 +1,28 @@
+{
+  "schema": "rafaelia.signing-variables/v1",
+  "public_variables": {
+    "RAFAELIA_SIGNER_ID": {
+      "purpose": "stable public signer identifier",
+      "state": "TOKEN_VAZIO"
+    },
+    "RAFAELIA_EXPECTED_CERT_SHA256": {
+      "purpose": "expected public Android signing certificate SHA-256",
+      "state": "TOKEN_VAZIO"
+    },
+    "RAFAELIA_ANDROID_KEY_ALIAS": {
+      "purpose": "keystore alias; public metadata",
+      "state": "TOKEN_VAZIO"
+    },
+    "RAFAELIA_PAGES_REPO": {
+      "purpose": "repository receiving public signing receipts",
+      "recommended_value": "rafaelmeloreisnovo/RafGitTools"
+    }
+  },
+  "secrets": {
+    "RAFAELIA_ANDROID_KEYSTORE_B64": "PRIVATE; never publish",
+    "RAFAELIA_ANDROID_STORE_PASSWORD": "PRIVATE; never publish",
+    "RAFAELIA_ANDROID_KEY_PASSWORD": "PRIVATE; never publish",
+    "RAFAELIA_PAGES_PAT": "PRIVATE; cross-repository receipt publishing only"
+  },
+  "invariant": "secret values are never committed, printed, embedded in APK, or published to Pages"
+}

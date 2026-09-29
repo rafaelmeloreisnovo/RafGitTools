@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rafaelia — Verificação de Assinatura</title>
+<style>
+:root{color-scheme:dark;background:#101216;color:#e9eef4;font-family:ui-monospace,monospace}
+body{max-width:920px;margin:0 auto;padding:24px}
+.card{border:1px solid #39424d;border-radius:12px;padding:18px;margin:14px 0;background:#171b20}
+code{overflow-wrap:anywhere;color:#9ee6c8}
+.good{color:#9ee6c8}.empty{color:#f0c674}
+a{color:#8ab4f8}
+</style>
+</head>
+<body>
+<h1>Rafaelia · verificação pública</h1>
+<p>Esta página publica somente coordenadas verificáveis. Material privado de assinatura nunca é publicado.</p>
+
+<div class="card">
+<h2>Invariante</h2>
+<code>SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM</code><br>
+<code>HASH != AUTHORSHIP</code><br>
+<code>PRIVATE_KEY != PUBLIC_RECEIPT</code>
+</div>
+
+<div class="card">
+<h2>Estado atual</h2>
+<p class="empty">O arquivo <a href="./latest.json">latest.json</a> começa em TOKEN_VAZIO até uma execução de assinatura real publicar um receipt validado.</p>
+<p><a href="./latest.txt">receipt textual</a></p>
+</div>
+
+<div class="card">
+<h2>Como verificar</h2>
+<ol>
+<li>Calcule SHA-256 do APK recebido.</li>
+<li>Compare com <code>signed_apk_sha256</code> do receipt.</li>
+<li>Leia o certificado de assinatura do APK com uma ferramenta Android compatível.</li>
+<li>Compare com <code>certificate_sha256</code>.</li>
+<li>Confira o <code>source_sha</code> no repositório de origem.</li>
+</ol>
+</div>
+
+<div class="card">
+<h2>Fronteira</h2>
+<p>O certificado prova a chave que assinou o APK. O receipt liga essa assinatura ao SHA do artefato e ao source SHA. Nenhum desses fatos, isoladamente, prova toda alegação científica ou funcional do aplicativo.</p>
+</div>
+</body>
+</html>
