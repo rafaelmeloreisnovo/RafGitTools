@@ -62,6 +62,26 @@ class NovoexportQueueStoreTest {
         assertEquals(1, resumed.attempts)
     }
 
+    @Test fun reInventoryOnlyRequeuesPermissionBlockedItems() {
+        val root = Files.createTempDirectory("novoexport-queue-permission").toFile()
+        val first = NovoexportQueueStore.mergeInventory(root, inventory(), nowEpochMs = 10)
+        val itemId = first.snapshot.items.single().id
+        NovoexportQueueStore.transition(first.queueFile, itemId, NovoexportQueueStore.BLOCKED,
+            error = "SAF_PERMISSION_LOST: grant revoked", nowEpochMs = 20)
+
+        val afterGrantRefresh = NovoexportQueueStore.mergeInventory(root, inventory(), nowEpochMs = 30)
+            .snapshot.items.single()
+        assertEquals(NovoexportQueueStore.PENDING, afterGrantRefresh.state)
+
+        NovoexportQueueStore.transition(first.queueFile, itemId, NovoexportQueueStore.PROCESSING, nowEpochMs = 40)
+        NovoexportQueueStore.transition(first.queueFile, itemId, NovoexportQueueStore.BLOCKED,
+            error = "SOURCE_REJECTED: malformed JSON", nowEpochMs = 50)
+        val rejected = NovoexportQueueStore.mergeInventory(root, inventory(), nowEpochMs = 60)
+            .snapshot.items.single()
+        assertEquals(NovoexportQueueStore.BLOCKED, rejected.state)
+        assertEquals("SOURCE_REJECTED: malformed JSON", rejected.lastError)
+    }
+
     @Test fun completionRequiresVerifiedDriveAndGitReadback() {
         val root = Files.createTempDirectory("novoexport-queue-completion").toFile()
         val queue = NovoexportQueueStore.mergeInventory(root, inventory(), nowEpochMs = 10)
