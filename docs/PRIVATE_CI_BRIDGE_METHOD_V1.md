@@ -37,7 +37,7 @@ human workflow_dispatch
 9. CWD and artifact paths are constrained to the checked-out source root.
 10. Secret-like environment keys are rejected from private replay steps.
 
-This protects the provider credential from ordinary replayed code. **Outbound network isolation is not yet enforced**, so V1 does not claim confidentiality against intentionally hostile private source. That gap remains explicit.
+This protects the provider credential and now also wraps replayed commands in a Linux user+network namespace. The executor runs a fail-closed network probe before private steps; if the namespace cannot block outbound IPv4 TCP, replay does not start. This does not claim protection against kernel-level escape or host compromise.
 
 ## Why not just execute the YAML?
 
@@ -91,6 +91,6 @@ The bridge is additive. Rollback consists of removing the `private_ci` START lan
 
 `F_ok`: bounded registry + secretless replay executor + hash-only receipt contract are implemented on the delta branch.
 
-`F_gap`: target-private manifest merge, real private replay, network egress isolation and ZIPRAF signed receipt profile are not yet proven.
+`F_gap`: target-private manifest merge, the first real private replay receipt and ZIPRAF signed receipt profile are not yet proven. Network namespace isolation is implemented and awaits the fresh public runner gate/replay evidence.
 
 `F_next`: merge the private manifest for one target, then run one exact-SHA manual replay and promote only that workflow from `IMPLEMENTED_UNTESTED` to `PASS` if its receipt closes all required gates.
