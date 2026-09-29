@@ -4,7 +4,7 @@ set -euo pipefail
 root="${1:-docs/site/rafaelia-signing}"
 json="$root/latest.json"
 txt="$root/latest.txt"
-vars="configs/rafaelia-signing-variables.v1.json"
+vars="${2:-configs/rafaelia-signing-variables.v1.json}"
 
 [ -f "$json" ] || { echo "SIGNING_PAGE_JSON_MISSING"; exit 1; }
 [ -f "$txt" ] || { echo "SIGNING_PAGE_TEXT_MISSING"; exit 1; }
@@ -38,7 +38,7 @@ if any(not isinstance(receipt.get(key), str) for key in expected):
     reject("SIGNING_PAGE_VALUE_TYPE_INVALID")
 
 # V1 intentionally publishes an awaiting receipt only. A future signed/failed
-# receipt requires a successor contract and validator; this gate will fail closed.
+# receipt requires a successor contract and validator; this gate fails closed.
 if receipt["state"] != "AWAITING_REAL_SIGNING_RECEIPT":
     reject("SIGNING_PAGE_STATE_UNSUPPORTED")
 if any(receipt[key] != "TOKEN_VAZIO" for key in (
@@ -87,7 +87,8 @@ for name in ("RAFAELIA_SIGNER_ID", "RAFAELIA_EXPECTED_CERT_SHA256", "RAFAELIA_AN
     entry = public.get(name)
     if not isinstance(entry, dict) or entry.get("state") != "TOKEN_VAZIO":
         reject("SIGNING_PUBLIC_VALUE_MUST_REMAIN_UNBOUND")
-if public["RAFAELIA_PAGES_REPO"].get("recommended_value") != "rafaelmeloreisnovo/RafGitTools":
+pages_repo = public.get("RAFAELIA_PAGES_REPO")
+if not isinstance(pages_repo, dict) or pages_repo.get("recommended_value") != "rafaelmeloreisnovo/RafGitTools":
     reject("SIGNING_PAGES_REPOSITORY_MISMATCH")
 
 secret_names = {
