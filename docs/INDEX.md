@@ -130,3 +130,8 @@ Esse bloco é histórico e commit-bound.
 - `navigation/RLL_BRANCH_ATLAS_V1.md` — census, numbered branch taxonomy and fail-closed rename policy.
 - `site/rll-atlas/index.html` — repository/family/branch combobox UI.
 - `../data/navigation/RLL_BRANCH_ATLAS_SNAPSHOT_20260929.json` — canonical machine-readable snapshot.
+
+
+## Navegação de trabalho entre IAs
+
+- [Adaptador de despacho de sessão IA V1](AI_SESSION_DISPATCH_ADAPTER_V1.md) — resolve pacotes e papéis do Mapa por pin exato; prova apenas navegação estrutural.

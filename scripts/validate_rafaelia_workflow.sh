@@ -179,3 +179,8 @@ make -C rafaelia/block1 clean
 
 # Public signature page contract: validates JSON, text parity, unbound state and secret placeholders.
 bash scripts/validate_rafaelia_signing_contract.sh
+
+
+# Mapa session-agent resolver: exact source binding, read-only route and no execution claim.
+python3 -m unittest discover -s tests -p 'test_resolve_session_ai_work_packet.py' -v
+python3 scripts/validate_practice_router.py configs/practice-router.v1.json --route session-ai-dispatch
