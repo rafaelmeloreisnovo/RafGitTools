@@ -1,0 +1,344 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafaelia.local/schemas/receipt-envelope-v1.schema.json",
+  "title": "RAFAELIA Receipt Envelope V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "receipt_id",
+    "observed_at",
+    "producer",
+    "source",
+    "execution",
+    "evidence",
+    "result",
+    "gaps",
+    "lineage",
+    "receipt_sha256",
+    "claim_allowed"
+  ],
+  "properties": {
+    "schema": {
+      "const": "rafaelia.receipt-envelope/v1"
+    },
+    "receipt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observed_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "ref",
+        "commit",
+        "artifact_id"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^(TOKEN_VAZIO|[0-9a-f]{40})$"
+        },
+        "artifact_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "source_ref",
+        "sha256"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^(TOKEN_VAZIO|[0-9a-f]{64})$"
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "execution_id",
+        "environment",
+        "architecture",
+        "device_id",
+        "state"
+      ],
+      "properties": {
+        "execution_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "environment": {
+          "type": "string",
+          "minLength": 1
+        },
+        "architecture": {
+          "type": "string",
+          "minLength": 1
+        },
+        "device_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "NOT_RUN",
+            "PENDING",
+            "AUDIT",
+            "TOKEN_VAZIO",
+            "IMPLEMENTED_UNTESTED",
+            "OBSERVED_UNPROMOTED",
+            "ROUTE_STATE_BLOCKED"
+          ]
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "ref",
+          "sha256",
+          "state",
+          "scope"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^(TOKEN_VAZIO|[0-9a-f]{64})$"
+          },
+          "state": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "NOT_RUN",
+              "PENDING",
+              "AUDIT",
+              "TOKEN_VAZIO",
+              "IMPLEMENTED_UNTESTED",
+              "OBSERVED_UNPROMOTED",
+              "ROUTE_STATE_BLOCKED"
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "summary"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "NOT_RUN",
+            "PENDING",
+            "AUDIT",
+            "TOKEN_VAZIO",
+            "IMPLEMENTED_UNTESTED",
+            "OBSERVED_UNPROMOTED",
+            "ROUTE_STATE_BLOCKED"
+          ]
+        },
+        "summary": {
+          "type": "string"
+        }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "gap_id",
+          "state",
+          "blocking",
+          "detail"
+        ],
+        "properties": {
+          "gap_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "NOT_RUN",
+              "PENDING",
+              "AUDIT",
+              "TOKEN_VAZIO",
+              "IMPLEMENTED_UNTESTED",
+              "OBSERVED_UNPROMOTED",
+              "ROUTE_STATE_BLOCKED"
+            ]
+          },
+          "blocking": {
+            "type": "boolean"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parent_receipt",
+        "supersedes"
+      ],
+      "properties": {
+        "parent_receipt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "supersedes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "receipt_sha256": {
+      "type": "string",
+      "pattern": "^(TOKEN_VAZIO|[0-9a-f]{64})$"
+    },
+    "claim_allowed": {
+      "type": "boolean"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "claim_allowed": {
+            "const": true
+          }
+        },
+        "required": [
+          "claim_allowed"
+        ]
+      },
+      "then": {
+        "properties": {
+          "producer": {
+            "properties": {
+              "commit": {
+                "pattern": "^[0-9a-f]{40}$"
+              }
+            }
+          },
+          "source": {
+            "properties": {
+              "source_ref": {
+                "pattern": "^(?!TOKEN_VAZIO$).+"
+              },
+              "sha256": {
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          },
+          "execution": {
+            "properties": {
+              "execution_id": {
+                "pattern": "^(?!TOKEN_VAZIO$).+"
+              },
+              "environment": {
+                "pattern": "^(?!TOKEN_VAZIO$).+"
+              },
+              "architecture": {
+                "pattern": "^(?!TOKEN_VAZIO$).+"
+              },
+              "state": {
+                "const": "PASS"
+              }
+            }
+          },
+          "evidence": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "state": {
+                  "const": "PASS"
+                },
+                "sha256": {
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          },
+          "result": {
+            "properties": {
+              "state": {
+                "const": "PASS"
+              }
+            }
+          },
+          "gaps": {
+            "items": {
+              "properties": {
+                "blocking": {
+                  "const": false
+                }
+              }
+            }
+          },
+          "receipt_sha256": {
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    }
+  ]
+}
