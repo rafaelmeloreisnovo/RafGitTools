@@ -266,6 +266,32 @@ jobs:
               provider_actions_sha="$target_sha"
               provider_actions_task="$target_task"
             fi
+            if [[ "${GITHUB_EVENT_NAME}" == push && "${GITHUB_REF}" == refs/heads/main ]] &&
+               grep -Fxq 'configs/private-ci/replay.once.json' <<<"$changed"; then
+              [[ "$provider_environments" == false && "$provider_actions" == false ]] || {
+                echo "::error::private CI one-shot cannot share a commit with another privileged provider lane"
+                exit 2
+              }
+              private_operation="$(python3 -c "import json,pathlib; print(json.loads(pathlib.Path('configs/private-ci/replay.once.json').read_text(encoding='utf-8')).get('operation',''))")"
+              private_target_id="$(python3 -c "import json,pathlib; print(json.loads(pathlib.Path('configs/private-ci/replay.once.json').read_text(encoding='utf-8')).get('target_id',''))")"
+              private_target_sha="$(python3 -c "import json,pathlib; print(json.loads(pathlib.Path('configs/private-ci/replay.once.json').read_text(encoding='utf-8')).get('target_commit',''))")"
+              private_workflow_id="$(python3 -c "import json,pathlib; print(json.loads(pathlib.Path('configs/private-ci/replay.once.json').read_text(encoding='utf-8')).get('workflow_id',''))")"
+              [[ "$private_operation" == exact_sha_replay ]] || {
+                echo "::error::private CI one-shot only permits exact_sha_replay"
+                exit 2
+              }
+              [[ "$private_target_sha" =~ ^[0-9a-f]{40}$ ]] || {
+                echo "::error::private CI one-shot target must be an exact lowercase SHA"
+                exit 2
+              }
+              resolved="$(python3 scripts/private_ci_bridge.py resolve                 --registry configs/private-ci/execution-registry.v1.json                 --target-id "$private_target_id"                 --workflow-id "$private_workflow_id"                 --commit "$private_target_sha")"
+              private_ci_target_id="$private_target_id"
+              private_ci_repository="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["repository"])' <<<"$resolved")"
+              private_ci_sha="$private_target_sha"
+              private_ci_workflow_id="$private_workflow_id"
+              private_ci_manifest_path="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["manifest_path"])' <<<"$resolved")"
+              private_ci=true
+            fi
           fi
 
           case "$mode" in
@@ -458,6 +484,12 @@ jobs:
               py_compile.compile(str(path), doraise=True)
           print(f'compiled_python_files={len(files)}')
           PY
+
+      - name: Private CI network-isolation capability
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/private_ci_bridge.py probe-isolation
 
       - name: RAFANDROID toolchain shell gate
         shell: bash
@@ -959,8 +991,14 @@ jobs:
       ${{
         needs.plan.outputs.private_ci == 'true' &&
         needs.coherence.result == 'success' &&
-        github.event_name == 'workflow_dispatch' &&
-        github.actor == 'rafaelmeloreisnovo'
+        github.actor == 'rafaelmeloreisnovo' &&
+        (
+          github.event_name == 'workflow_dispatch' ||
+          (
+            github.event_name == 'push' &&
+            github.ref == 'refs/heads/main'
+          )
+        )
       }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1076,6 +1114,9 @@ jobs:
           assert b['raw_private_stdout_persisted'] is False
           assert b['raw_private_stderr_persisted'] is False
           assert b['private_source_uploaded_as_public_artifact'] is False
+          isolation = b['network_egress_isolation']
+          assert isolation['state'] == 'PASS'
+          assert isolation['external_ipv4_tcp_connect_blocked'] is True
           PY
           fi
 
