@@ -195,6 +195,45 @@ class ContextBroker @Inject constructor() {
         _state.value = ContextBrokerState()
     }
 
+    /**
+     * Java-friendly read-only handoff for the local model consumer.
+     *
+     * The broker still never infers semantic types or exam results. It only
+     * transports context that the user explicitly selected earlier.
+     */
+    @JvmOverloads
+    fun buildReadOnlyModelBundle(
+        bundleId: String,
+        objective: String,
+        createdAt: String,
+        requestId: String? = null,
+        evidenceRefs: List<String> = emptyList()
+    ): ContextBundleV2 {
+        val snapshot = _state.value
+        require(snapshot.segments.isNotEmpty()) { "selected context is empty" }
+
+        return buildBundle(
+            bundleId = bundleId,
+            objective = objective,
+            createdAt = createdAt,
+            requestId = requestId,
+            evidenceRefs = evidenceRefs,
+            constraints = listOf(
+                "context assembled only from explicit user-selected resources",
+                "semantic context exam must pass before model consumption",
+                "consumer is read-only: model output is not execution permission",
+                "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+                "TOKEN_VAZIO != 0"
+            ),
+            annotations = mapOf(
+                "claim_allowed" to false,
+                "context_broker" to "ContextBroker",
+                "consumer_mode" to "READ_ONLY_LOCAL_MODEL",
+                "semantic_exam_required" to true
+            )
+        )
+    }
+
     fun buildBundle(
         bundleId: String,
         objective: String,
