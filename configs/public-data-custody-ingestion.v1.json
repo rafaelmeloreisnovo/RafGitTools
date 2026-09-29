@@ -59,6 +59,29 @@
       "auth": "NONE_FOR_PUBLIC_API",
       "projection": "AGGREGATE_AWARD_OR_ACCOUNT_LEVEL",
       "state": "BASE_CONFIGURED_ENDPOINT_CONTRACT_PENDING"
+    },
+    "PORTAL_HISTORICO_GASTOS_DIRETOS_PAGAMENTOS": {
+      "provider": "Portal da Transparencia do Governo Federal",
+      "landing_url": "https://portaldatransparencia.gov.br/download-de-dados/historico-gastos-diretos-pagamentos/",
+      "mode": "LOCAL_PUBLIC_FILE",
+      "projection": "AGGREGATE_PUBLIC_MONEY",
+      "state": "READY_FOR_SELECTED_PUBLIC_FILE"
+    },
+    "PORTAL_DIRIGENTES": {
+      "provider": "Portal da Transparencia do Governo Federal",
+      "landing_url": "https://portaldatransparencia.gov.br/download-de-dados/dirigentes",
+      "mode": "LOCAL_PUBLIC_FILE",
+      "projection": "AGGREGATE_GOVERNANCE_ROLES_ONLY",
+      "state": "READY_FOR_SELECTED_PUBLIC_FILE",
+      "privacy_note": "Public source may include direct identifiers; public RafGitTools projection must suppress them and retain only aggregate/effective-dated role structure."
+    },
+    "PORTAL_PEP": {
+      "provider": "Portal da Transparencia do Governo Federal",
+      "landing_url": "https://portaldatransparencia.gov.br/download-de-dados/pep",
+      "mode": "LOCAL_PUBLIC_FILE",
+      "projection": "AGGREGATE_GOVERNANCE_ROLES_ONLY",
+      "state": "READY_FOR_SELECTED_PUBLIC_FILE",
+      "privacy_note": "Do not create public person-level dossiers or infer misconduct from PEP status."
     }
   },
   "secret_policy": {
@@ -124,6 +147,8 @@
     "CORRELATION != CAUSALITY",
     "MISSING_RECORD != ZERO",
     "TOKEN_VAZIO != PASS",
-    "PLECT_BASELINE != PLECT_CANONICAL"
+    "PLECT_BASELINE != PLECT_CANONICAL",
+    "PUBLIC_ROLE != MISCONDUCT",
+    "PEP_STATUS != SUSPICION"
   ]
 }
