@@ -1,23 +1,19 @@
-# RLL Branch Atlas V1
+# RLL Branch Atlas V1.1
 
-Status: `IMPLEMENTED_SOURCE / SNAPSHOT_OBSERVED / RENAMES_NOT_EXECUTED`  
+Status: `IMPLEMENTED_SOURCE / DISPLAY_ORDERED / PHYSICAL_REFS_PRESERVED`  
 Claim gate: `claim_allowed=false`
 
-## Census
+## Selection model
 
-The 2026-09-29 snapshot records:
+`main` remains exactly `main` and is pinned at the top of the selector.
 
-- RLL: **873 branches**
-- RafGitTools: **325 branches**
-- Combined: **1198 branches**
-
-The snapshot stores every observed branch name and assigns a proposed numbered family. Classification is navigation metadata, not proof that the branch belongs semantically to that family.
-
-## Canonical ordered families
+Everything below it is ordered by navigation number:
 
 ```text
-00-anchor
+main
 05-lab
+06-integration
+07-release
 10-science
 20-data
 30-math-geometry
@@ -30,54 +26,37 @@ The snapshot stores every observed branch name and assigns a proposed numbered f
 95-legacy-unclassified
 ```
 
-`main` and `rll/lab` remain anchors. They are not renamed by this migration.
+The number is a **navigation/order label**, not a mandatory physical Git rename.
 
-## Why there is no bulk rename
+The maturity refs keep their real names:
 
-The repositories contain active/historical PR heads, workflow branch filters, receipts, links and provider controls. A Git ref rename can make those references stale even when the commit survives.
+- `main`
+- `rll/lab`
+- `rll/integration`
+- `rll/release`
 
-Therefore each non-anchor branch is currently:
+## Snapshot rule
 
-`REVIEW_REQUIRED`
+The branch census is a point-in-time observation. The validator checks that each repository total equals the number of records in the snapshot instead of hard-coding a historical count.
 
-with four required preconditions:
+## UI behavior
 
-1. scan open PR references;
-2. scan workflow triggers and explicit branch literals;
-3. read back branch protection/ruleset state;
-4. scan Pages/document links.
+`docs/site/rll-atlas/index.html` uses three selectors:
 
-Only after all four can a branch move from its historical name to a numbered canonical prefix.
+1. repository;
+2. ordered selection;
+3. branch.
 
-## Pages / combobox
+When a repository contains `main`, the selector starts at `main`. Choosing another numbered family exposes its branches below the root selection.
 
-`docs/site/rll-atlas/index.html` provides repository, family and branch selectors. It reads `branch-atlas.json`, a presentation copy of the canonical snapshot.
+## Rename boundary
 
-The page source is materialized, but GitHub Pages provider configuration was not assumed or mutated:
+No bulk rename is authorized by the atlas.
 
-`TOKEN_VAZIO_PAGES_PROVIDER_CONFIGURATION`
-
-## PAT boundary
-
-This work does not reuse all PATs generically.
-
-- `PAT_ACTIONS`: existing bounded read-only route remains unchanged.
-- `PAT_ENV`: manual-only provider route remains unchanged.
-- `PAT_AGENTS`, `PAT_CODESPACES`, `PAT_DEPENDABOT`: remain registered but unwired until provider permission readback.
-
-No secret value is read, printed, persisted or copied into the atlas.
-
-## Files
-
-- `configs/rll-branch-atlas.v1.yml` — governance contract.
-- `data/navigation/RLL_BRANCH_ATLAS_SNAPSHOT_20260929.json` — canonical branch census.
-- `docs/site/rll-atlas/branch-atlas.json` — Pages/UI projection.
-- `docs/site/rll-atlas/index.html` — combobox navigation.
-- `scripts/navigation/rll_branch_atlas.py` — offline validator.
-- `tests/test_rll_branch_atlas.py` — CI regression checks.
+For historical/non-maturity branches, a physical rename remains `REVIEW_REQUIRED` until PR references, workflow literals, protection/rulesets and Pages/document links are checked.
 
 ## R3
 
-**F_ok:** all currently observable branch names are captured and ordered into a migration taxonomy.  
-**F_gap:** per-branch PR/workflow/protection/Pages dependency scans are not yet completed; Pages provider state is not read back.  
-**F_next:** execute dependency scans by family, starting with `50-docs-papers` and `80-audit-evidence`, then migrate only branches with zero unresolved references.
+**F_ok:** main is fixed as the root display name; maturity refs have explicit ordered families; numeric labels organize selection without changing protected refs.  
+**F_gap:** provider Pages publication and per-branch physical rename safety remain separate evidence gates.  
+**F_next:** use the ordered UI immediately; execute physical rename only where dependency scans prove it safe.
