@@ -1,8 +1,8 @@
 {
   "schema": "rafgittools.android-novoexport-processor.v1",
-  "state": "ANDROID_PROCESSOR_AND_SINGLE_FILE_FLOW_SOURCE_ADDED",
-  "app_flow": "SOURCE_PRESENT_PER_FILE",
-  "ci": "PENDING",
+  "state": "PER_FILE_PROCESS_AND_PUBLICATION_UI_MERGED",
+  "app_flow": "DRIVE_TAB_PER_FILE_ACTION_SOURCE_PRESENT",
+  "ci": "ANDROID_JOB_QUEUED_RUN_36558610755",
   "device_execution": "NOT_RUN",
   "claim_allowed": false,
   "source_patterns": [
@@ -29,11 +29,11 @@
   "corpus_scope_bytes": "TOKEN_VAZIO_MEASURED_INVENTORY_REQUIRED",
   "remaining": [
     "SAF_TREE_ENUMERATION",
-    "PERSISTENT_QUEUE",
-    "APP_SCREEN_WIRING",
-    "BACKGROUND_EXECUTION",
+    "PERSISTENT_RESUMABLE_BATCH_QUEUE",
+    "BACKGROUND_EXECUTION_AND_RECOVERY",
     "DRIVE_AND_GIT_READBACK",
-    "PHYSICAL_DEVICE_CANARY"
+    "PHYSICAL_DEVICE_CANARY",
+    "MEASURED_CORPUS_INVENTORY"
   ],
-  "next": "run exact-head CI, wire APK screen and SAF enumerator, then handset canary"
+  "next": "await terminal Android CI for run 36558610755; then wire recursive SAF inventory and resumable batch queue before a phone canary"
 }
