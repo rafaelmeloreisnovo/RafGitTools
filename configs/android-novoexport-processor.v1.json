@@ -1,8 +1,8 @@
 {
   "schema": "rafgittools.android-novoexport-processor.v1",
-  "state": "SAF_RECURSIVE_INVENTORY_SOURCE_IMPLEMENTED_UNTESTED",
-  "app_flow": "DRIVE_TAB_PER_FILE_PLUS_RECURSIVE_METADATA_INVENTORY_SOURCE_PRESENT",
-  "ci": "NEW_STACKED_EXACT_HEAD_CI_NOT_RUN",
+  "state": "RESUMABLE_QUEUE_STORE_SOURCE_IMPLEMENTED_UNTESTED",
+  "app_flow": "DRIVE_TAB_PER_FILE_PLUS_RECURSIVE_INVENTORY_PLUS_PRIVATE_QUEUE_SOURCE_PRESENT",
+  "ci": "NEW_STACKED_QUEUE_EXACT_HEAD_CI_NOT_RUN",
   "device_execution": "NOT_RUN",
   "claim_allowed": false,
   "source_patterns": [
@@ -28,13 +28,12 @@
   "provider_readback": "SOURCE_IMPLEMENTED_FAIL_CLOSED_DRIVE_AND_PRIVATE_GIT",
   "corpus_scope_bytes": "TOKEN_VAZIO_MEASURED_INVENTORY_REQUIRED",
   "remaining": [
-    "EXACT_HEAD_CI_FOR_SAF_INVENTORY_SUCCESSOR",
-    "PERSISTENT_RESUMABLE_BATCH_QUEUE",
+    "EXACT_HEAD_CI_FOR_RESUMABLE_QUEUE_SUCCESSOR",
     "BACKGROUND_EXECUTION_AND_RECOVERY",
     "PHYSICAL_DEVICE_CANARY",
     "MEASURED_CORPUS_INVENTORY"
   ],
-  "next": "close exact-head CI for stacked SAF inventory; then persist the candidate URI+metadata queue and per-file state so process death/restart resumes safely before any physical large-corpus run",
+  "next": "close exact-head CI for the stacked queue successor; then wire the queue executor/background recovery loop to process one URI at a time and persist transitions before a physical Drive canary",
   "saf_inventory": {
     "state": "SOURCE_IMPLEMENTED_UNTESTED",
     "mode": "METADATA_ONLY_RECURSIVE",
@@ -47,5 +46,21 @@
     ],
     "known_size_aggregation": "PROVIDER_METADATA_ONLY",
     "unknown_size": "TOKEN_VAZIO_SIZE"
+  },
+  "queue": {
+    "state": "SOURCE_IMPLEMENTED_UNTESTED",
+    "storage": "ANDROID_APP_PRIVATE_FILES",
+    "schema": "rafgittools.novoexport-resumable-queue/v1",
+    "identity": "SHA256_OF_TREE_URI_PLUS_PROVIDER_METADATA",
+    "states": [
+      "PENDING",
+      "PROCESSING",
+      "COMPLETE",
+      "FAILED_RETRYABLE",
+      "BLOCKED"
+    ],
+    "atomic_recovery": "TEMP_PLUS_BACKUP",
+    "preserves_retry_state_on_reinventory": true,
+    "queue_is_evidence": false
   }
 }
