@@ -377,7 +377,7 @@ class HomeViewModel @Inject constructor(
                     utf8Content = content,
                     message = message,
                     branch = target.defaultBranch
-                ).map { Unit }
+                ).map { it.commit.sha }
             }.getOrThrow()
         }
     }
