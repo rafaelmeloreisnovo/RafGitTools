@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -134,6 +135,57 @@ class PrivateCiBridgeTests(unittest.TestCase):
                 allowed_executables={"python3"},
             )
 
+    def test_probe_network_isolation_falls_back_without_weakening_gate(self):
+        backends = [
+            ("USERNS", ["/usr/bin/unshare", "--user", "--net", "--"]),
+            (
+                bridge.NETWORK_ISOLATION_SUDO_METHOD,
+                ["/usr/bin/sudo", "-n", "/usr/bin/unshare", "--net", "--", "/usr/bin/setpriv", "--no-new-privs", "--"],
+            ),
+        ]
+        failed = subprocess.CompletedProcess(
+            args=backends[0][1], returncode=1, stdout=b"", stderr=b"userns blocked"
+        )
+        passed = subprocess.CompletedProcess(
+            args=backends[1][1], returncode=0, stdout=b"", stderr=b""
+        )
+        with mock.patch.object(
+            bridge,
+            "_network_isolation_backends",
+            return_value=backends,
+        ), mock.patch.object(
+            bridge.subprocess,
+            "run",
+            side_effect=[failed, passed],
+        ):
+            out = bridge.probe_network_isolation()
+        self.assertEqual(out["state"], "PASS")
+        self.assertEqual(out["method"], bridge.NETWORK_ISOLATION_SUDO_METHOD)
+        self.assertEqual(out["attempt_count"], 2)
+        self.assertEqual(len(out["failed_backend_hashes"]), 1)
+        self.assertFalse(out["claim_allowed"])
+
+    def test_probe_network_isolation_fails_closed_when_all_backends_fail(self):
+        backends = [
+            ("USERNS", ["/usr/bin/unshare", "--user", "--net", "--"]),
+            ("FALLBACK", ["/usr/bin/sudo", "-n", "/usr/bin/unshare", "--net", "--"]),
+        ]
+        failures = [
+            subprocess.CompletedProcess(args=x[1], returncode=1, stdout=b"", stderr=x[0].encode())
+            for x in backends
+        ]
+        with mock.patch.object(
+            bridge,
+            "_network_isolation_backends",
+            return_value=backends,
+        ), mock.patch.object(
+            bridge.subprocess,
+            "run",
+            side_effect=failures,
+        ):
+            with self.assertRaisesRegex(ValueError, "failed across all backends"):
+                bridge.probe_network_isolation()
+
     def test_zipraf_receipt_profile_is_deterministic_integrity_only(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -188,7 +240,23 @@ class PrivateCiBridgeTests(unittest.TestCase):
                 for k, v in os.environ.items()
                 if k not in bridge.FORBIDDEN_SECRET_NAMES
             }
-            with mock.patch.dict(os.environ, clean_env, clear=True):
+            isolation = {
+                "method": "TEST_NETNS",
+                "state": "PASS",
+                "external_ipv4_tcp_connect_blocked": True,
+                "probe_stdout_sha256": hashlib.sha256(b"").hexdigest(),
+                "probe_stderr_sha256": hashlib.sha256(b"").hexdigest(),
+                "attempt_count": 1,
+                "failed_backend_hashes": [],
+                "claim_allowed": False,
+            }
+            with mock.patch.dict(os.environ, clean_env, clear=True), mock.patch.object(
+                bridge, "probe_network_isolation", return_value=isolation
+            ), mock.patch.object(
+                bridge,
+                "network_isolation_argv",
+                side_effect=lambda argv, method=None: list(argv),
+            ):
                 out = bridge.execute_plan(
                     registry=registry(),
                     manifest=manifest(),
