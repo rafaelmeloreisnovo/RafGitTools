@@ -9,7 +9,7 @@ The user's phone runs the RafGitTools APK. RafGitTools reads the existing Drive 
 
 ## Implementation status at main
 
-The per-file processor, publisher, Drive-tab action and tests were introduced by PR #575 and compile/publishing fixes by PR #576. Both PRs are merged. Exact-head pipeline run `36558610755`: Android/test/lint/devDebug APK job `109375861051` completed successfully, including unit tests, lint, devDebug assembly and APK hash verification; CodeQL Java/Kotlin and Python deterministic tests also completed successfully. Final receipt job `109382657128` is still queued, so the overall pipeline has not closed. Physical-device execution has not been run.
+The per-file processor, publisher, Drive-tab action and tests were introduced by PR #575 and compile/publishing fixes by PR #576. Both PRs are merged. Exact-head pipeline run `36558610755`: Android/test/lint/devDebug APK job `109375861051` completed successfully, including unit tests, lint, devDebug assembly and APK hash verification; CodeQL Java/Kotlin and Python deterministic tests also completed successfully. Final receipt job `109382657128` is still queued, so the overall pipeline has not closed. The built devDebug APK SHA-256 is `4120a8f91a1de47a28c3c8db27b3e1a8fbaa94146c1b044ee7f1ecc3575fac7d`, uploaded in workflow artifact `start-06-devDebug-36558610755` (artifact ID `11030485325`). The merge commit `695bed743c5b22427ebc7f6cf4b71169208001bc` is one commit ahead of tested head `07081ef774d773cf570fb20aaab1058301761155` with no changed files in the comparison. This binds source trees, but no APK installation or physical-device execution has been run.
 
 ## Implemented source
 
