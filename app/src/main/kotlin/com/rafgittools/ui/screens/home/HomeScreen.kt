@@ -31,6 +31,7 @@ import com.rafgittools.bridge.CorpusIntakeResult
 import com.rafgittools.bridge.DriveStagingGate
 import com.rafgittools.navigator.ConversationManifoldProcessor
 import com.rafgittools.navigator.ConversationManifoldPublication
+import com.rafgittools.navigator.NovoexportSafInventory
 import com.rafgittools.ui.components.ResponsiveContentFrame
 import com.rafgittools.domain.model.github.GithubRepository
 import kotlinx.coroutines.Dispatchers
@@ -299,6 +300,8 @@ private fun DriveBridgeContent(
     var manifoldPlan by remember { mutableStateOf<ConversationManifoldPublication.Plan?>(null) }
     var publishingManifold by remember { mutableStateOf(false) }
     var manifoldPublishSummary by remember { mutableStateOf<String?>(null) }
+    var inventoryingTree by remember { mutableStateOf(false) }
+    var treeInventory by remember { mutableStateOf<NovoexportSafInventory.Result?>(null) }
 
     val catalogFolderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) {
@@ -367,6 +370,35 @@ private fun DriveBridgeContent(
                 }
                 planned.onSuccess { manifoldPlan = it }
                     .onFailure { error = it.message ?: "Falha ao criar plano de publicação" }
+            }
+        }
+    }
+
+    val sourceTreePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            error = null
+            treeInventory = null
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: SecurityException) {
+                // The current grant may still be enough for this bounded inventory pass.
+            }
+            scope.launch {
+                inventoryingTree = true
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        NovoexportSafInventory.scan(
+                            resolver = context.contentResolver,
+                            treeUri = uri
+                        )
+                    }
+                }
+                result.onSuccess { treeInventory = it }
+                    .onFailure { error = it.message ?: "Falha ao inventariar árvore NOVOexport" }
+                inventoryingTree = false
             }
         }
     }
@@ -444,6 +476,65 @@ private fun DriveBridgeContent(
                             Icon(Icons.Default.CloudDownload, null)
                             Spacer(Modifier.width(8.dp))
                             Text("Abrir seletor de arquivos")
+                        }
+                    }
+                }
+            }
+        }
+
+
+        item {
+            ElevatedCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.AccountTree, null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(8.dp))
+                        Text("NOVOexport · inventário recursivo", style = MaterialTheme.typography.titleMedium)
+                    }
+                    Text(
+                        "Lê somente metadados da árvore SAF selecionada. Não abre o conteúdo dos arquivos, não renomeia e não move nada. Filtra conversation*.json e codex*.json para preparar a fila persistente.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Button(
+                        onClick = { sourceTreePicker.launch(null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !inventoryingTree && !processingManifold && !publishingManifold
+                    ) {
+                        if (inventoryingTree) {
+                            CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Inventariando metadados…")
+                        } else {
+                            Icon(Icons.Default.FolderOpen, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Selecionar pasta NOVOexport")
+                        }
+                    }
+                    treeInventory?.let { inventory ->
+                        Text(
+                            "INVENTORY: ${inventory.state} · documentos=${inventory.visitedDocuments} · diretórios=${inventory.visitedDirectories} · candidatos=${inventory.candidateFiles.size}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            "Bytes conhecidos nos candidatos: ${formatBytes(inventory.knownCandidateBytes)} · tamanhos TOKEN_VAZIO=${inventory.unknownSizeCandidateFiles}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        inventory.candidateFiles.take(6).forEach { candidate ->
+                            Text(
+                                "• ${candidate.name} · ${candidate.sizeBytes?.let(::formatBytes) ?: "TOKEN_VAZIO_SIZE"}",
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        if (inventory.candidateFiles.size > 6) {
+                            Text(
+                                "… +${inventory.candidateFiles.size - 6} candidatos; a fila persistente continua como próximo gate.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }

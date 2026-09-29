@@ -1,6 +1,6 @@
 # RafGitTools Android NOVOexport Processor — Implementation V1
 
-State: `PROVIDER_READBACK_SOURCE_IMPLEMENTED_UNTESTED / NEW_EXACT_HEAD_CI_NOT_RUN / DEVICE_NOT_RUN / BATCH_INVENTORY_NOT_WIRED`
+State: `SAF_RECURSIVE_INVENTORY_SOURCE_IMPLEMENTED_UNTESTED / STACKED_EXACT_HEAD_CI_NOT_RUN / DEVICE_NOT_RUN / PERSISTENT_QUEUE_NOT_WIRED`
 claim_allowed: false
 
 ## Correct execution model
@@ -24,6 +24,15 @@ The per-file processor, publisher, Drive-tab action and tests were introduced by
   - synthetic conversation and Codex inputs;
   - large-message reconstruction;
   - malformed/trailing-comma, unexpected source, source-size and record-size rejection.
+- `app/src/main/kotlin/com/rafgittools/navigator/NovoexportSafInventory.kt`
+  - recursively walks only metadata from a user-selected SAF tree using provider document IDs;
+  - never opens source document bytes and never renames, moves or deletes a source;
+  - filters the bounded source families `conversation*.json`, `conversations*.json` and `codex*.json`;
+  - records candidate URIs, MIME types and provider-reported sizes, retaining unknown sizes as `TOKEN_VAZIO_SIZE`;
+  - prevents directory cycles by document ID and fails closed above the configured 100,000-document bound.
+- `app/src/test/kotlin/com/rafgittools/navigator/NovoexportSafInventoryTest.kt`
+  - positive and negative source-family selection gates.
+
 - `app/src/main/kotlin/com/rafgittools/navigator/ConversationManifoldPublication.kt`
   - creates a metadata-only plan with source/output hashes and bounded Git-sized parts;
   - requires the confirmation value to equal the exact plan SHA-256;
@@ -36,9 +45,9 @@ The Drive tab in `app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen
 
 ## Still required before the phone can run the full route
 
-1. Add a dedicated NOVOexport batch/inventory screen and bind `ACTION_OPEN_DOCUMENT_TREE` for the source tree with persisted SAF grants. The current Drive-tab action selects one file at a time.
-2. Enumerate descendants of the selected source tree and filter `conversation*.json` and `codex*.json`; persist the queue and per-file status so app restart resumes safely.
-3. Feed each source URI to `ConversationManifoldProcessor` on an IO/background executor and persist checkpoints, cancellation, permission loss and storage errors.
+1. Obtain exact-head CI for the recursive SAF inventory successor; `IMPLEMENTED_UNTESTED != PASS`.
+2. Persist the inventoried candidate URI + metadata set as a resumable queue with per-file states, retry/error counters and source identity so app restart resumes safely.
+3. Feed queued source URIs to `ConversationManifoldProcessor` on an IO/background executor and persist checkpoints, cancellation, permission loss and storage errors.
 4. Extend the existing per-file preview/plan confirmation into a batch queue view with per-file status and resume controls; publish only after explicit confirmation through the live-private GitHub writer.
 5. Obtain terminal exact-head CI for the provider-readback successor; `IMPLEMENTED_UNTESTED != PASS`.
 6. Install the exact tested APK on the phone and pass a small Drive→process→Drive/Git canary, including the V2 readback receipt, before enabling multi-gigabyte batches.
