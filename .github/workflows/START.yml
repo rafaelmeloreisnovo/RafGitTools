@@ -25,6 +25,7 @@ on:
           - docs
           - release
           - provider_environments
+          - private_ci
           - public_data
       release_version:
         description: 'Release version without leading v (required for manual release mode)'
@@ -50,6 +51,27 @@ on:
         required: false
         default: ''
         type: string
+      private_ci_target_id:
+        description: 'Public registry target id for exact-SHA private CI replay'
+        required: false
+        default: rafaelia-private
+        type: string
+      private_ci_target_sha:
+        description: 'Exact lowercase 40-hex private repository commit SHA'
+        required: false
+        default: ''
+        type: string
+      private_ci_workflow_id:
+        description: 'Allowlisted private workflow replay id'
+        required: false
+        default: documentation-std-mil
+        type: choice
+        options:
+          - documentation-std-mil
+          - current-rafaelia-program-governance-v1
+          - freestanding-l0-v1
+          - hd-cache-phase1
+          - hd-cache-phase2
       public_data_source:
         description: 'Allowlisted aggregate official source'
         required: false
@@ -99,6 +121,12 @@ jobs:
       provider_actions_repository: ${{ steps.route.outputs.provider_actions_repository }}
       provider_actions_sha: ${{ steps.route.outputs.provider_actions_sha }}
       provider_actions_task: ${{ steps.route.outputs.provider_actions_task }}
+      private_ci: ${{ steps.route.outputs.private_ci }}
+      private_ci_target_id: ${{ steps.route.outputs.private_ci_target_id }}
+      private_ci_repository: ${{ steps.route.outputs.private_ci_repository }}
+      private_ci_sha: ${{ steps.route.outputs.private_ci_sha }}
+      private_ci_workflow_id: ${{ steps.route.outputs.private_ci_workflow_id }}
+      private_ci_manifest_path: ${{ steps.route.outputs.private_ci_manifest_path }}
       public_data: ${{ steps.route.outputs.public_data }}
     steps:
       - name: Checkout exact source
@@ -113,6 +141,9 @@ jobs:
         env:
           REQUESTED_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'auto' }}
           REQUESTED_PROVIDER_OPERATION: ${{ github.event_name == 'workflow_dispatch' && inputs.provider_operation || 'preflight' }}
+          REQUESTED_PRIVATE_CI_TARGET_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.private_ci_target_id || '' }}
+          REQUESTED_PRIVATE_CI_TARGET_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.private_ci_target_sha || '' }}
+          REQUESTED_PRIVATE_CI_WORKFLOW_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.private_ci_workflow_id || '' }}
         run: |
           set -euo pipefail
           mode="${REQUESTED_MODE:-auto}"
@@ -127,6 +158,12 @@ jobs:
           provider_actions_repository=""
           provider_actions_sha=""
           provider_actions_task=""
+          private_ci=false
+          private_ci_target_id=""
+          private_ci_repository=""
+          private_ci_sha=""
+          private_ci_workflow_id=""
+          private_ci_manifest_path=""
           public_data=false
 
           case "${GITHUB_EVENT_NAME}" in
@@ -267,6 +304,23 @@ jobs:
               provider_environments=true
               provider_operation="${REQUESTED_PROVIDER_OPERATION:-preflight}"
               ;;
+            private_ci)
+              if [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch ]]; then
+                echo "::error::private_ci is manual-only"
+                exit 2
+              fi
+              [[ "${REQUESTED_PRIVATE_CI_TARGET_SHA:-}" =~ ^[0-9a-f]{40}$ ]] || {
+                echo "::error::private_ci requires an exact lowercase 40-hex target SHA"
+                exit 2
+              }
+              resolved="$(python3 scripts/private_ci_bridge.py resolve --registry configs/private-ci/execution-registry.v1.json --target-id "${REQUESTED_PRIVATE_CI_TARGET_ID}" --workflow-id "${REQUESTED_PRIVATE_CI_WORKFLOW_ID}" --commit "${REQUESTED_PRIVATE_CI_TARGET_SHA}")"
+              private_ci_target_id="${REQUESTED_PRIVATE_CI_TARGET_ID}"
+              private_ci_repository="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read())[\"repository\"])' <<<"$resolved")"
+              private_ci_sha="${REQUESTED_PRIVATE_CI_TARGET_SHA}"
+              private_ci_workflow_id="${REQUESTED_PRIVATE_CI_WORKFLOW_ID}"
+              private_ci_manifest_path="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read())[\"manifest_path\"])' <<<"$resolved")"
+              private_ci=true
+              ;;
             public_data)
               if [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch ]]; then
                 echo "::error::public_data is manual-only"
@@ -295,6 +349,12 @@ jobs:
             echo "provider_actions_repository=$provider_actions_repository"
             echo "provider_actions_sha=$provider_actions_sha"
             echo "provider_actions_task=$provider_actions_task"
+            echo "private_ci=$private_ci"
+            echo "private_ci_target_id=$private_ci_target_id"
+            echo "private_ci_repository=$private_ci_repository"
+            echo "private_ci_sha=$private_ci_sha"
+            echo "private_ci_workflow_id=$private_ci_workflow_id"
+            echo "private_ci_manifest_path=$private_ci_manifest_path"
             echo "public_data=$public_data"
           } >> "$GITHUB_OUTPUT"
 
@@ -313,6 +373,12 @@ jobs:
             echo "- provider_actions_repository: \`${provider_actions_repository:-TOKEN_VAZIO}\`"
             echo "- provider_actions_sha: \`${provider_actions_sha:-TOKEN_VAZIO}\`"
             echo "- provider_actions_task: \`${provider_actions_task:-TOKEN_VAZIO}\`"
+            echo "- private_ci: \`$private_ci\`"
+            echo "- private_ci_target_id: \`${private_ci_target_id:-TOKEN_VAZIO}\`"
+            echo "- private_ci_repository: \`${private_ci_repository:-TOKEN_VAZIO}\`"
+            echo "- private_ci_sha: \`${private_ci_sha:-TOKEN_VAZIO}\`"
+            echo "- private_ci_workflow_id: \`${private_ci_workflow_id:-TOKEN_VAZIO}\`"
+            echo "- private_ci_manifest_path: \`${private_ci_manifest_path:-TOKEN_VAZIO}\`"
             echo "- public_data: \`$public_data\`"
             echo '- claim_allowed: `false`'
           } >> "$GITHUB_STEP_SUMMARY"
