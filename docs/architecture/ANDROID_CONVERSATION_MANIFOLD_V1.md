@@ -1,6 +1,6 @@
 # RafGitTools Android Conversation Manifold V1
 
-State: `SPEC_MATERIALIZED / IMPLEMENTATION_GAP_CONFIRMED / DEVICE_E2E_NOT_RUN`
+State: `SPEC_MATERIALIZED / PER_FILE_FLOW_MERGED / BATCH_GAPS_OPEN / DEVICE_E2E_NOT_RUN`
 claim_allowed: false
 
 ## Intent
@@ -91,3 +91,12 @@ No count is complete until an exhaustive provider enumeration and terminal curso
 F_ok: current app staging/receipt route and Python Navigator tooling are observed in source; destination repository is private and identified.
 F_gap: the APK-to-Navigator integration, recursive Drive inventory, mobile checkpoints, private derived publication, CI and physical-device run are not proven.
 F_next: implement M0/M1 as a reviewable APK feature, then close M2-M4 with synthetic/reference parity and a phone canary before scaling to the reported 25 GB.
+
+
+## Implementation checkpoint — 2026-09-29
+
+PR #575 introduced the per-file processor, bounded publisher, tests and a Drive-tab Process action. PR #576 fixed Kotlin compilation issues in the processor/publisher and was merged at commit `695bed743c5b22427ebc7f6cf4b71169208001bc`. The app now has a source-level per-file action; it does not yet have recursive NOVOexport tree inventory or a persistent resumable batch queue.
+
+For workflow run `36558610755`, the routing, workflow-topology and coherence stages were observed successful. The Android/test/lint/devDebug APK job was still `queued` at the latest check. Therefore build/test state is `PENDING`, not PASS. No APK installation, phone execution, Drive provider readback, or 25 GB corpus enumeration has been evidenced.
+
+Current split: `IMPLEMENTED_SOURCE_PER_FILE`; `BATCH_INVENTORY=NOT_IMPLEMENTED`; `ANDROID_CI=PENDING`; `DEVICE_E2E=NOT_RUN`; `MEASURED_CORPUS_BYTES=TOKEN_VAZIO`; `claim_allowed=false`.
