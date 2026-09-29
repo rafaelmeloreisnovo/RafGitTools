@@ -89,7 +89,7 @@ No count is complete until an exhaustive provider enumeration and terminal curso
 ## R3
 
 F_ok: current app staging/receipt route and Python Navigator tooling are observed in source; destination repository is private and identified.
-F_gap: the APK-to-Navigator integration, recursive Drive inventory, mobile checkpoints, private derived publication, CI and physical-device run are not proven.
+F_gap: the full APK-to-Navigator data model, recursive Drive inventory, persistent mobile batch checkpoints, provider readback and physical-device run are not proven; Android CI has passed for the per-file implementation.
 F_next: implement M0/M1 as a reviewable APK feature, then close M2-M4 with synthetic/reference parity and a phone canary before scaling to the reported 25 GB.
 
 
@@ -97,6 +97,6 @@ F_next: implement M0/M1 as a reviewable APK feature, then close M2-M4 with synth
 
 PR #575 introduced the per-file processor, bounded publisher, tests and a Drive-tab Process action. PR #576 fixed Kotlin compilation issues in the processor/publisher and was merged at commit `695bed743c5b22427ebc7f6cf4b71169208001bc`. The app now has a source-level per-file action; it does not yet have recursive NOVOexport tree inventory or a persistent resumable batch queue.
 
-For workflow run `36558610755`, the routing, workflow-topology and coherence stages were observed successful. The Android/test/lint/devDebug APK job was still `queued` at the latest check. Therefore build/test state is `PENDING`, not PASS. No APK installation, phone execution, Drive provider readback, or 25 GB corpus enumeration has been evidenced.
+For workflow run `36558610755`, the Android/test/lint/devDebug APK job `109375861051` completed successfully: unit tests, lint, devDebug assembly and APK hash verification passed. Python deterministic tests and CodeQL Java/Kotlin also passed. The overall run's final receipt job `109382657128` remains queued. No APK installation, phone execution, Drive provider readback, or 25 GB corpus enumeration has been evidenced.
 
-Current split: `IMPLEMENTED_SOURCE_PER_FILE`; `BATCH_INVENTORY=NOT_IMPLEMENTED`; `ANDROID_CI=PENDING`; `DEVICE_E2E=NOT_RUN`; `MEASURED_CORPUS_BYTES=TOKEN_VAZIO`; `claim_allowed=false`.
+Current split: `IMPLEMENTED_SOURCE_PER_FILE`; `BATCH_INVENTORY=NOT_IMPLEMENTED`; `ANDROID_CI=ANDROID_JOB_PASS_FINAL_RECEIPT_PENDING`; `DEVICE_E2E=NOT_RUN`; `MEASURED_CORPUS_BYTES=TOKEN_VAZIO`; `claim_allowed=false`.
