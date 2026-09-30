@@ -18,7 +18,7 @@ fix, and the Vectras ARM32 policy fix.
 |---|---|---:|---|
 | Rafaelia_Private CI | BLOCKED_EXTERNAL | P1 | no speculative source patch; runner steps/logs unavailable |
 | GAIA_phi CI | BLOCKED_EXTERNAL | P1 | same fail-closed handling; source cause not proven |
-| RafPolimata TOKEN_VAZIO gate | HOTFIX_APPLIED_PENDING_RERUN | P0 | bind new unknown-state markers to CLOSURE_L11 |
+| RafPolimata TOKEN_VAZIO gate | **PASS_HOTFIX_VERIFIED** | closed P0 | CLOSURE_L11 binding verified by CI run 36705649532 |
 | Vectras APK Wizard ARM32 | HOTFIX_APPLIED_PENDING_RERUN | P0 | add arm32-debug parity to terminal-emulator |
 | Termux provider protection | FAIL / EXTERNAL_ADMIN | P0 | apply live ruleset admin delta, then rerun 10_PROVIDER |
 | termux-packages D3-D8 | TOKEN_VAZIO | P1 | execute D3 before any later gate |
@@ -40,9 +40,11 @@ A green host gate does not prove ARM, Android or device execution.
 
 ## Confirmed hotfixes
 
-### RafPolimata
+### RafPolimata — verified PASS
 
-The CI failure at step `Validate TOKEN_VAZIO gates (Hotfix H1)` was causal to two
+CI run `36705649532`, job `109855143660`, completed successfully. The `Validate TOKEN_VAZIO gates (Hotfix H1)` step is now PASS, together with the remaining exposed CI steps.
+
+The prior CI failure at step `Validate TOKEN_VAZIO gates (Hotfix H1)` was causal to two
 new federation files. The new references are now bound to
 `CLOSURE_L11_OPERATIONAL_GAP_TOPOLOGY`.
 
