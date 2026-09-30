@@ -25,7 +25,9 @@
       "closure": "CLOSURE_L11_REQUIRED_BEFORE_AUTHORITY_PROMOTION"
     },
     "rafpolimata_hotfix_result": "RafPolimata/federation/receipts/2026-09-30-polimata-hotfix-result.v3.json",
-    "termux_packages_source_result": "termux-packages/federation/receipts/2026-09-30-termux-packages-hotfix-result.v3.json"
+    "termux_packages_source_result": "termux-packages/federation/receipts/2026-09-30-termux-packages-hotfix-result.v3.json",
+    "termux_app_result": "termux-app-rafacodephi/federation/receipts/2026-09-30-termux-app-hotfix-result.v3.json",
+    "crossrepo_structural_receipt": "RafGitTools/receipts/2026-09-30_ECOSYSTEM_CROSSREPO_STRUCTURAL_V3.json"
   },
   "errors": [
     {
@@ -236,5 +238,16 @@
     "state": "PASS",
     "scope": "SOURCE_AND_HARDENING_ONLY",
     "D3": "NOT_RUN"
+  },
+  "termux_app_verification": {
+    "rafaelia_pipeline": {
+      "run_id": 36705656507,
+      "state": "PASS"
+    },
+    "provider_protection": {
+      "run_id": 36705656293,
+      "state": "FAIL"
+    },
+    "physical_D6_D8": "TOKEN_VAZIO"
   }
 }
