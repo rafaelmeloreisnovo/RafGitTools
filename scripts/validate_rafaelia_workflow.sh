@@ -184,3 +184,12 @@ bash scripts/validate_rafaelia_signing_contract.sh
 # Mapa session-agent resolver: exact source binding, read-only route and no execution claim.
 python3 -m unittest discover -s tests -p 'test_resolve_session_ai_work_packet.py' -v
 python3 scripts/validate_practice_router.py configs/practice-router.v1.json --route session-ai-dispatch
+
+
+# Authorial Omega Hypervisor executor V1. This validates only the clean state/custody
+# implementation, exact Mapa manifest pin and authorial-payload identity boundary.
+# It does not promote Vectra/PCR inherited code, hardware virtualization, physical
+# device runtime, provider state or legal authorship of newly generated glue.
+python3 -m unittest discover -s tests \
+  -p 'test_authorial_omega_hypervisor_executor.py' -v
+python3 scripts/validate_authorial_omega_hypervisor_executor.py
