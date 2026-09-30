@@ -1,0 +1,41 @@
+{
+  "schema": "rafcodephi.functional-federation/v1",
+  "mode": "freestanding-concrete-contracts",
+  "principles": {
+    "relationship_is_not_authority_merge": true,
+    "source_body_copy_required": false,
+    "missing_evidence_may_be_promoted": false,
+    "freestanding_must_be_evidenced": true,
+    "local_gate_required_before_promotion": true,
+    "claim_promotion_by_failover": false
+  },
+  "members": [
+    {
+      "repository": "rafaelmeloreisnovo/termux-packages",
+      "authority": "package-build-and-freestanding-module",
+      "leaf": "federation/functional-freestanding-leaf.v1.json"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/GAIA_phi",
+      "authority": "deterministic-data-index-and-pointer-custody",
+      "leaf": "federation/functional-freestanding-leaf.v1.json"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "authority": "android-shell-runtime",
+      "leaf": "federation/functional-freestanding-leaf.v1.json"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/RafPolimata",
+      "authority": "semantic-governance-and-freestanding-language",
+      "leaf": "federation/functional-freestanding-leaf.v1.json"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "authority": "federated-control-plane",
+      "leaf": "federation/functional-freestanding-leaf.v1.json"
+    }
+  ],
+  "promotion_rule": "all referenced local evidence and local gates remain repository-owned; federation validates presence/consistency only",
+  "claim_allowed": false
+}
