@@ -23,7 +23,8 @@
       "blob_sha": "132f948d199f6679fcae4f33912e0a3ad69691a3",
       "authority_repo": "TOKEN_VAZIO",
       "closure": "CLOSURE_L11_REQUIRED_BEFORE_AUTHORITY_PROMOTION"
-    }
+    },
+    "rafpolimata_hotfix_result": "RafPolimata/federation/receipts/2026-09-30-polimata-hotfix-result.v3.json"
   },
   "errors": [
     {
@@ -43,13 +44,19 @@
     {
       "id": "E-POLIMATA-TOKEN-CLOSURE",
       "repo": "rafaelmeloreisnovo/RafPolimata",
-      "state": "HOTFIX_APPLIED_PENDING_RERUN",
+      "state": "PASS_HOTFIX_VERIFIED",
       "causal_to_delta": true,
       "evidence": "two new federation TOKEN_VAZIO references lacked valid closure binding",
       "hotfix_commits": [
         "1d747af17cafddbb88f9a2de6cc4f8a076d8d1ab",
         "64ad3a6cbef8230a07ab5a524ab7756ef3e68a4d"
-      ]
+      ],
+      "verification": {
+        "workflow": "CI",
+        "run_id": 36705649532,
+        "job_id": 109855143660,
+        "conclusion": "success"
+      }
     },
     {
       "id": "E-VECTRAS-ARM32-POLICY",
@@ -155,7 +162,11 @@
     {
       "id": "G-POLIMATA-CLOSURE",
       "owner": "RafPolimata",
-      "state": "PENDING_RERUN"
+      "state": "PASS",
+      "evidence": {
+        "run_id": 36705649532,
+        "job_id": 109855143660
+      }
     },
     {
       "id": "G-VECTRAS-APK",
