@@ -14,10 +14,11 @@
   "required_paths": [
     "configs/rafaelia-federation.json",
     "scripts/federation/validate_federated_runtime_v1.py",
-    "native/rafcode_federation_v1/tests/smoke.sh"
+    "native/rafcode_federation_v1/tests/smoke.sh",
+    "native/rafcode_federation_v1/tools/audit_elf.sh"
   ],
   "verification_commands": [
-    "bash native/rafcode_federation_v1/tests/smoke.sh"
+    "make -C native/rafcode_federation_v1 test audit"
   ],
   "freestanding_evidence": "native/rafcode_federation_v1/tools/audit_elf.sh",
   "integration": {
