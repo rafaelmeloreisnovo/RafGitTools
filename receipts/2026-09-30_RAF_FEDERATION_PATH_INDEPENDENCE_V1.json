@@ -1,0 +1,59 @@
+{
+  "schema": "rafaelia.execution-receipt/v1",
+  "id": "RGT-FEDERATION-PATH-INDEPENDENCE-20260930",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "branch": "rafaelia/ecosystem-federation-v1-20260930",
+  "scope": "host x86_64 local-container verification of native/rafcode_federation_v1 after path-independence fix",
+  "source_changes": [
+    {
+      "path": "native/rafcode_federation_v1/tools/audit_elf.sh",
+      "commit": "83a4d1cfebcb65f4d76db83062ed068ae7a013ae"
+    },
+    {
+      "path": "native/rafcode_federation_v1/tests/smoke.sh",
+      "commit": "383d7e99c3f204e9845aa5992f56f3e89e49ab2d"
+    },
+    {
+      "path": "federation/functional-freestanding-leaf.v1.json",
+      "commit": "24269f96ec0b317c7959c7a74492edb2f42c6134"
+    }
+  ],
+  "execution": {
+    "environment": "local container supplied by ChatGPT tool runtime",
+    "architecture": "x86_64",
+    "commands": [
+      "make -C native/rafcode_federation_v1 clean",
+      "make -C native/rafcode_federation_v1 test audit",
+      "bash native/rafcode_federation_v1/tests/smoke.sh native/rafcode_federation_v1/build/host/rafcode-federation",
+      "bash native/rafcode_federation_v1/tools/audit_elf.sh native/rafcode_federation_v1/build/host/rafcode-federation 'Advanced Micro Devices X86-64'"
+    ],
+    "status": "PASS",
+    "observations": {
+      "smoke": "PASS deterministic valid receipt + fail-closed claim/short-frame paths",
+      "elf_audit": "PASS",
+      "hotpath_audit": "PASS",
+      "elf_bytes": 1384,
+      "load_segments": 1,
+      "interp": 0,
+      "needed": 0,
+      "relocations": 0,
+      "symbols": 0,
+      "undefined": 0,
+      "source_loops": 0,
+      "heap_primitives": 0
+    }
+  },
+  "evidence_boundary": {
+    "github_ci": "NOT_RUN",
+    "armv7": "NOT_RUN",
+    "aarch64": "NOT_RUN",
+    "android_device": "NOT_RUN",
+    "physical_device_receipt": "TOKEN_VAZIO",
+    "claim_allowed": false
+  },
+  "R3": {
+    "F_ok": "path-independent host build/smoke/ELF/hotpath gates pass locally",
+    "F_gap": "GitHub CI and ARM/Android execution are not established by this receipt",
+    "F_next": "run repository-native CI and architecture/device gates before any broader promotion"
+  }
+}
