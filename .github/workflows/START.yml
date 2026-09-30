@@ -518,6 +518,16 @@ jobs:
           make -C native/silicon_light_v1 host-test audit HOST_CC=clang NM=nm READELF=readelf
           make -C native/silicon_light_v1 clean
 
+      - name: Omega Hypervisor L0 freestanding gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C native/omega_hypervisor_v1 clean
+          make -C native/omega_hypervisor_v1 host-test audit HOST_CC=clang NM=nm
+          make -C native/omega_hypervisor_v1 audit-armv7 ARMV7_CC=clang NM=nm
+          make -C native/omega_hypervisor_v1 audit-aarch64 AARCH64_CC=clang NM=nm
+          make -C native/omega_hypervisor_v1 clean
+
       - name: Knowledge Campus L0 freestanding gate
         shell: bash
         run: |
