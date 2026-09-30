@@ -24,7 +24,8 @@
       "authority_repo": "TOKEN_VAZIO",
       "closure": "CLOSURE_L11_REQUIRED_BEFORE_AUTHORITY_PROMOTION"
     },
-    "rafpolimata_hotfix_result": "RafPolimata/federation/receipts/2026-09-30-polimata-hotfix-result.v3.json"
+    "rafpolimata_hotfix_result": "RafPolimata/federation/receipts/2026-09-30-polimata-hotfix-result.v3.json",
+    "termux_packages_source_result": "termux-packages/federation/receipts/2026-09-30-termux-packages-hotfix-result.v3.json"
   },
   "errors": [
     {
@@ -229,5 +230,11 @@
     "TermuxProvider": "no live mutation applied; if later applied, preserve pre-change provider snapshot and revert only through provider administration with successor receipt",
     "other_repositories": "close successor PR or revert only federation commits; do not rewrite unrelated history"
   },
-  "claim_allowed": false
+  "claim_allowed": false,
+  "package_source_verification": {
+    "workflow_run": 36705662359,
+    "state": "PASS",
+    "scope": "SOURCE_AND_HARDENING_ONLY",
+    "D3": "NOT_RUN"
+  }
 }
