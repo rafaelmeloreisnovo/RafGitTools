@@ -6,12 +6,12 @@
   "federated_authority": {
     "repository": "rafaelmeloreisnovo/Mapa",
     "pull_request": 717,
-    "commit": "f23304cc5a2b77805df85ab1a0586c8521b87756",
+    "commit": "3d54e8e36f1de787e1a815d899490a0fb7f0b326",
     "manifest_path": "data/manifold/authorial_omega_hypervisor_federation_v1.json",
-    "manifest_blob_sha1": "d223400c4bd57d6e4c31cd2de0db4c882b55a4bb",
-    "manifold_ci_run": 36661039552,
+    "manifest_blob_sha1": "5ec155d2e67fb7e6f46fb2589c6e32149d570091",
+    "manifold_ci_run": 36661939615,
     "manifold_ci_state": "PASS",
-    "aggregate_ci_run": 36661039521,
+    "aggregate_ci_run": 36661939451,
     "aggregate_ci_state": "PASS",
     "promotion_state": "NOT_AUTHORIZED"
   },
@@ -69,7 +69,7 @@
   "authorial_payloads": [
     {
       "artifact_id": "RAF_BL0_V0",
-      "classification": "AUTHORIAL_PROVEN_BY_FEDERATED_MANIFEST",
+      "classification": "AUTHORIAL_PATH_PROVEN_IN_REPOSITORY_HISTORY",
       "git_blob_sha1": "132f948d199f6679fcae4f33912e0a3ad69691a3",
       "local_path": "rafaelia/raf_bl0.c",
       "execution_binding": "IDENTITY_ONLY_V1",
