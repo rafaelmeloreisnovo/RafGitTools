@@ -1,0 +1,222 @@
+{
+  "schema": "rafaelia.ecosystem-operational-state/v2",
+  "observed_on": "2026-09-30",
+  "control_repository": "rafaelmeloreisnovo/RafGitTools",
+  "branch": "hotfix/ecosystem-federation-v2-20260930",
+  "invariants": [
+    "SOURCE!=ARTIFACT",
+    "ARTIFACT!=EXECUTION",
+    "EXECUTION!=EVIDENCE",
+    "EVIDENCE!=CLAIM",
+    "TOKEN_VAZIO!=0",
+    "IMPLEMENTED_UNTESTED!=PASS",
+    "RELATIONSHIP!=AUTHORITY_MERGE"
+  ],
+  "materialized": {
+    "five_member_freestanding_registry": "configs/functional-freestanding-federation.v1.json",
+    "seven_member_registry": "configs/ecosystem-federation.v1.json",
+    "shared_component_registry": "configs/shared-component-authority.v1.json",
+    "local_member_manifests": "federation/ecosystem-member.v1.json in seven repositories",
+    "local_receipts": "federation/receipts/2026-09-30-ecosystem-federation.v1.json in seven repositories",
+    "raf_bl0": {
+      "state": "SAME_BLOB",
+      "blob_sha": "132f948d199f6679fcae4f33912e0a3ad69691a3",
+      "authority_repo": "TOKEN_VAZIO",
+      "closure": "CLOSURE_L11_REQUIRED_BEFORE_AUTHORITY_PROMOTION"
+    }
+  },
+  "errors": [
+    {
+      "id": "E-PRIVATE-CI-STARTUP",
+      "repo": "rafaelmeloreisnovo/Rafaelia_Private",
+      "state": "BLOCKED_EXTERNAL",
+      "causal_to_delta": false,
+      "evidence": "current jobs expose steps=[] and logs BlobNotFound; same pattern is documented by predecessor receipt"
+    },
+    {
+      "id": "E-GAIA-CI-STARTUP",
+      "repo": "rafaelmeloreisnovo/GAIA_phi",
+      "state": "BLOCKED_EXTERNAL",
+      "causal_to_delta": "NOT_PROVEN",
+      "evidence": "failed jobs expose steps=[] and logs BlobNotFound"
+    },
+    {
+      "id": "E-POLIMATA-TOKEN-CLOSURE",
+      "repo": "rafaelmeloreisnovo/RafPolimata",
+      "state": "HOTFIX_APPLIED_PENDING_RERUN",
+      "causal_to_delta": true,
+      "evidence": "two new federation TOKEN_VAZIO references lacked valid closure binding",
+      "hotfix_commits": [
+        "1d747af17cafddbb88f9a2de6cc4f8a076d8d1ab",
+        "64ad3a6cbef8230a07ab5a524ab7756ef3e68a4d"
+      ]
+    },
+    {
+      "id": "E-VECTRAS-ARM32-POLICY",
+      "repo": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "state": "HOTFIX_APPLIED_PENDING_RERUN",
+      "causal_to_delta": false,
+      "evidence": "terminal-emulator rejected governed arm32-debug profile used by APK Wizard",
+      "hotfix_commits": [
+        "d24bd32c050817d15c9fcfeeb25ead9dd0d59f86",
+        "c0a997aa8b6940b8a7d5a789c80e2695c33f8d42"
+      ]
+    },
+    {
+      "id": "E-TERMUX-PROVIDER",
+      "repo": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "state": "BLOCKED_EXTERNAL_ADMIN_AUTHORITY",
+      "causal_to_delta": false,
+      "evidence": "live ruleset 21908888 lacks required_status_checks; PR policy differs; five always-bypass actors unresolved"
+    },
+    {
+      "id": "E-PACKAGES-D3-D8",
+      "repo": "rafaelmeloreisnovo/termux-packages",
+      "state": "TOKEN_VAZIO",
+      "causal_to_delta": false,
+      "evidence": "D3 workflow exists but was not executed for federation-only changes"
+    }
+  ],
+  "urgencies": [
+    {
+      "priority": "P0",
+      "id": "U-PROVIDER",
+      "why": "live enforcement does not satisfy the repository-declared provider target"
+    },
+    {
+      "priority": "P0",
+      "id": "U-POLIMATA",
+      "why": "federation delta itself violated the local unknown-state closure gate; rerun required after hotfix"
+    },
+    {
+      "priority": "P0",
+      "id": "U-VECTRAS",
+      "why": "ARM32 APK evidence lane was blocked by cross-module policy inconsistency; rerun required"
+    },
+    {
+      "priority": "P1",
+      "id": "U-D3",
+      "why": "SOURCE_READY cannot become ARTIFACT_READY without a real .deb receipt"
+    },
+    {
+      "priority": "P1",
+      "id": "U-CI-STARTUP",
+      "why": "Private/GAIA cannot acquire fresh CI evidence while jobs fail before steps"
+    },
+    {
+      "priority": "P1",
+      "id": "U-RAFBL0-AUTHORITY",
+      "why": "six identical copies create divergence risk until producer authority/provenance is established"
+    }
+  ],
+  "risks": [
+    {
+      "id": "R-CLAIM-PROMOTION",
+      "severity": "CRITICAL",
+      "control": "claim_allowed=false; unexecuted/failed gates never promote"
+    },
+    {
+      "id": "R-COPY-DIVERGENCE",
+      "severity": "HIGH",
+      "control": "shared-component registry; authority_repo remains TOKEN_VAZIO"
+    },
+    {
+      "id": "R-STALE-DOC",
+      "severity": "HIGH",
+      "control": "successor receipts and exact run/commit pointers"
+    },
+    {
+      "id": "R-PROVIDER-BYPASS",
+      "severity": "HIGH",
+      "control": "typed bypass actors must be identified/justified or removed"
+    },
+    {
+      "id": "R-RUNNER-BLINDNESS",
+      "severity": "MEDIUM",
+      "control": "no source patch without executed-step evidence"
+    },
+    {
+      "id": "R-CROSSREPO-ROLLBACK",
+      "severity": "MEDIUM",
+      "control": "rollback per producer/consumer; never global history rewrite"
+    }
+  ],
+  "gates": [
+    {
+      "id": "G-FED-STRUCT",
+      "owner": "RafGitTools",
+      "state": "PASS_PREVIOUS_LOCAL"
+    },
+    {
+      "id": "G-RGT-HOST",
+      "owner": "RafGitTools",
+      "state": "PASS"
+    },
+    {
+      "id": "G-POLIMATA-CLOSURE",
+      "owner": "RafPolimata",
+      "state": "PENDING_RERUN"
+    },
+    {
+      "id": "G-VECTRAS-APK",
+      "owner": "Vectras",
+      "state": "PENDING_RERUN"
+    },
+    {
+      "id": "G-TERMUX-PROVIDER",
+      "owner": "termux-app",
+      "state": "FAIL"
+    },
+    {
+      "id": "G-D3",
+      "owner": "termux-packages",
+      "state": "NOT_RUN"
+    },
+    {
+      "id": "G-D4-D8",
+      "owner": "termux-packages/termux-app",
+      "state": "TOKEN_VAZIO"
+    },
+    {
+      "id": "G-PRIVATE-CI",
+      "owner": "Rafaelia_Private",
+      "state": "BLOCKED_EXTERNAL"
+    },
+    {
+      "id": "G-GAIA-CI",
+      "owner": "GAIA_phi",
+      "state": "BLOCKED_EXTERNAL"
+    }
+  ],
+  "token_vazio": [
+    "raf_bl0 authority_repo",
+    "termux-packages D3-D8",
+    "physical Android receipts",
+    "GAIA/Private source-cause while runner steps/logs unavailable",
+    "Termux bypass identity justification"
+  ],
+  "provider_live_snapshot": {
+    "ruleset_id": 21908888,
+    "updated_at": "2026-09-26T20:05:43.907-03:00",
+    "observed_on": "2026-09-30",
+    "target_plan": "governance/provider/PROVIDER_RULESET_ADMIN_DELTA_20260926.v1.json",
+    "plan_stale": false,
+    "apply_state": "BLOCKED_EXTERNAL_ADMIN_AUTHORITY"
+  },
+  "provisions": [
+    "apply only causal source hotfixes",
+    "keep provider mutation external/admin and fail-stale",
+    "rerun exact local gates after hotfix",
+    "create successor receipts instead of silently replacing observations",
+    "advance D3 before D4-D8",
+    "establish shared-component authority by provenance before deduplication"
+  ],
+  "rollback": {
+    "global": "The first federation PR set was closed unmerged. Successor hotfix branches are independent rollback units.",
+    "RafPolimata": "revert 64ad3a6c and 1d747af1; original base anchor 1ea93d8f1b4d849826d51f11f5728ff092afd361",
+    "Vectras": "revert c0a997aa and d24bd32c; original base anchor 8d7126e2aea89a4226b7df32d79bdd98a265c8f3",
+    "TermuxProvider": "no live mutation applied; if later applied, preserve pre-change provider snapshot and revert only through provider administration with successor receipt",
+    "other_repositories": "close successor PR or revert only federation commits; do not rewrite unrelated history"
+  },
+  "claim_allowed": false
+}
