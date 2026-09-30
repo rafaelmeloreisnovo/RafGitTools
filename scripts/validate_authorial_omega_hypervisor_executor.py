@@ -4,8 +4,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "configs" / "authorial-omega-hypervisor-executor.v1.json"
-EXPECTED_MAPA_HEAD = "f23304cc5a2b77805df85ab1a0586c8521b87756"
-EXPECTED_MAPA_BLOB = "d223400c4bd57d6e4c31cd2de0db4c882b55a4bb"
+EXPECTED_MAPA_HEAD = "3d54e8e36f1de787e1a815d899490a0fb7f0b326"
+EXPECTED_MAPA_BLOB = "5ec155d2e67fb7e6f46fb2589c6e32149d570091"
 EXPECTED_BL0_BLOB = "132f948d199f6679fcae4f33912e0a3ad69691a3"
 
 class ValidationError(ValueError):
