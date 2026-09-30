@@ -1,0 +1,43 @@
+{
+  "schema": "rafaelia.ecosystem-federation-hotfix-receipt/v2",
+  "date": "2026-09-30",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "branch": "hotfix/ecosystem-federation-v2-20260930",
+  "supersedes": "federation/receipts/2026-09-30-ecosystem-federation.v1.json",
+  "state": "CONTROL_PLANE_HOTFIX_V2",
+  "errors": [],
+  "urgencies": [
+    "validate successor state and consume downstream rerun evidence"
+  ],
+  "gates": {
+    "host_build": "PASS_PREDECESSOR",
+    "smoke": "PASS_PREDECESSOR",
+    "elf_audit": "PASS_PREDECESSOR",
+    "orchestrated_pipeline": "PASS_PREDECESSOR"
+  },
+  "token_vazio": [
+    "raf_bl0 authority_repo",
+    "ARMv7/AArch64/Android execution for native federation module",
+    "downstream repo closure states"
+  ],
+  "provisions": [
+    "operational state v2 and human hotfix router added",
+    "first PR set remains closed-unmerged rollback anchor"
+  ],
+  "needs": [
+    "successor PR CI",
+    "cross-repository rerun receipts"
+  ],
+  "rollback": "Close successor PR or revert v2 state/document commits; do not alter repository-local producer histories.",
+  "hotfix_commits": [],
+  "claim_allowed": false,
+  "R3": {
+    "F_ok": "CONTROL_PLANE_HOTFIX_V2",
+    "F_gap": [
+      "raf_bl0 authority_repo",
+      "ARMv7/AArch64/Android execution for native federation module",
+      "downstream repo closure states"
+    ],
+    "F_next": "validate successor state and consume downstream rerun evidence"
+  }
+}
