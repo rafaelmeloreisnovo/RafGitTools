@@ -1,8 +1,8 @@
 # Omega Hypervisor L0 V1
 
 State: `IMPLEMENTED_UNTESTED`  
-Federated authority: `Mapa PR#717@f23304cc5a2b77805df85ab1a0586c8521b87756`  
-Manifest blob: `d223400c4bd57d6e4c31cd2de0db4c882b55a4bb`  
+Federated authority: `Mapa PR#717@3d54e8e36f1de787e1a815d899490a0fb7f0b326`  
+Manifest blob: `5ec155d2e67fb7e6f46fb2589c6e32149d570091`  
 Claim gate: `claim_allowed=false`
 
 ## Meaning
@@ -43,9 +43,9 @@ The production core is:
 
 The hosted test harness is test-only.
 
-## Proven authorial payload identity
+## Repository-history-proven payload identity
 
-V1 does not copy the payload into the state engine. It binds one proven path-level artifact by identity:
+V1 does not copy the payload into the state engine. It binds one path with add-from-zero repository-history evidence by identity; this is not an exclusive legal authorship claim:
 
 ```text
 RAF_BL0_V0
