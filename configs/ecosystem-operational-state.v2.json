@@ -98,32 +98,32 @@
     {
       "priority": "P0",
       "id": "U-PROVIDER",
-      "why": "live enforcement does not satisfy the repository-declared provider target"
-    },
-    {
-      "priority": "P0",
-      "id": "U-POLIMATA",
-      "why": "federation delta itself violated the local unknown-state closure gate; rerun required after hotfix"
-    },
-    {
-      "priority": "P0",
-      "id": "U-VECTRAS",
-      "why": "ARM32 APK evidence lane was blocked by cross-module policy inconsistency; rerun required"
+      "state": "OPEN",
+      "why": "live branch-protection ruleset does not satisfy target v3 and contains unresolved always-bypass actors"
     },
     {
       "priority": "P1",
       "id": "U-D3",
-      "why": "SOURCE_READY cannot become ARTIFACT_READY without a real .deb receipt"
+      "state": "OPEN",
+      "why": "package chain cannot advance from source evidence to artifact evidence without D3 real-deb execution"
     },
     {
       "priority": "P1",
       "id": "U-CI-STARTUP",
-      "why": "Private/GAIA cannot acquire fresh CI evidence while jobs fail before steps"
+      "state": "OPEN",
+      "why": "Private/GAIA cannot acquire fresh step-level CI evidence while jobs fail before steps"
     },
     {
       "priority": "P1",
       "id": "U-RAFBL0-AUTHORITY",
-      "why": "six identical copies create divergence risk until producer authority/provenance is established"
+      "state": "OPEN",
+      "why": "six identical copies remain without proven producer authority"
+    },
+    {
+      "priority": "P1",
+      "id": "U-PHYSICAL",
+      "state": "OPEN",
+      "why": "APK/build success does not close physical ARM32/ARM64 Android execution"
     }
   ],
   "risks": [
@@ -241,7 +241,16 @@
     "RafPolimata": "revert 64ad3a6c and 1d747af1; original base anchor 1ea93d8f1b4d849826d51f11f5728ff092afd361",
     "Vectras": "revert c0a997aa and d24bd32c; original base anchor 8d7126e2aea89a4226b7df32d79bdd98a265c8f3",
     "TermuxProvider": "no live mutation applied; if later applied, preserve pre-change provider snapshot and revert only through provider administration with successor receipt",
-    "other_repositories": "close successor PR or revert only federation commits; do not rewrite unrelated history"
+    "other_repositories": "close successor PR or revert only federation commits; do not rewrite unrelated history",
+    "repository_base_anchors": {
+      "rafaelmeloreisnovo/Rafaelia_Private": "a71be795d20588472bcd7cc6ac4a086a7af628b5",
+      "rafaelmeloreisnovo/GAIA_phi": "100f4a43f0acd366b1d72b89d3d7eabf062a418b",
+      "rafaelmeloreisnovo/RafPolimata": "1ea93d8f1b4d849826d51f11f5728ff092afd361",
+      "rafaelmeloreisnovo/Vectras-VM-Android": "8d7126e2aea89a4226b7df32d79bdd98a265c8f3",
+      "rafaelmeloreisnovo/termux-app-rafacodephi": "9e7b3b1ad2ed3b924f1b4b82a8696b3b027c0587",
+      "rafaelmeloreisnovo/termux-packages": "5e6c7ead2fbc941f96fbdfebb9b7167852d28487",
+      "rafaelmeloreisnovo/RafGitTools": "1ad8f53f371cb073d0e80ee697751fedaa3bc746"
+    }
   },
   "claim_allowed": false,
   "package_source_verification": {
@@ -260,5 +269,118 @@
       "state": "FAIL"
     },
     "physical_D6_D8": "TOKEN_VAZIO"
+  },
+  "resolved_urgencies": [
+    {
+      "id": "U-POLIMATA",
+      "state": "RESOLVED",
+      "evidence": {
+        "run_id": 36705796151,
+        "conclusion": "success"
+      }
+    },
+    {
+      "id": "U-VECTRAS",
+      "state": "RESOLVED",
+      "evidence": {
+        "run_id": 36705651907,
+        "job_id": 109855151297,
+        "conclusion": "success"
+      }
+    }
+  ],
+  "gaps": [
+    {
+      "id": "GAP-PRIVATE-RUNNER",
+      "state": "BLOCKED_EXTERNAL",
+      "missing": "executed workflow steps/logs",
+      "next": "restore provider/runner visibility and rerun unchanged source first"
+    },
+    {
+      "id": "GAP-GAIA-RUNNER",
+      "state": "BLOCKED_EXTERNAL",
+      "missing": "executed workflow steps/logs",
+      "next": "restore provider/runner visibility and rerun unchanged source first"
+    },
+    {
+      "id": "GAP-TERMUX-PROVIDER",
+      "state": "FAIL",
+      "missing": "live ruleset conformance to target v3",
+      "next": "authorized admin delta then route 10_PROVIDER"
+    },
+    {
+      "id": "GAP-D3-D8",
+      "state": "TOKEN_VAZIO",
+      "missing": "real .deb -> APT repo -> bootstrap -> prefix -> apt/pkg -> physical receipts",
+      "next": "execute D3 first"
+    },
+    {
+      "id": "GAP-PHYSICAL-ANDROID",
+      "state": "TOKEN_VAZIO",
+      "missing": "physical ARM32 and ARM64 runtime receipts",
+      "next": "device runs after artifact chain closes"
+    },
+    {
+      "id": "GAP-RAFBL0-PROVENANCE",
+      "state": "TOKEN_VAZIO",
+      "missing": "verifiable producer/origin authority",
+      "next": "reconstruct earliest source/commit provenance before deduplication"
+    },
+    {
+      "id": "GAP-CURRENT-HEAD-CI",
+      "state": "PENDING",
+      "missing": "final CI on receipt/document-only successor heads for Vectras, Termux app and RafGitTools",
+      "next": "consume current head runs; do not invalidate previously verified code hotfix evidence"
+    }
+  ],
+  "needs": [
+    {
+      "id": "N-PROVIDER-ADMIN",
+      "kind": "authority",
+      "need": "GitHub ruleset administration capable of applying the non-stale provider delta"
+    },
+    {
+      "id": "N-D3-DISPATCH",
+      "kind": "execution",
+      "need": "execute .github/workflows/rafcodephi-d3-real-deb.yml through repository-owned workflow dispatch"
+    },
+    {
+      "id": "N-ANDROID-ARM32",
+      "kind": "physical-evidence",
+      "need": "ARM32 Android device receipt for intended lane"
+    },
+    {
+      "id": "N-ANDROID-ARM64",
+      "kind": "physical-evidence",
+      "need": "ARM64 Android device receipt"
+    },
+    {
+      "id": "N-RUNNER",
+      "kind": "provider",
+      "need": "runner-backed step execution/log visibility for Rafaelia_Private and GAIA_phi"
+    },
+    {
+      "id": "N-PROVENANCE",
+      "kind": "research",
+      "need": "earliest verifiable raf_bl0 producer/source lineage"
+    }
+  ],
+  "receipts": [
+    "RafGitTools/receipts/2026-09-30_RAF_FEDERATION_PATH_INDEPENDENCE_V1.json",
+    "RafGitTools/receipts/2026-09-30_ECOSYSTEM_CROSSREPO_STRUCTURAL_V3.json",
+    "RafPolimata/federation/receipts/2026-09-30-polimata-hotfix-result.v3.json",
+    "Vectras-VM-Android/federation/receipts/2026-09-30-vectras-hotfix-result.v3.json",
+    "termux-app-rafacodephi/federation/receipts/2026-09-30-termux-app-hotfix-result.v3.json",
+    "termux-packages/federation/receipts/2026-09-30-termux-packages-hotfix-result.v3.json",
+    "all seven repositories: federation/receipts/2026-09-30-ecosystem-hotfix.v2.json"
+  ],
+  "current_successor_prs": {
+    "Rafaelia_Private": 268,
+    "GAIA_phi": 108,
+    "RafPolimata": 366,
+    "Vectras-VM-Android": 1151,
+    "termux-app-rafacodephi": 472,
+    "termux-packages": 123,
+    "RafGitTools": 594
   }
 }
