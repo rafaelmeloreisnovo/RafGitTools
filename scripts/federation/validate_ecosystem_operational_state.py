@@ -9,7 +9,7 @@ STATE = ROOT / "configs" / "ecosystem-operational-state.v2.json"
 REQUIRED_TOP = {
     "schema", "observed_on", "control_repository", "invariants", "materialized",
     "errors", "urgencies", "risks", "gates", "token_vazio", "provider_live_snapshot",
-    "provisions", "rollback", "claim_allowed"
+    "provisions", "rollback", "claim_allowed", "gaps", "needs", "receipts"
 }
 REQUIRED_INVARIANTS = {
     "SOURCE!=ARTIFACT",
@@ -54,7 +54,7 @@ def main():
     if not any(x.get("priority") == "P0" for x in urgencies):
         return fail("at least one current P0 must be explicitly represented")
 
-    roll = data.get("rollback", {})
+    if not data.get("gaps"):\n        return fail("explicit gaps inventory missing")\n    if not data.get("needs"):\n        return fail("explicit needs inventory missing")\n    if not data.get("receipts"):\n        return fail("explicit receipts inventory missing")\n\n    roll = data.get("rollback", {})
     if not roll.get("global"):
         return fail("global rollback anchor missing")
 
