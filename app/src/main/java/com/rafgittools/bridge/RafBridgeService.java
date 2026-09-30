@@ -9,6 +9,11 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
 
+import com.rafgittools.workspace.ContextBroker;
+import com.rafgittools.workspace.ContextBundleV2;
+
+import dagger.hilt.android.AndroidEntryPoint;
+
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
@@ -21,9 +26,14 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
+
+import javax.inject.Inject;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,8 +43,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * Bind: 127.0.0.1:8765 only.
  * Routes: GET /health and POST /v1/chat.
+ * action=context_chat consumes only the current explicit ContextBroker selection,
+ * after the Semantic Context Exam runtime gate passes.
  * There is deliberately no command, shell, git-write, or filesystem route.
  */
+@AndroidEntryPoint
 public final class RafBridgeService extends Service {
     private static final int MAX_HEADER_BYTES = 16 * 1024;
     private static final int MAX_BODY_BYTES = 128 * 1024;
@@ -44,6 +57,9 @@ public final class RafBridgeService extends Service {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final ExecutorService clients = Executors.newFixedThreadPool(2);
     private final RafModelClient modelClient = new RafModelClient();
+
+    @Inject
+    ContextBroker contextBroker;
 
     private ServerSocket serverSocket;
     private Thread serverThread;
@@ -211,13 +227,102 @@ public final class RafBridgeService extends Service {
             return;
         }
 
-        String response = modelClient.chat(
-                RafBridgePrefs.getModelEndpoint(this),
-                RafBridgePrefs.getModelName(this),
-                contract.intent,
-                contract.dataClass,
-                contract.message
-        );
+        String response;
+        RafSemanticContextExamRuntime.Result semanticExam = null;
+        ContextBundleV2 contextBundle = null;
+
+        if ("context_chat".equals(contract.action)) {
+            try {
+                semanticExam = RafSemanticContextExamRuntime.evaluate(contract.semanticExamJson);
+                RafSemanticContextExamRuntime.requireReadOnlySafe(semanticExam);
+            } catch (RafSemanticContextExamRuntime.ExamException error) {
+                writeJson(output, 422, error("semantic_exam_rejected", error.getMessage()));
+                return;
+            }
+
+            try {
+                contextBundle = contextBroker.buildReadOnlyModelBundle(
+                        "bridge-" + contract.requestId,
+                        contract.intent,
+                        utcTimestamp(),
+                        contract.requestId,
+                        semanticExam.evidenceRefs
+                );
+            } catch (IllegalArgumentException error) {
+                writeJson(output, 422, error("context_bundle_rejected", error.getMessage()));
+                return;
+            }
+
+            if (!RafContextPrivacyGate.allows(contract.dataClass, contextBundle.getPrivacyClass())) {
+                writeJson(
+                        output,
+                        422,
+                        error(
+                                "privacy_class_rejected",
+                                "data_class não cobre privacy_class=" + contextBundle.getPrivacyClass()
+                        )
+                );
+                return;
+            }
+
+            String bundleJson = contextBundle.toJson();
+            String semanticExamResultJson = semanticExam.toJson();
+            if (bundleJson.length() > RafModelClient.MAX_CONTEXT_JSON_CHARS) {
+                writeJson(
+                        output,
+                        422,
+                        error(
+                                "context_too_large",
+                                "ContextBundle V2 excede "
+                                        + RafModelClient.MAX_CONTEXT_JSON_CHARS
+                                        + " caracteres"
+                        )
+                );
+                return;
+            }
+            if (semanticExamResultJson.length() > RafModelClient.MAX_EXAM_JSON_CHARS) {
+                writeJson(
+                        output,
+                        422,
+                        error(
+                                "semantic_exam_result_too_large",
+                                "Semantic Context Exam result excede "
+                                        + RafModelClient.MAX_EXAM_JSON_CHARS
+                                        + " caracteres"
+                        )
+                );
+                return;
+            }
+            if (RafBridgeContract.looksLikeCredential(bundleJson)) {
+                writeJson(
+                        output,
+                        422,
+                        error(
+                                "context_credential_rejected",
+                                "Possível credencial detectada no contexto selecionado"
+                        )
+                );
+                return;
+            }
+
+            response = modelClient.chatExaminedContext(
+                    RafBridgePrefs.getModelEndpoint(this),
+                    RafBridgePrefs.getModelName(this),
+                    contract.intent,
+                    contract.dataClass,
+                    contract.message,
+                    bundleJson,
+                    semanticExamResultJson
+            );
+        } else {
+            response = modelClient.chat(
+                    RafBridgePrefs.getModelEndpoint(this),
+                    RafBridgePrefs.getModelName(this),
+                    contract.intent,
+                    contract.dataClass,
+                    contract.message
+            );
+        }
 
         JSONObject result = new JSONObject();
         result.put("ok", true);
@@ -225,7 +330,24 @@ public final class RafBridgeService extends Service {
         result.put("reply", response);
         result.put("executed_external_action", false);
         result.put("retained_message", false);
+        if (semanticExam != null && contextBundle != null) {
+            result.put("context_mode", "READ_ONLY");
+            result.put("semantic_exam_state", semanticExam.state);
+            result.put("semantic_exam_claim_allowed", semanticExam.claimAllowed);
+            result.put("context_bundle_id", contextBundle.getBundleId());
+            result.put("context_privacy_class", contextBundle.getPrivacyClass());
+            result.put("context_segments", contextBundle.getSegments().size());
+        }
         writeJson(output, 200, result);
+    }
+
+    private static String utcTimestamp() {
+        SimpleDateFormat formatter = new SimpleDateFormat(
+                "yyyy-MM-dd'T'HH:mm:ss'Z'",
+                Locale.US
+        );
+        formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return formatter.format(new Date());
     }
 
     private synchronized void stopServer() {
