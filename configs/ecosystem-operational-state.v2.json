@@ -27,7 +27,8 @@
     "rafpolimata_hotfix_result": "RafPolimata/federation/receipts/2026-09-30-polimata-hotfix-result.v3.json",
     "termux_packages_source_result": "termux-packages/federation/receipts/2026-09-30-termux-packages-hotfix-result.v3.json",
     "termux_app_result": "termux-app-rafacodephi/federation/receipts/2026-09-30-termux-app-hotfix-result.v3.json",
-    "crossrepo_structural_receipt": "RafGitTools/receipts/2026-09-30_ECOSYSTEM_CROSSREPO_STRUCTURAL_V3.json"
+    "crossrepo_structural_receipt": "RafGitTools/receipts/2026-09-30_ECOSYSTEM_CROSSREPO_STRUCTURAL_V3.json",
+    "vectras_hotfix_result": "Vectras-VM-Android/federation/receipts/2026-09-30-vectras-hotfix-result.v3.json"
   },
   "errors": [
     {
@@ -64,13 +65,19 @@
     {
       "id": "E-VECTRAS-ARM32-POLICY",
       "repo": "rafaelmeloreisnovo/Vectras-VM-Android",
-      "state": "HOTFIX_APPLIED_PENDING_RERUN",
+      "state": "PASS_HOTFIX_VERIFIED",
       "causal_to_delta": false,
       "evidence": "terminal-emulator rejected governed arm32-debug profile used by APK Wizard",
       "hotfix_commits": [
         "d24bd32c050817d15c9fcfeeb25ead9dd0d59f86",
         "c0a997aa8b6940b8a7d5a789c80e2695c33f8d42"
-      ]
+      ],
+      "verification": {
+        "workflow": "APK Wizard",
+        "run_id": 36705651907,
+        "job_id": 109855151297,
+        "conclusion": "success"
+      }
     },
     {
       "id": "E-TERMUX-PROVIDER",
@@ -174,7 +181,11 @@
     {
       "id": "G-VECTRAS-APK",
       "owner": "Vectras",
-      "state": "PENDING_RERUN"
+      "state": "PASS",
+      "evidence": {
+        "run_id": 36705651907,
+        "job_id": 109855151297
+      }
     },
     {
       "id": "G-TERMUX-PROVIDER",
