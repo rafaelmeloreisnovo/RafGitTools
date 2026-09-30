@@ -96,6 +96,7 @@ concurrency:
 
 env:
   PIPELINE_SCHEMA: RAFAELIA_START_V1
+  EXECUTION_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
   CLAIM_ALLOWED: 'false'
   AUTOMATIC_PROMOTION: 'false'
   TRAINING_EXECUTED: 'false'
@@ -132,8 +133,17 @@ jobs:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
           fetch-depth: 0
+
+      - name: Verify exact source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$EXECUTION_SHA"
+          echo "EXECUTION_SHA=$actual"
 
       - name: Resolve execution lane
         id: route
@@ -418,6 +428,7 @@ jobs:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
 
       - name: Assert START is the only active YAML workflow
@@ -454,6 +465,7 @@ jobs:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
       - name: Python 3.12
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -517,6 +529,16 @@ jobs:
           make -C native/silicon_light_v1 clean
           make -C native/silicon_light_v1 host-test audit HOST_CC=clang NM=nm READELF=readelf
           make -C native/silicon_light_v1 clean
+
+      - name: Omega Hypervisor L0 freestanding gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C native/omega_hypervisor_v1 clean
+          make -C native/omega_hypervisor_v1 host-test audit HOST_CC=clang NM=nm
+          make -C native/omega_hypervisor_v1 audit-armv7 ARMV7_CC=clang NM=nm
+          make -C native/omega_hypervisor_v1 audit-aarch64 AARCH64_CC=clang NM=nm
+          make -C native/omega_hypervisor_v1 clean
 
       - name: Knowledge Campus L0 freestanding gate
         shell: bash
@@ -598,6 +620,7 @@ jobs:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
       - name: Python 3.12
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -625,6 +648,7 @@ jobs:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
       - name: Python 3.12
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -679,6 +703,7 @@ jobs:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
       - name: Validate docs policy
         shell: bash
@@ -703,6 +728,7 @@ jobs:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
       - name: Java 17
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.0
@@ -815,6 +841,7 @@ jobs:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
       - name: Java 17
         if: matrix.language == 'java-kotlin'
@@ -888,6 +915,7 @@ jobs:
       - name: Checkout RafGitTools authority
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
           fetch-depth: 0
       - name: Validate actions capability routing
@@ -1015,6 +1043,7 @@ jobs:
       - name: Checkout RafGitTools authority
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
           fetch-depth: 0
 
@@ -1177,6 +1206,7 @@ jobs:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
           fetch-depth: 0
       - name: Validate capability routing
@@ -1280,6 +1310,7 @@ jobs:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
           fetch-depth: 0
       - name: Java 17
@@ -1435,8 +1466,12 @@ jobs:
               'schema': os.environ['PIPELINE_SCHEMA'],
               'mode': os.environ.get('ROUTE_MODE') or 'TOKEN_VAZIO_ROUTE',
               'repository': os.environ['GITHUB_REPOSITORY'],
-              'sha': os.environ['GITHUB_SHA'],
+              'sha': os.environ['EXECUTION_SHA'],
+              'execution_sha': os.environ['EXECUTION_SHA'],
+              'provider_sha': os.environ['GITHUB_SHA'],
               'ref': os.environ['GITHUB_REF'],
+              'head_ref': os.environ.get('GITHUB_HEAD_REF') or 'TOKEN_VAZIO_NOT_PR',
+              'base_ref': os.environ.get('GITHUB_BASE_REF') or 'TOKEN_VAZIO_NOT_PR',
               'run_id': os.environ['GITHUB_RUN_ID'],
               'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
               'event': os.environ['GITHUB_EVENT_NAME'],
@@ -1491,6 +1526,7 @@ jobs:
       - name: Checkout exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
 
       - name: Python 3.12
