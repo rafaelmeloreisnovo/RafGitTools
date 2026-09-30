@@ -109,3 +109,10 @@ RafPolimata closure rerun
 ```
 
 `claim_allowed=false` until the specific claim's complete gate path is satisfied.
+
+
+## Executable federation verification
+
+When all seven repository roots are available locally, run `scripts/federation/validate_ecosystem_federation_v2.py` with one `--root owner/repo=/path` per member. It verifies the exact seven-member set, local authority manifests, successor receipts, rollback presence, `claim_allowed=false`, and the Git blob identity of each declared `raf_bl0.c` consumer.
+
+This validator intentionally fails when a repository root is absent; partial availability is not silently promoted to full federation PASS.
