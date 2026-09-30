@@ -1,0 +1,52 @@
+{
+  "schema": "rafaelia.ecosystem-member/v1",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "authority": "federated-control-plane",
+  "authority_sources": [
+    "docs/federation/RAFAELIA_FEDERATED_OPERATIONS_V1.md",
+    "configs/functional-freestanding-federation.v1.json",
+    "native/rafcode_federation_v1/README.md"
+  ],
+  "planes": [
+    "control",
+    "evidence-routing"
+  ],
+  "interface": {
+    "produces": [
+      "federation-registry",
+      "git-change",
+      "control-receipt",
+      "route-decision"
+    ],
+    "consumes": [
+      "repository-contract",
+      "source-lock",
+      "artifact-hash",
+      "execution-receipt"
+    ],
+    "boundary": "contract-or-artifact-reference"
+  },
+  "shared_components": [
+    {
+      "id": "raf_bl0.c",
+      "path": "rafaelia/raf_bl0.c",
+      "blob_sha": "132f948d199f6679fcae4f33912e0a3ad69691a3"
+    }
+  ],
+  "invariants": {
+    "relationship_is_not_authority_merge": true,
+    "source_is_not_artifact": true,
+    "artifact_is_not_execution": true,
+    "execution_is_not_evidence": true,
+    "evidence_is_not_claim": true,
+    "token_vazio_is_not_zero": true,
+    "implemented_untested_is_not_pass": true,
+    "missing_evidence_may_be_promoted": false
+  },
+  "federation": {
+    "authority_transfer_allowed": false,
+    "body_copy_required": false,
+    "local_gate_required_before_promotion": true
+  },
+  "claim_allowed": false
+}

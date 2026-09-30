@@ -1,0 +1,30 @@
+{
+  "schema": "rafcodephi.functional-federation-leaf/v1",
+  "mode": "freestanding-concrete-contract",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "authority": "federated-control-plane",
+  "conditions": {
+    "relationship_is_not_authority_merge": true,
+    "source_body_copy_required": false,
+    "missing_evidence_may_be_promoted": false,
+    "freestanding_must_be_evidenced": true,
+    "local_gate_required_before_promotion": true,
+    "claim_promotion_by_failover": false
+  },
+  "required_paths": [
+    "configs/rafaelia-federation.json",
+    "scripts/federation/validate_federated_runtime_v1.py",
+    "native/rafcode_federation_v1/tests/smoke.sh",
+    "native/rafcode_federation_v1/tools/audit_elf.sh"
+  ],
+  "verification_commands": [
+    "make -C native/rafcode_federation_v1 test audit"
+  ],
+  "freestanding_evidence": "native/rafcode_federation_v1/tools/audit_elf.sh",
+  "integration": {
+    "body_copy_allowed": false,
+    "authority_transfer_allowed": false,
+    "contract_or_artifact_boundary_required": true
+  },
+  "claim_allowed": false
+}

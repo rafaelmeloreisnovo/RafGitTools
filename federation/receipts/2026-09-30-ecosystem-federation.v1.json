@@ -1,0 +1,43 @@
+{
+  "schema": "rafaelia.ecosystem-federation-receipt/v1",
+  "date": "2026-09-30",
+  "state": "LOCAL_CONTAINER_PASS",
+  "materialized": [
+    "FEDERATION_FUNCTIONAL_FREESTANDING.md",
+    "configs/functional-freestanding-federation.v1.json",
+    "configs/ecosystem-federation.v1.json",
+    "configs/shared-component-authority.v1.json",
+    "scripts/federation/validate_functional_freestanding_federation.py",
+    "federation/functional-freestanding-leaf.v1.json",
+    "federation/ecosystem-member.v1.json",
+    "receipts/2026-09-30_RAF_FEDERATION_PATH_INDEPENDENCE_V1.json"
+  ],
+  "local_execution": {
+    "build": "PASS",
+    "smoke": "PASS",
+    "elf_audit": "PASS",
+    "hotpath_audit": "PASS",
+    "elf_bytes": 1384,
+    "interp": 0,
+    "needed": 0,
+    "relocations": 0,
+    "undefined": 0,
+    "source_loops": 0,
+    "heap_primitives": 0
+  },
+  "github_workflow": {
+    "name": "START · RAFAELIA Orchestrated Pipeline",
+    "state": "IN_PROGRESS"
+  },
+  "architecture_gaps": {
+    "armv7": "NOT_RUN",
+    "aarch64": "NOT_RUN",
+    "android": "NOT_RUN"
+  },
+  "claim_allowed": false,
+  "R3": {
+    "F_ok": "path-independent host gates pass locally",
+    "F_gap": "GitHub CI and ARM/Android incomplete",
+    "F_next": "consume CI then run architecture/device gates"
+  }
+}
