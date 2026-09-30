@@ -23,3 +23,15 @@ python3 scripts/federation/validate_functional_freestanding_federation.py \
 
 `sumali_classificado_total` permanece como corpus/evidência de entrada e não recebe autoridade
 de execução nesta federação.
+
+## Current operational state
+
+The current hotfix/status router is `docs/federation/ECOSYSTEM_OPERATIONAL_HOTFIX_20260930.md` and its machine-readable source is `configs/ecosystem-operational-state.v2.json`.
+
+Validate it with:
+
+```bash
+python3 scripts/federation/validate_ecosystem_operational_state.py
+```
+
+This current-state pointer supersedes no repository-local authority and does not promote any claim.

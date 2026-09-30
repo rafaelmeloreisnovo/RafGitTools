@@ -1,0 +1,34 @@
+{
+  "schema": "rafaelia.crossrepo-federation-structural-receipt/v3",
+  "date": "2026-09-30",
+  "control_repository": "rafaelmeloreisnovo/RafGitTools",
+  "branch": "hotfix/ecosystem-federation-v2-20260930",
+  "result": "PASS",
+  "scope": "seven hotfix branches; manifest/receipt/authority/shared-blob structural verification via GitHub connector",
+  "members": 7,
+  "checks": {
+    "repository_identity": "PASS_7_OF_7",
+    "authority_match": "PASS_7_OF_7",
+    "claim_allowed_false": "PASS_7_OF_7",
+    "authority_transfer_disabled": "PASS_7_OF_7",
+    "successor_receipt_present": "PASS_7_OF_7",
+    "rollback_present": "PASS_7_OF_7",
+    "raf_bl0_declared_consumers": 6,
+    "raf_bl0_blob_identity": "PASS_6_OF_6",
+    "raf_bl0_blob_sha": "132f948d199f6679fcae4f33912e0a3ad69691a3",
+    "raf_bl0_authority_repo": "TOKEN_VAZIO"
+  },
+  "evidence_boundary": {
+    "code_execution": "NOT_PROVEN_BY_THIS_RECEIPT",
+    "android_runtime": "NOT_PROVEN_BY_THIS_RECEIPT",
+    "D3_D8": "NOT_PROVEN_BY_THIS_RECEIPT",
+    "scientific_claims": "NOT_PROVEN_BY_THIS_RECEIPT"
+  },
+  "claim_allowed": false,
+  "rollback": "Revert/remove this receipt only to roll back the observation record; repository changes remain governed by their local rollback entries.",
+  "R3": {
+    "F_ok": "seven-member federation v2 structurally coherent on hotfix branches",
+    "F_gap": "runtime/provider/D3-D8 and raf_bl0 producer provenance remain separate",
+    "F_next": "consume local execution/provider/package gates without promoting this structural PASS"
+  }
+}

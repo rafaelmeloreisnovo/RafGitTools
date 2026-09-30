@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+import json
+import pathlib
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+STATE = ROOT / "configs" / "ecosystem-operational-state.v2.json"
+
+REQUIRED_TOP = {
+    "schema",
+    "observed_on",
+    "control_repository",
+    "invariants",
+    "materialized",
+    "errors",
+    "urgencies",
+    "risks",
+    "gates",
+    "token_vazio",
+    "provider_live_snapshot",
+    "provisions",
+    "rollback",
+    "claim_allowed",
+    "gaps",
+    "needs",
+    "receipts",
+}
+
+REQUIRED_INVARIANTS = {
+    "SOURCE!=ARTIFACT",
+    "ARTIFACT!=EXECUTION",
+    "EXECUTION!=EVIDENCE",
+    "EVIDENCE!=CLAIM",
+    "TOKEN_VAZIO!=0",
+    "IMPLEMENTED_UNTESTED!=PASS",
+    "RELATIONSHIP!=AUTHORITY_MERGE",
+}
+
+
+def fail(msg):
+    print("FAIL:", msg)
+    return 1
+
+
+def main():
+    try:
+        data = json.loads(STATE.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return fail(f"cannot parse {STATE}: {exc}")
+
+    missing = REQUIRED_TOP - set(data)
+    if missing:
+        return fail("missing top-level fields: " + ",".join(sorted(missing)))
+
+    if data.get("claim_allowed") is not False:
+        return fail("claim_allowed must remain false")
+
+    if not REQUIRED_INVARIANTS.issubset(set(data.get("invariants", []))):
+        return fail("required epistemic invariants missing")
+
+    errors = data.get("errors", [])
+    if not errors:
+        return fail("error inventory may not be empty")
+
+    for item in errors:
+        for key in ("id", "repo", "state", "evidence"):
+            if not item.get(key):
+                return fail(f"error entry missing {key}: {item}")
+
+    urgencies = data.get("urgencies", [])
+    if not any(x.get("priority") == "P0" and x.get("state") == "OPEN" for x in urgencies):
+        return fail("at least one current OPEN P0 must be explicitly represented")
+
+    if not data.get("gaps"):
+        return fail("explicit gaps inventory missing")
+
+    if not data.get("needs"):
+        return fail("explicit needs inventory missing")
+
+    if not data.get("receipts"):
+        return fail("explicit receipts inventory missing")
+
+    roll = data.get("rollback", {})
+    if not roll.get("global"):
+        return fail("global rollback anchor missing")
+    if len(roll.get("repository_base_anchors", {})) != 7:
+        return fail("seven repository rollback base anchors required")
+
+    provider = data.get("provider_live_snapshot", {})
+    if provider.get("apply_state") != "BLOCKED_EXTERNAL_ADMIN_AUTHORITY":
+        return fail("provider apply boundary unexpectedly changed")
+    if provider.get("plan_stale") is not False:
+        return fail("provider plan staleness is not explicitly false")
+
+    print("PASS: ecosystem operational state v2 is structurally fail-closed")
+    print(
+        f"errors={len(errors)} "
+        f"urgencies={len(urgencies)} "
+        f"gaps={len(data.get('gaps', []))} "
+        f"needs={len(data.get('needs', []))} "
+        f"receipts={len(data.get('receipts', []))} "
+        f"gates={len(data.get('gates', []))}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
