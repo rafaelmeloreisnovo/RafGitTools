@@ -19,7 +19,7 @@ fix, and the Vectras ARM32 policy fix.
 | Rafaelia_Private CI | BLOCKED_EXTERNAL | P1 | no speculative source patch; runner steps/logs unavailable |
 | GAIA_phi CI | BLOCKED_EXTERNAL | P1 | same fail-closed handling; source cause not proven |
 | RafPolimata TOKEN_VAZIO gate | **PASS_HOTFIX_VERIFIED** | closed P0 | CLOSURE_L11 binding verified by CI run 36705649532 |
-| Vectras APK Wizard ARM32 | HOTFIX_APPLIED_PENDING_RERUN | P0 | add arm32-debug parity to terminal-emulator |
+| Vectras APK Wizard ARM32 | **PASS_HOTFIX_VERIFIED** | closed P0 | APK Wizard run 36705651907 passed after arm32-debug parity fix |
 | Termux provider protection | FAIL / EXTERNAL_ADMIN | P0 | apply live ruleset admin delta, then rerun 10_PROVIDER |
 | termux-packages D3-D8 | TOKEN_VAZIO | P1 | execute D3 before any later gate |
 | raf_bl0 authority | AUDIT / TOKEN_VAZIO | P1 | establish producer provenance before deduplication |
@@ -52,7 +52,9 @@ The earlier `SOURCE_CONTRACT_FAIL` lines in the log belong to the one-bit mutati
 rejection test; those source-contract steps actually passed and are not classified
 as a repository defect.
 
-### Vectras
+### Vectras — verified PASS
+
+APK Wizard run `36705651907`, job `109855151297`, completed successfully, including bootstrap contract checks, shell-loader smoke, all APK wizard lanes and artifact upload.
 
 `tools/ci/build_apk_wizard.sh`, the root/app ABI registry and the Moto E7 profile
 already use `arm32-debug`. `terminal-emulator/build.gradle` had not implemented
