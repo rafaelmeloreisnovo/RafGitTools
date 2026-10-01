@@ -217,6 +217,11 @@ def execute_plan(plan_path: Path, root: Path, output_dir: Path, source_sha: str,
             if r.get("plan_sha256") != plan_sha or r.get("source_sha") != source_sha:
                 raise IntegrityError("resume source/plan identity mismatch")
             existing[r["stage_id"]] = r["state"]
+        # Recovery is append-only: prior FAIL/BLOCKED receipts remain in the chain,
+        # but their latest states are reopened for one bounded retry pass.
+        if retry_failed:
+            for sid in [sid for sid, state in existing.items() if state in {"FAIL", "BLOCKED"}]:
+                del existing[sid]
     elif any(receipt_dir.glob("*.receipt.json")):
         raise ConvoyError("receipt directory is not empty; use --resume or a fresh output directory")
 

@@ -59,6 +59,26 @@ class ExecutionConvoyTests(unittest.TestCase):
             self.assertEqual(result["states"]["independent"], "PASS")
             self.assertEqual(result["state"], "FAIL")
 
+    def test_retry_failed_reopens_failed_and_blocked_cone(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td)
+            (root/"ok.txt").write_text("ok", encoding="utf-8")
+            pp=root/"plan.json"
+            pp.write_text(json.dumps(plan([
+                stage("source","source.txt",score=(5,5,5,5,5,1)),
+                stage("dependent","ok.txt",needs=["source"])
+            ])), encoding="utf-8")
+            out=root/"out"
+            first=convoy.execute_plan(pp, root, out, "d"*40)
+            self.assertEqual(first["states"], {"source":"FAIL","dependent":"BLOCKED"})
+            (root/"source.txt").write_text("fixed", encoding="utf-8")
+            second=convoy.execute_plan(pp, root, out, "d"*40, resume=True, retry_failed=True)
+            self.assertEqual(second["state"], "PASS_LIMITED")
+            self.assertEqual(second["states"], {"source":"PASS","dependent":"PASS"})
+            self.assertEqual(second["executed_this_run"], ["source","dependent"])
+            receipts,_=convoy.verify_receipt_chain(out/"receipts")
+            self.assertEqual([r["state"] for r in receipts], ["FAIL","BLOCKED","PASS","PASS"])
+
     def test_path_escape_is_rejected(self):
         with tempfile.TemporaryDirectory() as td:
             root=Path(td)
