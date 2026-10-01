@@ -1,0 +1,56 @@
+{
+  "schema": "rafaelia.execution-convoy.v1",
+  "version": "1.0.0",
+  "workgroup_id": "rafgittools.control-plane-selfcheck.v1",
+  "claim_allowed": false,
+  "policy": {
+    "automatic_mutation_levels": ["READ_ONLY", "TEST"],
+    "arbitrary_shell": false,
+    "resume_requires_receipt_chain": true,
+    "failure_mode": "FAIL_CLOSED",
+    "commit_rule": "COMMIT_ON_MATERIAL_DELTA_ONLY",
+    "receipt_rule": "RECEIPT_EVERY_STAGE"
+  },
+  "stages": [
+    {
+      "id": "control_contract",
+      "needs": [],
+      "operation": "ASSERT_FILE",
+      "mutation_level": "READ_ONLY",
+      "heuristic": {"U": 5, "R": 5, "D": 5, "A": 4, "E": 5, "C": 1},
+      "config": {"path": "docs/excelencia_operacional/PLANO_DE_CONTROLE.md"}
+    },
+    {
+      "id": "executor_contract",
+      "needs": [],
+      "operation": "ASSERT_FILE",
+      "mutation_level": "READ_ONLY",
+      "heuristic": {"U": 4, "R": 5, "D": 5, "A": 4, "E": 5, "C": 1},
+      "config": {"path": "docs/excelencia_operacional/CONTRATO_RAFGITTOOLS_RAFPOLIMATA.md"}
+    },
+    {
+      "id": "t7_contract_json",
+      "needs": [],
+      "operation": "ASSERT_JSON",
+      "mutation_level": "READ_ONLY",
+      "heuristic": {"U": 4, "R": 4, "D": 4, "A": 3, "E": 5, "C": 1},
+      "config": {"path": "contracts/t7/RAFAELIA_T7_CONTROL_ADAPTER.v1.json"}
+    },
+    {
+      "id": "convoy_source_digest",
+      "needs": ["control_contract", "executor_contract"],
+      "operation": "HASH_FILE",
+      "mutation_level": "READ_ONLY",
+      "heuristic": {"U": 3, "R": 5, "D": 4, "A": 4, "E": 5, "C": 1},
+      "config": {"path": "scripts/execution_convoy.py"}
+    },
+    {
+      "id": "convoy_unit_tests",
+      "needs": ["convoy_source_digest", "t7_contract_json"],
+      "operation": "UNITTEST_DISCOVERY",
+      "mutation_level": "TEST",
+      "heuristic": {"U": 5, "R": 5, "D": 5, "A": 5, "E": 5, "C": 2},
+      "config": {"start_dir": "tests", "pattern": "test_execution_convoy.py", "timeout_seconds": 120}
+    }
+  ]
+}
