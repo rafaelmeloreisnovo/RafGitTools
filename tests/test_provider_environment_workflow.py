@@ -24,6 +24,7 @@ class ProviderEnvironmentWorkflowTests(unittest.TestCase):
     def test_only_governed_provider_pats_are_injected_into_active_start(self):
         self.assertIn("PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}", self.text)
         self.assertIn("PROVIDER_ACTIONS_TOKEN: ${{ secrets.PAT_ACTIONS }}", self.text)
+        self.assertNotIn("PROVIDER_TOKEN: ${{ secrets.PAT_ENVIRONMENTS }}", self.text)
         self.assertNotIn("secrets.PAT_AGENTS", self.text)
         self.assertNotIn("secrets.PAT_CODESPACES", self.text)
         self.assertNotIn("secrets.PAT_DEPENDABOT", self.text)
@@ -46,6 +47,7 @@ class ProviderEnvironmentWorkflowTests(unittest.TestCase):
 
     def test_no_pat_fallback_is_present(self):
         self.assertNotIn("secrets.PAT_ENV ||", self.text)
+        self.assertNotIn("secrets.PAT_ENVIRONMENTS ||", self.text)
         self.assertNotIn("secrets.PAT_ACTIONS ||", self.text)
         self.assertNotIn("secrets.PAT_AGENTS ||", self.text)
         self.assertNotIn("secrets.PAT_CODESPACES ||", self.text)

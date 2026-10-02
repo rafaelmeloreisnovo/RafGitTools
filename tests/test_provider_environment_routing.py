@@ -26,6 +26,12 @@ class ProviderEnvironmentRoutingTests(unittest.TestCase):
         self.assertEqual(routed["environments"]["secret"], "PAT_ENV")
         self.assertEqual(routed["environments"]["state"], "WIRED_MANUAL_ONLY")
         self.assertEqual(routed["environments"]["storage_scope"], "ENVIRONMENT_SECRET")
+        self.assertEqual(routed["environments_secret_reported"]["secret"], "PAT_ENVIRONMENTS")
+        self.assertEqual(routed["environments_secret_reported"]["storage_scope"], "TOKEN_VAZIO_PROVIDER_SCOPE_PENDING")
+        self.assertEqual(routed["environments_secret_reported"]["environment"], "TOKEN_VAZIO_PROVIDER_BINDING_PENDING")
+        self.assertEqual(routed["environments_secret_reported"]["state"], "HUMAN_REPORTED_PROVIDER_READBACK_PENDING")
+        self.assertEqual(routed["environments_secret_reported"]["allowed_operations"], [])
+        self.assertFalse(routed["environments_secret_reported"]["write_allowed"])
         self.assertEqual(routed["actions"]["secret"], "PAT_ACTIONS")
         self.assertEqual(routed["actions"]["state"], "WIRED_MAIN_ONESHOT_READ_ONLY")
         self.assertFalse(routed["actions"]["write_allowed"])
@@ -37,6 +43,12 @@ class ProviderEnvironmentRoutingTests(unittest.TestCase):
         for key in ("actions", "agents", "codespaces", "dependabot"):
             self.assertEqual(routed[key]["storage_scope"], "REPOSITORY_SECRET")
             self.assertEqual(routed[key]["environment"], "TOKEN_VAZIO_NOT_ENVIRONMENT_BOUND")
+
+    def test_reported_pat_environments_cannot_be_silently_promoted(self):
+        data = json.loads((ROOT / "configs" / "provider-capability-environments.v1.json").read_text())
+        cap = next(x for x in data["capabilities"] if x["capability"] == "environments_secret_reported")
+        cap["allowed_operations"] = ["apply_main_protection"]
+        self.assertTrue(any("must remain unwired" in x for x in ENV.validate(data)))
 
     def test_branch_protection_payload_matches_canonical_start_contexts(self):
         plan = json.loads((ROOT / "contracts" / "MAIN_PROVIDER_ENFORCEMENT_PLAN_20260907.v3.json").read_text())

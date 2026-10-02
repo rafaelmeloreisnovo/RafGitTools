@@ -2,14 +2,16 @@
 """Fail-closed RafGitTools main branch-protection applicator.
 
 Credential material is read only from --token-env and is never written to receipts.
-Stage-1 apply supports automatic rollback to an observed ABSENT prestate.
+Stage-1 apply supports transactional rollback for both ABSENT and PRESENT
+protection prestates, so an in-place repair never needs an intentional
+unprotected window.
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
-import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -58,6 +60,84 @@ def enabled(obj: Any) -> bool:
     return False
 
 
+def _principal_names(items: Any, key: str) -> list[str]:
+    values: list[str] = []
+    if not isinstance(items, list):
+        return values
+    for item in items:
+        if isinstance(item, dict):
+            value = item.get(key)
+        else:
+            value = item
+        if value is not None:
+            values.append(str(value))
+    return sorted(values)
+
+
+def protection_to_payload(data: dict[str, Any]) -> dict[str, Any]:
+    """Normalize provider readback into an accepted protection PUT payload."""
+    checks = data.get("required_status_checks")
+    if isinstance(checks, dict):
+        required_status_checks: dict[str, Any] | None = {
+            "strict": bool(checks.get("strict")),
+            "contexts": sorted(str(x) for x in (checks.get("contexts") or [])),
+        }
+    else:
+        required_status_checks = None
+
+    reviews = data.get("required_pull_request_reviews")
+    if isinstance(reviews, dict):
+        required_pull_request_reviews: dict[str, Any] | None = {
+            "dismiss_stale_reviews": bool(reviews.get("dismiss_stale_reviews")),
+            "require_code_owner_reviews": bool(reviews.get("require_code_owner_reviews")),
+            "required_approving_review_count": int(
+                reviews.get("required_approving_review_count") or 0
+            ),
+            "require_last_push_approval": bool(reviews.get("require_last_push_approval")),
+        }
+    else:
+        required_pull_request_reviews = None
+
+    restrictions = data.get("restrictions")
+    if isinstance(restrictions, dict):
+        normalized_restrictions: dict[str, list[str]] | None = {
+            "users": _principal_names(restrictions.get("users"), "login"),
+            "teams": _principal_names(restrictions.get("teams"), "slug"),
+            "apps": _principal_names(restrictions.get("apps"), "slug"),
+        }
+    else:
+        normalized_restrictions = None
+
+    return {
+        "required_status_checks": required_status_checks,
+        "required_pull_request_reviews": required_pull_request_reviews,
+        "enforce_admins": enabled(data.get("enforce_admins")),
+        "restrictions": normalized_restrictions,
+        "required_linear_history": enabled(data.get("required_linear_history")),
+        "allow_force_pushes": enabled(data.get("allow_force_pushes")),
+        "allow_deletions": enabled(data.get("allow_deletions")),
+        "block_creations": enabled(data.get("block_creations")),
+        "required_conversation_resolution": enabled(
+            data.get("required_conversation_resolution")
+        ),
+        "lock_branch": enabled(data.get("lock_branch")),
+        "allow_fork_syncing": enabled(data.get("allow_fork_syncing")),
+    }
+
+
+def payload_digest(payload: dict[str, Any]) -> str:
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def prestate_allowed(required: str, observed: str) -> bool:
+    if required in {"TOKEN_VAZIO", "ABSENT_OR_PRESENT"}:
+        return observed in {"ABSENT", "PRESENT"}
+    if required in {"ABSENT", "PRESENT"}:
+        return observed == required
+    return False
+
+
 def verify_readback(data: dict[str, Any], plan: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     policy = plan["required_policy"]
@@ -66,8 +146,11 @@ def verify_readback(data: dict[str, Any], plan: dict[str, Any]) -> list[str]:
     checks = data.get("required_status_checks") or {}
     actual_contexts = set(checks.get("contexts") or [])
     missing = sorted(expected_contexts - actual_contexts)
+    unexpected = sorted(actual_contexts - expected_contexts)
     if missing:
         errors.append("missing required contexts: " + ", ".join(missing))
+    if unexpected:
+        errors.append("unexpected required contexts: " + ", ".join(unexpected))
     if checks.get("strict") is not bool(policy["require_branch_up_to_date_before_merge"]):
         errors.append("strict status-check mode mismatch")
 
@@ -117,7 +200,7 @@ class Api:
                 "Authorization": "Bearer " + self.token,
                 "X-GitHub-Api-Version": API_VERSION,
                 "Content-Type": "application/json",
-                "User-Agent": "rafgittools-provider-enforcement-v2",
+                "User-Agent": "rafgittools-provider-enforcement-v3",
             },
         )
         try:
@@ -151,6 +234,23 @@ def restore_absent_prestate(api: Api, repo: str, branch: str) -> tuple[bool, str
         return False, f"FAIL_ROLLBACK_{type(exc).__name__}"
 
 
+def restore_present_prestate(
+    api: Api,
+    repo: str,
+    branch: str,
+    previous_payload: dict[str, Any],
+) -> tuple[bool, str]:
+    try:
+        path = f"/repos/{repo}/branches/{branch}/protection"
+        api.request("PUT", path, previous_payload)
+        after = api.request("GET", path)
+        if protection_to_payload(after) == previous_payload:
+            return True, "PASS_PRESENT_RESTORED"
+        return False, "FAIL_PRESENT_POLICY_MISMATCH"
+    except Exception as exc:  # receipt is sanitized to exception class only
+        return False, f"FAIL_ROLLBACK_{type(exc).__name__}"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo", required=True)
@@ -167,7 +267,7 @@ def main() -> int:
 
     op = "ROLLBACK" if args.rollback else ("APPLY" if args.apply else "PLAN")
     receipt: dict[str, Any] = {
-        "schema": "rafaelia.rafgittools-main-provider-enforcement-receipt.v2",
+        "schema": "rafaelia.rafgittools-main-provider-enforcement-receipt.v3",
         "repository": args.repo,
         "branch": args.branch,
         "expected_main_sha": args.expected_main_sha,
@@ -212,6 +312,11 @@ def main() -> int:
     before = api.request("GET", protection_path, allow_404=True)
     prestate = "ABSENT" if before is None else "PRESENT"
     receipt["protection_prestate"] = prestate
+    previous_payload = protection_to_payload(before) if isinstance(before, dict) else None
+    if previous_payload is not None:
+        receipt["prestate_payload_sha256"] = payload_digest(previous_payload)
+        checks = previous_payload.get("required_status_checks") or {}
+        receipt["prestate_required_contexts"] = list(checks.get("contexts") or [])
 
     if args.rollback:
         if prestate == "ABSENT":
@@ -227,7 +332,16 @@ def main() -> int:
         return 0 if ok else 9
 
     required_prestate = str(plan.get("required_prestate") or "TOKEN_VAZIO")
-    if required_prestate != "TOKEN_VAZIO" and prestate != required_prestate:
+    if required_prestate not in {
+        "TOKEN_VAZIO",
+        "ABSENT",
+        "PRESENT",
+        "ABSENT_OR_PRESENT",
+    }:
+        receipt["state"] = "BLOCKED_PLAN_PRESTATE_INVALID"
+        write_receipt(args.receipt, receipt)
+        return 7
+    if not prestate_allowed(required_prestate, prestate):
         receipt["state"] = "BLOCKED_PROTECTION_PRESTATE_DRIFT"
         write_receipt(args.receipt, receipt)
         return 7
@@ -266,9 +380,19 @@ def main() -> int:
 
     except Exception as exc:
         receipt["apply_error_class"] = type(exc).__name__
-        if mutation_started and prestate == "ABSENT":
+        if mutation_started:
             receipt["rollback_attempted"] = True
-            ok, result = restore_absent_prestate(api, args.repo, args.branch)
+            if prestate == "ABSENT":
+                ok, result = restore_absent_prestate(api, args.repo, args.branch)
+            elif previous_payload is not None:
+                ok, result = restore_present_prestate(
+                    api,
+                    args.repo,
+                    args.branch,
+                    previous_payload,
+                )
+            else:
+                ok, result = False, "FAIL_ROLLBACK_PRESTATE_PAYLOAD_TOKEN_VAZIO"
             receipt["rollback_result"] = result
             if not ok:
                 receipt["state"] = "FAIL_APPLY_AND_ROLLBACK"

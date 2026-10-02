@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 SCHEMA = "rafaelia.provider-capability-environments.v1"
+EXPECTED_CAPABILITIES = {"environments", "environments_secret_reported", "actions", "agents", "codespaces", "dependabot"}
 
 def validate(data: dict) -> list[str]:
     errors: list[str] = []
@@ -31,7 +32,12 @@ def validate(data: dict) -> list[str]:
         seen_caps.add(cap)
         if not secret:
             errors.append(f"{cap}: missing secret name")
-        if scope == "ENVIRONMENT_SECRET":
+        if cap == "environments_secret_reported":
+            if scope != "TOKEN_VAZIO_PROVIDER_SCOPE_PENDING":
+                errors.append("environments_secret_reported: scope must remain pending provider readback")
+            if env != "TOKEN_VAZIO_PROVIDER_BINDING_PENDING":
+                errors.append("environments_secret_reported: binding must remain pending provider readback")
+        elif scope == "ENVIRONMENT_SECRET":
             env_key = env.casefold()
             if not env or env_key in seen_envs:
                 errors.append(f"invalid/duplicate environment: {env!r}")
@@ -43,6 +49,9 @@ def validate(data: dict) -> list[str]:
             errors.append(f"{cap}: unsupported storage_scope {scope!r}")
         if state.startswith("WIRED") and cap not in {"environments", "actions"}:
             errors.append(f"{cap}: unsupported wired capability in v1")
+    if seen_caps != EXPECTED_CAPABILITIES:
+        errors.append("capability set mismatch")
+
     env_cap = next((x for x in caps if x.get("capability") == "environments"), None)
     if not env_cap:
         errors.append("missing environments capability")
@@ -56,6 +65,22 @@ def validate(data: dict) -> list[str]:
         ops = set(env_cap.get("allowed_operations") or [])
         if "apply_main_protection" not in ops:
             errors.append("environments capability missing apply_main_protection")
+
+    reported = next((x for x in caps if x.get("capability") == "environments_secret_reported"), None)
+    if not reported:
+        errors.append("missing environments_secret_reported capability")
+    else:
+        if reported.get("secret") != "PAT_ENVIRONMENTS":
+            errors.append("environments_secret_reported must bind PAT_ENVIRONMENTS")
+        if reported.get("state") != "HUMAN_REPORTED_PROVIDER_READBACK_PENDING":
+            errors.append("PAT_ENVIRONMENTS reported state must remain provider-readback pending")
+        if reported.get("allowed_operations") != []:
+            errors.append("PAT_ENVIRONMENTS must remain unwired before provider readback")
+        if reported.get("write_allowed") is not False:
+            errors.append("PAT_ENVIRONMENTS must remain write-disabled before provider readback")
+        if reported.get("permission_probe_required") is not True:
+            errors.append("PAT_ENVIRONMENTS must require provider permission probe")
+
     actions_cap = next((x for x in caps if x.get("capability") == "actions"), None)
     if not actions_cap:
         errors.append("missing actions capability")
@@ -80,6 +105,8 @@ def validate(data: dict) -> list[str]:
     for required in (
         "NO_PAT_FALLBACK_BETWEEN_CAPABILITIES",
         "SECRET_VALUE_NEVER_PERSISTED_OR_PRINTED",
+        "PAT_ENV_DISTINCT_FROM_PAT_ENVIRONMENTS",
+        "HUMAN_REPORTED_PAT_REQUIRES_PROVIDER_READBACK_BEFORE_WIRING",
         "PROVIDER_WRITE_REQUIRES_WORKFLOW_DISPATCH",
         "PROVIDER_WRITE_REQUIRES_ENVIRONMENT_PROTECTION_PASS",
         "PROVIDER_WRITE_REQUIRES_EXACT_MAIN_SHA",
