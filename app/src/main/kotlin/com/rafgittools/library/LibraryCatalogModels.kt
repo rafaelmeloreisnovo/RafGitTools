@@ -26,6 +26,8 @@ enum class LibraryRelationType {
     CO_OCCURS_WITH
 }
 
+enum class LibraryTreeNodeKind { DIRECTORY, FILE }
+
 enum class AuthorityKind {
     PERSON,
     ORGANIZATION,
@@ -133,6 +135,19 @@ data class LibraryItemRecord(
     val claimAllowed: Boolean = false
 )
 
+data class LibraryTreeNodeRecord(
+    val nodeId: String,
+    val sourceId: String,
+    val parentNodeId: String?,
+    val displayName: String,
+    val kind: LibraryTreeNodeKind,
+    val sourceRefSha256: String,
+    val mediaType: String? = null,
+    val sizeBytes: Long? = null,
+    val evidenceState: LibraryEvidenceState = LibraryEvidenceState.SOURCE_OBSERVED,
+    val claimAllowed: Boolean = false
+)
+
 data class LibraryPreservationEventRecord(
     val eventId: String,
     val eventType: String,
@@ -180,5 +195,6 @@ data class LibraryCatalogBundle(
     val relations: List<LibraryRelationRecord>,
     val gaps: List<String>,
     val createdAtEpochMs: Long,
-    val claimAllowed: Boolean = false
+    val claimAllowed: Boolean = false,
+    val treeNodes: List<LibraryTreeNodeRecord> = emptyList()
 )
