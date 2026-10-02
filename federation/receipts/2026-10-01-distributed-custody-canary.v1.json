@@ -1,0 +1,49 @@
+{
+  "schema": "rafaelia.distributed-custody-canary-receipt/v1",
+  "canary_id": "CUSTODY-CANARY-20261001-001",
+  "parent_contract": "configs/distributed-custody-fabric.v1.json@7714e57eee968f2b2d4f785f2b8bcb461e9463b9",
+  "source_plane": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "commit": "b390296b0465ba3dcaafd3e8099606c7745922ef",
+    "path": "federation/canary/CUSTODY_CANARY_20261001_001.json",
+    "blob_sha": "ea67686d65969343317ff058595630bb22603ad6",
+    "expected_payload_sha256": "9cdd46b98fabe80e24703ab695ef797db2ac0fdc164c5c5c52da534903e3f692",
+    "readback": "PASS"
+  },
+  "documentary_plane": {
+    "provider": "Google Drive",
+    "ledger_id": "1NEU7lg7iUZf1u7lX-SEKuc-knSDGlF5gOx7qzXcJ1yc",
+    "mu_id": "MU-CUSTODY-CANARY-20261001-001",
+    "revision_id": "ANLCKQl-FNOxNnxi2yIM667AGj8wqQchVs1ncG2UH74VxSsRY5ezZgddqWejMqq1f4FP6QUGSHzWDYbmsWC4Mn41TbHcJib10CPjZzA3PvE",
+    "mu_id_readback_range": "t.0:139318-139348",
+    "digest_readback_range": "t.0:140147-140211",
+    "recorded_payload_sha256": "9cdd46b98fabe80e24703ab695ef797db2ac0fdc164c5c5c52da534903e3f692",
+    "readback": "PASS"
+  },
+  "execution_plane": {
+    "executor": "ChatGPT current-session deterministic SHA-256 recomputation",
+    "canonicalization": "UTF-8 JSON; payload only; sort_keys=true; separators=(',',':'); ensure_ascii=false",
+    "recomputed_payload_sha256": "9cdd46b98fabe80e24703ab695ef797db2ac0fdc164c5c5c52da534903e3f692",
+    "triple_match": true,
+    "state": "PASS_SCOPED"
+  },
+  "restricted_fragment": {
+    "materialized": false,
+    "secret_material_observed_in_canary": false,
+    "state": "NOT_REQUIRED_FOR_NON_SENSITIVE_CANARY"
+  },
+  "result": "PASS_SCOPED_CROSS_PLANE_STRUCTURAL_CUSTODY",
+  "scope_limits": [
+    "does not prove cryptographic secret-fragment implementation",
+    "does not prove Android physical execution",
+    "does not prove provider/admin enforcement",
+    "does not certify legal or standards conformity"
+  ],
+  "gaps": [
+    "CRYPTOGRAPHIC_RESTRICTED_FRAGMENT=TOKEN_VAZIO",
+    "PHYSICAL_DEVICE_EXECUTION=NOT_RUN",
+    "SUCCESSOR_BRANCH_CI=NOT_OBSERVED_AT_RECEIPT_CREATION"
+  ],
+  "rollback": "close/revert successor canary commits only; Drive correction is successor μWRITE; parent PR#605 merge remains independent",
+  "claim_allowed": false
+}
