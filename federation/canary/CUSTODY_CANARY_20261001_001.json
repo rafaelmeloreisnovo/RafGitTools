@@ -1,0 +1,20 @@
+{
+  "schema": "rafaelia.custody-canary-envelope/v1",
+  "payload": {
+    "schema": "rafaelia.custody-canary/v1",
+    "canary_id": "CUSTODY-CANARY-20261001-001",
+    "scope": "NON_SENSITIVE_STRUCTURAL_CUSTODY",
+    "producer": "RafGitTools",
+    "source_plane": "GitHub",
+    "documentary_plane": "GoogleDrive",
+    "execution_plane": "ChatGPT_current_session_deterministic_hash_check",
+    "restricted_fragment": "NOT_MATERIALIZED",
+    "key_slot_ref": "canary-slot-none",
+    "privacy_class": "PUBLIC_NON_SENSITIVE_CANARY",
+    "claim_allowed": false
+  },
+  "canonicalization": "UTF-8 JSON, sort_keys=true, separators=(',',':'), ensure_ascii=false over payload only",
+  "payload_sha256": "9cdd46b98fabe80e24703ab695ef797db2ac0fdc164c5c5c52da534903e3f692",
+  "state": "SOURCE_PLANE_MATERIALIZED",
+  "claim_allowed": false
+}
