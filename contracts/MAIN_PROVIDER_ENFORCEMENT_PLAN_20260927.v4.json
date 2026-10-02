@@ -1,14 +1,14 @@
 {
   "schema": "rafaelia.rafgittools-main-provider-enforcement-plan.v4",
-  "version": "4.0.0-stage1",
-  "generated_at": "2026-09-27",
+  "version": "4.0.1-stage1-context-hotfix",
+  "generated_at": "2026-10-02",
   "repository": "rafaelmeloreisnovo/RafGitTools",
   "target_branch": "main",
   "supersedes": "contracts/MAIN_PROVIDER_ENFORCEMENT_PLAN_20260907.v3.json",
   "stage": "STAGE1_CI_AND_PR_BARRIER",
-  "mode": "PREPARED_NOT_APPLIED",
+  "mode": "PREPARED_CONTEXT_REPAIR_NOT_APPLIED",
   "claim_allowed": false,
-  "purpose": "Close the observed merge-before-terminal-CI gap without requiring an unevidenced independent reviewer. Stage 2 may raise approvals from 0 to 1 only after reviewer availability is evidenced.",
+  "purpose": "Close the merge-before-terminal-CI gap while requiring the exact check-run names emitted by START. The 2026-10-02 hotfix removes the stale workflow-name prefix that GitHub branch protection was waiting for but the workflow did not emit as a check-run context.",
   "authority_evidence": {
     "environment": "Pat_environments",
     "secret_reference": "PAT_ENV",
@@ -17,7 +17,20 @@
     "preflight_artifact_id": 10945320713,
     "admin_permission_observed": true,
     "exact_main_sha_preflight": "255267cf780f3ce03402066c76b8721c9d92f18d",
-    "secret_value_recorded": false
+    "secret_value_recorded": false,
+    "context_hotfix_evidence": {
+      "source_pr": 609,
+      "source_head_before_hotfix": "3e95116cbf091a3b319f5657378fe0324664e463",
+      "start_run_id": 36948845497,
+      "start_run_conclusion": "success",
+      "observed_required_job_names": [
+        "00 · Plan / roteamento",
+        "01 · Workflow topology / single-root invariant",
+        "02 · Coherence / anti-regression",
+        "09 · Final receipt / fechamento"
+      ],
+      "provider_merge_attempt_result": "BLOCKED_4_OF_4_REQUIRED_STATUS_CHECKS_EXPECTED"
+    }
   },
   "required_prestate": "ABSENT",
   "required_policy": {
@@ -36,19 +49,19 @@
   },
   "required_status_checks_global": [
     {
-      "context": "START · RAFAELIA Orchestrated Pipeline / 00 · Plan / roteamento",
+      "context": "00 · Plan / roteamento",
       "job_id": "plan"
     },
     {
-      "context": "START · RAFAELIA Orchestrated Pipeline / 01 · Workflow topology / single-root invariant",
+      "context": "01 · Workflow topology / single-root invariant",
       "job_id": "topology"
     },
     {
-      "context": "START · RAFAELIA Orchestrated Pipeline / 02 · Coherence / anti-regression",
+      "context": "02 · Coherence / anti-regression",
       "job_id": "coherence"
     },
     {
-      "context": "START · RAFAELIA Orchestrated Pipeline / 09 · Final receipt / fechamento",
+      "context": "09 · Final receipt / fechamento",
       "job_id": "receipt"
     }
   ],
@@ -74,6 +87,7 @@
     "SOURCE != EXECUTION != EVIDENCE != CLAIM",
     "MERGED != VALIDATED",
     "DETECTOR != SERVER_BARRIER",
+    "REQUIRED_CONTEXT == OBSERVED_CHECK_RUN_NAME",
     "REVIEWER_TOKEN_VAZIO != REVIEWER_AVAILABLE",
     "STAGE1_APPROVAL_COUNT_0 != STAGE2_APPROVAL_COUNT_1",
     "PAT_ENV_VALUE_NEVER_PERSISTED",
