@@ -1,0 +1,151 @@
+{
+  "schema": "rafaelia.freestanding-jvm-orchestration/v1",
+  "version": 1,
+  "state": "IMPLEMENTED_UNTESTED",
+  "claim_allowed": false,
+  "jvm_is_freestanding": false,
+  "execution_policy": {
+    "dispatch": "TYPED_ITERATIVE_NO_REFLECTION",
+    "tail_recursion": false,
+    "shadow_state": "SINGLE_CONTROL_CONTEXT",
+    "warning_transport": "BITMASK_OR_TYPED_STATUS",
+    "failure_mode": "FAIL_CLOSED"
+  },
+  "modules": [
+    {
+      "id": "rafgittools-control-plane",
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "authority_path": "app/src/main/kotlin/com/rafgittools/workspace/FreestandingModulePipeline.kt",
+      "module_kind": "ROUTE",
+      "boundary": "JVM_CONTROL_PLANE",
+      "required_flags": ["SOURCE_BOUND", "AUTHORITY_BOUND", "FAIL_CLOSED", "SHADOW_GUARD"],
+      "state": "IMPLEMENTED_UNTESTED",
+      "urgency": "P1",
+      "leaf_ref": "feature/freestanding-jvm-orchestration-v1-20261002",
+      "evidence_refs": [],
+      "token_vazio": [
+        {
+          "id": "TOKEN_VAZIO_RGT_PIPELINE_UNIT_CI",
+          "missing": "current-head unit/CI execution receipt",
+          "evidence_needed": "FreestandingModulePipelineTest PASS on this branch head",
+          "urgency": "P1",
+          "next": "execute scoped unit test and bind workflow result to exact head"
+        }
+      ]
+    },
+    {
+      "id": "rafpolimata-l0",
+      "repository": "rafaelmeloreisnovo/RafPolimata",
+      "authority_path": "freestanding/",
+      "module_kind": "POLIMATA_L0",
+      "boundary": "FREESTANDING_CORE",
+      "required_flags": ["SOURCE_BOUND", "AUTHORITY_BOUND", "FAIL_CLOSED", "SHADOW_GUARD"],
+      "state": "IMPLEMENTED_UNTESTED",
+      "urgency": "P1",
+      "leaf_ref": "PR#368@9e7771c69880ba5edc2e28f8f8550a347f331604",
+      "evidence_refs": [],
+      "token_vazio": [
+        {
+          "id": "TOKEN_VAZIO_RAFPOLIMATA_JVM_ADAPTER_CURRENT_HEAD",
+          "missing": "current-head producer/consumer adapter execution evidence",
+          "evidence_needed": "same-revision adapter/core gate receipt",
+          "urgency": "P1",
+          "next": "bind one bounded adapter to an existing L0 ABI and execute its owner gate"
+        }
+      ]
+    },
+    {
+      "id": "audio-dsp-core",
+      "repository": "rafaelmeloreisnovo/Est-dio-de-udio",
+      "authority_path": "app/src/main/cpp/",
+      "module_kind": "AUDIO_DSP",
+      "boundary": "FREESTANDING_CORE",
+      "required_flags": ["SOURCE_BOUND", "AUTHORITY_BOUND", "FAIL_CLOSED", "SHADOW_GUARD"],
+      "state": "IMPLEMENTED_UNTESTED",
+      "urgency": "P0",
+      "leaf_ref": "PR#26@5ec9fa4277c217ed3ca410f5976a4ecd927ee413",
+      "evidence_refs": [],
+      "token_vazio": [
+        {
+          "id": "TOKEN_VAZIO_AUDIO_PHYSICAL_MIC_SENSOR",
+          "missing": "physical microphone/speaker/sensor evidence",
+          "evidence_needed": "exact APK+device+permission+sensor/microphone runtime receipt",
+          "urgency": "P0",
+          "next": "execute physical Android evidence gate before hardware-facing claim promotion"
+        }
+      ]
+    },
+    {
+      "id": "blake3-rmr-provider",
+      "repository": "rafaelmeloreisnovo/BLAKE3",
+      "authority_path": "rmr/",
+      "module_kind": "CRYPTO_RMR",
+      "boundary": "FREESTANDING_CORE",
+      "upstream_crypto_mutation": false,
+      "required_flags": ["SOURCE_BOUND", "AUTHORITY_BOUND", "FAIL_CLOSED", "SHADOW_GUARD"],
+      "state": "IMPLEMENTED_UNTESTED",
+      "urgency": "P0",
+      "leaf_ref": "PR#173@1a0fde505bf17661d47c7626e3d6003ae461c8d8",
+      "evidence_refs": [],
+      "token_vazio": [
+        {
+          "id": "TOKEN_VAZIO_BLAKE3_RMR_PROVIDER_EQUIVALENCE_CURRENT_HEAD",
+          "missing": "current-head functional equivalence against upstream reference for claimed vectors",
+          "evidence_needed": "exact-head vectors + upstream comparison + compiler/environment receipt",
+          "urgency": "P0",
+          "next": "execute bounded provider equivalence before cryptographic conformance claim"
+        }
+      ]
+    },
+    {
+      "id": "vectra-vm-kernel",
+      "repository": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "authority_path": "app/",
+      "module_kind": "VM_KERNEL",
+      "boundary": "FREESTANDING_CORE",
+      "required_flags": ["SOURCE_BOUND", "AUTHORITY_BOUND", "FAIL_CLOSED", "SHADOW_GUARD"],
+      "state": "IMPLEMENTED_UNTESTED",
+      "urgency": "P0",
+      "leaf_ref": "PR#1152@94b45391968fc48bc11ff6d9575b528db6bc15ed",
+      "evidence_refs": [],
+      "token_vazio": [
+        {
+          "id": "TOKEN_VAZIO_VECTRA_TERMUX_PHYSICAL_TRANSACTION",
+          "missing": "physical request digest -> provider result -> observed process/exit transaction",
+          "evidence_needed": "same-device Vectras request + Termux result + process/exit receipt",
+          "urgency": "P0",
+          "next": "execute bounded cross-repository physical transaction"
+        }
+      ]
+    },
+    {
+      "id": "rafcodephi-platform-runtime",
+      "repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "authority_path": "app/",
+      "module_kind": "PLATFORM_RUNTIME",
+      "boundary": "PLATFORM_GATE",
+      "required_flags": ["SOURCE_BOUND", "AUTHORITY_BOUND", "FAIL_CLOSED", "SHADOW_GUARD"],
+      "state": "IMPLEMENTED_UNTESTED",
+      "urgency": "P0",
+      "leaf_ref": "PR#473@8e1c0e615380b08359ab3a3a64a03c66e55ce3b8",
+      "evidence_refs": [],
+      "token_vazio": [
+        {
+          "id": "TOKEN_VAZIO_RAFCODEPHI_ARM32_ARM64_PHYSICAL_RUNTIME",
+          "missing": "physical ARM32/ARM64 runtime receipts for current artifacts",
+          "evidence_needed": "artifact hash + device ABI + install/launch/provider result receipt",
+          "urgency": "P0",
+          "next": "run physical ARM32 and ARM64 evidence without inheriting historical VERIFIED state"
+        },
+        {
+          "id": "TOKEN_VAZIO_RAFCODEPHI_PROVIDER_ENFORCEMENT",
+          "missing": "provider/admin enforcement state",
+          "evidence_needed": "authorized provider readback and rejection receipt",
+          "urgency": "P0",
+          "next": "preserve fail-closed until authorized provider state is observed"
+        }
+      ]
+    }
+  ],
+  "rollback": "close/revert per repository; never force-push global history or weaken local owner gates"
+}
