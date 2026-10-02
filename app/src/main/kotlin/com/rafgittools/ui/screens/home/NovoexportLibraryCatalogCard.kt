@@ -44,6 +44,12 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
 
+private data class CatalogPreviewEntry(
+    val relativePath: String,
+    val isDirectory: Boolean,
+    val sizeBytes: Long?
+)
+
 @Composable
 fun NovoexportLibraryCatalogCard(inventory: NovoexportSafInventory.Result) {
     val context = LocalContext.current
@@ -80,10 +86,22 @@ fun NovoexportLibraryCatalogCard(inventory: NovoexportSafInventory.Result) {
         }
     }
 
-    val candidates = remember(inventory, filter) {
+    val allFiles = remember(inventory) {
+        (inventory.allFiles.ifEmpty { inventory.candidateFiles }).distinctBy { it.documentId }
+    }
+    val directories = remember(inventory) {
+        inventory.allDirectories.distinctBy { it.documentId }
+    }
+    val catalogNodeCount = 1 + allFiles.size + directories.size
+    val previewEntries = remember(inventory, filter) {
         val query = filter.trim()
-        if (query.isEmpty()) inventory.candidateFiles
-        else inventory.candidateFiles.filter { it.name.contains(query, ignoreCase = true) }
+        val rows = directories.map {
+            CatalogPreviewEntry(it.relativePath, isDirectory = true, sizeBytes = null)
+        } + allFiles.map {
+            CatalogPreviewEntry(it.relativePath, isDirectory = false, sizeBytes = it.sizeBytes)
+        }
+        rows.filter { query.isEmpty() || it.relativePath.contains(query, ignoreCase = true) }
+            .sortedBy { it.relativePath.lowercase() }
     }
 
     ElevatedCard(Modifier.fillMaxWidth()) {
@@ -91,9 +109,9 @@ fun NovoexportLibraryCatalogCard(inventory: NovoexportSafInventory.Result) {
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("Catálogo NOVOexport", style = MaterialTheme.typography.titleMedium)
+            Text("Mapa de diretórios NOVOexport", style = MaterialTheme.typography.titleMedium)
             Text(
-                "Prévia pesquisável dos nomes e tamanhos informados pelo provedor. Esta etapa não abre nem copia o conteúdo dos arquivos.",
+                "Índice local pesquisável de toda a árvore selecionada: nomes, hierarquia, tipos MIME e tamanhos informados pelo provedor. Não abre nem copia conteúdo.",
                 style = MaterialTheme.typography.bodySmall
             )
             Text(
@@ -102,7 +120,11 @@ fun NovoexportLibraryCatalogCard(inventory: NovoexportSafInventory.Result) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                "Itens encontrados: ${inventory.candidateFiles.size} · filtrados: ${candidates.size} · catalogados: ${materialization?.let { inventory.candidateFiles.size } ?: 0}",
+                "Árvore: ${allFiles.size} arquivos · ${directories.size} subpastas · 1 raiz",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                "Resultado da busca: ${previewEntries.size} nós · nós catalogados: ${materialization?.let { catalogNodeCount } ?: 0}",
                 style = MaterialTheme.typography.bodySmall
             )
             OutlinedTextField(
@@ -110,20 +132,23 @@ fun NovoexportLibraryCatalogCard(inventory: NovoexportSafInventory.Result) {
                 onValueChange = { filter = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                label = { Text("Filtrar por nome") },
+                label = { Text("Filtrar por caminho ou nome") },
                 leadingIcon = { androidx.compose.material3.Icon(Icons.Default.Search, null) }
             )
-            candidates.take(12).forEach { candidate ->
+            previewEntries.take(12).forEach { entry ->
+                val kind = if (entry.isDirectory) "PASTA" else "ARQUIVO"
+                val size = if (entry.isDirectory) ""
+                    else " · ${entry.sizeBytes?.let(::formatCatalogBytes) ?: "tamanho TOKEN_VAZIO"}"
                 Text(
-                    "${candidate.name} · ${candidate.sizeBytes?.let(::formatCatalogBytes) ?: "tamanho TOKEN_VAZIO"}",
+                    "$kind · ${entry.relativePath}$size",
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            if (candidates.size > 12) {
+            if (previewEntries.size > 12) {
                 Text(
-                    "Mais ${candidates.size - 12} itens no resultado.",
+                    "Mais ${previewEntries.size - 12} nós no resultado.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -169,14 +194,14 @@ fun NovoexportLibraryCatalogCard(inventory: NovoexportSafInventory.Result) {
                     Spacer(Modifier.size(8.dp))
                     Text("Compondo catálogo…")
                 } else {
-                    Text("Indexar e compor catálogo local")
+                    Text("Indexar e compor mapa local")
                 }
             }
 
             materialization?.let { ready ->
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Materialização local verificada", style = MaterialTheme.typography.titleSmall)
+                        Text("Mapa local verificado", style = MaterialTheme.typography.titleSmall)
                         Text(ready.catalogFile.name, style = MaterialTheme.typography.bodySmall)
                         Text("SHA-256 catálogo: ${ready.catalogSha256}", style = MaterialTheme.typography.bodySmall)
                         Text(
