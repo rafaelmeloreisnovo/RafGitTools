@@ -1127,6 +1127,12 @@ private fun DriveBridgeContent(
             }
         }
 
+        treeInventory?.let { inventory ->
+            item {
+                NovoexportLibraryCatalogCard(inventory)
+            }
+        }
+
         error?.let { message ->
             item {
                 OutlinedCard(Modifier.fillMaxWidth()) {
