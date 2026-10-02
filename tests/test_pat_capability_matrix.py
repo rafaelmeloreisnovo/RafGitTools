@@ -1,4 +1,3 @@
-import copy
 import importlib.util
 import json
 import unittest
@@ -17,6 +16,13 @@ class PatCapabilityMatrixTests(unittest.TestCase):
 
     def test_canonical_matrix_passes(self):
         self.assertEqual(M.validate(self.load()), [])
+
+    def test_six_distinct_secret_ids_are_typed(self):
+        data=self.load()
+        self.assertEqual(len(data["secret_ids"]), 6)
+        self.assertIn("PAT_ENV", data["secret_ids"])
+        self.assertIn("PAT_ENVIRONMENTS", data["secret_ids"])
+        self.assertNotEqual("PAT_ENV", "PAT_ENVIRONMENTS")
 
     def test_lowercase_secret_fails(self):
         data=self.load()
@@ -37,6 +43,16 @@ class PatCapabilityMatrixTests(unittest.TestCase):
         data=self.load()
         next(x for x in data["capabilities"] if x["secret_id"]=="PAT_ENV")["environment"]="Pat_environments"
         self.assertTrue(any("canonical uppercase" in x for x in M.validate(data)))
+
+    def test_pat_environments_remains_fail_closed_until_provider_readback(self):
+        data=self.load()
+        cap=next(x for x in data["capabilities"] if x["secret_id"]=="PAT_ENVIRONMENTS")
+        self.assertEqual(cap["storage_scope"], "TOKEN_VAZIO_PROVIDER_SCOPE_PENDING")
+        self.assertEqual(cap["current_state"], "HUMAN_REPORTED_PROVIDER_READBACK_PENDING")
+        self.assertEqual(cap["wired_operations"], [])
+        self.assertFalse(cap["mutation_allowed"])
+        cap["wired_operations"]=["apply_main_protection"]
+        self.assertTrue(any("PAT_ENVIRONMENTS must remain unwired" in x for x in M.validate(data)))
 
 if __name__=="__main__":
     unittest.main()
