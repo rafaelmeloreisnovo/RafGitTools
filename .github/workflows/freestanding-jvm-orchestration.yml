@@ -1,0 +1,47 @@
+name: Freestanding JVM Orchestration V1
+
+on:
+  pull_request:
+    paths:
+      - 'app/src/main/kotlin/com/rafgittools/workspace/FreestandingModulePipeline.kt'
+      - 'app/src/test/kotlin/com/rafgittools/workspace/FreestandingModulePipelineTest.kt'
+      - 'configs/freestanding-jvm-orchestration.v1.json'
+      - 'scripts/validate_freestanding_jvm_orchestration.py'
+      - 'docs/architecture/FREESTANDING_JVM_ORCHESTRATION_V1.md'
+      - '.github/workflows/freestanding-jvm-orchestration.yml'
+  push:
+    branches:
+      - 'feature/freestanding-jvm-orchestration-v1-*'
+    paths:
+      - 'app/src/main/kotlin/com/rafgittools/workspace/FreestandingModulePipeline.kt'
+      - 'app/src/test/kotlin/com/rafgittools/workspace/FreestandingModulePipelineTest.kt'
+      - 'configs/freestanding-jvm-orchestration.v1.json'
+      - 'scripts/validate_freestanding_jvm_orchestration.py'
+      - '.github/workflows/freestanding-jvm-orchestration.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate typed federation contract
+        run: python3 scripts/validate_freestanding_jvm_orchestration.py
+
+  jvm-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Execute scoped JVM orchestration unit tests
+        run: >-
+          ./scripts/gradlew_with_java17.sh
+          testDevDebugUnitTest
+          --tests com.rafgittools.workspace.FreestandingModulePipelineTest
