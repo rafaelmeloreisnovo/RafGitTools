@@ -32,6 +32,21 @@ class FakeApi:
         raise AssertionError((method, path, allow_404))
 
 
+class PresentFakeApi:
+    def __init__(self, current_payload):
+        self.current_payload = current_payload
+        self.put_payloads = []
+
+    def request(self, method, path, payload=None, allow_404=False):
+        if method == "PUT" and path.endswith("/protection"):
+            self.current_payload = payload
+            self.put_payloads.append(payload)
+            return {}
+        if method == "GET" and path.endswith("/protection"):
+            return self.current_payload
+        raise AssertionError((method, path, allow_404))
+
+
 class ProviderEnforcementStage1Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -69,13 +84,39 @@ class ProviderEnforcementStage1Tests(unittest.TestCase):
             "required_pull_request_reviews": {
                 "required_approving_review_count": 0,
                 "dismiss_stale_reviews": False,
+                "require_code_owner_reviews": False,
+                "require_last_push_approval": False,
+            },
+            "required_linear_history": {"enabled": False},
+            "required_conversation_resolution": {"enabled": True},
+            "allow_force_pushes": {"enabled": False},
+            "allow_deletions": {"enabled": False},
+            "block_creations": {"enabled": False},
+            "lock_branch": {"enabled": False},
+            "allow_fork_syncing": {"enabled": True},
+            "restrictions": None,
+        }
+        self.assertEqual(APP.verify_readback(observed, self.plan), [])
+
+    def test_readback_rejects_stale_or_extra_required_context(self):
+        contexts = [x["context"] for x in self.plan["required_status_checks_global"]]
+        observed = {
+            "required_status_checks": {
+                "contexts": contexts + ["stale-context"],
+                "strict": True,
+            },
+            "enforce_admins": {"enabled": True},
+            "required_pull_request_reviews": {
+                "required_approving_review_count": 0,
+                "dismiss_stale_reviews": False,
                 "require_last_push_approval": False,
             },
             "required_conversation_resolution": {"enabled": True},
             "allow_force_pushes": {"enabled": False},
             "allow_deletions": {"enabled": False},
         }
-        self.assertEqual(APP.verify_readback(observed, self.plan), [])
+        errors = APP.verify_readback(observed, self.plan)
+        self.assertTrue(any("unexpected required contexts" in item for item in errors))
 
     def test_rollback_restores_absent_prestate(self):
         api = FakeApi()
@@ -83,6 +124,58 @@ class ProviderEnforcementStage1Tests(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(result, "PASS_ABSENT_RESTORED")
         self.assertTrue(api.deleted)
+
+    def test_present_prestate_normalizes_and_restores_transactionally(self):
+        previous_readback = {
+            "required_status_checks": {
+                "strict": True,
+                "contexts": ["old-b", "old-a"],
+            },
+            "required_pull_request_reviews": {
+                "dismiss_stale_reviews": False,
+                "require_code_owner_reviews": False,
+                "required_approving_review_count": 0,
+                "require_last_push_approval": False,
+            },
+            "enforce_admins": {"enabled": True},
+            "restrictions": None,
+            "required_linear_history": {"enabled": False},
+            "allow_force_pushes": {"enabled": False},
+            "allow_deletions": {"enabled": False},
+            "block_creations": {"enabled": False},
+            "required_conversation_resolution": {"enabled": True},
+            "lock_branch": {"enabled": False},
+            "allow_fork_syncing": {"enabled": True},
+        }
+        previous_payload = APP.protection_to_payload(previous_readback)
+        self.assertEqual(
+            previous_payload["required_status_checks"]["contexts"],
+            ["old-a", "old-b"],
+        )
+        api = PresentFakeApi({})
+        ok, result = APP.restore_present_prestate(
+            api,
+            "owner/repo",
+            "main",
+            previous_payload,
+        )
+        self.assertTrue(ok)
+        self.assertEqual(result, "PASS_PRESENT_RESTORED")
+        self.assertEqual(api.put_payloads, [previous_payload])
+
+    def test_prestate_policy_accepts_absent_or_present_without_other_values(self):
+        self.assertEqual(self.plan["required_prestate"], "ABSENT_OR_PRESENT")
+        self.assertTrue(APP.prestate_allowed("ABSENT_OR_PRESENT", "ABSENT"))
+        self.assertTrue(APP.prestate_allowed("ABSENT_OR_PRESENT", "PRESENT"))
+        self.assertTrue(APP.prestate_allowed("ABSENT", "ABSENT"))
+        self.assertFalse(APP.prestate_allowed("ABSENT", "PRESENT"))
+        self.assertFalse(APP.prestate_allowed("INVALID", "PRESENT"))
+
+    def test_payload_digest_is_stable_for_equivalent_payload(self):
+        payload = APP.build_payload(self.plan)
+        clone = json.loads(json.dumps(payload))
+        self.assertEqual(APP.payload_digest(payload), APP.payload_digest(clone))
+        self.assertRegex(APP.payload_digest(payload), r"^[0-9a-f]{64}$")
 
     def test_stage1_trigger_is_exact_and_not_claim_promotion(self):
         self.assertEqual(self.trigger["operation"], "apply_main_protection")
