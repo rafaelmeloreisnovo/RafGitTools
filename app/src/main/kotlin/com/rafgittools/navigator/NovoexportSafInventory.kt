@@ -62,6 +62,8 @@ object NovoexportSafInventory {
 
         val pending = ArrayDeque<DirectoryWork>()
         val visitedDirectories = mutableSetOf<String>()
+        val directoryPlacements = mutableMapOf<String, Pair<String, String>>()
+        val filePlacements = mutableMapOf<String, Pair<String, String>>()
         val allFiles = mutableListOf<Entry>()
         val allDirectories = mutableListOf<DirectoryEntry>()
         val candidates = mutableListOf<Entry>()
@@ -106,24 +108,26 @@ object NovoexportSafInventory {
                     val relativePath = childPath(directory.relativePath, name)
 
                     if (mimeType == DocumentsContract.Document.MIME_TYPE_DIR) {
-                        allDirectories += DirectoryEntry(
-                            documentId = documentId,
-                            parentDocumentId = directoryId,
-                            name = name,
-                            relativePath = relativePath
-                        )
-                        pending.addLast(DirectoryWork(documentId, relativePath))
+                        val placement = relativePath to directoryId
+                        val previousPlacement = directoryPlacements[documentId]
+                        require(previousPlacement == null || previousPlacement == placement) {
+                            "SAF_DIRECTORY_ID_HAS_MULTIPLE_TREE_PATHS"
+                        }
+                        if (previousPlacement == null) {
+                            directoryPlacements[documentId] = placement
+                            allDirectories += DirectoryEntry(
+                                documentId = documentId,
+                                parentDocumentId = directoryId,
+                                name = name,
+                                relativePath = relativePath
+                            )
+                            pending.addLast(DirectoryWork(documentId, relativePath))
+                        }
                         continue
                     }
 
                     val size = if (it.isNull(sizeIndex)) null
                     else it.getLong(sizeIndex).takeIf { value -> value >= 0L }
-                    if (size == null) {
-                        unknownSizeFiles += 1
-                    } else {
-                        knownTotalBytes = addSize(knownTotalBytes, size, "SAF total size aggregation overflow")
-                    }
-
                     val entry = Entry(
                         uri = DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId).toString(),
                         documentId = documentId,
@@ -133,6 +137,19 @@ object NovoexportSafInventory {
                         relativePath = relativePath,
                         parentDocumentId = directoryId
                     )
+                    val placement = relativePath to directoryId
+                    val previousPlacement = filePlacements[documentId]
+                    require(previousPlacement == null || previousPlacement == placement) {
+                        "SAF_FILE_ID_HAS_MULTIPLE_TREE_PATHS"
+                    }
+                    if (previousPlacement != null) continue
+                    filePlacements[documentId] = placement
+
+                    if (size == null) {
+                        unknownSizeFiles += 1
+                    } else {
+                        knownTotalBytes = addSize(knownTotalBytes, size, "SAF total size aggregation overflow")
+                    }
                     allFiles += entry
 
                     if (acceptsSourceName(name)) {
