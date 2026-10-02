@@ -62,7 +62,11 @@ No existing Drive file was moved or deleted.
 
 ## NOVOexport
 
-The canonical NOVOexport root and semantic-library artifacts already exist in Drive. This control plane treats them as source/catalog authorities and does not duplicate the raw corpus.
+The canonical NOVOexport root and semantic-library artifacts were recorded as existing in Drive on 2026-09-27. This control plane treats them as source/catalog authorities and does not duplicate the raw corpus.
+
+The catalog pilot on branch `codex/novoexport-library-catalog-v1-20261002` composes only a complete metadata inventory. It keeps access classification at `TOKEN_VAZIO`, records missing bibliographic parents as explicit gaps, and leaves claims disabled. Source locator and document IDs are represented by SHA-256 fingerprints; the app does not read source bytes or include raw SAF URIs in the catalog. These fingerprints are not anonymization or proof of truth.
+
+The searchable preview filters candidate names in the current inventory. It is not a full-text/vector index. Export requires a separate confirmation and writes only the materialized catalog and its receipt through SAF. The export receipt records the provider authority and readback result, but does not inspect Drive ACLs or verify private/shared/public visibility. CI and a physical Drive/provider run remain pending for this branch.
 
 ## Materialization
 
@@ -97,7 +101,7 @@ DISCOVER -> IDENTITY_BIND -> DESCRIBE -> AUTHORITY_CONTROL -> CLASSIFY -> CATALO
 - full semantic authority/subject extraction is NOT_RUN;
 - reversible physical move planner is not implemented;
 - multi-source circulation/change journal is not implemented;
-- library search UI is not wired;
+- full library search is not wired; the catalog pilot exposes only an in-memory, filename-filtered preview for the current metadata inventory;
 - no whole-Drive delete/dedup authorization exists.
 
 ## F_next
