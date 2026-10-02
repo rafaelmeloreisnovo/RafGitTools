@@ -18,9 +18,9 @@
     "cancelled_run_head_sha": "df16e6dd19c5d8e0350c66b78dbb3edae9ed642c",
     "cancelled_run_conclusion": "cancelled",
     "cancelled_run_jobs_observed": 0,
-    "current_main_observed_sha": "74f4b5b66469bcfe16aee5253a4ea5d985bce841",
+    "current_main_observed_sha": "7714e57eee968f2b2d4f785f2b8bcb461e9463b9",
     "branch_protection_observed": false,
-    "reason": "Stage-1 merge push did not reach provider enforcement before a subsequent main push; protection remained absent. Updating this exact one-shot file intentionally re-arms the bounded main-push route."
+    "reason": "Provider readback still reports main protection absent at the exact observed main SHA. This one-shot update re-arms only the bounded Stage-1 CI/PR barrier route; it does not assert standards compliance, certification, accreditation, or audit status."
   },
   "claim_allowed": false
 }
