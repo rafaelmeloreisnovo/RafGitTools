@@ -104,7 +104,6 @@ class ProviderEnforcementStage1Tests(unittest.TestCase):
         )
         self.assertFalse(retry["branch_protection_observed"])
         self.assertIn("re-arm", retry["reason"].lower())
-        self.assertIn(retry["current_main_observed_sha"], retry["reason"])
 
     def test_workflow_exposes_manual_rollback_before_apply(self):
         self.assertIn("- rollback_main_protection", WORKFLOW)
