@@ -29,6 +29,16 @@ interface RepositoryGovernanceApiService {
     ): List<GovernanceRepositorySummary>
 
     @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
+    @GET("user")
+    suspend fun getAuthenticatedUser(): GovernanceOwner
+
+    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
+    @POST("user/repos")
+    suspend fun createUserRepository(
+        @Body request: CreateUserRepositoryRequest
+    ): Response<GovernanceRepositoryDetails>
+
+    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
     @GET("repos/{owner}/{repo}")
     suspend fun getRepository(
         @Path("owner") owner: String,
