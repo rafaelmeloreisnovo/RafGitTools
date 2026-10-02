@@ -9,9 +9,9 @@ class SafDirectoryIntakeGateTest {
     @Test
     fun safeRelativePathPreservesNestedFolderStructure() {
         assertEquals(
-            "NOVOexport/Conversation Chunks/part-001.json",
+            "selected-root/notes/part-001.json",
             SafDirectoryIntakeGate.safeRelativePath(
-                "NOVOexport/Conversation Chunks",
+                "selected-root/notes",
                 "part-001.json"
             )
         )
