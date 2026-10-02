@@ -41,3 +41,5 @@ The manifest has a stable serialization order and records relative paths, MIME t
 Unit tests cover safe path composition, traversal/control-character rejection, and stable metadata fingerprints independent of provider enumeration order.
 
 Android build, SAF-provider integration on device, Drive-account selection, large-file behavior, and end-to-end provider publication require exact-head CI or physical-device evidence. Source presence and hashes alone do not prove those runtime claims.
+
+Destination provider/repository/ref/path stay TOKEN_VAZIO_EXPLICIT_TARGET_REQUIRED in the local manifest until a later, explicit setup and publication flow binds them. This intake card is deliberately not the repository creator or policy applier.

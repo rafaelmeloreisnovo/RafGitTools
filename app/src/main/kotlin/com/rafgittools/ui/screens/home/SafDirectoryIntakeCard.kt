@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,6 +57,13 @@ fun SafDirectoryIntakeCard() {
     var copyAcknowledged by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
+    DisposableEffect(selectedTreeUri) {
+        val grantedUri = selectedTreeUri
+        onDispose {
+            if (grantedUri != null) releaseSafReadGrant(context, grantedUri)
+        }
+    }
+
     val folderPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
@@ -85,7 +93,7 @@ fun SafDirectoryIntakeCard() {
                     }
                 }
                 result.onSuccess { preview = it }
-                    .onFailure { error = it.message ?: "Falha ao revisar a pasta selecionada" }
+                    .onFailure { error = safDirectoryFailure(it) }
                 reviewing = false
             }
         }
@@ -142,7 +150,7 @@ fun SafDirectoryIntakeCard() {
             preview?.let { inventory ->
                 OutlinedCard(Modifier.fillMaxWidth()) {
                     Column(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(14.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text("Prévia do inventário", style = MaterialTheme.typography.titleSmall)
@@ -213,7 +221,7 @@ fun SafDirectoryIntakeCard() {
                                             preview = null
                                             copyAcknowledged = false
                                         }.onFailure {
-                                            error = it.message ?: "Falha ao copiar e verificar a pasta"
+                                            error = safDirectoryFailure(it)
                                         }
                                         copying = false
                                     }
@@ -281,6 +289,11 @@ fun SafDirectoryIntakeCard() {
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Text(
+                            "Destino Drive/GitHub: TOKEN_VAZIO. A composição e aplicação das regras do repositório continuam bloqueadas até a próxima etapa explícita.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
@@ -321,5 +334,30 @@ private fun releaseSafReadGrant(context: android.content.Context, uri: Uri) {
         )
     } catch (_: SecurityException) {
         // A non-persisted, one-shot grant needs no release.
+    }
+}
+
+
+private fun safDirectoryFailure(failure: Throwable): String {
+    val code = failure.message
+        ?.takeIf { it.matches(Regex("^[A-Z0-9_]{1,80}$")) }
+        ?: "SAF_OPERATION_FAILED"
+    return when (code) {
+        "SOURCE_CHANGED_AFTER_PREVIEW" ->
+            "A pasta mudou desde a prévia. Revise a seleção novamente antes de copiar."
+        "SAF_MAX_DOCUMENTS_EXCEEDED", "SOURCE_EXCEEDS_MAX_TOTAL_BYTES",
+        "SAF_COPY_BYTE_LIMIT_EXCEEDED", "SOURCE_FILE_EXCEEDS_MAX_FILE_BYTES" ->
+            "A pasta excede o limite desta operação (50.000 itens ou 512 MiB)."
+        "INSUFFICIENT_PRIVATE_STORAGE_FOR_KNOWN_SOURCE_BYTES" ->
+            "O espaço privado disponível no aparelho não comporta o tamanho informado pela origem."
+        "SAF_PATH_TRAVERSAL_BLOCKED", "SAF_PATH_SEPARATOR_BLOCKED",
+        "SAF_PATH_CONTROL_CHARACTER_BLOCKED", "SAF_PATH_SEGMENT_TOO_LONG",
+        "SAF_RELATIVE_PATH_TOO_LONG", "SAF_RELATIVE_PATH_COLLISION",
+        "SAF_DUPLICATE_DOCUMENT_REFERENCE" ->
+            "A pasta contém um caminho ambíguo ou inseguro; nada foi publicado."
+        "STAGED_READBACK_MISMATCH", "FINAL_READBACK_MISMATCH",
+        "SAF_SOURCE_SIZE_CHANGED_DURING_COPY" ->
+            "A verificação de integridade falhou. A cópia incompleta foi descartada e a origem permanece intacta."
+        else -> "Falha na operação SAF (" + code + "). A origem não foi alterada."
     }
 }
