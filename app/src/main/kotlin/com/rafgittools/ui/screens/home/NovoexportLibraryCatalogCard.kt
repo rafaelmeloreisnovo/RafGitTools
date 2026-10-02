@@ -6,16 +6,13 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -31,7 +28,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -57,6 +53,7 @@ fun NovoexportLibraryCatalogCard(inventory: NovoexportSafInventory.Result) {
     }
     var outputFolder by remember { mutableStateOf<Uri?>(null) }
     var askExportConfirmation by remember { mutableStateOf(false) }
+    var permissionWarning by remember { mutableStateOf(false) }
     var materializing by remember { mutableStateOf(false) }
     var exporting by remember { mutableStateOf(false) }
     var error by remember(inventory) { mutableStateOf<String?>(null) }
@@ -68,12 +65,14 @@ fun NovoexportLibraryCatalogCard(inventory: NovoexportSafInventory.Result) {
         if (uri != null) {
             outputFolder = uri
             exportSummary = null
+            permissionWarning = false
             try {
                 context.contentResolver.takePersistableUriPermission(
                     uri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 )
             } catch (_: SecurityException) {
+                permissionWarning = true
                 error = "Permissão persistente indisponível; a exportação ainda será tentada nesta sessão."
             }
             askExportConfirmation = true
@@ -138,6 +137,7 @@ fun NovoexportLibraryCatalogCard(inventory: NovoexportSafInventory.Result) {
                 onClick = {
                     scope.launch {
                         materializing = true
+                        materialization = null
                         error = null
                         exportSummary = null
                         val result = withContext(Dispatchers.IO) {
@@ -226,6 +226,9 @@ fun NovoexportLibraryCatalogCard(inventory: NovoexportSafInventory.Result) {
                     }
                     Text("Destino (provedor): ${destination?.authority ?: "TOKEN_VAZIO"}")
                     Text("Compartilhamento do destino: TOKEN_VAZIO; confirme as permissões diretamente no Google Drive.")
+                    if (permissionWarning) {
+                        Text("Acesso persistente não confirmado pelo Android; a tentativa desta sessão pode falhar.")
+                    }
                     Text("Claim permitido: false.")
                 }
             },
