@@ -63,7 +63,7 @@ class FreestandingModulePipelineTest {
     @Test
     fun missing_required_flag_fails_closed_before_stage_execution() {
         var executed = false
-        val descriptor = ModuleDescriptor(
+        val descriptorValue = ModuleDescriptor(
             moduleId = 31,
             kind = ModuleKind.PLATFORM_RUNTIME,
             boundary = ModuleBoundary.PLATFORM_GATE,
@@ -71,7 +71,7 @@ class FreestandingModulePipelineTest {
         )
         val pipeline = FreestandingModulePipeline(
             arrayOf(object : FreestandingStage {
-                override val descriptor = descriptor
+                override val descriptor = descriptorValue
                 override fun execute(context: PipelineContext): PipelineState {
                     executed = true
                     return PipelineState.CONTINUE
@@ -109,14 +109,14 @@ class FreestandingModulePipelineTest {
         kind: ModuleKind,
         block: (PipelineContext) -> PipelineState
     ): FreestandingStage {
-        val descriptor = ModuleDescriptor(
+        val descriptorValue = ModuleDescriptor(
             moduleId = id,
             kind = kind,
             boundary = ModuleBoundary.FREESTANDING_CORE,
             requiredFlags = strictFlags
         )
         return object : FreestandingStage {
-            override val descriptor = descriptor
+            override val descriptor = descriptorValue
             override fun execute(context: PipelineContext): PipelineState = block(context)
         }
     }
