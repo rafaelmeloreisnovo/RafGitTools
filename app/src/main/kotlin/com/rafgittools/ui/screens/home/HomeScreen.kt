@@ -441,6 +441,10 @@ private fun DriveBridgeContent(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
+            SafDirectoryIntakeCard()
+        }
+
+        item {
             ElevatedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
