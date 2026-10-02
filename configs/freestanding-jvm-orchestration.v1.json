@@ -42,7 +42,7 @@
       "required_flags": ["SOURCE_BOUND", "AUTHORITY_BOUND", "FAIL_CLOSED", "SHADOW_GUARD"],
       "state": "IMPLEMENTED_UNTESTED",
       "urgency": "P1",
-      "leaf_ref": "PR#368@9e7771c69880ba5edc2e28f8f8550a347f331604",
+      "leaf_ref": "PR#368@379d7278169be1f72ad5a08217f876b70d72055f",
       "evidence_refs": [],
       "token_vazio": [
         {
