@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="repo_create_card_title">Create private repository</string>
+    <string name="repo_create_card_body">Creates a repository in the authenticated personal GitHub account. Visibility is fixed to private and a minimal README is initialized. This does not upload the selected phone directory. Use the governance controls below to audit and apply rules afterward.</string>
+    <string name="repo_create_name_label">Repository name</string>
+    <string name="repo_create_description_label">Description (optional)</string>
+    <string name="repo_create_action">Review private repository creation</string>
+    <string name="repo_create_progress">Checking the receipt chain and GitHub inventory…</string>
+    <string name="repo_create_chain_invalid">Creation is blocked because the local receipt chain did not verify.</string>
+    <string name="repo_create_receipt_label">Receipt: %1$s</string>
+    <string name="repo_create_receipt_path">App-private log: %1$s</string>
+    <string name="repo_create_confirmation_title">Create this private repository?</string>
+    <string name="repo_create_confirmation_body">%1$s will be created in the signed-in personal GitHub account as private with a minimal README. Its name and optional description will be sent to GitHub. The selected phone directory and local snapshot will not be uploaded.</string>
+    <string name="repo_create_confirm">Create private repository</string>
+</resources>
