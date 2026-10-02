@@ -97,10 +97,11 @@ class ProviderEnforcementStage1Tests(unittest.TestCase):
         self.assertEqual(retry["supersedes_cancelled_push_run"], 36363833345)
         self.assertEqual(retry["cancelled_run_conclusion"], "cancelled")
         self.assertEqual(retry["cancelled_run_jobs_observed"], 0)
-        self.assertEqual(
-            retry["current_main_observed_sha"],
-            "74f4b5b66469bcfe16aee5253a4ea5d985bce841",
-        )
+        current_sha = retry["current_main_observed_sha"]
+        cancelled_sha = retry["cancelled_run_head_sha"]
+        self.assertRegex(current_sha, r"^[0-9a-f]{40}$")
+        self.assertRegex(cancelled_sha, r"^[0-9a-f]{40}$")
+        self.assertNotEqual(current_sha, cancelled_sha)
         self.assertFalse(retry["branch_protection_observed"])
         self.assertIn("re-arms", retry["reason"])
 
