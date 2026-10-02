@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Validate the bounded JVM -> hosted adapter -> freestanding module federation contract.
+"""Validate freestanding L0 authority plus optional hosted adapters.
 
-This gate validates topology/evidence semantics only. It does not prove build, runtime,
-device behavior, cryptographic correctness, audio quality, VM boot, or performance.
+This gate validates topology/evidence semantics only. It does not prove device
+behavior, cryptographic correctness, audio quality, VM boot, or performance.
 """
 
 from __future__ import annotations
@@ -23,6 +23,19 @@ BOUNDARIES = {
 STATES = {"REFERENCE", "IMPLEMENTED_UNTESTED", "PASS", "FAIL", "TOKEN_VAZIO", "BLOCKED"}
 URGENCIES = {"P0", "P1", "P2", "P3"}
 REQUIRED_FLAGS = {"SOURCE_BOUND", "AUTHORITY_BOUND", "FAIL_CLOSED", "SHADOW_GUARD"}
+FORBIDDEN_L0 = {
+    "JVM",
+    "JNI",
+    "NDK",
+    "libc",
+    "libstdc++",
+    "POSIX",
+    "malloc",
+    "syscall",
+    "filesystem",
+    "threads",
+    "external_library",
+}
 
 
 def error(errors: list[str], message: str) -> None:
@@ -42,6 +55,18 @@ def validate(path: pathlib.Path) -> list[str]:
         error(errors, "claim_allowed must remain false at orchestration-contract scope")
     if document.get("jvm_is_freestanding") is not False:
         error(errors, "jvm_is_freestanding must be false")
+    if document.get("root_authority") != "FREESTANDING_L0":
+        error(errors, "root_authority must be FREESTANDING_L0")
+    if document.get("root_authority_path") != "freestanding/orchestration/raf_orchestrator_l0.c":
+        error(errors, "root_authority_path must point to raf_orchestrator_l0.c")
+    if document.get("hosted_adapter_optional") is not True:
+        error(errors, "hosted_adapter_optional must be true")
+    if document.get("runtime_dependencies") != []:
+        error(errors, "freestanding root runtime_dependencies must be empty")
+
+    forbidden = set(document.get("forbidden_l0_dependencies", []))
+    if not FORBIDDEN_L0.issubset(forbidden):
+        error(errors, f"forbidden_l0_dependencies missing {sorted(FORBIDDEN_L0 - forbidden)}")
 
     policy = document.get("execution_policy", {})
     if policy.get("dispatch") != "TYPED_ITERATIVE_NO_REFLECTION":
@@ -50,6 +75,8 @@ def validate(path: pathlib.Path) -> list[str]:
         error(errors, "tail_recursion must be false")
     if policy.get("shadow_state") != "SINGLE_CONTROL_CONTEXT":
         error(errors, "shadow_state must be SINGLE_CONTROL_CONTEXT")
+    if policy.get("allocation") != "CALLER_OWNED_ONLY":
+        error(errors, "allocation must be CALLER_OWNED_ONLY")
 
     modules = document.get("modules")
     if not isinstance(modules, list) or not modules:
@@ -90,6 +117,12 @@ def validate(path: pathlib.Path) -> list[str]:
         if not REQUIRED_FLAGS.issubset(flags):
             missing = sorted(REQUIRED_FLAGS - flags)
             error(errors, f"{prefix}.required_flags missing {missing}")
+
+        if repository == "rafaelmeloreisnovo/RafGitTools":
+            if module.get("authority_path") != "freestanding/orchestration/":
+                error(errors, f"{prefix}: RafGitTools authority must be freestanding/orchestration/")
+            if boundary != "FREESTANDING_CORE":
+                error(errors, f"{prefix}: RafGitTools root boundary must be FREESTANDING_CORE")
 
         if state == "PASS" and not module.get("evidence_refs"):
             error(errors, f"{prefix}: PASS requires evidence_refs")
@@ -134,7 +167,8 @@ def main() -> int:
             print(f"FAIL: {item}")
         return 1
     print(f"PASS_SCOPED: {manifest}")
-    print("scope=structure+evidence-semantics; runtime/device/performance=TOKEN_VAZIO")
+    print("root=FREESTANDING_L0; runtime_dependencies=0; hosted_adapters=OPTIONAL")
+    print("scope=structure+evidence-semantics; device/performance=TOKEN_VAZIO")
     return 0
 
 
