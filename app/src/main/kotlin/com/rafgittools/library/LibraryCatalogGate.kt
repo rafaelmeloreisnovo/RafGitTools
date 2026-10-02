@@ -126,7 +126,12 @@ object LibraryCatalogGate {
         bundle.items.forEach { item ->
             if (!stableId.matches(item.itemId)) errors += "ITEM_ID:" + item.itemId
             if (item.editionId == null && item.manifestationId == null) {
-                errors += "ITEM_BIBLIOGRAPHIC_PARENT_REQUIRED:" + item.itemId
+                if ("BIBLIOGRAPHIC_PARENT_TOKEN_VAZIO" !in item.gapRefs) {
+                    errors += "ITEM_BIBLIOGRAPHIC_PARENT_REQUIRED:" + item.itemId
+                }
+                if (item.claimAllowed) {
+                    errors += "ITEM_UNLINKED_CLAIM_ALLOWED:" + item.itemId
+                }
             }
             if (item.editionId != null && item.editionId !in editionIds) {
                 errors += "ITEM_UNKNOWN_EDITION:" + item.itemId
