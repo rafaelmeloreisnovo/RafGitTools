@@ -4,32 +4,57 @@
   "state": "IMPLEMENTED_UNTESTED",
   "claim_allowed": false,
   "jvm_is_freestanding": false,
+  "root_authority": "FREESTANDING_L0",
+  "root_authority_path": "freestanding/orchestration/raf_orchestrator_l0.c",
+  "hosted_adapter_optional": true,
+  "runtime_dependencies": [],
+  "forbidden_l0_dependencies": [
+    "JVM",
+    "JNI",
+    "NDK",
+    "libc",
+    "libstdc++",
+    "POSIX",
+    "malloc",
+    "syscall",
+    "filesystem",
+    "threads",
+    "external_library"
+  ],
   "execution_policy": {
     "dispatch": "TYPED_ITERATIVE_NO_REFLECTION",
     "tail_recursion": false,
     "shadow_state": "SINGLE_CONTROL_CONTEXT",
     "warning_transport": "BITMASK_OR_TYPED_STATUS",
-    "failure_mode": "FAIL_CLOSED"
+    "failure_mode": "FAIL_CLOSED",
+    "allocation": "CALLER_OWNED_ONLY"
   },
   "modules": [
     {
-      "id": "rafgittools-control-plane",
+      "id": "rafgittools-l0-control-plane",
       "repository": "rafaelmeloreisnovo/RafGitTools",
-      "authority_path": "app/src/main/kotlin/com/rafgittools/workspace/FreestandingModulePipeline.kt",
+      "authority_path": "freestanding/orchestration/",
       "module_kind": "ROUTE",
-      "boundary": "JVM_CONTROL_PLANE",
+      "boundary": "FREESTANDING_CORE",
       "required_flags": ["SOURCE_BOUND", "AUTHORITY_BOUND", "FAIL_CLOSED", "SHADOW_GUARD"],
       "state": "IMPLEMENTED_UNTESTED",
-      "urgency": "P1",
+      "urgency": "P0",
       "leaf_ref": "feature/freestanding-jvm-orchestration-v1-20261002",
       "evidence_refs": [],
       "token_vazio": [
         {
-          "id": "TOKEN_VAZIO_RGT_PIPELINE_UNIT_CI",
-          "missing": "current-head unit/CI execution receipt",
-          "evidence_needed": "FreestandingModulePipelineTest PASS on this branch head",
-          "urgency": "P1",
-          "next": "execute scoped unit test and bind workflow result to exact head"
+          "id": "TOKEN_VAZIO_RGT_L0_CURRENT_HEAD_CI",
+          "missing": "current-head freestanding compile/symbol/selftest receipt",
+          "evidence_needed": "host+ARMv7+AArch64 object compile, undefined external symbols=0, behavioral selftest PASS on exact head",
+          "urgency": "P0",
+          "next": "observe the L0 freestanding CI gate before promoting the core beyond IMPLEMENTED_UNTESTED"
+        },
+        {
+          "id": "TOKEN_VAZIO_RGT_OPTIONAL_JVM_ADAPTER_CI",
+          "missing": "current-head JVM adapter unit receipt",
+          "evidence_needed": "hosted adapter test PASS bound to exact head",
+          "urgency": "P2",
+          "next": "keep JVM optional; do not block freestanding L0 authority on hosted adapter availability"
         }
       ]
     },
@@ -53,7 +78,7 @@
           "next": "observe PR#369 CI and retain BLOCKED if the closure gate still fails"
         },
         {
-          "id": "TOKEN_VAZIO_RAFPOLIMATA_JVM_ADAPTER_CURRENT_HEAD",
+          "id": "TOKEN_VAZIO_RAFPOLIMATA_L0_ADAPTER_CURRENT_HEAD",
           "missing": "current-head producer/consumer adapter execution evidence",
           "evidence_needed": "same-revision adapter/core gate receipt",
           "urgency": "P1",
