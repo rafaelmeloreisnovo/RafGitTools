@@ -1,7 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-07-16T00:00:00-03:00",
+  "generated_at": "2026-10-02T14:34:04-03:00",
   "control_plane": "rafaelmeloreisnovo/RafGitTools",
+  "control_plane_scope": "operational_federation_and_runtime_routing",
+  "navigation_ontology": "rafaelmeloreisnovo/Mapa",
   "claim_states": [
     "VERIFIED",
     "TESTED",
@@ -64,10 +66,21 @@
       "blind_tests": ["failure-injection", "fixture-blindness"]
     },
     {
+      "name": "rafaelmeloreisnovo/termux-packages",
+      "role": "package-production-and-provenance",
+      "critical": true,
+      "dependencies": [],
+      "health_probe": "repository-native D3 ARM32+AArch64 package and provenance gates",
+      "safe_state": "no-package-promotion",
+      "failover": null,
+      "rollback": "previous-deb-sha256-and-source-commit",
+      "blind_tests": ["failure-injection", "implementation-blindness"]
+    },
+    {
       "name": "rafaelmeloreisnovo/termux-app-rafacodephi",
       "role": "android-shell-runtime",
       "critical": true,
-      "dependencies": [],
+      "dependencies": ["rafaelmeloreisnovo/termux-packages"],
       "health_probe": "scripts/validate_abi_policy_consistency.sh",
       "safe_state": "bootstrap-diagnostic-only",
       "failover": "rafaelmeloreisnovo/UserLAnd",
