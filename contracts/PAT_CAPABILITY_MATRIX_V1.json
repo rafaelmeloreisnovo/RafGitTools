@@ -1,6 +1,6 @@
 {
   "schema": "rafgittools.pat-capability-matrix.v1",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "authority": "rafaelmeloreisnovo/RafGitTools",
   "federated_authority": "rafaelmeloreisnovo/Mapa",
   "claim_allowed": false,
@@ -11,7 +11,8 @@
     "PAT_AGENTS",
     "PAT_CODESPACES",
     "PAT_DEPENDABOT",
-    "PAT_ENV"
+    "PAT_ENV",
+    "PAT_ENVIRONMENTS"
   ],
   "invariants": [
     "SECRET_IDENTIFIER == UPPERCASE",
@@ -21,6 +22,8 @@
     "WIRED != EXECUTED",
     "EXECUTED != PASS_WITHOUT_READBACK",
     "NO_PAT_FALLBACK",
+    "PAT_ENV != PAT_ENVIRONMENTS",
+    "HUMAN_REPORTED_CAPABILITY_REQUIRES_PROVIDER_READBACK_BEFORE_WIRING",
     "RafGitTools == PAT_BACKED_EXECUTOR",
     "Mapa == FEDERATED_ROUTING_AUTHORITY",
     "TOKEN_VAZIO != PASS",
@@ -141,6 +144,21 @@
       },
       "mutation_allowed": "MANUAL_GATED_ONLY",
       "permission_state": "BOUNDED_BY_EXISTING_PROVIDER_ROUTE"
+    },
+    {
+      "secret_id": "PAT_ENVIRONMENTS",
+      "storage_scope": "TOKEN_VAZIO_PROVIDER_SCOPE_PENDING",
+      "provider_surface": "HUMAN_REPORTED_DISTINCT_PAT_IDENTITY",
+      "environment": "TOKEN_VAZIO_PROVIDER_BINDING_PENDING",
+      "current_state": "HUMAN_REPORTED_PROVIDER_READBACK_PENDING",
+      "wired_operations": [],
+      "candidate_operations": [],
+      "provider_permission_hints": {
+        "status": "TOKEN_VAZIO_PROVIDER_READBACK_REQUIRED",
+        "rule": "Do not infer repository-vs-environment storage, binding, permission or endpoint from the identifier alone."
+      },
+      "mutation_allowed": false,
+      "permission_state": "TOKEN_VAZIO_NOT_PROVIDER_READBACK"
     }
   ],
   "routing": {
