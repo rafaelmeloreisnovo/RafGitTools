@@ -4,6 +4,7 @@ import com.google.gson.GsonBuilder
 import com.rafgittools.library.LibraryAccessClass
 import com.rafgittools.library.LibraryCatalogGate
 import com.rafgittools.library.LibraryEvidenceState
+import com.rafgittools.library.LibraryTreeNodeKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -12,17 +13,96 @@ import org.junit.Test
 
 class NovoexportLibraryCatalogComposerTest {
     @Test
-    fun composesOnlyMetadataAndKeepsSourceIdentifiersOutOfBundle() {
+    fun composesAllFilesAndDirectoryTopologyWithoutSourceIdentifiers() {
         val tree = "content://example.provider/tree/PRIVATE_TREE_TOKEN"
-        val documentId = "drive/private/document/PRIVATE_DOCUMENT_TOKEN"
+        val rootId = "provider-root-private-id"
+        val folderId = "provider-folder-private-id"
+        val conversationId = "provider-conversation-private-id"
+        val spreadsheetId = "provider-spreadsheet-private-id"
+        val conversation = NovoexportSafInventory.Entry(
+            uri = "content://example.provider/document/PRIVATE_CONVERSATION_URI",
+            documentId = conversationId,
+            name = "conversation-export.json",
+            mimeType = "application/json",
+            sizeBytes = 123L,
+            relativePath = "conversation-export.json",
+            parentDocumentId = rootId
+        )
+        val spreadsheet = NovoexportSafInventory.Entry(
+            uri = "content://example.provider/document/PRIVATE_SPREADSHEET_URI",
+            documentId = spreadsheetId,
+            name = "notes.csv",
+            mimeType = "text/csv",
+            sizeBytes = 654L,
+            relativePath = "Sessions/notes.csv",
+            parentDocumentId = folderId
+        )
         val inventory = NovoexportSafInventory.Result(
             treeUri = tree,
-            visitedDocuments = 2,
+            visitedDocuments = 4,
+            visitedDirectories = 2,
+            candidateFiles = listOf(conversation),
+            knownCandidateBytes = 123L,
+            unknownSizeCandidateFiles = 0,
+            rootDocumentId = rootId,
+            allFiles = listOf(conversation, spreadsheet),
+            allDirectories = listOf(
+                NovoexportSafInventory.DirectoryEntry(
+                    documentId = folderId,
+                    parentDocumentId = rootId,
+                    name = "Sessions",
+                    relativePath = "Sessions"
+                )
+            ),
+            knownTotalBytes = 777L,
+            unknownSizeFiles = 0
+        )
+
+        val bundle = NovoexportLibraryCatalogComposer.compose(inventory, createdAtEpochMs = 42L)
+        val json = GsonBuilder().create().toJson(bundle)
+        val spreadsheetItem = bundle.items.single { it.displayName == "notes.csv" }
+        val folderNode = bundle.treeNodes.single { it.displayName == "Sessions" }
+        val fileNode = bundle.treeNodes.single { it.nodeId == spreadsheetItem.itemId }
+        val source = bundle.sources.single()
+
+        assertFalse(bundle.claimAllowed)
+        assertEquals(2, bundle.items.size)
+        assertEquals(4, bundle.treeNodes.size)
+        assertEquals(LibraryTreeNodeKind.DIRECTORY, folderNode.kind)
+        assertEquals(folderNode.nodeId, fileNode.parentNodeId)
+        assertEquals(LibraryTreeNodeKind.FILE, fileNode.kind)
+        assertEquals(LibraryAccessClass.TOKEN_VAZIO, source.accessClass)
+        assertTrue(bundle.items.all { it.accessClass == LibraryAccessClass.TOKEN_VAZIO })
+        assertTrue(bundle.items.all { it.contentSha256 == null })
+        assertTrue(bundle.items.all { !it.claimAllowed })
+        assertEquals(LibraryEvidenceState.SOURCE_OBSERVED, spreadsheetItem.evidenceState)
+        assertTrue(spreadsheetItem.gapRefs.contains("BIBLIOGRAPHIC_PARENT_TOKEN_VAZIO"))
+        assertTrue(bundle.works.isEmpty())
+        assertTrue(bundle.relations.isEmpty())
+        assertTrue(spreadsheetItem.sourceRefSha256.matches(Regex("^[0-9a-f]{64}$")))
+        assertTrue(source.locatorSha256.matches(Regex("^[0-9a-f]{64}$")))
+        assertFalse(json.contains(tree))
+        assertFalse(json.contains(rootId))
+        assertFalse(json.contains(folderId))
+        assertFalse(json.contains(conversationId))
+        assertFalse(json.contains(spreadsheetId))
+        assertFalse(json.contains("PRIVATE_CONVERSATION_URI"))
+        assertFalse(json.contains("PRIVATE_SPREADSHEET_URI"))
+        assertTrue(json.contains("Sessions"))
+        assertTrue(json.contains("notes.csv"))
+        assertTrue(LibraryCatalogGate.validate(bundle).allowed)
+    }
+
+    @Test
+    fun fallsBackToCandidateListForLegacyInventoryRecords() {
+        val inventory = NovoexportSafInventory.Result(
+            treeUri = "content://example.provider/tree/root",
+            visitedDocuments = 1,
             visitedDirectories = 1,
             candidateFiles = listOf(
                 NovoexportSafInventory.Entry(
-                    uri = "content://example.provider/tree/PRIVATE_TREE_TOKEN/document/PRIVATE_DOCUMENT_TOKEN",
-                    documentId = documentId,
+                    uri = "content://example.provider/document/a",
+                    documentId = "a",
                     name = "conversation-export.json",
                     mimeType = "application/json",
                     sizeBytes = 123L
@@ -31,27 +111,9 @@ class NovoexportLibraryCatalogComposerTest {
             knownCandidateBytes = 123L,
             unknownSizeCandidateFiles = 0
         )
-
         val bundle = NovoexportLibraryCatalogComposer.compose(inventory, createdAtEpochMs = 42L)
-        val json = GsonBuilder().create().toJson(bundle)
-        val item = bundle.items.single()
-        val source = bundle.sources.single()
-
-        assertFalse(bundle.claimAllowed)
-        assertFalse(item.claimAllowed)
-        assertEquals(LibraryAccessClass.TOKEN_VAZIO, source.accessClass)
-        assertEquals(LibraryAccessClass.TOKEN_VAZIO, item.accessClass)
-        assertEquals(LibraryEvidenceState.SOURCE_OBSERVED, item.evidenceState)
-        assertNull(item.contentSha256)
-        assertTrue(item.gapRefs.contains("BIBLIOGRAPHIC_PARENT_TOKEN_VAZIO"))
-        assertTrue(bundle.works.isEmpty())
-        assertTrue(bundle.relations.isEmpty())
-        assertTrue(item.sourceRefSha256.matches(Regex("^[0-9a-f]{64}$")))
-        assertTrue(source.locatorSha256.matches(Regex("^[0-9a-f]{64}$")))
-        assertFalse(json.contains(tree))
-        assertFalse(json.contains(documentId))
-        assertFalse(json.contains("PRIVATE_TREE_TOKEN"))
-        assertFalse(json.contains("PRIVATE_DOCUMENT_TOKEN"))
+        assertEquals(1, bundle.items.size)
+        assertEquals(2, bundle.treeNodes.size)
         assertTrue(LibraryCatalogGate.validate(bundle).allowed)
     }
 
