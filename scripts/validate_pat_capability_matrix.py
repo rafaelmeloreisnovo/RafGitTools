@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT = ROOT / "contracts" / "PAT_CAPABILITY_MATRIX_V1.json"
-EXPECTED = {"PAT_ACTIONS","PAT_AGENTS","PAT_CODESPACES","PAT_DEPENDABOT","PAT_ENV"}
+EXPECTED = {"PAT_ACTIONS","PAT_AGENTS","PAT_CODESPACES","PAT_DEPENDABOT","PAT_ENV","PAT_ENVIRONMENTS"}
 
 def validate(data: dict) -> list[str]:
     errors: list[str] = []
@@ -53,6 +53,20 @@ def validate(data: dict) -> list[str]:
     if env.get("mutation_allowed") != "MANUAL_GATED_ONLY":
         errors.append("PAT_ENV mutation must remain manual gated")
 
+    envs = by_secret.get("PAT_ENVIRONMENTS", {})
+    if envs.get("storage_scope") != "TOKEN_VAZIO_PROVIDER_SCOPE_PENDING":
+        errors.append("PAT_ENVIRONMENTS scope must remain pending provider readback")
+    if envs.get("environment") != "TOKEN_VAZIO_PROVIDER_BINDING_PENDING":
+        errors.append("PAT_ENVIRONMENTS binding must remain pending provider readback")
+    if envs.get("current_state") != "HUMAN_REPORTED_PROVIDER_READBACK_PENDING":
+        errors.append("PAT_ENVIRONMENTS state must remain HUMAN_REPORTED_PROVIDER_READBACK_PENDING")
+    if envs.get("wired_operations") != []:
+        errors.append("PAT_ENVIRONMENTS must remain unwired before provider readback")
+    if envs.get("mutation_allowed") is not False:
+        errors.append("PAT_ENVIRONMENTS mutation must remain fail-closed")
+    if envs.get("permission_state") != "TOKEN_VAZIO_NOT_PROVIDER_READBACK":
+        errors.append("PAT_ENVIRONMENTS permission state must remain TOKEN_VAZIO_NOT_PROVIDER_READBACK")
+
     for secret in ("PAT_AGENTS","PAT_CODESPACES","PAT_DEPENDABOT"):
         cap = by_secret.get(secret, {})
         if cap.get("current_state") != "REGISTERED_NOT_WIRED":
@@ -66,6 +80,8 @@ def validate(data: dict) -> list[str]:
         "SECRET_VALUE_NEVER_PERSISTED_OR_PRINTED",
         "CAPABILITY != PERMISSION",
         "NO_PAT_FALLBACK",
+        "PAT_ENV != PAT_ENVIRONMENTS",
+        "HUMAN_REPORTED_CAPABILITY_REQUIRES_PROVIDER_READBACK_BEFORE_WIRING",
         "RafGitTools == PAT_BACKED_EXECUTOR",
         "Mapa == FEDERATED_ROUTING_AUTHORITY",
         "TOKEN_VAZIO != PASS",
