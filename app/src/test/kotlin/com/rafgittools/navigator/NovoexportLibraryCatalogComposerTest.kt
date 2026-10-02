@@ -1,8 +1,8 @@
 package com.rafgittools.navigator
 
-import com.google.gson.GsonBuilder
 import com.rafgittools.library.LibraryAccessClass
 import com.rafgittools.library.LibraryCatalogGate
+import com.rafgittools.library.LibraryCatalogMaterializer
 import com.rafgittools.library.LibraryEvidenceState
 import com.rafgittools.library.LibraryTreeNodeKind
 import org.junit.Assert.assertEquals
@@ -10,6 +10,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.nio.file.Files
 
 class NovoexportLibraryCatalogComposerTest {
     @Test
@@ -59,7 +60,10 @@ class NovoexportLibraryCatalogComposerTest {
         )
 
         val bundle = NovoexportLibraryCatalogComposer.compose(inventory, createdAtEpochMs = 42L)
-        val json = GsonBuilder().create().toJson(bundle)
+        val outputDir = Files.createTempDirectory("novoexport-tree-catalog").toFile()
+        val materialized = LibraryCatalogMaterializer.materialize(outputDir, bundle)
+        val json = materialized.catalogFile.readText()
+        val receipt = materialized.receiptFile.readText()
         val spreadsheetItem = bundle.items.single { it.displayName == "notes.csv" }
         val folderNode = bundle.treeNodes.single { it.displayName == "Sessions" }
         val fileNode = bundle.treeNodes.single { it.nodeId == spreadsheetItem.itemId }
@@ -90,7 +94,10 @@ class NovoexportLibraryCatalogComposerTest {
         assertFalse(json.contains("PRIVATE_SPREADSHEET_URI"))
         assertTrue(json.contains("Sessions"))
         assertTrue(json.contains("notes.csv"))
+        assertTrue(receipt.contains("\"tree_node_count\": 4"))
+        assertEquals(json.toByteArray(Charsets.UTF_8).size.toLong(), materialized.bytes)
         assertTrue(LibraryCatalogGate.validate(bundle).allowed)
+        outputDir.deleteRecursively()
     }
 
     @Test
