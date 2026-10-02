@@ -3,15 +3,14 @@ package com.rafgittools.workspace
 import java.nio.ByteBuffer
 
 /**
- * Hosted JVM control plane for specialized freestanding/native modules.
+ * OPTIONAL hosted JVM adapter/reference for the authoritative freestanding L0 core.
  *
- * JVM/Android is NOT freestanding. This class only owns deterministic orchestration:
+ * Authority lives in:
+ *   freestanding/orchestration/raf_orchestrator_l0.c
  *
- * JVM control plane -> typed hosted adapter -> specialized freestanding core -> receipt
- *
- * The hot orchestration path is intentionally iterative: no recursion/tail chaining,
- * no reflection, no string-based dispatch, and no duplicated shadow state. Flags and
- * warnings are compact bit masks; the caller owns payload allocation and core evidence.
+ * This Kotlin surface is deliberately outside the L0 dependency boundary. JVM/Android
+ * is NOT freestanding and must never be required for the L0 core to compile or execute.
+ * It mirrors the typed fail-closed semantics for hosted integration and adapter tests.
  */
 class FreestandingModulePipeline(
     private val stages: Array<FreestandingStage>
@@ -88,7 +87,6 @@ class FreestandingModulePipeline(
     }
 }
 
-/** Single mutable control-plane state. Native/freestanding state stays inside its owner. */
 class PipelineContext(
     val payload: ByteBuffer,
     var flags: Int,
@@ -99,11 +97,6 @@ class PipelineContext(
 
 interface FreestandingStage {
     val descriptor: ModuleDescriptor
-
-    /**
-     * Execute exactly one bounded adapter/core stage.
-     * Return TOKEN_VAZIO/BLOCKED/FAILED instead of inventing evidence.
-     */
     fun execute(context: PipelineContext): PipelineState
 }
 
