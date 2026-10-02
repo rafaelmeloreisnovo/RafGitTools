@@ -1,0 +1,130 @@
+{
+  "schema": "rafaelia.start-causal-cone-closure.v1",
+  "generated_local_date": "2026-10-01",
+  "authority": "rafaelmeloreisnovo/RafGitTools",
+  "claim_allowed": false,
+  "invariants": [
+    "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "TOKEN_VAZIO != 0",
+    "IMPLEMENTED_UNTESTED != PASS",
+    "HEURISTIC_MATCH != EVIDENCE",
+    "PREDECESSOR_NEVER_ERASED"
+  ],
+  "method": {
+    "name": "MAXIMUM_VERIFIED_EVOLUTIONARY_GAIN",
+    "selection_rule": "Prefer a bounded causal change that closes the largest independent uncertainty cone, unlocks the most downstream gates, preserves already-green gates, and has an exact rollback/replay path.",
+    "dmaic": {
+      "define": "Freeze exact heads and failing gates before mutation.",
+      "measure": "Read exact workflow/job/tree evidence and preserve scoped PASS/FAIL separately.",
+      "analyze": "Collapse failures onto earliest common causes; do not patch downstream symptoms independently.",
+      "improve": "Apply the smallest causal set of changes that can close multiple dependent failures without changing unrelated behavior.",
+      "control": "Require PR CI, exact-head receipts, non-regression of already-green gates, and exact rollback references before promotion."
+    }
+  },
+  "source_heads": {
+    "rafgittools": "2d36b7ada4149d7b15e95afa5094ec3b661d53f8",
+    "mapa": "0d7ae3df173c9dae7639a9dd9e1eefaf788fbe62",
+    "rll": "2228666641115f83090a3ae4a6d655448b622e5c"
+  },
+  "observed_evidence": {
+    "rafgittools": {
+      "workflow": "START · RAFAELIA Orchestrated Pipeline",
+      "run_id": 36945918585,
+      "state": "FAIL_SCOPED",
+      "passed_jobs": [
+        "00 Plan / roteamento",
+        "01 Workflow topology / single-root invariant",
+        "02 Coherence / anti-regression",
+        "04 Federation / master-index + provenance",
+        "08P Provider environments / main enforcement",
+        "07 CodeQL / actions"
+      ],
+      "failed_jobs": [
+        "03 Python / deterministic tests",
+        "06 Android / test + lint + devDebug APK",
+        "07 CodeQL / java-kotlin",
+        "09 Final receipt / fechamento"
+      ],
+      "causal_roots": [
+        {
+          "id": "RGT-PY-STALE-SHA-ASSERT",
+          "evidence": "tests/test_provider_enforcement_stage1.py pinned historical current_main_observed_sha=74f4b5b..., while config currently records 7714e57...",
+          "effect": "1 of 594 deterministic Python tests fails"
+        },
+        {
+          "id": "RGT-COMPOSE-WEIGHT-IMPORT",
+          "evidence": "ExecutionGateActivity.kt imported androidx.compose.foundation.layout.weight; Kotlin compiler reports the symbol is internal",
+          "effect": "main Android compile fails and CodeQL java-kotlin build fails from the same source defect"
+        }
+      ]
+    },
+    "mapa": {
+      "workflow": "Pages publication authority integrity",
+      "run_id": 36944467005,
+      "state": "PASS_SCOPED",
+      "exact_head": "0d7ae3df173c9dae7639a9dd9e1eefaf788fbe62",
+      "non_global_note": "CodeScan run 36944467006 failed on the same head; publication-authority PASS does not imply repository-global PASS."
+    },
+    "rll": {
+      "workflow": "Symlink integrity",
+      "run_id": 36945137158,
+      "job_id": 110645404817,
+      "state": "PASS_SCOPED",
+      "symlink_count": 17,
+      "fail_count": 0,
+      "all_targets_exist": true,
+      "all_targets_remain_inside_repository": true,
+      "head": "2228666641115f83090a3ae4a6d655448b622e5c",
+      "head_tree": "cf595b19f89fc32dbb667a94230103675a57f6a1",
+      "rollback_ref": "6fb4d144c75d280da4fec07b99426da3fddad3ae",
+      "rollback_relation": "rollback_ref is the first parent and merge-base ancestor of the current head; exact checkout of rollback_ref reconstructs predecessor state without heuristic inverse editing",
+      "rollback_test_state": "PASS_REF_IDENTITY_SCOPED"
+    }
+  },
+  "change_set": {
+    "branch": "fix/start-causal-cone-20261001",
+    "base": "2d36b7ada4149d7b15e95afa5094ec3b661d53f8",
+    "commits": [
+      {
+        "sha": "b620395dbea6724e549af6182733724a76847c24",
+        "path": "app/src/main/kotlin/com/rafgittools/ExecutionGateActivity.kt",
+        "change": "remove explicit internal Compose weight import so ColumnScope.weight resolves through its scoped public extension"
+      },
+      {
+        "sha": "7d648f4b9e08564919d3ba904abaf85cc1063051",
+        "path": "tests/test_provider_enforcement_stage1.py",
+        "change": "replace stale exact historical SHA assertion with stable semantic constraints: both refs are 40-hex and current != cancelled"
+      }
+    ],
+    "default_branch_mutated": false,
+    "merge_performed": false
+  },
+  "expected_observables": [
+    "Python deterministic discovery no longer fails the stale-SHA assertion",
+    "app:compileDevDebugKotlin passes the prior weight-import failure point",
+    "CodeQL java-kotlin no longer fails from the same Kotlin compile defect",
+    "already-green START jobs remain green",
+    "final receipt may execute only after upstream required jobs are successful"
+  ],
+  "falsifiers": [
+    "Any of the two original root causes still reproduces on the fix branch",
+    "An already-green START gate regresses",
+    "A new failure is introduced by the causal change set",
+    "Final receipt is promoted while an upstream required gate is not successful"
+  ],
+  "replay_recipe": [
+    "checkout fix/start-causal-cone-20261001",
+    "run the repository START workflow through the normal PR event",
+    "compare job conclusions against run 36945918585",
+    "verify Python deterministic tests, Android compile/test/lint/assemble path, CodeQL java-kotlin, and final receipt",
+    "retain all previous run IDs as historical evidence"
+  ],
+  "rollback": {
+    "rafgittools_exact_prestate": "2d36b7ada4149d7b15e95afa5094ec3b661d53f8",
+    "procedure": "Close the PR or restore branch content to the exact base ref; main has not been changed by this work.",
+    "rll_exact_predecessor": "6fb4d144c75d280da4fec07b99426da3fddad3ae",
+    "rll_rule": "Prefer exact predecessor checkout/tree identity over hand-authored reverse patches."
+  },
+  "promotion_rule": "No promotion until PR CI demonstrates the expected observables on the exact candidate head. Any remaining or new failure stays evidence and blocks PASS.",
+  "receipt_state": "IMPLEMENTED_UNTESTED_PENDING_PR_CI"
+}
