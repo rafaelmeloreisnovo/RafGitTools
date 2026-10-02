@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -32,6 +33,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -72,6 +74,9 @@ fun RepositoryGovernanceScreen(
     val controlCenter = remember(state) { buildGovernanceControlCenterSnapshot(state) }
     var repositoryMenuExpanded by remember { mutableStateOf(false) }
     var showApplyConfirmation by remember { mutableStateOf(false) }
+    var showCreateRepositoryConfirmation by remember { mutableStateOf(false) }
+    var createRepositoryName by remember { mutableStateOf("") }
+    var createRepositoryDescription by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -116,6 +121,17 @@ fun RepositoryGovernanceScreen(
                     text = stringResource(R.string.repo_governance_contract),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            item {
+                RepositoryCreationCard(
+                    state = state,
+                    repositoryName = createRepositoryName,
+                    onRepositoryNameChange = { createRepositoryName = it },
+                    description = createRepositoryDescription,
+                    onDescriptionChange = { createRepositoryDescription = it },
+                    onReviewCreation = { showCreateRepositoryConfirmation = true }
                 )
             }
 
@@ -322,6 +338,40 @@ fun RepositoryGovernanceScreen(
         }
     }
 
+    if (showCreateRepositoryConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showCreateRepositoryConfirmation = false },
+            title = { Text(stringResource(R.string.repo_create_confirmation_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.repo_create_confirmation_body,
+                        createRepositoryName.trim()
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !state.isCreatingRepository,
+                    onClick = {
+                        showCreateRepositoryConfirmation = false
+                        viewModel.createPrivateRepository(
+                            createRepositoryName,
+                            createRepositoryDescription
+                        )
+                    }
+                ) {
+                    Text(stringResource(R.string.repo_create_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCreateRepositoryConfirmation = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
+
     if (showApplyConfirmation) {
         AlertDialog(
             onDismissRequest = { showApplyConfirmation = false },
@@ -351,6 +401,102 @@ fun RepositoryGovernanceScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun RepositoryCreationCard(
+    state: RepositoryGovernanceUiState,
+    repositoryName: String,
+    onRepositoryNameChange: (String) -> Unit,
+    description: String,
+    onDescriptionChange: (String) -> Unit,
+    onReviewCreation: () -> Unit
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                stringResource(R.string.repo_create_card_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                stringResource(R.string.repo_create_card_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            OutlinedTextField(
+                value = repositoryName,
+                onValueChange = onRepositoryNameChange,
+                label = { Text(stringResource(R.string.repo_create_name_label)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = description,
+                onValueChange = onDescriptionChange,
+                label = { Text(stringResource(R.string.repo_create_description_label)) },
+                minLines = 2,
+                maxLines = 4,
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (state.isCreatingRepository) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Text(
+                        stringResource(R.string.repo_create_progress),
+                        modifier = Modifier.padding(start = 8.dp),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+            state.creationMessage?.let { message ->
+                Text(
+                    message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (message.startsWith("CREATED_PRIVATE_VERIFIED")) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
+            if (state.receiptChainStatus?.valid == false) {
+                Text(
+                    stringResource(R.string.repo_create_chain_invalid),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+            state.creationReceiptId?.let { receiptId ->
+                Text(
+                    stringResource(R.string.repo_create_receipt_label, receiptId),
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+            state.creationReceiptPath?.let { path ->
+                Text(
+                    stringResource(R.string.repo_create_receipt_path, path),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Button(
+                onClick = onReviewCreation,
+                enabled = repositoryName.isNotBlank() &&
+                    !state.isCreatingRepository &&
+                    state.receiptChainStatus?.valid != false,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.repo_create_action))
+            }
+        }
     }
 }
 
