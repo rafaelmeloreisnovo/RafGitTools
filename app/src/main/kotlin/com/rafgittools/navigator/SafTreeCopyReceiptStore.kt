@@ -14,7 +14,11 @@ data class SafTreeCopyReceiptEvent(
     val sourceRootSha256: String,
     val destinationRootSha256: String,
     val targetRootName: String,
-    val relativePath: String = "",
+    val pathSha256: String = "TOKEN_VAZIO",
+    val planSha256: String = "TOKEN_VAZIO",
+    val plannedFiles: Int? = null,
+    val plannedDirectories: Int? = null,
+    val occurredAtEpochMs: Long = System.currentTimeMillis(),
     val sourceRefSha256: String = "TOKEN_VAZIO",
     val destinationRefSha256: String = "TOKEN_VAZIO",
     val bytes: Long? = null,
@@ -59,7 +63,11 @@ class SafTreeCopyReceiptStore(private val receiptFile: File) {
         sourceRootSha256: String,
         destinationRootSha256: String,
         targetRootName: String,
-        relativePath: String = "",
+        pathSha256: String = "TOKEN_VAZIO",
+        planSha256: String = "TOKEN_VAZIO",
+        plannedFiles: Int? = null,
+        plannedDirectories: Int? = null,
+        occurredAtEpochMs: Long = System.currentTimeMillis(),
         sourceRefSha256: String = "TOKEN_VAZIO",
         destinationRefSha256: String = "TOKEN_VAZIO",
         bytes: Long? = null,
@@ -69,9 +77,10 @@ class SafTreeCopyReceiptStore(private val receiptFile: File) {
     ): SafTreeCopyReceiptEvent {
         require(eventType.isNotBlank()) { "COPY_RECEIPT_EVENT_TYPE_REQUIRED" }
         require(operationId.isNotBlank()) { "COPY_RECEIPT_OPERATION_ID_REQUIRED" }
-        require(!relativePath.contains('\n') && !relativePath.contains('\r')) {
-            "COPY_RECEIPT_PATH_HAS_LINE_BREAK"
-        }
+        if (pathSha256 != "TOKEN_VAZIO") require(isSha256(pathSha256)) { "COPY_RECEIPT_PATH_HASH_INVALID" }
+        if (planSha256 != "TOKEN_VAZIO") require(isSha256(planSha256)) { "COPY_RECEIPT_PLAN_HASH_INVALID" }
+        if (plannedFiles != null) require(plannedFiles >= 0) { "COPY_RECEIPT_NEGATIVE_FILE_COUNT" }
+        if (plannedDirectories != null) require(plannedDirectories >= 0) { "COPY_RECEIPT_NEGATIVE_DIRECTORY_COUNT" }
         if (bytes != null) require(bytes >= 0L) { "COPY_RECEIPT_NEGATIVE_BYTES" }
 
         val unhashed = SafTreeCopyReceiptEvent(
@@ -81,7 +90,11 @@ class SafTreeCopyReceiptStore(private val receiptFile: File) {
             sourceRootSha256 = sourceRootSha256,
             destinationRootSha256 = destinationRootSha256,
             targetRootName = targetRootName,
-            relativePath = relativePath,
+            pathSha256 = pathSha256,
+            planSha256 = planSha256,
+            plannedFiles = plannedFiles,
+            plannedDirectories = plannedDirectories,
+            occurredAtEpochMs = occurredAtEpochMs,
             sourceRefSha256 = sourceRefSha256,
             destinationRefSha256 = destinationRefSha256,
             bytes = bytes,
@@ -150,6 +163,8 @@ class SafTreeCopyReceiptStore(private val receiptFile: File) {
                 )
             }
         }
+
+        private fun isSha256(value: String): Boolean = value.matches(Regex("^[a-fA-F0-9]{64}$"))
 
         private fun sha256(bytes: ByteArray): String =
             MessageDigest.getInstance("SHA-256")
