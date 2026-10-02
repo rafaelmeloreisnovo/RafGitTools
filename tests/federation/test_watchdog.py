@@ -49,3 +49,21 @@ def test_failure_simulation_never_promotes_claims() -> None:
 def test_unknown_repository_failure_is_blocked() -> None:
     result = watchdog.simulate_failure(load_manifest(), "TOKEN_VAZIO/unknown")
     assert result["status"] == "BLOCKED"
+
+
+def test_termux_package_producer_is_explicit_dependency() -> None:
+    manifest = load_manifest()
+    by_name = {repo["name"]: repo for repo in manifest["repositories"]}
+    packages = by_name["rafaelmeloreisnovo/termux-packages"]
+    runtime = by_name["rafaelmeloreisnovo/termux-app-rafacodephi"]
+    assert packages["role"] == "package-production-and-provenance"
+    assert packages["critical"] is True
+    assert "rafaelmeloreisnovo/termux-packages" in runtime["dependencies"]
+
+
+def test_control_plane_and_navigation_are_not_collapsed() -> None:
+    manifest = load_manifest()
+    assert manifest["control_plane"] == "rafaelmeloreisnovo/RafGitTools"
+    assert manifest["navigation_ontology"] == "rafaelmeloreisnovo/Mapa"
+    assert manifest["control_plane_scope"] == "operational_federation_and_runtime_routing"
+
