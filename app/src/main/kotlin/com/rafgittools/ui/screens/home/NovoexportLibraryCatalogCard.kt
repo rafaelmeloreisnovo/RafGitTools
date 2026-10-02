@@ -124,6 +124,11 @@ fun NovoexportLibraryCatalogCard(inventory: NovoexportSafInventory.Result) {
                 style = MaterialTheme.typography.bodySmall
             )
             Text(
+                "Tamanhos informados: ${formatCatalogBytes(inventory.knownTotalBytes)} · sem tamanho: ${inventory.unknownSizeFiles}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
                 "Resultado da busca: ${previewEntries.size} nós · nós catalogados: ${materialization?.let { catalogNodeCount } ?: 0}",
                 style = MaterialTheme.typography.bodySmall
             )
