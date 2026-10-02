@@ -1,6 +1,6 @@
 {
   "schema": "rafaelia.rafgittools-main-provider-enforcement-plan.v4",
-  "version": "4.0.1-stage1-context-hotfix",
+  "version": "4.0.2-stage1-transactional-context-hotfix",
   "generated_at": "2026-10-02",
   "repository": "rafaelmeloreisnovo/RafGitTools",
   "target_branch": "main",
@@ -8,7 +8,7 @@
   "stage": "STAGE1_CI_AND_PR_BARRIER",
   "mode": "PREPARED_CONTEXT_REPAIR_NOT_APPLIED",
   "claim_allowed": false,
-  "purpose": "Close the merge-before-terminal-CI gap while requiring the exact check-run names emitted by START. The 2026-10-02 hotfix removes the stale workflow-name prefix that GitHub branch protection was waiting for but the workflow did not emit as a check-run context.",
+  "purpose": "Close the merge-before-terminal-CI gap while requiring the exact check-run names emitted by START. The 2026-10-02 hotfix removes the stale workflow-name prefix and permits fail-closed repair whether protection is absent or already present; a present prestate must be restored transactionally if apply/readback fails.",
   "authority_evidence": {
     "environment": "Pat_environments",
     "secret_reference": "PAT_ENV",
@@ -32,7 +32,7 @@
       "provider_merge_attempt_result": "BLOCKED_4_OF_4_REQUIRED_STATUS_CHECKS_EXPECTED"
     }
   },
-  "required_prestate": "ABSENT",
+  "required_prestate": "ABSENT_OR_PRESENT",
   "required_policy": {
     "pull_request_required": true,
     "direct_main_write_forbidden": true,
@@ -73,7 +73,8 @@
   "rollback": {
     "automatic_on_readback_mismatch": true,
     "automatic_on_main_sha_drift": true,
-    "prestate_restore_mode": "DELETE_PROTECTION_IF_PRESTATE_ABSENT",
+    "absent_prestate_restore_mode": "DELETE_PROTECTION_IF_PRESTATE_ABSENT",
+    "present_prestate_restore_mode": "PUT_NORMALIZED_PREVIOUS_POLICY_AND_VERIFY_READBACK",
     "manual_operation": "rollback_main_protection",
     "rollback_receipt_required": true
   },
@@ -88,6 +89,7 @@
     "MERGED != VALIDATED",
     "DETECTOR != SERVER_BARRIER",
     "REQUIRED_CONTEXT == OBSERVED_CHECK_RUN_NAME",
+    "PRESENT_REPAIR_ROLLBACK == PREVIOUS_POLICY_READBACK",
     "REVIEWER_TOKEN_VAZIO != REVIEWER_AVAILABLE",
     "STAGE1_APPROVAL_COUNT_0 != STAGE2_APPROVAL_COUNT_1",
     "PAT_ENV_VALUE_NEVER_PERSISTED",
