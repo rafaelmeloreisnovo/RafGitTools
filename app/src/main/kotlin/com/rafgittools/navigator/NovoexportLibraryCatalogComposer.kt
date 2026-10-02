@@ -57,6 +57,11 @@ object NovoexportLibraryCatalogComposer {
         }
         val fileEntries = (inventory.allFiles.ifEmpty { inventory.candidateFiles })
             .distinctBy { it.documentId }
+        if (inventory.rootDocumentId.isBlank()) {
+            require(inventory.allDirectories.isEmpty() &&
+                fileEntries.all { it.parentDocumentId == null }
+            ) { "NOVOEXPORT_ROOT_ID_REQUIRED_FOR_TREE" }
+        }
 
         fun parentNodeId(parentDocumentId: String?): String {
             if (parentDocumentId == null || inventory.rootDocumentId.isBlank() ||
