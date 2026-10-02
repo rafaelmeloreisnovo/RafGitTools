@@ -1,5 +1,6 @@
 package com.rafgittools.navigator
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -18,4 +19,15 @@ class NovoexportSafInventoryTest {
         assertFalse(NovoexportSafInventory.acceptsSourceName("codex.json.zip"))
         assertFalse(NovoexportSafInventory.acceptsSourceName("TOKEN_VAZIO"))
     }
+    @Test fun childPathsKeepNestedDirectorySegments() {
+        assertEquals(
+            "NOVOexport/Conversation chunks/2026",
+            NovoexportSafInventory.childPath(
+                "NOVOexport/Conversation chunks",
+                "2026"
+            )
+        )
+        assertEquals("NOVOexport", NovoexportSafInventory.childPath("", "NOVOexport"))
+    }
+
 }
