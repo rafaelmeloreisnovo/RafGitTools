@@ -42,6 +42,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.Locale
 
 @Composable
 fun NovoexportLibraryCatalogCard(inventory: NovoexportSafInventory.Result) {
@@ -114,7 +115,7 @@ fun NovoexportLibraryCatalogCard(inventory: NovoexportSafInventory.Result) {
             )
             candidates.take(12).forEach { candidate ->
                 Text(
-                    "${candidate.name} · ${candidate.sizeBytes?.let(::formatBytes) ?: "tamanho TOKEN_VAZIO"}",
+                    "${candidate.name} · ${candidate.sizeBytes?.let(::formatCatalogBytes) ?: "tamanho TOKEN_VAZIO"}",
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -215,7 +216,7 @@ fun NovoexportLibraryCatalogCard(inventory: NovoexportSafInventory.Result) {
                 askExportConfirmation = false
                 outputFolder = null
             },
-            title = { Text("Revisar exportação para o Drive") },
+            title = { Text("Revisar exportação para o destino") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Serão gravados somente o catálogo e o recibo de exportação; nenhum arquivo NOVOexport será copiado.")
@@ -225,7 +226,7 @@ fun NovoexportLibraryCatalogCard(inventory: NovoexportSafInventory.Result) {
                         Text("SHA-256 do catálogo: ${ready.catalogSha256}")
                     }
                     Text("Destino (provedor): ${destination?.authority ?: "TOKEN_VAZIO"}")
-                    Text("Compartilhamento do destino: TOKEN_VAZIO; confirme as permissões diretamente no Google Drive.")
+                    Text("Compartilhamento do destino: TOKEN_VAZIO; confirme as permissões no provedor escolhido.")
                     if (permissionWarning) {
                         Text("Acesso persistente não confirmado pelo Android; a tentativa desta sessão pode falhar.")
                     }
@@ -273,4 +274,12 @@ fun NovoexportLibraryCatalogCard(inventory: NovoexportSafInventory.Result) {
             }
         )
     }
+}
+
+private fun formatCatalogBytes(bytes: Long): String = when {
+    bytes < 1024L -> "$bytes B"
+    bytes < 1024L * 1024L -> String.format(Locale.ROOT, "%.1f KiB", bytes / 1024.0)
+    bytes < 1024L * 1024L * 1024L ->
+        String.format(Locale.ROOT, "%.1f MiB", bytes / (1024.0 * 1024.0))
+    else -> String.format(Locale.ROOT, "%.1f GiB", bytes / (1024.0 * 1024.0 * 1024.0))
 }
