@@ -131,4 +131,20 @@ class LibraryCatalogGateTest {
         assertFalse(result.allowed)
         assertTrue(result.errors.any { it.startsWith("CREDENTIAL_MARKER") })
     }
+    @Test
+    fun unlinkedInventoryItemNeedsExplicitBibliographicGap() {
+        val base = bundle()
+        val unlinked = base.items.single().copy(editionId = null, manifestationId = null)
+        val missingGap = base.copy(items = listOf(unlinked), relations = emptyList())
+        val rejected = LibraryCatalogGate.validate(missingGap)
+        assertFalse(rejected.allowed)
+        assertTrue(rejected.errors.any { it.startsWith("ITEM_BIBLIOGRAPHIC_PARENT_REQUIRED") })
+
+        val marked = missingGap.copy(
+            items = listOf(unlinked.copy(gapRefs = listOf("BIBLIOGRAPHIC_PARENT_TOKEN_VAZIO")))
+        )
+        val accepted = LibraryCatalogGate.validate(marked)
+        assertTrue(accepted.errors.toString(), accepted.allowed)
+    }
+
 }
