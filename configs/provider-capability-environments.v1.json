@@ -1,13 +1,17 @@
 {
   "schema": "rafaelia.provider-capability-environments.v1",
-  "observed_at": "2026-09-28",
+  "observed_at": "2026-10-02",
   "repository": "rafaelmeloreisnovo/RafGitTools",
   "source": "HUMAN_REPORTED_GITHUB_SETTINGS_READBACK",
   "canonical_naming": {
     "secret_names_uppercase": true,
     "environment_display_name": "PAT_ENVIRONMENTS",
     "legacy_case_alias": "Pat_environments",
-    "environment_case_sensitive": false
+    "environment_case_sensitive": false,
+    "distinct_secret_ids": [
+      "PAT_ENV",
+      "PAT_ENVIRONMENTS"
+    ]
   },
   "provider_environment_api_readback": "TOKEN_VAZIO_CONNECTOR_ENDPOINT_UNAVAILABLE",
   "claim_allowed": false,
@@ -73,11 +77,24 @@
         "rollback_main_protection"
       ],
       "issue": 393
+    },
+    {
+      "capability": "environments_secret_reported",
+      "storage_scope": "TOKEN_VAZIO_PROVIDER_SCOPE_PENDING",
+      "environment": "TOKEN_VAZIO_PROVIDER_BINDING_PENDING",
+      "secret": "PAT_ENVIRONMENTS",
+      "state": "HUMAN_REPORTED_PROVIDER_READBACK_PENDING",
+      "allowed_operations": [],
+      "write_allowed": false,
+      "permission_probe_required": true,
+      "source": "HUMAN_REPORTED_CURRENT_SESSION_2026-10-02"
     }
   ],
   "invariants": [
     "NON_PRIVILEGED_JOB_USES_GITHUB_TOKEN_ONLY",
     "PAT_SECRET_IDENTIFIERS_ARE_CANONICAL_UPPERCASE",
+    "PAT_ENV_DISTINCT_FROM_PAT_ENVIRONMENTS",
+    "HUMAN_REPORTED_PAT_REQUIRES_PROVIDER_READBACK_BEFORE_WIRING",
     "PAT_CAPABILITY_MUST_MATCH_STORAGE_SCOPE",
     "NO_PAT_FALLBACK_BETWEEN_CAPABILITIES",
     "SECRET_VALUE_NEVER_PERSISTED_OR_PRINTED",
