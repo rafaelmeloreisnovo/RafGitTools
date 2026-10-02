@@ -4,6 +4,10 @@ import com.google.common.truth.Truth.assertThat
 import java.nio.ByteBuffer
 import org.junit.Test
 
+/**
+ * Hosted adapter parity tests only.
+ * Authoritative dependency-free behavior is gated separately in freestanding/orchestration/.
+ */
 class FreestandingModulePipelineTest {
     private val strictFlags =
         PipelineFlags.SOURCE_BOUND or
