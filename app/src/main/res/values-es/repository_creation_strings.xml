@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="repo_create_card_title">Crear repositorio privado</string>
+    <string name="repo_create_card_body">Crea un repositorio en la cuenta personal de GitHub autenticada. La visibilidad queda fijada como privada y se inicializa un README mínimo. Esta acción no sube la carpeta seleccionada en el teléfono. Usa los controles de gobernanza de abajo para auditar y aplicar reglas después.</string>
+    <string name="repo_create_name_label">Nombre del repositorio</string>
+    <string name="repo_create_description_label">Descripción (opcional)</string>
+    <string name="repo_create_action">Revisar creación del repositorio privado</string>
+    <string name="repo_create_progress">Verificando la cadena de recibos y el inventario de GitHub…</string>
+    <string name="repo_create_chain_invalid">La creación se bloqueó porque la cadena local de recibos no pasó la verificación.</string>
+    <string name="repo_create_receipt_label">Recibo: %1$s</string>
+    <string name="repo_create_receipt_path">Registro privado de la aplicación: %1$s</string>
+    <string name="repo_create_confirmation_title">¿Crear este repositorio privado?</string>
+    <string name="repo_create_confirmation_body">%1$s se creará en la cuenta personal de GitHub conectada como privado, con un README mínimo. El nombre y la descripción opcional se enviarán a GitHub. La carpeta seleccionada en el teléfono y el snapshot local no se subirán.</string>
+    <string name="repo_create_confirm">Crear repositorio privado</string>
+</resources>

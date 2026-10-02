@@ -6,6 +6,8 @@ import com.rafgittools.data.github.ActionsPermissionsSnapshot
 import com.rafgittools.data.github.ActionsWorkflowPermissionsSnapshot
 import com.rafgittools.data.github.BranchProtectionRequest
 import com.rafgittools.data.github.BranchProtectionSnapshot
+import com.rafgittools.data.github.CreateUserRepositoryRequest
+import com.rafgittools.data.github.normalizeGitHubRepositoryName
 import com.rafgittools.data.github.GovernanceAuditInput
 import com.rafgittools.data.github.GovernanceAuditReport
 import com.rafgittools.data.github.GovernanceControlState
@@ -107,6 +109,11 @@ data class RepositoryGovernanceUiState(
     val isLoadingRepositories: Boolean = false,
     val isLoadingRepository: Boolean = false,
     val isAuditing: Boolean = false,
+    val isCreatingRepository: Boolean = false,
+    val creationMessage: String? = null,
+    val createdRepositoryFullName: String? = null,
+    val creationReceiptId: String? = null,
+    val creationReceiptPath: String? = null,
     val message: String? = null,
     val lastReceiptId: String? = null,
     val receiptPath: String? = null,
@@ -144,7 +151,7 @@ class RepositoryGovernanceViewModel @Inject constructor(
         refreshRepositories()
     }
 
-    fun refreshRepositories() {
+    fun refreshRepositories(preferredFullName: String? = null) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 isLoadingRepositories = true,
@@ -168,7 +175,9 @@ class RepositoryGovernanceViewModel @Inject constructor(
                             "Observed ${ordered.size} repository/repositories across all provider pages."
                         }
                     )
-                    val next = previousSelection?.let { name -> ordered.firstOrNull { it.fullName == name } }
+                    val next = preferredFullName?.let { preferred ->
+                        ordered.firstOrNull { it.fullName.equals(preferred, ignoreCase = true) }
+                    } ?: previousSelection?.let { name -> ordered.firstOrNull { it.fullName == name } }
                         ?: ordered.firstOrNull { it.permissions?.admin == true }
                         ?: ordered.firstOrNull()
                     next?.let { selectRepository(it.fullName) }
@@ -180,6 +189,267 @@ class RepositoryGovernanceViewModel @Inject constructor(
                         message = "TOKEN_VAZIO: repository inventory unavailable (${providerMessage(error)})."
                     )
                 }
+        }
+    }
+
+    fun createPrivateRepository(name: String, description: String) {
+        if (_uiState.value.isCreatingRepository) return
+
+        val normalizedName = normalizeGitHubRepositoryName(name)
+        val normalizedDescription = description.trim().takeIf { it.isNotEmpty() }
+        if (normalizedName == null) {
+            _uiState.value = _uiState.value.copy(
+                creationMessage = "BLOCKED: use 1-100 ASCII letters, digits, periods, underscores or hyphens for the repository name.",
+                createdRepositoryFullName = null,
+                creationReceiptId = null,
+                creationReceiptPath = null
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isCreatingRepository = true,
+                creationMessage = "PRECHECK: verifying receipt chain and GitHub inventory.",
+                createdRepositoryFullName = null,
+                creationReceiptId = null,
+                creationReceiptPath = null
+            )
+
+            val chainStatus = try {
+                receiptStore.verifyChain()
+            } catch (error: Exception) {
+                if (error is kotlinx.coroutines.CancellationException) throw error
+                finishRepositoryCreation(
+                    "BLOCKED: local receipt chain could not be checked; no create request was sent.",
+                    receiptId = null
+                )
+                return@launch
+            }
+            if (!chainStatus.valid) {
+                finishRepositoryCreation(
+                    "BLOCKED: local receipt chain is invalid; no create request was sent.",
+                    receiptId = null,
+                    chainStatus = chainStatus
+                )
+                return@launch
+            }
+
+            val owner = try {
+                api.getAuthenticatedUser().login.trim()
+            } catch (error: Exception) {
+                if (error is kotlinx.coroutines.CancellationException) throw error
+                finishRepositoryCreation(
+                    "TOKEN_VAZIO: authenticated GitHub owner could not be verified; no create request was sent.",
+                    receiptId = null,
+                    chainStatus = chainStatus
+                )
+                return@launch
+            }
+            if (owner.isBlank()) {
+                finishRepositoryCreation(
+                    "TOKEN_VAZIO: authenticated GitHub owner is blank; no create request was sent.",
+                    receiptId = null,
+                    chainStatus = chainStatus
+                )
+                return@launch
+            }
+
+            val repositories = try {
+                listAllRepositories()
+            } catch (error: Exception) {
+                if (error is kotlinx.coroutines.CancellationException) throw error
+                finishRepositoryCreation(
+                    "TOKEN_VAZIO: GitHub inventory preflight failed; no create request was sent (" +
+                        error::class.java.simpleName + ").",
+                    receiptId = null,
+                    chainStatus = chainStatus
+                )
+                return@launch
+            }
+
+            val existing = repositories.firstOrNull {
+                it.owner.login.equals(owner, ignoreCase = true) &&
+                    it.name.equals(normalizedName, ignoreCase = true)
+            }
+            if (existing != null) {
+                val receiptId = appendCreationReceipt(
+                    repository = existing.fullName,
+                    outcome = "ALREADY_EXISTS",
+                    details = "Case-insensitive personal repository name match; request_not_sent=true; existing_private=" + existing.isPrivate
+                )
+                finishRepositoryCreation(
+                    "EXISTS: " + existing.fullName + " is already visible as " +
+                        (if (existing.isPrivate) "private" else "public") +
+                        "; no create request was sent." +
+                        (if (receiptId == null) " Local receipt append failed." else ""),
+                    receiptId = receiptId
+                )
+                refreshRepositories(existing.fullName)
+                return@launch
+            }
+
+            val targetFullName = owner + "/" + normalizedName
+            val preparedReceiptId = appendCreationReceipt(
+                repository = targetFullName,
+                outcome = "ATTEMPT_PREPARED",
+                details = "visibility=private; auto_init=true; description_present=" + (normalizedDescription != null),
+                gaps = listOf("provider response pending")
+            )
+            if (preparedReceiptId == null) {
+                finishRepositoryCreation(
+                    "BLOCKED: the local intent receipt could not be written; no create request was sent.",
+                    receiptId = null
+                )
+                return@launch
+            }
+
+            val response = try {
+                api.createUserRepository(
+                    CreateUserRepositoryRequest(
+                        name = normalizedName,
+                        description = normalizedDescription
+                    )
+                )
+            } catch (error: Exception) {
+                if (error is kotlinx.coroutines.CancellationException) throw error
+                val outcomeReceiptId = appendCreationReceipt(
+                    repository = targetFullName,
+                    outcome = "OUTCOME_UNKNOWN",
+                    details = "provider_call_exception=" + error::class.java.simpleName + "; prepared_receipt=" + preparedReceiptId,
+                    beforeSnapshot = "prepared_receipt=" + preparedReceiptId,
+                    gaps = listOf("provider acceptance unknown; refresh inventory before retry")
+                )
+                finishRepositoryCreation(
+                    "OUTCOME_UNKNOWN: GitHub did not return a response. The repository may exist; inventory was refreshed and no automatic retry was made." +
+                        (if (outcomeReceiptId == null) " Outcome receipt append failed; only the intent receipt remains." else ""),
+                    receiptId = outcomeReceiptId ?: preparedReceiptId
+                )
+                refreshRepositories(targetFullName)
+                return@launch
+            }
+
+            if (!response.isSuccessful) {
+                val statusCode = response.code()
+                val outcomeReceiptId = appendCreationReceipt(
+                    repository = targetFullName,
+                    outcome = "REJECTED_HTTP_" + statusCode,
+                    details = "GitHub rejected the private repository request; prepared_receipt=" + preparedReceiptId,
+                    beforeSnapshot = "prepared_receipt=" + preparedReceiptId
+                )
+                finishRepositoryCreation(
+                    "REJECTED_HTTP_" + statusCode + ": GitHub did not confirm repository creation." +
+                        (if (outcomeReceiptId == null) " Outcome receipt append failed; only the intent receipt remains." else ""),
+                    receiptId = outcomeReceiptId ?: preparedReceiptId
+                )
+                refreshRepositories(targetFullName)
+                return@launch
+            }
+
+            val created = response.body()
+            if (created == null) {
+                val outcomeReceiptId = appendCreationReceipt(
+                    repository = targetFullName,
+                    outcome = "CREATE_RESPONSE_BODY_TOKEN_VAZIO",
+                    details = "HTTP " + response.code() + " was successful but no repository body was returned; prepared_receipt=" + preparedReceiptId,
+                    beforeSnapshot = "prepared_receipt=" + preparedReceiptId,
+                    gaps = listOf("repository identity and visibility readback unavailable")
+                )
+                finishRepositoryCreation(
+                    "OUTCOME_UNKNOWN: GitHub accepted the request without a readable repository body. Inventory was refreshed; verify before retrying." +
+                        (if (outcomeReceiptId == null) " Outcome receipt append failed; only the intent receipt remains." else ""),
+                    receiptId = outcomeReceiptId ?: preparedReceiptId
+                )
+                refreshRepositories(targetFullName)
+                return@launch
+            }
+
+            val responseOwner = created.owner.login.trim()
+            val responseName = created.name.trim()
+            val responseFullName = created.fullName.ifBlank {
+                responseOwner + "/" + responseName
+            }
+            if (responseOwner.isBlank() || responseName.isBlank()) {
+                val outcomeReceiptId = appendCreationReceipt(
+                    repository = targetFullName,
+                    outcome = "CREATE_RESPONSE_IDENTITY_TOKEN_VAZIO",
+                    details = "HTTP " + response.code() + "; prepared_receipt=" + preparedReceiptId,
+                    beforeSnapshot = "prepared_receipt=" + preparedReceiptId,
+                    afterSnapshot = "visibility_in_create_response=" + created.isPrivate,
+                    gaps = listOf("repository identity is incomplete; visibility not independently verified")
+                )
+                finishRepositoryCreation(
+                    "CREATED_BUT_UNVERIFIED: GitHub accepted the request, but returned an incomplete identity; check inventory before retrying." +
+                        (if (outcomeReceiptId == null) " Outcome receipt append failed; only the intent receipt remains." else ""),
+                    receiptId = outcomeReceiptId ?: preparedReceiptId,
+                    repositoryFullName = responseFullName.takeIf { it.contains("/") }
+                )
+                refreshRepositories(targetFullName)
+                return@launch
+            }
+
+            val readback = try {
+                api.getRepository(responseOwner, responseName)
+            } catch (error: Exception) {
+                if (error is kotlinx.coroutines.CancellationException) throw error
+                val outcomeReceiptId = appendCreationReceipt(
+                    repository = responseFullName,
+                    outcome = "CREATED_VISIBILITY_TOKEN_VAZIO",
+                    details = "POST accepted; GET readback failed with " + error::class.java.simpleName +
+                        "; prepared_receipt=" + preparedReceiptId,
+                    beforeSnapshot = "prepared_receipt=" + preparedReceiptId,
+                    afterSnapshot = "visibility_in_create_response=" + created.isPrivate,
+                    gaps = listOf("provider readback required to confirm visibility")
+                )
+                finishRepositoryCreation(
+                    "CREATED_BUT_UNVERIFIED: GitHub accepted the request, but visibility readback failed. No automatic retry was made." +
+                        (if (outcomeReceiptId == null) " Outcome receipt append failed; only the intent receipt remains." else ""),
+                    receiptId = outcomeReceiptId ?: preparedReceiptId,
+                    repositoryFullName = responseFullName
+                )
+                refreshRepositories(responseFullName)
+                return@launch
+            }
+
+            val identityMatches = responseOwner.equals(owner, ignoreCase = true) &&
+                responseName.equals(normalizedName, ignoreCase = true) &&
+                readback.owner.login.equals(owner, ignoreCase = true) &&
+                readback.name.equals(normalizedName, ignoreCase = true)
+            val privateConfirmed = identityMatches && readback.isPrivate
+            val finalOutcome = when {
+                !identityMatches -> "CREATED_IDENTITY_MISMATCH"
+                !readback.isPrivate -> "CREATED_VISIBILITY_MISMATCH"
+                else -> "CREATED_PRIVATE_VERIFIED"
+            }
+            val outcomeReceiptId = appendCreationReceipt(
+                repository = readback.fullName,
+                outcome = finalOutcome,
+                details = "POST_HTTP_" + response.code() + "; readback_owner=" + readback.owner.login +
+                    "; readback_name=" + readback.name + "; prepared_receipt=" + preparedReceiptId,
+                beforeSnapshot = "prepared_receipt=" + preparedReceiptId,
+                afterSnapshot = "private=" + readback.isPrivate + "; default_branch=" + readback.defaultBranch,
+                gaps = if (privateConfirmed) emptyList() else listOf("identity and private visibility must both be confirmed")
+            )
+            val postReceiptChainStatus = runCatching { receiptStore.verifyChain() }.getOrNull()
+            val receiptAuditVerified = outcomeReceiptId != null && postReceiptChainStatus?.valid == true
+            val finalMessage = when {
+                !identityMatches ->
+                    "CREATED_IDENTITY_MISMATCH: provider readback did not match the requested personal repository."
+                !readback.isPrivate ->
+                    "CREATED_VISIBILITY_MISMATCH: repository exists, but GitHub readback did not confirm private visibility. No content was uploaded."
+                !receiptAuditVerified ->
+                    "CREATED_PRIVATE_RECEIPT_GAP: GitHub readback confirmed private visibility, but a valid final receipt could not be confirmed."
+                else ->
+                    "CREATED_PRIVATE_VERIFIED: " + readback.fullName + "; default branch " +
+                        readback.defaultBranch + ". The repository is selected below for governance review."
+            }
+            finishRepositoryCreation(
+                finalMessage,
+                receiptId = outcomeReceiptId ?: preparedReceiptId,
+                repositoryFullName = readback.fullName.takeIf { identityMatches },
+                chainStatus = postReceiptChainStatus
+            )
+            refreshRepositories(readback.fullName.takeIf { identityMatches } ?: targetFullName)
         }
     }
 
@@ -964,6 +1234,47 @@ class RepositoryGovernanceViewModel @Inject constructor(
             message = if (preserveMessage) previous.message else evidenceSummary(observed, audit),
             lastReceiptId = auditReceipt ?: previous.lastReceiptId,
             receiptPath = if (auditReceipt != null || previous.receiptPath != null) receiptStore.path() else null
+        )
+    }
+
+    private fun appendCreationReceipt(
+        repository: String,
+        outcome: String,
+        details: String,
+        beforeSnapshot: String? = null,
+        afterSnapshot: String? = null,
+        gaps: List<String> = emptyList()
+    ): String? = try {
+        receiptStore.appendDetailed(
+            repository = repository,
+            operation = "create_private_repository",
+            outcome = outcome,
+            details = details,
+            beforeSnapshot = beforeSnapshot,
+            afterSnapshot = afterSnapshot,
+            gaps = gaps
+        )
+    } catch (_: Exception) {
+        null
+    }
+
+    private fun finishRepositoryCreation(
+        message: String,
+        receiptId: String?,
+        repositoryFullName: String? = null,
+        chainStatus: RepositoryGovernanceReceiptStore.GovernanceReceiptChainStatus? = null
+    ) {
+        val verifiedChain = chainStatus ?: runCatching { receiptStore.verifyChain() }.getOrNull()
+        val path = if (receiptId != null) receiptStore.path() else null
+        _uiState.value = _uiState.value.copy(
+            isCreatingRepository = false,
+            creationMessage = message,
+            createdRepositoryFullName = repositoryFullName,
+            creationReceiptId = receiptId,
+            creationReceiptPath = path,
+            receiptChainStatus = verifiedChain,
+            lastReceiptId = receiptId ?: _uiState.value.lastReceiptId,
+            receiptPath = path ?: _uiState.value.receiptPath
         )
     }
 
