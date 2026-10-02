@@ -1,0 +1,8 @@
+schema=rafaelia.signed-release/v1
+state=AWAITING_REAL_SIGNING_RECEIPT
+source_sha=TOKEN_VAZIO
+signed_apk_sha256=TOKEN_VAZIO
+certificate_sha256=TOKEN_VAZIO
+signer_id=TOKEN_VAZIO
+certificate_match=TOKEN_VAZIO
+private_key_material=NEVER_PUBLISH

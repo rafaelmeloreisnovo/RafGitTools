@@ -122,6 +122,45 @@ class ContextBrokerTest {
     }
 
     @Test
+    fun read_only_model_bundle_requires_explicit_selected_context() {
+        val broker = ContextBroker()
+
+        assertThrows(IllegalArgumentException::class.java) {
+            broker.buildReadOnlyModelBundle(
+                bundleId = "b-readonly",
+                objective = "Explain selected source",
+                createdAt = "2026-09-29T17:08:00Z"
+            )
+        }
+    }
+
+    @Test
+    fun read_only_model_bundle_marks_semantic_exam_and_no_execution_permission() {
+        val broker = ContextBroker()
+        broker.addText(resource(), "explicit selected context")
+
+        val bundle = broker.buildReadOnlyModelBundle(
+            bundleId = "b-readonly",
+            objective = "Explain selected source",
+            createdAt = "2026-09-29T17:08:00Z",
+            requestId = "r-readonly",
+            evidenceRefs = listOf("E1")
+        )
+
+        assertThat(bundle.annotations["claim_allowed"]).isEqualTo(false)
+        assertThat(bundle.annotations["consumer_mode"]).isEqualTo("READ_ONLY_LOCAL_MODEL")
+        assertThat(bundle.annotations["semantic_exam_required"]).isEqualTo(true)
+        assertThat(bundle.constraints).contains(
+            "semantic context exam must pass before model consumption"
+        )
+        assertThat(bundle.constraints).contains(
+            "consumer is read-only: model output is not execution permission"
+        )
+        assertThat(bundle.evidenceRefs).containsExactly("E1")
+        assertThat(bundle.segments).hasSize(1)
+    }
+
+    @Test
     fun bundle_requires_human_supplied_intent_and_identity() {
         val broker = ContextBroker()
         assertThrows(IllegalArgumentException::class.java) {

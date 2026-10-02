@@ -1,0 +1,86 @@
+{
+  "schema": "rafgittools.android-novoexport-processor.v1",
+  "state": "QUEUE_EXECUTOR_SOURCE_IMPLEMENTED_UNTESTED",
+  "app_flow": "DRIVE_TAB_RECURSIVE_INVENTORY_PRIVATE_QUEUE_AND_ONE_ITEM_PROCESSOR_SOURCE_PRESENT",
+  "ci": "BASE_QUEUE_CHAIN_PASS_RUN_36565432525; QUEUE_EXECUTOR_EXACT_HEAD_PENDING",
+  "device_execution": "NOT_RUN",
+  "claim_allowed": false,
+  "source_patterns": [
+    "conversation*.json",
+    "codex*.json"
+  ],
+  "input_mode": "USER_SELECTED_ANDROID_SAF_FILE_OR_TREE",
+  "source_mutation": false,
+  "parser": {
+    "top_level": "JSON_ARRAY",
+    "max_record_bytes": 16777216,
+    "max_source_bytes": 2147483648
+  },
+  "outputs": [
+    "PRIVATE_DERIVED_JSONL",
+    "CHECKPOINTS_JSONL"
+  ],
+  "destinations": [
+    "USER_SELECTED_DRIVE_SAF_FOLDER",
+    "LIVE_PRIVATE_GITHUB_NAMESPACE"
+  ],
+  "publisher_plan_confirmation_required": true,
+  "provider_readback": "SOURCE_IMPLEMENTED_FAIL_CLOSED_DRIVE_AND_PRIVATE_GIT",
+  "corpus_scope_bytes": "TOKEN_VAZIO_MEASURED_INVENTORY_REQUIRED",
+  "remaining": [
+    "EXACT_HEAD_CI_FOR_QUEUE_EXECUTOR",
+    "BACKGROUND_EXECUTION_AND_PROCESS_DEATH_RECOVERY",
+    "PHYSICAL_DEVICE_CANARY",
+    "MEASURED_CORPUS_INVENTORY"
+  ],
+  "next": "close exact-head CI for the one-item queue executor; then install that exact devDebug APK and run a small phone canary before any multi-gigabyte batch",
+  "saf_inventory": {
+    "state": "SOURCE_IMPLEMENTED_UNTESTED",
+    "mode": "METADATA_ONLY_RECURSIVE",
+    "source_content_opened": false,
+    "max_documents_default": 100000,
+    "accepted_patterns": [
+      "conversation*.json",
+      "conversations*.json",
+      "codex*.json"
+    ],
+    "known_size_aggregation": "PROVIDER_METADATA_ONLY",
+    "unknown_size": "TOKEN_VAZIO_SIZE"
+  },
+  "queue": {
+    "state": "SOURCE_IMPLEMENTED_UNTESTED",
+    "storage": "ANDROID_APP_PRIVATE_FILES",
+    "schema": "rafgittools.novoexport-resumable-queue/v1",
+    "identity": "SHA256_OF_TREE_URI_PLUS_PROVIDER_METADATA",
+    "states": [
+      "PENDING",
+      "PROCESSING",
+      "COMPLETE",
+      "FAILED_RETRYABLE",
+      "BLOCKED"
+    ],
+    "atomic_recovery": "TEMP_PLUS_BACKUP",
+    "preserves_retry_state_on_reinventory": true,
+    "queue_is_evidence": false,
+    "executor": "FOREGROUND_ONE_ITEM_PER_EXPLICIT_PLAN_CONFIRMATION_SOURCE_IMPLEMENTED_UNTESTED",
+    "completion_gate": "PUBLISHED_READBACK_VERIFIED_AND_DRIVE_GIT_READBACK_TRUE"
+  },
+  "base_ci_evidence": {
+    "workflow_run": 36565432525,
+    "pull_request": 583,
+    "tested_ref": "refs/pull/583/merge",
+    "tested_sha": "98e481c5eb2793ba299f6c230919469414f0a40f",
+    "feature_head": "abc5ca910a90aeeb65a75deed6c73b5b8c29f063",
+    "merge_commit": "cc2363c88260681c58c74189b1d2780384437182",
+    "state": "PASS_WITH_TYPED_SKIPS",
+    "android_job": 109396303979,
+    "codeql_java_kotlin_job": 109396304071,
+    "final_receipt_job": 109399071582,
+    "receipt_artifact_id": 11032261077,
+    "apk_artifact_id": 11032230928,
+    "apk_artifact_archive_sha256": "467939f37025904eb1e5eaebd0b772e2d3b6b76c7ccc6503bcab2e3781d18300",
+    "apk_sha256": "a848605f27aee58fe2099ed5fa117d2fe83a1700b3b3045ccf41964e280f4de7",
+    "device_install": "NOT_RUN",
+    "signed_release": "SKIPPED"
+  }
+}

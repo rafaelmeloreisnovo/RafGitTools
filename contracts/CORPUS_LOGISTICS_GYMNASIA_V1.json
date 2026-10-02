@@ -1,0 +1,50 @@
+{
+  "schema": "rafgittools.corpus-logistics-gymnasia.v1",
+  "version": "1.0.0",
+  "authority": "rafaelmeloreisnovo/RafGitTools",
+  "private_memory_authority": "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE",
+  "federated_map_authority": "rafaelmeloreisnovo/Mapa",
+  "mode": "PRIVATE_DEFAULT_DENY_REFERENCE_FIRST",
+  "claim_allowed": false,
+  "source_families": ["CONVERSATIONS", "CODEX", "CORTEX_TOKEN_VAZIO_UNBOUND"],
+  "topology": ["CAMPUS", "GYMNASIUM", "LAB", "AISLE", "SHELF", "BOOK", "SESSION", "CHUNK", "TOKEN"],
+  "tiers": ["HOT", "WARM", "COLD", "ARCHIVE"],
+  "knowledge_kinds": [
+    "CONCEPT", "PROJECT", "REPOSITORY", "FILE", "CODE", "FORMULA", "VARIABLE",
+    "UNIT", "PARABLE", "SYMBOL", "CLAIM", "EVIDENCE", "GAP", "ROUTE", "DECISION",
+    "QUESTION", "RESULT", "CONTRADICTION", "SUPERSESSION", "TOKEN_VAZIO"
+  ],
+  "materialization_states": [
+    "MATERIALIZED", "PARTIAL", "DECLARED", "TOKEN_VAZIO", "NOT_APPLICABLE", "SUPERSEDED"
+  ],
+  "relation_types": [
+    "CONTAINS", "COMPONENT_OF", "CHARACTERISTIC_OF", "RELATES_TO", "CORRELATES_WITH",
+    "ANALOGY_TO", "DERIVES_FROM", "PRODUCES", "REQUIRES", "BLOCKS", "EVIDENCED_BY",
+    "CONTRADICTS", "SUPERSEDES", "NEXT", "PREVIOUS"
+  ],
+  "publication": {
+    "raw_source_default": "EXTERNAL_IMMUTABLE_AUTHORITY",
+    "github_default": "POINTERS_CHUNKS_INDEXES_ATLAS_ROUTES_RECEIPTS",
+    "raw_git_commit_default": false,
+    "raw_lfs_optional": true,
+    "duplicate_overlap_bytes": false,
+    "overlap_as_edges": true,
+    "governed_writer": "RafGitFS",
+    "force_push": false
+  },
+  "invariants": [
+    "SOURCE != CHUNK != INDEX != ATLAS != EVIDENCE != CLAIM",
+    "ANALOGY != EVIDENCE",
+    "CORRELATION != CAUSATION",
+    "MATERIALIZED != VALIDATED",
+    "TOKEN_VAZIO != 0",
+    "RAW_BODY_PRIVATE_DEFAULT_DENY",
+    "NO_SECRET_VALUE_IN_CORPUS_LEDGER",
+    "OVERLAP_IS_RELATION_NOT_DUPLICATED_BYTES",
+    "CONTENT_ADDRESS_BEFORE_PUBLICATION",
+    "ROLLBACK_MOVES_ACTIVE_GENERATION_POINTER_NOT_HISTORY",
+    "RafGitTools == EXECUTOR",
+    "CONVERSATIONS_CHUNKS_PRIVATE == PRIVATE_LIBRARY",
+    "Mapa == FEDERATED_CAMPUS_MAP"
+  ]
+}

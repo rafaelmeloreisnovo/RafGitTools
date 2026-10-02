@@ -1,0 +1,21 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"rafgittools.knowledge-campus-logistics.v1",
+  "title":"RafGitTools Knowledge Campus Logistics V1",
+  "type":"object",
+  "required":["schema","object_id","kind","source_ref","materialization_state","characteristics","relations","evidence_refs","gaps","routes"],
+  "properties":{
+    "schema":{"const":"rafgittools.knowledge-campus-logistics.v1"},
+    "object_id":{"type":"string","minLength":1},
+    "kind":{"enum":["CAMPUS","GYMNASIUM","BUILDING","STREET","SHELF","BOOK","SESSION","CHAPTER","CHUNK","COMPONENT","PROPERTY","FUNCTION","FORMULA","PARABLE","TOKEN","GAP","EVIDENCE"]},
+    "source_ref":{"type":"string","minLength":1},
+    "materialization_state":{"enum":["MATERIALIZED","REFERENCED","IMPLEMENTED_UNTESTED","NOT_RUN","PENDING","AUDIT","TOKEN_VAZIO"]},
+    "characteristics":{"type":"array","items":{"type":"object","required":["name","value","epistemic_state"],"properties":{"name":{"type":"string"},"value":{},"unit":{"type":["string","null"]},"epistemic_state":{"enum":["FACT","INFERENCE","HYPOTHESIS","DECISION","GAP"]}}}},
+    "relations":{"type":"array","items":{"type":"object","required":["type","target"],"properties":{"type":{"enum":["CONTAINS","PART_OF","DEPENDS_ON","IMPLEMENTS","DERIVES_FROM","CORRELATES_WITH","ANALOGOUS_TO","CONTRADICTS","SUPERSEDES","EVIDENCED_BY","BLOCKED_BY","NEXT","PREVIOUS"]},"target":{"type":"string"},"evidence_ref":{"type":["string","null"]}}}},
+    "evidence_refs":{"type":"array","items":{"type":"string"}},
+    "gaps":{"type":"array","items":{"type":"string"}},
+    "routes":{"type":"array","items":{"type":"string"}},
+    "hotness":{"type":"object","properties":{"tier":{"enum":["HOT","WARM","COLD","ARCHIVE"]},"access_count":{"type":"integer","minimum":0},"last_access":{"type":["string","null"]},"score":{"type":"number"}}}
+  },
+  "additionalProperties":true
+}

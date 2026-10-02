@@ -1,0 +1,60 @@
+{
+  "schema": "rafgittools.private-ci-baseline-evidence.v1",
+  "observed_at": "2026-09-29",
+  "target_repository": "rafaelmeloreisnovo/Rafaelia_Private",
+  "target_pr": 266,
+  "observation_scope": "GitHub Actions PR-triggered runs for private manifest branch",
+  "runs": [
+    {
+      "run_id": 36572931546,
+      "workflow": "documentation-std-mil",
+      "run_conclusion": "failure",
+      "jobs": [
+        {
+          "job_id": 109421141876,
+          "name": "audit",
+          "conclusion": "failure",
+          "steps_observed": []
+        }
+      ],
+      "log_readback": "NOT_FOUND_BLOB_404"
+    },
+    {
+      "run_id": 36572931655,
+      "workflow": "Current RAFAELIA Program Governance V1",
+      "run_conclusion": "failure",
+      "jobs": [
+        {
+          "job_id": 109421144223,
+          "name": "governance-contract",
+          "conclusion": "failure",
+          "steps_observed": []
+        }
+      ],
+      "log_readback": "NOT_FOUND_BLOB_404"
+    },
+    {
+      "run_id": 36572931453,
+      "workflow": "Rafaelia Core CI",
+      "run_conclusion": "failure",
+      "sampled_jobs": [
+        {
+          "job_id": 109421141841,
+          "name": "Release Build",
+          "conclusion": "failure",
+          "steps_observed": []
+        }
+      ],
+      "sampled_log_readback": "NOT_FOUND_BLOB_404"
+    }
+  ],
+  "interpretation": {
+    "workflow_run_failure_observed": true,
+    "executed_step_failure_proven": false,
+    "source_code_test_failure_proven": false,
+    "recoverable_job_log_proven": false,
+    "state": "RUN_FAILURE_WITHOUT_RECOVERABLE_STEP_LOG"
+  },
+  "relation_to_bridge": "Motivates external exact-SHA replay but does not itself prove the cause of private Actions failure.",
+  "claim_allowed": false
+}

@@ -1,7 +1,20 @@
 #!/bin/sh
 set -eu
 
-binary=${1:-build/host/rafcode-federation}
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+module_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
+
+binary=${1:-"$module_dir/build/host/rafcode-federation"}
+case "$binary" in
+    /*) ;;
+    *)
+        if test ! -f "$binary"; then
+            binary="$module_dir/$binary"
+        fi
+        ;;
+esac
+
+test -x "$binary"
 scratch=$(mktemp -d)
 trap 'rm -rf "$scratch"' EXIT HUP INT TERM
 

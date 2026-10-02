@@ -1,0 +1,48 @@
+{
+  "schema": "rafgittools.private-ci-execution-registry.v1",
+  "version": "1.0.0",
+  "authority": "rafaelmeloreisnovo/RafGitTools",
+  "federated_method_authority": "rafaelmeloreisnovo/Mapa",
+  "secret_reference": "PAT_ACTIONS",
+  "secret_value_persisted": false,
+  "execution_model": "step_scoped_provider_secret_then_secretless_network_namespaced_subprocess",
+  "claim_allowed": false,
+  "targets": [
+    {
+      "target_id": "rafaelia-private",
+      "repository": "rafaelmeloreisnovo/Rafaelia_Private",
+      "visibility": "private",
+      "manifest_path": ".rafaelia/private-ci/manifest.v1.json",
+      "allowed_workflow_ids": [
+        "documentation-std-mil",
+        "current-rafaelia-program-governance-v1",
+        "freestanding-l0-v1",
+        "hd-cache-phase1",
+        "hd-cache-phase2"
+      ],
+      "allowed_executables": [
+        "python3",
+        "make"
+      ],
+      "state": "IMPLEMENTED_UNTESTED_NETWORK_ISOLATION_V2"
+    }
+  ],
+  "invariants": [
+    "PRIVATE_REPOSITORY_SOURCE != PUBLIC_ARTIFACT",
+    "PROVIDER_SECRET_SCOPE == ACCESS_STEPS_ONLY",
+    "PRIVATE_SUBPROCESS_ENV_HAS_NO_PROVIDER_SECRET",
+    "PRIVATE_STDOUT_STDERR_CONTENT != PUBLIC_RECEIPT",
+    "PUBLIC_RECEIPT == HASHES_AND_STATES_ONLY",
+    "TARGET_COMMIT == EXACT_40_HEX_SHA",
+    "WORKFLOW_ID == PUBLIC_ALLOWLIST AND PRIVATE_MANIFEST",
+    "SHELL_EXECUTION == false",
+    "ZIPRAF_CONTAINER != ENCRYPTION",
+    "TOKEN_VAZIO != PASS",
+    "CLAIM_ALLOWED == false",
+    "NETWORK_EGRESS_PROBE_REQUIRED_BEFORE_PRIVATE_STEP",
+    "NETWORK_ISOLATION_FAILURE == FAIL_CLOSED",
+    "NETWORK_EGRESS_ISOLATION_METHOD IN {LINUX_USER_NAMESPACE_PLUS_NETWORK_NAMESPACE,LINUX_ROOT_NETNS_DROP_TO_CALLER_NO_NEW_PRIVS}",
+    "PRIVILEGED_NETNS_FALLBACK_DROPS_UID_GID_AND_SETS_NO_NEW_PRIVS_BEFORE_PRIVATE_EXECUTION",
+    "NETWORK_ISOLATION_BACKEND_MUST_PASS_LIVE_EGRESS_PROBE_BEFORE_PRIVATE_STEP"
+  ]
+}

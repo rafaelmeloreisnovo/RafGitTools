@@ -1,0 +1,40 @@
+{
+  "schema": "rafgittools.repository-source-microscope/v1",
+  "version": "1.0.0",
+  "claim_allowed": false,
+  "github_api_base": "https://api.github.com",
+  "auth": {
+    "secret_reference": "PAT_ACTIONS",
+    "no_fallback": true,
+    "operation": "EXACT_SHA_READ_ONLY_SOURCE_MICROSCOPE"
+  },
+  "repositories": [
+    {"repository": "rafaelmeloreisnovo/papers", "role": "RESEARCH_SYNTHESIS_AND_EXECUTABLE_ANALYSIS", "authority_pointer": "Mapa:docs/RELATION_CALCULUS_CROSS_REPO_ROUTE.md"},
+    {"repository": "rafaelmeloreisnovo/Matem-tica-", "role": "FORMAL_MATH_AND_VERIFIERS", "authority_pointer": "Mapa:docs/RELATION_CALCULUS_CROSS_REPO_ROUTE.md"},
+    {"repository": "rafaelmeloreisnovo/teoremas", "role": "THEOREM_SOURCE_COLLECTION", "authority_pointer": "TOKEN_VAZIO_EXACT_ROLE_REVIEW"},
+    {"repository": "rafaelmeloreisnovo/TeoremasTesesTeorias", "role": "THEOREM_THESIS_THEORY_SOURCE_COLLECTION", "authority_pointer": "TOKEN_VAZIO_EXACT_ROLE_REVIEW"},
+    {"repository": "rafaelmeloreisnovo/ChipQuantum", "role": "EXECUTABLE_MATHEMATICAL_WITNESSES_AND_TESTS", "authority_pointer": "Mapa:docs/RELATION_CALCULUS_CROSS_REPO_ROUTE.md"},
+    {"repository": "rafaelmeloreisnovo/Clima", "role": "CLIMATE_MODEL_SOURCE", "authority_pointer": "Mapa:navigation/INDEX.md"},
+    {"repository": "rafaelmeloreisnovo/Cosmos", "role": "COSMOS_MODEL_SOURCE", "authority_pointer": "Mapa:navigation/INDEX.md"},
+    {"repository": "rafaelmeloreisnovo/RafGitTools", "role": "CONTROL_PLANE_EXECUTOR", "authority_pointer": "RafGitTools:AGENTS.md"},
+    {"repository": "instituto-Rafael/relativity-living-light", "role": "RLL_SCIENTIFIC_INTEGRATION", "authority_pointer": "Mapa:docs/RELATION_CALCULUS_CROSS_REPO_ROUTE.md"}
+  ],
+  "scan": {
+    "max_blob_bytes_default": 524288,
+    "max_files_default": 250,
+    "code_extensions": [".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".py", ".rs", ".go", ".java", ".kt", ".kts", ".js", ".jsx", ".ts", ".tsx", ".sh", ".bash", ".s", ".asm", ".sql", ".lua", ".swift", ".pl", ".php", ".vb", ".vbs", ".pas", ".f", ".f90", ".r", ".jl", ".zig", ".nim", ".gradle", ".cmake"],
+    "document_extensions": [".md", ".rst", ".txt", ".adoc"],
+    "contract_extensions": [".json", ".jsonl", ".yaml", ".yml", ".toml"],
+    "test_markers": ["/test/", "/tests/", "test_", "_test.", "verify_", "validate_"],
+    "workflow_markers": [".github/workflows/", "scripts/build", "tools/build"]
+  },
+  "invariants": [
+    "EXACT_COMMIT_REQUIRED",
+    "SOURCE_CODE_PRECEDES_DOCUMENTARY_INFERENCE",
+    "DOCUMENTATION_IS_COMPASS_NOT_RUNTIME_PROOF",
+    "TARGET_REPOSITORY_READ_ONLY",
+    "PAT_ACTIONS_VALUE_NEVER_PRINTED_OR_PERSISTED",
+    "TOKEN_VAZIO != PASS",
+    "SOURCE != EXECUTION != EVIDENCE != CLAIM"
+  ]
+}

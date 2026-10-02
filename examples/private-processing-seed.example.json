@@ -1,0 +1,73 @@
+{
+  "schema": "rafgittools.private-processing-seed/v1",
+  "seed_id": "PPS-20260928-001",
+  "observed_at": "2026-09-28",
+  "architecture": {
+    "state": "DETERMINED",
+    "capability_ref": "configs/private-processing-capability.v1.json",
+    "route": [
+      "GOOGLE_DRIVE_NOVOEXPORT_ACTIVE",
+      "ANDROID_SAF_USER_SELECTION",
+      "CorpusIntakeGate",
+      "PrivateProcessingReceiptGateV1",
+      "PRIVATE_MEMORY_BRIDGE"
+    ]
+  },
+  "source": {
+    "id": "GOOGLE_DRIVE_NOVOEXPORT_ACTIVE",
+    "authority_alias": "GOOGLE_DRIVE_NOVOEXPORT_ACTIVE",
+    "state": "DETERMINED",
+    "sha256": "TOKEN_VAZIO",
+    "raw_mutated": false
+  },
+  "artifact": {
+    "id": "TOKEN_VAZIO",
+    "state": "NOT_RUN",
+    "destination_alias": "PRIVATE_MEMORY_BRIDGE",
+    "output_sha256": "TOKEN_VAZIO"
+  },
+  "execution": {
+    "state": "NOT_RUN",
+    "execution_id": "TOKEN_VAZIO",
+    "device_ref": "TOKEN_VAZIO",
+    "processor_ref": "RmrCtiFullMemberStreamV1",
+    "processor_sha256": "TOKEN_VAZIO"
+  },
+  "evidence": {
+    "state": "TOKEN_VAZIO",
+    "receipt_id": "TOKEN_VAZIO",
+    "receipt_sha256": "TOKEN_VAZIO"
+  },
+  "claim": {
+    "state": "BLOCKED",
+    "claim_allowed": false,
+    "reason": "Architecture is determined, but physical execution and evidence are not established."
+  },
+  "gaps": [
+    {
+      "id": "G-PPS-001",
+      "field": "source.sha256",
+      "state": "TOKEN_VAZIO",
+      "reason": "No selected source object has been physically read in this seed.",
+      "promotion_condition": "Run one explicit Android SAF selection and bind the full selected-stream SHA-256."
+    },
+    {
+      "id": "G-PPS-002",
+      "field": "execution.execution_id",
+      "state": "NOT_RUN",
+      "reason": "No physical device end-to-end execution is recorded for this seed.",
+      "promotion_condition": "Execute the bounded private-processing route on device and record the execution identity."
+    },
+    {
+      "id": "G-PPS-003",
+      "field": "evidence.receipt_id",
+      "state": "TOKEN_VAZIO",
+      "reason": "No end-to-end receipt exists before a physical run.",
+      "promotion_condition": "Create and verify a sanitized activity receipt bound to source, processor, execution and output hashes."
+    }
+  ],
+  "next": {
+    "action": "Run the dependency-free seed validator, then perform one explicit Android Drive selection without promoting any claim.",
+    "gate": "PHYSICAL_DEVICE_END_TO_END"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "schema": "rafgittools.android-conversation-manifold/v1",
+  "status": "SPEC_MATERIALIZED",
+  "claim_allowed": false,
+  "execution": "NOT_RUN",
+  "evidence": "TOKEN_VAZIO",
+  "user_route": "RAF GIT TOOLS APK -> ANDROID SAF DRIVE/NOVOexport READ_ONLY -> RESUMABLE ON_DEVICE NAVIGATOR -> PRIVATE CONVERSATIONS_CHUNKS_PRIVATE",
+  "measured_source_size_bytes": "TOKEN_VAZIO",
+  "user_reported_scope_bytes": 25000000000,
+  "raw_corpus_upload_to_public_repo": false,
+  "mobile_integration": {
+    "app_screen": "TOKEN_VAZIO",
+    "recursive_saf_inventory": "TOKEN_VAZIO",
+    "persistent_checkpoints": "TOKEN_VAZIO",
+    "in_app_sqlite_fts_typed_graph": "TOKEN_VAZIO",
+    "private_publication_via_rafgitfs": "TOKEN_VAZIO",
+    "device_e2e": "NOT_RUN"
+  },
+  "milestones": [
+    "M0_CONTRACT_TESTS",
+    "M1_ANDROID_DISCOVERY",
+    "M2_BOUNDED_NAVIGATOR",
+    "M3_PRIVATE_PUBLICATION",
+    "M4_DEVICE_CANARY",
+    "M5_SMALL_PRIVATE_BATCH",
+    "M6_FULL_RECONCILIATION"
+  ],
+  "authorities": {
+    "source": "GOOGLE_DRIVE_NOVOEXPORT_READ_ONLY",
+    "implementation": "rafaelmeloreisnovo/RafGitTools",
+    "private_derived_destination": "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE"
+  },
+  "next": "implement M0/M1 in RafGitTools; do not begin a full corpus run before a physical-device canary passes"
+}

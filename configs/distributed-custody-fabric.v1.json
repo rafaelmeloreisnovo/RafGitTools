@@ -1,0 +1,171 @@
+{
+  "schema": "rafaelia.distributed-custody-fabric/v1",
+  "status": "IMPLEMENTED_UNTESTED",
+  "control_repository": "rafaelmeloreisnovo/RafGitTools",
+  "purpose": "Bind transient edge processing to independently auditable Git/GitHub, Google Drive documentary custody, and execution-evidence planes while keeping restricted reconstruction material outside public/shared records.",
+  "invariants": [
+    "SOURCE!=ARTIFACT",
+    "ARTIFACT!=EXECUTION",
+    "EXECUTION!=EVIDENCE",
+    "EVIDENCE!=CLAIM",
+    "TOKEN_VAZIO!=0",
+    "IMPLEMENTED_UNTESTED!=PASS",
+    "RELATIONSHIP!=AUTHORITY_MERGE",
+    "EDGE_BUFFER!=AUTHORITATIVE_STORAGE",
+    "NO_SINGLE_EXTERNAL_PLANE_RECONSTRUCTS_RESTRICTED_STATE",
+    "SECRET_MATERIAL_NEVER_ENTERS_GIT_DRIVE_OR_RECEIPT_LOGS",
+    "CORRECTION=SUCCESSOR_NOT_SILENT_OVERWRITE"
+  ],
+  "edge": {
+    "role": "transient-buffer-and-bounded-executor",
+    "expected_surfaces": [
+      "Android/RafGitTools",
+      "Termux/RAFCODEPHI",
+      "device-local bounded worker"
+    ],
+    "authoritative_persistence": false,
+    "durable_output_rule": "persist only typed refs, digests, receipts and explicitly authorized artifacts to the persistent planes",
+    "offline_first": true
+  },
+  "persistent_planes": {
+    "source_control": {
+      "authority": "repository-local implementation and version lineage",
+      "surfaces": [
+        "Git commit/tree/blob",
+        "branch/PR/patch",
+        "GitHub Actions run/job/artifact references"
+      ],
+      "minimum_record": [
+        "repository",
+        "commit_sha",
+        "path_or_patch_ref",
+        "parent_ref",
+        "content_digest",
+        "rollback_ref"
+      ]
+    },
+    "documentary_custody": {
+      "authority": "documentary memory, indexes, manifests, receipts and cross-plane routing",
+      "surfaces": [
+        "Google Drive",
+        "NOVOexport",
+        "CURRENT_STATE/START HERE/ledger pointers"
+      ],
+      "minimum_record": [
+        "object_id",
+        "source_ref",
+        "parent_ref",
+        "content_digest",
+        "execution_ref",
+        "evidence_ref",
+        "gap",
+        "next",
+        "rollback_ref"
+      ]
+    },
+    "execution_evidence": {
+      "authority": "observed execution and runtime evidence only within declared scope",
+      "surfaces": [
+        "local bounded execution",
+        "private/public CI as authorized",
+        "device/runtime receipts"
+      ],
+      "minimum_record": [
+        "execution_id",
+        "source_commit_or_artifact_digest",
+        "environment_ref",
+        "started_at",
+        "finished_at",
+        "exit_state",
+        "output_digest",
+        "receipt_ref"
+      ]
+    }
+  },
+  "restricted_fragment": {
+    "role": "closed reconstruction/key-binding fragment",
+    "materialize_in_repository": false,
+    "materialize_in_drive_documentation": false,
+    "materialize_in_logs": false,
+    "external_projection_only": [
+      "key_slot_ref",
+      "commitment_digest",
+      "context_digest",
+      "generation_or_version"
+    ],
+    "allowed_secret_storage": [
+      "platform secure keystore or equivalent authorized secret store",
+      "offline owner-controlled secret domain"
+    ],
+    "encryption_algorithm": "TOKEN_VAZIO_UNTIL_IMPLEMENTED_AND_REVIEWED",
+    "signature_algorithm": "TOKEN_VAZIO_UNTIL_IMPLEMENTED_AND_REVIEWED",
+    "key_rotation_policy": "TOKEN_VAZIO_UNTIL_AUTHORITY_AND_RECOVERY_RULES_ARE_BOUND"
+  },
+  "cross_plane_envelope": {
+    "id": "CUSTODY_ENVELOPE_V1",
+    "fields": [
+      "event_id",
+      "timestamp",
+      "producer",
+      "source_ref",
+      "parent_ref",
+      "patch_or_delta_ref",
+      "before_digest",
+      "after_digest",
+      "drive_receipt_ref",
+      "execution_ref",
+      "evidence_ref",
+      "key_slot_ref",
+      "commitment_digest",
+      "privacy_class",
+      "authority",
+      "state",
+      "gap",
+      "rollback_ref",
+      "successor_ref"
+    ],
+    "digest_policy": "SHA-256 minimum for cross-plane identity; stronger/alternate digests may be additive but cannot replace an existing recorded digest without a successor record",
+    "secret_fields_allowed": false
+  },
+  "reconstruction": {
+    "protected_state_requires": [
+      "source_control lineage",
+      "documentary_custody linkage",
+      "execution/evidence linkage when a runtime claim is involved",
+      "authorized restricted_fragment resolution"
+    ],
+    "single_plane_reconstruction": false,
+    "missing_required_plane_state": "TOKEN_VAZIO_OR_BLOCKED",
+    "mismatch_state": "CONTRADICTION",
+    "rule": "cross-plane reconstruction must verify exact refs and digests before claim promotion"
+  },
+  "privacy_by_design": {
+    "data_minimization": true,
+    "least_authority": true,
+    "purpose_binding_required": true,
+    "retention_rule_required_per_data_class": true,
+    "secret_redaction_required": true,
+    "public_receipt_must_be_sanitized": true,
+    "private_source_may_emit_only_minimum_verifiable_projection": true
+  },
+  "compliance_boundary": {
+    "claim": "architecture control target, not a legal compliance certification",
+    "required_controls": [
+      "access control",
+      "audit trail",
+      "purpose and authority binding",
+      "data minimization",
+      "retention/rollback",
+      "incident and contradiction recording",
+      "reproducible readback"
+    ],
+    "legal_basis_per_dataset": "TOKEN_VAZIO_UNTIL_DOCUMENTED_BY_AUTHORIZED_CONTROLLER"
+  },
+  "federation_binding": {
+    "member_registry": "configs/ecosystem-federation.v1.json",
+    "operational_state": "configs/ecosystem-operational-state.v2.json",
+    "operations_contract": "docs/federation/RAFAELIA_FEDERATED_OPERATIONS_V1.md",
+    "extension_rule": "a new repository joins only with exact repository identity, local authority source, custody role, rollback anchor and evidence boundary"
+  },
+  "claim_allowed": false
+}

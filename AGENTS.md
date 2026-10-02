@@ -133,3 +133,13 @@ Termux validation:
 - Do not replace ARM32 ASM with ARM64-only code.
 - Do not claim full APK build support inside Termux ARM32 without proof.
 - Do not convert an unresolved governance/data/privacy/security state into implicit success.
+
+
+### Federated session-agent dispatch
+
+For session-to-work routing, use `configs/session-agent-dispatch.v1.json` and
+`scripts/resolve_session_ai_work_packet.py`. Mapa remains the catalog and routing
+authority. The resolver is read-only, requires the pinned Mapa commit and Git blob,
+and fails closed on any mismatch. A resolved assignment is not agent execution or
+runtime evidence; preserve `claim_allowed=false` and `TOKEN_VAZIO` for unobserved
+results. Do not copy the Mapa role/packet catalog into RafGitTools.

@@ -1,0 +1,315 @@
+{
+  "schema": "rafgittools.knowledge-campus-logistics.v1",
+  "object_id": "GYM-MECHANICAL-POWERTRAIN-V1",
+  "kind": "GYMNASIUM",
+  "source_ref": "USER_CONCEPTUAL_DECOMPOSITION_2026-09-28",
+  "materialization_state": "IMPLEMENTED_UNTESTED",
+  "characteristics": [
+    {
+      "name": "purpose",
+      "value": "multi-scale mechanical decomposition and relation exercise",
+      "unit": null,
+      "epistemic_state": "DECISION"
+    },
+    {
+      "name": "operational_design_recipe",
+      "value": false,
+      "unit": null,
+      "epistemic_state": "DECISION"
+    },
+    {
+      "name": "hazardous_reactive_mix_ratios",
+      "value": "NOT_ENCODED",
+      "unit": null,
+      "epistemic_state": "DECISION"
+    }
+  ],
+  "relations": [
+    {
+      "type": "CONTAINS",
+      "target": "SYS-POWERTRAIN",
+      "evidence_ref": null
+    },
+    {
+      "type": "CONTAINS",
+      "target": "SYS-THERMAL-MANAGEMENT",
+      "evidence_ref": null
+    },
+    {
+      "type": "CONTAINS",
+      "target": "SYS-FORCED-INDUCTION",
+      "evidence_ref": null
+    },
+    {
+      "type": "CONTAINS",
+      "target": "SYS-FUEL-AIR-OXIDIZER",
+      "evidence_ref": null
+    },
+    {
+      "type": "CONTAINS",
+      "target": "SYS-BALANCE-TORQUE-VIBRATION",
+      "evidence_ref": null
+    }
+  ],
+  "evidence_refs": [],
+  "gaps": [
+    "EXACT_ENGINE_ARCHITECTURE",
+    "WATERMELON_TERM_IDENTITY",
+    "DOUBLAUER_TERM_IDENTITY",
+    "DIMENSIONAL_PARAMETERS",
+    "MATERIAL_PROPERTIES",
+    "THERMAL_LIMITS",
+    "SAFE_REACTIVE_MIX_BOUNDARIES",
+    "HYDRAULIC_LIFTER_VS_HYDROLOCK_DISAMBIGUATED",
+    "EXACT_VALVETRAIN_TOPOLOGY",
+    "BEARING_CLEARANCE_EVIDENCE",
+    "COMBUSTION_PRESSURE_EVIDENCE"
+  ],
+  "routes": [
+    "SYSTEM_TO_SUBSYSTEM",
+    "SUBSYSTEM_TO_COMPONENT",
+    "COMPONENT_TO_PROPERTY",
+    "PROPERTY_TO_FUNCTION",
+    "FUNCTION_TO_INTERACTION",
+    "INTERACTION_TO_EVIDENCE"
+  ],
+  "hotness": {
+    "tier": "WARM",
+    "access_count": 0,
+    "last_access": null,
+    "score": 0
+  },
+  "systems": {
+    "SYS-POWERTRAIN": {
+      "components": [
+        "ENGINE_BLOCK",
+        "CYLINDER_HEAD",
+        "CRANKSHAFT",
+        "MAIN_BEARING",
+        "CONNECTING_ROD_BEARING",
+        "PISTON",
+        "PISTON_PIN",
+        "COMPRESSION_RING",
+        "OIL_CONTROL_RING",
+        "CONNECTING_ROD",
+        "CAMSHAFT",
+        "CAM_LOBE",
+        "VALVE",
+        "VALVE_SPRING",
+        "VALVE_GUIDE",
+        "VALVE_SEAT",
+        "TIMING_DRIVE",
+        "FLYWHEEL"
+      ]
+    },
+    "SYS-LUBRICATION": {
+      "components": [
+        "OIL_PUMP",
+        "PICKUP",
+        "FILTER",
+        "GALLERY",
+        "MAIN_BEARING_OIL_FEED",
+        "ROD_BEARING_OIL_FEED",
+        "PISTON_COOLING_JET",
+        "SUMP",
+        "PRESSURE_RELIEF"
+      ]
+    },
+    "SYS-THERMAL-MANAGEMENT": {
+      "components": [
+        "COOLANT_PASSAGES",
+        "WATER_PUMP",
+        "THERMOSTAT",
+        "RADIATOR",
+        "OIL_COOLER",
+        "INTERCOOLER",
+        "FUEL_TEMPERATURE_CONDITIONING",
+        "PISTON_CROWN_HEAT_PATH",
+        "CYLINDER_WALL_HEAT_PATH"
+      ]
+    },
+    "SYS-FORCED-INDUCTION": {
+      "components": [
+        "TURBOCHARGER",
+        "SUPERCHARGER",
+        "TWINCHARGING_CANDIDATE",
+        "COMPRESSOR",
+        "TURBINE",
+        "WASTEGATE",
+        "BYPASS",
+        "CHARGE_COOLING",
+        "INTAKE_MANIFOLD"
+      ]
+    },
+    "SYS-FUEL-AIR-OXIDIZER": {
+      "components": [
+        "FUEL_PUMP",
+        "INJECTOR",
+        "FUEL_RAIL",
+        "FUEL_TEMPERATURE_SENSOR",
+        "AIR_PATH",
+        "THROTTLE",
+        "OXYGEN_FRACTION_REFERENCE",
+        "HYDROGEN_CANDIDATE",
+        "OXYGEN_ENRICHMENT_CANDIDATE",
+        "NITROUS_OXIDE_CANDIDATE",
+        "WATER_METHANOL_INJECTION_CANDIDATE"
+      ],
+      "safety_boundary": "Conceptual relation nodes only; no reactive-gas or oxidizer mixing ratios, pressure recipes, ignition procedures or tuning instructions are encoded."
+    },
+    "SYS-GEOMETRY": {
+      "components": [
+        "BORE",
+        "STROKE",
+        "ROD_LENGTH",
+        "COMPRESSION_HEIGHT",
+        "PISTON_CROWN",
+        "DECK_CLEARANCE",
+        "COMBUSTION_CHAMBER",
+        "VALVE_AREA"
+      ],
+      "candidate_relation": "WIDER_BORE_SHORTER_STROKE"
+    },
+    "SYS-BALANCE-TORQUE-VIBRATION": {
+      "components": [
+        "PRIMARY_BALANCE",
+        "SECONDARY_BALANCE",
+        "TORSIONAL_VIBRATION",
+        "COUNTERWEIGHT",
+        "BALANCE_SHAFT",
+        "COUNTER_ROTATING_SHAFT_CANDIDATE",
+        "ROTATIONAL_INERTIA",
+        "REACTION_TORQUE"
+      ]
+    },
+    "SYS-CRANKTRAIN": {
+      "components": [
+        "CRANKSHAFT_MAIN_JOURNAL",
+        "CRANKSHAFT_ROD_JOURNAL",
+        "MAIN_BEARING_SHELL",
+        "CONNECTING_ROD_BEARING_SHELL",
+        "THRUST_BEARING",
+        "COUNTERWEIGHT",
+        "HARMONIC_DAMPER",
+        "FLYWHEEL",
+        "CONNECTING_ROD",
+        "WRIST_PIN",
+        "PISTON"
+      ],
+      "relations": [
+        "BEARING_FILM_SUPPORTS_JOURNAL",
+        "COUNTERWEIGHT_PARTICIPATES_IN_BALANCE",
+        "DAMPER_TARGETS_TORSIONAL_OSCILLATION"
+      ]
+    },
+    "SYS-PISTON-RING-PACK": {
+      "components": [
+        "PISTON_CROWN",
+        "RING_LAND",
+        "TOP_COMPRESSION_RING",
+        "SECOND_COMPRESSION_RING",
+        "OIL_CONTROL_RING",
+        "PISTON_SKIRT",
+        "WRIST_PIN_BOSS"
+      ],
+      "characteristics": [
+        "BORE",
+        "STROKE",
+        "COMPRESSION_HEIGHT",
+        "CROWN_GEOMETRY",
+        "RING_GAP_CANDIDATE",
+        "SKIRT_CLEARANCE_CANDIDATE"
+      ]
+    },
+    "SYS-VALVETRAIN": {
+      "components": [
+        "CAMSHAFT",
+        "CAM_LOBE",
+        "CAM_FOLLOWER",
+        "HYDRAULIC_LIFTER",
+        "MECHANICAL_LIFTER",
+        "PUSHROD_CANDIDATE",
+        "ROCKER_ARM",
+        "VALVE",
+        "VALVE_SPRING",
+        "RETAINER",
+        "KEEPER",
+        "VALVE_GUIDE",
+        "VALVE_SEAT",
+        "TIMING_CHAIN",
+        "TIMING_BELT_CANDIDATE",
+        "TIMING_GEAR_CANDIDATE"
+      ],
+      "boundary": "Architecture-dependent components remain candidates until the exact engine topology is bound."
+    },
+    "SYS-SEALING-BREATHING": {
+      "components": [
+        "HEAD_GASKET",
+        "CRANK_SEAL",
+        "CAM_SEAL",
+        "VALVE_STEM_SEAL",
+        "PISTON_RING_SEALING",
+        "BLOW_BY",
+        "CRANKCASE_PRESSURE",
+        "PCV_SYSTEM"
+      ]
+    },
+    "SYS-EXHAUST": {
+      "components": [
+        "EXHAUST_PORT",
+        "EXHAUST_MANIFOLD",
+        "TURBINE_INLET_CANDIDATE",
+        "DOWNPIPE_CANDIDATE",
+        "BACKPRESSURE",
+        "PULSE_ENERGY"
+      ]
+    },
+    "SYS-COMBUSTION-RISK": {
+      "components": [
+        "KNOCK",
+        "PREIGNITION",
+        "DETONATION_TERM_ALIAS",
+        "PEAK_CYLINDER_PRESSURE",
+        "EXHAUST_GAS_TEMPERATURE",
+        "CHARGE_TEMPERATURE",
+        "HYDROLOCK_RISK"
+      ],
+      "boundary": "Risk/state nodes only; no ignition, pressure, reactive-mixture or tuning setpoints."
+    },
+    "SYS-FLUID-FILM": {
+      "components": [
+        "HYDRODYNAMIC_BEARING_FILM",
+        "OIL_VISCOSITY",
+        "OIL_TEMPERATURE",
+        "CLEARANCE_CANDIDATE",
+        "SUPPLY_PRESSURE",
+        "CAVITATION_RISK"
+      ],
+      "boundary": "No build clearances or pressure setpoints are asserted without exact engine/material evidence."
+    },
+    "SYS-FORCED-INDUCTION-DYNAMICS": {
+      "components": [
+        "COMPRESSOR_MAP_REFERENCE",
+        "SURGE_RISK",
+        "CHOKE_RISK",
+        "BOOST_PRESSURE_STATE",
+        "PRESSURE_RATIO",
+        "INTERCOOLER_EFFECTIVENESS",
+        "BYPASS_CONTROL",
+        "WASTEGATE_CONTROL"
+      ],
+      "boundary": "Relations and observables only; no boost/tuning recipe."
+    }
+  },
+  "relation_rules": [
+    "PART_DIMENSION != PERFORMANCE_CLAIM",
+    "COUNTER_ROTATION != AUTOMATIC_ZERO_TORQUE",
+    "BOOST != SAFE_POWER_GAIN",
+    "OXIDIZER_NODE != MIXTURE_RECIPE",
+    "THERMAL_CONDITIONING != SAFE_TEMPERATURE_SETPOINT",
+    "ANALOGY != FACT",
+    "HYDRAULIC_LIFTER != HYDROLOCK_RISK",
+    "BEARING_FILM_NODE != CLEARANCE_RECIPE",
+    "KNOCK_RISK_NODE != IGNITION_RECIPE"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schema": "RAFAELIA_SESSION_AI_WORK_DISPATCH_V1",
+  "claim_allowed": false,
+  "source_authority": {
+    "federated_router": "rafaelmeloreisnovo/Mapa",
+    "executor": "rafaelmeloreisnovo/RafGitTools"
+  },
+  "invariants": ["AGENT_ASSIGNMENT != AGENT_EXECUTION"],
+  "agent_roles": [
+    {
+      "id": "AI02_CONTROL_EXECUTOR",
+      "locality": "GitHub/RafGitTools",
+      "owner": "rafaelmeloreisnovo/RafGitTools",
+      "mission": "Convert an authorized packet to a bounded local gate.",
+      "source_min": ["AGENTS.md"],
+      "outputs": ["gate", "receipt"],
+      "execution_target": "repository-local named gate",
+      "evidence_rule": "exact-head gate only"
+    }
+  ],
+  "session_packets": [
+    {
+      "id": "SP08_SESSION_TO_WORK_PACKETS",
+      "authority": "Mapa routing; local executor",
+      "source_min": ["AGENTS.md"],
+      "execution_target": "local resolver",
+      "evidence_rule": "structural only",
+      "agents": ["AI02_CONTROL_EXECUTOR"],
+      "claim_allowed": false
+    },
+    {
+      "id": "SP01_TEMPLO_VISUAL_PRIVACY",
+      "authority": "Mapa routing; producer owner",
+      "source_min": ["producer source"],
+      "execution_target": "producer gate",
+      "evidence_rule": "producer receipt required",
+      "agents": ["AI02_CONTROL_EXECUTOR"],
+      "claim_allowed": false
+    }
+  ]
+}

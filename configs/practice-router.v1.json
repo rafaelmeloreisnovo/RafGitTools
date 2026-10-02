@@ -10,14 +10,27 @@
   },
   "comment_contract": {
     "use_when": "a public API, boundary, adapter, parser, executor or evidence-producing function is otherwise ambiguous",
-    "fields": ["ROLE","AUTHORITY","INPUT","OUTPUT","INVARIANT","EVIDENCE","FAIL_CLOSED","SEE"],
+    "fields": [
+      "ROLE",
+      "AUTHORITY",
+      "INPUT",
+      "OUTPUT",
+      "INVARIANT",
+      "EVIDENCE",
+      "FAIL_CLOSED",
+      "SEE"
+    ],
     "avoid": "syntax narration, speculative claims, copied corpus, secrets"
   },
   "routes": [
     {
       "id": "android-build-runtime",
       "atlas_area": "A08_ANDROID_TOOLCHAIN",
-      "source_min": ["AGENTS.md","docs/BUILD.md","docs/RAFGITTOOLS_CURRENT_STATE.md"],
+      "source_min": [
+        "AGENTS.md",
+        "docs/BUILD.md",
+        "docs/RAFGITTOOLS_CURRENT_STATE.md"
+      ],
       "execution_target": "./scripts/gradlew_with_java17.sh assembleDevDebug",
       "evidence": "exact-head build artifact; device install/launch is a separate gate",
       "next": "bind ABI/environment and run the smallest applicable build/runtime gate"
@@ -25,7 +38,11 @@
     {
       "id": "control-governance",
       "atlas_area": "A01_CONTROL_ROUTING",
-      "source_min": ["AGENTS.md","configs/agent-entry-kernel.v1.json","configs/workflow-master-index.json"],
+      "source_min": [
+        "AGENTS.md",
+        "configs/agent-entry-kernel.v1.json",
+        "configs/workflow-master-index.json"
+      ],
       "execution_target": "sh scripts/validate_rafaelia_workflow.sh",
       "evidence": "structural control-plane validation only",
       "next": "bind producer route before cross-repository mutation"
@@ -33,7 +50,11 @@
     {
       "id": "receipt-evidence",
       "atlas_area": "A11_EVIDENCE_GOVERNANCE",
-      "source_min": ["AGENTS.md","scripts/rafaelia_receipt_validator.py","docs/LIVE_CONTROL_PLANE_RECONCILIATION.md"],
+      "source_min": [
+        "AGENTS.md",
+        "scripts/rafaelia_receipt_validator.py",
+        "docs/LIVE_CONTROL_PLANE_RECONCILIATION.md"
+      ],
       "execution_target": "python3 scripts/rafaelia_receipt_validator.py",
       "evidence": "receipt structure/lineage within validator scope",
       "next": "keep runtime/scientific/device promotion separate"
@@ -41,7 +62,11 @@
     {
       "id": "zipraf-inspection",
       "atlas_area": "A04_ZIPRAF_BIT_LAYER",
-      "source_min": ["AGENTS.md","docs/INDEX.md","rafaelia/omega_hybrid/tests/test_raf_omega.c"],
+      "source_min": [
+        "AGENTS.md",
+        "docs/INDEX.md",
+        "rafaelia/omega_hybrid/tests/test_raf_omega.c"
+      ],
       "execution_target": "read-only inspector/debug route",
       "evidence": "adapter behavior; RafPolimata remains math/spec/ABI authority",
       "next": "consume canonical deterministic vectors instead of redefining the format"
@@ -49,7 +74,11 @@
     {
       "id": "spiral-formula-route",
       "atlas_area": "A05_SPIRAL_SQRT3_OVER_2",
-      "source_min": ["AGENTS.md","docs/INDEX.md","_incoming/rafaelia_orchestrator.c"],
+      "source_min": [
+        "AGENTS.md",
+        "docs/INDEX.md",
+        "_incoming/rafaelia_orchestrator.c"
+      ],
       "execution_target": "TOKEN_VAZIO_LOCAL_PRODUCER",
       "evidence": "RafGitTools must not promote formula truth from an incoming copy",
       "next": "route to Mapa/RafPolimata producer and bind exact implementation"
@@ -57,7 +86,11 @@
     {
       "id": "freestanding-low-level",
       "atlas_area": "A09_FREESTANDING_LOW_LEVEL",
-      "source_min": ["AGENTS.md","CODEX_ARM32_TERMUX_MANDATE.md","docs/BUILD.md"],
+      "source_min": [
+        "AGENTS.md",
+        "CODEX_ARM32_TERMUX_MANDATE.md",
+        "docs/BUILD.md"
+      ],
       "execution_target": "route to RafPolimata freestanding authority when the task is L0/compiler-contract work",
       "evidence": "local Android/native adapter evidence only unless producer gate is bound",
       "next": "do not duplicate freestanding authority in RafGitTools"
@@ -65,7 +98,11 @@
     {
       "id": "crypto-provenance",
       "atlas_area": "A10_CRYPTO_PROVENANCE",
-      "source_min": ["AGENTS.md","docs/INDEX.md","ECOSYSTEM_RUNTIME_STATE.json"],
+      "source_min": [
+        "AGENTS.md",
+        "docs/INDEX.md",
+        "ECOSYSTEM_RUNTIME_STATE.json"
+      ],
       "execution_target": "exact upstream/fork/ref comparison route",
       "evidence": "identity/provenance evidence is not a security-superiority claim",
       "next": "freeze execution_id and bind toolchain/dependency digests"
@@ -73,10 +110,26 @@
     {
       "id": "docs-contribution",
       "atlas_area": "A12_DOC_NAVIGATION",
-      "source_min": ["AGENTS.md","CONTRIBUTING.md","docs/INDEX.md"],
+      "source_min": [
+        "AGENTS.md",
+        "CONTRIBUTING.md",
+        "docs/INDEX.md"
+      ],
       "execution_target": "python3 scripts/validate_practice_router.py configs/practice-router.v1.json",
       "evidence": "navigation/router structure only",
       "next": "add typed pointers; never copy large source blocks into navigation"
+    },
+    {
+      "id": "session-ai-dispatch",
+      "atlas_area": "A12_DOC_NAVIGATION",
+      "source_min": [
+        "AGENTS.md",
+        "configs/session-agent-dispatch.v1.json",
+        "Mapa@21c2f9aefab86cd31b8ea7da22533452690fd087:data/control-plane/SESSION_AI_WORK_DISPATCH_V1.json#c1d1d8f1692c74957f8b70968fa863f855d93cb0"
+      ],
+      "execution_target": "python3 scripts/resolve_session_ai_work_packet.py --mapa-checkout <MAPA_CHECKOUT> --packet SP08_SESSION_TO_WORK_PACKETS",
+      "evidence": "Mapa HEAD+Git blob+schema validated; structural route only; claim_allowed=false",
+      "next": "follow each selected role source_min and owner; run that owner's named gate and bind its exact receipt"
     }
   ]
 }

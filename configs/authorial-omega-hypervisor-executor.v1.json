@@ -1,0 +1,144 @@
+{
+  "schema": "rafgittools.authorial-omega-hypervisor-executor.v1",
+  "version": "1.0.0",
+  "state": "IMPLEMENTED_UNTESTED",
+  "claim_allowed": false,
+  "federated_authority": {
+    "repository": "rafaelmeloreisnovo/Mapa",
+    "pull_request": 717,
+    "commit": "3d54e8e36f1de787e1a815d899490a0fb7f0b326",
+    "manifest_path": "data/manifold/authorial_omega_hypervisor_federation_v1.json",
+    "manifest_blob_sha1": "5ec155d2e67fb7e6f46fb2589c6e32149d570091",
+    "manifold_ci_run": 36661939615,
+    "manifold_ci_state": "PASS",
+    "aggregate_ci_run": 36661939451,
+    "aggregate_ci_state": "PASS",
+    "promotion_state": "NOT_AUTHORIZED"
+  },
+  "local_authority": "rafaelmeloreisnovo/RafGitTools",
+  "implementation_origin": "USER_DIRECTED_NEW_IMPLEMENTATION_ASSISTANT_ORCHESTRATED",
+  "authorship_claim": "TOKEN_VAZIO_LEGAL_AUTHORSHIP_NOT_PROMOTED",
+  "inherited_code_imported": false,
+  "model_references_imported_as_code": false,
+  "invariants": [
+    "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "TOKEN_VAZIO != 0",
+    "IMPLEMENTED_UNTESTED != PASS",
+    "STRUCTURAL_MODEL_REFERENCE != CODE_INHERITANCE",
+    "EXTERNAL_PRIMITIVE != AUTHORIAL_IMPLEMENTATION",
+    "C08_REENTRY_REQUIRES_DYNAMIC_GATE_MASK"
+  ],
+  "state_ids": {
+    "C01_INTENT": 1,
+    "C02_AUTHORSHIP": 2,
+    "C03_GAPS": 3,
+    "C04_MOUNT": 4,
+    "C05_EXECUTE": 5,
+    "C06_VERIFY": 6,
+    "C07_CUSTODY": 7,
+    "C08_OMEGA": 8
+  },
+  "gate_bits": {
+    "INTENT": 1,
+    "SOURCE_IDENTITY": 2,
+    "AUTHORSHIP_BOUNDARY": 4,
+    "GAP_REGISTER": 8,
+    "RISK_REVIEW": 16,
+    "AUTHORITY": 32,
+    "MOUNT_POLICY": 64,
+    "RELATION_TYPE": 128,
+    "EXECUTION_TARGET": 256,
+    "ROLLBACK": 512,
+    "INPUT_IDENTITY": 1024,
+    "FALSIFIER": 2048,
+    "GATE_RESULT": 4096,
+    "RECEIPT": 8192,
+    "HASH_REF": 16384,
+    "EVIDENCE_REF": 32768,
+    "INTEGRITY": 65536,
+    "PROVENANCE": 131072,
+    "SEMANTIC_CONSISTENCY": 262144,
+    "REPOSITORY_HEADS": 524288,
+    "PROVIDER_REVISION": 1048576,
+    "HUMAN_CHECKPOINT": 2097152
+  },
+  "conditional_flags": {
+    "PROVIDER_USED": 1,
+    "PROMOTION_REQUESTED": 2
+  },
+  "authorial_payloads": [
+    {
+      "artifact_id": "RAF_BL0_V0",
+      "classification": "AUTHORIAL_PATH_PROVEN_IN_REPOSITORY_HISTORY",
+      "git_blob_sha1": "132f948d199f6679fcae4f33912e0a3ad69691a3",
+      "local_path": "rafaelia/raf_bl0.c",
+      "execution_binding": "IDENTITY_ONLY_V1",
+      "copied_into_state_engine": false
+    }
+  ],
+  "external_primitives": {
+    "policy": "official/upstream authority on uncertainty; never rebrand",
+    "examples": [
+      "compiler",
+      "linker",
+      "Git object model",
+      "operating system",
+      "Android platform",
+      "provider APIs",
+      "standard hashes"
+    ],
+    "code_import": false
+  },
+  "private_surfaces": {
+    "raw_private_payload_allowed": false,
+    "conversation_chain": "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE@7413469736bad11e4902b48da8daf6e850102bf7",
+    "custody": "rafaelmeloreisnovo/Rafaelia_Private@a71be795d20588472bcd7cc6ac4a086a7af628b5",
+    "public_output": "metadata/digest/state only"
+  },
+  "execution_contract": {
+    "core": "native/omega_hypervisor_v1",
+    "language": "freestanding C11",
+    "heap": false,
+    "libc": false,
+    "system_headers": false,
+    "syscalls": false,
+    "network": false,
+    "filesystem": false,
+    "floating_point": false,
+    "external_runtime_symbols": false,
+    "host_test_is_test_only": true
+  },
+  "gaps": [
+    {
+      "id": "OHX-G001",
+      "state": "IMPLEMENTED_UNTESTED",
+      "subject": "freestanding state engine",
+      "next": "host + ARMv7 + AArch64 source/object gates"
+    },
+    {
+      "id": "OHX-G002",
+      "state": "TOKEN_VAZIO",
+      "subject": "physical device runtime",
+      "next": "exact-artifact named-device receipt"
+    },
+    {
+      "id": "OHX-G003",
+      "state": "TOKEN_VAZIO",
+      "subject": "legal authorship classification of newly generated glue",
+      "next": "keep separate from proven RAF_BL0 authorship unless independently classified"
+    },
+    {
+      "id": "OHX-G004",
+      "state": "PENDING",
+      "subject": "Mapa PR717 promotion",
+      "next": "keep exact-head pin; no merge assumption"
+    },
+    {
+      "id": "OHX-G005",
+      "state": "TOKEN_VAZIO",
+      "subject": "provider surfaces Gmail/Calendar/Library runtime binding",
+      "next": "activate only per authorized work packet"
+    }
+  ],
+  "F_next": "Run canonical START exact-head gates including host/ARMv7/AArch64 hypervisor core; preserve physical/provider/authorship gaps."
+}

@@ -70,6 +70,26 @@
             </intent-filter>
         </activity>
 
+        <!-- Bounded one-button WorkGroup control surface. Kept as an isolated launcher
+             so it cannot silently bypass the existing MainActivity navigation/governance. -->
+        <activity
+            android:name=".ExecutionGateActivity"
+            android:exported="true"
+            android:label="Raf Convoy"
+            android:theme="@style/Theme.RafGitTools"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="rafgittools" android:host="convoy" />
+            </intent-filter>
+        </activity>
+
         <!-- Read-only GitHub virtual storage surface. Separate launcher entry keeps
              Prompt 4 independent from the existing MainActivity navigation graph. -->
         <activity
@@ -101,6 +121,26 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Clear post-install configuration wizard. No privileged operation is executed
+             merely by recording a wizard choice; provider mutations keep their own gates. -->
+        <activity
+            android:name=".SetupWizardActivity"
+            android:exported="true"
+            android:label="Raf Setup"
+            android:theme="@style/Theme.RafGitTools"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="rafgittools" android:host="setup" />
             </intent-filter>
         </activity>
 

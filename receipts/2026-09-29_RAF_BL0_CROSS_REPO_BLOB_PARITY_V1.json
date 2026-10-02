@@ -1,0 +1,76 @@
+{
+  "schema": "rafgittools.raf-bl0-cross-repo-blob-parity/v1",
+  "observed_at": "2026-09-29",
+  "scope": "PR_HEAD_GIT_BLOB_IDENTITY_ONLY",
+  "status": "PASS_SAME_GIT_BLOB_AT_PINNED_REFS",
+  "claim_allowed": false,
+  "canonical_git_blob_sha1": "132f948d199f6679fcae4f33912e0a3ad69691a3",
+  "interpretation": "All eight listed paths resolve to the same Git blob object ID at the pinned pull-request head SHAs. This establishes byte-identity in Git object storage for this bounded scope; it does not establish runtime equivalence, physical execution, performance parity, authorship priority, or independent implementation.",
+  "copies": 8,
+  "repositories": 7,
+  "observations": [
+    {
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "pr": 561,
+      "head_sha": "26e533061d1486c53e8c513f1ef35bb421d6da07",
+      "path": "rafaelia/raf_bl0.c",
+      "blob_sha": "132f948d199f6679fcae4f33912e0a3ad69691a3"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "pr": 470,
+      "head_sha": "001eb5442e8650602def1e040ef8180688c3ec67",
+      "path": "rmr/Rrr/raf_bl0.c",
+      "blob_sha": "132f948d199f6679fcae4f33912e0a3ad69691a3"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "pr": 1149,
+      "head_sha": "047aad0ab2ab6aa22bcfc957bff5d6d6e6999b4b",
+      "path": "engine/rmr/raf_bl0.c",
+      "blob_sha": "132f948d199f6679fcae4f33912e0a3ad69691a3"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Rafaelia_Private",
+      "pr": 262,
+      "head_sha": "610dbcfefde467b402219b7c74e23b739ee540ee",
+      "path": "framework/core/raf_bl0/raf_bl0.c",
+      "blob_sha": "132f948d199f6679fcae4f33912e0a3ad69691a3"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/GaiaPhiRafcode",
+      "pr": 9,
+      "head_sha": "41de864ec7ca47902c6b44e55033e5b0ae412f6c",
+      "path": "native/raf_bl0/raf_bl0.c",
+      "blob_sha": "132f948d199f6679fcae4f33912e0a3ad69691a3"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/GAIA_phi",
+      "pr": 106,
+      "head_sha": "09a86911736b72820358db385f16d30ac16e568d",
+      "path": "native/raf_bl0/raf_bl0.c",
+      "blob_sha": "132f948d199f6679fcae4f33912e0a3ad69691a3"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/RafPolimata",
+      "pr": 362,
+      "head_sha": "81642ed0f338c209545c87ba996222975fa40464",
+      "path": "native/raf_bl0/raf_bl0.c",
+      "blob_sha": "132f948d199f6679fcae4f33912e0a3ad69691a3"
+    },
+    {
+      "repository": "rafaelmeloreisnovo/RafPolimata",
+      "pr": 362,
+      "head_sha": "81642ed0f338c209545c87ba996222975fa40464",
+      "path": "ports/hafnium/raf_bl0.c",
+      "blob_sha": "132f948d199f6679fcae4f33912e0a3ad69691a3"
+    }
+  ],
+  "invariants": [
+    "SOURCE!=ARTIFACT!=EXECUTION!=EVIDENCE!=CLAIM",
+    "SAME_GIT_BLOB!=RUNTIME_PARITY",
+    "SAME_GIT_BLOB!=PERFORMANCE_PARITY",
+    "SAME_GIT_BLOB!=AUTHORSHIP_PROOF"
+  ],
+  "next": "Use this receipt as the single pointer for source-byte parity. Keep runtime/object/ELF/device evidence in each producer repository."
+}

@@ -1,0 +1,50 @@
+{
+  "schema": "rafaelia.receipt-envelope/v1",
+  "receipt_id": "RCP-NEGATIVE-BLOCKING-001",
+  "observed_at": "2026-09-29T09:29:00-03:00",
+  "producer": {
+    "repository": "example/repo",
+    "ref": "refs/heads/main",
+    "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "artifact_id": "artifact-1"
+  },
+  "source": {
+    "source_id": "source-1",
+    "source_ref": "source:opaque",
+    "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "execution": {
+    "execution_id": "run-1",
+    "environment": "ci",
+    "architecture": "x86_64",
+    "device_id": "TOKEN_VAZIO",
+    "state": "PASS"
+  },
+  "evidence": [
+    {
+      "kind": "test-report",
+      "ref": "artifact:test-report",
+      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "state": "PASS",
+      "scope": "bounded-fixture"
+    }
+  ],
+  "result": {
+    "state": "PASS",
+    "summary": "Negative fixture: blocking gap must prevent promotion."
+  },
+  "gaps": [
+    {
+      "gap_id": "GAP-BLOCKING",
+      "state": "PENDING",
+      "blocking": true,
+      "detail": "Deliberate blocker."
+    }
+  ],
+  "lineage": {
+    "parent_receipt": "TOKEN_VAZIO",
+    "supersedes": "TOKEN_VAZIO"
+  },
+  "receipt_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "claim_allowed": true
+}

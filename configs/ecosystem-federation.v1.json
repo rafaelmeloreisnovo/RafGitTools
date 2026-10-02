@@ -1,0 +1,144 @@
+{
+  "schema": "rafaelia.ecosystem-federation/v1",
+  "purpose": "control-plane routing registry; does not replace repository-local authority",
+  "authority_model": "federated",
+  "invariants": {
+    "relationship_is_not_authority_merge": true,
+    "source_is_not_artifact": true,
+    "artifact_is_not_execution": true,
+    "execution_is_not_evidence": true,
+    "evidence_is_not_claim": true,
+    "token_vazio_is_not_zero": true,
+    "implemented_untested_is_not_pass": true,
+    "missing_evidence_may_be_promoted": false
+  },
+  "members": [
+    {
+      "repository": "rafaelmeloreisnovo/Rafaelia_Private",
+      "authority": "restricted-evidence-lab-and-promotion-custody",
+      "member_manifest": "federation/ecosystem-member.v1.json",
+      "authority_sources": [
+        "docs/federation/REPOSITORY_CONTRACT_V1.md",
+        "docs/development/RAFAELIA_PRIVATE_DEVELOPMENT_PLAN_V1.md"
+      ]
+    },
+    {
+      "repository": "rafaelmeloreisnovo/GAIA_phi",
+      "authority": "deterministic-data-index-and-pointer-custody",
+      "member_manifest": "federation/ecosystem-member.v1.json",
+      "authority_sources": [
+        "docs/federation/REPOSITORY_CONTRACT_V1.md",
+        "FEDERATION.md"
+      ]
+    },
+    {
+      "repository": "rafaelmeloreisnovo/RafPolimata",
+      "authority": "semantic-governance-and-freestanding-language",
+      "member_manifest": "federation/ecosystem-member.v1.json",
+      "authority_sources": [
+        "docs/canonical/2026-09-23/COMPONENT_CATALOG.md",
+        "federation/functional-freestanding-leaf.v1.json"
+      ]
+    },
+    {
+      "repository": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "authority": "android-vm-backend-and-ipc-runtime",
+      "member_manifest": "federation/ecosystem-member.v1.json",
+      "authority_sources": [
+        "docs/federation/REPOSITORY_CONTRACT_V1.md",
+        "docs/contracts/VECTRAS_TERMUX_IPC_V3.md"
+      ]
+    },
+    {
+      "repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "authority": "android-shell-runtime",
+      "member_manifest": "federation/ecosystem-member.v1.json",
+      "authority_sources": [
+        "docs/federation/REPOSITORY_CONTRACT_V1.md",
+        "configs/package-manager-contract.json",
+        "federation/functional-freestanding-leaf.v1.json"
+      ]
+    },
+    {
+      "repository": "rafaelmeloreisnovo/termux-packages",
+      "authority": "package-build-and-distribution-authority",
+      "member_manifest": "federation/ecosystem-member.v1.json",
+      "authority_sources": [
+        "docs/RAFCODEPHI_DELIVERY_CONTRACT_V1.md",
+        "federation/functional-freestanding-leaf.v1.json"
+      ]
+    },
+    {
+      "repository": "rafaelmeloreisnovo/RafGitTools",
+      "authority": "federated-control-plane",
+      "member_manifest": "federation/ecosystem-member.v1.json",
+      "authority_sources": [
+        "docs/federation/RAFAELIA_FEDERATED_OPERATIONS_V1.md",
+        "configs/functional-freestanding-federation.v1.json",
+        "native/rafcode_federation_v1/README.md"
+      ]
+    }
+  ],
+  "external_inputs": [
+    {
+      "id": "sumali_classificado_total",
+      "kind": "classified-corpus",
+      "authority": "corpus-and-evidence-input-only",
+      "execution_authority": false,
+      "state": "SOURCE_ATTACHED_OUTSIDE_GIT_REGISTRY"
+    },
+    {
+      "id": "conversations-048.json",
+      "kind": "conversation-corpus",
+      "authority": "historical-context-input-only",
+      "execution_authority": false,
+      "state": "SOURCE_ATTACHED_OUTSIDE_GIT_REGISTRY"
+    }
+  ],
+  "primary_edges": [
+    {
+      "from": "corpus",
+      "to": [
+        "rafaelmeloreisnovo/RafPolimata",
+        "rafaelmeloreisnovo/GAIA_phi"
+      ],
+      "kind": "index-and-provenance"
+    },
+    {
+      "from": [
+        "rafaelmeloreisnovo/RafPolimata",
+        "rafaelmeloreisnovo/GAIA_phi"
+      ],
+      "to": "rafaelmeloreisnovo/Rafaelia_Private",
+      "kind": "source-lock-delta-evidence"
+    },
+    {
+      "from": "rafaelmeloreisnovo/Rafaelia_Private",
+      "to": "rafaelmeloreisnovo/RafGitTools",
+      "kind": "approved-contract-and-promotion-proposal"
+    },
+    {
+      "from": "rafaelmeloreisnovo/termux-packages",
+      "to": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "kind": "deb-metadata-bootstrap-artifact-boundary"
+    },
+    {
+      "from": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "to": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "kind": "versioned-ipc-artifact-boundary"
+    },
+    {
+      "from": [
+        "rafaelmeloreisnovo/termux-app-rafacodephi",
+        "rafaelmeloreisnovo/Vectras-VM-Android"
+      ],
+      "to": [
+        "rafaelmeloreisnovo/RafGitTools",
+        "rafaelmeloreisnovo/Rafaelia_Private",
+        "rafaelmeloreisnovo/GAIA_phi"
+      ],
+      "kind": "receipt-and-hash-feedback"
+    }
+  ],
+  "claim_allowed": false
+}

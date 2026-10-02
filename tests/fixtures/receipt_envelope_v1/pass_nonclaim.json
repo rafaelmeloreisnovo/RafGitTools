@@ -1,0 +1,42 @@
+{
+  "schema": "rafaelia.receipt-envelope/v1",
+  "receipt_id": "RCP-DEMO-NONCLAIM-001",
+  "observed_at": "2026-09-29T09:29:00-03:00",
+  "producer": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "ref": "main",
+    "commit": "862b83547532d47e60eadf7810e0571b12ca8804",
+    "artifact_id": "demo"
+  },
+  "source": {
+    "source_id": "TOKEN_VAZIO",
+    "source_ref": "TOKEN_VAZIO",
+    "sha256": "TOKEN_VAZIO"
+  },
+  "execution": {
+    "execution_id": "TOKEN_VAZIO",
+    "environment": "TOKEN_VAZIO",
+    "architecture": "TOKEN_VAZIO",
+    "device_id": "TOKEN_VAZIO",
+    "state": "NOT_RUN"
+  },
+  "evidence": [],
+  "result": {
+    "state": "PENDING",
+    "summary": "Structural fixture only; no execution claim."
+  },
+  "gaps": [
+    {
+      "gap_id": "GAP-DEMO-EXECUTION",
+      "state": "TOKEN_VAZIO",
+      "blocking": true,
+      "detail": "Execution evidence intentionally absent."
+    }
+  ],
+  "lineage": {
+    "parent_receipt": "TOKEN_VAZIO",
+    "supersedes": "TOKEN_VAZIO"
+  },
+  "receipt_sha256": "TOKEN_VAZIO",
+  "claim_allowed": false
+}

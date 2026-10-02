@@ -29,12 +29,17 @@ import com.rafgittools.bridge.CorpusCatalogTreeGate
 import com.rafgittools.bridge.CorpusIntakeGate
 import com.rafgittools.bridge.CorpusIntakeResult
 import com.rafgittools.bridge.DriveStagingGate
+import com.rafgittools.navigator.ConversationManifoldProcessor
+import com.rafgittools.navigator.ConversationManifoldPublication
+import com.rafgittools.navigator.NovoexportSafInventory
+import com.rafgittools.navigator.NovoexportQueueStore
 import com.rafgittools.ui.components.ResponsiveContentFrame
 import com.rafgittools.domain.model.github.GithubRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileInputStream
 import java.io.IOException
 import java.security.MessageDigest
 
@@ -65,6 +70,7 @@ fun HomeScreen(
     val activeTab by viewModel.activeTab.collectAsStateWithLifecycle()
     val githubProbeState by viewModel.githubProbeState.collectAsStateWithLifecycle()
     val remoteReceiptState by viewModel.remoteReceiptState.collectAsStateWithLifecycle()
+    val privateProcessingPublishState by viewModel.privateProcessingPublishState.collectAsStateWithLifecycle()
     var showMenu by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -161,12 +167,15 @@ fun HomeScreen(
                     localRepositories = localRepositories,
                     githubProbeState = githubProbeState,
                     remoteReceiptState = remoteReceiptState,
+                    privateProcessingPublishState = privateProcessingPublishState,
                     onTabSelected = viewModel::setActiveTab,
                     onNavigateToAuth = onNavigateToAuth,
                     onRepositoryClick = onNavigateToRepository,
                     onLocalRepositoryClick = onNavigateToLocalRepo,
                     onRunGithubTest = viewModel::runGithubConnectivityTest,
-                    onCreateRemoteReceipt = viewModel::createRemoteConnectivityReceipt
+                    onCreateRemoteReceipt = viewModel::createRemoteConnectivityReceipt,
+                    onPublishPrivateProcessingReceipt = viewModel::publishPrivateProcessingReceipt,
+                    onPublishManifold = viewModel::publishConversationManifold
                 )
             }
         }
@@ -181,12 +190,21 @@ private fun SourceDashboard(
     localRepositories: List<LocalRepoSummary>,
     githubProbeState: GithubConnectivityState,
     remoteReceiptState: RemoteReceiptState,
+    privateProcessingPublishState: PrivateProcessingPublishState,
     onTabSelected: (HomeViewModel.HomeTab) -> Unit,
     onNavigateToAuth: () -> Unit,
     onRepositoryClick: (GithubRepository) -> Unit,
     onLocalRepositoryClick: (String) -> Unit,
     onRunGithubTest: () -> Unit,
-    onCreateRemoteReceipt: () -> Unit
+    onCreateRemoteReceipt: () -> Unit,
+    onPublishPrivateProcessingReceipt: (
+        GithubRepository,
+        Long,
+        String,
+        String,
+        CorpusIntakeResult
+    ) -> Unit,
+    onPublishManifold: suspend (GithubRepository, ConversationManifoldPublication.Plan, String, android.content.ContentResolver) -> Result<ConversationManifoldPublication.Published>
 ) {
     Column(Modifier.fillMaxSize()) {
         TabRow(selectedTabIndex = activeTab.ordinal) {
@@ -222,7 +240,12 @@ private fun SourceDashboard(
                     GithubDisconnectedContent(onNavigateToAuth)
                 }
             }
-            HomeViewModel.HomeTab.DRIVE -> DriveBridgeContent()
+            HomeViewModel.HomeTab.DRIVE -> DriveBridgeContent(
+                privateRepositories = remoteRepositories.filter { it.isPrivate },
+                publishState = privateProcessingPublishState,
+                onPublishReceipt = onPublishPrivateProcessingReceipt,
+                onPublishManifold = onPublishManifold
+            )
             HomeViewModel.HomeTab.LOCAL -> LocalRepositoryList(localRepositories, onLocalRepositoryClick)
         }
     }
@@ -254,9 +277,18 @@ private fun GithubDisconnectedContent(onNavigateToAuth: () -> Unit) {
 }
 
 @Composable
-private fun DriveBridgeContent() {
+private fun DriveBridgeContent(
+    privateRepositories: List<GithubRepository>,
+    publishState: PrivateProcessingPublishState,
+    onPublishReceipt: (GithubRepository, Long, String, String, CorpusIntakeResult) -> Unit,
+    onPublishManifold: suspend (GithubRepository, ConversationManifoldPublication.Plan, String, android.content.ContentResolver) -> Result<ConversationManifoldPublication.Published>
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var repositoryMenuExpanded by remember { mutableStateOf(false) }
+    var selectedPrivateRepository by remember(privateRepositories) {
+        mutableStateOf(privateRepositories.firstOrNull())
+    }
     var staging by remember { mutableStateOf(false) }
     var staged by remember { mutableStateOf<DriveStageResult?>(null) }
     var cataloging by remember { mutableStateOf(false) }
@@ -264,6 +296,16 @@ private fun DriveBridgeContent() {
     var exportingCatalog by remember { mutableStateOf(false) }
     var exportedCatalog by remember { mutableStateOf<CatalogTreeExportResult?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    var processingManifold by remember { mutableStateOf(false) }
+    var manifoldResult by remember { mutableStateOf<ConversationManifoldProcessor.Result?>(null) }
+    var manifoldPlan by remember { mutableStateOf<ConversationManifoldPublication.Plan?>(null) }
+    var publishingManifold by remember { mutableStateOf(false) }
+    var manifoldPublishSummary by remember { mutableStateOf<String?>(null) }
+    var inventoryingTree by remember { mutableStateOf(false) }
+    var treeInventory by remember { mutableStateOf<NovoexportSafInventory.Result?>(null) }
+    var queueingInventory by remember { mutableStateOf(false) }
+    var queueSummary by remember { mutableStateOf<NovoexportQueueStore.MergeResult?>(null) }
+    var queueProcessingItemId by remember { mutableStateOf<String?>(null) }
 
     val catalogFolderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) {
@@ -303,11 +345,77 @@ private fun DriveBridgeContent() {
         }
     }
 
+    val manifoldDestinationPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            } catch (_: SecurityException) {
+                error = "O provedor não concedeu acesso persistente de gravação; selecione uma pasta acessível no Drive."
+            }
+            val processed = manifoldResult
+            val target = selectedPrivateRepository
+            if (processed == null) error = "Processe primeiro um conversation*.json ou codex*.json."
+            else if (target == null) error = "Selecione um repositório GitHub privado antes de planejar a publicação."
+            else scope.launch {
+                manifoldPlan = null
+                val planned = withContext(Dispatchers.IO) {
+                    runCatching {
+                        ConversationManifoldPublication.plan(
+                            generationId = "g${System.currentTimeMillis()}",
+                            driveFolderUri = uri,
+                            githubOwner = target.owner.login,
+                            githubRepository = target.name,
+                            artifact = processed.outputFile
+                        )
+                    }
+                }
+                planned.onSuccess { manifoldPlan = it }
+                    .onFailure { error = it.message ?: "Falha ao criar plano de publicação" }
+            }
+        }
+    }
+
+    val sourceTreePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            error = null
+            treeInventory = null
+            queueSummary = null
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: SecurityException) {
+                // The current grant may still be enough for this bounded inventory pass.
+            }
+            scope.launch {
+                inventoryingTree = true
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        NovoexportSafInventory.scan(
+                            resolver = context.contentResolver,
+                            treeUri = uri
+                        )
+                    }
+                }
+                result.onSuccess { treeInventory = it }
+                    .onFailure { error = it.message ?: "Falha ao inventariar árvore NOVOexport" }
+                inventoryingTree = false
+            }
+        }
+    }
+
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             error = null
             cataloged = null
             exportedCatalog = null
+            manifoldResult = null
+            manifoldPlan = null
+            manifoldPublishSummary = null
             try {
                 context.contentResolver.takePersistableUriPermission(
                     uri,
@@ -373,6 +481,231 @@ private fun DriveBridgeContent() {
                             Icon(Icons.Default.CloudDownload, null)
                             Spacer(Modifier.width(8.dp))
                             Text("Abrir seletor de arquivos")
+                        }
+                    }
+                }
+            }
+        }
+
+
+        item {
+            ElevatedCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.AccountTree, null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(8.dp))
+                        Text("NOVOexport · inventário recursivo", style = MaterialTheme.typography.titleMedium)
+                    }
+                    Text(
+                        "Lê somente metadados da árvore SAF selecionada. Não abre o conteúdo dos arquivos, não renomeia e não move nada. Filtra conversation*.json e codex*.json para preparar a fila persistente.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Button(
+                        onClick = { sourceTreePicker.launch(null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !inventoryingTree && !processingManifold && !publishingManifold
+                    ) {
+                        if (inventoryingTree) {
+                            CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Inventariando metadados…")
+                        } else {
+                            Icon(Icons.Default.FolderOpen, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Selecionar pasta NOVOexport")
+                        }
+                    }
+                    treeInventory?.let { inventory ->
+                        Text(
+                            "INVENTORY: ${inventory.state} · documentos=${inventory.visitedDocuments} · diretórios=${inventory.visitedDirectories} · candidatos=${inventory.candidateFiles.size}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            "Bytes conhecidos nos candidatos: ${formatBytes(inventory.knownCandidateBytes)} · tamanhos TOKEN_VAZIO=${inventory.unknownSizeCandidateFiles}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        inventory.candidateFiles.take(6).forEach { candidate ->
+                            Text(
+                                "• ${candidate.name} · ${candidate.sizeBytes?.let(::formatBytes) ?: "TOKEN_VAZIO_SIZE"}",
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        if (inventory.candidateFiles.size > 6) {
+                            Text(
+                                "… +${inventory.candidateFiles.size - 6} candidatos incluídos no inventário.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    queueingInventory = true
+                                    error = null
+                                    val queued = withContext(Dispatchers.IO) {
+                                        runCatching {
+                                            NovoexportQueueStore.mergeInventory(
+                                                privateRoot = File(context.filesDir, "novoexport-queues"),
+                                                inventory = inventory
+                                            )
+                                        }
+                                    }
+                                    queued.onSuccess { queueSummary = it }
+                                        .onFailure { error = it.message ?: "Falha ao persistir fila NOVOexport" }
+                                    queueingInventory = false
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !queueingInventory && inventory.candidateFiles.isNotEmpty()
+                        ) {
+                            if (queueingInventory) {
+                                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Persistindo fila…")
+                            } else {
+                                Icon(Icons.Default.Save, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Persistir / retomar fila")
+                            }
+                        }
+                        queueSummary?.let { queue ->
+                            Text(
+                                "QUEUE: itens=${queue.snapshot.items.size} · novos=${queue.added} · preservados=${queue.preserved} · ausentes no inventário atual=${queue.absentFromLatestInventory}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Text(
+                                "Arquivo privado: ${queue.queueFile.absolutePath}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            val eligible = queue.snapshot.items.firstOrNull {
+                                it.presentInLatestInventory &&
+                                    (it.state == NovoexportQueueStore.PENDING ||
+                                        it.state == NovoexportQueueStore.FAILED_RETRYABLE)
+                            }
+                            val pendingCount = queue.snapshot.items.count {
+                                it.presentInLatestInventory &&
+                                    (it.state == NovoexportQueueStore.PENDING ||
+                                        it.state == NovoexportQueueStore.FAILED_RETRYABLE)
+                            }
+                            Text(
+                                "Pendentes/repetíveis: $pendingCount · processamento em série, um arquivo por confirmação.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Button(
+                                onClick = {
+                                    val next = eligible
+                                    if (next == null) {
+                                        error = "Não há item presente no último inventário pronto para processamento."
+                                    } else if (next.sizeBytes != null && next.sizeBytes > 2_147_483_648L) {
+                                        scope.launch {
+                                            val blocked = withContext(Dispatchers.IO) {
+                                                runCatching {
+                                                    NovoexportQueueStore.transition(
+                                                        queueFile = queue.queueFile,
+                                                        itemId = next.id,
+                                                        newState = NovoexportQueueStore.BLOCKED,
+                                                        error = "SOURCE_SIZE_EXCEEDS_2_GIB_PROCESSOR_LIMIT"
+                                                    )
+                                                }
+                                            }
+                                            blocked.onSuccess { queueSummary = queue.copy(snapshot = it) }
+                                            error = "Tamanho informado excede o limite por arquivo de 2 GiB."
+                                        }
+                                    } else if (selectedPrivateRepository?.isPrivate != true) {
+                                        error = "Selecione um repositório GitHub privado antes de processar a fila."
+                                    } else {
+                                        scope.launch {
+                                            processingManifold = true
+                                            error = null
+                                            val claimed = withContext(Dispatchers.IO) {
+                                                runCatching {
+                                                    NovoexportQueueStore.transition(
+                                                        queueFile = queue.queueFile,
+                                                        itemId = next.id,
+                                                        newState = NovoexportQueueStore.PROCESSING
+                                                    )
+                                                }
+                                            }
+                                            claimed.onSuccess { snapshot ->
+                                                queueSummary = queue.copy(snapshot = snapshot)
+                                                queueProcessingItemId = next.id
+                                                val processed = withContext(Dispatchers.IO) {
+                                                    runCatching {
+                                                        val input = context.contentResolver.openInputStream(Uri.parse(next.uri))
+                                                            ?: throw IOException("O provedor não abriu o JSON enfileirado")
+                                                        input.use { source ->
+                                                            ConversationManifoldProcessor(
+                                                                outputRoot = File(context.filesDir, "conversation-manifold")
+                                                            ).process(next.name, source)
+                                                        }
+                                                    }
+                                                }
+                                                processed.onSuccess {
+                                                    manifoldResult = it
+                                                    manifoldPlan = null
+                                                    manifoldPublishSummary = null
+                                                }.onFailure { failure ->
+                                                    val failedState = if (
+                                                        failure is SecurityException || failure is IllegalArgumentException
+                                                    ) {
+                                                        NovoexportQueueStore.BLOCKED
+                                                    } else {
+                                                        NovoexportQueueStore.FAILED_RETRYABLE
+                                                    }
+                                                    val failureText = when (failure) {
+                                                        is SecurityException ->
+                                                            "SAF_PERMISSION_LOST: ${failure.message ?: failure.javaClass.simpleName}"
+                                                        is IllegalArgumentException ->
+                                                            "SOURCE_REJECTED: ${failure.message ?: failure.javaClass.simpleName}"
+                                                        else ->
+                                                            "SOURCE_PROCESSING_FAILURE: ${failure.message ?: failure.javaClass.simpleName}"
+                                                    }
+                                                    val failed = withContext(Dispatchers.IO) {
+                                                        runCatching {
+                                                            NovoexportQueueStore.transition(
+                                                                queueFile = queue.queueFile,
+                                                                itemId = next.id,
+                                                                newState = failedState,
+                                                                error = failureText
+                                                            )
+                                                        }
+                                                    }
+                                                    failed.onSuccess { snapshot ->
+                                                        queueSummary = queue.copy(snapshot = snapshot)
+                                                    }
+                                                    queueProcessingItemId = null
+                                                    error = failure.message ?: "Falha ao processar item da fila"
+                                                }
+                                            }.onFailure {
+                                                error = it.message ?: "Falha ao reservar próximo item da fila"
+                                            }
+                                            if (claimed.isFailure) queueProcessingItemId = null
+                                            processingManifold = false
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = eligible != null && !processingManifold && !publishingManifold &&
+                                    selectedPrivateRepository?.isPrivate == true
+                            ) {
+                                if (processingManifold) {
+                                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Processando um arquivo no telefone…")
+                                } else {
+                                    Icon(Icons.Default.PlayArrow, null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Processar próximo arquivo da fila")
+                                }
+                            }
                         }
                     }
                 }
@@ -462,6 +795,169 @@ private fun DriveBridgeContent() {
             }
         }
 
+        staged?.let { stagedItem ->
+            item {
+                OutlinedCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Processar no RafGitTools", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "O processamento manual lê um arquivo. Para a fila NOVOexport, o APK abre a URI SAF persistida, processa um candidato por vez e aguarda confirmação do plano de publicação.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    processingManifold = true
+                                    manifoldResult = null
+                                    manifoldPlan = null
+                                    manifoldPublishSummary = null
+                                    error = null
+                                    val result = withContext(Dispatchers.IO) {
+                                        runCatching {
+                                            FileInputStream(File(stagedItem.path)).use { source ->
+                                                ConversationManifoldProcessor(
+                                                    outputRoot = File(context.filesDir, "conversation-manifold")
+                                                ).process(stagedItem.name, source)
+                                            }
+                                        }
+                                    }
+                                    result.onSuccess { manifoldResult = it }
+                                        .onFailure { error = it.message ?: "Falha no processamento JSON" }
+                                    processingManifold = false
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !processingManifold && !publishingManifold
+                        ) {
+                            if (processingManifold) {
+                                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Processando no telefone…")
+                            } else {
+                                Icon(Icons.Default.AccountTree, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Processar JSON selecionado")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        manifoldResult?.let { processed ->
+            item {
+                OutlinedCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text("Processamento local concluído", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            "${processed.sourceName} · ${formatBytes(processed.sourceBytes)} · SHA-256 ${processed.sourceSha256}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            "Registros ${processed.records} · nós ${processed.nodes} · mensagens ${processed.messages} · Codex ${processed.codexRecords}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text("Saída derivada SHA-256: ${processed.outputSha256}", style = MaterialTheme.typography.bodySmall)
+                        Button(
+                            onClick = { manifoldDestinationPicker.launch(null) },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = selectedPrivateRepository?.isPrivate == true && !publishingManifold
+                        ) {
+                            Icon(Icons.Default.CloudUpload, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Escolher pasta de saída no Drive")
+                        }
+                    }
+                }
+            }
+        }
+
+        manifoldPlan?.let { plan ->
+            item {
+                OutlinedCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text("Plano de publicação", style = MaterialTheme.typography.titleSmall)
+                        Text("Destino Git privado: ${plan.githubOwner}/${plan.githubRepository}")
+                        Text("Partes: ${plan.parts.size} · SHA-256 do plano: ${plan.planSha256}", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "Ao confirmar, o APK grava as partes derivadas na pasta Drive selecionada e no destino Git privado, relê ambos os destinos e confere bytes e SHA-256 antes de fechar o recibo.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Button(
+                            onClick = {
+                                val target = selectedPrivateRepository
+                                if (target == null || !target.isPrivate ||
+                                    target.owner.login != plan.githubOwner ||
+                                    target.name != plan.githubRepository
+                                ) {
+                                    error = "O destino privado mudou após a confirmação do plano; gere um novo plano."
+                                } else {
+                                    scope.launch {
+                                        publishingManifold = true
+                                        error = null
+                                        val result = onPublishManifold(
+                                            target, plan, plan.planSha256, context.contentResolver
+                                        )
+                                        result.onSuccess { published ->
+                                            manifoldPublishSummary =
+                                                "${published.state} · Drive readback=${published.driveReadbackVerified} · Git readback=${published.githubReadbackVerified} · Drive ${published.driveUris.size} itens · Git ${published.githubPaths.size} caminhos · commits ${published.githubCommitShas.joinToString().take(120)} · receipt SHA-256 ${published.artifactSha256}"
+                                            val queueItemId = queueProcessingItemId
+                                            val currentQueue = queueSummary
+                                            if (queueItemId != null && currentQueue != null) {
+                                                val completed = withContext(Dispatchers.IO) {
+                                                    runCatching {
+                                                        NovoexportQueueStore.markPublishedComplete(
+                                                            queueFile = currentQueue.queueFile,
+                                                            itemId = queueItemId,
+                                                            publishedState = published.state,
+                                                            driveReadbackVerified = published.driveReadbackVerified,
+                                                            githubReadbackVerified = published.githubReadbackVerified
+                                                        )
+                                                    }
+                                                }
+                                                completed.onSuccess { snapshot ->
+                                                    queueSummary = currentQueue.copy(snapshot = snapshot)
+                                                    queueProcessingItemId = null
+                                                    manifoldResult = null
+                                                    manifoldPlan = null
+                                                }.onFailure {
+                                                    error = it.message
+                                                        ?: "Publicação não fechou a transição da fila"
+                                                }
+                                            }
+                                        }.onFailure {
+                                            error = it.message ?: "Falha ao publicar o manifold"
+                                        }
+                                        publishingManifold = false
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !publishingManifold && selectedPrivateRepository?.isPrivate == true
+                        ) {
+                            if (publishingManifold) {
+                                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Publicando no Drive e no Git privado…")
+                            } else {
+                                Text("Confirmar plano e publicar")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        manifoldPublishSummary?.let { summary ->
+            item {
+                OutlinedCard(Modifier.fillMaxWidth()) {
+                    Text(summary, Modifier.padding(14.dp), style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+
         cataloged?.let { result ->
             item {
                 OutlinedCard(Modifier.fillMaxWidth()) {
@@ -524,6 +1020,102 @@ private fun DriveBridgeContent() {
                                 style = MaterialTheme.typography.bodySmall,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        HorizontalDivider()
+                        Text(
+                            "GitHub privado · receipt de atividade",
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        if (privateRepositories.isEmpty()) {
+                            Text(
+                                "Destino: TOKEN_VAZIO — conecte o GitHub e carregue um repositório privado.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            Box {
+                                OutlinedButton(
+                                    onClick = { repositoryMenuExpanded = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(Icons.Default.Lock, null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        selectedPrivateRepository?.fullName
+                                            ?: "Selecionar repositório privado",
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = repositoryMenuExpanded,
+                                    onDismissRequest = { repositoryMenuExpanded = false }
+                                ) {
+                                    privateRepositories.forEach { repository ->
+                                        DropdownMenuItem(
+                                            text = { Text(repository.fullName) },
+                                            onClick = {
+                                                selectedPrivateRepository = repository
+                                                repositoryMenuExpanded = false
+                                            },
+                                            leadingIcon = { Icon(Icons.Default.Lock, null) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            val stage = staged
+                            Button(
+                                onClick = {
+                                    val target = selectedPrivateRepository
+                                    if (target != null && stage != null) {
+                                        onPublishReceipt(
+                                            target,
+                                            stage.bytes,
+                                            stage.sha256,
+                                            stage.providerAuthority,
+                                            result
+                                        )
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = selectedPrivateRepository != null &&
+                                    stage != null &&
+                                    publishState !is PrivateProcessingPublishState.Running
+                            ) {
+                                if (publishState is PrivateProcessingPublishState.Running) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Publicando receipt…")
+                                } else {
+                                    Icon(Icons.Default.Upload, null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Publicar receipt privado")
+                                }
+                            }
+                        }
+
+                        when (publishState) {
+                            PrivateProcessingPublishState.Idle -> Text(
+                                "GitHub privado: TOKEN_VAZIO",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            PrivateProcessingPublishState.Running -> Unit
+                            is PrivateProcessingPublishState.Passed -> Text(
+                                "GitHub privado: PASS · ${publishState.operationId} · commit ${publishState.commitSha.take(12)}…",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            is PrivateProcessingPublishState.Failed -> Text(
+                                "GitHub privado: FAIL · ${publishState.message}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
                             )
                         }
                     }

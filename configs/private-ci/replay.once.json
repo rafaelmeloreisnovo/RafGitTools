@@ -1,0 +1,10 @@
+{
+  "schema": "rafgittools.private-ci-replay-once.v1",
+  "operation": "exact_sha_replay",
+  "target_id": "rafaelia-private",
+  "target_commit": "4148e279769e379aee216b7da636f986496ef302",
+  "workflow_id": "documentation-std-mil",
+  "trigger_scope": "OWNER_MAIN_PUSH_ONLY",
+  "single_use_by_change_detection": true,
+  "claim_allowed": false
+}

@@ -1,9 +1,21 @@
 #!/bin/sh
 set -eu
 
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+module_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
+
 binary=${1:?usage: audit_elf.sh <elf> [expected-machine]}
 expected_machine=${2:-}
 maximum_bytes=${MAXIMUM_BYTES:-8192}
+
+case "$binary" in
+    /*) ;;
+    *)
+        if test ! -f "$binary"; then
+            binary="$module_dir/$binary"
+        fi
+        ;;
+esac
 
 test -f "$binary"
 test "$(wc -c < "$binary")" -le "$maximum_bytes"
@@ -44,12 +56,12 @@ test "$load_count" -eq 1
 readelf -lW "$binary" | grep -q ' LOAD .*R E '
 readelf -lW "$binary" | grep -q 'GNU_STACK.*RW '
 
-if grep -En '(^|[^[:alnum:]_])(for|while)[[:space:]]*\(|(^|[^[:alnum:]_])do[[:space:]]*\{' src/*.c >/dev/null; then
+if grep -En '(^|[^[:alnum:]_])(for|while)[[:space:]]*\(|(^|[^[:alnum:]_])do[[:space:]]*\{' "$module_dir"/src/*.c >/dev/null; then
     printf '%s\n' 'FAIL: source loop present in runtime C' >&2
     exit 1
 fi
 
-if grep -En '(^|[^[:alnum:]_])(malloc|calloc|realloc|free|memcpy|memmove|memset)[[:space:]]*\(' src/*.c >/dev/null; then
+if grep -En '(^|[^[:alnum:]_])(malloc|calloc|realloc|free|memcpy|memmove|memset)[[:space:]]*\(' "$module_dir"/src/*.c >/dev/null; then
     printf '%s\n' 'FAIL: allocator or hosted-memory primitive present' >&2
     exit 1
 fi

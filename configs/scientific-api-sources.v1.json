@@ -1,0 +1,75 @@
+{
+  "schema": "rafgittools.scientific-api-sources/v1",
+  "version": "1.0.0",
+  "claim_allowed": false,
+  "purpose": "Bounded ingestion of official climate and space-science APIs with source hashing, redacted provenance, and no GitHub-PAT fallback.",
+  "sources": {
+    "NASA_POWER_DAILY_POINT": {
+      "provider": "NASA POWER",
+      "domain": "climate_meteorology_solar",
+      "base_url": "https://power.larc.nasa.gov",
+      "endpoint": "/api/temporal/daily/point",
+      "method": "GET",
+      "auth": {"mode": "NONE"},
+      "allowed_query_keys": ["parameters", "community", "longitude", "latitude", "start", "end", "format", "time-standard", "site-elevation", "wind-elevation", "wind-surface"],
+      "required_query_keys": ["parameters", "community", "longitude", "latitude", "start", "end", "format"],
+      "forced_query": {"format": "JSON"},
+      "state": "CONFIGURED"
+    },
+    "NASA_DONKI_CME": {
+      "provider": "NASA DONKI",
+      "domain": "space_weather",
+      "base_url": "https://api.nasa.gov",
+      "endpoint": "/DONKI/CME",
+      "method": "GET",
+      "auth": {"mode": "QUERY", "name": "api_key", "secret_reference": "NASA_API_KEY"},
+      "allowed_query_keys": ["startDate", "endDate"],
+      "required_query_keys": ["startDate", "endDate"],
+      "state": "CONFIGURED_SECRET_REQUIRED"
+    },
+    "NASA_DONKI_GST": {
+      "provider": "NASA DONKI",
+      "domain": "space_weather",
+      "base_url": "https://api.nasa.gov",
+      "endpoint": "/DONKI/GST",
+      "method": "GET",
+      "auth": {"mode": "QUERY", "name": "api_key", "secret_reference": "NASA_API_KEY"},
+      "allowed_query_keys": ["startDate", "endDate"],
+      "required_query_keys": ["startDate", "endDate"],
+      "state": "CONFIGURED_SECRET_REQUIRED"
+    },
+    "NOAA_CDO_DATA": {
+      "provider": "NOAA NCEI Climate Data Online",
+      "domain": "climate_observation",
+      "base_url": "https://www.ncei.noaa.gov",
+      "endpoint": "/cdo-web/api/v2/data",
+      "method": "GET",
+      "auth": {"mode": "HEADER", "name": "token", "secret_reference": "NOAA_CDO_TOKEN"},
+      "allowed_query_keys": ["datasetid", "datatypeid", "locationid", "stationid", "startdate", "enddate", "units", "limit", "offset", "sortfield", "sortorder", "includemetadata"],
+      "required_query_keys": ["datasetid", "startdate", "enddate"],
+      "state": "CONFIGURED_SECRET_REQUIRED"
+    }
+  },
+  "secret_policy": {
+    "allowed_external_secret_references": ["NASA_API_KEY", "NOAA_CDO_TOKEN"],
+    "forbidden_github_pat_fallbacks": ["PAT_ENV", "PAT_ACTIONS", "PAT_AGENTS", "PAT_CODESPACES", "PAT_DEPENDABOT", "PAT_PRIVATE_PROCESSING"],
+    "never_print_secret": true,
+    "never_persist_secret": true,
+    "redact_query_secret_values": true
+  },
+  "custody": {
+    "raw_source_persisted": false,
+    "source_sha256_required": true,
+    "projection_sha256_required": true,
+    "retrieved_at_required": true,
+    "redacted_source_url_required": true,
+    "append_only_receipt_semantics": true
+  },
+  "invariants": [
+    "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "GITHUB_PAT != EXTERNAL_API_CREDENTIAL",
+    "TOKEN_VAZIO != PASS",
+    "DOCUMENTATION != RUNTIME_EVIDENCE",
+    "HTTP_200 != SCIENTIFIC_VALIDATION"
+  ]
+}

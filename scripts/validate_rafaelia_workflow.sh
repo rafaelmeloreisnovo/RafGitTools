@@ -125,6 +125,13 @@ python3 scripts/check_program_mission_source_cohesion.py \
 python3 -m unittest discover -s tests \
   -p 'test_novoexport_full_recount.py' -v
 
+# Public official-data custody gate. This validates allowlisted source routing,
+# privacy minimization, separation of provider API credentials from GitHub PATs,
+# source/projection hashing, salary aggregation and PLECT claim boundaries.
+# PASS here is structural only; it does not prove a live Portal API execution.
+python3 -m unittest discover -s tests \
+  -p 'test_public_data_custody_ingest.py' -v
+
 # START single-root provider-enforcement policy gate. V1/V2 remain preserved as
 # append-only historical snapshots; V3 is the live topology contract. PASS here
 # proves only source/governance coherence of the prepared provider policy. It
@@ -169,3 +176,20 @@ python3 scripts/semantic_context_exam.py evaluate \
 
 make -C rafaelia/block1 clean check
 make -C rafaelia/block1 clean
+
+# Public signature page contract: validates JSON, text parity, unbound state and secret placeholders.
+bash scripts/validate_rafaelia_signing_contract.sh
+
+
+# Mapa session-agent resolver: exact source binding, read-only route and no execution claim.
+python3 -m unittest discover -s tests -p 'test_resolve_session_ai_work_packet.py' -v
+python3 scripts/validate_practice_router.py configs/practice-router.v1.json --route session-ai-dispatch
+
+
+# Authorial Omega Hypervisor executor V1. This validates only the clean state/custody
+# implementation, exact Mapa manifest pin and authorial-payload identity boundary.
+# It does not promote Vectra/PCR inherited code, hardware virtualization, physical
+# device runtime, provider state or legal authorship of newly generated glue.
+python3 -m unittest discover -s tests \
+  -p 'test_authorial_omega_hypervisor_executor.py' -v
+python3 scripts/validate_authorial_omega_hypervisor_executor.py

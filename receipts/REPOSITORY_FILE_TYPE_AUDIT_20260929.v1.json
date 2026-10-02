@@ -1,0 +1,289 @@
+{
+  "schema": "rafgittools.repository-file-type-audit.v1",
+  "audit_date": "2026-09-29",
+  "state": "PARTIAL_METADATA_SCAN_WITH_CONTENT_VERIFIED_TEXT_CLASSIFICATIONS",
+  "claim_allowed": false,
+  "source": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "ref": "main",
+    "observed_commit": "862b83547532d47e60eadf7810e0571b12ca8804",
+    "commit_context": "Merge commit for PR #584; inventory reads captured against the post-merge repository state."
+  },
+  "method": {
+    "source": "GitHub repository directory/file reader; GitHub file-content reads for ambiguous/extensionless candidates.",
+    "path_normalization": "Collapsed adjacent duplicated path components emitted by the directory reader, then deduplicated exact normalized paths.",
+    "bytes_policy": "Repository files were not bulk-downloaded. Text was classified only where content/first-line was returned or fetched. Binary signatures and full binary contents were not inspected.",
+    "mutation": "No source file was changed or renamed."
+  },
+  "coverage": {
+    "root_files": 53,
+    "top_level_directories_listed": 45,
+    "direct_files_inside_top_level_directories": 700,
+    "second_level_directories_discovered": 93,
+    "second_level_directories_read_successfully": 82,
+    "second_level_reads_blocked_by_hourly_limit": [
+      "receipts/t7",
+      "scripts/t7"
+    ],
+    "second_level_directories_deferred": [
+      "examples/context-bundle-v2",
+      "examples/human-ai-middleware",
+      "examples/rafgitfs",
+      "examples/rafyml",
+      "examples/semantic-context-exam",
+      "fixtures/coherence_ruler_gate",
+      "fixtures/cross_repo_impact",
+      "fixtures/memory_epoch",
+      "tests/fixtures"
+    ],
+    "files_directly_listed_in_successful_second_level_directories": 312,
+    "third_level_directories_discovered_but_not_read": 52,
+    "distinct_normalized_file_paths_observed": 1065,
+    "completeness": "PARTIAL; does not cover deferred second-level or third-level directories or deeper."
+  },
+  "extension_counts": {
+    ".md": 342,
+    ".json": 224,
+    ".py": 206,
+    ".yml": 53,
+    ".txt": 47,
+    ".sh": 38,
+    ".h": 29,
+    ".c": 28,
+    ".kt": 17,
+    "(no suffix)": 16,
+    ".s": 15,
+    ".zip": 14,
+    "(dotfile without suffix)": 3,
+    ".gradle": 3,
+    ".html": 3,
+    ".gz": 3,
+    ".mk": 3,
+    ".yaml": 2,
+    ".properties": 2,
+    ".asm": 2,
+    ".js": 2,
+    ".bat": 1,
+    ".mfd": 1,
+    ".cff": 1,
+    ".bib": 1,
+    ".csv": 1,
+    ".client": 1,
+    ".java": 1,
+    ".pro": 1,
+    ".tsv": 1,
+    ".css": 1,
+    ".lock": 1,
+    ".jar": 1,
+    ".manifest": 1
+  },
+  "extensionless_files": [
+    {
+      "path": "COPYING",
+      "classification": "text license",
+      "evidence": "GitHub content fetch returned GNU GPLv3 text."
+    },
+    {
+      "path": "LICENSE",
+      "classification": "text license",
+      "evidence": "GitHub content fetch returned GNU GPLv3 text."
+    },
+    {
+      "path": "Makefile",
+      "classification": "text build rules",
+      "evidence": "GitHub content fetch."
+    },
+    {
+      "path": "gradlew",
+      "classification": "shell script text",
+      "evidence": "GitHub content fetch; starts with #!/bin/sh."
+    },
+    {
+      "path": "Livro/LICENSE",
+      "classification": "text license",
+      "evidence": "First-line/content inspection."
+    },
+    {
+      "path": "BrowserRaf/internal/Makefile",
+      "classification": "text build rules",
+      "evidence": "Directory content."
+    },
+    {
+      "path": "native/energy_cascade_l0_v1/Makefile",
+      "classification": "text build rules",
+      "evidence": "Directory content."
+    },
+    {
+      "path": "native/knowledge_campus_l0_v1/Makefile",
+      "classification": "text build rules",
+      "evidence": "Directory content."
+    },
+    {
+      "path": "native/rafcode_federation_v1/Makefile",
+      "classification": "text build rules",
+      "evidence": "Directory content."
+    },
+    {
+      "path": "native/rafcode_route_exec_v1/Makefile",
+      "classification": "text build rules",
+      "evidence": "Directory content."
+    },
+    {
+      "path": "native/rafcode_route_federation_bridge_v1/Makefile",
+      "classification": "text build rules",
+      "evidence": "Directory content."
+    },
+    {
+      "path": "native/rafcode_route_v1/Makefile",
+      "classification": "text build rules",
+      "evidence": "Directory content."
+    },
+    {
+      "path": "native/silicon_light_v1/Makefile",
+      "classification": "text build rules",
+      "evidence": "Directory content."
+    },
+    {
+      "path": "rafaelia/block1/Makefile",
+      "classification": "text build rules",
+      "evidence": "Directory content."
+    },
+    {
+      "path": "rafaelia/omega_hybrid/Makefile",
+      "classification": "text build rules",
+      "evidence": "Directory content."
+    },
+    {
+      "path": "_upcoming/1",
+      "classification": "empty text placeholder",
+      "evidence": "GitHub content fetch returned one newline byte."
+    }
+  ],
+  "hidden_text_markers": [
+    {
+      "path": "IaCopiler/.new",
+      "bytes": 1,
+      "evidence": "GitHub content fetch returned one newline byte."
+    },
+    {
+      "path": "_incoming/.keep",
+      "bytes": 1,
+      "evidence": "GitHub content fetch returned one newline byte."
+    },
+    {
+      "path": ".gitignore",
+      "classification": "text configuration",
+      "evidence": "Root metadata and repository convention; full content not separately fetched for this audit."
+    }
+  ],
+  "unusual_text_suffixes": [
+    {
+      "suffix": ".mfd",
+      "path": "sss.mfd",
+      "count": 1,
+      "classification": "UTF-8 text containing prose and shell-script material",
+      "evidence": "GitHub content fetch."
+    },
+    {
+      "suffix": ".client",
+      "path": "_incoming/Makefile.client",
+      "count": 1,
+      "classification": "Makefile/build-rule text",
+      "evidence": "GitHub content fetch."
+    },
+    {
+      "suffix": ".manifest",
+      "path": "native/rafaelia_omega_v32/rafaelia_omega_v32.reference.manifest",
+      "count": 1,
+      "classification": "key/value text metadata",
+      "evidence": "GitHub content fetch."
+    },
+    {
+      "suffix": ".pro",
+      "path": "app/proguard-rules.pro",
+      "count": 1,
+      "classification": "ProGuard configuration text",
+      "evidence": "First line and directory content."
+    },
+    {
+      "suffix": ".cff",
+      "path": "Livro/CITATION.cff",
+      "count": 1,
+      "classification": "bibliographic metadata text",
+      "evidence": "First line and directory content."
+    },
+    {
+      "suffix": ".bib",
+      "path": "Livro/paper.bib",
+      "count": 1,
+      "classification": "BibTeX text",
+      "evidence": "First line and directory content."
+    },
+    {
+      "suffix": ".tsv",
+      "path": "configs/lineage-stage-2.tsv",
+      "count": 1,
+      "classification": "tab-separated text",
+      "evidence": "First line and directory content."
+    },
+    {
+      "suffix": ".mk",
+      "count": 3,
+      "classification": "Makefile/build-rule text",
+      "evidence": "First lines/content."
+    },
+    {
+      "suffix": ".s",
+      "count": 15,
+      "classification": "Assembly source text",
+      "evidence": "First lines/content."
+    },
+    {
+      "suffix": ".asm",
+      "count": 2,
+      "classification": "Assembly source text",
+      "evidence": "First lines/content."
+    },
+    {
+      "suffix": ".bat",
+      "count": 1,
+      "classification": "Windows batch text",
+      "evidence": "First line/content."
+    }
+  ],
+  "package_suffixes": {
+    ".zip": {
+      "count": 14,
+      "classification": "treated as package/binary by suffix only",
+      "content_or_magic_verified": false
+    },
+    ".gz": {
+      "count": 3,
+      "classification": "treated as compressed/binary by suffix only",
+      "content_or_magic_verified": false
+    },
+    ".jar": {
+      "count": 1,
+      "classification": "treated as package/binary by suffix only",
+      "content_or_magic_verified": false
+    }
+  },
+  "open_items": [
+    "Read the 2 second-level paths blocked by the hourly limit after reset.",
+    "Read the 9 deferred second-level paths.",
+    "Traverse 52 discovered third-level directories and continue recursively within budget.",
+    "Verify binary formats with magic bytes and SHA-256 only in a controlled, user-authorized source-processing path.",
+    "Reconcile this repository inventory with the Android app's phone-side SAF tree inventory; they cover different trees."
+  ],
+  "app_execution": {
+    "pr": 584,
+    "pr_state": "merged",
+    "merge_commit": "862b83547532d47e60eadf7810e0571b12ca8804",
+    "exact_head_sha": "65c2323d1c20d6e1b81f71e33e9aebb6c98173e6",
+    "workflow_run": 36567876002,
+    "workflow_state_at_capture": "queued",
+    "ci_pass_claimed": false,
+    "device_install_or_canary_evidence": false,
+    "full_corpus_processing_evidence": false
+  }
+}

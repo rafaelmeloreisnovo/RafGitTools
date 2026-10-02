@@ -1,0 +1,29 @@
+{
+  "schema": "rafgittools.program-inference-parameter-update-boundary.v1",
+  "claim_allowed": false,
+  "states": {
+    "PROGRAM_STATE": "PROGRAM_OUTPUT_MATERIALIZED",
+    "MODEL_INFERENCE_STATE": "NOT_RUN",
+    "PARAMETER_UPDATE_STATE": "NOT_RUN",
+    "AI_TRAINING": "NOT_RUN"
+  },
+  "parameter_update_evidence": [],
+  "training_gate": "BLOCKED_NO_PARAMETER_UPDATE_EVIDENCE",
+  "promotion_requirements": [
+    "PARAMETER_ARTIFACT_IDENTITY",
+    "PRE_UPDATE_PARAMETER_STATE",
+    "UPDATE_PROCEDURE_OR_OBJECTIVE",
+    "TRAINING_DATA_SCOPE",
+    "POST_UPDATE_PARAMETER_STATE",
+    "EXECUTION_EVIDENCE",
+    "PROVENANCE_RECEIPT"
+  ],
+  "invariants": [
+    "PROGRAM_EXECUTION!=MODEL_INFERENCE",
+    "MODEL_INFERENCE!=PARAMETER_UPDATE",
+    "PARAMETER_UPDATE!=AI_TRAINING_CLAIM",
+    "PARAMETER_UPDATE_EVIDENCE_REQUIRED_FOR_AI_TRAINING",
+    "SOURCE!=ARTIFACT!=EXECUTION!=EVIDENCE!=CLAIM",
+    "TOKEN_VAZIO!=0"
+  ]
+}
