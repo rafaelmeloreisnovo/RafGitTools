@@ -14,6 +14,29 @@ Camada machine-readable:
 
 Regra: esta camada **roteia** as autoridades abaixo; não as substitui e não promove claim.
 
+### Próximo passo sem fricção — quando há várias lacunas
+
+Depois de reconstruir o estado mínimo, não percorra backlog, corpus ou permutações até achar algo “interessante”. Use a rota machine-readable `NEXT_BEST_GATE` em [`../configs/context-reconstruction-routes.v1.json`](../configs/context-reconstruction-routes.v1.json).
+
+Ela reutiliza, sem copiar sua lógica:
+
+1. [`../configs/agent-entry-kernel.v1.json`](../configs/agent-entry-kernel.v1.json) — prioridade, autoridade, stop conditions, rollback e eixos não-compensatórios;
+2. [`UNCERTAINTY_URGENCY_FRICTION_ETHICS_LICENSE_BY_DESIGN_V3.md`](UNCERTAINTY_URGENCY_FRICTION_ETHICS_LICENSE_BY_DESIGN_V3.md) — `TOKEN_VAZIO`, classes de fricção, providência, falsificador e receipt.
+
+Ordem operacional resumida:
+
+```text
+P0 não-compensatório
+→ dependência upstream
+→ READY_TO_TEST + exit criterion
+→ menor delta reversível/falsificável
+→ blocker cross-repo de maior fan-out
+→ observação não resolvida mais antiga
+→ STOP no exit/authority/dependency/no-marginal-gain
+```
+
+`priority-selection != gap-closure != claim-promotion`. Um `TOKEN_VAZIO` bem tipado é saída válida quando identifica exatamente a fonte, autoridade, execução ou evidência ausente.
+
 ## Rota gradual ética / exegese
 
 Quando a intenção cruzar ética, Novo Testamento, linguagem, história e interpretação, use [`navigation/LOVE_NEIGHBOR_EXEGESIS_ROUTE_V1.md`](navigation/LOVE_NEIGHBOR_EXEGESIS_ROUTE_V1.md).
@@ -143,9 +166,9 @@ Esse bloco é histórico e commit-bound.
 
 ## R3
 
-- **F_ok:** índice atual separa estado vivo, snapshots e receipts históricos e roteia as superfícies novas.
-- **F_gap:** machine-state regeneration e contagens integrais revision-bound permanecem abertas.
-- **F_next:** manter a ordem de leitura sincronizada a cada mudança material e preservar `TOKEN_VAZIO` onde a prova não existe.
+- **F_ok:** índice atual separa estado vivo, snapshots e receipts históricos, roteia as superfícies novas e expõe a seleção determinística do próximo gate sem duplicar autoridade.
+- **F_gap:** machine-state regeneration e contagens integrais revision-bound permanecem abertas; seleção de prioridade não fecha o gap selecionado.
+- **F_next:** manter a ordem de leitura sincronizada a cada mudança material, usar `NEXT_BEST_GATE` quando houver disputa entre lacunas e preservar `TOKEN_VAZIO` onde a prova não existe.
 
 ## RLL branch and presentation atlas
 
