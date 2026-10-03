@@ -1,0 +1,38 @@
+{
+  "schema": "rafgittools.context_reconstruction_seed.v1",
+  "seed_id": "RGT-CONTEXT-RECONSTRUCTION-EXAMPLE-001",
+  "parent_seed_id": null,
+  "created_at": "2026-10-02T23:27:00-03:00",
+  "intent": "Re-enter RafGitTools context routing from canonical refs without rereading the corpus.",
+  "repo": "rafaelmeloreisnovo/RafGitTools",
+  "ref": "docs/context-reconstruction-router-v1-20261002",
+  "route_id": "CONTEXT_BUNDLE_V2",
+  "current_state_ref": {
+    "kind": "github_path",
+    "locator": "docs/RAFGITTOOLS_CURRENT_STATE.md",
+    "note": "Interpret only at its observed revision; refresh against provider ref when current-head truth is required."
+  },
+  "source_refs": [
+    {
+      "kind": "github_path",
+      "locator": "contracts/context-bundle-v2.schema.json"
+    },
+    {
+      "kind": "github_path",
+      "locator": "scripts/context_bundle_v2.py"
+    },
+    {
+      "kind": "github_path",
+      "locator": "app/src/main/kotlin/com/rafgittools/workspace/ContextBroker.kt"
+    }
+  ],
+  "authority": "RafGitTools producer repository at the bound ref",
+  "execution_target": "Validated rafaelia.context_bundle.v2 packet built through existing contract/broker paths",
+  "evidence_refs": [],
+  "gaps": [
+    "TOKEN_VAZIO_EXACT_HEAD_CI",
+    "TOKEN_VAZIO_CURRENT_HEAD_RUNTIME"
+  ],
+  "next": "Validate route registry and seed, then bind exact-head workflow evidence before promoting PASS.",
+  "claim_allowed": false
+}
