@@ -25,6 +25,22 @@ def canonical_label(value: str) -> str:
     return value[:1].upper() + value[1:].lower()
 
 
+def canonical_observed_at(value: str | None) -> str:
+    """Return a canonical UTC timestamp; None preserves live-emission behavior."""
+    if value is None:
+        return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    raw = value.strip()
+    if not raw:
+        raise ValueError("observed-at must be non-empty")
+    try:
+        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("observed-at must be ISO-8601") from exc
+    if parsed.tzinfo is None:
+        raise ValueError("observed-at must include a timezone")
+    return parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser()
     p.add_argument("--bridge-id", required=True)
@@ -36,12 +52,16 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--predecessor", default="TOKEN_VAZIO")
     p.add_argument("--supersedes", default="TOKEN_VAZIO")
     p.add_argument("--capability-name", action="append", default=[])
+    p.add_argument(
+        "--observed-at",
+        default=None,
+        help="explicit ISO-8601 timestamp for deterministic replay; omitted means current UTC time",
+    )
     return p
 
 
-def main() -> int:
-    args = parser().parse_args()
-    envelope = {
+def build_envelope(args: argparse.Namespace) -> dict:
+    return {
         "schemaVersion": "rafgittools.rafpolimata-custody-bridge.v1",
         "bridgeId": args.bridge_id,
         "producer": "rafaelmeloreisnovo/RafGitTools",
@@ -55,9 +75,17 @@ def main() -> int:
         "predecessorReceipt": args.predecessor,
         "supersedesReceipt": args.supersedes,
         "capabilityLabels": sorted({canonical_label(v) for v in args.capability_name}),
-        "observedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "observedAt": canonical_observed_at(args.observed_at),
     }
-    print(json.dumps(envelope, sort_keys=True, separators=(",", ":")))
+
+
+def canonical_json(envelope: dict) -> str:
+    return json.dumps(envelope, sort_keys=True, separators=(",", ":"))
+
+
+def main() -> int:
+    args = parser().parse_args()
+    print(canonical_json(build_envelope(args)))
     return 0
 
 
