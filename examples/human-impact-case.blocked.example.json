@@ -29,6 +29,7 @@
     "bestInterestAssessmentRef": "TOKEN_VAZIO",
     "childLegalBasisReviewRef": "TOKEN_VAZIO",
     "ageAssuranceAssessmentRef": "TOKEN_VAZIO",
+    "childParticipationAssessmentRef": "TOKEN_VAZIO",
     "childAppropriateExplanation": false,
     "noBehavioralManipulation": false,
     "progressiveAutonomyRespected": false,
@@ -46,7 +47,8 @@
   "equity": {
     "equityImpactAssessmentRef": "TOKEN_VAZIO",
     "accessibilityPlanRef": "TOKEN_VAZIO",
-    "benefitHarmDistributionRef": "TOKEN_VAZIO"
+    "benefitHarmDistributionRef": "TOKEN_VAZIO",
+    "stakeholderEngagementRef": "TOKEN_VAZIO"
   },
   "safety": {
     "riskTier": "HIGH",
