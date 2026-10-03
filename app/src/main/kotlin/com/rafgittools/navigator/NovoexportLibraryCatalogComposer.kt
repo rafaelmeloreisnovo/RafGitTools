@@ -40,7 +40,7 @@ object NovoexportLibraryCatalogComposer {
             sourceSlot = "NOVOEXPORT_SELECTED_ROOT",
             providerAuthority = providerAuthority,
             locatorSha256 = locatorSha,
-            displayLabel = "Selected SAF source tree (metadata only)",
+            displayLabel = "Selected Drive/SAF source tree (metadata only)",
             readOnly = true,
             accessClass = LibraryAccessClass.TOKEN_VAZIO,
             evidenceState = LibraryEvidenceState.SOURCE_OBSERVED,
@@ -57,6 +57,7 @@ object NovoexportLibraryCatalogComposer {
         }
         val fileEntries = (inventory.allFiles.ifEmpty { inventory.candidateFiles })
             .distinctBy { it.documentId }
+        val corpusCoverage = NovoexportConversationCorpus.coverage(fileEntries)
         if (inventory.rootDocumentId.isBlank()) {
             require(inventory.allDirectories.isEmpty() &&
                 fileEntries.all { it.parentDocumentId == null }
@@ -151,7 +152,7 @@ object NovoexportLibraryCatalogComposer {
                 "CONTENT_HASH_NOT_COMPUTED",
                 "SEMANTIC_EXTRACTION_NOT_RUN",
                 "SOURCE_TREE_METADATA_ONLY"
-            ),
+            ) + corpusCoverage.gapRefs(),
             createdAtEpochMs = createdAtEpochMs,
             claimAllowed = false,
             treeNodes = listOf(rootNode) + directoryNodes + fileNodes
