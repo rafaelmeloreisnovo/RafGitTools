@@ -44,6 +44,7 @@ If children or adolescents may reasonably use or be affected by the system, the 
 - best-interest assessment;
 - child-rights and lawful-basis review;
 - proportional age-assurance assessment, when age assurance is relevant;
+- an assessment of safe, age-appropriate participation of children in design/evaluation, without exposing them unnecessarily to research risk;
 - child-appropriate explanations;
 - protection from behavioral manipulation;
 - respect for progressive autonomy;
@@ -82,7 +83,7 @@ FPIC is not mechanically declared applicable to every context. The applicability
 
 The project must not treat cultural diversity as a dataset to be extracted. Participation, attribution, benefit sharing, context and community governance must be addressed before reuse of culturally sensitive material.
 
-## Equity, accessibility and social benefit
+## Equity, accessibility, social participation and social benefit
 
 A claim that a system reduces social inequality is not accepted from intent alone.
 
@@ -91,8 +92,11 @@ For public-impact or vulnerable-population cases, the gate requires:
 - equity impact assessment;
 - accessibility plan;
 - expected distribution of benefits and harms;
+- documented stakeholder/community engagement appropriate to the scope and population;
 - measurable outcomes defined before deployment;
 - post-deployment monitoring capable of detecting unequal error, exclusion or burden.
+
+Participation must be meaningful rather than ceremonial: material concerns, objections and mitigation decisions should be traceable in the evidence record.
 
 A project may be well-intentioned and still fail this gate.
 
@@ -136,10 +140,10 @@ INTENT
 -> PURPOSE_AND_AUTHORITY
 -> DATA_MAP
 -> RIGHTS_IMPACT
--> CHILD_SAFETY
+-> CHILD_SAFETY_AND_PARTICIPATION
 -> CULTURAL_AND_COMMUNITY_REVIEW
 -> SECURITY_AND_PRIVACY
--> EQUITY_AND_ACCESSIBILITY
+-> EQUITY_ACCESSIBILITY_AND_PARTICIPATION
 -> SAFETY_CASE
 -> EVIDENCE
 -> HUMAN/AUTHORITY_REVIEW
@@ -159,9 +163,9 @@ The gate MUST block when any applicable requirement is missing, including:
 - manipulative behavior or dark patterns;
 - missing redress or human override for consequential use;
 - personal-data use without documented lawful-basis/privacy review;
-- child impact without best-interest and safeguarding evidence;
+- child impact without best-interest, participation assessment and safeguarding evidence;
 - Indigenous/community impact without consultation and FPIC applicability assessment;
-- public/vulnerable impact without equity/accessibility analysis;
+- public/vulnerable impact without equity, accessibility and stakeholder-engagement evidence;
 - high-risk operation without safety case, independent review and authority review;
 - missing rollback, incident response or evidence references.
 
@@ -179,6 +183,7 @@ population_triggers
 data_triggers
 risk_tier
 applicable_controls
+stakeholder_refs
 blockers
 expected_observable
 actual_observable
