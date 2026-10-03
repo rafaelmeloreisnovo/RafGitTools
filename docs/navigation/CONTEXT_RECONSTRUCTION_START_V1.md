@@ -54,6 +54,7 @@ claim_allowed=false
 |---|---|
 | Editorial/current-state pointer | `docs/RAFGITTOOLS_CURRENT_STATE.md` |
 | Documentation map | `docs/INDEX.md` + `CODE_TO_DOC_MAP.md` |
+| Deterministic next-gate priority | `configs/agent-entry-kernel.v1.json` + `docs/UNCERTAINTY_URGENCY_FRICTION_ETHICS_LICENSE_BY_DESIGN_V3.md` |
 | Workspace/context architecture | `docs/architecture/RAFGITTOOLS_CONTEXT_WORKBENCH_INTEGRATION_AUDIT_V1.md` |
 | Canonical portable context contract | `contracts/context-bundle-v2.schema.json` |
 | Context conversion/validation | `scripts/context_bundle_v2.py` |
@@ -100,6 +101,7 @@ human/AI intent
 context-reconstruction-routes.v1.json
   ├─ CURRENT_STATE
   ├─ DOCUMENTATION_INDEX
+  ├─ NEXT_BEST_GATE
   ├─ CONTEXT_BUNDLE_V2
   ├─ CONTEXT_WORKBENCH
   ├─ NOVOEXPORT_NAVIGATOR
@@ -108,6 +110,52 @@ context-reconstruction-routes.v1.json
 ```
 
 A route may reference several files, but `source_min` is intentionally bounded to 1–3 roots. Expand only for missing source, contradiction, unresolved authority, missing evidence or explicit request.
+
+## Next-best-gate selection — reduce uncertainty without reducing rigor
+
+After `CURRENT_STATE` and the minimum evidence are bound, route to `NEXT_BEST_GATE` when more than one unresolved action is possible. Do **not** rank by document count, symbolic density, number of links or combinatorial reachability. Those properties do not increase truth or execution authority.
+
+Use the already-governed priority rules from `configs/agent-entry-kernel.v1.json` as a deterministic lexicographic filter:
+
+1. fail-closed governance, data, privacy, security, safety, rollback or execution blockers first;
+2. inside the same urgency, unblock upstream dependencies before downstream consumers;
+3. prefer `READY_TO_TEST` work with an observable exit criterion over speculative redesign;
+4. prefer the smallest reversible action that reduces one named uncertainty and exercises a falsifier;
+5. prefer a cross-repository blocker that unlocks several dependent nodes over isolated cosmetic debt;
+6. if still tied, take the oldest unresolved observation;
+7. stop when the exit criterion is observed, authority changes, a mandatory dependency is unavailable, or more history has no marginal effect on the decision.
+
+Every selected unit must preserve:
+
+```text
+gap_id
+urgency / risk
+source + authority
+known evidence
+missing evidence
+blocked uses
+dependencies
+falsifier / exit criterion
+rollback
+next gate
+claim_allowed=false unless separately promoted by its own evidence rule
+```
+
+`TOKEN_VAZIO` is not a low score to be optimized away. It is often the most valuable output when it identifies the exact missing source, authority, execution or evidence needed to make the next decision deterministic.
+
+### DMAIC as execution discipline, not certification claim
+
+For a bounded documentation/control-plane change:
+
+```text
+DEFINE  = intent + CTQ + authority + stop condition
+MEASURE = exact ref + source/evidence baseline + named uncertainty
+ANALYZE = dependency/blocker/falsifier + contradiction classification
+IMPROVE = smallest reversible causal delta
+CONTROL = exact-head validation + readback + receipt + rollback/supersedes
+```
+
+This mapping is a process discipline. It does not assert statistical Six Sigma performance, ISO certification, RFC/IEEE conformance or any other certification without the corresponding measured/audited evidence.
 
 ## Control of content
 
@@ -120,8 +168,8 @@ A route may reference several files, but `source_min` is intentionally bounded t
 
 ## R3
 
-`F_ok`: existing ContextBundleV2, ContextBroker, Navigator, session dispatch and RafGitFS are reused as authorities.
+`F_ok`: existing ContextBundleV2, ContextBroker, Navigator, session dispatch, RafGitFS, agent-entry priority rules and uncertainty/friction governance are reused as authorities.
 
-`F_gap`: this V1 requires exact-head validation/CI before `PASS`; current-state freshness remains independently revision-bound.
+`F_gap`: this V1 successor requires exact-head validation/CI before `PASS`; current-state freshness and any selected domain gate remain independently revision-bound.
 
-`F_next`: validate registry + seed example, open draft PR, observe exact-head checks, then append the material delta to the longitudinal ledger.
+`F_next`: validate registry + anti-regression test on the exact head, open a draft PR, observe checks, then append the material delta to the longitudinal ledger without promoting unrelated TOKEN_VAZIO.

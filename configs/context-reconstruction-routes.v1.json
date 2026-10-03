@@ -39,6 +39,20 @@
       "next_on_missing": "TOKEN_VAZIO_DOCUMENT_ROUTE"
     },
     {
+      "route_id": "NEXT_BEST_GATE",
+      "purpose": "Select exactly one smallest bounded next action that reduces a named uncertainty without weakening gates or expanding scope.",
+      "authority": "RafGitTools agent-entry priority rules plus the uncertainty/urgency/friction governance contract",
+      "source_min": [
+        "configs/agent-entry-kernel.v1.json",
+        "docs/UNCERTAINTY_URGENCY_FRICTION_ETHICS_LICENSE_BY_DESIGN_V3.md"
+      ],
+      "service": "agent-entry-kernel / uncertainty-urgency selector",
+      "execution_target": "one existing gap or gate with an explicit falsifier, exit criterion, evidence rule and rollback boundary",
+      "evidence_rule": "preserve typed TOKEN_VAZIO; non-compensatory governance/data/privacy/security blockers dominate; then prefer upstream dependency unblockers, READY_TO_TEST items, narrow falsifiable actions and cross-repository blockers; if still tied use the oldest unresolved observation",
+      "claim_boundary": "priority-selection!=gap-closure!=claim-promotion",
+      "next_on_missing": "TOKEN_VAZIO_NEXT_GATE_SELECTION"
+    },
+    {
       "route_id": "CONTEXT_BUNDLE_V2",
       "purpose": "Normalize portable context using the existing canonical V2 contract.",
       "authority": "RafGitTools context bundle contract and implementation",
