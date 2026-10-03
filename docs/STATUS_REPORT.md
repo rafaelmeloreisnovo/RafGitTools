@@ -1,10 +1,11 @@
 # RafGitTools — Relatório de Status
 
 **Data de observação:** 2026-10-03  
-**Provider head observado para este overlay:** `main@3f63ac845fcc4fed99c62087d52b75148dcc9aa1`  
+**Provider main observado antes desta branch:** `main@9eab1300caae061a4476ba894c7e71236eecb35e`  
+**Head limitado do compare pós-baseline:** `3f63ac845fcc4fed99c62087d52b75148dcc9aa1`  
 **Baseline histórico da reconciliação:** `8af97a580e535d2015e8211000850e282b031763`  
-**Estado geral:** 🟡 `SOURCE_ADVANCED / EVIDENCE_GATED / RECONCILIATION_TOKEN_VAZIO`  
-**Escopo desta revisão:** overlay documental limitado a PR #617 + PR #618; sem alegar auditoria semântica exaustiva dos commits intermediários  
+**Estado geral:** 🟡 `SOURCE_ADVANCED / EVIDENCE_GATED / PARTITIONED_UNRECONCILED`  
+**Escopo desta revisão:** overlay documental + BR-4 decomposto em sete domínios; sem alegar reconciliação semântica exaustiva dos 642 commits  
 **Claim:** `claim_allowed=false`  
 **Release:** `release_allowed=false`
 
@@ -18,20 +19,38 @@ SOURCE_OBSERVED
 != DEVICE_PROVEN
 != RELEASE_PROVEN
 
+PARTITIONED != RECONCILED
 TOKEN_VAZIO != FAIL != PASS
 ```
 
 ## Overlay 2026-10-03 — verdade corrente sem falsa promoção
 
-O provider foi relido em `main@3f63ac845fcc4fed99c62087d52b75148dcc9aa1`. O compare entre o baseline documental de 2026-09-28 (`8af97a...`) e esse head retorna **642 commits à frente**. Assim, este relatório não converte automaticamente esse intervalo em estado auditado; o intervalo permanece `TOKEN_VAZIO_RECONCILIATION_REQUIRED` até reconciliação por domínio.
+O compare entre o baseline documental de 2026-09-28 (`8af97a...`) e o head limitado `3f63ac...` retorna **642 commits à frente**. O PR #619 transformou esse drift implícito em `TOKEN_VAZIO_RECONCILIATION_REQUIRED` e foi promovido após START #594 / run `37093098000` SUCCESS no candidato `18c683e0e58e6023ec013c62703c36706bbb94d9`, com merge `9eab1300caae061a4476ba894c7e71236eecb35e`.
 
 | Superfície | Estado | Evidência exata | Limite |
 |---|---|---|---|
 | Context Reconstruction Router V1 | `MERGED / VERIFIED_LIMITED` | PR #617 head `5878176b49f19f297f6573ea528f66218c3a036d`; START #590 / run `37090622351` SUCCESS; merge `f2ab825454a42f07ba55db742b04390092826475` | prova rota/contrato/CI; não prova runtime físico/release |
 | Custody deterministic replay | `MERGED / VERIFIED_LIMITED` | PR #618 head `e0e5010c5142d77af9f5a6c6c8e5ba7bd419d978`; START #591 / run `37090667573` SUCCESS; merge `3f63ac845fcc4fed99c62087d52b75148dcc9aa1` | remove bloqueio de timestamp não determinístico; não prova replay histórico já executado |
-| Delta pós-baseline completo | `TOKEN_VAZIO_RECONCILIATION_REQUIRED` | 642 commits entre baseline e provider head | não inferir capabilities/claims não revisados |
+| Documentation truth overlay | `MERGED / VERIFIED_LIMITED` | PR #619 head `18c683e0e58e6023ec013c62703c36706bbb94d9`; START #594 / run `37093098000` SUCCESS; merge `9eab1300caae061a4476ba894c7e71236eecb35e` | prova hotfix documental; não prova reconciliação semântica do intervalo |
+| Delta pós-baseline completo | `TOKEN_VAZIO_RECONCILIATION_REQUIRED` | 642 commits entre baseline e bounded head | não inferir capabilities/claims não revisados |
 
 Entrada de reconstrução canônica: `docs/navigation/CONTEXT_RECONSTRUCTION_START_V1.md`. O seed associado é referência-first e não é backup integral de corpus.
+
+## BR-4 — partição da reconciliação pós-baseline
+
+`docs/audit/POST_BASELINE_RECONCILIATION_PARTITION_20261003_V1.md` decompõe o intervalo em sete domínios de autoridade/evidência:
+
+| ID | Domínio | Estado |
+|---|---|---|
+| R642-D1 | CONTROL_PLANE_EVIDENCE | `PARTITIONED_UNRECONCILED` |
+| R642-D2 | ANDROID_RUNTIME_BRIDGE | `PARTITIONED_UNRECONCILED` |
+| R642-D3 | PROVIDER_GOVERNANCE | `PARTITIONED_UNRECONCILED` |
+| R642-D4 | CONTEXT_CORPUS_NAVIGATION | `PARTITIONED_UNRECONCILED` |
+| R642-D5 | LOWLEVEL_FREESTANDING | `PARTITIONED_UNRECONCILED` |
+| R642-D6 | FEDERATION_CUSTODY_DATA | `PARTITIONED_UNRECONCILED` |
+| R642-D7 | DOCUMENTATION_CLAIMS_RECEIPTS | `PARTITIONED_UNRECONCILED` |
+
+BR-4 reduz o espaço de busca; não reduz nenhum domínio a PASS. D1 vem primeiro porque define os limites do START, dos validators, dos skips condicionais e das evidências provider-bound usadas pelos demais.
 
 ## Reconciliação 2026-09-28 — RAFANDROID + Silicon Light
 
@@ -123,6 +142,8 @@ No SHA exato `56f4ce...`, foi diretamente observado o workflow Human Impact Cros
 | Silicon Light L0 | freestanding L0 integrado | host + NDK ARMv7/AArch64 + minimal APK fixture PASS; physical device aberto |
 | Context Reconstruction Router V1 | integrado | PR #617 exact-head START PASS; pointer/route proof != corpus/runtime/release |
 | Custody deterministic replay | integrado | PR #618 exact-head START PASS; deterministic producer != replay histórico concluído |
+| Documentation truth overlay | integrado | PR #619 exact-head START PASS; docs truth != semantic reconciliation |
+| BR-4 domain partition | candidate docs-only | seven domains `PARTITIONED_UNRECONCILED`; exact-head candidate CI pending |
 | LLaMA/local model | bridge/source presente | dependência/modelo/runtime externo = `TOKEN_VAZIO` |
 | Physical Android device | — | `TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED` |
 | Release | — | `BLOCKED_BY_EVIDENCE` |
@@ -159,24 +180,26 @@ Não converter esses vazios em números aproximados.
 
 - `docs/RAFGITTOOLS_CURRENT_STATE.md` é a entrada editorial corrente, agora em modo de overlay bounded.
 - `docs/RAFGITTOOLS_ROADMAP_TRUE.md` contém a sequência operacional corrente.
+- `docs/audit/POST_BASELINE_RECONCILIATION_PARTITION_20261003_V1.md` é o mapa BR-4; ele classifica domínios, não concede PASS.
 - `docs/URGENCY_GATE_GAP_20260906.md` permanece append-only como snapshot do seu source revision.
 - `ECOSYSTEM_RUNTIME_STATE.json` foi observado com `observed_at=2026-08-14`; por ser arquivo máquina-legível fora do escopo docs-only, não foi reescrito. Até regeneração: `HISTORICAL_MACHINE_STATE / TOKEN_VAZIO_REGEN_REQUIRED`.
 - `docs/canonical/2026-08-14/*` permanece imutável como evidência histórica.
 
 ## Gaps prioritários
 
-1. **U0 — documentation truth / reconciliation:** particionar os 642 commits pós-baseline e reconciliar por domínio; até lá `TOKEN_VAZIO_RECONCILIATION_REQUIRED`.
-2. **U0 — current-head evidence:** manter CI/build/security ligados ao SHA exato; não herdar PASS de predecessor.
-3. **U0 — physical device:** instalar/iniciar o artefato exato e registrar package/ABI/device/logcat/hash.
-4. **U0 — release:** assinatura, provenance e physical acceptance no mesmo artifact chain.
-5. **U0/U1 — provider governance:** autoridade, desired policy, dry-run, reversible apply e authoritative readback.
-6. **U1 — real fixtures:** Git/Auth/providers/offline/recovery.
-7. **U1 — external runtimes:** PTY, LFS/GPG e modelo/LLaMA conforme cada contrato.
-8. **U2 — machine drift:** regenerar estado máquina quando autorizado.
-9. **U1 — low-level equivalence:** inventariar helpers duplicados e migrar somente famílias com referência, property/fuzz e equivalência comprovada.
+1. **U0 — BR-4 promotion:** exact-head START da branch de partição; até lá `IMPLEMENTED_UNTESTED`.
+2. **U0 — R642-D1 control plane evidence:** reconciliar workflow topology, validators, conditions/skips e provider evidence; sem herdar PASS global.
+3. **U0 — full post-baseline reconciliation:** manter os sete domínios `PARTITIONED_UNRECONCILED` até fechamento individual.
+4. **U0 — current-head evidence:** manter CI/build/security ligados ao SHA exato; não herdar PASS de predecessor.
+5. **U0 — physical device:** instalar/iniciar o artefato exato e registrar package/ABI/device/logcat/hash.
+6. **U0 — release:** assinatura, provenance e physical acceptance no mesmo artifact chain.
+7. **U0/U1 — provider governance:** autoridade, desired policy, dry-run, reversible apply e authoritative readback.
+8. **U1 — real fixtures:** Git/Auth/providers/offline/recovery.
+9. **U1 — external runtimes:** PTY, LFS/GPG e modelo/LLaMA conforme cada contrato.
+10. **U2 — machine drift:** regenerar estado máquina quando autorizado.
 
 ## R3
 
-- **F_ok:** PR #617 e PR #618 agora estão representados com SHA/run/merge exatos e sem promover runtime físico, replay histórico ou release.
-- **F_gap:** 642 commits pós-baseline permanecem sem reconciliação semântica exaustiva; current-head full evidence inventory, máquina de estado, device, provider-real fixtures e release continuam abertos.
-- **F_next:** reconciliar o delta por domínio e manter cada promoção vinculada a revision/artifact-bound receipt; expansão permanece abaixo desse gate.
+- **F_ok:** #617/#618/#619 estão revision-bound e o grande vazio pós-baseline está decomposto em sete domínios de evidência sem falsa promoção.
+- **F_gap:** BR-4 candidate ainda requer exact-head START; D1–D7 permanecem `PARTITIONED_UNRECONCILED`; máquina de estado, device, provider-real fixtures e release continuam abertos.
+- **F_next:** promover BR-4 somente com exact-head START terminal; depois reconciliar exclusivamente R642-D1 CONTROL_PLANE_EVIDENCE.
