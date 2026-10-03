@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "rafaelia.human-impact-gate.v1",
+  "caseId": "EXAMPLE-HUMAN-IMPACT-001",
+  "owner": "TOKEN_VAZIO",
+  "purpose": "TOKEN_VAZIO",
+  "claimAllowed": false,
+  "population": {
+    "childrenPossible": true,
+    "indigenousPeoplesAffected": true,
+    "vulnerableGroupsAffected": true,
+    "publicImpact": true
+  },
+  "data": {
+    "personalData": true,
+    "sensitiveData": false,
+    "lawfulBasisReviewRef": "TOKEN_VAZIO",
+    "minimizationDocumented": false,
+    "retentionDocumented": false,
+    "securityControlsDocumented": false,
+    "privacyImpactAssessmentRef": "TOKEN_VAZIO"
+  },
+  "agency": {
+    "nonManipulation": false,
+    "accessibleNotice": false,
+    "redressChannel": false,
+    "humanOverrideForConsequentialUse": false
+  },
+  "children": {
+    "bestInterestAssessmentRef": "TOKEN_VAZIO",
+    "childLegalBasisReviewRef": "TOKEN_VAZIO",
+    "ageAssuranceAssessmentRef": "TOKEN_VAZIO",
+    "childParticipationAssessmentRef": "TOKEN_VAZIO",
+    "childAppropriateExplanation": false,
+    "noBehavioralManipulation": false,
+    "progressiveAutonomyRespected": false,
+    "safeguardingEscalationRef": "TOKEN_VAZIO",
+    "dataProtectionImpactRef": "TOKEN_VAZIO"
+  },
+  "culture": {
+    "communityConsultationRef": "TOKEN_VAZIO",
+    "representativeInstitutionRef": "TOKEN_VAZIO",
+    "fpicAssessmentRef": "TOKEN_VAZIO",
+    "localLanguagePlanRef": "TOKEN_VAZIO",
+    "traditionalKnowledgeProtection": false,
+    "communityWithdrawalRespected": false
+  },
+  "equity": {
+    "equityImpactAssessmentRef": "TOKEN_VAZIO",
+    "accessibilityPlanRef": "TOKEN_VAZIO",
+    "benefitHarmDistributionRef": "TOKEN_VAZIO",
+    "stakeholderEngagementRef": "TOKEN_VAZIO"
+  },
+  "safety": {
+    "riskTier": "HIGH",
+    "rollbackRef": "TOKEN_VAZIO",
+    "incidentResponseRef": "TOKEN_VAZIO",
+    "safetyCaseRef": "TOKEN_VAZIO",
+    "independentReviewRef": "TOKEN_VAZIO",
+    "authorityReviewRef": "TOKEN_VAZIO",
+    "failSafe": false,
+    "monitoringDocumented": false
+  },
+  "evidenceRefs": ["TOKEN_VAZIO"]
+}
