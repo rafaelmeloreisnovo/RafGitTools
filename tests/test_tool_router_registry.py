@@ -16,6 +16,7 @@ class ToolRouterRegistryContractTest(unittest.TestCase):
         self.assertEqual("PASS", report["state"], report)
         self.assertFalse(report["claim_allowed"])
         self.assertEqual("NOT_RUN", report["execution_evidence"])
+        self.assertEqual(["git.pull", "git.push"], report["durable_handlers"])
 
     def test_allowed_tool_without_handler_fails(self):
         registry = {
@@ -54,6 +55,23 @@ class ToolRouterRegistryContractTest(unittest.TestCase):
         report = MODULE.evaluate(registry, router)
         self.assertEqual("FAIL", report["state"])
         self.assertEqual(["git.status"], report["allowed_without_implemented_state"])
+
+    def test_blocked_durable_handler_still_requires_queue_boundary(self):
+        registry = {
+            "version": "fixture",
+            "tools": {
+                "git.push": {
+                    "allowed": False,
+                    "requires_auth": True,
+                    "handler_state": "IMPLEMENTED_DURABLE_QUEUE",
+                }
+            },
+        }
+        router = 'return when (tool) { "git.push" -> handleGitPushQueued(call) }'
+        report = MODULE.evaluate(registry, router)
+        self.assertEqual("FAIL", report["state"])
+        self.assertIn("git.push", report["durable_contract_missing"])
+        self.assertIn("durable_queue_boundary", report["durable_contract_missing"])
 
 
 if __name__ == "__main__":
