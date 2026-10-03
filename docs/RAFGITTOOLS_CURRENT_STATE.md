@@ -1,11 +1,12 @@
 # RAFGITTOOLS_CURRENT_STATE
 
-- Status: **ACTIVE — bounded current-state overlay; full post-2026-09-28 reconciliation remains gated**
+- Status: **ACTIVE — bounded current-state overlay; post-2026-09-28 reconciliation partitioned but still gated**
 - Observed repository: `rafaelmeloreisnovo/RafGitTools`
-- Observed provider head for this overlay: `main@3f63ac845fcc4fed99c62087d52b75148dcc9aa1`
+- Observed provider main before this partition branch: `main@9eab1300caae061a4476ba894c7e71236eecb35e`
+- Bounded post-baseline compare head: `3f63ac845fcc4fed99c62087d52b75148dcc9aa1`
 - Historical reconciliation baseline: `8af97a580e535d2015e8211000850e282b031763`
 - Observed date: **2026-10-03**
-- Reconciliation scope: **bounded evidence reconciliation for PR #617 and PR #618; no claim of exhaustive review of intervening commits**
+- Reconciliation scope: **bounded evidence reconciliation + BR-4 domain partition; no claim of exhaustive semantic reconciliation of the 642-commit interval**
 - `claim_allowed=false`
 - `release_allowed=false`
 
@@ -16,19 +17,21 @@ SOURCE_OBSERVED != TEST_PROVEN != BUILD_PROVEN != RUNTIME_PROVEN
                 != DEVICE_PROVEN != RELEASE_PROVEN
 TOKEN_VAZIO != FAIL != PASS
 HISTORICAL_RECEIPT != CURRENT_HEAD_RECEIPT
+PARTITIONED != RECONCILED
 ```
 
 This document describes the current source/documentation relationship. Historical receipts remain valid only for the exact revisions and artifacts to which they were originally bound.
 
 ## 2026-10-03 controlling delta — context reconstruction + deterministic custody replay
 
-Provider readback observed `main@3f63ac845fcc4fed99c62087d52b75148dcc9aa1`. The historical documentation baseline `8af97a580e535d2015e8211000850e282b031763` is 642 commits behind that head. Therefore the sections below remain revision-bounded history unless explicitly promoted by exact evidence; this overlay does **not** claim an exhaustive semantic reconciliation of all 642 intervening commits.
+Provider readback bounded the semantic compare at `3f63ac845fcc4fed99c62087d52b75148dcc9aa1`. The historical documentation baseline `8af97a580e535d2015e8211000850e282b031763` is 642 commits behind that bounded head. Therefore the sections below remain revision-bounded history unless explicitly promoted by exact evidence; this overlay does **not** claim an exhaustive semantic reconciliation of all 642 intervening commits.
 
 | Surface | Source state | Exact evidence | Boundary |
 |---|---|---|---|
 | Context Reconstruction Router V1 | `MERGED` | PR #617 candidate `5878176b49f19f297f6573ea528f66218c3a036d`; START #590 / run `37090622351` = SUCCESS; merge `f2ab825454a42f07ba55db742b04390092826475` | routing/contract/CI proof only; no physical/release promotion |
-| RafPolimata custody deterministic replay hotfix | `MERGED` | PR #618 head `e0e5010c5142d77af9f5a6c6c8e5ba7bd419d978`; START #591 / run `37090667573` = SUCCESS; merge/current head `3f63ac845fcc4fed99c62087d52b75148dcc9aa1` | proves producer source/tests at exact PR head; does not prove a historical envelope was already reconstructed |
-| Full post-2026-09-28 documentation reconciliation | `TOKEN_VAZIO_RECONCILIATION_REQUIRED` | compare baseline→current head = 642 commits ahead | do not infer unreviewed capability/evidence promotions |
+| RafPolimata custody deterministic replay hotfix | `MERGED` | PR #618 head `e0e5010c5142d77af9f5a6c6c8e5ba7bd419d978`; START #591 / run `37090667573` = SUCCESS; merge `3f63ac845fcc4fed99c62087d52b75148dcc9aa1` | proves producer source/tests at exact PR head; does not prove a historical envelope was already reconstructed |
+| Documentation truth overlay | `MERGED / VERIFIED_LIMITED` | PR #619 candidate `18c683e0e58e6023ec013c62703c36706bbb94d9`; START #594 / run `37093098000` = SUCCESS; merge `9eab1300caae061a4476ba894c7e71236eecb35e` | proves documentation hotfix exact-head CI; does not reconcile the 642 commits |
+| Full post-2026-09-28 semantic reconciliation | `TOKEN_VAZIO_RECONCILIATION_REQUIRED` | compare baseline→bounded head = 642 commits ahead | do not infer unreviewed capability/evidence promotions |
 
 Canonical reconstruction route:
 
@@ -38,6 +41,22 @@ Canonical reconstruction route:
 - `docs/INDEX.md`
 
 The reconstruction seed is a pointer packet, not a corpus backup. Unknown source/authority/execution/evidence remains fail-closed. `claim_allowed=false` and `release_allowed=false` remain unchanged.
+
+## 2026-10-03 BR-4 — post-baseline reconciliation partition
+
+The provider compare path families are now partitioned in `docs/audit/POST_BASELINE_RECONCILIATION_PARTITION_20261003_V1.md` into seven evidence-bearing domains:
+
+```text
+R642-D1 CONTROL_PLANE_EVIDENCE
+R642-D2 ANDROID_RUNTIME_BRIDGE
+R642-D3 PROVIDER_GOVERNANCE
+R642-D4 CONTEXT_CORPUS_NAVIGATION
+R642-D5 LOWLEVEL_FREESTANDING
+R642-D6 FEDERATION_CUSTODY_DATA
+R642-D7 DOCUMENTATION_CLAIMS_RECEIPTS
+```
+
+All seven states are `PARTITIONED_UNRECONCILED`. The partition reduces search/audit uncertainty; it does not close the global reconciliation gate. Audit order begins with D1 because workflow topology, validators, conditional/skipped lanes and exact-head provider evidence constrain how downstream domains may be promoted.
 
 ## 2026-09-28 controlling delta — RAFANDROID + Silicon Light
 
@@ -144,6 +163,8 @@ FNEXT8 predecessor execution evidence remains bounded to its executed revision/r
 | Silicon Light L0 | `MERGED / VERIFIED_LIMITED` | PR #526 exact-head host + ARMv7/AArch64 + generated APK fixture PASS |
 | Context Reconstruction Router V1 | `MERGED / VERIFIED_LIMITED` | PR #617 exact-head START PASS; pointer/route proof != corpus backup/runtime/release |
 | Custody deterministic replay producer | `MERGED / VERIFIED_LIMITED` | PR #618 exact-head START PASS; capability to replay deterministically != completed historical replay |
+| Documentation truth overlay | `MERGED / VERIFIED_LIMITED` | PR #619 exact-head START PASS; documentation truth != semantic reconciliation |
+| BR-4 reconciliation partition | `IMPLEMENTED_UNTESTED` on candidate | seven domains are partitioned, none reconciled; exact-head CI pending for candidate |
 | Physical Android runtime | `TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED` | exact-artifact install/launch/recovery receipt required |
 | Release | `BLOCKED_BY_EVIDENCE` | signing + exact artifact + physical acceptance required |
 
@@ -161,16 +182,18 @@ current machine-state regeneration = TOKEN_VAZIO_REGEN_REQUIRED
 ## Current open gates
 
 ```text
-full post-2026-09-28 semantic reconciliation = TOKEN_VAZIO_RECONCILIATION_REQUIRED
-exact-current-head complete CI/build receipt = TOKEN_VAZIO until individually provider-bound
-physical install/launch/restart receipt       = TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED
-real Git/provider/auth fixture matrix         = TOKEN_VAZIO_RUNTIME
-PTY/VT100                                      = TOKEN_VAZIO_PTY
-external LLaMA/model runtime                  = TOKEN_VAZIO_RUNTIME
-signed release provenance                    = TOKEN_VAZIO_RELEASE
-provider governance enforcement              = TOKEN_VAZIO until authoritative readback proves it
-claim_allowed                                 = false
-release_allowed                               = false
+post-2026-09-28 delta partition                 = 7 domains / PARTITIONED_UNRECONCILED
+full post-2026-09-28 semantic reconciliation   = TOKEN_VAZIO_RECONCILIATION_REQUIRED
+R642-D1 CONTROL_PLANE_EVIDENCE                 = TOKEN_VAZIO_RECONCILIATION_REQUIRED
+exact-current-head complete CI/build receipt   = TOKEN_VAZIO until individually provider-bound
+physical install/launch/restart receipt        = TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED
+real Git/provider/auth fixture matrix          = TOKEN_VAZIO_RUNTIME
+PTY/VT100                                       = TOKEN_VAZIO_PTY
+external LLaMA/model runtime                   = TOKEN_VAZIO_RUNTIME
+signed release provenance                     = TOKEN_VAZIO_RELEASE
+provider governance enforcement               = TOKEN_VAZIO until authoritative readback proves it
+claim_allowed                                  = false
+release_allowed                                = false
 ```
 
 ## Source-of-truth order
@@ -191,10 +214,10 @@ Machine-readable files that are older than the current revision remain useful hi
 
 Keep documentation synchronized from exact source and evidence boundaries. Any future source merge that changes user-visible capability, evidence state, build/runtime gate or release boundary must update the current-state/status/roadmap triad in the same review cycle or explicitly emit `TOKEN_VAZIO_DOC_DRIFT`.
 
-The next bounded reconciliation step is not feature expansion: partition the 642-commit post-baseline delta into evidence-bearing domains and close them incrementally. Until that is completed, `TOKEN_VAZIO_RECONCILIATION_REQUIRED` is the truthful state.
+BR-4 is materialized as a seven-domain partition, but this candidate remains `IMPLEMENTED_UNTESTED` until its exact-head START closes. After promotion, the next bounded reconciliation step is R642-D1 `CONTROL_PLANE_EVIDENCE`; do not open a lower-priority semantic domain before D1 source/authority/execution/skip boundaries are explicit.
 
 ## R3
 
-- **F_ok:** PR #617 context reconstruction and PR #618 deterministic replay are revision-bound and routed with exact-head START evidence; current provider head is recorded without promoting physical/release claims.
-- **F_gap:** the 642-commit delta since the 2026-09-28 baseline is not exhaustively semantically reconciled; machine-state regeneration, physical device, provider-real fixtures and release remain evidence-gated.
-- **F_next:** keep the triad aligned to this bounded overlay, then partition and reconcile the post-baseline delta by evidence-bearing domain rather than pretending a global PASS.
+- **F_ok:** PR #617, #618 and #619 are revision-bound; BR-4 decomposes the 642-commit uncertainty into seven evidence domains without promoting any domain to PASS.
+- **F_gap:** BR-4 exact-head CI is pending on the candidate; all seven domains remain `PARTITIONED_UNRECONCILED`; machine-state regeneration, physical device, provider-real fixtures and release remain evidence-gated.
+- **F_next:** close exact-head START for BR-4; after promotion reconcile only R642-D1 CONTROL_PLANE_EVIDENCE first.
