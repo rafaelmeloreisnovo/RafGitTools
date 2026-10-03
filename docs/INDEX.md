@@ -4,6 +4,8 @@
 
 Para reentrar no projeto sem varrer o corpus, comece por [`navigation/CONTEXT_RECONSTRUCTION_START_V1.md`](navigation/CONTEXT_RECONSTRUCTION_START_V1.md).
 
+Para o corpus do Google Drive e a fronteira público/privado/compartilhado, use [`architecture/RAFGITTOOLS_DRIVE_CORPUS_START_HERE_V1.md`](architecture/RAFGITTOOLS_DRIVE_CORPUS_START_HERE_V1.md). Essa rota fixa o namespace canônico `conversations-000.json`…`conversations-050.json` (51 arquivos), mantém IDs/ACLs físicos no índice privado do Drive e deixa o repositório público apenas com a rota lógica, código, testes e documentação public-safe.
+
 Camada machine-readable:
 
 - [`../configs/context-reconstruction-routes.v1.json`](../configs/context-reconstruction-routes.v1.json) — intenção → fonte mínima → autoridade → serviço → evidência;
@@ -24,20 +26,21 @@ A rota começa em **amar o próximo como a si mesmo** e preserva a separação `
 2. [`STATUS_REPORT.md`](STATUS_REPORT.md) — classificação técnica/evidencial corrente.
 3. [`RAFGITTOOLS_ROADMAP_TRUE.md`](RAFGITTOOLS_ROADMAP_TRUE.md) — sequência operacional atual.
 4. [`RAFGITTOOLS_DEVELOPMENT_DELIVERY_MAP_V1.md`](RAFGITTOOLS_DEVELOPMENT_DELIVERY_MAP_V1.md) — mapa gate-first de desenvolvimento e entrega.
-5. [`architecture/RAFGITTOOLS_DRIVE_GITHUB_DELIVERY_ARCHITECTURE_V1.md`](architecture/RAFGITTOOLS_DRIVE_GITHUB_DELIVERY_ARCHITECTURE_V1.md) — Drive/SAF → staging → RafGitFS → GitHub.
-6. [`RESPONSIVE_LAYOUT_GATE_V1.md`](RESPONSIVE_LAYOUT_GATE_V1.md) — contrato e limites da responsividade.
-7. [`RELEASE_NOTES_NEXT.md`](RELEASE_NOTES_NEXT.md) — notas candidatas, sem equivaler a release receipt.
-8. [`CODE_TO_DOC_MAP.md`](CODE_TO_DOC_MAP.md) — roteamento semântico código → documentação.
-9. [`URGENCY_GATE_GAP_20260906.md`](URGENCY_GATE_GAP_20260906.md) — snapshot append-only histórico de urgências/gates/gaps.
-10. [`RAFGITTOOLS_CODE_REALITY_MATRIX.md`](RAFGITTOOLS_CODE_REALITY_MATRIX.md) — matriz de capacidades; interpretar pelo revision/evidence boundary.
-11. [`FIRST_COMPILE_RUN_TRIANGLE.md`](FIRST_COMPILE_RUN_TRIANGLE.md) — contrato source → build → device.
-12. [`PENDING_33_ITEMS.md`](PENDING_33_ITEMS.md) — backlog histórico/source-functional; não equivale a runtime.
-13. [`canonical/2026-08-14/RAFGITTOOLS_SOURCE_BUILD_EVIDENCE_V1.md`](canonical/2026-08-14/RAFGITTOOLS_SOURCE_BUILD_EVIDENCE_V1.md) — checkpoint BUILD append-only.
-14. [`DOCUMENTATION_AUDIT_RECEIPT_2026-09-06.md`](DOCUMENTATION_AUDIT_RECEIPT_2026-09-06.md) — reconciliação histórica de 2026-09-06.
-15. [`RAFANDROID_METHOD_V1.md`](RAFANDROID_METHOD_V1.md) — shell autoral de descoberta/orquestração/gates do toolchain Android.
-16. [`architecture/SILICON_LIGHT_LOWLEVEL_V1.md`](architecture/SILICON_LIGHT_LOWLEVEL_V1.md) — contrato L0 freestanding e fronteira L0→JNI→Android.
-17. [`audit/SESSION_RECONCILIATION_RAFANDROID_SILICON_LIGHT_20260928.md`](audit/SESSION_RECONCILIATION_RAFANDROID_SILICON_LIGHT_20260928.md) — revisão desta sessão, complicações, F_gap/F_next e evidência terminal.
-18. [`ci/START_PIPELINE_V1.md`](ci/START_PIPELINE_V1.md) — single-root pipeline ativo incluindo RAFANDROID/Silicon Light.
+5. [`architecture/RAFGITTOOLS_DRIVE_CORPUS_START_HERE_V1.md`](architecture/RAFGITTOOLS_DRIVE_CORPUS_START_HERE_V1.md) — Drive privado → corpus 000..050 → SAF → catálogo → GitHub público-safe.
+6. [`architecture/RAFGITTOOLS_DRIVE_GITHUB_DELIVERY_ARCHITECTURE_V1.md`](architecture/RAFGITTOOLS_DRIVE_GITHUB_DELIVERY_ARCHITECTURE_V1.md) — Drive/SAF → staging → RafGitFS → GitHub.
+7. [`RESPONSIVE_LAYOUT_GATE_V1.md`](RESPONSIVE_LAYOUT_GATE_V1.md) — contrato e limites da responsividade.
+8. [`RELEASE_NOTES_NEXT.md`](RELEASE_NOTES_NEXT.md) — notas candidatas, sem equivaler a release receipt.
+9. [`CODE_TO_DOC_MAP.md`](CODE_TO_DOC_MAP.md) — roteamento semântico código → documentação.
+10. [`URGENCY_GATE_GAP_20260906.md`](URGENCY_GATE_GAP_20260906.md) — snapshot append-only histórico de urgências/gates/gaps.
+11. [`RAFGITTOOLS_CODE_REALITY_MATRIX.md`](RAFGITTOOLS_CODE_REALITY_MATRIX.md) — matriz de capacidades; interpretar pelo revision/evidence boundary.
+12. [`FIRST_COMPILE_RUN_TRIANGLE.md`](FIRST_COMPILE_RUN_TRIANGLE.md) — contrato source → build → device.
+13. [`PENDING_33_ITEMS.md`](PENDING_33_ITEMS.md) — backlog histórico/source-functional; não equivale a runtime.
+14. [`canonical/2026-08-14/RAFGITTOOLS_SOURCE_BUILD_EVIDENCE_V1.md`](canonical/2026-08-14/RAFGITTOOLS_SOURCE_BUILD_EVIDENCE_V1.md) — checkpoint BUILD append-only.
+15. [`DOCUMENTATION_AUDIT_RECEIPT_2026-09-06.md`](DOCUMENTATION_AUDIT_RECEIPT_2026-09-06.md) — reconciliação histórica de 2026-09-06.
+16. [`RAFANDROID_METHOD_V1.md`](RAFANDROID_METHOD_V1.md) — shell autoral de descoberta/orquestração/gates do toolchain Android.
+17. [`architecture/SILICON_LIGHT_LOWLEVEL_V1.md`](architecture/SILICON_LIGHT_LOWLEVEL_V1.md) — contrato L0 freestanding e fronteira L0→JNI→Android.
+18. [`audit/SESSION_RECONCILIATION_RAFANDROID_SILICON_LIGHT_20260928.md`](audit/SESSION_RECONCILIATION_RAFANDROID_SILICON_LIGHT_20260928.md) — revisão desta sessão, complicações, F_gap/F_next e evidência terminal.
+19. [`ci/START_PIPELINE_V1.md`](ci/START_PIPELINE_V1.md) — single-root pipeline ativo incluindo RAFANDROID/Silicon Light.
 
 ### Invariante
 
@@ -67,6 +70,7 @@ Ele não deve ultrapassar `RAFGITTOOLS_CURRENT_STATE.md` ou provider metadata at
 
 - `RAFGITTOOLS_CURRENT_STATE.md`
 - `RAFGITTOOLS_DEVELOPMENT_DELIVERY_MAP_V1.md`
+- `architecture/RAFGITTOOLS_DRIVE_CORPUS_START_HERE_V1.md`
 - `architecture/RAFGITTOOLS_DRIVE_GITHUB_DELIVERY_ARCHITECTURE_V1.md`
 - `RESPONSIVE_LAYOUT_GATE_V1.md`
 - `RELEASE_NOTES_NEXT.md`
@@ -148,7 +152,6 @@ Esse bloco é histórico e commit-bound.
 - `navigation/RLL_BRANCH_ATLAS_V1.md` — census, numbered branch taxonomy and fail-closed rename policy.
 - `site/rll-atlas/index.html` — repository/family/branch combobox UI.
 - `../data/navigation/RLL_BRANCH_ATLAS_SNAPSHOT_20260929.json` — canonical machine-readable snapshot.
-
 
 ## Navegação de trabalho entre IAs
 
