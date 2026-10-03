@@ -201,3 +201,16 @@ python3 scripts/validate_authorial_omega_hypervisor_executor.py
 python3 -m unittest discover -s tests -p 'test_tool_router_registry.py' -v
 python3 scripts/validate_tool_router_registry.py \
   --report artifacts/tool-router-registry-report.json
+
+# Runtime-lock successor gate. Rebuild the exact candidate from its predecessor
+# plus the observed producer heads, require byte-identical receipt binding, and
+# prove that unresolved artifact hashes still block promotion. Synthetic in-memory
+# integration/authorization fixtures isolate the artifact-hash falsifier only;
+# they are never persisted as evidence and execution remains NOT_RUN.
+python3 -m unittest discover -s tests -p 'test_runtime_lock_successor_20261003.py' -v
+python3 scripts/validate_runtime_lock_successor.py \
+  data/runtime-lock-candidates/runtime-lock-candidate-20261001T193906Z.json \
+  data/runtime-lock-candidates/runtime-lock-observation-20261003T214824Z.json \
+  data/runtime-lock-candidates/runtime-lock-candidate-20261003T214824Z.json \
+  data/runtime-lock-candidates/runtime-lock-refresh-receipt-20261003T214824Z.json \
+  --report artifacts/runtime-lock-successor-validation-report.json
