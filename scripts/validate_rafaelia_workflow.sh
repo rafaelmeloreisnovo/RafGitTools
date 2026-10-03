@@ -193,3 +193,11 @@ python3 scripts/validate_practice_router.py configs/practice-router.v1.json --ro
 python3 -m unittest discover -s tests \
   -p 'test_authorial_omega_hypervisor_executor.py' -v
 python3 scripts/validate_authorial_omega_hypervisor_executor.py
+
+# ToolRouter / GovernanceGate coherence. An allowlisted tool must have a concrete
+# router handler, every concrete handler must be represented in the registry, and
+# deferred Git writes must retain the durable queue boundary. PASS is structural
+# source evidence only; it does not prove WorkManager execution or remote Git I/O.
+python3 -m unittest discover -s tests -p 'test_tool_router_registry.py' -v
+python3 scripts/validate_tool_router_registry.py \
+  --report artifacts/tool-router-registry-report.json
