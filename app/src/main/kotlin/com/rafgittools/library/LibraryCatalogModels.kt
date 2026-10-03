@@ -1,6 +1,6 @@
 package com.rafgittools.library
 
-enum class LibraryAccessClass { PUBLIC, INTERNAL, PRIVATE, RESTRICTED, TOKEN_VAZIO }
+enum class LibraryAccessClass { PUBLIC, SHARED, INTERNAL, PRIVATE, RESTRICTED, TOKEN_VAZIO }
 
 enum class LibraryEvidenceState {
     SOURCE_OBSERVED,
