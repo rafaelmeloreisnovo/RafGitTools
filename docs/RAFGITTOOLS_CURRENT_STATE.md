@@ -1,12 +1,12 @@
 # RAFGITTOOLS_CURRENT_STATE
 
-- Status: **ACTIVE — bounded current-state overlay; post-2026-09-28 reconciliation partitioned but still gated**
+- Status: **ACTIVE — bounded current-state overlay; D1 control plane reconciled bounded, remaining post-baseline domains gated**
 - Observed repository: `rafaelmeloreisnovo/RafGitTools`
-- Observed provider main before this partition branch: `main@9eab1300caae061a4476ba894c7e71236eecb35e`
+- Observed provider main before this branch: `main@0a08334809aa6680ccebd3c3acd5d695b93b8560`
 - Bounded post-baseline compare head: `3f63ac845fcc4fed99c62087d52b75148dcc9aa1`
 - Historical reconciliation baseline: `8af97a580e535d2015e8211000850e282b031763`
 - Observed date: **2026-10-03**
-- Reconciliation scope: **bounded evidence reconciliation + BR-4 domain partition; no claim of exhaustive semantic reconciliation of the 642-commit interval**
+- Reconciliation scope: **BR-4 seven-domain partition + bounded D1 control-plane authority/execution reconciliation; no claim of exhaustive replay of all 642 intermediate revisions**
 - `claim_allowed=false`
 - `release_allowed=false`
 
@@ -18,6 +18,7 @@ SOURCE_OBSERVED != TEST_PROVEN != BUILD_PROVEN != RUNTIME_PROVEN
 TOKEN_VAZIO != FAIL != PASS
 HISTORICAL_RECEIPT != CURRENT_HEAD_RECEIPT
 PARTITIONED != RECONCILED
+SKIPPED != PASS
 ```
 
 This document describes the current source/documentation relationship. Historical receipts remain valid only for the exact revisions and artifacts to which they were originally bound.
@@ -31,6 +32,7 @@ Provider readback bounded the semantic compare at `3f63ac845fcc4fed99c62087d52b7
 | Context Reconstruction Router V1 | `MERGED` | PR #617 candidate `5878176b49f19f297f6573ea528f66218c3a036d`; START #590 / run `37090622351` = SUCCESS; merge `f2ab825454a42f07ba55db742b04390092826475` | routing/contract/CI proof only; no physical/release promotion |
 | RafPolimata custody deterministic replay hotfix | `MERGED` | PR #618 head `e0e5010c5142d77af9f5a6c6c8e5ba7bd419d978`; START #591 / run `37090667573` = SUCCESS; merge `3f63ac845fcc4fed99c62087d52b75148dcc9aa1` | proves producer source/tests at exact PR head; does not prove a historical envelope was already reconstructed |
 | Documentation truth overlay | `MERGED / VERIFIED_LIMITED` | PR #619 candidate `18c683e0e58e6023ec013c62703c36706bbb94d9`; START #594 / run `37093098000` = SUCCESS; merge `9eab1300caae061a4476ba894c7e71236eecb35e` | proves documentation hotfix exact-head CI; does not reconcile the 642 commits |
+| BR-4 domain partition | `MERGED / VERIFIED_LIMITED` | PR #620 candidate `2a0e54cfd3565a31ff0a0d26ffa2b216ff18b100`; START #596 / run `37094037607` = SUCCESS; merge `0a08334809aa6680ccebd3c3acd5d695b93b8560` | proves seven-domain partition artifact; partition != reconciliation |
 | Full post-2026-09-28 semantic reconciliation | `TOKEN_VAZIO_RECONCILIATION_REQUIRED` | compare baseline→bounded head = 642 commits ahead | do not infer unreviewed capability/evidence promotions |
 
 Canonical reconstruction route:
@@ -42,21 +44,41 @@ Canonical reconstruction route:
 
 The reconstruction seed is a pointer packet, not a corpus backup. Unknown source/authority/execution/evidence remains fail-closed. `claim_allowed=false` and `release_allowed=false` remain unchanged.
 
-## 2026-10-03 BR-4 — post-baseline reconciliation partition
+## 2026-10-03 BR-4 / BR-5 — post-baseline partition + D1 control plane
 
-The provider compare path families are now partitioned in `docs/audit/POST_BASELINE_RECONCILIATION_PARTITION_20261003_V1.md` into seven evidence-bearing domains:
+The provider compare path families are partitioned in `docs/audit/POST_BASELINE_RECONCILIATION_PARTITION_20261003_V1.md` into seven evidence-bearing domains.
+
+Current bounded states:
 
 ```text
-R642-D1 CONTROL_PLANE_EVIDENCE
-R642-D2 ANDROID_RUNTIME_BRIDGE
-R642-D3 PROVIDER_GOVERNANCE
-R642-D4 CONTEXT_CORPUS_NAVIGATION
-R642-D5 LOWLEVEL_FREESTANDING
-R642-D6 FEDERATION_CUSTODY_DATA
-R642-D7 DOCUMENTATION_CLAIMS_RECEIPTS
+R642-D1 CONTROL_PLANE_EVIDENCE          = RECONCILED_BOUNDED_CONTROL_PLANE
+R642-D2 ANDROID_RUNTIME_BRIDGE          = PARTITIONED_UNRECONCILED
+R642-D3 PROVIDER_GOVERNANCE             = PARTITIONED_UNRECONCILED
+R642-D4 CONTEXT_CORPUS_NAVIGATION       = PARTITIONED_UNRECONCILED
+R642-D5 LOWLEVEL_FREESTANDING           = PARTITIONED_UNRECONCILED
+R642-D6 FEDERATION_CUSTODY_DATA         = PARTITIONED_UNRECONCILED
+R642-D7 DOCUMENTATION_CLAIMS_RECEIPTS   = PARTITIONED_UNRECONCILED
 ```
 
-All seven states are `PARTITIONED_UNRECONCILED`. The partition reduces search/audit uncertainty; it does not close the global reconciliation gate. Audit order begins with D1 because workflow topology, validators, conditional/skipped lanes and exact-head provider evidence constrain how downstream domains may be promoted.
+D1 detail is recorded in `docs/audit/CONTROL_PLANE_EVIDENCE_RECONCILIATION_20261003_V1.md`. Its bounded reconciliation means:
+
+- current START authority/routing semantics resolved;
+- workflow topology auditor boundary resolved as lexical/structural, not full YAML semantic/security certification;
+- baseline/current final-receipt semantics reconciled;
+- exact START #596 artifact proves `PASS_WITH_TYPED_SKIPS` on candidate `2a0e54c...`;
+- 609 deterministic Python tests passed in job `111120272105`;
+- skipped federation/provider/private/public-data/release lanes remain `TOKEN_VAZIO_NOT_SELECTED`, not PASS;
+- intermediate control-plane transitions across all 642 commits were not replayed exhaustively.
+
+Therefore D1 residuals remain:
+
+```text
+TOKEN_VAZIO_D1_HISTORICAL_TRANSITION_REPLAY
+TOKEN_VAZIO_D1_PRIVILEGED_LANE_RUNTIME
+TOKEN_VAZIO_RELEASE
+```
+
+This candidate only synchronizes documentation to that already-observed evidence. It does not modify START or any runtime/provider surface.
 
 ## 2026-09-28 controlling delta — RAFANDROID + Silicon Light
 
@@ -164,7 +186,8 @@ FNEXT8 predecessor execution evidence remains bounded to its executed revision/r
 | Context Reconstruction Router V1 | `MERGED / VERIFIED_LIMITED` | PR #617 exact-head START PASS; pointer/route proof != corpus backup/runtime/release |
 | Custody deterministic replay producer | `MERGED / VERIFIED_LIMITED` | PR #618 exact-head START PASS; capability to replay deterministically != completed historical replay |
 | Documentation truth overlay | `MERGED / VERIFIED_LIMITED` | PR #619 exact-head START PASS; documentation truth != semantic reconciliation |
-| BR-4 reconciliation partition | `IMPLEMENTED_UNTESTED` on candidate | seven domains are partitioned, none reconciled; exact-head CI pending for candidate |
+| BR-4 reconciliation partition | `MERGED / VERIFIED_LIMITED` | PR #620 exact-head START #596 PASS; seven-domain partition itself proved, domains independently gated |
+| R642-D1 control plane | `RECONCILED_BOUNDED_CONTROL_PLANE / candidate documentation sync` | current authority + reference run + typed-skips resolved; historical transition replay and privileged-lane runtime remain TOKEN_VAZIO |
 | Physical Android runtime | `TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED` | exact-artifact install/launch/recovery receipt required |
 | Release | `BLOCKED_BY_EVIDENCE` | signing + exact artifact + physical acceptance required |
 
@@ -182,9 +205,12 @@ current machine-state regeneration = TOKEN_VAZIO_REGEN_REQUIRED
 ## Current open gates
 
 ```text
-post-2026-09-28 delta partition                 = 7 domains / PARTITIONED_UNRECONCILED
+post-2026-09-28 delta partition                 = 7 domains / 1 bounded reconciled + 6 partitioned unreconciled
 full post-2026-09-28 semantic reconciliation   = TOKEN_VAZIO_RECONCILIATION_REQUIRED
-R642-D1 CONTROL_PLANE_EVIDENCE                 = TOKEN_VAZIO_RECONCILIATION_REQUIRED
+R642-D1 current control-plane authority        = RECONCILED_BOUNDED_CONTROL_PLANE
+R642-D1 historical transition replay           = TOKEN_VAZIO_NOT_EXHAUSTIVELY_REPLAYED
+R642-D1 privileged-lane runtime                = TOKEN_VAZIO_NOT_EXECUTED_IN_REFERENCE_RUN
+R642-D3 PROVIDER_GOVERNANCE                    = PARTITIONED_UNRECONCILED
 exact-current-head complete CI/build receipt   = TOKEN_VAZIO until individually provider-bound
 physical install/launch/restart receipt        = TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED
 real Git/provider/auth fixture matrix          = TOKEN_VAZIO_RUNTIME
@@ -214,10 +240,10 @@ Machine-readable files that are older than the current revision remain useful hi
 
 Keep documentation synchronized from exact source and evidence boundaries. Any future source merge that changes user-visible capability, evidence state, build/runtime gate or release boundary must update the current-state/status/roadmap triad in the same review cycle or explicitly emit `TOKEN_VAZIO_DOC_DRIFT`.
 
-BR-4 is materialized as a seven-domain partition, but this candidate remains `IMPLEMENTED_UNTESTED` until its exact-head START closes. After promotion, the next bounded reconciliation step is R642-D1 `CONTROL_PLANE_EVIDENCE`; do not open a lower-priority semantic domain before D1 source/authority/execution/skip boundaries are explicit.
+The D1 reconciliation is materialized on this documentation candidate and remains `IMPLEMENTED_UNTESTED` as a documentation delta until its own exact-head START closes. After promotion, the next bounded domain is R642-D3 `PROVIDER_GOVERNANCE`; its authority/readback must be audited independently and may not inherit PASS from D1.
 
 ## R3
 
-- **F_ok:** PR #617, #618 and #619 are revision-bound; BR-4 decomposes the 642-commit uncertainty into seven evidence domains without promoting any domain to PASS.
-- **F_gap:** BR-4 exact-head CI is pending on the candidate; all seven domains remain `PARTITIONED_UNRECONCILED`; machine-state regeneration, physical device, provider-real fixtures and release remain evidence-gated.
-- **F_next:** close exact-head START for BR-4; after promotion reconcile only R642-D1 CONTROL_PLANE_EVIDENCE first.
+- **F_ok:** PR #617–#620 are revision-bound; BR-4 is merged; D1 current control-plane authority, structural-audit scope, final receipt semantics and exact #596 typed-skip execution are reconciled bounded without changing START.
+- **F_gap:** this D1 documentation candidate still needs exact-head START; historical intermediate D1 transitions and skipped privileged lanes remain TOKEN_VAZIO; D2–D7, machine-state regeneration, physical device and release remain gated.
+- **F_next:** exact-head gate and promote this D1 documentation delta; then reconcile only R642-D3 PROVIDER_GOVERNANCE using authoritative provider readback.
