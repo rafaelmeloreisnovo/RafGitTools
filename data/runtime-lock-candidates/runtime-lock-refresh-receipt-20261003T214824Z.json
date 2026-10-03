@@ -1,0 +1,40 @@
+{
+  "artifact_hashes_preserved": true,
+  "base_lock_sha256": "693f8cefacbc56a340d2896a97310b42164d82278a7d8bfdde1169fb33d565b0",
+  "candidate_sha256": "e75dd047c0e3156f1f1b20fd19463716826c9dd15180eab8c57b208f24b2dcdb",
+  "canonical_lock_mutated": false,
+  "changed_count": 4,
+  "changed_repositories": [
+    {
+      "from": "8b3a53b65daefd61202329e77999525f5060ea73",
+      "name": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "to": "3dea538c975178857c8e93fbe33af8f61f58c238"
+    },
+    {
+      "from": "e27af9ca20dbc4c8828c54f000dd3c03ae1d50b4",
+      "name": "rafaelmeloreisnovo/termux-packages",
+      "to": "50dcfcc057a7891b8ecd4eb5be0afd5f8f870726"
+    },
+    {
+      "from": "6a75ec21456c73303a4e0bf4ca987a65b29010eb",
+      "name": "rafaelmeloreisnovo/llamaRafaelia",
+      "to": "b532b7678e4f86b1b5dccf5f54a6b310f9014b34"
+    },
+    {
+      "from": "573c7f58085ed2f2289f8dd32224550e8ae1a025",
+      "name": "rafaelmeloreisnovo/RafPolimata",
+      "to": "757dead806e9b91654553d5eebcda176f40d0473"
+    }
+  ],
+  "claim_allowed": false,
+  "f_gap": [
+    "TOKEN_VAZIO_CROSS_REPO_CANDIDATE_INTEGRATION_EXECUTION",
+    "TOKEN_VAZIO_RUNTIME_LOCK_PROMOTION_AUTHORIZATION"
+  ],
+  "f_next": "Execute locked cross-repository integration gates against this exact candidate before any canonical promotion.",
+  "input_hash_semantics": "EXACT_FILE_BYTES",
+  "observation_sha256": "69083a1865ed25d230acd9adcf2ef948fa4d0e67944b376d6c5318c0ed6c8b57",
+  "observed_at": "2026-10-03T21:48:24Z",
+  "promoted": false,
+  "schema": "rafaelia.runtime-lock-refresh-receipt.v1"
+}
