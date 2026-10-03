@@ -1,11 +1,28 @@
 # RAFGITTOOLS_ROADMAP_TRUE
 
-- Status: **ACTIVE — operational roadmap**
-- Observed base for this reconciliation: `main@8af97a580e535d2015e8211000850e282b031763`
-- Updated: **2026-09-28**
-- Scope of this revision: **source/documentation reconciliation + delivery gates**
+- Status: **ACTIVE — evidence-first operational roadmap with bounded reconciliation overlay**
+- Observed provider head for this overlay: `main@3f63ac845fcc4fed99c62087d52b75148dcc9aa1`
+- Historical reconciliation baseline: `main@8af97a580e535d2015e8211000850e282b031763`
+- Updated: **2026-10-03**
+- Scope of this revision: **documentation truth hotfix; PR #617 + #618 exact evidence; no exhaustive semantic claim across the 642-commit interval**
 - Rule: `SOURCE_OBSERVED != TEST_PROVEN != BUILD_PROVEN != RUNTIME_PROVEN != DEVICE_PROVEN != RELEASE_PROVEN`
 - Historical 288-feature matrix: planning reference only; it is not the current evidence denominator.
+
+## 2026-10-03 bounded reconciliation lane
+
+Closed with exact bounded evidence:
+
+1. **BR-1 Context Reconstruction Router V1** — PR #617 head `5878176b49f19f297f6573ea528f66218c3a036d`; START #590 / run `37090622351` SUCCESS; merge `f2ab825454a42f07ba55db742b04390092826475`.
+2. **BR-2 Deterministic custody replay producer** — PR #618 head `e0e5010c5142d77af9f5a6c6c8e5ba7bd419d978`; START #591 / run `37090667573` SUCCESS; merge/current observed head `3f63ac845fcc4fed99c62087d52b75148dcc9aa1`.
+3. **BR-3 Documentation truth boundary** — compare baseline `8af97a...` → current observed head reports 642 commits ahead; therefore the unreconciled interval is explicitly `TOKEN_VAZIO_RECONCILIATION_REQUIRED` instead of being silently treated as current audited state.
+
+Open next lane, without feature expansion:
+
+4. **BR-4 Partition post-baseline delta by evidence-bearing domain** — group existing commits only; do not create new capability.
+5. **BR-5 Reconcile highest-authority domain first** — provider/source/evidence readback, one bounded domain at a time.
+6. **BR-6 Keep current-state/status/roadmap synchronized** — each closed partition receives exact refs and leaves all unresolved partitions as `TOKEN_VAZIO`.
+
+The context reconstruction seed is a reference packet, not a corpus backup. The deterministic replay hotfix proves repeatable producer bytes for fixed inputs; it does not claim a historical envelope has already been reconstructed.
 
 ## 2026-09-28 low-level/toolchain lane
 
@@ -61,6 +78,8 @@ Canonical detail:
 - Local governance receipts use an append-only SHA-256 chain while keeping provider acceptance/re-probe as separate evidence.
 - FNEXT cross-repository receipt validation is present and fail-closed; structural validity does not promote physical/scientific claims.
 - Recent CI/security/compile fixes are integrated in the main lineage.
+- Context Reconstruction Router V1 is present and exact-head CI-bound at PR #617.
+- Custody deterministic replay support is present and exact-head CI-bound at PR #618.
 
 ## Gate P0 — exact-current-head truth
 
@@ -74,7 +93,13 @@ Required:
 4. bind build artifacts and hashes to the same SHA;
 5. do not inherit PASS from predecessor commits.
 
-The historical 2026-09-06 audit directly observed one workflow success on `56f4ce...` (Human Impact Cross-Repo Gate V1 run `34031951218`). The remaining exact-head workflow/build inventory stays `TOKEN_VAZIO` until individually read back.
+The historical 2026-09-06 audit directly observed one workflow success on `56f4ce...` (Human Impact Cross-Repo Gate V1 run `34031951218`). PR #617 and #618 have exact candidate-head START success, but that evidence is bounded to those heads and does not automatically establish complete current-main runtime/device/release truth.
+
+## Gate P0D — documentation reconciliation truth
+
+**State:** `OPEN / TOKEN_VAZIO_RECONCILIATION_REQUIRED`.
+
+Observed fact: the 2026-09-28 documentation baseline is 642 commits behind the current provider head used by this overlay. Closure requires partitioning that interval and reconciling each evidence-bearing domain without inheriting claims across commits. Until then, the triad may record bounded verified deltas, but must not call the whole interval audited.
 
 ## Gate P1 — physical Android device
 
@@ -166,9 +191,7 @@ Machine-generated/state artifacts are not manually edited merely to match prose.
 ## Priority order
 
 ```text
-D0/D1/D2 source+docs candidate
-→ D3 explicit recipient
-→ D4 governed RafGitFS handoff
+P0D documentation reconciliation truth
 → P0 exact-head evidence coherence
 → P1 physical device
 → P2 provider-governance readback/safe apply
@@ -178,12 +201,14 @@ D0/D1/D2 source+docs candidate
 → P6 expansion/optimization
 ```
 
+The former D0/D1/D2 delivery sequence remains historical/parallel planning; no expansion outranks the truth gates above.
+
 ## Historical lineage
 
 The 2026-08-14 BUILD anchor and PR #346/#347 sequence remain evidence/genealogy only. They no longer define the active roadmap head.
 
 ## R3
 
-- **F_ok:** roadmap is now source/evidence ordered instead of feature-count ordered; governance and receipt validation are represented at their real source maturity.
-- **F_gap:** full exact-head evidence inventory, physical device, provider-real fixtures and release remain open.
-- **F_next:** close gates in evidence order; expansion must not outrun P0/P1 without an explicit reason and receipt.
+- **F_ok:** recent verified deltas #617/#618 are bound to exact candidate heads and runs; the documentation now exposes rather than hides the post-baseline drift.
+- **F_gap:** the 642-commit post-baseline interval, full exact-current-head evidence inventory, physical device, provider-real fixtures and release remain open.
+- **F_next:** close P0D by bounded domain partitions, then continue evidence order; no feature expansion while an unclassified documentation interval remains.

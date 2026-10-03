@@ -1,10 +1,11 @@
 # RAFGITTOOLS_CURRENT_STATE
 
-- Status: **ACTIVE — source advanced / current documentation reconciled against main**
+- Status: **ACTIVE — bounded current-state overlay; full post-2026-09-28 reconciliation remains gated**
 - Observed repository: `rafaelmeloreisnovo/RafGitTools`
-- Observed base revision for this reconciliation: `8af97a580e535d2015e8211000850e282b031763`
-- Observed date: **2026-09-28**
-- Reconciliation scope: **code + tests + delivery architecture + documentation**
+- Observed provider head for this overlay: `main@3f63ac845fcc4fed99c62087d52b75148dcc9aa1`
+- Historical reconciliation baseline: `8af97a580e535d2015e8211000850e282b031763`
+- Observed date: **2026-10-03**
+- Reconciliation scope: **bounded evidence reconciliation for PR #617 and PR #618; no claim of exhaustive review of intervening commits**
 - `claim_allowed=false`
 - `release_allowed=false`
 
@@ -18,6 +19,25 @@ HISTORICAL_RECEIPT != CURRENT_HEAD_RECEIPT
 ```
 
 This document describes the current source/documentation relationship. Historical receipts remain valid only for the exact revisions and artifacts to which they were originally bound.
+
+## 2026-10-03 controlling delta — context reconstruction + deterministic custody replay
+
+Provider readback observed `main@3f63ac845fcc4fed99c62087d52b75148dcc9aa1`. The historical documentation baseline `8af97a580e535d2015e8211000850e282b031763` is 642 commits behind that head. Therefore the sections below remain revision-bounded history unless explicitly promoted by exact evidence; this overlay does **not** claim an exhaustive semantic reconciliation of all 642 intervening commits.
+
+| Surface | Source state | Exact evidence | Boundary |
+|---|---|---|---|
+| Context Reconstruction Router V1 | `MERGED` | PR #617 candidate `5878176b49f19f297f6573ea528f66218c3a036d`; START #590 / run `37090622351` = SUCCESS; merge `f2ab825454a42f07ba55db742b04390092826475` | routing/contract/CI proof only; no physical/release promotion |
+| RafPolimata custody deterministic replay hotfix | `MERGED` | PR #618 head `e0e5010c5142d77af9f5a6c6c8e5ba7bd419d978`; START #591 / run `37090667573` = SUCCESS; merge/current head `3f63ac845fcc4fed99c62087d52b75148dcc9aa1` | proves producer source/tests at exact PR head; does not prove a historical envelope was already reconstructed |
+| Full post-2026-09-28 documentation reconciliation | `TOKEN_VAZIO_RECONCILIATION_REQUIRED` | compare baseline→current head = 642 commits ahead | do not infer unreviewed capability/evidence promotions |
+
+Canonical reconstruction route:
+
+- `docs/navigation/CONTEXT_RECONSTRUCTION_START_V1.md`
+- `configs/context-reconstruction-routes.v1.json`
+- `contracts/context-reconstruction-seed-v1.schema.json`
+- `docs/INDEX.md`
+
+The reconstruction seed is a pointer packet, not a corpus backup. Unknown source/authority/execution/evidence remains fail-closed. `claim_allowed=false` and `release_allowed=false` remain unchanged.
 
 ## 2026-09-28 controlling delta — RAFANDROID + Silicon Light
 
@@ -122,6 +142,8 @@ FNEXT8 predecessor execution evidence remains bounded to its executed revision/r
 | Local LLM/LLaMA bridge | `SOURCE_PRESENT / EXTERNAL_RUNTIME_GATED` | dependency/model/device evidence remains open |
 | RAFANDROID toolchain shell | `MERGED / VERIFIED_LIMITED` | PR #521 exact-head START PASS; external tool presence/runtime remains separately typed |
 | Silicon Light L0 | `MERGED / VERIFIED_LIMITED` | PR #526 exact-head host + ARMv7/AArch64 + generated APK fixture PASS |
+| Context Reconstruction Router V1 | `MERGED / VERIFIED_LIMITED` | PR #617 exact-head START PASS; pointer/route proof != corpus backup/runtime/release |
+| Custody deterministic replay producer | `MERGED / VERIFIED_LIMITED` | PR #618 exact-head START PASS; capability to replay deterministically != completed historical replay |
 | Physical Android runtime | `TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED` | exact-artifact install/launch/recovery receipt required |
 | Release | `BLOCKED_BY_EVIDENCE` | signing + exact artifact + physical acceptance required |
 
@@ -139,6 +161,7 @@ current machine-state regeneration = TOKEN_VAZIO_REGEN_REQUIRED
 ## Current open gates
 
 ```text
+full post-2026-09-28 semantic reconciliation = TOKEN_VAZIO_RECONCILIATION_REQUIRED
 exact-current-head complete CI/build receipt = TOKEN_VAZIO until individually provider-bound
 physical install/launch/restart receipt       = TOKEN_VAZIO_PHYSICAL_DEVICE_REQUIRED
 real Git/provider/auth fixture matrix         = TOKEN_VAZIO_RUNTIME
@@ -168,8 +191,10 @@ Machine-readable files that are older than the current revision remain useful hi
 
 Keep documentation synchronized from exact source and evidence boundaries. Any future source merge that changes user-visible capability, evidence state, build/runtime gate or release boundary must update the current-state/status/roadmap triad in the same review cycle or explicitly emit `TOKEN_VAZIO_DOC_DRIFT`.
 
+The next bounded reconciliation step is not feature expansion: partition the 642-commit post-baseline delta into evidence-bearing domains and close them incrementally. Until that is completed, `TOKEN_VAZIO_RECONCILIATION_REQUIRED` is the truthful state.
+
 ## R3
 
-- **F_ok:** current main source was re-observed; obsolete PR #346/#347 framing is retired; governance/FNEXT8 plus RAFANDROID/Silicon Light are routed; PR #521 and #526 terminal CI evidence is preserved without device over-promotion.
-- **F_gap:** exact-current-main full workflow/build inventory, machine-state regeneration, physical device, QEMU/VM runtime, provider-real fixtures and release remain evidence-gated; duplicated low-level primitive migration is not complete.
-- **F_next:** keep RAFANDROID/Silicon Light regression gates in START, migrate only equivalence-proven low-level primitives, and require revision/artifact/device-bound evidence for every higher promotion.
+- **F_ok:** PR #617 context reconstruction and PR #618 deterministic replay are revision-bound and routed with exact-head START evidence; current provider head is recorded without promoting physical/release claims.
+- **F_gap:** the 642-commit delta since the 2026-09-28 baseline is not exhaustively semantically reconciled; machine-state regeneration, physical device, provider-real fixtures and release remain evidence-gated.
+- **F_next:** keep the triad aligned to this bounded overlay, then partition and reconcile the post-baseline delta by evidence-bearing domain rather than pretending a global PASS.
