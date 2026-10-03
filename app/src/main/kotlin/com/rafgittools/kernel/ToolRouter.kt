@@ -1,7 +1,11 @@
 package com.rafgittools.kernel
 
+import android.content.Context
 import android.util.Log
 import com.rafgittools.data.git.JGitService
+import com.rafgittools.offline.SyncOperation
+import com.rafgittools.offline.SyncWorker
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
@@ -12,6 +16,7 @@ import javax.inject.Singleton
 class ToolRouter @Inject constructor(
     private val gate: GovernanceGate,
     private val jGitService: JGitService,
+    @ApplicationContext private val appContext: Context,
 ) {
     private val TAG = "RafToolRouter"
     private val termuxHealthProbe = TermuxHealthProbe()
@@ -179,27 +184,65 @@ class ToolRouter @Inject constructor(
             put("tool", "git.commit")
             put("status", "WRITE_PROTECTED")
             put("reason", "git.commit is write-protected in kernel mode — use the app UI to commit")
+            put("claim_allowed", false)
         }.toString()
 
     private fun handleGitPushQueued(call: JSONObject): String {
-        val repoPath = call.optString("repoPath", "")
+        val repoPath = call.optString("repoPath", "").trim()
         if (repoPath.isBlank()) return errorJson("missing_repoPath")
-        return JSONObject().apply {
-            put("tool", "git.push")
-            put("status", "queued")
-            put("note", "Push queued for background sync — use the app UI or SyncWorker will execute on next network opportunity")
-        }.toString()
+        val remote = call.optString("remote", "").trim()
+        if (remote.isBlank()) return errorJson("missing_remote")
+        val branch = call.optString("branch", "").trim()
+        if (branch.isBlank()) return errorJson("missing_branch")
+        return enqueueDurable(
+            tool = "git.push",
+            operation = SyncOperation.GitPush(repoPath = repoPath, remote = remote, branch = branch),
+        )
     }
 
     private fun handleGitPullQueued(call: JSONObject): String {
-        val repoPath = call.optString("repoPath", "")
+        val repoPath = call.optString("repoPath", "").trim()
         if (repoPath.isBlank()) return errorJson("missing_repoPath")
-        return JSONObject().apply {
-            put("tool", "git.pull")
-            put("status", "queued")
-            put("note", "Pull queued for background sync — use the app UI or SyncWorker will execute on next network opportunity")
-        }.toString()
+        val remote = call.optString("remote", "").trim()
+        if (remote.isBlank()) return errorJson("missing_remote")
+        val branch = call.optString("branch", "").trim()
+        if (branch.isBlank()) return errorJson("missing_branch")
+        return enqueueDurable(
+            tool = "git.pull",
+            operation = SyncOperation.GitPull(repoPath = repoPath, remote = remote, branch = branch),
+        )
     }
+
+    /**
+     * Durable boundary for deferred Git writes.
+     *
+     * A `queued` response is emitted only after [OfflineQueue] has synchronously
+     * persisted the new snapshot through SyncWorker's atomic-file storage.
+     * Execution remains a separate WorkManager/SyncWorker transition.
+     */
+    private fun enqueueDurable(tool: String, operation: SyncOperation): String =
+        runCatching {
+            val queue = SyncWorker.buildQueue(appContext)
+            queue.enqueue(operation)
+            JSONObject().apply {
+                put("tool", tool)
+                put("status", "queued")
+                put("durable", true)
+                put("queue_size", queue.size())
+                put("worker", SyncWorker.WORK_NAME)
+                put("executed", false)
+                put("claim_allowed", false)
+            }.toString()
+        }.getOrElse { error ->
+            JSONObject().apply {
+                put("tool", tool)
+                put("status", "ERROR")
+                put("code", "queue_persistence_failed")
+                put("error_type", error.javaClass.simpleName)
+                put("executed", false)
+                put("claim_allowed", false)
+            }.toString()
+        }
 
     private fun handleTermuxHealth(call: JSONObject): String {
         val endpoint = call.optString("endpoint", TermuxHealthProbe.DEFAULT_ENDPOINT)
@@ -219,8 +262,8 @@ class ToolRouter @Inject constructor(
     }
 
     private fun tokenVazio(tool: String, reason: String): String =
-        """{"tool":"$tool","status":"TOKEN_VAZIO","reason":"$reason"}"""
+        """{"tool":"$tool","status":"TOKEN_VAZIO","reason":"$reason","claim_allowed":false}"""
 
     private fun errorJson(code: String): String =
-        """{"status":"ERROR","code":"$code"}"""
+        """{"status":"ERROR","code":"$code","claim_allowed":false}"""
 }
