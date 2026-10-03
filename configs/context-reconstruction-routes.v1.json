@@ -1,0 +1,107 @@
+{
+  "schema": "rafgittools.context_reconstruction_routes.v1",
+  "version": 1,
+  "claim_allowed": false,
+  "rules": {
+    "source_min_max": 3,
+    "expand_only_on": [
+      "missing_source",
+      "contradiction",
+      "unresolved_authority",
+      "missing_evidence",
+      "explicit_request"
+    ],
+    "invariant": "SOURCE!=ARTIFACT!=EXECUTION!=EVIDENCE!=CLAIM",
+    "unknown": "TOKEN_VAZIO",
+    "missing_required_route_field": "BLOCKED"
+  },
+  "routes": [
+    {
+      "route_id": "CURRENT_STATE",
+      "purpose": "Resolve the bounded editorial/source state before reading history.",
+      "authority": "revision-bound repository documentation plus exact provider ref",
+      "source_min": ["docs/RAFGITTOOLS_CURRENT_STATE.md"],
+      "service": "repository-read",
+      "execution_target": "current repository ref",
+      "evidence_rule": "state prose must be interpreted at its observed revision; exact current-head claims require provider metadata/readback",
+      "claim_boundary": "state-pointer!=current-head-proof",
+      "next_on_missing": "TOKEN_VAZIO_CURRENT_STATE"
+    },
+    {
+      "route_id": "DOCUMENTATION_INDEX",
+      "purpose": "Find the canonical engineering document without scanning the repository.",
+      "authority": "repository documentation index",
+      "source_min": ["docs/INDEX.md", "CODE_TO_DOC_MAP.md"],
+      "service": "documentation-router",
+      "execution_target": "selected canonical document",
+      "evidence_rule": "selected document path must exist at the bound ref",
+      "claim_boundary": "document-route!=runtime-proof",
+      "next_on_missing": "TOKEN_VAZIO_DOCUMENT_ROUTE"
+    },
+    {
+      "route_id": "CONTEXT_BUNDLE_V2",
+      "purpose": "Normalize portable context using the existing canonical V2 contract.",
+      "authority": "RafGitTools context bundle contract and implementation",
+      "source_min": [
+        "contracts/context-bundle-v2.schema.json",
+        "scripts/context_bundle_v2.py",
+        "app/src/main/kotlin/com/rafgittools/workspace/ContextBroker.kt"
+      ],
+      "service": "ContextBundleV2/ContextBroker",
+      "execution_target": "validated rafaelia.context_bundle.v2 bundle",
+      "evidence_rule": "schema validation plus implementation/test receipt bound to exact ref",
+      "claim_boundary": "valid-bundle!=model-correctness!=provider-write-authority",
+      "next_on_missing": "TOKEN_VAZIO_CONTEXT_CONTRACT"
+    },
+    {
+      "route_id": "CONTEXT_WORKBENCH",
+      "purpose": "Route human/AI workspace reads, selections, patch proposals and source-linked responses through the existing control plane.",
+      "authority": "RafGitTools workspace architecture and producer-specific providers",
+      "source_min": [
+        "docs/architecture/RAFGITTOOLS_CONTEXT_WORKBENCH_INTEGRATION_AUDIT_V1.md",
+        "app/src/main/kotlin/com/rafgittools/workspace/ContextBroker.kt"
+      ],
+      "service": "Context Workbench",
+      "execution_target": "workspace selection/context/patch flow",
+      "evidence_rule": "provider-specific readback and exact target receipt; patch proposal alone is not execution",
+      "claim_boundary": "proposal!=write!=provider-acceptance",
+      "next_on_missing": "TOKEN_VAZIO_PROVIDER_OR_WIRING"
+    },
+    {
+      "route_id": "NOVOEXPORT_NAVIGATOR",
+      "purpose": "Reconstruct/search NOVOexport context locally without rereading the full corpus.",
+      "authority": "source-preserving rafaelia_navigator implementation",
+      "source_min": ["tools/rafaelia_navigator/README.md"],
+      "service": "rafaelia_navigator",
+      "execution_target": "local SQLite/index publication or bounded query",
+      "evidence_rule": "source hash/checkpoint and deterministic publication/query receipt",
+      "claim_boundary": "index-hit!=global-absence!=training",
+      "next_on_missing": "TOKEN_VAZIO_SOURCE_OR_CHECKPOINT"
+    },
+    {
+      "route_id": "AI_SESSION_DISPATCH",
+      "purpose": "Resolve a bounded session/package/role route for AI work without loading the whole map.",
+      "authority": "session dispatch adapter configuration and documentation",
+      "source_min": [
+        "docs/AI_SESSION_DISPATCH_ADAPTER_V1.md",
+        "configs/session-ai-dispatch-adapter.v1.json"
+      ],
+      "service": "AI Session Dispatch Adapter V1",
+      "execution_target": "resolved session/package/role references",
+      "evidence_rule": "exact pinned route/config refs and structural validation",
+      "claim_boundary": "dispatch-resolution!=task-execution",
+      "next_on_missing": "TOKEN_VAZIO_DISPATCH_BINDING"
+    },
+    {
+      "route_id": "GOVERNED_GIT_WRITE",
+      "purpose": "Turn an approved staged change into a governed Git branch/commit/draft-PR flow.",
+      "authority": "RafGitFS governed write contract",
+      "source_min": ["docs/RAFGITFS_GOVERNED_GIT_WRITE_V1.md"],
+      "service": "RafGitFS",
+      "execution_target": "non-protected branch plus draft pull request",
+      "evidence_rule": "base SHA + three-way comparison + dry-run + exact approval + commit/PR/readback + append-only receipt",
+      "claim_boundary": "local-stage!=remote-write!=merge!=release",
+      "next_on_missing": "TOKEN_VAZIO_APPROVAL_OR_PREIMAGE"
+    }
+  ]
+}
