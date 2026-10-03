@@ -1,11 +1,13 @@
 # RAFGITTOOLS_ROADMAP_TRUE
 
-- Status: **ACTIVE — evidence-first operational roadmap with bounded reconciliation overlay**
-- Observed provider head for this overlay: `main@3f63ac845fcc4fed99c62087d52b75148dcc9aa1`
+- Status: **ACTIVE — evidence-first operational roadmap with bounded reconciliation partition**
+- Observed provider main before this branch: `main@9eab1300caae061a4476ba894c7e71236eecb35e`
+- Bounded post-baseline compare head: `3f63ac845fcc4fed99c62087d52b75148dcc9aa1`
 - Historical reconciliation baseline: `main@8af97a580e535d2015e8211000850e282b031763`
 - Updated: **2026-10-03**
-- Scope of this revision: **documentation truth hotfix; PR #617 + #618 exact evidence; no exhaustive semantic claim across the 642-commit interval**
+- Scope of this revision: **BR-4 documentation-only partition of the 642-commit uncertainty; no feature/runtime/release promotion**
 - Rule: `SOURCE_OBSERVED != TEST_PROVEN != BUILD_PROVEN != RUNTIME_PROVEN != DEVICE_PROVEN != RELEASE_PROVEN`
+- Additional rule: `PARTITIONED != RECONCILED`
 - Historical 288-feature matrix: planning reference only; it is not the current evidence denominator.
 
 ## 2026-10-03 bounded reconciliation lane
@@ -13,14 +15,27 @@
 Closed with exact bounded evidence:
 
 1. **BR-1 Context Reconstruction Router V1** — PR #617 head `5878176b49f19f297f6573ea528f66218c3a036d`; START #590 / run `37090622351` SUCCESS; merge `f2ab825454a42f07ba55db742b04390092826475`.
-2. **BR-2 Deterministic custody replay producer** — PR #618 head `e0e5010c5142d77af9f5a6c6c8e5ba7bd419d978`; START #591 / run `37090667573` SUCCESS; merge/current observed head `3f63ac845fcc4fed99c62087d52b75148dcc9aa1`.
-3. **BR-3 Documentation truth boundary** — compare baseline `8af97a...` → current observed head reports 642 commits ahead; therefore the unreconciled interval is explicitly `TOKEN_VAZIO_RECONCILIATION_REQUIRED` instead of being silently treated as current audited state.
+2. **BR-2 Deterministic custody replay producer** — PR #618 head `e0e5010c5142d77af9f5a6c6c8e5ba7bd419d978`; START #591 / run `37090667573` SUCCESS; merge `3f63ac845fcc4fed99c62087d52b75148dcc9aa1`.
+3. **BR-3 Documentation truth boundary** — compare baseline `8af97a...` → bounded head `3f63ac...` reports 642 commits ahead; the unreconciled interval is explicitly `TOKEN_VAZIO_RECONCILIATION_REQUIRED` rather than silently treated as audited. PR #619 exact head `18c683e0e58e6023ec013c62703c36706bbb94d9`; START #594 / run `37093098000` SUCCESS; merge `9eab1300caae061a4476ba894c7e71236eecb35e`.
+
+Materialized on the current candidate, still requiring its own exact-head promotion gate:
+
+4. **BR-4 Partition post-baseline delta by evidence-bearing domain** — `docs/audit/POST_BASELINE_RECONCILIATION_PARTITION_20261003_V1.md` decomposes the interval into seven domains; all remain `PARTITIONED_UNRECONCILED` until individually reconciled.
+
+```text
+R642-D1 CONTROL_PLANE_EVIDENCE
+R642-D2 ANDROID_RUNTIME_BRIDGE
+R642-D3 PROVIDER_GOVERNANCE
+R642-D4 CONTEXT_CORPUS_NAVIGATION
+R642-D5 LOWLEVEL_FREESTANDING
+R642-D6 FEDERATION_CUSTODY_DATA
+R642-D7 DOCUMENTATION_CLAIMS_RECEIPTS
+```
 
 Open next lane, without feature expansion:
 
-4. **BR-4 Partition post-baseline delta by evidence-bearing domain** — group existing commits only; do not create new capability.
-5. **BR-5 Reconcile highest-authority domain first** — provider/source/evidence readback, one bounded domain at a time.
-6. **BR-6 Keep current-state/status/roadmap synchronized** — each closed partition receives exact refs and leaves all unresolved partitions as `TOKEN_VAZIO`.
+5. **BR-5 Reconcile highest-authority domain first** — after BR-4 promotion, reconcile only `R642-D1 CONTROL_PLANE_EVIDENCE`: START topology, validators, conditional/skipped lanes and exact provider evidence.
+6. **BR-6 Keep current-state/status/roadmap synchronized** — each closed domain receives exact refs and all unresolved domains remain `TOKEN_VAZIO` / `PARTITIONED_UNRECONCILED`.
 
 The context reconstruction seed is a reference packet, not a corpus backup. The deterministic replay hotfix proves repeatable producer bytes for fixed inputs; it does not claim a historical envelope has already been reconstructed.
 
@@ -80,6 +95,8 @@ Canonical detail:
 - Recent CI/security/compile fixes are integrated in the main lineage.
 - Context Reconstruction Router V1 is present and exact-head CI-bound at PR #617.
 - Custody deterministic replay support is present and exact-head CI-bound at PR #618.
+- Documentation truth overlay is merged from PR #619 with exact-head START evidence.
+- BR-4 seven-domain partition is materialized on the candidate and remains `IMPLEMENTED_UNTESTED` until exact-head START closes.
 
 ## Gate P0 — exact-current-head truth
 
@@ -93,13 +110,15 @@ Required:
 4. bind build artifacts and hashes to the same SHA;
 5. do not inherit PASS from predecessor commits.
 
-The historical 2026-09-06 audit directly observed one workflow success on `56f4ce...` (Human Impact Cross-Repo Gate V1 run `34031951218`). PR #617 and #618 have exact candidate-head START success, but that evidence is bounded to those heads and does not automatically establish complete current-main runtime/device/release truth.
+The historical 2026-09-06 audit directly observed one workflow success on `56f4ce...` (Human Impact Cross-Repo Gate V1 run `34031951218`). PR #617, #618 and #619 have exact candidate-head START success, but that evidence is bounded to those heads and does not automatically establish complete current-main runtime/device/release truth.
 
 ## Gate P0D — documentation reconciliation truth
 
-**State:** `OPEN / TOKEN_VAZIO_RECONCILIATION_REQUIRED`.
+**State:** `OPEN / PARTITIONED_UNRECONCILED`.
 
-Observed fact: the 2026-09-28 documentation baseline is 642 commits behind the current provider head used by this overlay. Closure requires partitioning that interval and reconciling each evidence-bearing domain without inheriting claims across commits. Until then, the triad may record bounded verified deltas, but must not call the whole interval audited.
+Observed fact: the 2026-09-28 documentation baseline is 642 commits behind the bounded compare head `3f63ac...`. BR-4 now partitions that interval into seven evidence-bearing domains on the current candidate, but **partitioning is not reconciliation**. Exact-head START for the BR-4 candidate is required before the partition can be promoted. Even after promotion, P0D remains open until each domain is reconciled against its own authority/evidence boundary.
+
+First semantic domain after BR-4 promotion: `R642-D1 CONTROL_PLANE_EVIDENCE`.
 
 ## Gate P1 — physical Android device
 
@@ -191,7 +210,14 @@ Machine-generated/state artifacts are not manually edited merely to match prose.
 ## Priority order
 
 ```text
-P0D documentation reconciliation truth
+BR-4 exact-head promotion
+→ R642-D1 CONTROL_PLANE_EVIDENCE
+→ R642-D3 PROVIDER_GOVERNANCE
+→ R642-D4 CONTEXT_CORPUS_NAVIGATION
+→ R642-D5 LOWLEVEL_FREESTANDING
+→ R642-D2 ANDROID_RUNTIME_BRIDGE
+→ R642-D6 FEDERATION_CUSTODY_DATA
+→ R642-D7 DOCUMENTATION_CLAIMS_RECEIPTS
 → P0 exact-head evidence coherence
 → P1 physical device
 → P2 provider-governance readback/safe apply
@@ -209,6 +235,6 @@ The 2026-08-14 BUILD anchor and PR #346/#347 sequence remain evidence/genealogy 
 
 ## R3
 
-- **F_ok:** recent verified deltas #617/#618 are bound to exact candidate heads and runs; the documentation now exposes rather than hides the post-baseline drift.
-- **F_gap:** the 642-commit post-baseline interval, full exact-current-head evidence inventory, physical device, provider-real fixtures and release remain open.
-- **F_next:** close P0D by bounded domain partitions, then continue evidence order; no feature expansion while an unclassified documentation interval remains.
+- **F_ok:** #617/#618/#619 are exact-evidence bounded; BR-4 has materialized a deterministic seven-domain partition of the 642-commit uncertainty without promoting any domain.
+- **F_gap:** BR-4 exact-head CI remains pending on the candidate; D1–D7 are all `PARTITIONED_UNRECONCILED`; complete current-head evidence, physical device, provider-real fixtures and release remain open.
+- **F_next:** close the exact-head BR-4 promotion gate; then reconcile only `R642-D1 CONTROL_PLANE_EVIDENCE` before moving to any lower-priority domain or expansion.
