@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafgittools.local/contracts/context-reconstruction-seed-v1.schema.json",
+  "title": "RafGitTools Context Reconstruction Seed V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "seed_id",
+    "created_at",
+    "intent",
+    "repo",
+    "ref",
+    "route_id",
+    "current_state_ref",
+    "source_refs",
+    "authority",
+    "execution_target",
+    "evidence_refs",
+    "gaps",
+    "next",
+    "claim_allowed"
+  ],
+  "properties": {
+    "schema": {"const": "rafgittools.context_reconstruction_seed.v1"},
+    "seed_id": {"type": "string", "minLength": 1},
+    "parent_seed_id": {"type": ["string", "null"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "intent": {"type": "string", "minLength": 1, "maxLength": 800},
+    "repo": {"type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$"},
+    "ref": {"type": "string", "minLength": 1},
+    "route_id": {"type": "string", "minLength": 1},
+    "current_state_ref": {"$ref": "#/$defs/ref"},
+    "source_refs": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "items": {"$ref": "#/$defs/ref"}
+    },
+    "authority": {"type": "string", "minLength": 1},
+    "execution_target": {"type": "string", "minLength": 1},
+    "evidence_refs": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/ref"}
+    },
+    "gaps": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "next": {"type": "string", "minLength": 1},
+    "claim_allowed": {"const": false}
+  },
+  "$defs": {
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "locator"],
+      "properties": {
+        "kind": {
+          "enum": ["github_path", "commit", "workflow", "artifact", "receipt", "drive_pointer", "other"]
+        },
+        "locator": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+        "note": {"type": "string", "maxLength": 500}
+      }
+    }
+  }
+}
