@@ -63,13 +63,14 @@ class HumanImpactGateTests(unittest.TestCase):
         self.assertIn("data.lawfulBasisReviewRef:TOKEN_VAZIO", result["blockers"])
         self.assertIn("data.privacyImpactAssessmentRef:TOKEN_VAZIO", result["blockers"])
 
-    def test_child_context_requires_best_interest_and_safeguarding(self):
+    def test_child_context_requires_best_interest_participation_and_safeguarding(self):
         case = base_case()
         case["population"]["childrenPossible"] = True
         result = MODULE.evaluate(case)
         self.assertEqual("BLOCKED", result["gateState"])
         self.assertIn("children.bestInterestAssessmentRef:TOKEN_VAZIO", result["blockers"])
         self.assertIn("children.childLegalBasisReviewRef:TOKEN_VAZIO", result["blockers"])
+        self.assertIn("children.childParticipationAssessmentRef:TOKEN_VAZIO", result["blockers"])
         self.assertIn("children.safeguardingEscalationRef:TOKEN_VAZIO", result["blockers"])
 
     def test_indigenous_context_requires_consultation_and_fpic_assessment(self):
@@ -91,7 +92,7 @@ class HumanImpactGateTests(unittest.TestCase):
         self.assertIn("safety.authorityReviewRef:TOKEN_VAZIO", result["blockers"])
         self.assertIn("safety.failSafe:REQUIRED_TRUE", result["blockers"])
 
-    def test_public_or_vulnerable_impact_requires_equity_and_accessibility_analysis(self):
+    def test_public_or_vulnerable_impact_requires_equity_accessibility_and_participation(self):
         case = base_case()
         case["population"]["publicImpact"] = True
         result = MODULE.evaluate(case)
@@ -99,6 +100,7 @@ class HumanImpactGateTests(unittest.TestCase):
         self.assertIn("equity.equityImpactAssessmentRef:TOKEN_VAZIO", result["blockers"])
         self.assertIn("equity.accessibilityPlanRef:TOKEN_VAZIO", result["blockers"])
         self.assertIn("equity.benefitHarmDistributionRef:TOKEN_VAZIO", result["blockers"])
+        self.assertIn("equity.stakeholderEngagementRef:TOKEN_VAZIO", result["blockers"])
 
 
 if __name__ == "__main__":
