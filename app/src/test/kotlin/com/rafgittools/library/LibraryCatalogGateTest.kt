@@ -131,4 +131,63 @@ class LibraryCatalogGateTest {
         assertFalse(result.allowed)
         assertTrue(result.errors.any { it.startsWith("CREDENTIAL_MARKER") })
     }
+    @Test
+    fun unlinkedInventoryItemNeedsExplicitBibliographicGap() {
+        val base = bundle()
+        val unlinked = base.items.single().copy(editionId = null, manifestationId = null)
+        val missingGap = base.copy(items = listOf(unlinked), relations = emptyList())
+        val rejected = LibraryCatalogGate.validate(missingGap)
+        assertFalse(rejected.allowed)
+        assertTrue(rejected.errors.any { it.startsWith("ITEM_BIBLIOGRAPHIC_PARENT_REQUIRED") })
+
+        val marked = missingGap.copy(
+            items = listOf(unlinked.copy(gapRefs = listOf("BIBLIOGRAPHIC_PARENT_TOKEN_VAZIO")))
+        )
+        val accepted = LibraryCatalogGate.validate(marked)
+        assertTrue(accepted.errors.toString(), accepted.allowed)
+    }
+
+    @Test
+    fun treeNodesMustPreserveDirectoryParentAndFileItemIdentity() {
+        val base = bundle()
+        val source = base.sources.single()
+        val item = base.items.single()
+        val root = LibraryTreeNodeRecord(
+            nodeId = "NODE-ROOT-001",
+            sourceId = source.sourceId,
+            parentNodeId = null,
+            displayName = "Selected SAF root",
+            kind = LibraryTreeNodeKind.DIRECTORY,
+            sourceRefSha256 = source.locatorSha256
+        )
+        val directory = LibraryTreeNodeRecord(
+            nodeId = "NODE-DIR-001",
+            sourceId = source.sourceId,
+            parentNodeId = root.nodeId,
+            displayName = "folder",
+            kind = LibraryTreeNodeKind.DIRECTORY,
+            sourceRefSha256 = "2".repeat(64)
+        )
+        val file = LibraryTreeNodeRecord(
+            nodeId = item.itemId,
+            sourceId = item.sourceId,
+            parentNodeId = directory.nodeId,
+            displayName = item.displayName,
+            kind = LibraryTreeNodeKind.FILE,
+            sourceRefSha256 = item.sourceRefSha256,
+            mediaType = item.mediaType,
+            sizeBytes = item.sizeBytes
+        )
+        val valid = base.copy(treeNodes = listOf(root, directory, file))
+        val accepted = LibraryCatalogGate.validate(valid)
+        assertTrue(accepted.errors.toString(), accepted.allowed)
+
+        val disconnected = valid.copy(
+            treeNodes = listOf(root, directory, file.copy(parentNodeId = "NODE-MISSING"))
+        )
+        val rejected = LibraryCatalogGate.validate(disconnected)
+        assertFalse(rejected.allowed)
+        assertTrue(rejected.errors.any { it.startsWith("TREE_NODE_UNKNOWN_PARENT") })
+    }
+
 }

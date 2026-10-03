@@ -8,6 +8,10 @@ import java.util.ArrayDeque
 /**
  * Metadata-only recursive inventory for a user-selected SAF tree.
  * No source document bytes are opened, changed or deleted.
+ *
+ * allFiles/allDirectories describe the selected tree. candidateFiles remains
+ * the narrower conversation/codex processing queue and must not be used as a
+ * complete representation of the source tree.
  */
 object NovoexportSafInventory {
     data class Entry(
@@ -15,7 +19,16 @@ object NovoexportSafInventory {
         val documentId: String,
         val name: String,
         val mimeType: String,
-        val sizeBytes: Long?
+        val sizeBytes: Long?,
+        val relativePath: String = name,
+        val parentDocumentId: String? = null
+    )
+
+    data class DirectoryEntry(
+        val documentId: String,
+        val parentDocumentId: String?,
+        val name: String,
+        val relativePath: String
     )
 
     data class Result(
@@ -25,7 +38,17 @@ object NovoexportSafInventory {
         val candidateFiles: List<Entry>,
         val knownCandidateBytes: Long,
         val unknownSizeCandidateFiles: Int,
-        val state: String = "INVENTORY_COMPLETE_METADATA_ONLY"
+        val state: String = "INVENTORY_COMPLETE_METADATA_ONLY",
+        val rootDocumentId: String = "",
+        val allFiles: List<Entry> = emptyList(),
+        val allDirectories: List<DirectoryEntry> = emptyList(),
+        val knownTotalBytes: Long = 0L,
+        val unknownSizeFiles: Int = 0
+    )
+
+    private data class DirectoryWork(
+        val documentId: String,
+        val relativePath: String
     )
 
     fun scan(
@@ -37,14 +60,20 @@ object NovoexportSafInventory {
         val rootId = DocumentsContract.getTreeDocumentId(treeUri)
         require(rootId.isNotBlank()) { "Selected SAF tree has no root document id" }
 
-        val pending = ArrayDeque<String>()
+        val pending = ArrayDeque<DirectoryWork>()
         val visitedDirectories = mutableSetOf<String>()
+        val directoryPlacements = mutableMapOf<String, Pair<String, String>>()
+        val filePlacements = mutableMapOf<String, Pair<String, String>>()
+        val allFiles = mutableListOf<Entry>()
+        val allDirectories = mutableListOf<DirectoryEntry>()
         val candidates = mutableListOf<Entry>()
-        pending.add(rootId)
+        pending.addLast(DirectoryWork(rootId, ""))
 
         var visitedDocuments = 0
-        var knownBytes = 0L
-        var unknownSizes = 0
+        var knownTotalBytes = 0L
+        var unknownSizeFiles = 0
+        var knownCandidateBytes = 0L
+        var unknownCandidateFiles = 0
 
         val projection = arrayOf(
             DocumentsContract.Document.COLUMN_DOCUMENT_ID,
@@ -54,7 +83,8 @@ object NovoexportSafInventory {
         )
 
         while (pending.isNotEmpty()) {
-            val directoryId = pending.removeFirst()
+            val directory = pending.removeFirst()
+            val directoryId = directory.documentId
             if (!visitedDirectories.add(directoryId)) continue
 
             val children = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, directoryId)
@@ -75,43 +105,100 @@ object NovoexportSafInventory {
                     val documentId = it.getString(idIndex) ?: error("SAF child has no document id")
                     val name = it.getString(nameIndex) ?: "TOKEN_VAZIO_DISPLAY_NAME"
                     val mimeType = it.getString(mimeIndex) ?: "application/octet-stream"
+                    val relativePath = childPath(directory.relativePath, name)
 
                     if (mimeType == DocumentsContract.Document.MIME_TYPE_DIR) {
-                        pending.addLast(documentId)
+                        val placement = relativePath to directoryId
+                        val previousPlacement = directoryPlacements[documentId]
+                        require(previousPlacement == null || previousPlacement == placement) {
+                            "SAF_DIRECTORY_ID_HAS_MULTIPLE_TREE_PATHS"
+                        }
+                        if (previousPlacement == null) {
+                            directoryPlacements[documentId] = placement
+                            allDirectories += DirectoryEntry(
+                                documentId = documentId,
+                                parentDocumentId = directoryId,
+                                name = name,
+                                relativePath = relativePath
+                            )
+                            pending.addLast(DirectoryWork(documentId, relativePath))
+                        }
                         continue
                     }
-                    if (!acceptsSourceName(name)) continue
 
-                    val size = if (it.isNull(sizeIndex)) null else it.getLong(sizeIndex).takeIf { value -> value >= 0L }
-                    if (size == null) {
-                        unknownSizes += 1
-                    } else {
-                        require(size <= Long.MAX_VALUE - knownBytes) {
-                            "SAF provider size aggregation overflow"
-                        }
-                        knownBytes += size
-                    }
-
-                    candidates += Entry(
+                    val size = if (it.isNull(sizeIndex)) null
+                    else it.getLong(sizeIndex).takeIf { value -> value >= 0L }
+                    val entry = Entry(
                         uri = DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId).toString(),
                         documentId = documentId,
                         name = name,
                         mimeType = mimeType,
-                        sizeBytes = size
+                        sizeBytes = size,
+                        relativePath = relativePath,
+                        parentDocumentId = directoryId
                     )
+                    val placement = relativePath to directoryId
+                    val previousPlacement = filePlacements[documentId]
+                    require(previousPlacement == null || previousPlacement == placement) {
+                        "SAF_FILE_ID_HAS_MULTIPLE_TREE_PATHS"
+                    }
+                    if (previousPlacement != null) continue
+                    filePlacements[documentId] = placement
+
+                    if (size == null) {
+                        unknownSizeFiles += 1
+                    } else {
+                        knownTotalBytes = addSize(knownTotalBytes, size, "SAF total size aggregation overflow")
+                    }
+                    allFiles += entry
+
+                    if (acceptsSourceName(name)) {
+                        candidates += entry
+                        if (size == null) {
+                            unknownCandidateFiles += 1
+                        } else {
+                            knownCandidateBytes = addSize(
+                                knownCandidateBytes,
+                                size,
+                                "SAF candidate size aggregation overflow"
+                            )
+                        }
+                    }
                 }
             }
         }
 
-        val ordered = candidates.sortedWith(compareBy<Entry>({ it.name.lowercase() }, { it.documentId }))
+        val orderedFiles = allFiles
+            .distinctBy { it.documentId }
+            .sortedWith(compareBy<Entry>({ it.relativePath.lowercase() }, { it.documentId }))
+        val orderedDirectories = allDirectories
+            .distinctBy { it.documentId }
+            .sortedWith(compareBy<DirectoryEntry>({ it.relativePath.lowercase() }, { it.documentId }))
+        val orderedCandidates = candidates
+            .distinctBy { it.documentId }
+            .sortedWith(compareBy<Entry>({ it.relativePath.lowercase() }, { it.documentId }))
+
         return Result(
             treeUri = treeUri.toString(),
             visitedDocuments = visitedDocuments,
             visitedDirectories = visitedDirectories.size,
-            candidateFiles = ordered,
-            knownCandidateBytes = knownBytes,
-            unknownSizeCandidateFiles = unknownSizes
+            candidateFiles = orderedCandidates,
+            knownCandidateBytes = knownCandidateBytes,
+            unknownSizeCandidateFiles = unknownCandidateFiles,
+            rootDocumentId = rootId,
+            allFiles = orderedFiles,
+            allDirectories = orderedDirectories,
+            knownTotalBytes = knownTotalBytes,
+            unknownSizeFiles = unknownSizeFiles
         )
+    }
+
+    internal fun childPath(parentPath: String, name: String): String =
+        if (parentPath.isBlank()) name else parentPath + "/" + name
+
+    private fun addSize(current: Long, size: Long, error: String): Long {
+        require(size <= Long.MAX_VALUE - current) { error }
+        return current + size
     }
 
     internal fun acceptsSourceName(name: String): Boolean {

@@ -62,7 +62,13 @@ No existing Drive file was moved or deleted.
 
 ## NOVOexport
 
-The canonical NOVOexport root and semantic-library artifacts already exist in Drive. This control plane treats them as source/catalog authorities and does not duplicate the raw corpus.
+The canonical NOVOexport root and semantic-library artifacts were recorded as existing in Drive on 2026-09-27. This control plane treats them as source/catalog authorities and does not duplicate the raw corpus.
+
+The catalog pilot on branch `codex/novoexport-library-catalog-v1-20261002` composes a complete metadata inventory of the user-selected SAF tree. Catalog tree nodes preserve folder/file parent links, display names, reported MIME types, and reported sizes. The independent processing queue remains limited to `conversation*.json` and `codex*.json` candidates.
+
+The catalog keeps access classification at `TOKEN_VAZIO`, records missing bibliographic parents as explicit gaps, and leaves claims disabled. Source locator and document IDs are represented by SHA-256 fingerprints; raw SAF URIs and provider document IDs are not included in the catalog. No source bytes are read, copied, or content-hashed. These fingerprints are not anonymization or proof of truth.
+
+The searchable preview filters the in-memory tree by path/name. It is not a full-text/vector index. Export requires a separate confirmation and writes only the materialized tree catalog and its receipt through SAF. The export receipt records the provider authority and readback result, but does not inspect Drive ACLs or verify private/shared/public visibility. CI passed for the prior exact head; a physical Drive/provider run remains pending for this branch.
 
 ## Materialization
 
@@ -97,9 +103,9 @@ DISCOVER -> IDENTITY_BIND -> DESCRIBE -> AUTHORITY_CONTROL -> CLASSIFY -> CATALO
 - full semantic authority/subject extraction is NOT_RUN;
 - reversible physical move planner is not implemented;
 - multi-source circulation/change journal is not implemented;
-- library search UI is not wired;
+- full library search is not wired; the catalog pilot exposes only an in-memory path/name-filtered preview of the selected tree;
 - no whole-Drive delete/dedup authorization exists.
 
 ## F_next
 
-Bind DRIVE_A and DRIVE_B through SAF; run a bounded NOVOexport catalog pilot; materialize catalog/authority/relation artifacts; export only catalog artifacts to the private Library Map; compare identities before any move.
+Physically verify the bounded NOVOexport tree pilot on a handset/Drive provider; bind DRIVE_A and DRIVE_B through SAF; add content hashing or semantic indexing only as separately gated stages; compare identities before any move.

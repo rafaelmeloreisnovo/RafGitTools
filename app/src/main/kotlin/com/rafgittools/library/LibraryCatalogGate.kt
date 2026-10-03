@@ -35,6 +35,7 @@ object LibraryCatalogGate {
         uniqueIds("preservation_event", bundle.preservationEvents.map { it.eventId }, errors)
         uniqueIds("rights", bundle.rights.map { it.rightsId }, errors)
         uniqueIds("relation", bundle.relations.map { it.relationId }, errors)
+        uniqueIds("tree_node", bundle.treeNodes.map { it.nodeId }, errors)
 
         val sourceIds = bundle.sources.map { it.sourceId }.toSet()
         val authorityIds = bundle.authorities.map { it.authorityId }.toSet()
@@ -126,7 +127,12 @@ object LibraryCatalogGate {
         bundle.items.forEach { item ->
             if (!stableId.matches(item.itemId)) errors += "ITEM_ID:" + item.itemId
             if (item.editionId == null && item.manifestationId == null) {
-                errors += "ITEM_BIBLIOGRAPHIC_PARENT_REQUIRED:" + item.itemId
+                if ("BIBLIOGRAPHIC_PARENT_TOKEN_VAZIO" !in item.gapRefs) {
+                    errors += "ITEM_BIBLIOGRAPHIC_PARENT_REQUIRED:" + item.itemId
+                }
+                if (item.claimAllowed) {
+                    errors += "ITEM_UNLINKED_CLAIM_ALLOWED:" + item.itemId
+                }
             }
             if (item.editionId != null && item.editionId !in editionIds) {
                 errors += "ITEM_UNKNOWN_EDITION:" + item.itemId
@@ -143,6 +149,8 @@ object LibraryCatalogGate {
             if (item.claimAllowed) errors += "ITEM_CLAIM_ALLOWED:" + item.itemId
             scanCredentials(item.displayName, "ITEM_DISPLAY_NAME:" + item.itemId, errors)
         }
+
+        validateTreeNodes(bundle, sourceIds, itemIds, errors)
 
         bundle.preservationEvents.forEach { event ->
             if (!stableId.matches(event.eventId)) errors += "PRESERVATION_EVENT_ID:" + event.eventId
@@ -185,6 +193,128 @@ object LibraryCatalogGate {
             allowed = errors.isEmpty(),
             errors = errors.distinct().sorted()
         )
+    }
+
+    private fun validateTreeNodes(
+        bundle: LibraryCatalogBundle,
+        sourceIds: Set<String>,
+        itemIds: Set<String>,
+        errors: MutableList<String>
+    ) {
+        val nodes = bundle.treeNodes
+        if (nodes.isEmpty()) return
+
+        val nodesById = nodes.associateBy { it.nodeId }
+        val mappedSourceIds = nodes.map { it.sourceId }.toSet()
+        mappedSourceIds.forEach { sourceId ->
+            val roots = nodes.filter {
+                it.sourceId == sourceId && it.parentNodeId == null
+            }
+            if (roots.size != 1) errors += "TREE_ROOT_COUNT:" + sourceId
+            val source = bundle.sources.firstOrNull { it.sourceId == sourceId }
+            val root = roots.singleOrNull()
+            if (root != null && source != null &&
+                root.sourceRefSha256 != source.locatorSha256
+            ) {
+                errors += "TREE_ROOT_SOURCE_HASH:" + sourceId
+            }
+        }
+
+        nodes.forEach { node ->
+            if (!stableId.matches(node.nodeId)) errors += "TREE_NODE_ID:" + node.nodeId
+            if (node.sourceId !in sourceIds) errors += "TREE_NODE_UNKNOWN_SOURCE:" + node.nodeId
+            if (!sha256.matches(node.sourceRefSha256)) {
+                errors += "TREE_NODE_SOURCE_REF_HASH:" + node.nodeId
+            }
+            if (node.displayName.isBlank()) errors += "TREE_NODE_NAME:" + node.nodeId
+            if (node.sizeBytes != null && node.sizeBytes < 0L) {
+                errors += "TREE_NODE_SIZE:" + node.nodeId
+            }
+            if (node.claimAllowed) errors += "TREE_NODE_CLAIM_ALLOWED:" + node.nodeId
+            scanCredentials(node.displayName, "TREE_NODE_NAME:" + node.nodeId, errors)
+
+            val parentId = node.parentNodeId
+            if (parentId == null) {
+                if (node.kind != LibraryTreeNodeKind.DIRECTORY) {
+                    errors += "TREE_ROOT_MUST_BE_DIRECTORY:" + node.nodeId
+                }
+            } else {
+                val parent = nodesById[parentId]
+                if (parent == null) {
+                    errors += "TREE_NODE_UNKNOWN_PARENT:" + node.nodeId
+                } else {
+                    if (parent.kind != LibraryTreeNodeKind.DIRECTORY) {
+                        errors += "TREE_NODE_PARENT_NOT_DIRECTORY:" + node.nodeId
+                    }
+                    if (parent.sourceId != node.sourceId) {
+                        errors += "TREE_NODE_CROSS_SOURCE_PARENT:" + node.nodeId
+                    }
+                }
+            }
+
+            when (node.kind) {
+                LibraryTreeNodeKind.DIRECTORY -> {
+                    if (node.nodeId in itemIds) errors += "TREE_DIRECTORY_COLLIDES_WITH_ITEM:" + node.nodeId
+                    if (node.mediaType != null || node.sizeBytes != null) {
+                        errors += "TREE_DIRECTORY_HAS_FILE_METADATA:" + node.nodeId
+                    }
+                }
+                LibraryTreeNodeKind.FILE -> {
+                    if (node.nodeId !in itemIds) {
+                        errors += "TREE_FILE_ITEM_REQUIRED:" + node.nodeId
+                    }
+                    if (node.mediaType.isNullOrBlank()) {
+                        errors += "TREE_FILE_MEDIA_TYPE_REQUIRED:" + node.nodeId
+                    }
+                    val item = bundle.items.firstOrNull { it.itemId == node.nodeId }
+                    if (item != null) {
+                        if (item.sourceId != node.sourceId) {
+                            errors += "TREE_FILE_SOURCE_MISMATCH:" + node.nodeId
+                        }
+                        if (item.sourceRefSha256 != node.sourceRefSha256) {
+                            errors += "TREE_FILE_SOURCE_REF_MISMATCH:" + node.nodeId
+                        }
+                        if (item.displayName != node.displayName) {
+                            errors += "TREE_FILE_NAME_MISMATCH:" + node.nodeId
+                        }
+                        if (item.mediaType != node.mediaType) {
+                            errors += "TREE_FILE_MEDIA_TYPE_MISMATCH:" + node.nodeId
+                        }
+                        if (item.sizeBytes != node.sizeBytes) {
+                            errors += "TREE_FILE_SIZE_MISMATCH:" + node.nodeId
+                        }
+                    }
+                }
+            }
+        }
+
+        mappedSourceIds.forEach { sourceId ->
+            bundle.items.filter { it.sourceId == sourceId }.forEach { item ->
+                val fileNode = nodesById[item.itemId]
+                if (fileNode == null || fileNode.kind != LibraryTreeNodeKind.FILE) {
+                    errors += "TREE_ITEM_FILE_NODE_REQUIRED:" + item.itemId
+                }
+            }
+        }
+
+        val state = mutableMapOf<String, Int>()
+        nodes.forEach { start ->
+            val path = mutableListOf<String>()
+            var cursorId: String? = start.nodeId
+            while (cursorId != null) {
+                val color = state[cursorId]
+                if (color == 1) {
+                    errors += "TREE_NODE_PARENT_CYCLE:" + cursorId
+                    break
+                }
+                if (color == 2) break
+                val cursor = nodesById[cursorId] ?: break
+                state[cursorId] = 1
+                path += cursorId
+                cursorId = cursor.parentNodeId
+            }
+            path.forEach { state[it] = 2 }
+        }
     }
 
     private fun uniqueIds(kind: String, ids: List<String>, errors: MutableList<String>) {

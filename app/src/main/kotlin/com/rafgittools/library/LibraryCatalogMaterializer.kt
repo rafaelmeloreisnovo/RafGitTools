@@ -42,7 +42,8 @@ object LibraryCatalogMaterializer {
             preservationEvents = bundle.preservationEvents.sortedBy { it.eventId },
             rights = bundle.rights.sortedBy { it.rightsId },
             relations = bundle.relations.sortedBy { it.relationId },
-            gaps = bundle.gaps.distinct().sorted()
+            gaps = bundle.gaps.distinct().sorted(),
+            treeNodes = bundle.treeNodes.sortedBy { it.nodeId }
         )
 
         val catalogFile = File(destinationDir, normalized.catalogId + ".catalog.json")
@@ -67,6 +68,7 @@ object LibraryCatalogMaterializer {
             "preservation_event_count" to normalized.preservationEvents.size,
             "rights_count" to normalized.rights.size,
             "relation_count" to normalized.relations.size,
+            "tree_node_count" to normalized.treeNodes.size,
             "gap_count" to normalized.gaps.size,
             "readback_verified" to true,
             "claim_allowed" to false,
