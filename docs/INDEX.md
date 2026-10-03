@@ -1,5 +1,17 @@
 # Documentação RafGitTools
 
+## Reconstrução rápida de contexto — humano / IA
+
+Para reentrar no projeto sem varrer o corpus, comece por [`navigation/CONTEXT_RECONSTRUCTION_START_V1.md`](navigation/CONTEXT_RECONSTRUCTION_START_V1.md).
+
+Camada machine-readable:
+
+- [`../configs/context-reconstruction-routes.v1.json`](../configs/context-reconstruction-routes.v1.json) — intenção → fonte mínima → autoridade → serviço → evidência;
+- [`../contracts/context-reconstruction-seed-v1.schema.json`](../contracts/context-reconstruction-seed-v1.schema.json) — semente reference-first de reconstrução;
+- [`../examples/context-reconstruction-seed/minimal.example.json`](../examples/context-reconstruction-seed/minimal.example.json) — exemplo mínimo, sem corpus bruto.
+
+Regra: esta camada **roteia** as autoridades abaixo; não as substitui e não promove claim.
+
 ## Fonte de verdade — ordem de leitura
 
 1. [`RAFGITTOOLS_CURRENT_STATE.md`](RAFGITTOOLS_CURRENT_STATE.md) — estado editorial corrente; reconciliação de 2026-09-28 observada contra `main@8af97a580e535d2015e8211000850e282b031763`.
