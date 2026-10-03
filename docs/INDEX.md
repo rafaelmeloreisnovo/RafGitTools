@@ -12,6 +12,12 @@ Camada machine-readable:
 
 Regra: esta camada **roteia** as autoridades abaixo; não as substitui e não promove claim.
 
+## Rota gradual ética / exegese
+
+Quando a intenção cruzar ética, Novo Testamento, linguagem, história e interpretação, use [`navigation/LOVE_NEIGHBOR_EXEGESIS_ROUTE_V1.md`](navigation/LOVE_NEIGHBOR_EXEGESIS_ROUTE_V1.md).
+
+A rota começa em **amar o próximo como a si mesmo** e preserva a separação `TEXT != VARIANT != HISTORY != THEOLOGY != ETHICAL_APPLICATION`. Ela permite leitura espiritual/metafórica sem promover hipótese como fato, e usa `TOKEN_VAZIO` quando a fonte não sustenta a próxima passagem.
+
 ## Fonte de verdade — ordem de leitura
 
 1. [`RAFGITTOOLS_CURRENT_STATE.md`](RAFGITTOOLS_CURRENT_STATE.md) — estado editorial corrente; reconciliação de 2026-09-28 observada contra `main@8af97a580e535d2015e8211000850e282b031763`.
