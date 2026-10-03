@@ -49,6 +49,13 @@ object NovoexportConversationCorpus {
         return "conversations-%03d.json".format(index)
     }
 
+    fun canonicalIndex(name: String): Int? {
+        val normalized = name.substringAfterLast('/')
+        val match = canonicalName.matchEntire(normalized) ?: return null
+        val index = match.groupValues[1].toInt()
+        return index.takeIf { it in FIRST_INDEX..LAST_INDEX }
+    }
+
     fun coverage(entries: List<NovoexportSafInventory.Entry>): Coverage {
         val counts = mutableMapOf<Int, Int>()
         val outOfRange = mutableListOf<String>()
