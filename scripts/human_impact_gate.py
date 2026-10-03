@@ -85,10 +85,11 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
 
     children_possible = bool(_get(case, "population.childrenPossible", False))
     if children_possible:
-        # Best interests and child-rights review are mandatory project gates.
+        # Best interests, participation and child-rights review are mandatory project gates.
         _require_ref(case, "children.bestInterestAssessmentRef", blockers)
         _require_ref(case, "children.childLegalBasisReviewRef", blockers)
         _require_ref(case, "children.ageAssuranceAssessmentRef", blockers)
+        _require_ref(case, "children.childParticipationAssessmentRef", blockers)
         _require_true(case, "children.childAppropriateExplanation", blockers)
         _require_true(case, "children.noBehavioralManipulation", blockers)
         _require_true(case, "children.progressiveAutonomyRespected", blockers)
@@ -112,6 +113,7 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
         _require_ref(case, "equity.equityImpactAssessmentRef", blockers)
         _require_ref(case, "equity.accessibilityPlanRef", blockers)
         _require_ref(case, "equity.benefitHarmDistributionRef", blockers)
+        _require_ref(case, "equity.stakeholderEngagementRef", blockers)
 
     risk_tier = str(_get(case, "safety.riskTier", "TOKEN_VAZIO")).upper()
     if risk_tier in HIGH_RISK_TIERS:
