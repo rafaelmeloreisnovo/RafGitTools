@@ -4,7 +4,7 @@
   "claim_allowed": false,
   "authority": {
     "repo": "rafaelmeloreisnovo/Mapa",
-    "commit": "21c2f9aefab86cd31b8ea7da22533452690fd087",
+    "commit": "ad2efc2b9a4599bdcc37ab416c84bd99dc2a1e09",
     "path": "data/control-plane/SESSION_AI_WORK_DISPATCH_V1.json",
     "blob_sha1": "c1d1d8f1692c74957f8b70968fa863f855d93cb0"
   },

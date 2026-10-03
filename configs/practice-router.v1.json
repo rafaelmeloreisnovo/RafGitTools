@@ -125,7 +125,7 @@
       "source_min": [
         "AGENTS.md",
         "configs/session-agent-dispatch.v1.json",
-        "Mapa@21c2f9aefab86cd31b8ea7da22533452690fd087:data/control-plane/SESSION_AI_WORK_DISPATCH_V1.json#c1d1d8f1692c74957f8b70968fa863f855d93cb0"
+        "Mapa@ad2efc2b9a4599bdcc37ab416c84bd99dc2a1e09:data/control-plane/SESSION_AI_WORK_DISPATCH_V1.json#c1d1d8f1692c74957f8b70968fa863f855d93cb0"
       ],
       "execution_target": "python3 scripts/resolve_session_ai_work_packet.py --mapa-checkout <MAPA_CHECKOUT> --packet SP08_SESSION_TO_WORK_PACKETS",
       "evidence": "Mapa HEAD+Git blob+schema validated; structural route only; claim_allowed=false",

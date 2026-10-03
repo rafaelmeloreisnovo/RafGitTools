@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 MAPA_REPO = "rafaelmeloreisnovo/Mapa"
-MAPA_COMMIT = "21c2f9aefab86cd31b8ea7da22533452690fd087"
+MAPA_COMMIT = "ad2efc2b9a4599bdcc37ab416c84bd99dc2a1e09"
 DISPATCH_PATH = "data/control-plane/SESSION_AI_WORK_DISPATCH_V1.json"
 DISPATCH_BLOB = "c1d1d8f1692c74957f8b70968fa863f855d93cb0"
 SCHEMA = "RAFAELIA_SESSION_AI_WORK_DISPATCH_V1"
