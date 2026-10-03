@@ -35,6 +35,12 @@ def evaluate(registry: dict[str, Any], router_text: str) -> dict[str, Any]:
         name for name, config in tools.items()
         if isinstance(config, dict) and config.get("allowed") is True
     }
+    durable_handlers = {
+        name for name, config in tools.items()
+        if isinstance(config, dict)
+        and config.get("handler_state") == "IMPLEMENTED_DURABLE_QUEUE"
+    }
+
     allowed_without_handler = sorted(allowed - handlers)
     handler_without_registry = sorted(handlers - registered)
 
@@ -46,13 +52,13 @@ def evaluate(registry: dict[str, Any], router_text: str) -> dict[str, Any]:
             bad_handler_state.append(name)
 
     durable_contract_missing: list[str] = []
-    if "git.push" in allowed:
+    if "git.push" in durable_handlers:
         if "SyncOperation.GitPush" not in router_text or 'tool = "git.push"' not in router_text:
             durable_contract_missing.append("git.push")
-    if "git.pull" in allowed:
+    if "git.pull" in durable_handlers:
         if "SyncOperation.GitPull" not in router_text or 'tool = "git.pull"' not in router_text:
             durable_contract_missing.append("git.pull")
-    if {"git.push", "git.pull"} & allowed and "queue.enqueue(operation)" not in router_text:
+    if durable_handlers and "queue.enqueue(operation)" not in router_text:
         durable_contract_missing.append("durable_queue_boundary")
 
     problems = {
@@ -72,6 +78,7 @@ def evaluate(registry: dict[str, Any], router_text: str) -> dict[str, Any]:
         "handler_count": len(handlers),
         "registered_tools": sorted(registered),
         "allowed_tools": sorted(allowed),
+        "durable_handlers": sorted(durable_handlers),
         "router_handlers": sorted(handlers),
         **problems,
         "execution_evidence": "NOT_RUN",
