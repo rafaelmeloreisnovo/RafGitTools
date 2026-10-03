@@ -2,10 +2,12 @@
 
 ## Autoridade e limite
 
-O catálogo federado continua em `rafaelmeloreisnovo/Mapa`, no commit
-`21c2f9aefab86cd31b8ea7da22533452690fd087`, arquivo
+O catálogo federado continua em `rafaelmeloreisnovo/Mapa`, no merge commit
+`ad2efc2b9a4599bdcc37ab416c84bd99dc2a1e09`, arquivo
 `data/control-plane/SESSION_AI_WORK_DISPATCH_V1.json`, blob
-`c1d1d8f1692c74957f8b70968fa863f855d93cb0`. RafGitTools fornece somente um
+`c1d1d8f1692c74957f8b70968fa863f855d93cb0`. Esse pin preserva a identidade do
+merge corrigido que contém o mesmo blob validado; ele não afirma que o `main`
+móvel do Mapa deva permanecer nesse commit. RafGitTools fornece somente um
 resolvedor local e somente leitura. O adaptador confere o `HEAD`, o blob Git e o
 schema antes de expor uma rota. Uma divergência resulta em `ROUTE_STATE_BLOCKED`.
 
