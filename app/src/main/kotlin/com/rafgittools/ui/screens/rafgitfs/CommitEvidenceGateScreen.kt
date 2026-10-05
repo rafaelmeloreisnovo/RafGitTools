@@ -33,6 +33,8 @@ import com.rafgittools.rafgitfs.assurance.EvidenceProducerKind
 import com.rafgittools.rafgitfs.assurance.EvidenceProfile
 import com.rafgittools.rafgitfs.assurance.EvidenceRecord
 import com.rafgittools.rafgitfs.assurance.EvidenceState
+import com.rafgittools.rafgitfs.assurance.RiskSeverity
+import com.rafgittools.rafgitfs.assurance.UrgencyClass
 
 private data class CommitEvidenceDisplayRow(
     val phase: String,
@@ -60,6 +62,31 @@ private val providerProducer = EvidenceProducer(
     independenceDomain = "github-provider"
 )
 
+private val unboundHumanSafeguardProducer = EvidenceProducer(
+    kind = EvidenceProducerKind.AUTOMATION,
+    id = "human-safeguard:unbound",
+    independenceDomain = "human-safeguard-unbound"
+)
+
+private fun unresolvedHumanSafeguard(
+    kind: EvidenceKind,
+    risk: RiskSeverity,
+    urgency: UrgencyClass,
+    falsifier: String,
+    mitigation: String
+): EvidenceRecord = EvidenceRecord(
+    kind = kind,
+    state = EvidenceState.TOKEN_VAZIO,
+    sourceRef = "TOKEN_VAZIO: traceable human safeguard assessment not connected",
+    proofRef = null,
+    producer = unboundHumanSafeguardProducer,
+    riskSeverity = risk,
+    urgency = urgency,
+    falsifierRef = falsifier,
+    mitigationRef = mitigation,
+    claimAllowed = false
+)
+
 private fun buildCommitEvidenceEnvelope(
     repositoryFullName: String,
     refName: String,
@@ -83,6 +110,41 @@ private fun buildCommitEvidenceEnvelope(
     }
 
     val records = listOf(
+        unresolvedHumanSafeguard(
+            EvidenceKind.HUMAN_DIGNITY,
+            RiskSeverity.CRITICAL,
+            UrgencyClass.P0,
+            "Block promotion when dignity impact is adverse or unassessed",
+            "Require traceable human dignity review and reversible mitigation before promotion"
+        ),
+        unresolvedHumanSafeguard(
+            EvidenceKind.CHILD_SAFETY,
+            RiskSeverity.CRITICAL,
+            UrgencyClass.P0,
+            "Block promotion when child-safety relevance or best-interest assessment is unresolved",
+            "Require human child-safety scope review and documented protective controls"
+        ),
+        unresolvedHumanSafeguard(
+            EvidenceKind.INCLUSION_NONDISCRIMINATION,
+            RiskSeverity.CRITICAL,
+            UrgencyClass.P0,
+            "Block promotion on discriminatory exclusion or unassessed disparate impact",
+            "Require human non-discrimination/inclusion review and corrective controls"
+        ),
+        unresolvedHumanSafeguard(
+            EvidenceKind.ACCESSIBILITY_INCLUSION,
+            RiskSeverity.HIGH,
+            UrgencyClass.P1,
+            "Block promotion while accessibility impact remains unassessed",
+            "Require accessibility review, documented limitations and corrective path"
+        ),
+        unresolvedHumanSafeguard(
+            EvidenceKind.SAFE_HEALTHY_WORK,
+            RiskSeverity.CRITICAL,
+            UrgencyClass.P0,
+            "Block promotion on unsafe work practice or unassessed worker-safety impact",
+            "Require human work-safety review and mitigation/rollback path"
+        ),
         EvidenceRecord(
             kind = EvidenceKind.SOURCE_IDENTITY,
             state = if (repositoryFullName.isNotBlank() && refName.isNotBlank()) EvidenceState.PASS else EvidenceState.FAIL,
@@ -192,6 +254,11 @@ private fun buildCommitEvidenceEnvelope(
 
 private fun displayRows(envelope: CommitEvidenceEnvelope): List<CommitEvidenceDisplayRow> {
     val phaseByKind = mapOf(
+        EvidenceKind.HUMAN_DIGNITY to "HUMAN-FIRST",
+        EvidenceKind.CHILD_SAFETY to "HUMAN-FIRST",
+        EvidenceKind.INCLUSION_NONDISCRIMINATION to "HUMAN-FIRST",
+        EvidenceKind.ACCESSIBILITY_INCLUSION to "HUMAN-FIRST",
+        EvidenceKind.SAFE_HEALTHY_WORK to "HUMAN-FIRST",
         EvidenceKind.SOURCE_IDENTITY to "PRE",
         EvidenceKind.PRIVATE_WORKSPACE to "PRE",
         EvidenceKind.BASE_COMMIT to "PRE",
@@ -209,12 +276,16 @@ private fun displayRows(envelope: CommitEvidenceEnvelope): List<CommitEvidenceDi
     )
 
     val rows = envelope.records.map { record ->
+        val evidenceBits = mutableListOf<String>()
+        record.riskSeverity?.let { evidenceBits += "risk=${it.name}" }
+        record.urgency?.let { evidenceBits += "urgency=${it.name}" }
+        evidenceBits += "source=${record.sourceRef}"
         CommitEvidenceDisplayRow(
             phase = phaseByKind.getValue(record.kind),
             id = record.kind.name,
             label = record.kind.name.replace('_', ' '),
             status = record.state,
-            evidence = record.sourceRef
+            evidence = evidenceBits.joinToString(" · ")
         )
     }.toMutableList()
 
@@ -280,8 +351,10 @@ fun CommitEvidenceGateScreen(
             item {
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Fail-closed promotion boundary", style = MaterialTheme.typography.titleMedium)
+                        Text("Human dignity first · fail-closed promotion", style = MaterialTheme.typography.titleMedium)
                         Text(reason)
+                        Text("HUMAN_DIGNITY > DELIVERY_SPEED · CHILD_SAFETY > FEATURE_COMPLETION", fontFamily = FontFamily.Monospace)
+                        Text("UNKNOWN_HUMAN_IMPACT ≠ SAFE · AI_ASSESSMENT ≠ HUMAN_AUTHORITY", fontFamily = FontFamily.Monospace)
                         Text("SOURCE ≠ ARTIFACT ≠ EXECUTION ≠ EVIDENCE ≠ CLAIM", fontFamily = FontFamily.Monospace)
                         Text("AI_GENERATED ≠ VERIFIED · TOKEN_VAZIO ≠ PASS", fontFamily = FontFamily.Monospace)
                     }
@@ -331,7 +404,7 @@ fun CommitEvidenceGateScreen(
 
             item {
                 OutlinedButton(onClick = onNavigateBack, modifier = Modifier.fillMaxWidth()) {
-                    Text("Return to PRE / ACT governed plan")
+                    Text("Return to HUMAN-FIRST / PRE / ACT governed plan")
                 }
             }
         }
