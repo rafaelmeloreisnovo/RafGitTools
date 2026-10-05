@@ -14,7 +14,7 @@ buildscript {
         classpath 'com.android.tools.build:gradle:8.13.2'
 
         // Kotlin plugin 1.9.24 is compatible with Compose Compiler 1.5.14 and KSP 1.9.24-1.0.20.
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.25'
 
         // Hilt for dependency injection.  Version 2.48 is stable and supports
         // AGP 8+.
