@@ -13,11 +13,22 @@ FILES = {
     "screen": ROOT / "app/src/main/kotlin/com/rafgittools/ui/screens/rafgitfs/CommitEvidenceGateScreen.kt",
     "tests": ROOT / "app/src/test/kotlin/com/rafgittools/rafgitfs/assurance/CommitEvidenceEnvelopeTest.kt",
     "docs": ROOT / "docs/architecture/COMMIT_EVIDENCE_GATE_V1.md",
+    "human_safeguard_docs": ROOT / "docs/architecture/HUMAN_DIGNITY_SAFEGUARD_V1.md",
 }
 
 REQUIRED_ENVELOPE = [
     "RAFGITTOOLS_COMMIT_EVIDENCE_ENVELOPE_V1",
     "TOKEN_VAZIO",
+    "HUMAN_DIGNITY",
+    "CHILD_SAFETY",
+    "INCLUSION_NONDISCRIMINATION",
+    "ACCESSIBILITY_INCLUSION",
+    "SAFE_HEALTHY_WORK",
+    "RiskSeverity",
+    "UrgencyClass",
+    "humanFirstRequired",
+    "ENV-HUMAN-AUTHORITY-",
+    "ENV-HUMAN-NONCOMPENSATORY-",
     "EXACT_HEAD_CI",
     "SERVER_ENFORCEMENT",
     "TRUSTED_TIME",
@@ -37,6 +48,11 @@ REQUIRED_ENVELOPE = [
 ]
 
 REQUIRED_TESTS = [
+    "missing human dignity blocks draft ready and merge",
+    "child safety fail is non compensatory",
+    "human safeguard cannot bypass with not applicable",
+    "AI cannot certify human dignity pass",
+    "human safeguard pass without risk typing is unresolved",
     "wrong head CI never allows ready or merge",
     "approval for different plan never allows draft",
     "token vazio trusted time blocks merge",
@@ -54,6 +70,20 @@ REQUIRED_DOCS = [
     "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
     "PUBLIC_PROOF != PUBLIC_PAYLOAD",
     "AI_GENERATED != VERIFIED",
+]
+
+REQUIRED_HUMAN_DOCS = [
+    "HUMAN_DIGNITY > DELIVERY_SPEED",
+    "CHILD_SAFETY > FEATURE_COMPLETION",
+    "UNKNOWN_HUMAN_IMPACT != SAFE",
+    "AI_ASSESSMENT != HUMAN_AUTHORITY",
+    "HUMAN_DIGNITY",
+    "CHILD_SAFETY",
+    "INCLUSION_NONDISCRIMINATION",
+    "ACCESSIBILITY_INCLUSION",
+    "SAFE_HEALTHY_WORK",
+    "legal_compliance_certified: false",
+    "claim_allowed: false",
 ]
 
 
@@ -74,6 +104,7 @@ def main() -> int:
     envelope = FILES["envelope"].read_text(encoding="utf-8")
     tests = FILES["tests"].read_text(encoding="utf-8")
     docs = FILES["docs"].read_text(encoding="utf-8")
+    human_docs = FILES["human_safeguard_docs"].read_text(encoding="utf-8")
     screen = FILES["screen"].read_text(encoding="utf-8")
 
     for needle in REQUIRED_ENVELOPE:
@@ -85,9 +116,16 @@ def main() -> int:
     for needle in REQUIRED_DOCS:
         if needle not in docs:
             errors.append(f"DOC_MISSING:{needle}")
+    for needle in REQUIRED_HUMAN_DOCS:
+        if needle not in human_docs:
+            errors.append(f"HUMAN_DOC_MISSING:{needle}")
 
     if "mergeAllowed" not in screen or "Commit Evidence Gate" not in screen:
         errors.append("SCREEN_GATE_NOT_EXPOSED")
+    if "HUMAN-FIRST" not in screen or "HUMAN_DIGNITY > DELIVERY_SPEED" not in screen:
+        errors.append("SCREEN_HUMAN_FIRST_NOT_EXPOSED")
+    if "risk=" not in screen or "urgency=" not in screen:
+        errors.append("SCREEN_HUMAN_RISK_URGENCY_NOT_EXPOSED")
     if "privatePayloadIncluded: Boolean = false" not in envelope:
         errors.append("PRIVACY_DEFAULT_NOT_FAIL_CLOSED")
     if "artifactDigest: String?" not in envelope:
@@ -117,6 +155,10 @@ def emit(errors: list[str]) -> None:
             for name, path in FILES.items()
         },
         "invariants": [
+            "HUMAN_DIGNITY>DELIVERY_SPEED",
+            "CHILD_SAFETY>FEATURE_COMPLETION",
+            "UNKNOWN_HUMAN_IMPACT!=SAFE",
+            "AI_ASSESSMENT!=HUMAN_AUTHORITY",
             "UNKNOWN!=PASS",
             "TOKEN_VAZIO!=0",
             "AI_GENERATED!=VERIFIED",
