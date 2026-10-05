@@ -62,9 +62,10 @@ data class CommitEvidenceEnvelope(
     val schema: String = "RAFGITTOOLS_COMMIT_EVIDENCE_ENVELOPE_V1",
     val repositoryFullName: String,
     val refName: String,
-    val baseCommitSha: String,
-    val planHash: String,
-    val headSha: String,
+    val baseCommitSha: String?,
+    val planHash: String?,
+    val headSha: String?,
+    val artifactDigest: String?,
     val profile: EvidenceProfile = EvidenceProfile.SOFTWARE,
     val reproducibilitySeed: Long = 1748365262L,
     val seedProvenanceRef: String = "RAFAELIA_SEED_1748365262_a6a1f608-b889-4803-8f59-d57ce00dba1b",
@@ -120,9 +121,24 @@ object CommitEvidenceEnvelopePolicy {
         if (envelope.schema != "RAFGITTOOLS_COMMIT_EVIDENCE_ENVELOPE_V1") blocking += "ENV-SCHEMA-001"
         if (envelope.repositoryFullName.isBlank() || !envelope.repositoryFullName.contains('/')) blocking += "ENV-REPO-002"
         if (envelope.refName.isBlank()) blocking += "ENV-REF-003"
-        if (!sha40.matches(envelope.baseCommitSha)) blocking += "ENV-BASE-004"
-        if (!sha64.matches(envelope.planHash)) blocking += "ENV-PLAN-005"
-        if (!sha40.matches(envelope.headSha)) blocking += "ENV-HEAD-006"
+
+        when {
+            envelope.baseCommitSha == null -> tokenVazio += "ENV-BASE-004"
+            !sha40.matches(envelope.baseCommitSha) -> blocking += "ENV-BASE-004"
+        }
+        when {
+            envelope.planHash == null -> tokenVazio += "ENV-PLAN-005"
+            !sha64.matches(envelope.planHash) -> blocking += "ENV-PLAN-005"
+        }
+        when {
+            envelope.headSha == null -> tokenVazio += "ENV-HEAD-006"
+            !sha40.matches(envelope.headSha) -> blocking += "ENV-HEAD-006"
+        }
+        when {
+            envelope.artifactDigest == null -> tokenVazio += "ENV-ARTIFACT-DIGEST-011"
+            !sha64.matches(envelope.artifactDigest) -> blocking += "ENV-ARTIFACT-DIGEST-011"
+        }
+
         if (envelope.privatePayloadIncluded) blocking += "ENV-PRIVACY-007"
         if (envelope.claimAllowed) blocking += "ENV-CLAIM-008"
         if (envelope.reproducibilitySeed != 1748365262L) blocking += "ENV-SEED-009"
@@ -141,13 +157,20 @@ object CommitEvidenceEnvelopePolicy {
             if (record.producer.id.isBlank() || record.producer.independenceDomain.isBlank()) {
                 blocking += "ENV-PRODUCER-${record.kind.name}"
             }
+            if (record.kind == EvidenceKind.EXACT_APPROVAL && record.state == EvidenceState.PASS) {
+                if (envelope.planHash == null || record.subjectDigest != envelope.planHash) {
+                    blocking += "ENV-APPROVAL-PLAN-MISMATCH"
+                }
+            }
             if (record.kind == EvidenceKind.EXACT_HEAD_CI && record.state == EvidenceState.PASS) {
-                if (record.headSha != envelope.headSha) blocking += "ENV-CI-HEAD-MISMATCH"
+                if (envelope.headSha == null || record.headSha != envelope.headSha) blocking += "ENV-CI-HEAD-MISMATCH"
                 if (record.proofRef.isNullOrBlank()) tokenVazio += "ENV-CI-PROOF"
             }
             if (record.kind == EvidenceKind.TRUSTED_TIME && record.state == EvidenceState.PASS) {
                 if (record.subjectDigest.isNullOrBlank() || !sha64.matches(record.subjectDigest)) {
                     blocking += "ENV-TIME-DIGEST"
+                } else if (envelope.artifactDigest == null || record.subjectDigest != envelope.artifactDigest) {
+                    blocking += "ENV-TIME-SUBJECT-MISMATCH"
                 }
                 if (record.proofRef.isNullOrBlank() || record.observedAtUtc.isNullOrBlank()) {
                     tokenVazio += "ENV-TIME-PROOF"
@@ -156,6 +179,8 @@ object CommitEvidenceEnvelopePolicy {
             if (record.kind == EvidenceKind.TRANSPARENCY_LOG && record.state == EvidenceState.PASS) {
                 if (record.subjectDigest.isNullOrBlank() || !sha64.matches(record.subjectDigest)) {
                     blocking += "ENV-LOG-DIGEST"
+                } else if (envelope.artifactDigest == null || record.subjectDigest != envelope.artifactDigest) {
+                    blocking += "ENV-LOG-SUBJECT-MISMATCH"
                 }
                 if (record.proofRef.isNullOrBlank()) tokenVazio += "ENV-LOG-PROOF"
             }
@@ -170,6 +195,9 @@ object CommitEvidenceEnvelopePolicy {
         val log = envelope.records.singleOrNull { it.kind == EvidenceKind.TRANSPARENCY_LOG && it.state == EvidenceState.PASS }
         if (time != null && log != null && time.producer.independenceDomain == log.producer.independenceDomain) {
             blocking += "ENV-CORRELATED-TIME-LOG"
+        }
+        if (time != null && log != null && time.subjectDigest != log.subjectDigest) {
+            blocking += "ENV-ANCHOR-SUBJECT-DIVERGENCE"
         }
 
         val review = envelope.records.singleOrNull { it.kind == EvidenceKind.INDEPENDENT_REVIEW && it.state == EvidenceState.PASS }
@@ -219,9 +247,14 @@ object CommitEvidenceEnvelopePolicy {
             return pass
         }
 
-        val draft = blocking.isEmpty() && requiredPass(draftRequired, "DRAFT")
-        val ready = draft && blocking.isEmpty() && requiredPass(readyRequired, "READY")
-        var merge = ready && blocking.isEmpty() && requiredPass(mergeRequired, "MERGE")
+        val draftBaseIdentityKnown = envelope.baseCommitSha != null && envelope.planHash != null
+        val draft = blocking.isEmpty() && draftBaseIdentityKnown && requiredPass(draftRequired, "DRAFT")
+
+        val readyIdentityKnown = envelope.headSha != null
+        val ready = draft && readyIdentityKnown && blocking.isEmpty() && requiredPass(readyRequired, "READY")
+
+        val mergeArtifactKnown = envelope.artifactDigest != null
+        var merge = ready && mergeArtifactKnown && blocking.isEmpty() && requiredPass(mergeRequired, "MERGE")
 
         if (envelope.profile == EvidenceProfile.SCIENTIFIC_PUBLICATION) {
             val publicationPass = envelope.records.any {
