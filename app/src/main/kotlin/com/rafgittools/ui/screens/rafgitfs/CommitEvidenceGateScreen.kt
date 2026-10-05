@@ -25,182 +25,214 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.rafgittools.rafgitfs.assurance.CommitEvidenceEnvelope
+import com.rafgittools.rafgitfs.assurance.CommitEvidenceEnvelopePolicy
+import com.rafgittools.rafgitfs.assurance.EvidenceKind
+import com.rafgittools.rafgitfs.assurance.EvidenceProducer
+import com.rafgittools.rafgitfs.assurance.EvidenceProducerKind
+import com.rafgittools.rafgitfs.assurance.EvidenceProfile
+import com.rafgittools.rafgitfs.assurance.EvidenceRecord
+import com.rafgittools.rafgitfs.assurance.EvidenceState
 
-enum class CommitEvidenceStatus {
-    PASS,
-    FAIL,
-    TOKEN_VAZIO,
-    NOT_RUN,
-    NOT_APPLICABLE
-}
-
-data class CommitEvidenceCheck(
+private data class CommitEvidenceDisplayRow(
     val phase: String,
     val id: String,
     val label: String,
-    val status: CommitEvidenceStatus,
+    val status: EvidenceState,
     val evidence: String
 )
 
-data class CommitEvidenceGateDecision(
-    val draftAllowed: Boolean,
-    val readyAllowed: Boolean,
-    val mergeAllowed: Boolean,
-    val reason: String
+private val localWorkspaceProducer = EvidenceProducer(
+    kind = EvidenceProducerKind.AUTOMATION,
+    id = "rafgittools:workspace",
+    independenceDomain = "local-workspace"
 )
 
-private fun deriveCommitEvidenceChecks(
+private val localHumanProducer = EvidenceProducer(
+    kind = EvidenceProducerKind.HUMAN,
+    id = "local:approval-input",
+    independenceDomain = "local-human"
+)
+
+private val providerProducer = EvidenceProducer(
+    kind = EvidenceProducerKind.PROVIDER,
+    id = "github:provider",
+    independenceDomain = "github-provider"
+)
+
+private fun buildCommitEvidenceEnvelope(
     repositoryFullName: String,
     refName: String,
     state: WorkspaceEditorUiState
-): List<CommitEvidenceCheck> {
+): CommitEvidenceEnvelope {
     val plan = state.plan
-    val approvalStatus = when {
-        state.expectedApproval == null -> CommitEvidenceStatus.TOKEN_VAZIO
-        state.approvalText.isBlank() -> CommitEvidenceStatus.TOKEN_VAZIO
-        state.approvalText == state.expectedApproval -> CommitEvidenceStatus.PASS
-        else -> CommitEvidenceStatus.FAIL
-    }
-    val conflictStatus = when {
-        plan == null -> CommitEvidenceStatus.TOKEN_VAZIO
-        state.conflicts.any { it.resolvedAt == null } -> CommitEvidenceStatus.FAIL
-        else -> CommitEvidenceStatus.PASS
-    }
-    val executionStatus = when {
-        state.dryRun.isEmpty() -> CommitEvidenceStatus.NOT_RUN
-        state.dryRun.all { it.evidenceState == "OBSERVED" } -> CommitEvidenceStatus.PASS
-        else -> CommitEvidenceStatus.TOKEN_VAZIO
+    val baseSha = plan?.baseCommitSha
+    val planHash = plan?.planHash
+
+    val approvalState = when {
+        state.expectedApproval == null || planHash == null -> EvidenceState.TOKEN_VAZIO
+        state.approvalText.isBlank() -> EvidenceState.TOKEN_VAZIO
+        state.approvalText == state.expectedApproval -> EvidenceState.PASS
+        else -> EvidenceState.FAIL
     }
 
-    return listOf(
-        CommitEvidenceCheck(
-            "PRE",
-            "SOURCE_IDENTITY",
-            "Repository + ref identity",
-            if (repositoryFullName.isNotBlank() && refName.isNotBlank()) CommitEvidenceStatus.PASS else CommitEvidenceStatus.FAIL,
-            if (repositoryFullName.isNotBlank() && refName.isNotBlank()) "$repositoryFullName@$refName" else "TOKEN_VAZIO"
+    val conflictState = when {
+        plan == null -> EvidenceState.TOKEN_VAZIO
+        state.conflicts.any { it.resolvedAt == null } -> EvidenceState.FAIL
+        else -> EvidenceState.PASS
+    }
+
+    val records = listOf(
+        EvidenceRecord(
+            kind = EvidenceKind.SOURCE_IDENTITY,
+            state = if (repositoryFullName.isNotBlank() && refName.isNotBlank()) EvidenceState.PASS else EvidenceState.FAIL,
+            sourceRef = if (repositoryFullName.isNotBlank() && refName.isNotBlank()) "$repositoryFullName@$refName" else "TOKEN_VAZIO",
+            producer = providerProducer
         ),
-        CommitEvidenceCheck(
-            "PRE",
-            "PRIVATE_WORKSPACE",
-            "Private workspace contract",
-            if (state.workspace != null) CommitEvidenceStatus.PASS else CommitEvidenceStatus.TOKEN_VAZIO,
-            state.workspace?.workspaceId?.take(12) ?: "TOKEN_VAZIO"
+        EvidenceRecord(
+            kind = EvidenceKind.PRIVATE_WORKSPACE,
+            state = if (state.workspace != null) EvidenceState.PASS else EvidenceState.TOKEN_VAZIO,
+            sourceRef = state.workspace?.workspaceId ?: "TOKEN_VAZIO",
+            producer = localWorkspaceProducer
         ),
-        CommitEvidenceCheck(
-            "PRE",
-            "BASE_COMMIT",
-            "Observed base commit",
-            if (plan?.baseCommitSha.isNullOrBlank()) CommitEvidenceStatus.TOKEN_VAZIO else CommitEvidenceStatus.PASS,
-            plan?.baseCommitSha ?: "TOKEN_VAZIO"
+        EvidenceRecord(
+            kind = EvidenceKind.BASE_COMMIT,
+            state = if (baseSha.isNullOrBlank()) EvidenceState.TOKEN_VAZIO else EvidenceState.PASS,
+            sourceRef = baseSha ?: "TOKEN_VAZIO",
+            headSha = baseSha,
+            producer = providerProducer
         ),
-        CommitEvidenceCheck(
-            "PRE",
-            "CONFLICT_BOUNDARY",
-            "Three-way conflicts resolved",
-            conflictStatus,
-            when (conflictStatus) {
-                CommitEvidenceStatus.PASS -> "No unresolved conflict"
-                CommitEvidenceStatus.FAIL -> "${state.conflicts.count { it.resolvedAt == null }} unresolved conflict(s)"
-                else -> "Plan not materialized"
-            }
+        EvidenceRecord(
+            kind = EvidenceKind.CONFLICT_BOUNDARY,
+            state = conflictState,
+            sourceRef = when (conflictState) {
+                EvidenceState.PASS -> "unresolved=0"
+                EvidenceState.FAIL -> "unresolved=${state.conflicts.count { it.resolvedAt == null }}"
+                else -> "TOKEN_VAZIO"
+            },
+            producer = localWorkspaceProducer
         ),
-        CommitEvidenceCheck(
-            "ACT",
-            "PLAN_HASH",
-            "Canonical plan identity",
-            if (plan == null) CommitEvidenceStatus.TOKEN_VAZIO else CommitEvidenceStatus.PASS,
-            plan?.planHash ?: "TOKEN_VAZIO"
+        EvidenceRecord(
+            kind = EvidenceKind.PLAN_HASH,
+            state = if (planHash.isNullOrBlank()) EvidenceState.TOKEN_VAZIO else EvidenceState.PASS,
+            sourceRef = planHash ?: "TOKEN_VAZIO",
+            subjectDigest = planHash,
+            producer = localWorkspaceProducer
         ),
-        CommitEvidenceCheck(
-            "ACT",
-            "EXACT_APPROVAL",
-            "Exact human approval bound to planHash",
-            approvalStatus,
-            state.expectedApproval ?: "TOKEN_VAZIO"
+        EvidenceRecord(
+            kind = EvidenceKind.EXACT_APPROVAL,
+            state = approvalState,
+            sourceRef = state.expectedApproval ?: "TOKEN_VAZIO",
+            subjectDigest = if (approvalState == EvidenceState.PASS) planHash else null,
+            producer = localHumanProducer
         ),
-        CommitEvidenceCheck(
-            "ACT",
-            "NO_DESTRUCTIVE_WRITE",
-            "No direct main write / force push / remote delete",
-            CommitEvidenceStatus.PASS,
-            "RafGitFS governed-write contract"
+        EvidenceRecord(
+            kind = EvidenceKind.NO_DESTRUCTIVE_WRITE,
+            state = EvidenceState.PASS,
+            sourceRef = "RafGitFS governed-write contract",
+            producer = localWorkspaceProducer
         ),
-        CommitEvidenceCheck(
-            "POST",
-            "EXECUTION_RECEIPT",
-            "Observed governed execution outcomes",
-            executionStatus,
-            if (state.dryRun.isEmpty()) "NOT_RUN" else state.dryRun.joinToString(" | ") { "${it.step.action}:${it.evidenceState}" }.take(280)
+        EvidenceRecord(
+            kind = EvidenceKind.EXECUTION_RECEIPT,
+            state = EvidenceState.NOT_RUN,
+            sourceRef = "No canonical post-execution receipt adapter connected to this screen",
+            producer = providerProducer
         ),
-        CommitEvidenceCheck(
-            "POST",
-            "EXACT_HEAD_CI",
-            "CI bound to exact PR head",
-            CommitEvidenceStatus.TOKEN_VAZIO,
-            "Provider evidence adapter not connected to this screen yet"
+        EvidenceRecord(
+            kind = EvidenceKind.EXACT_HEAD_CI,
+            state = EvidenceState.TOKEN_VAZIO,
+            sourceRef = "Provider exact-head CI adapter not connected",
+            producer = providerProducer
         ),
-        CommitEvidenceCheck(
-            "POST",
-            "SERVER_ENFORCEMENT",
-            "Server-side branch/ruleset enforcement",
-            CommitEvidenceStatus.TOKEN_VAZIO,
-            "Provider readback required; local policy is not sufficient"
+        EvidenceRecord(
+            kind = EvidenceKind.SERVER_ENFORCEMENT,
+            state = EvidenceState.TOKEN_VAZIO,
+            sourceRef = "Provider server-enforcement readback not connected",
+            producer = providerProducer
         ),
-        CommitEvidenceCheck(
-            "POST",
-            "TRUSTED_TIME",
-            "Independent signed time evidence",
-            CommitEvidenceStatus.TOKEN_VAZIO,
-            "RFC3161/TSA or equivalent trusted-time proof not attached"
+        EvidenceRecord(
+            kind = EvidenceKind.TRUSTED_TIME,
+            state = EvidenceState.TOKEN_VAZIO,
+            sourceRef = "RFC3161-compatible trusted-time adapter not connected",
+            producer = EvidenceProducer(EvidenceProducerKind.EXTERNAL_REGISTRY, "trusted-time:unbound", "trusted-time-unbound")
         ),
-        CommitEvidenceCheck(
-            "POST",
-            "TRANSPARENCY_LOG",
-            "Append-only transparency inclusion proof",
-            CommitEvidenceStatus.TOKEN_VAZIO,
-            "Transparency-log inclusion/consistency proof not attached"
+        EvidenceRecord(
+            kind = EvidenceKind.TRANSPARENCY_LOG,
+            state = EvidenceState.TOKEN_VAZIO,
+            sourceRef = "Transparency inclusion/consistency adapter not connected",
+            producer = EvidenceProducer(EvidenceProducerKind.EXTERNAL_REGISTRY, "transparency:unbound", "transparency-unbound")
         ),
-        CommitEvidenceCheck(
-            "POST",
-            "PUBLICATION_ANCHOR",
-            "DOI/publication/date anchors when scientifically applicable",
-            CommitEvidenceStatus.NOT_APPLICABLE,
-            "Optional profile: scientific/publication provenance"
+        EvidenceRecord(
+            kind = EvidenceKind.INDEPENDENT_REVIEW,
+            state = EvidenceState.TOKEN_VAZIO,
+            sourceRef = "Independent review not observed",
+            producer = EvidenceProducer(EvidenceProducerKind.AI_AGENT, "reviewer:unbound", "independent-review-unbound")
+        ),
+        EvidenceRecord(
+            kind = EvidenceKind.PUBLICATION_ANCHOR,
+            state = EvidenceState.NOT_APPLICABLE,
+            sourceRef = "Optional scientific/publication profile",
+            producer = EvidenceProducer(EvidenceProducerKind.EXTERNAL_REGISTRY, "publication:unbound", "publication-unbound")
         )
+    )
+
+    return CommitEvidenceEnvelope(
+        repositoryFullName = repositoryFullName,
+        refName = refName,
+        baseCommitSha = baseSha,
+        planHash = planHash,
+        headSha = null,
+        artifactDigest = null,
+        profile = EvidenceProfile.SOFTWARE,
+        records = records,
+        privatePayloadIncluded = false,
+        claimAllowed = false
     )
 }
 
-private fun deriveCommitEvidenceDecision(checks: List<CommitEvidenceCheck>): CommitEvidenceGateDecision {
-    fun status(id: String) = checks.first { it.id == id }.status
+private fun displayRows(envelope: CommitEvidenceEnvelope): List<CommitEvidenceDisplayRow> {
+    val phaseByKind = mapOf(
+        EvidenceKind.SOURCE_IDENTITY to "PRE",
+        EvidenceKind.PRIVATE_WORKSPACE to "PRE",
+        EvidenceKind.BASE_COMMIT to "PRE",
+        EvidenceKind.CONFLICT_BOUNDARY to "PRE",
+        EvidenceKind.PLAN_HASH to "ACT",
+        EvidenceKind.EXACT_APPROVAL to "ACT",
+        EvidenceKind.NO_DESTRUCTIVE_WRITE to "ACT",
+        EvidenceKind.EXECUTION_RECEIPT to "POST",
+        EvidenceKind.EXACT_HEAD_CI to "POST",
+        EvidenceKind.SERVER_ENFORCEMENT to "POST",
+        EvidenceKind.TRUSTED_TIME to "POST",
+        EvidenceKind.TRANSPARENCY_LOG to "POST",
+        EvidenceKind.INDEPENDENT_REVIEW to "POST",
+        EvidenceKind.PUBLICATION_ANCHOR to "POST"
+    )
 
-    val draftAllowed = listOf(
-        "SOURCE_IDENTITY",
-        "PRIVATE_WORKSPACE",
-        "BASE_COMMIT",
-        "CONFLICT_BOUNDARY",
-        "PLAN_HASH",
-        "EXACT_APPROVAL",
-        "NO_DESTRUCTIVE_WRITE"
-    ).all { status(it) == CommitEvidenceStatus.PASS }
+    val rows = envelope.records.map { record ->
+        CommitEvidenceDisplayRow(
+            phase = phaseByKind.getValue(record.kind),
+            id = record.kind.name,
+            label = record.kind.name.replace('_', ' '),
+            status = record.state,
+            evidence = record.sourceRef
+        )
+    }.toMutableList()
 
-    val readyAllowed = draftAllowed &&
-        status("EXECUTION_RECEIPT") == CommitEvidenceStatus.PASS &&
-        status("EXACT_HEAD_CI") == CommitEvidenceStatus.PASS
-
-    val mergeAllowed = readyAllowed && listOf(
-        "SERVER_ENFORCEMENT",
-        "TRUSTED_TIME",
-        "TRANSPARENCY_LOG"
-    ).all { status(it) == CommitEvidenceStatus.PASS }
-
-    val reason = when {
-        mergeAllowed -> "MERGE evidence boundary satisfied"
-        readyAllowed -> "Ready-for-review boundary satisfied; merge evidence still incomplete"
-        draftAllowed -> "Draft publication boundary satisfied; post-publication evidence is still required"
-        else -> "Fail-closed: one or more required PRE/ACT checks are FAIL or TOKEN_VAZIO"
-    }
-    return CommitEvidenceGateDecision(draftAllowed, readyAllowed, mergeAllowed, reason)
+    rows += CommitEvidenceDisplayRow(
+        phase = "POST",
+        id = "HEAD_SHA",
+        label = "Exact PR head SHA",
+        status = if (envelope.headSha == null) EvidenceState.TOKEN_VAZIO else EvidenceState.PASS,
+        evidence = envelope.headSha ?: "TOKEN_VAZIO"
+    )
+    rows += CommitEvidenceDisplayRow(
+        phase = "POST",
+        id = "ARTIFACT_DIGEST",
+        label = "Canonical artifact/evidence-root digest",
+        status = if (envelope.artifactDigest == null) EvidenceState.TOKEN_VAZIO else EvidenceState.PASS,
+        evidence = envelope.artifactDigest ?: "TOKEN_VAZIO"
+    )
+    return rows
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -211,8 +243,17 @@ fun CommitEvidenceGateScreen(
     state: WorkspaceEditorUiState,
     onNavigateBack: () -> Unit
 ) {
-    val checks = deriveCommitEvidenceChecks(repositoryFullName, refName, state)
-    val decision = deriveCommitEvidenceDecision(checks)
+    val envelope = buildCommitEvidenceEnvelope(repositoryFullName, refName, state)
+    val decision = CommitEvidenceEnvelopePolicy.decide(envelope)
+    val rows = displayRows(envelope)
+
+    val reason = when {
+        decision.mergeAllowed -> "MERGE evidence boundary satisfied"
+        decision.readyAllowed -> "Ready boundary satisfied; merge evidence remains incomplete"
+        decision.draftAllowed -> "Draft boundary satisfied; POST evidence remains unresolved"
+        decision.blockingCodes.isNotEmpty() -> "Fail-closed: blocking evidence failure present"
+        else -> "Fail-closed: required evidence remains TOKEN_VAZIO / NOT_RUN"
+    }
 
     Scaffold(
         topBar = {
@@ -240,9 +281,9 @@ fun CommitEvidenceGateScreen(
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("Fail-closed promotion boundary", style = MaterialTheme.typography.titleMedium)
-                        Text(decision.reason)
+                        Text(reason)
                         Text("SOURCE ≠ ARTIFACT ≠ EXECUTION ≠ EVIDENCE ≠ CLAIM", fontFamily = FontFamily.Monospace)
-                        Text("TOKEN_VAZIO is evidence of an unresolved boundary; it is never coerced to PASS.")
+                        Text("AI_GENERATED ≠ VERIFIED · TOKEN_VAZIO ≠ PASS", fontFamily = FontFamily.Monospace)
                     }
                 }
             }
@@ -254,11 +295,17 @@ fun CommitEvidenceGateScreen(
                         PromotionLine("Draft PR", decision.draftAllowed)
                         PromotionLine("Ready for review", decision.readyAllowed)
                         PromotionLine("Merge", decision.mergeAllowed)
+                        if (decision.blockingCodes.isNotEmpty()) {
+                            Text("FAIL: ${decision.blockingCodes.joinToString()}", style = MaterialTheme.typography.bodySmall)
+                        }
+                        if (decision.tokenVazioCodes.isNotEmpty()) {
+                            Text("TOKEN_VAZIO: ${decision.tokenVazioCodes.joinToString()}", style = MaterialTheme.typography.bodySmall)
+                        }
                     }
                 }
             }
 
-            items(checks, key = { "${it.phase}:${it.id}" }) { check ->
+            items(rows, key = { "${it.phase}:${it.id}" }) { check ->
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -275,8 +322,9 @@ fun CommitEvidenceGateScreen(
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("Temporal / publication anchoring", style = MaterialTheme.typography.titleMedium)
-                        Text("Use multiple independent anchors. Git timestamps alone are not proof of real-world time. A future adapter may bind artifact digest + commit/tree + signed TSA timestamp + transparency-log proof + DOI/publication metadata when applicable.")
-                        Text("Do not publish private payloads: external anchors should receive only minimized digests/attestations needed for verification.")
+                        Text("Independent anchors must bind the same canonical digest. Git timestamps alone are metadata, not sufficient real-world anteriority proof.")
+                        Text("Public anchors receive minimized digest/attestation only: PUBLIC_PROOF ≠ PUBLIC_PAYLOAD.")
+                        Text("Seed ${envelope.reproducibilitySeed} is for deterministic reconstruction/falsifiers, not security randomness or timestamp authority.")
                     }
                 }
             }
