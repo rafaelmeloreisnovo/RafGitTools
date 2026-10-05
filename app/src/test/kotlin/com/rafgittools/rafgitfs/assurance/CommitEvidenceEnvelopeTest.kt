@@ -36,13 +36,15 @@ class CommitEvidenceEnvelopeTest {
 
     private fun complete(profile: EvidenceProfile = EvidenceProfile.SOFTWARE): CommitEvidenceEnvelope {
         val head = "1".repeat(40)
-        val digest = "2".repeat(64)
+        val artifactDigest = "2".repeat(64)
+        val planHash = "a".repeat(64)
         return CommitEvidenceEnvelope(
             repositoryFullName = "owner/repo",
             refName = "refs/heads/rafgitfs/evidence",
             baseCommitSha = "0".repeat(40),
-            planHash = "a".repeat(64),
+            planHash = planHash,
             headSha = head,
+            artifactDigest = artifactDigest,
             profile = profile,
             records = listOf(
                 record(EvidenceKind.SOURCE_IDENTITY, producer = human),
@@ -50,13 +52,13 @@ class CommitEvidenceEnvelopeTest {
                 record(EvidenceKind.BASE_COMMIT, producer = provider),
                 record(EvidenceKind.CONFLICT_BOUNDARY, producer = human),
                 record(EvidenceKind.PLAN_HASH, producer = human),
-                record(EvidenceKind.EXACT_APPROVAL, producer = human),
+                record(EvidenceKind.EXACT_APPROVAL, producer = human, digest = planHash),
                 record(EvidenceKind.NO_DESTRUCTIVE_WRITE, producer = human),
                 record(EvidenceKind.EXECUTION_RECEIPT, producer = provider),
                 record(EvidenceKind.EXACT_HEAD_CI, producer = provider, head = head),
                 record(EvidenceKind.SERVER_ENFORCEMENT, producer = provider),
-                record(EvidenceKind.TRUSTED_TIME, producer = tsa, digest = digest),
-                record(EvidenceKind.TRANSPARENCY_LOG, producer = log, digest = digest),
+                record(EvidenceKind.TRUSTED_TIME, producer = tsa, digest = artifactDigest),
+                record(EvidenceKind.TRANSPARENCY_LOG, producer = log, digest = artifactDigest),
                 record(EvidenceKind.INDEPENDENT_REVIEW, producer = ai),
                 record(
                     EvidenceKind.PUBLICATION_ANCHOR,
@@ -90,6 +92,18 @@ class CommitEvidenceEnvelopeTest {
     }
 
     @Test
+    fun `approval for different plan never allows draft`() {
+        val source = complete()
+        val mutated = source.copy(records = source.records.map {
+            if (it.kind == EvidenceKind.EXACT_APPROVAL) it.copy(subjectDigest = "b".repeat(64)) else it
+        })
+        val decision = CommitEvidenceEnvelopePolicy.decide(mutated)
+        assertFalse(decision.draftAllowed)
+        assertFalse(decision.mergeAllowed)
+        assertTrue(decision.blockingCodes.contains("ENV-APPROVAL-PLAN-MISMATCH"))
+    }
+
+    @Test
     fun `token vazio trusted time blocks merge`() {
         val source = complete()
         val mutated = source.copy(records = source.records.map {
@@ -99,6 +113,17 @@ class CommitEvidenceEnvelopeTest {
         assertTrue(decision.readyAllowed)
         assertFalse(decision.mergeAllowed)
         assertTrue(decision.tokenVazioCodes.any { it.contains("TRUSTED_TIME") })
+    }
+
+    @Test
+    fun `timestamp for different artifact is rejected`() {
+        val source = complete()
+        val mutated = source.copy(records = source.records.map {
+            if (it.kind == EvidenceKind.TRUSTED_TIME) it.copy(subjectDigest = "3".repeat(64)) else it
+        })
+        val decision = CommitEvidenceEnvelopePolicy.decide(mutated)
+        assertFalse(decision.mergeAllowed)
+        assertTrue(decision.blockingCodes.contains("ENV-TIME-SUBJECT-MISMATCH"))
     }
 
     @Test
