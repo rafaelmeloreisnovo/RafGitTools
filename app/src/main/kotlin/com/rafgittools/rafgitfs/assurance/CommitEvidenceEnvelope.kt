@@ -8,7 +8,26 @@ enum class EvidenceState {
     NOT_APPLICABLE
 }
 
+enum class RiskSeverity {
+    CRITICAL,
+    HIGH,
+    MEDIUM,
+    LOW
+}
+
+enum class UrgencyClass {
+    P0,
+    P1,
+    P2,
+    P3
+}
+
 enum class EvidenceKind {
+    HUMAN_DIGNITY,
+    CHILD_SAFETY,
+    INCLUSION_NONDISCRIMINATION,
+    ACCESSIBILITY_INCLUSION,
+    SAFE_HEALTHY_WORK,
     SOURCE_IDENTITY,
     PRIVATE_WORKSPACE,
     BASE_COMMIT,
@@ -55,6 +74,10 @@ data class EvidenceRecord(
     val dateType: String? = null,
     val dateValue: String? = null,
     val producer: EvidenceProducer,
+    val riskSeverity: RiskSeverity? = null,
+    val urgency: UrgencyClass? = null,
+    val falsifierRef: String? = null,
+    val mitigationRef: String? = null,
     val claimAllowed: Boolean = false
 )
 
@@ -92,7 +115,15 @@ object CommitEvidenceEnvelopePolicy {
     private val sha40 = Regex("^[0-9a-f]{40}$")
     private val sha64 = Regex("^[0-9a-f]{64}$")
 
-    private val draftRequired = setOf(
+    private val humanFirstRequired = setOf(
+        EvidenceKind.HUMAN_DIGNITY,
+        EvidenceKind.CHILD_SAFETY,
+        EvidenceKind.INCLUSION_NONDISCRIMINATION,
+        EvidenceKind.ACCESSIBILITY_INCLUSION,
+        EvidenceKind.SAFE_HEALTHY_WORK
+    )
+
+    private val draftRequired = humanFirstRequired + setOf(
         EvidenceKind.SOURCE_IDENTITY,
         EvidenceKind.PRIVATE_WORKSPACE,
         EvidenceKind.BASE_COMMIT,
@@ -157,6 +188,23 @@ object CommitEvidenceEnvelopePolicy {
             if (record.producer.id.isBlank() || record.producer.independenceDomain.isBlank()) {
                 blocking += "ENV-PRODUCER-${record.kind.name}"
             }
+
+            if (record.kind in humanFirstRequired) {
+                if (record.riskSeverity == null) tokenVazio += "ENV-HUMAN-RISK-${record.kind.name}"
+                if (record.urgency == null) tokenVazio += "ENV-HUMAN-URGENCY-${record.kind.name}"
+                if (record.falsifierRef.isNullOrBlank()) tokenVazio += "ENV-HUMAN-FALSIFIER-${record.kind.name}"
+                if (record.mitigationRef.isNullOrBlank()) tokenVazio += "ENV-HUMAN-MITIGATION-${record.kind.name}"
+                if (record.state == EvidenceState.NOT_APPLICABLE) {
+                    blocking += "ENV-HUMAN-NONCOMPENSATORY-${record.kind.name}-N/A"
+                }
+                if (record.state == EvidenceState.PASS) {
+                    if (record.producer.kind != EvidenceProducerKind.HUMAN) {
+                        blocking += "ENV-HUMAN-AUTHORITY-${record.kind.name}"
+                    }
+                    if (record.proofRef.isNullOrBlank()) tokenVazio += "ENV-HUMAN-PROOF-${record.kind.name}"
+                }
+            }
+
             if (record.kind == EvidenceKind.EXACT_APPROVAL && record.state == EvidenceState.PASS) {
                 if (envelope.planHash == null || record.subjectDigest != envelope.planHash) {
                     blocking += "ENV-APPROVAL-PLAN-MISMATCH"
