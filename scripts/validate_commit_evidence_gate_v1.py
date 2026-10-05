@@ -24,8 +24,11 @@ REQUIRED_ENVELOPE = [
     "TRANSPARENCY_LOG",
     "INDEPENDENT_REVIEW",
     "PUBLICATION_ANCHOR",
-    "EvidenceProducerKind.AI_AGENT",
+    "AI_AGENT",
     "ENV-CI-HEAD-MISMATCH",
+    "ENV-APPROVAL-PLAN-MISMATCH",
+    "ENV-TIME-SUBJECT-MISMATCH",
+    "ENV-LOG-SUBJECT-MISMATCH",
     "ENV-CORRELATED-TIME-LOG",
     "ENV-SELF-REVIEW",
     "ENV-PRIVACY-007",
@@ -35,7 +38,9 @@ REQUIRED_ENVELOPE = [
 
 REQUIRED_TESTS = [
     "wrong head CI never allows ready or merge",
+    "approval for different plan never allows draft",
     "token vazio trusted time blocks merge",
+    "timestamp for different artifact is rejected",
     "correlated trusted time and transparency witnesses are rejected",
     "same producer cannot author source and satisfy independent review",
     "private payload disclosure is fail closed",
@@ -48,6 +53,7 @@ REQUIRED_DOCS = [
     "TOKEN_VAZIO != 0",
     "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
     "PUBLIC_PROOF != PUBLIC_PAYLOAD",
+    "AI_GENERATED != VERIFIED",
 ]
 
 
@@ -84,12 +90,12 @@ def main() -> int:
         errors.append("SCREEN_GATE_NOT_EXPOSED")
     if "privatePayloadIncluded: Boolean = false" not in envelope:
         errors.append("PRIVACY_DEFAULT_NOT_FAIL_CLOSED")
+    if "artifactDigest: String?" not in envelope:
+        errors.append("CANONICAL_ARTIFACT_DIGEST_MISSING")
     if "class UnboundEvidenceAdapter" not in envelope or "EvidenceState.TOKEN_VAZIO" not in envelope:
         errors.append("UNBOUND_ADAPTER_MUST_RETURN_TOKEN_VAZIO")
     if "claimAllowed: Boolean = true" in envelope:
         errors.append("CLAIM_DEFAULT_TRUE_FORBIDDEN")
-    if "AI_GENERATED" in docs and "AI_GENERATED != VERIFIED" not in docs:
-        errors.append("AI_AUTHORITY_BOUNDARY_MISSING")
 
     emit(errors)
     return 0 if not errors else 2
