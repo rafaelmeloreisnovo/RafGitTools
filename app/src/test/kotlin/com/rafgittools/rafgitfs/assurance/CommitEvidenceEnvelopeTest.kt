@@ -19,7 +19,11 @@ class CommitEvidenceEnvelopeTest {
         digest: String? = null,
         proof: String? = "proof:${kind.name.lowercase()}",
         dateType: String? = null,
-        dateValue: String? = null
+        dateValue: String? = null,
+        risk: RiskSeverity? = null,
+        urgency: UrgencyClass? = null,
+        falsifier: String? = null,
+        mitigation: String? = null
     ) = EvidenceRecord(
         kind = kind,
         state = state,
@@ -31,7 +35,27 @@ class CommitEvidenceEnvelopeTest {
         dateType = dateType,
         dateValue = dateValue,
         producer = producer,
+        riskSeverity = risk,
+        urgency = urgency,
+        falsifierRef = falsifier,
+        mitigationRef = mitigation,
         claimAllowed = false
+    )
+
+    private fun safeguard(
+        kind: EvidenceKind,
+        risk: RiskSeverity,
+        urgency: UrgencyClass,
+        producer: EvidenceProducer = human,
+        state: EvidenceState = EvidenceState.PASS
+    ) = record(
+        kind = kind,
+        state = state,
+        producer = producer,
+        risk = risk,
+        urgency = urgency,
+        falsifier = "falsifier:${kind.name.lowercase()}",
+        mitigation = "mitigation:${kind.name.lowercase()}"
     )
 
     private fun complete(profile: EvidenceProfile = EvidenceProfile.SOFTWARE): CommitEvidenceEnvelope {
@@ -47,6 +71,11 @@ class CommitEvidenceEnvelopeTest {
             artifactDigest = artifactDigest,
             profile = profile,
             records = listOf(
+                safeguard(EvidenceKind.HUMAN_DIGNITY, RiskSeverity.CRITICAL, UrgencyClass.P0),
+                safeguard(EvidenceKind.CHILD_SAFETY, RiskSeverity.CRITICAL, UrgencyClass.P0),
+                safeguard(EvidenceKind.INCLUSION_NONDISCRIMINATION, RiskSeverity.CRITICAL, UrgencyClass.P0),
+                safeguard(EvidenceKind.ACCESSIBILITY_INCLUSION, RiskSeverity.HIGH, UrgencyClass.P1),
+                safeguard(EvidenceKind.SAFE_HEALTHY_WORK, RiskSeverity.CRITICAL, UrgencyClass.P0),
                 record(EvidenceKind.SOURCE_IDENTITY, producer = human),
                 record(EvidenceKind.PRIVATE_WORKSPACE, producer = human),
                 record(EvidenceKind.BASE_COMMIT, producer = provider),
@@ -77,6 +106,62 @@ class CommitEvidenceEnvelopeTest {
         assertTrue(decision.draftAllowed)
         assertTrue(decision.readyAllowed)
         assertTrue(decision.mergeAllowed)
+    }
+
+    @Test
+    fun `missing human dignity blocks draft ready and merge`() {
+        val source = complete()
+        val mutated = source.copy(records = source.records.filterNot { it.kind == EvidenceKind.HUMAN_DIGNITY })
+        val decision = CommitEvidenceEnvelopePolicy.decide(mutated)
+        assertFalse(decision.draftAllowed)
+        assertFalse(decision.readyAllowed)
+        assertFalse(decision.mergeAllowed)
+        assertTrue(decision.tokenVazioCodes.contains("DRAFT-HUMAN_DIGNITY-UNRESOLVED"))
+    }
+
+    @Test
+    fun `child safety fail is non compensatory`() {
+        val source = complete()
+        val mutated = source.copy(records = source.records.map {
+            if (it.kind == EvidenceKind.CHILD_SAFETY) it.copy(state = EvidenceState.FAIL) else it
+        })
+        val decision = CommitEvidenceEnvelopePolicy.decide(mutated)
+        assertFalse(decision.draftAllowed)
+        assertFalse(decision.mergeAllowed)
+        assertTrue(decision.blockingCodes.contains("DRAFT-CHILD_SAFETY-FAIL"))
+    }
+
+    @Test
+    fun `human safeguard cannot bypass with not applicable`() {
+        val source = complete()
+        val mutated = source.copy(records = source.records.map {
+            if (it.kind == EvidenceKind.INCLUSION_NONDISCRIMINATION) it.copy(state = EvidenceState.NOT_APPLICABLE) else it
+        })
+        val decision = CommitEvidenceEnvelopePolicy.decide(mutated)
+        assertFalse(decision.draftAllowed)
+        assertTrue(decision.blockingCodes.any { it.contains("INCLUSION_NONDISCRIMINATION") })
+    }
+
+    @Test
+    fun `AI cannot certify human dignity pass`() {
+        val source = complete()
+        val mutated = source.copy(records = source.records.map {
+            if (it.kind == EvidenceKind.HUMAN_DIGNITY) it.copy(producer = ai) else it
+        })
+        val decision = CommitEvidenceEnvelopePolicy.decide(mutated)
+        assertFalse(decision.draftAllowed)
+        assertTrue(decision.blockingCodes.contains("ENV-HUMAN-AUTHORITY-HUMAN_DIGNITY"))
+    }
+
+    @Test
+    fun `human safeguard pass without risk typing is unresolved`() {
+        val source = complete()
+        val mutated = source.copy(records = source.records.map {
+            if (it.kind == EvidenceKind.SAFE_HEALTHY_WORK) it.copy(riskSeverity = null) else it
+        })
+        val decision = CommitEvidenceEnvelopePolicy.decide(mutated)
+        assertFalse(decision.draftAllowed)
+        assertTrue(decision.tokenVazioCodes.contains("ENV-HUMAN-RISK-SAFE_HEALTHY_WORK"))
     }
 
     @Test
