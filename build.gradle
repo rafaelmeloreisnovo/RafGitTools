@@ -15,16 +15,14 @@ buildscript {
 
         // Kotlin plugin 1.9.24 is compatible with Compose Compiler 1.5.14 and KSP 1.9.24-1.0.20.
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.25'
-
-        // Hilt for dependency injection.  Version 2.48 is stable and supports
-        // AGP 8+.
-        classpath 'com.google.dagger:hilt-android-gradle-plugin:2.48'
     }
 }
 
 plugins {
     // KSP (Kotlin Symbol Processing) version aligned with Kotlin 1.9.24.
     id 'com.google.devtools.ksp' version '2.3.12' apply false
+    // Keep Hilt and KSP in the same root plugin scope to avoid split classloaders.
+    id 'com.google.dagger.hilt.android' version '2.48' apply false
 }
 
 // Keep the clean task definition
