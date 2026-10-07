@@ -66,6 +66,9 @@ class ProviderEnvironmentWorkflowTests(unittest.TestCase):
         self.assertIn("MAIN_PROVIDER_ENFORCEMENT_PLAN_20260927.v4.json", self.text)
         self.assertIn("provider-main-enforcement.json", self.text)
         self.assertIn("scripts/apply_rafgittools_main_protection.py", self.text)
+        self.assertIn("expected_target_sha", self.text)
+        self.assertIn("rafaelmeloreisnovo/RafPolimata", self.text)
+        self.assertIn("target_plan", self.text)
 
 if __name__ == "__main__":
     unittest.main()
