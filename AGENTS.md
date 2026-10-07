@@ -41,6 +41,13 @@ Core invariants:
 
 Canonical federation reference: `docs/AGENT_FEDERATION_ENTRY_V1.md`.
 
+
+### Authorial federation / imported-source gate
+
+If the task reads, copies, adapts, relicenses or promotes `federation/authorial/**`, read `federation/authorial/AGENTS.md` before acting. Machine authority: `configs/authorial-federation.v1.json`. Human/AI route: `docs/federation/AUTHORIAL_FEDERATION_V1.md`.
+
+An imported snapshot is provenance evidence, not native RafGitTools implementation. Preserve exact source identity and governing rights; derive any active adapter outside the archive and prove it separately.
+
 ## 1. Local role
 
 RafGitTools owns deterministic routing, service classification, ledgers, gates, transition receipts, cross-repository contracts and control-plane validation. It must not silently promote runtime/scientific claims of repositories it indexes.
