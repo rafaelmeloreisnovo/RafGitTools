@@ -296,7 +296,9 @@ object CommitEvidenceEnvelopePolicy {
         }
 
         val draftBaseIdentityKnown = envelope.baseCommitSha != null && envelope.planHash != null
-        val draft = blocking.isEmpty() && draftBaseIdentityKnown && requiredPass(draftRequired, "DRAFT")
+        val humanSafeguardsResolved = tokenVazio.none { it.startsWith("ENV-HUMAN-") }
+        val draft = blocking.isEmpty() && humanSafeguardsResolved &&
+            draftBaseIdentityKnown && requiredPass(draftRequired, "DRAFT")
 
         val readyIdentityKnown = envelope.headSha != null
         val ready = draft && readyIdentityKnown && blocking.isEmpty() && requiredPass(readyRequired, "READY")
