@@ -23,5 +23,16 @@
     "current_main_observed_sha": "7714e57eee968f2b2d4f785f2b8bcb461e9463b9",
     "branch_protection_observed": false,
     "reason": "Historical re-arms evidence retained verbatim as custody for the one-shot mechanism; this successor changes only the bounded target to RafPolimata and does not reinterpret the prior event."
+  },
+  "crossrepo_retry_evidence": {
+    "parent_run_id": 37577815469,
+    "parent_job_id": 112650698106,
+    "parent_head_sha": "7cff5aa58107a020e1c9557f860e71a80be3f8d1",
+    "observed_failure": "SOURCE_WORKFLOW_SHELL_SYNTAX_BEFORE_APPLICATOR",
+    "provider_applicator_started": false,
+    "provider_mutation_observed": false,
+    "artifact_receipt_observed": false,
+    "correction": "replace heredoc parser with four bounded python3 -c reads; preserve target SHA/allowlist/rollback policy",
+    "claim_allowed": false
   }
 }
