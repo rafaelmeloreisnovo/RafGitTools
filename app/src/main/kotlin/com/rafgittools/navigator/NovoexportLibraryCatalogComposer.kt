@@ -18,6 +18,10 @@ import java.security.MessageDigest
  */
 object NovoexportLibraryCatalogComposer {
     private const val BIBLIOGRAPHIC_GAP = "BIBLIOGRAPHIC_PARENT_TOKEN_VAZIO"
+    private val MATERIALIZED_CATALOG_ARTIFACT = Regex(
+        "^CAT-NOVO-[0-9a-f]{20}-[0-9]+\\.(catalog|receipt)\\.json$",
+        RegexOption.IGNORE_CASE
+    )
 
     fun compose(
         inventory: NovoexportSafInventory.Result,
@@ -55,8 +59,10 @@ object NovoexportLibraryCatalogComposer {
             directory.documentId to "NODE-DIR-" +
                 sourceRefSha(inventory.treeUri, directory.documentId).take(24)
         }
-        val fileEntries = (inventory.allFiles.ifEmpty { inventory.candidateFiles })
+        val observedFileEntries = (inventory.allFiles.ifEmpty { inventory.candidateFiles })
             .distinctBy { it.documentId }
+        val fileEntries = observedFileEntries
+            .filterNot { isOwnMaterializedCatalogArtifact(it.name) }
         val corpusCoverage = NovoexportConversationCorpus.coverage(fileEntries)
         if (inventory.rootDocumentId.isBlank()) {
             require(inventory.allDirectories.isEmpty() &&
@@ -163,6 +169,9 @@ object NovoexportLibraryCatalogComposer {
         }
         return bundle
     }
+
+    internal fun isOwnMaterializedCatalogArtifact(name: String): Boolean =
+        MATERIALIZED_CATALOG_ARTIFACT.matches(name.substringAfterLast('/'))
 
     private fun safeMimeType(value: String): String =
         if (Regex("^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+$").matches(value)) {
