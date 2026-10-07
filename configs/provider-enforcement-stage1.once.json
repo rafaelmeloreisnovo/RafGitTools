@@ -14,5 +14,14 @@
   "independent_review_required": false,
   "required_approving_reviews": 0,
   "one_shot": true,
-  "claim_allowed": false
+  "claim_allowed": false,
+  "retry_evidence": {
+    "supersedes_cancelled_push_run": 36363833345,
+    "cancelled_run_head_sha": "df16e6dd19c5d8e0350c66b78dbb3edae9ed642c",
+    "cancelled_run_conclusion": "cancelled",
+    "cancelled_run_jobs_observed": 0,
+    "current_main_observed_sha": "7714e57eee968f2b2d4f785f2b8bcb461e9463b9",
+    "branch_protection_observed": false,
+    "reason": "Historical re-arms evidence retained verbatim as custody for the one-shot mechanism; this successor changes only the bounded target to RafPolimata and does not reinterpret the prior event."
+  }
 }
