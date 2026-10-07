@@ -1,0 +1,47 @@
+{
+  "schema": "rafaelia.rafgittools-main-stage1-negative-assurance-intent.v1",
+  "observed_at": "2026-10-07T04:58:30Z",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "base_branch": "main",
+  "base_sha": "fba1f1e316cb6cab8bd8fadca6de662028a69d94",
+  "provider_apply_run_id": 37565532822,
+  "provider_apply_job_id": 112638749640,
+  "provider_apply_artifact_id": 11461739068,
+  "provider_apply_artifact_digest": "sha256:b0e4f1f70c6b91045b54708bf8bb38446e42c96993b75f2441d4d524f94d256a",
+  "applied_policy": "contracts/MAIN_PROVIDER_ENFORCEMENT_PLAN_20260927.v4.json",
+  "stage": "STAGE1_CI_AND_PR_BARRIER",
+  "branch_readback": {
+    "protected": true,
+    "enforcement_level": "everyone",
+    "required_contexts": [
+      "00 · Plan / roteamento",
+      "01 · Workflow topology / single-root invariant",
+      "02 · Coherence / anti-regression",
+      "09 · Final receipt / fechamento"
+    ],
+    "minimum_approving_reviews": 0
+  },
+  "negative_assurance": {
+    "state": "READY_TO_TEST",
+    "method": "attempt merge on this bounded PR before required START contexts reach success",
+    "success": "provider rejects merge without bypass while one or more required contexts are pending/failing",
+    "destructive": false
+  },
+  "green_path": {
+    "state": "TOKEN_VAZIO",
+    "method": "after the same four required contexts succeed, retry merge without bypass",
+    "success": "provider permits merge only after required contexts succeed"
+  },
+  "stage2": {
+    "state": "TOKEN_VAZIO_INDEPENDENT_REVIEWER",
+    "target_minimum_approving_reviews": 1
+  },
+  "invariants": [
+    "SOURCE != EXECUTION != EVIDENCE != CLAIM",
+    "DETECTOR != SERVER_BARRIER",
+    "REQUIRED_CONTEXT == OBSERVED_CHECK_RUN_NAME",
+    "STAGE1_APPROVAL_COUNT_0 != STAGE2_APPROVAL_COUNT_1",
+    "TOKEN_VAZIO != PASS"
+  ],
+  "claim_allowed": false
+}
