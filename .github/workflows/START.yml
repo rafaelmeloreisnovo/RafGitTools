@@ -1251,13 +1251,33 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts
+          target_repo="${GITHUB_REPOSITORY}"
+          target_branch="main"
+          target_plan="contracts/MAIN_PROVIDER_ENFORCEMENT_PLAN_20260927.v4.json"
           expected="${REQUESTED_EXPECTED_MAIN_SHA:-}"
           [[ -n "$expected" ]] || expected="${GITHUB_SHA}"
+          if [[ "${GITHUB_EVENT_NAME}" == push ]] && git diff --name-only HEAD^ HEAD | grep -Fxq "configs/provider-enforcement-stage1.once.json"; then
+            read -r target_repo target_branch expected target_plan < <(
+              python3 - <<'PY'
+              import json
+              from pathlib import Path
+              d = json.loads(Path('configs/provider-enforcement-stage1.once.json').read_text(encoding='utf-8'))
+              print(d.get('target_repository',''), d.get('target_branch',''), d.get('expected_target_sha',''), d.get('plan',''))
+              PY
+            )
+            case "$target_repo" in
+              rafaelmeloreisnovo/RafGitTools|rafaelmeloreisnovo/RafPolimata) ;;
+              *) echo "::error::unsupported provider enforcement target: $target_repo"; exit 2 ;;
+            esac
+            [[ "$target_branch" == main ]] || { echo "::error::target branch must be main"; exit 2; }
+            [[ "$expected" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::target requires exact lowercase SHA"; exit 2; }
+            [[ "$target_plan" == contracts/*.json ]] || { echo "::error::target plan must be contracts JSON"; exit 2; }
+          fi
           args=(
-            --repo "${GITHUB_REPOSITORY}"
-            --branch main
+            --repo "$target_repo"
+            --branch "$target_branch"
             --expected-main-sha "$expected"
-            --plan contracts/MAIN_PROVIDER_ENFORCEMENT_PLAN_20260927.v4.json
+            --plan "$target_plan"
             --receipt artifacts/provider-main-enforcement.json
             --token-env PROVIDER_TOKEN
           )
