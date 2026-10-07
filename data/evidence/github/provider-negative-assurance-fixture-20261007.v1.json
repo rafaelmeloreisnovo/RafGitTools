@@ -1,0 +1,10 @@
+{
+  "schema": "rafaelia.provider-negative-assurance-fixture.v1",
+  "date": "2026-10-07",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "base_sha": "fba1f1e316cb6cab8bd8fadca6de662028a69d94",
+  "purpose": "bounded non-destructive provider merge rejection proof",
+  "expected": "merge rejected until required START contexts succeed",
+  "claim_allowed": false,
+  "mutation_scope": "fixture branch only"
+}
