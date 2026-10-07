@@ -1,0 +1,59 @@
+{
+  "schema":"RAFAELIA_AUTHORIAL_FEDERATION_V1",
+  "generated_at":"2026-10-07T12:59:00-03:00",
+  "target_repository":"rafaelmeloreisnovo/RafGitTools",
+  "target_base":"80bcaa59562a809d887cfba884f81b95cff7fe8e",
+  "role":"control-plane executor and governance tooling",
+  "policy":{
+    "source_artifact_execution_evidence_claim_distinct":true,
+    "token_vazio_not_zero":true,
+    "copy_only_with_verified_authorship_and_rights":true,
+    "imported_source_is_active_build":false
+  },
+  "sources":[
+    {
+      "repository":"rafaelmeloreisnovo/PCR_Rafaelia_Code_seed",
+      "ref":"6e15628b8382f832de08f3f08b2cab216b81ccaf",
+      "classification":"MIXED_DERIVATIVE_WITH_VERIFIED_RAFAELIA_ADDITIONS",
+      "candidate_count_observed":102,
+      "authorship_evidence":"AUTHORSHIP_ANALYSIS.md + AUTHORS.md",
+      "promoted_paths":[
+        "native/src/core/rafaelia_audit.rs",
+        "native/src/core/rafaelia_telemetry.rs"
+      ],
+      "license":"GPL-3.0-or-later as carried by source files/repository",
+      "destination":"federation/authorial/pcr",
+      "state":"SOURCE_ARCHIVE_IMPORTED_NOT_IN_APP_BUILD",
+      "notes":"Source files still reference Magisk/base runtime assumptions; no integration claim."
+    },
+    {
+      "repository":"rafaelmeloreisnovo/Vectras-VM-Android",
+      "ref":"6ccab6c8c884734472484f16a7efc18f9246d727",
+      "classification":"MIXED_FORK_WITH_AUTHORIAL_SUBTREES",
+      "candidate_count_observed":160,
+      "state":"POINTER_ONLY_HERE",
+      "reason":"Low-level clean-room bundle is routed to RafPolimata; Vectras whole-repo authorship is explicitly false."
+    },
+    {
+      "repository":"rafaelmeloreisnovo/Rafaelia_Private",
+      "ref":"b16f537b4d8af4e734419d4879a8ed2203bc31b4",
+      "classification":"MIXED_LICENSE_PRIVATE",
+      "candidate_count_observed":103,
+      "state":"POINTER_ONLY_HERE",
+      "reason":"Root custom source-available license and subtree-specific licenses require per-path decisions; one explicitly governed source archive is routed to RafPolimata."
+    },
+    {
+      "repository":"rafaelmeloreisnovo/GaiaPhiRafcode",
+      "ref":"3862753e00a8b24e96f8656a7750c7c824887df1",
+      "classification":"RIGHTS_TOKEN_VAZIO",
+      "state":"POINTER_ONLY_BLOCKED"
+    },
+    {
+      "repository":"rafaelmeloreisnovo/Rafcodephi_Sdk_ndkJni_c_py_sh_asm_lua_rs_go_swift_perl_yml_",
+      "ref":"f0d5b6795670b69bfe978b55f36354c5c7de44d8",
+      "classification":"ALIAS_UNRESOLVED",
+      "state":"POINTER_ONLY_BLOCKED",
+      "reason":"No exact repository/code match for the user term Rafcodifi; do not silently equate names."
+    }
+  ]
+}
