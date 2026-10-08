@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -18,7 +19,9 @@ import com.rafgittools.data.github.ActionsWorkflow
 private data class PendingAction(
     val operation: ActionsMutation,
     val id: Long,
-    val label: String
+    val label: String,
+    val repository: String,
+    val reference: String
 ) {
     val phrase: String get() = when (operation) {
         ActionsMutation.DISPATCH -> "DISPARAR $id"
@@ -120,8 +123,8 @@ fun ActionsControlScreen(
                                 style = MaterialTheme.typography.bodySmall
                             )
                             Text(
-                                "source_sha=${receipt.sourceSha} · local_receipt=" +
-                                    if (state.receiptDurable) "DURABLE" else "TOKEN_VAZIO",
+                                "source_sha=${receipt.sourceSha} · ref=${receipt.targetRef} · local_receipt=" +
+                                    (if (state.receiptDurable) "DURABLE" else "TOKEN_VAZIO"),
                                 style = MaterialTheme.typography.bodySmall
                             )
                             Text(
@@ -143,7 +146,8 @@ fun ActionsControlScreen(
                     disabled = state.busy || state.authRequired,
                     onDispatch = {
                         pending = PendingAction(
-                            ActionsMutation.DISPATCH, workflow.id, workflow.name ?: "Workflow"
+                            ActionsMutation.DISPATCH, workflow.id,
+                            workflow.name ?: "Workflow", state.repository, state.reference
                         )
                     }
                 )
@@ -155,9 +159,12 @@ fun ActionsControlScreen(
             items(state.runs, key = { "run-${it.id}" }) { run ->
                 RunCard(
                     run = run,
+                    repository = state.repository,
                     disabled = state.busy || state.authRequired,
                     onAction = { op ->
-                        pending = PendingAction(op, run.id, run.name ?: "Run")
+                        pending = PendingAction(
+                            op, run.id, run.name ?: "Run", state.repository, state.reference
+                        )
                     }
                 )
             }
@@ -191,7 +198,8 @@ fun ActionsControlScreen(
                         viewModel.mutate(action.operation, action.id, inputs)
                         pending = null
                     },
-                    enabled = !state.busy && typed == action.phrase
+                    enabled = !state.busy && typed == action.phrase &&
+                        action.repository == state.repository && action.reference == state.reference
                 ) { Text("Solicitar ao GitHub") }
             },
             dismissButton = { TextButton(onClick = { pending = null }) { Text("Não executar") } }
@@ -222,7 +230,13 @@ private fun WorkflowCard(workflow: ActionsWorkflow, disabled: Boolean, onDispatc
 }
 
 @Composable
-private fun RunCard(run: ActionsRun, disabled: Boolean, onAction: (ActionsMutation) -> Unit) {
+private fun RunCard(
+    run: ActionsRun,
+    repository: String,
+    disabled: Boolean,
+    onAction: (ActionsMutation) -> Unit
+) {
+    val uri = LocalUriHandler.current
     OutlinedCard {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(run.name ?: "Run #${run.id}", fontWeight = FontWeight.SemiBold)
@@ -233,6 +247,9 @@ private fun RunCard(run: ActionsRun, disabled: Boolean, onAction: (ActionsMutati
             )
             Text("branch=${run.headBranch ?: "TOKEN_VAZIO"} · sha=${run.headSha ?: "TOKEN_VAZIO"}",
                 style = MaterialTheme.typography.bodySmall)
+            TextButton(onClick = {
+                uri.openUri("https://github.com/${ActionsControlPolicy.OWNER}/$repository/actions/runs/${run.id}")
+            }) { Text("Ver execução / logs no GitHub") }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (ActionsControlPolicy.runCanCancel(run)) {
                     OutlinedButton(onClick = { onAction(ActionsMutation.CANCEL) }, enabled = !disabled) {
