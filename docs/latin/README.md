@@ -10,3 +10,7 @@ Route: `555_10 authority → 555_20 graph producer → 555_30 RLL scientific bou
 Normative mapping is a checklist of potential applicability (NIST SSDF/800-53, ISO 27001/27002/27701, Unicode UAX 15/29, BCP47, SLSA), not certification or proven compliance. Rights/copyright and translation editions need source-specific evidence. No automatic merge/release/approval/training.
 
 R3: F_ok=contract and negative tests authored; F_gap=provider readback, LATIN exact-head CI, independent approvals, LowFala parity, scientific falsifiers; F_next=observe PR check completion; use a separate authorized admin preflight if required.
+
+## Corrective successor (topology)
+
+The first draft introduced an active `.github/workflows/555_10_latin_authority.yml`; exact-head START run `37851135459` rejected it at its **single-root active workflow invariant**. The successor deletes that active workflow and runs the same fail-closed LATIN tests/validator inside `START.yml` coherence. The existing topology validator is preserved, and START's coherence artifact uploader collects the scoped receipt. The predecessor dedicated run `37851135581` remains a historical scoped success; it does not override global START. No administrative operation or PAT is used.

@@ -642,6 +642,15 @@ jobs:
             echo 'TOKEN_VAZIO: native/rafcode_route_exec_v1 not present'
           fi
 
+      - name: Validate LATIN 555 source policy in canonical START
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests/latin -p 'test_*.py' -v
+          python3 scripts/latin/validate_latin_authority.py
+          mkdir -p artifacts/latin
+          cp dist/latin/authority-receipt.v1.json artifacts/latin/authority-receipt.v1.json
+
       - name: Upload coherence artifacts
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
