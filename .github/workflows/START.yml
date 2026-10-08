@@ -6,6 +6,7 @@ on:
     tags: ['v*.*.*']
   pull_request:
     branches: [main, develop]
+    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft]
   schedule:
     - cron: '35 3 * * *'
   workflow_dispatch:
@@ -91,8 +92,10 @@ permissions:
   actions: read
 
 concurrency:
-  group: start-${{ github.ref }}-${{ github.event_name }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # Deduplicate superseded PR commits and branch pushes; never cancel
+  # scheduled, manual provider mutations or immutable tag releases.
+  group: start-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')) }}
 
 env:
   PIPELINE_SCHEMA: RAFAELIA_START_V1
@@ -150,6 +153,7 @@ jobs:
         shell: bash
         env:
           REQUESTED_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'auto' }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
           REQUESTED_PROVIDER_OPERATION: ${{ github.event_name == 'workflow_dispatch' && inputs.provider_operation || 'preflight' }}
           REQUESTED_PRIVATE_CI_TARGET_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.private_ci_target_id || '' }}
           REQUESTED_PRIVATE_CI_TARGET_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.private_ci_target_sha || '' }}
@@ -157,6 +161,16 @@ jobs:
         run: |
           set -euo pipefail
           mode="${REQUESTED_MODE:-auto}"
+          # Draft PRs have an explicit small source-only lane; promotion to
+          # ready_for_review fires a new full auto run at the exact head SHA.
+          if [[ "$mode" == auto && "${GITHUB_EVENT_NAME}" == pull_request &&
+                "${PR_DRAFT:-false}" == true ]]; then
+            mode=fast
+            echo 'DRAFT_PR_MODE=FAST_SOURCE_ONLY'
+            echo 'ANDROID_APK_VALIDATION=NOT_RUN'
+            echo 'CODEQL_SECURITY_VALIDATION=NOT_RUN'
+            echo 'CLAIM_ALLOWED=false'
+          fi
           android=false
           federation=false
           security=false
@@ -614,6 +628,8 @@ jobs:
   python_tests:
     name: '03 · Python / deterministic tests'
     needs: [plan, coherence]
+    # Draft/explicit fast only checks coherence; full regression runs on ready.
+    if: ${{ needs.plan.outputs.mode != 'fast' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:

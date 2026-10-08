@@ -168,6 +168,10 @@ fun RafGitToolsApp(
                     },
                     onNavigateToNotifications = {
                         navController.navigate(Screen.Notifications.route)
+                    },
+                    onNavigateToActions = {
+                        val launch = Intent(navController.context, ActionsControlActivity::class.java)
+                        navController.context.startActivity(launch)
                     }
                 )
             }
