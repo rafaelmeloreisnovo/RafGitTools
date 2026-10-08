@@ -21,6 +21,18 @@ class ProviderEnvironmentWorkflowTests(unittest.TestCase):
         self.assertIn("configs/provider-environment-preflight.once.json", self.text)
         self.assertIn("configs/provider-enforcement-stage1.once.json", self.text)
 
+    def test_manual_pat_environment_requires_owner_actor_and_main_at_job_entry(self):
+        lane = self.text.split("  provider_environments:", 1)[1].split("\n  release:", 1)[0]
+        guard = lane.split("    if: >-", 1)[1].split("    runs-on:", 1)[0]
+        self.assertIn("github.actor == 'rafaelmeloreisnovo'", guard)
+        self.assertIn("github.ref == 'refs/heads/main'", guard)
+        self.assertIn("github.event_name == 'workflow_dispatch'", guard)
+        run_guard = lane.split("- name: Enforce manual main-only execution boundary", 1)[1]
+        self.assertIn('[[ "${GITHUB_ACTOR}" == rafaelmeloreisnovo ]]', run_guard)
+        self.assertIn("provider operation denied to non-owner workflow actor", run_guard)
+        self.assertIn("name: Pat_environments", lane)
+        self.assertIn("PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}", lane)
+
     def test_only_governed_provider_pats_are_injected_into_active_start(self):
         self.assertIn("PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}", self.text)
         self.assertIn("PROVIDER_ACTIONS_TOKEN: ${{ secrets.PAT_ACTIONS }}", self.text)
