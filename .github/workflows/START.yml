@@ -1194,6 +1194,8 @@ jobs:
       ${{
         needs.plan.outputs.provider_environments == 'true' &&
         needs.coherence.result == 'success' &&
+        github.actor == 'rafaelmeloreisnovo' &&
+        github.ref == 'refs/heads/main' &&
         (
           github.event_name == 'workflow_dispatch' ||
           (
@@ -1234,6 +1236,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          [[ "${GITHUB_ACTOR}" == rafaelmeloreisnovo ]] || {
+            echo '::error::provider operation denied to non-owner workflow actor'
+            exit 2
+          }
           if [[ "${GITHUB_EVENT_NAME}" == push ]]; then
             [[ "${GITHUB_REF}" == refs/heads/main ]] || {
               echo '::error::one-shot preflight push must target main'
