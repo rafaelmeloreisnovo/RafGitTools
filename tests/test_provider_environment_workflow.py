@@ -13,16 +13,21 @@ class ProviderEnvironmentWorkflowTests(unittest.TestCase):
         cls.text = WORKFLOW.read_text(encoding="utf-8")
         cls.river7_validator = RIVER7_VALIDATOR.read_text(encoding="utf-8")
 
+    @classmethod
+    def provider_environments_lane(cls) -> str:
+        return cls.text.split("\n  provider_environments:\n", 1)[1].split("\n  release:\n", 1)[0]
+
     def test_provider_environment_lane_is_bounded_to_manual_or_owner_main_one_shot(self):
-        self.assertIn("- provider_environments", self.text)
-        self.assertIn("github.event_name == 'workflow_dispatch'", self.text)
-        self.assertIn("github.actor == 'rafaelmeloreisnovo'", self.text)
-        self.assertIn("github.ref == 'refs/heads/main'", self.text)
+        lane = self.provider_environments_lane()
+        self.assertIn("needs.plan.outputs.provider_environments == 'true'", lane)
+        self.assertIn("github.event_name == 'workflow_dispatch'", lane)
+        self.assertIn("github.actor == 'rafaelmeloreisnovo'", lane)
+        self.assertIn("github.ref == 'refs/heads/main'", lane)
         self.assertIn("configs/provider-environment-preflight.once.json", self.text)
         self.assertIn("configs/provider-enforcement-stage1.once.json", self.text)
 
     def test_manual_pat_environment_requires_owner_actor_and_main_at_job_entry(self):
-        lane = self.text.split("  provider_environments:", 1)[1].split("\n  release:", 1)[0]
+        lane = self.provider_environments_lane()
         guard = lane.split("    if: >-", 1)[1].split("    runs-on:", 1)[0]
         self.assertIn("github.actor == 'rafaelmeloreisnovo'", guard)
         self.assertIn("github.ref == 'refs/heads/main'", guard)
