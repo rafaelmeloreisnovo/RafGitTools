@@ -39,6 +39,8 @@ fun ActionsControlScreen(
     viewModel: ActionsControlViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // Re-check the provider when returning from the in-app GitHub login.
+    LaunchedEffect(Unit) { viewModel.refresh() }
     var repoMenu by remember { mutableStateOf(false) }
     var inputs by remember { mutableStateOf("{}") }
     var pending by remember { mutableStateOf<PendingAction?>(null) }
@@ -242,7 +244,7 @@ private fun RunCard(
             Text(run.name ?: "Run #${run.id}", fontWeight = FontWeight.SemiBold)
             Text(
                 "#${run.id} · ${run.status ?: "UNKNOWN"} · ${run.conclusion ?: "TOKEN_VAZIO"}" +
-                    " · tentativa=${run.runAttempt ?: 1}",
+                    " · tentativa=${run.runAttempt?.toString() ?: "TOKEN_VAZIO"}",
                 style = MaterialTheme.typography.bodySmall
             )
             Text("branch=${run.headBranch ?: "TOKEN_VAZIO"} · sha=${run.headSha ?: "TOKEN_VAZIO"}",
