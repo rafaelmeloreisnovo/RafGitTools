@@ -628,6 +628,8 @@ jobs:
   python_tests:
     name: '03 · Python / deterministic tests'
     needs: [plan, coherence]
+    # Draft/explicit fast only checks coherence; full regression runs on ready.
+    if: ${{ needs.plan.outputs.mode != 'fast' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
