@@ -90,6 +90,21 @@
             </intent-filter>
         </activity>
 
+        <!-- Dedicated GitHub Actions control UI. Operations require signed-in actor,
+             typed confirmation, live provider preflight and request receipts.
+             This activity never receives CI runner secrets. -->
+        <activity
+            android:name=".ActionsControlActivity"
+            android:exported="true"
+            android:label="Raf Actions"
+            android:theme="@style/Theme.RafGitTools"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <!-- Read-only GitHub virtual storage surface. Separate launcher entry keeps
              Prompt 4 independent from the existing MainActivity navigation graph. -->
         <activity
