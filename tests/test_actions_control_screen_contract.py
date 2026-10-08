@@ -24,9 +24,9 @@ class ActionsControlContractTests(unittest.TestCase):
             "/actions/runs/{run_id}/rerun-failed-jobs",
         ):
             self.assertIn(route, api)
-        self.assertIn("/actions/workflows\")", api)
-        self.assertIn("/actions/runs\")", api)
-        self.assertIn("/actions/runs/{run_id}\")", api)
+        self.assertIn('@GET("repos/{owner}/{repo}/actions/workflows")', api)
+        self.assertIn('@GET("repos/{owner}/{repo}/actions/runs")', api)
+        self.assertIn('@GET("repos/{owner}/{repo}/actions/runs/{run_id}")', api)
         self.assertIn("retrofit2.Response<Unit>", api)
 
     def test_preflight_and_receipt_before_mutation(self):
