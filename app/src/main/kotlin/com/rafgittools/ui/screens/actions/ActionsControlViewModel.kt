@@ -143,6 +143,8 @@ class ActionsControlViewModel @Inject constructor(
                         )
                         return@launch
                     }
+                    if (!prepareIntent(repository, operation, targetId,
+                            null, snapshot.reference)) return@launch
                     api.dispatchActionsWorkflow(
                         owner, repository, targetId, WorkflowDispatchRequest(snapshot.reference, inputs)
                     )
@@ -158,6 +160,8 @@ class ActionsControlViewModel @Inject constructor(
                         )
                         return@launch
                     }
+                    if (!prepareIntent(repository, operation, targetId,
+                            latest.headSha, latest.headBranch ?: "TOKEN_VAZIO")) return@launch
                     when (operation) {
                         ActionsMutation.CANCEL -> api.cancelActionsRun(owner, repository, targetId)
                         ActionsMutation.RERUN -> api.rerunActionsRun(owner, repository, targetId)
@@ -165,7 +169,9 @@ class ActionsControlViewModel @Inject constructor(
                         ActionsMutation.DISPATCH -> error("Unreachable")
                     }
                 }
-                recordResponse(repository, operation, targetId, run?.headSha, response)
+                recordResponse(repository, operation, targetId, run?.headSha,
+                    if (operation == ActionsMutation.DISPATCH) snapshot.reference
+                    else run?.headBranch ?: "TOKEN_VAZIO", response)
             } catch (_: Exception) {
                 _state.value = _state.value.copy(
                     busy = false, message = "PROVIDER_UNAVAILABLE — outcome unknown; refresh before retry"
@@ -199,9 +205,33 @@ class ActionsControlViewModel @Inject constructor(
         } catch (_: Exception) { null }
     }
 
+    /** A durable pre-operation intent is mandatory: no journal, no mutation. */
+    private suspend fun prepareIntent(
+        repository: String, operation: ActionsMutation, targetId: Long,
+        sourceSha: String?, targetRef: String
+    ): Boolean {
+        val intent = ActionsControlReceipt(
+            repository = "${ActionsControlPolicy.OWNER}/$repository",
+            operation = operation.name,
+            targetId = targetId,
+            sourceSha = sourceSha ?: "TOKEN_VAZIO",
+            state = "INTENT_PREPARED",
+            providerHttpCode = 0,
+            targetRef = targetRef
+        )
+        if (persistReceipt(intent)) return true
+        _state.value = _state.value.copy(
+            busy = false,
+            lastReceipt = intent,
+            receiptDurable = false,
+            message = "BLOCKED — cannot fsync local pre-operation receipt"
+        )
+        return false
+    }
+
     private suspend fun recordResponse(
         repository: String, operation: ActionsMutation, targetId: Long,
-        sourceSha: String?, response: Response<Unit>
+        sourceSha: String?, targetRef: String, response: Response<Unit>
     ) {
         val disposition = if (response.isSuccessful) "REQUEST_ACCEPTED" else "PROVIDER_DENIED"
         val receipt = ActionsControlReceipt(
@@ -210,15 +240,27 @@ class ActionsControlViewModel @Inject constructor(
             targetId = targetId,
             sourceSha = sourceSha ?: "TOKEN_VAZIO",
             state = disposition,
-            providerHttpCode = response.code()
+            providerHttpCode = response.code(),
+            targetRef = targetRef
         )
-        val durable = withContext(Dispatchers.IO) {
+        val durable = persistReceipt(receipt)
+        _state.value = _state.value.copy(
+            busy = false, lastReceipt = receipt, receiptDurable = durable,
+            message = disposition + "_HTTP_" + response.code() +
+                (if (durable) " · RECEIPT_DURABLE" else " · RECEIPT_TOKEN_VAZIO")
+        )
+        // A successful 204 acknowledges a request, not the completed workflow.
+    }
+
+    private suspend fun persistReceipt(receipt: ActionsControlReceipt): Boolean =
+        withContext(Dispatchers.IO) {
             try {
                 val record = JSONObject().apply {
                     put("schema", "rafgittools.actions-control-request/v1")
                     put("repository", receipt.repository)
                     put("operation", receipt.operation)
                     put("target_id", receipt.targetId)
+                    put("target_ref", receipt.targetRef)
                     put("source_sha", receipt.sourceSha)
                     put("state", receipt.state)
                     put("provider_http_code", receipt.providerHttpCode)
@@ -233,11 +275,4 @@ class ActionsControlViewModel @Inject constructor(
                 true
             } catch (_: Exception) { false }
         }
-        _state.value = _state.value.copy(
-            busy = false, lastReceipt = receipt, receiptDurable = durable,
-            message = disposition + "_HTTP_" + response.code() +
-                (if (durable) " · RECEIPT_DURABLE" else " · RECEIPT_TOKEN_VAZIO")
-        )
-        // A successful 204 acknowledges a request, not the completed workflow.
-    }
 }
