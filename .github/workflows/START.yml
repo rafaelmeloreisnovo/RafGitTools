@@ -28,6 +28,20 @@ on:
           - provider_environments
           - private_ci
           - public_data
+          - repository_factory
+      repository_factory_owner:
+        description: 'Owner allowlist; offline planning only'
+        required: false
+        default: rafaelmeloreisnovo
+        type: choice
+        options:
+          - rafaelmeloreisnovo
+          - instituto-Rafael
+      repository_factory_name:
+        description: 'Private repository name for offline plan (no provider mutation)'
+        required: false
+        default: ''
+        type: string
       release_version:
         description: 'Release version without leading v (required for manual release mode)'
         required: false
@@ -371,6 +385,12 @@ jobs:
               private_ci_manifest_path="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read())[\"manifest_path\"])' <<<"$resolved")"
               private_ci=true
               ;;
+            repository_factory)
+              if [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch || "${GITHUB_REF}" != refs/heads/main ]]; then
+                echo '::error::repository_factory requires manual main dispatch'
+                exit 2
+              fi
+              ;;
             public_data)
               if [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch ]]; then
                 echo "::error::public_data is manual-only"
@@ -510,6 +530,12 @@ jobs:
               py_compile.compile(str(path), doraise=True)
           print(f'compiled_python_files={len(files)}')
           PY
+
+      - name: Verify repository factory contracts even in fast lane
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_repository_factory_v1.py' -v
 
       - name: Private CI network-isolation capability
         shell: bash
@@ -1638,3 +1664,34 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+
+  repository_factory_plan:
+    name: '09X · Repository factory / offline plan only'
+    needs: [plan, topology, coherence]
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.plan.outputs.mode == 'repository_factory' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout immutable execution SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.EXECUTION_SHA }}
+          persist-credentials: false
+      - name: Record offline repo plan without PAT or POST
+        shell: bash
+        env:
+          FACTORY_OWNER: ${{ inputs.repository_factory_owner }}
+          FACTORY_NAME: ${{ inputs.repository_factory_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          python3 scripts/repository_factory_v1.py --owner "$FACTORY_OWNER" --name "$FACTORY_NAME" --operation plan --receipt artifacts/repository-factory-plan.json
+      - name: Upload offline plan receipt
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: repository-factory-plan-${{ github.run_id }}
+          path: artifacts/repository-factory-plan.json
+          if-no-files-found: error
+          retention-days: 30
