@@ -42,7 +42,8 @@ data class ActionsControlReceipt(
     val targetId: Long,
     val sourceSha: String,
     val state: String,
-    val providerHttpCode: Int
+    val providerHttpCode: Int,
+    val targetRef: String = "TOKEN_VAZIO"
 )
 
 /** Simple control-plane policy independent of Android/Compose and safe to unit test. */
