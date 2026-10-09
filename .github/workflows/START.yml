@@ -29,6 +29,7 @@ on:
           - private_ci
           - public_data
           - repository_factory
+          - repository_factory_pat_preflight
       repository_factory_owner:
         description: 'Owner allowlist; offline planning only'
         required: false
@@ -391,6 +392,12 @@ jobs:
                 exit 2
               fi
               ;;
+            repository_factory_pat_preflight)
+              if [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch || "${GITHUB_REF}" != refs/heads/main || "${GITHUB_ACTOR}" != rafaelmeloreisnovo ]]; then
+                echo '::error::PAT_AGENTS preflight is manually dispatched from main by the owner only'
+                exit 2
+              fi
+              ;;
             public_data)
               if [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch ]]; then
                 echo "::error::public_data is manual-only"
@@ -536,6 +543,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m unittest discover -s tests -p 'test_repository_factory_v1.py' -v
+          python3 -m unittest discover -s tests -p 'test_repository_factory_pat_agents_preflight_v1.py' -v
 
       - name: Private CI network-isolation capability
         shell: bash
@@ -1703,4 +1711,55 @@ jobs:
           name: repository-factory-plan-${{ github.run_id }}
           path: artifacts/repository-factory-plan.json
           if-no-files-found: error
+          retention-days: 30
+
+  repository_factory_pat_preflight:
+    name: '09Y · PAT_AGENTS / identity and org preflight (read-only)'
+    needs: [plan, topology, coherence]
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' &&
+        github.ref == 'refs/heads/main' &&
+        github.actor == 'rafaelmeloreisnovo' &&
+        needs.plan.outputs.mode == 'repository_factory_pat_preflight' &&
+        needs.topology.result == 'success' &&
+        needs.coherence.result == 'success'
+      }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    environment:
+      name: Pat_environments
+      deployment: false
+    steps:
+      - name: Checkout immutable execution SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.EXECUTION_SHA }}
+          persist-credentials: false
+      - name: Verify no provider writes and no secret fallback
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_ACTOR" = rafaelmeloreisnovo
+          python3 -m unittest discover -s tests -p test_repository_factory_pat_agents_preflight_v1.py -v
+      - name: PAT_AGENTS read-only provider preflight
+        shell: bash
+        env:
+          RAFAELIA_PREFLIGHT_TOKEN: ${{ secrets.PAT_AGENTS }}
+          FACTORY_OWNER: ${{ inputs.repository_factory_owner }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          python3 scripts/repository_factory_pat_agents_preflight_v1.py --owner "$FACTORY_OWNER" --receipt artifacts/repository-factory-pat-agents-preflight.json
+      - name: Upload typed non-secret receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: repository-factory-pat-agents-preflight-${{ github.run_id }}
+          path: artifacts/repository-factory-pat-agents-preflight.json
+          if-no-files-found: warn
           retention-days: 30
