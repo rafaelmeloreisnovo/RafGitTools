@@ -271,7 +271,7 @@ dependencies {
     }
 
     // SSH client for JGit.  Using version 0.2.9 of mwiede's JSch fork.
-    implementation('com.github.mwiede:jsch:0.2.9') {
+    implementation('com.github.mwiede:jsch:2.28.7') {
         // Exclude BouncyCastle again at this dependency level.
         exclude group: 'org.bouncycastle'
     }
