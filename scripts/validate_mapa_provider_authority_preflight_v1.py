@@ -147,6 +147,7 @@ def probe_read_only(data: dict[str, Any], token: str) -> dict[str, Any]:
                 statuses["main_sha_matches"] = sha == data["expected_target_main_sha"]
                 endpoint["main_sha_matches"] = statuses["main_sha_matches"]
                 endpoint["protected"] = obj.get("protected") if isinstance(obj, dict) else None
+                statuses["main_protected"] = endpoint["protected"]
             if path.endswith("/rulesets/21909304"):
                 endpoint["ruleset_enforcement"] = obj.get("enforcement") if isinstance(obj, dict) else None
                 endpoint["approvals_required"] = next(
@@ -156,6 +157,7 @@ def probe_read_only(data: dict[str, Any], token: str) -> dict[str, Any]:
                 ) if isinstance(obj, dict) else None
             if path == f"/repos/{OWNER_REPO}":
                 endpoint["identity_repo_admin_flag"] = (obj.get("permissions") or {}).get("admin") if isinstance(obj, dict) else None
+                statuses["repo_admin_flag"] = endpoint["identity_repo_admin_flag"]
             if path.endswith("/actions/secrets"):
                 names = {x.get("name") for x in obj.get("secrets", [])} if isinstance(obj, dict) else set()
                 endpoint["codescan_secret_names_present"] = {
@@ -163,9 +165,32 @@ def probe_read_only(data: dict[str, Any], token: str) -> dict[str, Any]:
                     ("CODESCAN_AUTH_TOKEN", "CODESCAN_ORGANIZATION_KEY", "CODESCAN_PROJECT_KEY")
                 }
         result["endpoints"].append(endpoint)
+    # A 404 from the protection endpoint is normal for a branch without
+    # classic branch protection. It is NOT proof of a provider write capability.
+    # Treat it as a typed absent prestate only if independent GET observations
+    # agree: exact main SHA, protected=false and target-repo admin flag=true.
+    protection_path = f"GET /repos/{OWNER_REPO}/branches/main/protection"
+    for endpoint in result["endpoints"]:
+        if endpoint["path"] == protection_path and endpoint["status"] == 404:
+            if (statuses.get("main_sha_matches") is True
+                    and statuses.get("main_protected") is False
+                    and statuses.get("repo_admin_flag") is True):
+                endpoint["state"] = "ABSENT_CLASSIC_PROTECTION_CONFIRMED_BY_BRANCH"
+            else:
+                endpoint["state"] = "UNVERIFIED_404_DO_NOT_COERCE_TO_ABSENT"
+
+    def acceptable(endpoint: dict[str, Any]) -> bool:
+        if endpoint.get("state") == "UNPARSEABLE_RESPONSE":
+            return False
+        if endpoint["status"] == 200:
+            return True
+        return (endpoint["path"] == protection_path
+                and endpoint["status"] == 404
+                and endpoint.get("state") == "ABSENT_CLASSIC_PROTECTION_CONFIRMED_BY_BRANCH")
+
     if statuses.get("main_sha_matches") is not True:
         result["state"] = "BLOCKED_MAIN_SHA_UNVERIFIED_OR_DRIFTED"
-    elif not all(x["status"] == 200 for x in result["endpoints"]):
+    elif not all(acceptable(endpoint) for endpoint in result["endpoints"]):
         result["state"] = "PARTIAL_PROVIDER_READBACK"
     else:
         result["state"] = "READ_ONLY_API_REACHABLE_NO_WRITE_PERMISSION_PROOF"
