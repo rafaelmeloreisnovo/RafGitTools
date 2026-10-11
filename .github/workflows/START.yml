@@ -552,6 +552,13 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_repository_factory_v1.py' -v
           python3 -m unittest discover -s tests -p 'test_repository_factory_pat_agents_preflight_v1.py' -v
 
+      - name: Verify Mapa PAT_ENV preflight falsifiers in fast lane
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_mapa_provider_authority_preflight_v1.py' -v
+          python3 scripts/validate_mapa_provider_authority_preflight_v1.py
+
       - name: Private CI network-isolation capability
         shell: bash
         run: |
