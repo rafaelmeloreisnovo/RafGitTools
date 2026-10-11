@@ -32,9 +32,19 @@ class FakeResponse:
         return self._body[:length]
 
 
+class FakeRawResponse(FakeResponse):
+    def __init__(self, raw):
+        self._body = raw
+
+
 class FakeOpener:
-    def __init__(self, main_sha):
+    def __init__(self, main_sha, protection_error_status=None,
+                 main_protected=False, repo_admin=True, invalid_ruleset=False):
         self.main_sha = main_sha
+        self.protection_error_status = protection_error_status
+        self.main_protected = main_protected
+        self.repo_admin = repo_admin
+        self.invalid_ruleset = invalid_ruleset
         self.verbs = []
         self.urls = []
         self.headers = []
@@ -44,18 +54,24 @@ class FakeOpener:
         self.urls.append(req.full_url)
         self.headers.append(dict(req.headers))
         if req.full_url.endswith("/branches/main"):
-            obj = {"commit": {"sha": self.main_sha}, "protected": False}
+            obj = {"commit": {"sha": self.main_sha}, "protected": self.main_protected}
         elif req.full_url.endswith("/rulesets/21909304"):
+            if self.invalid_ruleset:
+                return FakeRawResponse(b"{BROKEN_JSON")
             obj = {"enforcement": "disabled", "rules": [
                 {"type": "pull_request", "parameters": {"required_approving_review_count": 0}}]}
         elif req.full_url.endswith("/actions/secrets"):
             obj = {"secrets": [{"name": "CODESCAN_AUTH_TOKEN"}]}
         elif req.full_url.endswith("/protection"):
+            if self.protection_error_status is not None:
+                raise module.urllib.error.HTTPError(
+                    req.full_url, self.protection_error_status, "Synthetic negative fixture", {}, None
+                )
             obj = {"required_status_checks": None}
         elif req.full_url.endswith("/rulesets"):
             obj = []
         else:
-            obj = {"permissions": {"admin": True}}
+            obj = {"permissions": {"admin": self.repo_admin}}
         return FakeResponse(obj)
 
 
@@ -155,6 +171,47 @@ class MapaPatEnvPreflightTests(unittest.TestCase):
         with patch.object(module.urllib.request, "build_opener", return_value=mock):
             report = module.probe_read_only(CONTRACT, "FAKE_TEST_TOKEN_NOT_REAL")
         self.assertEqual(report["state"], "BLOCKED_MAIN_SHA_UNVERIFIED_OR_DRIFTED")
+
+    def test_absent_protection_404_may_be_typed_without_fabricating_enforcement(self):
+        mock = FakeOpener(CONTRACT["expected_target_main_sha"], protection_error_status=404)
+        with patch.object(module.urllib.request, "build_opener", return_value=mock):
+            report = module.probe_read_only(CONTRACT, "FAKE_TEST_TOKEN_NOT_REAL")
+        protection = next(x for x in report["endpoints"] if x["path"].endswith("/protection"))
+        self.assertEqual(protection["status"], 404)
+        self.assertEqual(protection["state"], "ABSENT_CLASSIC_PROTECTION_CONFIRMED_BY_BRANCH")
+        self.assertEqual(report["state"], "READ_ONLY_API_REACHABLE_NO_WRITE_PERMISSION_PROOF")
+        self.assertFalse(report["claim_allowed"])
+        self.assertFalse(report["mutation_allowed"])
+
+    def test_404_contradicts_protected_branch_and_must_fail(self):
+        mock = FakeOpener(CONTRACT["expected_target_main_sha"],
+                          protection_error_status=404, main_protected=True)
+        with patch.object(module.urllib.request, "build_opener", return_value=mock):
+            report = module.probe_read_only(CONTRACT, "FAKE_TEST_TOKEN_NOT_REAL")
+        self.assertEqual(report["state"], "PARTIAL_PROVIDER_READBACK")
+        self.assertIn("UNVERIFIED_404",
+                      next(x["state"] for x in report["endpoints"] if x["path"].endswith("/protection")))
+
+    def test_404_without_admin_scope_must_fail(self):
+        mock = FakeOpener(CONTRACT["expected_target_main_sha"],
+                          protection_error_status=404, repo_admin=False)
+        with patch.object(module.urllib.request, "build_opener", return_value=mock):
+            report = module.probe_read_only(CONTRACT, "FAKE_TEST_TOKEN_NOT_REAL")
+        self.assertEqual(report["state"], "PARTIAL_PROVIDER_READBACK")
+
+    def test_403_must_not_be_coerced_to_absent(self):
+        mock = FakeOpener(CONTRACT["expected_target_main_sha"], protection_error_status=403)
+        with patch.object(module.urllib.request, "build_opener", return_value=mock):
+            report = module.probe_read_only(CONTRACT, "FAKE_TEST_TOKEN_NOT_REAL")
+        self.assertEqual(report["state"], "PARTIAL_PROVIDER_READBACK")
+        self.assertNotIn("ABSENT_CLASSIC_PROTECTION_CONFIRMED_BY_BRANCH", str(report))
+
+    def test_200_malformed_json_must_not_pass(self):
+        mock = FakeOpener(CONTRACT["expected_target_main_sha"], invalid_ruleset=True)
+        with patch.object(module.urllib.request, "build_opener", return_value=mock):
+            report = module.probe_read_only(CONTRACT, "FAKE_TEST_TOKEN_NOT_REAL")
+        self.assertEqual(report["state"], "PARTIAL_PROVIDER_READBACK")
+        self.assertIn("UNPARSEABLE_RESPONSE", str(report))
 
 
 if __name__ == "__main__":
