@@ -45,6 +45,8 @@ def verify_parent_chain(
         index[key]=item
     if source_id not in index or trusted_root_id not in index:
         return result("BLOCK_ROOT_OR_SOURCE_MISSING")
+    if index[source_id]["kind"]!="file":
+        return result("BLOCK_SOURCE_NOT_FILE")
     if index[trusted_root_id]["kind"]!="folder":
         return result("BLOCK_TRUSTED_ROOT_NOT_FOLDER")
     visited=set()
