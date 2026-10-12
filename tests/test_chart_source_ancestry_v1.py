@@ -80,6 +80,10 @@ class SourceAncestryTests(unittest.TestCase):
         d[0]["parents"]=["source2"]
         d.append({"id":"source2","parents":["trusted"],"kind":"file"})
         self.assertEqual(v(d).state,"BLOCK_PARENT_NOT_FOLDER")
+    def test_directory_cannot_masquerade_as_chart_source(self):
+        d=copy.deepcopy(ROOT)
+        d[0]["kind"]="folder"
+        self.assertEqual(v(d).state,"BLOCK_SOURCE_NOT_FILE")
     def test_larger_than_bounded_metadata(self):
         d=copy.deepcopy(ROOT)+[
           {"id":"f"+str(i),"parents":[],"kind":"folder"} for i in range(125)
