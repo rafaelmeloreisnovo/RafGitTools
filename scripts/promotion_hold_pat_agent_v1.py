@@ -24,6 +24,9 @@ VALID_OPERATIONS = ("validate", "inspect", "mark")
 API_HOST = "https://api.github.com"
 OWNER = "rafaelmeloreisnovo"
 EXECUTOR = "rafaelmeloreisnovo/RafGitTools"
+TARGET_BINDINGS = {"mapa750": ("rafaelmeloreisnovo/Mapa", 750),
+                   "rafpolimata431": ("rafaelmeloreisnovo/RafPolimata", 431),
+                   "rafpolimata432": ("rafaelmeloreisnovo/RafPolimata", 432)}
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -67,6 +70,9 @@ def validate_contract(config):
             errors.append("TARGET_REPOSITORY_INVALID")
         if type(item.get("pr")) is not int or item["pr"] < 1:
             errors.append("TARGET_PR_INVALID")
+        if isinstance(target, str) and target in TARGET_BINDINGS and (
+                item.get("repository"), item.get("pr")) != TARGET_BINDINGS[target]:
+            errors.append("TARGET_BINDING_INVALID")
         if not isinstance(item.get("head_sha"), str) or not SHA.fullmatch(item["head_sha"]):
             errors.append("TARGET_SHA_INVALID")
         title = item.get("title")
