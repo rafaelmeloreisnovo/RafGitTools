@@ -136,3 +136,25 @@ As seis amostras são **out-of-scope de NOVOexport** salvo novo
 `source_ref` independente e verificável. `GLOBAL_SEARCH !=
 NOVOEXPORT_MEMBERSHIP`.
 
+## S4 — validador estrutural de ancestralidade implementado
+
+`tools/verify_chart_source_ancestry_v1.py` agora valida **snapshots
+de metadados fornecidos pelo chamador**, sem acessar o Drive. Rejeita
+pais múltiplos, árvore externa ao root autorizado, ancestral faltante,
+ciclo, pai não-pasta, fonte do tipo pasta, identificadores duplicados,
+ambiguidade e limite de profundidade. O resultado positivo se chama
+`PASS_STRUCTURAL_ONLY`, nunca `VERIFIED_BY_GOOGLE`.
+
+`tests/test_chart_source_ancestry_v1.py` inclui 21 testes sintéticos;
+`.github/workflows/chart-source-ancestry-v1.yml` é read-only.
+Readback de primeiro gate: run 38190997359 SUCCESS com 20 testes;
+a 21ª contraprova contra fonte-pasta foi adicionada depois e requer
+novo HEAD terminal para prova.
+
+**Não implementado**: coleta autenticada Drive/SAF, assinatura de
+metadados, hash de bytes, autorização/licença, vínculo real chart→OOXML
+parent/workbook, filtro de payload ativo ou publicação de recibo privado.
+Nenhum resultado desse utilitário autentica o próprio snapshot; um
+atacante que falsifique toda a árvore não é detectado apenas por
+consistência topológica. G011/G012/G023 ainda bloqueados.
+
