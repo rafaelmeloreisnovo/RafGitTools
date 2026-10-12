@@ -63,6 +63,11 @@ class HoldTests(unittest.TestCase):
         d["targets"].append(dict(TARGET, id="evil", repository="other/repo"))
         self.assertIn("TARGET_ALLOWLIST_INVALID", agent.validate_contract(d))
 
+    def test_fixed_target_binding(self):
+        changed = copy.deepcopy(CONTRACT)
+        changed["targets"][0]["pr"] = 999
+        self.assertIn("TARGET_BINDING_INVALID", agent.validate_contract(changed))
+
     def test_boolean_pr_rejected(self):
         d = copy.deepcopy(CONTRACT)
         d["targets"][0]["pr"] = True
