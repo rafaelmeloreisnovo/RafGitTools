@@ -84,3 +84,29 @@ F_next = one scoped read-only synthetic chart-to-series-to-receipt
   security fuzz and source-side falsifier.
 Rollback: close draft. No main, releases, branch protection or
 CI authority changed.
+
+## S2 — sessão Ω composta, genealogia privada e espaço de lacunas
+
+Mapa PR #752 oferece
+`data/assurance/rafaelia-unified-session-audit.v1.json`:
+26 vetores F01..F26, 25 gaps G001..G025, 55 nós e 99 arestas
+com semântica de navegação, **não um único evento do ChatGPT**.
+
+RafGitTools recebe somente trabalho privado consentido para G001
+scan bruto 000..050, G002 first-seen, G003 role, G008 chunks,
+G009 hashes, G011 OOXML parent/workbook, G012 direitos, G018
+conversation_id exportado, G020 áudio em dispositivo, G023 SAF consent,
+G025 autoria. O controle público recebe tipagem de ausência e
+referências sanitizadas, não o corpus ou o hash privado.
+
+Esquema futuro de recibo privado por operação:
+`job_id | source_file_id | source_revision | exact_bytes_sha256 |
+chart_rel_id | workbook_ref | sheet_and_range | source_kind |
+role | timestamp | permission_ref | human_consent_state |
+falsifier_run | result | predecessor_receipt | rollback_plan`.
+
+Ausência de qualquer campo obrigatório deixa
+`TOKEN_VAZIO_SOURCE_CHAIN` em aberto. É proibido criar `PASS`
+a partir de apenas um resumo ou de `Workbook=Sheet1`.
+Importador/parsers por agora **NÃO IMPLEMENTADOS** nesta PR
+documental; nenhuma cópia de dados privados foi autorizada.
