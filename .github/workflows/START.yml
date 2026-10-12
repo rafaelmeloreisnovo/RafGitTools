@@ -31,6 +31,7 @@ on:
           - repository_factory
           - repository_factory_pat_preflight
           - mapa_provider_pat_preflight
+          - promotion_hold_pat
       repository_factory_owner:
         description: 'Owner allowlist; offline planning only'
         required: false
@@ -40,7 +41,7 @@ on:
           - rafaelmeloreisnovo
           - instituto-Rafael
       repository_factory_name:
-        description: 'Private repository name for offline plan (no provider mutation)'
+        description: 'Factory name; in promotion_hold_pat mode: mapa750 / rafpolimata431 / rafpolimata432'
         required: false
         default: ''
         type: string
@@ -55,7 +56,7 @@ on:
         default: false
         type: boolean
       provider_operation:
-        description: 'Pat_environments / PAT_ENV provider operation'
+        description: 'Provider operation; inspect_hold/mark_hold apply only to promotion_hold_pat mode'
         required: false
         default: preflight
         type: choice
@@ -63,6 +64,8 @@ on:
           - preflight
           - apply_main_protection
           - rollback_main_protection
+          - inspect_hold
+          - mark_hold
       provider_expected_main_sha:
         description: 'Optional exact main SHA guard; defaults to workflow-dispatch SHA'
         required: false
@@ -171,6 +174,7 @@ jobs:
           REQUESTED_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'auto' }}
           PR_DRAFT: ${{ github.event.pull_request.draft }}
           REQUESTED_PROVIDER_OPERATION: ${{ github.event_name == 'workflow_dispatch' && inputs.provider_operation || 'preflight' }}
+          REQUESTED_HOLD_TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.repository_factory_name || '' }}
           REQUESTED_PRIVATE_CI_TARGET_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.private_ci_target_id || '' }}
           REQUESTED_PRIVATE_CI_TARGET_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.private_ci_target_sha || '' }}
           REQUESTED_PRIVATE_CI_WORKFLOW_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.private_ci_workflow_id || '' }}
@@ -405,6 +409,20 @@ jobs:
                 exit 2
               fi
               ;;
+            promotion_hold_pat)
+              [[ "${GITHUB_EVENT_NAME}" == workflow_dispatch && "${GITHUB_REF}" == refs/heads/main && "${GITHUB_ACTOR}" == rafaelmeloreisnovo ]] || {
+                echo '::error::Promotion hold PAT_AGENTS is main/owner/manual only'
+                exit 2
+              }
+              case "${REQUESTED_PROVIDER_OPERATION}" in
+                inspect_hold|mark_hold) ;;
+                *) echo '::error::Promotion hold requires inspect_hold or mark_hold'; exit 2 ;;
+              esac
+              case "${REQUESTED_HOLD_TARGET}" in
+                mapa750|rafpolimata431|rafpolimata432) ;;
+                *) echo '::error::Target must be pinned in promotion hold contract'; exit 2 ;;
+              esac
+              ;;
             public_data)
               if [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch ]]; then
                 echo "::error::public_data is manual-only"
@@ -551,6 +569,13 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s tests -p 'test_repository_factory_v1.py' -v
           python3 -m unittest discover -s tests -p 'test_repository_factory_pat_agents_preflight_v1.py' -v
+
+      - name: Verify PAT_AGENTS promotion hold source and negative tests in fast lane
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_promotion_hold_pat_agent_v1.py' -v
+          python3 scripts/promotion_hold_pat_agent_v1.py --operation validate
 
       - name: Verify Mapa PAT_ENV preflight falsifiers in fast lane
         shell: bash
@@ -1568,7 +1593,7 @@ jobs:
 
   receipt:
     name: '09 · Final receipt / fechamento'
-    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_actions, private_ci_bridge, provider_environments, release, public_data_custody]
+    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_actions, private_ci_bridge, provider_environments, release, public_data_custody, promotion_hold_pat_agent]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -1586,6 +1611,7 @@ jobs:
       PROVIDER_ENVIRONMENTS_RESULT: ${{ needs.provider_environments.result }}
       RELEASE_RESULT: ${{ needs.release.result }}
       PUBLIC_DATA_RESULT: ${{ needs.public_data_custody.result }}
+      PROMOTION_HOLD_RESULT: ${{ needs.promotion_hold_pat_agent.result }}
       ROUTE_MODE: ${{ needs.plan.outputs.mode }}
     steps:
       - name: Emit append-only pipeline receipt
@@ -1609,6 +1635,7 @@ jobs:
               'provider_environments': os.environ['PROVIDER_ENVIRONMENTS_RESULT'],
               'release': os.environ['RELEASE_RESULT'],
               'public_data_custody': os.environ['PUBLIC_DATA_RESULT'],
+              'promotion_hold_pat_agent': os.environ['PROMOTION_HOLD_RESULT'],
           }
           mapped = {
               k: ('TOKEN_VAZIO_NOT_SELECTED' if v == 'skipped' else v.upper())
@@ -1833,5 +1860,67 @@ jobs:
         with:
           name: repository-factory-pat-agents-preflight-${{ github.run_id }}
           path: artifacts/repository-factory-pat-agents-preflight.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  promotion_hold_pat_agent:
+    name: '09Z · PAT_AGENTS / P0 title hold only (owner manual)'
+    needs: [plan, topology, coherence]
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' &&
+        github.ref == 'refs/heads/main' &&
+        github.actor == 'rafaelmeloreisnovo' &&
+        needs.plan.outputs.mode == 'promotion_hold_pat' &&
+        needs.topology.result == 'success' &&
+        needs.coherence.result == 'success'
+      }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    environment:
+      name: Pat_environments
+      deployment: false
+    steps:
+      - name: Checkout exact protected executor SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.EXECUTION_SHA }}
+          persist-credentials: false
+      - name: Verify bounded target and payload contract without PAT
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_ACTOR" = rafaelmeloreisnovo
+          python3 -m unittest discover -s tests -p 'test_promotion_hold_pat_agent_v1.py' -v
+          python3 scripts/promotion_hold_pat_agent_v1.py --operation validate
+      - name: Inspect or apply P0 title using PAT_AGENTS only
+        shell: bash
+        env:
+          RAFAELIA_AGENTS_TOKEN: ${{ secrets.PAT_AGENTS }}
+          HOLD_TARGET: ${{ inputs.repository_factory_name }}
+          HOLD_PROVIDER_OPERATION: ${{ inputs.provider_operation }}
+          PROMOTION_HOLD_CONFIRM: ${{ inputs.provider_operation == 'mark_hold' && 'EXPLICIT_HOLD_ONLY' || '' }}
+        run: |
+          set -euo pipefail
+          case "$HOLD_TARGET" in mapa750|rafpolimata431|rafpolimata432) ;; *) exit 3 ;; esac
+          case "$HOLD_PROVIDER_OPERATION" in
+            inspect_hold) operation=inspect ;;
+            mark_hold) operation=mark ;;
+            *) exit 3 ;;
+          esac
+          mkdir -p artifacts
+          python3 scripts/promotion_hold_pat_agent_v1.py \
+            --operation "$operation" --target "$HOLD_TARGET" \
+            --receipt artifacts/promotion-hold-receipt.json
+      - name: Preserve typed non-secret hold receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: promotion-hold-${{ github.run_id }}
+          path: artifacts/promotion-hold-receipt.json
           if-no-files-found: warn
           retention-days: 30

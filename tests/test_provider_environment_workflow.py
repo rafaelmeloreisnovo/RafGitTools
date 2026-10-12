@@ -42,19 +42,35 @@ class ProviderEnvironmentWorkflowTests(unittest.TestCase):
         self.assertIn("PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}", self.text)
         self.assertIn("PROVIDER_ACTIONS_TOKEN: ${{ secrets.PAT_ACTIONS }}", self.text)
         self.assertNotIn("PROVIDER_TOKEN: ${{ secrets.PAT_ENVIRONMENTS }}", self.text)
-        # PAT_AGENTS is permitted only in the separately gated, GET-only
-        # repository-factory preflight lane, never as a PAT_ENV fallback.
-        regular_lanes, preflight_lane = self.text.split(
+        # PAT_AGENTS may occur only in two separately gated jobs. The
+        # repository-factory preflight remains GET-only. Promotion-hold
+        # PATCH is title-only and must never reuse PAT_ENV or PAT_ACTIONS.
+        regular_lanes, after_preflight = self.text.split(
             "\n  repository_factory_pat_preflight:\n", 1
+        )
+        preflight_lane, hold_lane = after_preflight.split(
+            "\n  promotion_hold_pat_agent:\n", 1
         )
         self.assertNotIn("secrets.PAT_AGENTS", regular_lanes)
         self.assertEqual(preflight_lane.count("secrets.PAT_AGENTS"), 1)
+        self.assertEqual(hold_lane.count("secrets.PAT_AGENTS"), 1)
+        self.assertEqual(self.text.count("secrets.PAT_AGENTS"), 2)
         self.assertIn("RAFAELIA_PREFLIGHT_TOKEN: ${{ secrets.PAT_AGENTS }}", preflight_lane)
         self.assertIn("github.event_name == 'workflow_dispatch'", preflight_lane)
         self.assertIn("github.ref == 'refs/heads/main'", preflight_lane)
         self.assertIn("github.actor == 'rafaelmeloreisnovo'", preflight_lane)
         self.assertIn("needs.plan.outputs.mode == 'repository_factory_pat_preflight'", preflight_lane)
         self.assertIn("name: Pat_environments", preflight_lane)
+        self.assertIn("RAFAELIA_AGENTS_TOKEN: ${{ secrets.PAT_AGENTS }}", hold_lane)
+        self.assertIn("needs.plan.outputs.mode == 'promotion_hold_pat'", hold_lane)
+        self.assertIn("github.event_name == 'workflow_dispatch'", hold_lane)
+        self.assertIn("github.ref == 'refs/heads/main'", hold_lane)
+        self.assertIn("github.actor == 'rafaelmeloreisnovo'", hold_lane)
+        self.assertIn("name: Pat_environments", hold_lane)
+        self.assertIn("deployment: false", hold_lane)
+        self.assertIn("promotion_hold_pat_agent_v1.py", hold_lane)
+        for other_secret in ("PAT_ENV", "PAT_ACTIONS", "PAT_ENVIRONMENTS"):
+            self.assertNotIn("secrets." + other_secret, hold_lane)
         self.assertNotIn("secrets.PAT_CODESPACES", self.text)
         self.assertNotIn("secrets.PAT_DEPENDABOT", self.text)
 
