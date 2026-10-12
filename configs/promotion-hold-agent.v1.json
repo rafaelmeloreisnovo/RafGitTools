@@ -1,0 +1,61 @@
+{
+  "schema": "rafaelia.promotion-hold-agent.v1",
+  "authority": "rafaelmeloreisnovo/RafGitTools",
+  "federated_authority": "rafaelmeloreisnovo/Mapa",
+  "credential": "PAT_AGENTS",
+  "claims_allowed": false,
+  "automatic_merge": false,
+  "promotion_authority": false,
+  "allowed_mutation": "PATCH_PR_TITLE_ONLY_EXPLICIT_MANUAL",
+  "execution": "MAIN_OWNER_MANUAL_PROTECTED_ENVIRONMENT",
+  "approval_or_ruleset_mutation": false,
+  "targets": [
+    {
+      "id": "mapa750",
+      "repository": "rafaelmeloreisnovo/Mapa",
+      "pr": 750,
+      "head_sha": "a97075d9b5dda2fd9bcacfaa01d10c79f01a6bae",
+      "title": "[NÃO PROMOVER — P0: proteção OFF, CodeScan sem SARIF, sem revisão] Observador sintético",
+      "gap_ids": [
+        "PROVIDER_ENFORCEMENT_DISABLED",
+        "CODESCAN_SARIF_NOT_RUN",
+        "INDEPENDENT_REVIEW_NOT_OBSERVED"
+      ],
+      "evidence": [
+        "https://github.com/rafaelmeloreisnovo/Mapa/actions/runs/38176049162",
+        "https://github.com/rafaelmeloreisnovo/Mapa/actions/runs/38176049186",
+        "https://github.com/rafaelmeloreisnovo/Mapa/pull/750#issuecomment-6113928065"
+      ]
+    },
+    {
+      "id": "rafpolimata431",
+      "repository": "rafaelmeloreisnovo/RafPolimata",
+      "pr": 431,
+      "head_sha": "c46f32e1650738b06ef31f497bd33f61376e3623",
+      "title": "[NÃO PROMOVER — P0: direitos/proveniência e revisão pendentes] JMV freestanding",
+      "gap_ids": [
+        "LICENSE_RIGHTS_OWNER_UNRESOLVED",
+        "INDEPENDENT_REVIEW_NOT_OBSERVED",
+        "DEVICE_RUNTIME_NOT_RUN"
+      ],
+      "evidence": [
+        "https://github.com/rafaelmeloreisnovo/RafPolimata/pull/431#issuecomment-6113928452"
+      ]
+    },
+    {
+      "id": "rafpolimata432",
+      "repository": "rafaelmeloreisnovo/RafPolimata",
+      "pr": 432,
+      "head_sha": "91ead256dd6ccd1631844e99ab6908a306ebeee2",
+      "title": "[NÃO PROMOVER — P0: direitos/proveniência e revisão pendentes] ELF/DEX/NUMA freestanding",
+      "gap_ids": [
+        "LICENSE_RIGHTS_OWNER_UNRESOLVED",
+        "INDEPENDENT_REVIEW_NOT_OBSERVED",
+        "PHYSICAL_NUMA_ELF_DEX_REAL_CORPUS_NOT_RUN"
+      ],
+      "evidence": [
+        "https://github.com/rafaelmeloreisnovo/RafPolimata/pull/432#issuecomment-6113928761"
+      ]
+    }
+  ]
+}
