@@ -20,6 +20,10 @@ The machine contract at `configs/promotion-hold-agent.v1.json` pins exactly thes
 
 The contract is intentionally exact-head. **When a producer PR receives a new push, its old SHA ceases to authorize any PAT action.** A new independent readback and reviewed manifest successor are required. Do not erase unknowns or silently broaden this allowlist.
 
+### Exact-HEAD successor after source falsifier improvements
+
+A GitHub PR readback on 2026-10-12 observed Mapa #750 at `0dfb0aee3c056f19d0cf74e409708581677ffec0`, RafPolimata #431 at `7b1fe6a43ccf81201913673b768c91e13a2dac91`, and #432 at `cbcf26bf8c3f984b1e7a4b00fd7e8360aaf418e7`. These HEADs supersede the earlier entry only for the **title-hold** target identity; `predecessor_head_binding` preserves prior hashes. Exact-HEAD CI for these producer sources was observed successful in their scoped tests, but independent approvals were still empty, Mapa server protection/CodeScan failed and RafPolimata rights were unresolved. **No promotion was authorized by this readback.**
+
 ## Integration in the existing START
 
 `.github/workflows/START.yml` remains the **only active workflow**. All push and PR runs execute the offline unit/falsifier contract from the core coherence lane. Those checks are source-scope only; they **do not access PAT_AGENTS**.
