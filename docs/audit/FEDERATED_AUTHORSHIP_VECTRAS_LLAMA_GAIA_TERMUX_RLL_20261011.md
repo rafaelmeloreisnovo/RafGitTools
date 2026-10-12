@@ -33,6 +33,23 @@ Google Drive corpus, app/Gradle/JNI/build config, new provider admin action.
 - RLL scholarly math/research has CC BY-SA 4.0 research-text terms;
   software file-level rights and science validation remain separate.
 
+## Namespace e plugin — LAMA barro distinto de LLaMA
+
+O usuário identifica LAMA como um plugin de **barro**; isso não
+identifica automaticamente `llamaRafaelia` ou `ggml-org/llama.cpp`.
+No fork `llamaRafaelia`, há integrações opcionais verificadas:
+`LLAMA_RAF_BITSTACK`, `LLAMA_RAF_AUDIT`, `LLAMA_RAF_RAFSTORE`,
+`LLAMA_RAF_WITNESS`, `LLAMA_RAF_CONTRACTS` partem OFF no CMake.
+As funções de `common/raf_inference.h` passam a no-op/permissivas
+quando os contratos não estão habilitados. Isso prova extensão opt-in,
+**não** estabelece arquivo, distribuição, build ou autoria do plugin
+LAMA-barro em particular: `TOKEN_VAZIO_NOT_IDENTIFIED`.
+
+Consumidores nunca devem trocar esse vazio por `LLAMA_CPP_UPSTREAM`,
+`LLAMARAFAELIA_EXTENSION` ou `PASS`. Mesmo se o plugin for
+observado, sua compatibilidade, licenciamento e execução requerem
+recibo de origem e gate específicos, sem promover código upstream.
+
 ## Governance/Zero Trust integration boundary
 
 RafGitTools can inspect provider metadata, compare source references, record
