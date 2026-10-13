@@ -74,7 +74,8 @@ def validate_graph(data):
     if data.get("claim_allowed") is not False:
         raise Invalid("GRAPH_CLAIM_MUST_BE_FALSE")
     policy = data.get("graph_policy")
-    if not isinstance(policy, dict) or any(policy.get(k) != v for k,v in REQUIRED_POLICY.items()):
+    if not isinstance(policy, dict) or any(type(policy.get(k)) is not type(v) or policy.get(k) != v
+                                               for k,v in REQUIRED_POLICY.items()):
         raise Invalid("GRAPH_POLICY_WEAKENED")
     node_rows, edge_rows = data.get("nodes"), data.get("relations")
     if not isinstance(node_rows,list) or not 0 < len(node_rows) <= MAX_NODES:
