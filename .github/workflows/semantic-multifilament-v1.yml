@@ -1,0 +1,45 @@
+name: Semantic multifilament - exact-head falsifiers (read only)
+on:
+  pull_request:
+    paths:
+      - 'tools/semantic_multifilament_v1.py'
+      - 'tests/test_semantic_multifilament_v1.py'
+      - 'docs/SEMANTIC_MULTIFILAMENT_TYPED_ROUTES_V1.md'
+      - 'data/governance/complex-network-design-relations.v1.json'
+      - '.github/workflows/semantic-multifilament-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bounded-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact tree without persisted credentials
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Strict Python compile and source-side negative tests
+        run: |
+          set -eu
+          python3 -m py_compile tools/semantic_multifilament_v1.py tests/test_semantic_multifilament_v1.py
+          python3 -m unittest discover -s tests -p test_semantic_multifilament_v1.py -v
+      - name: Read-only graph + loglog route smoke
+        run: |
+          set -eu
+          python3 tools/semantic_multifilament_v1.py --from-id N:RAFAELIA:B7 --to-id N:T2 --max-depth 3 --math-x 4 --math-depth 2 > /tmp/semantic_multifilament_report.json
+          python3 - /tmp/semantic_multifilament_report.json <<'PY'
+          import json
+          import sys
+          obj = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert obj["schema"] == "rafaelia.semantic-multifilament-inspection.v1"
+          assert obj["claim_allowed"] is False
+          assert obj["release_allowed"] is False
+          assert obj["transitive_evidence_inference"] is False
+          assert obj["path_count"] >= 1
+          assert all(p["not_an_authenticated_evidence_chain"] for p in obj["paths"])
+          assert obj["math_probe"]["inverse_roundtrip_residual"] < 1e-12
+          PY
+      - name: Gate boundary
+        run: |
+          echo "Graph/source/mathematical checks only; no ML learning, evidence promotion, Android runtime or APK signature claim."
