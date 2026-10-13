@@ -120,6 +120,38 @@ class SemanticMultifilamentTests(unittest.TestCase):
         with self.assertRaises(M.Invalid):
             M.route(nodes,edges,"N:T2","N:RAFAELIA:B7",max_depth=6)
 
+    def test_combinatorial_search_budget_fail_closed(self):
+        graph=copy.deepcopy(self.graph)
+        root="N:SEARCH:ROOT"
+        target="N:SEARCH:UNREACHABLE"
+        graph["nodes"].extend([
+            {"id":root,"kind":"SYNTHETIC_TEST","authority":"test only"},
+            {"id":target,"kind":"SYNTHETIC_TEST","authority":"test only"},
+        ])
+        previous=[root]
+        for layer in range(4):
+            current=["N:SEARCH:L%s:%s"%(layer,j) for j in range(8)]
+            for node in current:
+                graph["nodes"].append({
+                    "id":node,"kind":"SYNTHETIC_TEST","authority":"test only"})
+            for src in previous:
+                for dest in current:
+                    graph["relations"].append({
+                        "relation_id":"REL:SEARCH:%s:%s"%(src,dest),
+                        "from":src,"to":dest,
+                        "relation_type":"ANALOGY_OF",
+                        "source_ref":"bounded test fixture",
+                        "authority_domain":"synthetic",
+                        "uncertainty_state":"TOKEN_VAZIO_TEST",
+                        "evidence_effect":"NONE",
+                        "boundary_or_falsifier":"route explosion limit",
+                        "next_gate":"block excess expansion"
+                    })
+            previous=current
+        nodes,edges=M.validate_graph(graph)
+        with self.assertRaisesRegex(M.Invalid,"ROUTE_SEARCH_BUDGET_EXCEEDED"):
+            M.route(nodes,edges,root,target,max_depth=5,max_paths=1)
+
     def test_domain_rejections_real_log(self):
         for value in (0,1,-4,float("nan"),float("inf"),float("-inf")):
             with self.subTest(value=value):
