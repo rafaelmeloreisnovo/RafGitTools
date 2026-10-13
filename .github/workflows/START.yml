@@ -584,6 +584,12 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_mapa_provider_authority_preflight_v1.py' -v
           python3 scripts/validate_mapa_provider_authority_preflight_v1.py
 
+      - name: Falsify chart ancestry metadata (synthetic, no provider access)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_chart_source_ancestry_v1.py' -v
+
       - name: Private CI network-isolation capability
         shell: bash
         run: |
