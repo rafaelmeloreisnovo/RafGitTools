@@ -9,7 +9,7 @@ Reuses the existing data/governance/complex-network-design-relations.v1.json and
 
 Existing source semantics cover mathematical objects, cross-domain analogy, declared evidence boundaries, memory, rights, and explicit TOKEN_VAZIO gaps. V1 does not measure verbal, nonverbal or physical signals. A future producer-approved successor may attach modality-specific evidence and reversible transformation contracts as typed deltas, not silently reclassify original sources.
 
-Missing route = NOT_OBSERVED_NOT_NEGATIVE_PROOF, not zero and not demonstrated false. Source reference string = declared locator, NOT independently authenticated. Input caps: graph 256 KiB, <=4096 nodes, <=8192 edges; each route depth <=5 and output <=32 paths. JSON duplicate keys and softened policies fail closed; graph traversal does not re-enter a node already visited in the same path.
+Missing route = NOT_OBSERVED_NOT_NEGATIVE_PROOF, not zero and not demonstrated false. Source reference string = declared locator, NOT independently authenticated. Input caps: graph 256 KiB, <=4096 nodes, <=8192 edges; each route depth <=5 and output <=32 paths; BFS queued states <=2048 and expanded states <=16384. Over-budget traversal fails closed rather than producing a potentially incomplete pass. JSON duplicate keys and softened policies fail closed; graph traversal does not re-enter a node already visited in the same path.
 
 ## Direct and reverse math; conditions
 
@@ -30,7 +30,7 @@ The CLI outputs to stdout only. It does not mutate source artifacts, repository 
 
 SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM; TOKEN_VAZIO != 0; IMPLEMENTED_UNTESTED != PASS. Traversal cannot promote an analogy, cooccurrence or missing evidence to proof. Governance/data/privacy/security are non-compensatory and are never unlocked by mathematical route discovery.
 
-16 adversarial tests cover: canonical graph, B7 -> T2 unresolved route, analogy without evidence, contradiction preservation, unknown route, dangling endpoints, repeated ids/JSON keys, policy numeric-boolean spoof, attempted promotion of token-vazio and analogy, cycle termination, log domains, finite differences, inverse roundtrips, integration constants, and overflow.
+17 adversarial tests cover: canonical graph, B7 -> T2 unresolved route, analogy without evidence, contradiction preservation, unknown route, dangling endpoints, repeated ids/JSON keys, policy numeric-boolean spoof, attempted promotion of token-vazio and analogy, cycle termination, log domains, finite differences, inverse roundtrips, integration constants, overflow, and exponential path-explosion budget rejection.
 
 No CI or independent review claim from source existence. A PASS requires exact-head run metadata and executed steps. No certificate validation, Play APK verification or rights proof is claimed.
 
