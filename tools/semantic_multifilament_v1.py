@@ -20,6 +20,8 @@ MAX_NODES = 4096
 MAX_EDGES = 8192
 MAX_DEPTH = 5
 MAX_PATHS = 32
+MAX_QUEUED = 2048
+MAX_EXPANDED = 16384
 EFFECTS = {"NONE", "ROUTING_ONLY", "EVIDENCES_BOUNDED", "CONTRADICTS", "SUPPORT_LIMITED"}
 REQUIRED_POLICY = {
     "decorative_edges_allowed": False,
@@ -155,7 +157,11 @@ def route(nodes, edges, start, end, max_depth=3, max_paths=12):
     for value in links.values():
         value.sort(key=lambda e:(e["relation_id"],e["to"]))
     results, q = [], deque([(start, (start,), ())])
+    expanded = 0
     while q and len(results) < max_paths:
+        expanded += 1
+        if expanded > MAX_EXPANDED or len(q) > MAX_QUEUED:
+            raise Invalid("ROUTE_SEARCH_BUDGET_EXCEEDED")
         current, visited, steps = q.popleft()
         if len(steps) >= max_depth:
             continue
@@ -170,6 +176,8 @@ def route(nodes, edges, start, end, max_depth=3, max_paths=12):
                     break
             else:
                 q.append((dest, visited + (dest,), path))
+                if len(q) > MAX_QUEUED:
+                    raise Invalid("ROUTE_SEARCH_BUDGET_EXCEEDED")
     return results
 
 def nested_log(x, depth=2):
