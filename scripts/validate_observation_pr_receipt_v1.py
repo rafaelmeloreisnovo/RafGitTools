@@ -5,9 +5,18 @@ import re
 import sys
 
 EXPECTED = {
+    ("rafaelmeloreisnovo/RafPolimata", 434): "810af5f565ee8fb0676839635d1d352cedfe80f7",
+    ("rafaelmeloreisnovo/RafPolimata", 435): "487080c0b9523ad499b97d53a7a78375cdab1024",
+    ("rafaelmeloreisnovo/RafPolimata", 436): "278b3bc2d99afe3fbad2107713a5542c60832c04",
+    ("rafaelmeloreisnovo/RafPolimata", 437): "200a25b3a82dff31ebf2a1c6182a309b983d735a",
+    ("rafaelmeloreisnovo/Mapa", 756): "e8b847d9bd80498d7e506ee599de5d94956cfe11",
+    ("rafaelmeloreisnovo/Mapa", 757): "481077363ff82518fee8719d2a8244e27eb3d6d5",
     ("rafaelmeloreisnovo/Mapa", 758): "ccd25c9cf256f3b7cee221cc28954b0185e33e3a",
-    ("rafaelmeloreisnovo/RafPolimata", 437): "9c5b6657841aea96128ab360e952f0cfad09a69c",
+    ("rafaelmeloreisnovo/EstudioAudio", 64): "e910f484044ea90fc4d809cb18ccabdccef197ef",
+    ("rafaelmeloreisnovo/EstudioAudio", 68): "f84d13c722520deb3857518bb5dea2b00481d150",
     ("rafaelmeloreisnovo/EstudioAudio", 70): "9be018f47df528059470f87fc7657b8707911732",
+    ("rafaelmeloreisnovo/ChipQuantum", 89): "b8ceefb9b89e3cdca5ba67c4ca78786d5fe19253",
+    ("rafaelmeloreisnovo/papers", 136): "456c909763be7948fc307aee6d2f37a91e2d6b9d",
 }
 SHA = re.compile(r"^[0-9a-f]{40}$")
 
