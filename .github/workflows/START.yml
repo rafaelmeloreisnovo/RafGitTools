@@ -612,6 +612,14 @@ jobs:
           fi
           test ! -e "$RUNNER_TEMP/drive-custody-canary/rejected.json"
           echo "RMR_PAI_KAT_AND_FAIL_CLOSED_CUSTODY=PASS_CI_SIMULATION_NOT_LIVE_DRIVE"
+      - name: Preserve pinned RMR pai binary for private readback verification
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/drive-ci-custody-rmr-pai-single-root-v1-20261015'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rmr-pai-pinned-binary-584a686e
+          path: ${{ runner.temp }}/rmr-pai-build/pai
+          if-no-files-found: error
+          retention-days: 1
       - name: Verify repository factory contracts even in fast lane
         shell: bash
         run: |
