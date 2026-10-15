@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RafGitTools Federated Lens Metadata V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "nodes"
+  ],
+  "properties": {
+    "schema": {
+      "const": "rafgittools.federated-lens.metadata.v1"
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "logical_id",
+          "source_kind",
+          "tokens",
+          "gap_state"
+        ],
+        "properties": {
+          "logical_id": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
+          },
+          "source_kind": {
+            "enum": [
+              "DRIVE_PRIVATE",
+              "DRIVE_DASHBOARD",
+              "GITHUB_PRIVATE",
+              "GITHUB_PUBLIC",
+              "MAPA_PUBLIC",
+              "PAPER_RESEARCH",
+              "ETHICS_RESEARCH"
+            ]
+          },
+          "tokens": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 16,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9_-]{1,40}$"
+            }
+          },
+          "gap_state": {
+            "enum": [
+              "TOKEN_VAZIO",
+              "MISSING_AUTHORITY",
+              "MISSING_EVIDENCE",
+              "UNVERIFIED",
+              "EVIDENCED_SCOPED"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
