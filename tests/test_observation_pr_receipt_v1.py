@@ -17,7 +17,9 @@ def sample():
         "draft": True,
         "merged": False,
         "title": "[DRAFT][NÃO PROMOVER] teste de fechamento",
-        "checks": [{"name": "test", "conclusion": "success"}],
+        "checks": [{"name": "test", "conclusion": "success",
+                    "status": "completed",
+                    "head_sha": "ccd25c9cf256f3b7cee221cc28954b0185e33e3a"}],
         "provider_enforcement": True,
         "independent_review": True,
         "license_verified": True,
@@ -68,11 +70,32 @@ class ReadOnlyEvidenceGateTests(unittest.TestCase):
             x["repository"] = repository
             x["pr"] = pr
             x["head_sha"] = sha
+            x["checks"][0]["head_sha"] = sha
             verified = M.assess(x)
             self.assertEqual(verified["state"], "EVIDENCE_OBSERVABLE_NO_PROMOTION")
             self.assertFalse(verified["promotion_allowed"])
             x["head_sha"] = "0" * 40 if sha != "0" * 40 else "1" * 40
             self.assertIn("HEAD_DRIFT", M.assess(x)["gaps"])
+
+    def test_stale_check_sha_blocks_even_when_check_is_green(self):
+        x = sample()
+        x["checks"][0]["head_sha"] = "f" * 40
+        self.assert_block(x, "CHECK_HEAD_MISMATCH")
+
+    def test_absent_check_sha_is_not_exact_head_evidence(self):
+        x = sample()
+        del x["checks"][0]["head_sha"]
+        self.assert_block(x, "CHECK_HEAD_MISMATCH")
+
+    def test_pending_check_with_success_field_does_not_pass(self):
+        x = sample()
+        x["checks"][0]["status"] = "in_progress"
+        self.assert_block(x, "CHECK_NOT_COMPLETED")
+
+    def test_missing_check_status_does_not_pass(self):
+        x = sample()
+        del x["checks"][0]["status"]
+        self.assert_block(x, "CHECK_NOT_COMPLETED")
 
     def test_unlisted_repository_denied_even_with_successes(self):
         x = sample()
