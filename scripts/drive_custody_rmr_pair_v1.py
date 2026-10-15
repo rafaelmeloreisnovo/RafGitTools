@@ -45,7 +45,7 @@ def rmr_pai_blake3(pai, path):
     if not Path(pai).is_file():
         raise CustodyError("RMR_PAI_EXECUTABLE_NOT_FOUND")
     completed = subprocess.run(
-        [str(pai), "hash", "--file", str(path), "--algo", "blake3"],
+        [str(pai), "run", "--mode", "cli", "hash", "--file", str(path), "--algo", "blake3"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
         timeout=60, check=False, shell=False,
     )
