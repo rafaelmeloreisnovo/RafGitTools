@@ -43,6 +43,21 @@ class FederatedLensCoreTest {
         assertTrue(FederatedLensCore.candidates(listOf(a, b), budget = 0).isEmpty())
     }
 
+    @Test fun avalancheIsBoundedAndNotCausal() {
+        val n = listOf(
+            node("NODE_001", listOf("a", "b")),
+            node("NODE_002", listOf("b", "c")),
+            node("NODE_003", listOf("c", "d")),
+            node("NODE_004", listOf("d", "e"))
+        )
+        assertEquals(1, FederatedLensCore.lexicalReach(n, "NODE_001", 0).size)
+        assertEquals(4, FederatedLensCore.lexicalReach(n, "NODE_001", 3).size)
+        try {
+            FederatedLensCore.lexicalReach(n, "NODE_001", 4)
+            fail("unbounded depth")
+        } catch (_: IllegalArgumentException) { }
+    }
+
     @Test fun duplicatesFailClosed() {
         try {
             FederatedLensCore.candidates(listOf(node("NODE_001", listOf("mapa")),
