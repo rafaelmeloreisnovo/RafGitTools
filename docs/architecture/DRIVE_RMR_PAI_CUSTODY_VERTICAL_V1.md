@@ -19,7 +19,7 @@ RMR/pai BLAKE3 was NOT EXECUTED for that real transfer. Its evidence is typed TO
 scripts/drive_custody_rmr_pair_v1.py verifies:
 - identical byte length and SHA-256 for GitHub-origin artifact and Drive raw readback;
 - SHA-256 matches independently observed GitHub Actions artifact digest;
-- real RMR/pai binary: pai hash --file FILE --algo blake3;
+- real RMR/pai binary: pai run --mode cli hash --file FILE --algo blake3;
 - two BLAKE3 known-answer tests (empty, abc), source/readback BLAKE3 equivalence;
 - canonical JSON domain-separated receipt chain SHA-256 and create-only output file.
 
