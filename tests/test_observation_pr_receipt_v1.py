@@ -54,6 +54,21 @@ class ReadOnlyEvidenceGateTests(unittest.TestCase):
         x = sample(); x["head_sha"] = "0" * 40
         self.assert_block(x, "HEAD_DRIFT")
 
+    def test_pr_array_never_crashes_or_grants_permission(self):
+        x = sample()
+        x["pr"] = [758]
+        self.assert_block(x, "TARGET_NOT_PINNED")
+
+    def test_pr_object_never_crashes_or_grants_permission(self):
+        x = sample()
+        x["pr"] = {"value": 758}
+        self.assert_block(x, "TARGET_NOT_PINNED")
+
+    def test_repository_array_never_crashes(self):
+        x = sample()
+        x["repository"] = ["rafaelmeloreisnovo/Mapa"]
+        self.assert_block(x, "TARGET_NOT_PINNED")
+
     def test_bad_sha(self):
         x = sample(); x["head_sha"] = "TOKEN_VAZIO"
         self.assert_block(x, "MALFORMED_HEAD")
