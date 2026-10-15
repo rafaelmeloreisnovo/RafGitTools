@@ -40,15 +40,15 @@ class ReadOnlyEvidenceGateTests(unittest.TestCase):
 
     def test_unknown_and_null(self):
         self.assertEqual(M.assess(None)["state"], "BLOCKED_INPUT")
-        self.assert_block({}, "TARGET_NOT_PINN")
+        self.assert_block({}, "TARGET_NOT_PINNED")
 
     def test_boolean_pr_is_not_integer(self):
         x = sample(); x["pr"] = True
-        self.assert_block(x, "TARGET_NOT_PINN")
+        self.assert_block(x, "TARGET_NOT_PINNED")
 
     def test_unpinned_repo(self):
         x = sample(); x["repository"] = "attacker/Mapa"
-        self.assert_block(x, "TARGET_NOT_PINN")
+        self.assert_block(x, "TARGET_NOT_PINNED")
 
     def test_stale_head(self):
         x = sample(); x["head_sha"] = "0" * 40
