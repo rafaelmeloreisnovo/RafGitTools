@@ -17,9 +17,14 @@ def assess(source):
     gaps = []
     if not isinstance(source, dict):
         return {"state": "BLOCKED_INPUT", "gaps": ["NOT_OBJECT"], "claim_allowed": False}
-    identity = (source.get("repository"), source.get("pr"))
-    pinned = EXPECTED.get(identity)
-    if pinned is None or type(identity[1]) is not int:
+    # Untrusted JSON may carry a list/dict as pr; do not hash unvalidated input.
+    repository = source.get("repository")
+    pr = source.get("pr")
+    if not isinstance(repository, str) or type(pr) is not int:
+        pinned = None
+    else:
+        pinned = EXPECTED.get((repository, pr))
+    if pinned is None:
         gaps.append("TARGET_NOT_PINNED")
     if not isinstance(source.get("head_sha"), str) or not SHA.fullmatch(source["head_sha"]):
         gaps.append("MALFORMED_HEAD")
