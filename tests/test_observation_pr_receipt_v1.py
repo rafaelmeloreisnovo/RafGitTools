@@ -46,6 +46,39 @@ class ReadOnlyEvidenceGateTests(unittest.TestCase):
         x = sample(); x["pr"] = True
         self.assert_block(x, "TARGET_NOT_PINNED")
 
+    def test_public_catalog_covers_twelve_prs_and_no_unauthorized_repo(self):
+        expected_pairs = {
+            ("rafaelmeloreisnovo/RafPolimata", 434),
+            ("rafaelmeloreisnovo/RafPolimata", 435),
+            ("rafaelmeloreisnovo/RafPolimata", 436),
+            ("rafaelmeloreisnovo/RafPolimata", 437),
+            ("rafaelmeloreisnovo/Mapa", 756),
+            ("rafaelmeloreisnovo/Mapa", 757),
+            ("rafaelmeloreisnovo/Mapa", 758),
+            ("rafaelmeloreisnovo/EstudioAudio", 64),
+            ("rafaelmeloreisnovo/EstudioAudio", 68),
+            ("rafaelmeloreisnovo/EstudioAudio", 70),
+            ("rafaelmeloreisnovo/ChipQuantum", 89),
+            ("rafaelmeloreisnovo/papers", 136),
+        }
+        self.assertEqual(set(M.EXPECTED), expected_pairs)
+        for (repository, pr), sha in M.EXPECTED.items():
+            self.assertRegex(sha, r"^[a-f0-9]{40}$")
+            x = sample()
+            x["repository"] = repository
+            x["pr"] = pr
+            x["head_sha"] = sha
+            verified = M.assess(x)
+            self.assertEqual(verified["state"], "EVIDENCE_OBSERVABLE_NO_PROMOTION")
+            self.assertFalse(verified["promotion_allowed"])
+            x["head_sha"] = "0" * 40 if sha != "0" * 40 else "1" * 40
+            self.assertIn("HEAD_DRIFT", M.assess(x)["gaps"])
+
+    def test_unlisted_repository_denied_even_with_successes(self):
+        x = sample()
+        x["repository"] = "unregistered/unknown"
+        self.assert_block(x, "TARGET_NOT_PINNED")
+
     def test_unpinned_repo(self):
         x = sample(); x["repository"] = "attacker/Mapa"
         self.assert_block(x, "TARGET_NOT_PINNED")
