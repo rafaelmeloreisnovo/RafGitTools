@@ -95,6 +95,20 @@ class DriveCustodyTests(unittest.TestCase):
         self.assertEqual(digest, self.d)
         self.assertEqual(n, len(self.origin.read_bytes()))
 
+    def test_rmr_pai_router_arguments_are_exact(self):
+        completed = mock.Mock(returncode=0,
+            stdout="a" * 64 + "  " + str(self.origin) + "\n")
+        with mock.patch.object(M.subprocess, "run", return_value=completed) as run:
+            p = Path(self.tmp.name) / "pai"
+            p.write_text("fixture")
+            M.rmr_pai_blake3(p, self.origin)
+            argv = run.call_args.args[0]
+            self.assertEqual(argv, [
+                str(p), "run", "--mode", "cli", "hash",
+                "--file", str(self.origin), "--algo", "blake3",
+            ])
+            self.assertFalse(run.call_args.kwargs["shell"])
+
     def test_rmr_output_binds_exact_filename(self):
         p = Path(self.tmp.name) / "pai"
         p.write_text("#!/bin/sh\nprintf '%064d  WRONG_FILENAME\\n' 0\n")
