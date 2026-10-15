@@ -39,7 +39,7 @@ private fun readBounded(input: java.io.InputStream): ByteArray {
     while (true) {
         val n = input.read(buf)
         if (n < 0) return out.toByteArray()
-        if (n == 0) continue
+        require(n != 0) { "SAF returned zero bytes repeatedly" }
         require(out.size() + n <= MAX_IMPORT_BYTES) { "manifest maior que 64 KiB" }
         out.write(buf, 0, n)
     }
@@ -177,6 +177,12 @@ private fun FederatedVectorScreen(onBack: () -> Unit) {
                     style = MaterialTheme.typography.titleSmall)
                 Text("Relações são somente sobreposição de tokens; não implicam causalidade, verdade ou validade científica.",
                     style = MaterialTheme.typography.bodySmall)
+                if (nodes.isNotEmpty()) {
+                    val affected = FederatedLensCore.lexicalReach(nodes.toList(), nodes.first().logicalId)
+                    Text("Efeito dominó estrutural · semente=${nodes.first().logicalId} · " +
+                        "alcançáveis até 3 saltos=${affected.size}/${nodes.size} · NÃO causal",
+                        style = MaterialTheme.typography.bodySmall)
+                }
                 if (edges.isNotEmpty()) {
                     Text(edges.take(5).joinToString("\n") {
                         "${it.from} ↔ ${it.to} · ${it.commonTokens}/${it.unionTokens} (candidata)"
