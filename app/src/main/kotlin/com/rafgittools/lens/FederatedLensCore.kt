@@ -109,6 +109,34 @@ object FederatedLensCore {
         return result
     }
 
+    /**
+     * Bounded undirected reachability over lexical candidates. This is a
+     * structural what-if projection, NOT a causal avalanche prediction.
+     */
+    fun lexicalReach(nodes: List<LensNode>, startId: String, maxDepth: Int = 3): List<String> {
+        require(maxDepth in 0..3) { "depth outside 0..3" }
+        require(nodes.any { it.logicalId == startId }) { "unknown start ID" }
+        val edges = candidates(nodes)
+        val seen = LinkedHashSet<String>()
+        seen.add(startId)
+        var frontier = listOf(startId)
+        repeat(maxDepth) {
+            val next = ArrayList<String>()
+            for (edge in edges) {
+                for (from in frontier) {
+                    val neighbor = when (from) {
+                        edge.from -> edge.to
+                        edge.to -> edge.from
+                        else -> null
+                    }
+                    if (neighbor != null && seen.add(neighbor)) next.add(neighbor)
+                }
+            }
+            frontier = next
+        }
+        return seen.toList()
+    }
+
     fun urgency(node: LensNode): String = when (node.gap) {
         LensGap.MISSING_AUTHORITY -> "P0 / HOLD"
         LensGap.MISSING_EVIDENCE -> "P1 / HOLD"
