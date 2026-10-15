@@ -55,6 +55,10 @@ def assess(source):
             if check["name"] in names:
                 gaps.append("DUPLICATE_CHECK_NAME")
             names.add(check["name"])
+            if check.get("head_sha") != source.get("head_sha"):
+                gaps.append("CHECK_HEAD_MISMATCH")
+            if check.get("status") != "completed":
+                gaps.append("CHECK_NOT_COMPLETED")
             if check.get("conclusion") != "success":
                 gaps.append("CHECK_NOT_PASS")
     if source.get("provider_enforcement") is not True:
