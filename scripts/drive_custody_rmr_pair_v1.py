@@ -112,6 +112,13 @@ def verify(
     drive_b3 = rmr_pai_blake3(pai, drive_readback)
     if source_b3 != drive_b3:
         raise CustodyError("DRIVE_READBACK_BLAKE3_MISMATCH")
+    # Fail closed on a TOCTOU mutation while the external pai subprocess runs.
+    # This is a post-hash consistency barrier, not an atomic filesystem snapshot.
+    final_source_sha, final_source_size = sha256_file(source)
+    final_drive_sha, final_drive_size = sha256_file(drive_readback)
+    if (final_source_sha != initial_sha or final_drive_sha != drive_sha
+            or final_source_size != source_size or final_drive_size != drive_size):
+        raise CustodyError("BYTES_CHANGED_DURING_HASH_VERIFICATION")
     body = {
         "schema": "rafaelia.drive-ci-custody.v1",
         "producer": "rafaelmeloreisnovo/RafGitTools",
