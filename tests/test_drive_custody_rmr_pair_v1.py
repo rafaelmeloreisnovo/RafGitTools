@@ -76,6 +76,33 @@ class DriveCustodyTests(unittest.TestCase):
             with self.assertRaisesRegex(M.CustodyError, "DRIVE_READBACK_BLAKE3_MISMATCH"):
                 self.run_gate()
 
+    def test_source_changed_during_blake3_fails_closed(self):
+        # Simulate an attacker or a concurrent writer after the first SHA-256.
+        calls = [0]
+        def mutate_then_return(pai, path):
+            calls[0] += 1
+            if calls[0] == 1:
+                self.origin.write_bytes(b"MUTATED" + self.origin.read_bytes())
+            return "a" * 64
+        with mock.patch.object(M, "rmr_pai_preflight"), mock.patch.object(
+            M, "rmr_pai_blake3", side_effect=mutate_then_return
+        ):
+            with self.assertRaisesRegex(M.CustodyError, "BYTES_CHANGED_DURING_HASH_VERIFICATION"):
+                self.run_gate()
+
+    def test_drive_readback_changed_during_blake3_fails_closed(self):
+        calls = [0]
+        def mutate_then_return(pai, path):
+            calls[0] += 1
+            if calls[0] == 2:
+                self.readback.write_bytes(b"MUTATED" + self.readback.read_bytes())
+            return "a" * 64
+        with mock.patch.object(M, "rmr_pai_preflight"), mock.patch.object(
+            M, "rmr_pai_blake3", side_effect=mutate_then_return
+        ):
+            with self.assertRaisesRegex(M.CustodyError, "BYTES_CHANGED_DURING_HASH_VERIFICATION"):
+                self.run_gate()
+
     def test_predecessor_invalid(self):
         with mock.patch.object(M, "rmr_pai_preflight"), mock.patch.object(
             M, "rmr_pai_blake3", return_value="a" * 64
