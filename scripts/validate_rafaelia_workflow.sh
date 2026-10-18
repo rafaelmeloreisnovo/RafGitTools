@@ -10,6 +10,11 @@ set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$ROOT"
 
+# Observation federation anti-regression: run on every quick/full START lane.
+# Offline only. PASS is a source gate; merge authority remains with the provider.
+python3 -m unittest discover -s tests -p 'test_observation_pr_receipt_v1.py' -v
+
+
 python3 -m unittest discover -s tests -p 'test_workflow_session_contract.py' -v
 python3 scripts/workflow_session_contract.py validate-index workflow-master-index.json
 python3 scripts/workflow_session_contract.py validate-session \
