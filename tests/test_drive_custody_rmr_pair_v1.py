@@ -47,6 +47,32 @@ class DriveCustodyTests(unittest.TestCase):
         self.assertFalse(r["promotion_allowed"])
         self.assertEqual(r["previous_receipt_sha256"], "0" * 64)
 
+    def test_simulated_ci_id_is_never_labeled_real_drive_readback(self):
+        with mock.patch.object(M, "rmr_pai_preflight"), mock.patch.object(
+            M, "rmr_pai_blake3", return_value="a" * 64
+        ):
+            receipt = M.verify(
+                self.origin, self.readback, self.d, COMMIT, REPO,
+                38711297966, 11961380420, "SIMULATED_CI_NO_ACTUAL_DRIVE_ID",
+                "0" * 64, "/fake/never-passed-as-real",
+            )
+        self.assertEqual(receipt["readback_result"], "SIMULATED_FILES_DUAL_HASH_NO_DRIVE")
+        self.assertEqual(receipt["transport_evidence_scope"], "CI_SIMULATION_NO_LIVE_DRIVE")
+        self.assertEqual(receipt["provider_identity_status"], "SIMULATION_NO_PROVIDER_READBACK")
+        self.assertFalse(receipt["claim_allowed"])
+        self.assertFalse(receipt["promotion_allowed"])
+
+    def test_real_looking_id_is_still_not_provider_attested(self):
+        with mock.patch.object(M, "rmr_pai_preflight"), mock.patch.object(
+            M, "rmr_pai_blake3", return_value="a" * 64
+        ):
+            receipt = self.run_gate()
+        self.assertEqual(receipt["transport_evidence_scope"],
+                         "CALLER_SUPPLIED_FILES_PROVIDER_UNVERIFIED")
+        self.assertEqual(receipt["provider_identity_status"],
+                         "CALLER_SUPPLIED_CHECK_PROVIDER_READBACK_SEPARATELY")
+        self.assertFalse(receipt["claim_allowed"])
+
     def test_changed_drive_payload_fails(self):
         self.readback.write_bytes(b"CHANGED")
         with self.assertRaisesRegex(M.CustodyError, "TRANSFER_BYTE_COUNT_MISMATCH"):
