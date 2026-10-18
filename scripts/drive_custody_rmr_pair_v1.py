@@ -119,6 +119,7 @@ def verify(
     if (final_source_sha != initial_sha or final_drive_sha != drive_sha
             or final_source_size != source_size or final_drive_size != drive_size):
         raise CustodyError("BYTES_CHANGED_DURING_HASH_VERIFICATION")
+    simulated_ci = drive_file_id == "SIMULATED_CI_NO_ACTUAL_DRIVE_ID"
     body = {
         "schema": "rafaelia.drive-ci-custody.v1",
         "producer": "rafaelmeloreisnovo/RafGitTools",
@@ -137,8 +138,12 @@ def verify(
         "content_sha256": initial_sha,
         "content_blake3_256": source_b3,
         "byte_count": source_size,
-        "readback_result": "BYTES_MATCH_DUAL_HASH",
-        "provider_identity_status": "CALLER_SUPPLIED_CHECK_PROVIDER_READBACK_SEPARATELY",
+        "readback_result": ("SIMULATED_FILES_DUAL_HASH_NO_DRIVE" if simulated_ci
+                            else "BYTES_MATCH_DUAL_HASH"),
+        "transport_evidence_scope": ("CI_SIMULATION_NO_LIVE_DRIVE" if simulated_ci
+                                     else "CALLER_SUPPLIED_FILES_PROVIDER_UNVERIFIED"),
+        "provider_identity_status": ("SIMULATION_NO_PROVIDER_READBACK" if simulated_ci
+                                     else "CALLER_SUPPLIED_CHECK_PROVIDER_READBACK_SEPARATELY"),
         "previous_receipt_sha256": previous_digest,
     }
     return {**body, "receipt_chain_sha256": chain_digest(previous_digest, body)}
@@ -172,7 +177,9 @@ def main(argv=None):
             stream.flush()
             os.fsync(stream.fileno())
         print(json.dumps({
-            "state": "DUAL_HASH_READBACK_MATCH",
+            "state": ("SIMULATION_ONLY_DUAL_HASH_MATCH"
+                      if receipt["transport_evidence_scope"] == "CI_SIMULATION_NO_LIVE_DRIVE"
+                      else "DUAL_HASH_READBACK_MATCH"),
             "receipt": str(out),
             "receipt_chain_sha256": receipt["receipt_chain_sha256"],
             "claim_allowed": False,
