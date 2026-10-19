@@ -30,7 +30,7 @@ static u32 HTML_RENDER(const u8*html,u32 n,u8*out,u32 cap){
     u8  tag_done=0;          /* tag attributes are not tag-name bytes */
 
     /* Macro: emite byte no output sem overflow */
-#define EM(c) do{if(oi<cap-1u){out[oi++]=(u8)(c);}}while(0)
+#define EM(c) do{u8 _em_byte=(u8)(c);if(oi<cap-1u){out[oi++]=_em_byte;}}while(0)
 #define EMS(s) do{const char*_s=(s);while(*_s)EM(*_s++);}while(0)
 
     for(u32 i=0;i<n;i++){
