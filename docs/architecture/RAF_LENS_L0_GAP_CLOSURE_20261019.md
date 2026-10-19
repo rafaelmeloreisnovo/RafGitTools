@@ -18,6 +18,14 @@
 | G-RFL-04 | Prior START quick workflow omitted actual L0 verification | One step added to existing `coherence` job in `.github/workflows/START.yml` | Await exact-head Actions steps/receipt. A green aggregate run without this step is NOT proof. |
 | G-RFL-05 | Physical bare-metal Android/ABI + Drive provider bridge absent | No unsafe shortcut; L1 remains separate and not connected | `TOKEN_VAZIO_NOT_RUN`; not counted closed |
 
+## Provider trigger diagnosis (2026-10-19)
+
+The exact commit's GitHub run `39322900203` is **Automatic Dependency Submission (Gradle)**, not `START · RAFAELIA Orchestrated Pipeline`. The active `START.yml` declares `pull_request.branches: [main, develop]`; the child PR #696 targets `feat/federated-vector-lens-five-cycles-20261015`. Thus this PR does **not** satisfy the START pull-request trigger filter. The L0 step was wired in source but **not executed remotely**. Do not relabel the dependency-submission result as START CI. 
+
+Safe resolution: after human review, trigger `START.yml` manually against this exact branch/ref in `fast` mode, or run the test on a purpose-specific PR targeting `main` once the feature dependency is ready, without broadening the default PR branch allowlist. Confirm the named `Raf Lens L0 freestanding exact-head gate` step and exact commit in the provider job record.
+
+Locally, fault injection `NM=/bin/false` and `READELF=/bin/false` both produced an expected nonzero verifier result. These are **host falsifiers**, not remote CI proof.
+
 ## Reproduction
 
 ```sh
