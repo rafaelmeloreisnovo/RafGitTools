@@ -22,6 +22,26 @@ int main(void){unsigned char hash[32],seen[3];unsigned n,i;struct rfl_vector a,b
  if(rfl_candidates(nodes,3u,edges,64u,&n)!=RFL_OK||n!=3u)return 16;
  if(rfl_reach(edges,n,3u,0u,1u,seen)!=RFL_OK||!seen[1]||!seen[2])return 17;
  if(rfl_reach(edges,n,3u,0u,4u,seen)!=RFL_INVALID)return 18;
+ /* Fail closed: invalid edges must not overwrite the caller-owned result. */
+ {struct rfl_edge malformed={0u,3u,1u,2u};seen[0]=0xA5u;seen[1]=0x5Au;seen[2]=0x3Cu;
+  if(rfl_reach(&malformed,1u,3u,0u,1u,seen)!=RFL_INVALID)return 22;
+  if(seen[0]!=0xA5u||seen[1]!=0x5Au||seen[2]!=0x3Cu)return 23;}
+ /* Bounded edge list is never silently truncated. */
+ {struct rfl_edge few[1];unsigned written=99u;
+  if(rfl_candidates(nodes,3u,few,1u,&written)!=RFL_CAPACITY||written!=1u)return 24;}
+ /* Duplicate logical IDs never create ambiguous provenance. */
+ {struct rfl_node duplicate[2]={nodes[0],nodes[0]};unsigned written=0u;
+  if(rfl_candidates(duplicate,2u,edges,64u,&written)!=RFL_DUPLICATE)return 25;}
+ /* SHA-256 padding across two blocks and split update match authoritative KAT. */
+ {const unsigned char message[]="abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
+  const unsigned char known[32]={0x24,0x8d,0x6a,0x61,0xd2,0x06,0x38,0xb8,0xe5,0xc0,0x26,0x93,0x0c,0x3e,0x60,0x39,
+   0xa3,0x3c,0xe4,0x59,0x64,0xff,0x21,0x67,0xf6,0xec,0xed,0xd4,0x19,0xdb,0x06,0xc1};
+  struct rfl_sha256 ctx;
+  rfl_sha_init(&ctx);rfl_sha_update(&ctx,message,19u);
+  rfl_sha_update(&ctx,message+19u,(unsigned)sizeof(message)-1u-19u);
+  rfl_sha_final(&ctx,hash);
+  if(!equal(hash,known,32u))return 26;
+ }
  {static const struct rfl_span bad[]={SPAN("bad token")};struct rfl_node q=nodes[0];q.tokens=bad;q.token_count=1;
  if(rfl_vectorize(&q,&b)!=RFL_INVALID)return 19;}
  {static const struct rfl_span dup[]={SPAN("mapa"),SPAN("mapa")};struct rfl_node q=nodes[0];q.tokens=dup;q.token_count=2;

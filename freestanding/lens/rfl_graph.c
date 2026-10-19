@@ -28,9 +28,10 @@ enum rfl_status rfl_reach(const struct rfl_edge *edges,unsigned edge_count,
  unsigned i,d;unsigned char frontier[64],next[64];
  if(!seen||(!edges&&edge_count)||node_count>64u||!node_count||start>=node_count||
    edge_count>64u||depth>3u)return RFL_INVALID;
- for(i=0;i<node_count;i++){frontier[i]=0u;seen[i]=0u;}frontier[start]=seen[start]=1u;
+ /* Reject malformed edges before touching any caller-owned output buffer. */
  for(i=0;i<edge_count;i++)if(edges[i].from>=node_count||edges[i].to>=node_count||
    edges[i].from==edges[i].to)return RFL_INVALID;
+ for(i=0;i<node_count;i++){frontier[i]=0u;seen[i]=0u;}frontier[start]=seen[start]=1u;
  for(d=0;d<depth;d++){
    for(i=0;i<node_count;i++)next[i]=0u;
    for(i=0;i<edge_count;i++){

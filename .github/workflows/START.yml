@@ -615,6 +615,16 @@ jobs:
             echo '::error::eval is forbidden in rafandroid execution path'
             exit 1
           fi
+      - name: Raf Lens L0 freestanding exact-head gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v clang
+          command -v ld.lld
+          command -v nm
+          command -v readelf
+          sh freestanding/lens/verify_l0.sh
+
       - name: Silicon Light L0 freestanding gate
         shell: bash
         run: |
