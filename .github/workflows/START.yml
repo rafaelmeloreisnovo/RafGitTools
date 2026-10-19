@@ -563,6 +563,12 @@ jobs:
           print(f'compiled_python_files={len(files)}')
           PY
 
+      - name: BrowserRaf bounded wire C fixture (no network / no secrets)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_browser_wire_bounds.py' -v
+
       - name: Verify repository factory contracts even in fast lane
         shell: bash
         run: |
