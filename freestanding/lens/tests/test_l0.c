@@ -11,9 +11,11 @@ int main(void){unsigned char hash[32],seen[3];unsigned n,i;struct rfl_vector a,b
    {SPAN("NODE_002"),RFL_DRIVE_PRIVATE,RFL_TOKEN_VAZIO,y,3u},
    {SPAN("NODE_003"),RFL_MAPA_PUBLIC,RFL_UNVERIFIED,z,2u} };
  struct rfl_edge edges[64];
+ static const unsigned char expected_node_sha[32]={0xa2,0xef,0x31,0x9e,0xc7,0xd2,0x46,0x10,0xe7,0x74,0xfd,0xec,0x4e,0xf9,0xb8,0x6c,0xa2,0xed,0x31,0x62,0xf2,0xae,0xa4,0xb6,0x08,0x8c,0xef,0xbe,0x99,0x2a,0x32,0xbd};
  rfl_sha("",0,hash);if(!equal(hash,empty_sha,32))return 10;
  rfl_sha("abc",3,hash);if(!equal(hash,abc_sha,32))return 11;
  if(rfl_vectorize(nodes,&a)!=RFL_OK)return 12;
+ if(!equal(a.digest,expected_node_sha,32))return 21;
  {struct rfl_node q=nodes[0];q.tokens=y;if(rfl_vectorize(&q,&b)!=RFL_OK)return 13;}
  if(!equal(a.digest,b.digest,32)||!equal(a.bins,b.bins,64u))return 14;
  n=0;for(i=0;i<64;i++)n+=a.bins[i];if(n!=3u)return 15;
