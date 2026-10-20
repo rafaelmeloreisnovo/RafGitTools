@@ -1,0 +1,68 @@
+{
+  "schema": "rafgittools.chatgpt-evidence-correction-gate.contract/v1",
+  "status": "SOURCE_CONTRACT",
+  "accepted_evidence_schema": "rafaelia.chatgpt-operational-evidence/v1",
+  "evidence_semantics": {
+    "source_surface": "ChatGPT",
+    "training_use": false,
+    "dataset_use": false,
+    "operational_evidence_use": true
+  },
+  "automatic_correction": {
+    "meaning": "automatic work-branch corrective execution after deterministic evidence gates; never automatic promotion or merge",
+    "allowed_actions": [
+      "DRY_RUN",
+      "WORK_BRANCH_PATCH",
+      "RUN_FALSIFIER",
+      "RUN_REGRESSION_GATES",
+      "EMIT_APPEND_ONLY_RECEIPT",
+      "ROLLBACK_IF_REQUIRED"
+    ],
+    "forbidden_actions": [
+      "DIRECT_MAIN_WRITE",
+      "FORCE_PUSH",
+      "REMOTE_DELETE",
+      "AUTO_MERGE",
+      "CLAIM_PROMOTION"
+    ],
+    "required": [
+      "validated_operational_evidence",
+      "explicit_target",
+      "exact_source_revision",
+      "deterministic_reproducer_or_falsifier",
+      "root_cause_evidence",
+      "bounded_patch",
+      "rollback_condition",
+      "pre_patch_receipt",
+      "required_post_patch_tests",
+      "non_regression_invariants"
+    ],
+    "pass_requires": [
+      "patch_applied_on_work_branch",
+      "exact_head_identified",
+      "falsifier_pass_after_patch",
+      "regression_gates_pass",
+      "post_patch_receipt"
+    ]
+  },
+  "states": [
+    "HOLD_EVIDENCE_ONLY",
+    "AUTO_CORRECT_ELIGIBLE",
+    "PATCH_EXECUTED_UNTESTED",
+    "PASS_CORRECTION_BOUNDED",
+    "FAIL_CORRECTION",
+    "ROLLBACK_EXECUTED",
+    "BLOCKED"
+  ],
+  "invariants": [
+    "SESSION_CONTEXT != TRAINING_DATASET",
+    "OBSERVATION != ROOT_CAUSE",
+    "CORRECTION_CANDIDATE != CORRECTION_PASS",
+    "IMPLEMENTED_UNTESTED != PASS",
+    "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "AUTO_CORRECT != AUTO_MERGE",
+    "AUTO_CORRECT != CLAIM_PROMOTION",
+    "ROLLBACK_REQUIRED"
+  ],
+  "claim_allowed": false
+}
