@@ -58,6 +58,21 @@ class FederatedLensCoreTest {
         } catch (_: IllegalArgumentException) { }
     }
 
+    @Test fun capacityBoundaryDistinguishesCompleteFromTruncated() {
+        val pair = listOf(node("NODE_001", listOf("a")), node("NODE_002", listOf("a")))
+        assertFalse(FederatedLensCore.candidateResult(pair, 1).truncated)
+        assertTrue(FederatedLensCore.candidateResult(pair, 0).truncated)
+        assertFalse(FederatedLensCore.candidateResult(listOf(pair[0]), 0).truncated)
+        val dense = (0 until 12).map { node("NODE_" + it.toString().padStart(3, '0'), listOf("a")) }
+        val preview = FederatedLensCore.candidateResult(dense)
+        assertEquals(64, preview.edges.size)
+        assertTrue(preview.truncated) // 12 choose 2 = 66, not 64.
+        try {
+            FederatedLensCore.lexicalReach(dense, "NODE_000")
+            fail("partial graph must not support a complete reachability claim")
+        } catch (_: IllegalArgumentException) { }
+    }
+
     @Test fun duplicatesFailClosed() {
         try {
             FederatedLensCore.candidates(listOf(node("NODE_001", listOf("mapa")),
