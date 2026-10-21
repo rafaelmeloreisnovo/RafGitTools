@@ -623,6 +623,13 @@ jobs:
           make -C native/silicon_light_v1 host-test audit HOST_CC=clang NM=nm READELF=readelf
           make -C native/silicon_light_v1 clean
 
+      - name: RAFAELIA Authorial Keyboard L0 ARMv7 + AArch64 gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C native/authorial_keyboard_l0 clean all CLANG=clang
+          make -C native/authorial_keyboard_l0 clean
+
       - name: Omega Hypervisor L0 freestanding gate
         shell: bash
         run: |
