@@ -243,9 +243,13 @@ static s32 DO_FETCH(BCtx*ctx){
     }
     PS("  Status HTTP: ");PN(ctx->status);
 
-    /* Content-Length */
-    const u8*clv=HTTP_FIND_HEADER(_NB,total,"Content-Length");
-    if(clv)ctx->content_len=STR2U32(clv,16u);
+    /* Content-Length: distinguish absent, malformed and fully parsed. */
+    s32 cl_state=HTTP_CONTENT_LENGTH(_NB,total,&ctx->content_len);
+    if(cl_state<0){
+        FF_SET(ctx->flags,FL_ERROR);
+        STATUS(ctx->flags,"Content-Length invalido");
+        goto done;
+    }
     PS("  Content-Length: ");PN(ctx->content_len);
 
     /* ── FASE 6: Render HTML ─────────────────────────────────────────── */
@@ -260,7 +264,15 @@ static s32 DO_FETCH(BCtx*ctx){
         goto done;
     }
     u32 body_len=total-body_off;
-    if(body_len&&HTTP_IS_CHUNKED(_NB,body_off)){
+    u8 is_chunked=HTTP_IS_CHUNKED(_NB,body_off);
+    /* Concurrent chunked framing and Content-Length is ambiguous:
+     * do not guess which one controls the response body. */
+    if(is_chunked&&cl_state==1){
+        FF_SET(ctx->flags,FL_ERROR);
+        STATUS(ctx->flags,"Framing HTTP ambiguo");
+        goto done;
+    }
+    if(is_chunked){
         u32 dec=HTTP_DECHUNK(_NB+body_off,body_len);
         if(dec==0xFFFFFFFFu){
             FF_SET(ctx->flags,FL_ERROR);
@@ -268,6 +280,10 @@ static s32 DO_FETCH(BCtx*ctx){
             goto done;
         }
         body_len=dec;
+    }else if(cl_state==1&&body_len!=ctx->content_len){
+        FF_SET(ctx->flags,FL_ERROR);
+        STATUS(ctx->flags,"Content-Length divergente do body recebido");
+        goto done;
     }
     STATUS(ctx->flags,"Renderizando HTML...");
     PS("  Body: ");PN(body_len);PS("B\n");
