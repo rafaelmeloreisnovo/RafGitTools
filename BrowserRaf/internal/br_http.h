@@ -170,7 +170,9 @@ static u32 HTTP_DECHUNK(u8*buf,u32 n){
         }
 
         if(sz>n-r)return 0xFFFFFFFFu; /* subtraction avoids unsigned wrap */
-        MC(buf+w,buf+r,sz);
+        /* In-place dechunk writes below source (w<=r). MC copies backwards,
+         * which corrupts overlapping ranges when dest<src. Move forwards. */
+        for(u32 i=0u;i<sz;i++)buf[w+i]=buf[r+i];
         w+=sz;
         r+=sz;
 
