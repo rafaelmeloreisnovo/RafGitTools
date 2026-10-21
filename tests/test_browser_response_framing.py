@@ -23,9 +23,9 @@ int main(void){
     const u8 corrupt[] = "HTTP/1.1 200 OK\r\nContent-Length: 3junk\r\n\r\n";
     const u8 empty[] = "HTTP/1.1 204 No Content\r\n\r\n";
     const u8 ch[] = "4\r\nWiki\r\n0\r\n\r\n";
-    const u8 badsize[] = "ffffffff\r\nx\r\n";
-    const u8 truncated[] = "4\r\nWiki\r\n0\r\n";
-    const u8 trailer[] = "4\r\nWiki\r\n0\r\nTrailer: no\r\n\r\n";
+    u8 badsize[] = "ffffffff\r\nx\r\n";
+    u8 truncated[] = "4\r\nWiki\r\n0\r\n";
+    u8 trailer[] = "4\r\nWiki\r\n0\r\nTrailer: no\r\n\r\n";
     u32 length=0u;
     if(HTTP_HEADERS_END(ok,LEN(ok))!=LEN(ok)-4u)return 1;
     if(HTTP_HEADERS_END(missing,LEN(missing))!=0u)return 2;
@@ -41,10 +41,9 @@ int main(void){
     for(u32 i=0;i<LEN(ch);i++)wire[i]=ch[i];
     if(HTTP_DECHUNK(wire,LEN(ch))!=4u)return 10;
     if(wire[0]!='W'||wire[1]!='i'||wire[2]!='k'||wire[3]!='i')return 11;
-    for(u32 i=0;i<LEN(badsize);i++)wire[i]=0u; /* reset fixture */
-    if(HTTP_DECHUNK((u8*)badsize,LEN(badsize))!=0xFFFFFFFFu)return 12;
-    if(HTTP_DECHUNK((u8*)truncated,LEN(truncated))!=0xFFFFFFFFu)return 13;
-    if(HTTP_DECHUNK((u8*)trailer,LEN(trailer))!=0xFFFFFFFFu)return 14;
+    if(HTTP_DECHUNK(badsize,LEN(badsize))!=0xFFFFFFFFu)return 12;
+    if(HTTP_DECHUNK(truncated,LEN(truncated))!=0xFFFFFFFFu)return 13;
+    if(HTTP_DECHUNK(trailer,LEN(trailer))!=0xFFFFFFFFu)return 14;
     return 0;
 }
 '''
