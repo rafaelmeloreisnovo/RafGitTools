@@ -135,11 +135,15 @@ static u32 HTTP_DECHUNK(u8*buf,u32 n){
         r++;
 
         if(sz==0u){
-            if(r+1u<n&&buf[r]=='\r'&&buf[r+1u]=='\n')r+=2u;
+            if(r+1u>=n||buf[r]!='\r'||buf[r+1u]!='\n')return 0xFFFFFFFFu;
+            /* Only an explicit terminal CRLF is accepted here. Trailer
+             * support is deliberately NOT implied by this subset parser. */
+            r+=2u;
+            if(r!=n)return 0xFFFFFFFFu;
             return w;
         }
 
-        if(r+sz>n)return 0xFFFFFFFFu;
+        if(sz>n-r)return 0xFFFFFFFFu; /* subtraction avoids unsigned wrap */
         MC(buf+w,buf+r,sz);
         w+=sz;
         r+=sz;
@@ -154,5 +158,5 @@ static u32 HTTP_HEADERS_END(const u8*buf,u32 n){
         if(buf[i]=='\r'&&buf[i+1]=='\n'&&buf[i+2]=='\r'&&buf[i+3]=='\n')
             return i+4u;
     }
-    return n; /* headers não terminados ainda */
+    return 0u; /* incomplete header: reject, not a zero-length page */
 }
