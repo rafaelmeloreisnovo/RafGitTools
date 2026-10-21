@@ -37,6 +37,8 @@ data class LensEdge(
     val relation: String = "LEXICAL_CANDIDATE_NOT_CAUSAL"
 )
 
+data class LensCandidates(val edges: List<LensEdge>, val truncated: Boolean)
+
 object FederatedLensCore {
     const val MAX_NODES = 64
     const val MAX_TOKENS = 16
@@ -89,7 +91,11 @@ object FederatedLensCore {
      * Bounded pairwise candidate search. No correlation-to-causation promotion.
      * Private-public candidate edges remain local and must NOT be published.
      */
-    fun candidates(nodes: List<LensNode>, budget: Int = MAX_PAIRS): List<LensEdge> {
+    fun candidates(nodes: List<LensNode>, budget: Int = MAX_PAIRS): List<LensEdge> =
+        candidateResult(nodes, budget).edges
+
+    /** Preview may be partial; reachability must reject an incomplete graph. */
+    fun candidateResult(nodes: List<LensNode>, budget: Int = MAX_PAIRS): LensCandidates {
         require(nodes.size <= MAX_NODES) { "excesso de nós" }
         require(nodes.map { it.logicalId }.distinct().size == nodes.size) { "ID duplicado" }
         nodes.forEach(::validate)
@@ -97,16 +103,16 @@ object FederatedLensCore {
         val safeBudget = budget.coerceIn(0, MAX_PAIRS)
         for (i in nodes.indices) {
             for (j in i + 1 until nodes.size) {
-                if (result.size >= safeBudget) return result
                 val left = nodes[i].tokens.toSet()
                 val right = nodes[j].tokens.toSet()
                 val intersection = left.intersect(right).size
                 if (intersection == 0) continue
+                if (result.size >= safeBudget) return LensCandidates(result, truncated = true)
                 val union = left.union(right).size
                 result.add(LensEdge(nodes[i].logicalId, nodes[j].logicalId, intersection, union))
             }
         }
-        return result
+        return LensCandidates(result, truncated = false)
     }
 
     /**
@@ -116,7 +122,9 @@ object FederatedLensCore {
     fun lexicalReach(nodes: List<LensNode>, startId: String, maxDepth: Int = 3): List<String> {
         require(maxDepth in 0..3) { "depth outside 0..3" }
         require(nodes.any { it.logicalId == startId }) { "unknown start ID" }
-        val edges = candidates(nodes)
+        val graph = candidateResult(nodes)
+        require(!graph.truncated) { "RFL_CAPACITY: incomplete candidate graph" }
+        val edges = graph.edges
         val seen = LinkedHashSet<String>()
         seen.add(startId)
         var frontier = listOf(startId)
