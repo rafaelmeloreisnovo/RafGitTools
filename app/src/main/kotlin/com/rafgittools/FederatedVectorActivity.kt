@@ -172,12 +172,17 @@ private fun FederatedVectorScreen(onBack: () -> Unit) {
                 }
             }
             item {
-                val edges = FederatedLensCore.candidates(nodes.toList())
+                val graph = FederatedLensCore.candidateResult(nodes.toList())
+                val edges = graph.edges
                 Text("Nós ${nodes.size} · relações lexicais candidatas ${edges.size}/64",
                     style = MaterialTheme.typography.titleSmall)
                 Text("Relações são somente sobreposição de tokens; não implicam causalidade, verdade ou validade científica.",
                     style = MaterialTheme.typography.bodySmall)
-                if (nodes.isNotEmpty()) {
+                if (graph.truncated) {
+                    Text("HOLD: mais de 64 relações; prévia parcial. Alcance não calculado.",
+                        style = MaterialTheme.typography.bodySmall)
+                }
+                if (nodes.isNotEmpty() && !graph.truncated) {
                     val affected = FederatedLensCore.lexicalReach(nodes.toList(), nodes.first().logicalId)
                     Text("Efeito dominó estrutural · semente=${nodes.first().logicalId} · " +
                         "alcançáveis até 3 saltos=${affected.size}/${nodes.size} · NÃO causal",
