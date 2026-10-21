@@ -630,6 +630,19 @@ jobs:
           make -C native/authorial_keyboard_l0 clean all CLANG=clang
           make -C native/authorial_keyboard_l0 clean
 
+      - name: RAFAELIA Authorial Keyboard L1 pixel and edit host gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 native/authorial_keyboard_l0/tests/check_panel.py
+          for target in armv7a-linux-androideabi24 aarch64-linux-android24; do
+            obj="$RUNNER_TEMP/rafkbd-panel-$target.o"
+            clang --target="$target" -std=c11 -O2 -ffreestanding -fno-builtin -nostdinc \
+              -Inative/authorial_keyboard_l0/src -c \
+              native/authorial_keyboard_l0/src/rafkbd_panel.c -o "$obj"
+            test "$(nm -u "$obj" | sed -n 's/^[[:space:]]*U[[:space:]]*//p')" = rafkbd_l0_probe
+          done
+
       - name: Omega Hypervisor L0 freestanding gate
         shell: bash
         run: |
@@ -891,6 +904,19 @@ jobs:
           tools/rafandroid/rafandroid apk-gate "$APK"
           sha256sum "$APK" | tee "$RUNNER_TEMP/rafandroid-silicon-fixture.sha256"
 
+      - name: RAFAELIA Authorial Keyboard native demo APK gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEMO="native/authorial_keyboard_l0/android-demo"
+          ./gradlew --no-daemon -p "$DEMO" assembleDebug --stacktrace
+          APK="$DEMO/build/outputs/apk/debug/android-demo-debug.apk"
+          test -s "$APK"
+          unzip -l "$APK" | grep -q 'lib/armeabi-v7a/librafkbd_demo.so'
+          unzip -l "$APK" | grep -q 'lib/arm64-v8a/librafkbd_demo.so'
+          sha256sum "$APK" | tee "$RUNNER_TEMP/rafkbd-demo.sha256"
+          tools/rafandroid/rafandroid apk-gate "$APK"
+
       - name: Unit tests
         run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
       - name: Compile device route instrumentation APK
@@ -916,6 +942,7 @@ jobs:
           path: |
             app/build/outputs/apk/dev/debug/*.apk
             app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+            native/authorial_keyboard_l0/android-demo/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 30
       - name: Upload Android diagnostics
