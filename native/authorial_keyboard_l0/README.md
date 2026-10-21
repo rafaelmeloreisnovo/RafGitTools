@@ -49,3 +49,17 @@ P0: independent review of license/authorship and compiler/readelf results. P1: m
 **Rollback:** close the unmerged draft branch; main unchanged. Preserve predecessor commits; new corrections supersede instead of silently deleting.
 
 **R3:** `F_ok`=separate ARMv7/AArch64 L0 source + hosted object gate; `F_gap`=ISA emulator/device, L1/L2 display/input, full browser; `F_next`=exact-head Coherence CI and independent review before the Android adapter.
+
+## V2 isolated visual/text extension — no promotion
+A bounded **native on-screen keypad demonstrator** has been added, not a replacement for Android IME, BrowserRaf, or the Android RafGitTools app. The one-way route is:
+
+- L0: independent ARMv7/AArch64 register decoder in `src/keyboard_*.S`. Same 50-byte literal layout; no system services.
+- L1: `src/rafkbd_panel.c` draws RGBA8888 keys using handwritten 5x7 glyph bytes and appends/erases text in a *caller-owned* 256-byte buffer. Uses no heap, libc or Android headers. C parameters/local scalars and control flow exist in L1 and are **not** mislabelled assembler-only or symbol-free.
+- L2: `android-demo/src/main/jni/rafkbd_activity.c` uses **documented Android NDK NativeActivity, AInputQueue, ALooper and ANativeWindow APIs**. These platform contracts are external Android/system obligations and are never called from L0/L1. No application-defined Java/Kotlin classes, internet permission, external keyboard, cloud account access, or JavaScript.
+- L3: the repository `START.yml` fast/Coherence lane runs the L1 host edit/raster/canary checks and cross-ABI object inspection. The full Android lane builds an isolated **unsigned/debug candidate** with `./gradlew --no-daemon -p native/authorial_keyboard_l0/android-demo assembleDebug`, checks both native ABIs, APK format and SHA. CI build evidence does not equal physical touchscreen execution.
+
+Input: bottom-half touches map to virtual 320×160 key coordinates (10×5). Top half renders plain ASCII text. Backspace deletes one byte, Tab inserts a space, Enter writes LF; attempts outside bounds are ignored; the keyboard draws a simple direct pixel grid and no system IME. The five spaces on row 5 produce the same output, intentionally. Direct text rendering has **no persistence** and no export to browser accounts.
+
+**P0 unresolved:** physical ARM32/ARM64 launch/tap/background/resume, signed/installable device artifact, accessibility/Portuguese accents, production-grade IME, secure browser login/session and independent review/provider enforcement. Keep `claim_allowed=false` and `release_allowed=false`. If Android NativeActivity link/build fails, keep that failed exact-head evidence; repair the narrow source without bypassing existing pipeline steps or deleting earlier receipts. Root project GPL-3.0-or-later remains the governing license. No claim of legal originality certification is made.
+
+**Authorial/provenance boundary:** standard API contracts and established letter placements are interoperability/functional references, not copied implementation bodies. No third-party source, font, binary, plugin, class or embedded browser code was imported into this candidate.
