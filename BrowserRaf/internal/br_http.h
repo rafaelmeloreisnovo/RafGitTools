@@ -103,6 +103,32 @@ static u32 STR2U32(const u8*s,u32 n){
     return v;
 }
 
+/* Strict bounded Content-Length: 0 absent, 1 valid, -1 malformed.
+ * Do not reuse STR2U32: HTML numeric entities need separate semantics. */
+static s32 HTTP_CONTENT_LENGTH(const u8*buf,u32 n,u32*out){
+    if(!buf||!out)return-1;
+    u32 hend=HTTP_HEADERS_END(buf,n);
+    if(!hend)return-1;
+    const u8*value=HTTP_FIND_HEADER(buf,n,"Content-Length");
+    if(!value)return 0;
+    u32 off=(u32)(value-buf);
+    u32 v=0u,digits=0u;
+    for(u32 i=off;i<hend;i++){
+        u8 c=buf[i];
+        if(c=='\r'){
+            if(!digits||i+1u>=hend||buf[i+1u]!='\n')return-1;
+            *out=v;
+            return 1;
+        }
+        if(c<'0'||c>'9')return-1;
+        u32 digit=(u32)(c-'0');
+        if(v>429496729u||(v==429496729u&&digit>5u))return-1;
+        v=v*10u+digit;
+        digits++;
+    }
+    return-1;
+}
+
 /* ── FIND END OF HEADERS ──────────────────────────────────────────────────── */
 /* Retorna offset do início do body (após \r\n\r\n) */
 
