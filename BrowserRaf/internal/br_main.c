@@ -212,16 +212,22 @@ static s32 DO_FETCH(BCtx*ctx){
     /* Acumula response em _NB */
     {
         u32 max=NET_BUF-1u;
+        u8 eof=0u;
+        u8 io_error=0u;
         while(total<max){
             s32 r=RECV(ctx->fd,(void*)(_NB+total),max-total);
-            if(r<=0)break;
+            if(r<0){io_error=1u;break;} /* timeout/error != EOF */
+            if(r==0){eof=1u;break;}
             total+=(u32)r;
         }
         _NB[total]=0;
-    }
-    if(total==0u){
-        FF_SET(ctx->flags,FL_ERROR);
-        goto done;
+        /* In a Connection:close HTTP/1.1 subset, a verified EOF is needed.
+         * At buffer capacity we cannot know whether bytes were truncated. */
+        if(io_error||!eof||total==0u){
+            FF_SET(ctx->flags,FL_ERROR);
+            STATUS(ctx->flags,"HTTP response incompleta ou erro de I/O");
+            goto done;
+        }
     }
     ctx->rx_bytes=total;
 
@@ -248,7 +254,12 @@ static s32 DO_FETCH(BCtx*ctx){
         goto done;
     }
     u32 body_off=HTTP_HEADERS_END(_NB,total);
-    u32 body_len=total>body_off?total-body_off:0u;
+    if(!body_off){
+        FF_SET(ctx->flags,FL_ERROR);
+        STATUS(ctx->flags,"HTTP headers incompletos");
+        goto done;
+    }
+    u32 body_len=total-body_off;
     if(body_len&&HTTP_IS_CHUNKED(_NB,body_off)){
         u32 dec=HTTP_DECHUNK(_NB+body_off,body_len);
         if(dec==0xFFFFFFFFu){
