@@ -922,8 +922,18 @@ jobs:
           test -x "$ALIGN"
           "$SIGNER" verify "$APK"
           "$ALIGN" -c 4 "$APK"
-          sha256sum "$APK" | tee "$RUNNER_TEMP/rafkbd-demo.sha256"
+          sha256sum "$APK" | tee "$DEMO/build/outputs/apk/debug/SHA256SUMS.txt"
           echo 'RAFKBD_NATIVE_APK_SCOPED_GATE=PASS'
+
+      - name: Publish RAFAELIA keyboard test APK (not a release)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rafaelia-keyboard-test-apk-${{ github.run_id }}
+          path: |
+            native/authorial_keyboard_l0/android-demo/build/outputs/apk/debug/*.apk
+            native/authorial_keyboard_l0/android-demo/build/outputs/apk/debug/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Unit tests
         run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
