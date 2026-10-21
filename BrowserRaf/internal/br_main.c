@@ -180,6 +180,12 @@ static s32 DO_FETCH(BCtx*ctx){
     }
 
     /* ── FASE 4: HTTP request ────────────────────────────────────────── */
+    /* DNS -> CONNECT happened, but HTTP_TX must be entered before
+     * BR_PHASE_NEXT(HTTP_TX -> HTTP_RX). Preserve strict phase gating. */
+    if(!BR_PHASE_NEXT(&ctx->flags,FL_CONNECT,FL_HTTP_TX,FL_CONNECT)){
+        STATUS(ctx->flags,"Estado invalido: CONNECT->HTTP_TX");
+        goto done;
+    }
     STATUS(ctx->flags,"Enviando request HTTP...");
     u32 reqlen=HTTP_BUILD_REQ(ctx->host,ctx->path,_NB,NET_BUF);
     if(!reqlen){
