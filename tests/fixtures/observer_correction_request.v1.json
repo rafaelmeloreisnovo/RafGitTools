@@ -1,0 +1,33 @@
+{
+  "schema": "rafgittools.observer-correction-request/v1",
+  "explicit_target": {
+    "repository": "owner/repo",
+    "path": "src/module.py"
+  },
+  "exact_source_revision": "cccccccccccccccccccccccccccccccccccccccc",
+  "deterministic_reproducer_or_falsifier": {
+    "id": "BUG-F-001",
+    "command": "python -m unittest tests.test_bug"
+  },
+  "root_cause_evidence": {
+    "state": "REPRODUCED",
+    "receipt": "root-cause-receipt"
+  },
+  "bounded_patch": {
+    "work_branch_only": true,
+    "direct_main_write": false,
+    "force_push": false,
+    "remote_delete": false,
+    "auto_merge": false,
+    "auto_claim_promotion": false
+  },
+  "pre_patch_receipt": "receipt:pre",
+  "rollback_condition": "revert bounded patch if falsifier or regression fails",
+  "required_post_patch_tests": [
+    "BUG-F-001",
+    "regression-suite"
+  ],
+  "non_regression_invariants": [
+    "SOURCE!=ARTIFACT!=EXECUTION!=EVIDENCE!=CLAIM"
+  ]
+}
