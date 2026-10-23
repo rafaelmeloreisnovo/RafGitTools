@@ -105,6 +105,20 @@
             </intent-filter>
         </activity>
 
+        <!-- Local metadata-only federation lens. SAF picker is user-initiated.
+             No PAT, network dispatch or provider write permission. -->
+        <activity
+            android:name=".FederatedVectorActivity"
+            android:exported="true"
+            android:label="Raf Lens"
+            android:theme="@style/Theme.RafGitTools"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <!-- Read-only GitHub virtual storage surface. Separate launcher entry keeps
              Prompt 4 independent from the existing MainActivity navigation graph. -->
         <activity
