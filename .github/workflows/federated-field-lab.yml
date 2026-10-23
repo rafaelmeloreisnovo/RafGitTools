@@ -1,0 +1,81 @@
+name: Field Lab | federated controls (secretless, no promotion)
+
+on:
+  pull_request:
+    paths:
+      - 'configs/federated-field-lab.v1.json'
+      - 'scripts/federated_field_lab.py'
+      - 'tests/test_federated_field_lab.py'
+      - 'docs/federation/FEDERATED_FIELD_LAB_V1.md'
+      - '.github/workflows/federated-field-lab.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'configs/federated-field-lab.v1.json'
+      - 'scripts/federated_field_lab.py'
+      - 'tests/test_federated_field_lab.py'
+      - 'docs/federation/FEDERATED_FIELD_LAB_V1.md'
+      - '.github/workflows/federated-field-lab.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: field-lab-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract-and-falsifiers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact PR head, without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Prove checked-out SHA identity
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          printf 'EXACT_HEAD=%s\n' "$EXPECTED_SHA"
+
+      - name: Run negative control tests (stdlib only)
+        run: python3 -m unittest -v tests.test_federated_field_lab
+
+      - name: Evaluate federation without executing remote code or secrets
+        run: |
+          python3 scripts/federated_field_lab.py \
+            --contract configs/federated-field-lab.v1.json \
+            --receipt artifacts/federated-field-lab/receipt.json
+
+      - name: Assert nonpromotable artifact and privacy boundary
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d = json.loads(Path('artifacts/federated-field-lab/receipt.json').read_text())
+          assert d['result'] == 'PASS_SCOPED_CONTRACT_ONLY'
+          assert d['claim_allowed'] is False and d['release_allowed'] is False
+          assert d['private_source_exported'] is False
+          assert d['remote_code_executed'] is False and d['device_executed'] is False
+          assert d['private_access'] == 'TOKEN_VAZIO_NOT_RUN'
+          print('FIELD_LAB_CONTRACT=PASS_SCOPED_NO_REMOTE_EXECUTION')
+          PY
+
+      - name: Upload sanitized bounded receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: field-lab-contract-${{ github.run_id }}
+          path: artifacts/federated-field-lab/receipt.json
+          if-no-files-found: warn
+          retention-days: 14
+
+# Only the pre-existing trusted START workflow has a separately governed,
+# manual private-ci lane. NEVER import a PAT into this PR-triggered workflow.
