@@ -623,6 +623,26 @@ jobs:
           make -C native/silicon_light_v1 host-test audit HOST_CC=clang NM=nm READELF=readelf
           make -C native/silicon_light_v1 clean
 
+      - name: RAFAELIA Authorial Keyboard L0 ARMv7 + AArch64 gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C native/authorial_keyboard_l0 clean all CLANG=clang
+          make -C native/authorial_keyboard_l0 clean
+
+      - name: RAFAELIA Authorial Keyboard L1 pixel and edit host gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 native/authorial_keyboard_l0/tests/check_panel.py
+          for target in armv7a-linux-androideabi24 aarch64-linux-android24; do
+            obj="$RUNNER_TEMP/rafkbd-panel-$target.o"
+            clang --target="$target" -std=c11 -O2 -ffreestanding -fno-builtin -nostdinc \
+              -Inative/authorial_keyboard_l0/src -c \
+              native/authorial_keyboard_l0/src/rafkbd_panel.c -o "$obj"
+            test "$(nm -u "$obj" | sed -n 's/^[[:space:]]*U[[:space:]]*//p')" = rafkbd_l0_probe
+          done
+
       - name: Omega Hypervisor L0 freestanding gate
         shell: bash
         run: |
@@ -884,6 +904,37 @@ jobs:
           tools/rafandroid/rafandroid apk-gate "$APK"
           sha256sum "$APK" | tee "$RUNNER_TEMP/rafandroid-silicon-fixture.sha256"
 
+      - name: RAFAELIA Authorial Keyboard native demo APK gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEMO="native/authorial_keyboard_l0/android-demo"
+          ./gradlew --no-daemon -p "$DEMO" assembleDebug --stacktrace
+          APK="$(find "$DEMO/build/outputs/apk/debug" -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          test -s "$APK"
+          unzip -l "$APK" | grep -q 'lib/armeabi-v7a/librafkbd_demo.so'
+          unzip -l "$APK" | grep -q 'lib/arm64-v8a/librafkbd_demo.so'
+          unzip -Z1 "$APK" | grep -Fxq 'AndroidManifest.xml'
+          SIGNER="$(find "$ANDROID_SDK_ROOT/build-tools" -mindepth 2 -maxdepth 2 -type f -name apksigner | sort -V | tail -1)"
+          ALIGN="$(find "$ANDROID_SDK_ROOT/build-tools" -mindepth 2 -maxdepth 2 -type f -name zipalign | sort -V | tail -1)"
+          test -x "$SIGNER"
+          test -x "$ALIGN"
+          "$SIGNER" verify "$APK"
+          "$ALIGN" -c 4 "$APK"
+          sha256sum "$APK" | tee "$DEMO/build/outputs/apk/debug/SHA256SUMS.txt"
+          echo 'RAFKBD_NATIVE_APK_SCOPED_GATE=PASS'
+
+      - name: Publish RAFAELIA keyboard test APK (not a release)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rafaelia-keyboard-test-apk-${{ github.run_id }}
+          path: |
+            native/authorial_keyboard_l0/android-demo/build/outputs/apk/debug/*.apk
+            native/authorial_keyboard_l0/android-demo/build/outputs/apk/debug/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Unit tests
         run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
       - name: Compile device route instrumentation APK
@@ -909,6 +960,7 @@ jobs:
           path: |
             app/build/outputs/apk/dev/debug/*.apk
             app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+            native/authorial_keyboard_l0/android-demo/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 30
       - name: Upload Android diagnostics
