@@ -29,3 +29,9 @@ runs:
           --base-ref "${{ inputs.base-ref }}" \
           --output "${{ inputs.output-json }}" \
           --summary
+
+    - name: Validate Commit Evidence Gate source contract
+      shell: bash
+      run: |
+        set -euo pipefail
+        python3 "$GITHUB_WORKSPACE/scripts/validate_commit_evidence_gate_v1.py"

@@ -27,6 +27,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -40,6 +43,17 @@ fun WorkspaceEditorScreen(
     viewModel: WorkspaceEditorViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var showEvidenceGate by rememberSaveable { mutableStateOf(false) }
+
+    if (showEvidenceGate) {
+        CommitEvidenceGateScreen(
+            repositoryFullName = viewModel.repositoryFullName,
+            refName = viewModel.refName,
+            state = state,
+            onNavigateBack = { showEvidenceGate = false }
+        )
+        return
+    }
 
     Scaffold(
         topBar = {
@@ -86,6 +100,13 @@ fun WorkspaceEditorScreen(
                             "GitHub writes are limited to a generated rafgitfs/* branch and a draft pull request.",
                             style = MaterialTheme.typography.bodySmall
                         )
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = { showEvidenceGate = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Open Commit Evidence Gate")
+                        }
                     }
                 }
             }

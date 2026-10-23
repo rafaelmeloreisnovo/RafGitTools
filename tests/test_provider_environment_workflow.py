@@ -13,19 +13,64 @@ class ProviderEnvironmentWorkflowTests(unittest.TestCase):
         cls.text = WORKFLOW.read_text(encoding="utf-8")
         cls.river7_validator = RIVER7_VALIDATOR.read_text(encoding="utf-8")
 
+    @classmethod
+    def provider_environments_lane(cls) -> str:
+        return cls.text.split("\n  provider_environments:\n", 1)[1].split("\n  release:\n", 1)[0]
+
     def test_provider_environment_lane_is_bounded_to_manual_or_owner_main_one_shot(self):
-        self.assertIn("- provider_environments", self.text)
-        self.assertIn("github.event_name == 'workflow_dispatch'", self.text)
-        self.assertIn("github.actor == 'rafaelmeloreisnovo'", self.text)
-        self.assertIn("github.ref == 'refs/heads/main'", self.text)
+        lane = self.provider_environments_lane()
+        self.assertIn("needs.plan.outputs.provider_environments == 'true'", lane)
+        self.assertIn("github.event_name == 'workflow_dispatch'", lane)
+        self.assertIn("github.actor == 'rafaelmeloreisnovo'", lane)
+        self.assertIn("github.ref == 'refs/heads/main'", lane)
         self.assertIn("configs/provider-environment-preflight.once.json", self.text)
         self.assertIn("configs/provider-enforcement-stage1.once.json", self.text)
+
+    def test_manual_pat_environment_requires_owner_actor_and_main_at_job_entry(self):
+        lane = self.provider_environments_lane()
+        guard = lane.split("    if: >-", 1)[1].split("    runs-on:", 1)[0]
+        self.assertIn("github.actor == 'rafaelmeloreisnovo'", guard)
+        self.assertIn("github.ref == 'refs/heads/main'", guard)
+        self.assertIn("github.event_name == 'workflow_dispatch'", guard)
+        run_guard = lane.split("- name: Enforce manual main-only execution boundary", 1)[1]
+        self.assertIn('[[ "${GITHUB_ACTOR}" == rafaelmeloreisnovo ]]', run_guard)
+        self.assertIn("provider operation denied to non-owner workflow actor", run_guard)
+        self.assertIn("name: Pat_environments", lane)
+        self.assertIn("PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}", lane)
 
     def test_only_governed_provider_pats_are_injected_into_active_start(self):
         self.assertIn("PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}", self.text)
         self.assertIn("PROVIDER_ACTIONS_TOKEN: ${{ secrets.PAT_ACTIONS }}", self.text)
         self.assertNotIn("PROVIDER_TOKEN: ${{ secrets.PAT_ENVIRONMENTS }}", self.text)
-        self.assertNotIn("secrets.PAT_AGENTS", self.text)
+        # PAT_AGENTS may occur only in two separately gated jobs. The
+        # repository-factory preflight remains GET-only. Promotion-hold
+        # PATCH is title-only and must never reuse PAT_ENV or PAT_ACTIONS.
+        regular_lanes, after_preflight = self.text.split(
+            "\n  repository_factory_pat_preflight:\n", 1
+        )
+        preflight_lane, hold_lane = after_preflight.split(
+            "\n  promotion_hold_pat_agent:\n", 1
+        )
+        self.assertNotIn("secrets.PAT_AGENTS", regular_lanes)
+        self.assertEqual(preflight_lane.count("secrets.PAT_AGENTS"), 1)
+        self.assertEqual(hold_lane.count("secrets.PAT_AGENTS"), 1)
+        self.assertEqual(self.text.count("secrets.PAT_AGENTS"), 2)
+        self.assertIn("RAFAELIA_PREFLIGHT_TOKEN: ${{ secrets.PAT_AGENTS }}", preflight_lane)
+        self.assertIn("github.event_name == 'workflow_dispatch'", preflight_lane)
+        self.assertIn("github.ref == 'refs/heads/main'", preflight_lane)
+        self.assertIn("github.actor == 'rafaelmeloreisnovo'", preflight_lane)
+        self.assertIn("needs.plan.outputs.mode == 'repository_factory_pat_preflight'", preflight_lane)
+        self.assertIn("name: Pat_environments", preflight_lane)
+        self.assertIn("RAFAELIA_AGENTS_TOKEN: ${{ secrets.PAT_AGENTS }}", hold_lane)
+        self.assertIn("needs.plan.outputs.mode == 'promotion_hold_pat'", hold_lane)
+        self.assertIn("github.event_name == 'workflow_dispatch'", hold_lane)
+        self.assertIn("github.ref == 'refs/heads/main'", hold_lane)
+        self.assertIn("github.actor == 'rafaelmeloreisnovo'", hold_lane)
+        self.assertIn("name: Pat_environments", hold_lane)
+        self.assertIn("deployment: false", hold_lane)
+        self.assertIn("promotion_hold_pat_agent_v1.py", hold_lane)
+        for other_secret in ("PAT_ENV", "PAT_ACTIONS", "PAT_ENVIRONMENTS"):
+            self.assertNotIn("secrets." + other_secret, hold_lane)
         self.assertNotIn("secrets.PAT_CODESPACES", self.text)
         self.assertNotIn("secrets.PAT_DEPENDABOT", self.text)
 
@@ -66,6 +111,9 @@ class ProviderEnvironmentWorkflowTests(unittest.TestCase):
         self.assertIn("MAIN_PROVIDER_ENFORCEMENT_PLAN_20260927.v4.json", self.text)
         self.assertIn("provider-main-enforcement.json", self.text)
         self.assertIn("scripts/apply_rafgittools_main_protection.py", self.text)
+        self.assertIn("expected_target_sha", self.text)
+        self.assertIn("rafaelmeloreisnovo/RafPolimata", self.text)
+        self.assertIn("target_plan", self.text)
 
 if __name__ == "__main__":
     unittest.main()

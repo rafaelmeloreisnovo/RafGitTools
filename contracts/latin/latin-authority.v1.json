@@ -1,0 +1,90 @@
+{
+  "schema": "rafaelia.latin.authority.v1",
+  "owner": "rafaelmeloreisnovo/RafGitTools",
+  "producer": "rafaelmeloreisnovo/RafPolimata",
+  "consumer": "instituto-Rafael/relativity-living-light",
+  "lowfala_owner": "rafaelmeloreisnovo/ChipQuantum",
+  "scope": "metadata_graph_json_only",
+  "execution_mode": "READ_ONLY_CI",
+  "github_authorization": "TOKEN_VAZIO_PROVIDER_AND_HUMAN",
+  "private_source": "TOKEN_VAZIO_PRIVATE_POINTER_ONLY",
+  "capabilities": {
+    "PAT_ACTIONS": "READ_ONLY_ALREADY_BOUNDED",
+    "PAT_AGENTS": "TOKEN_VAZIO_PROVIDER_PERMISSION",
+    "PAT_ENV": "MANUAL_ADMINISTRATION_ROUTE_NOT_GRANTED_TO_THIS_WORKFLOW",
+    "PAT_ENVIRONMENTS": "DISTINCT_UNBOUND_IDENTITY",
+    "RLL_GITPAT": "SEPARATE_MANUAL_READ_ASSURANCE_ONLY",
+    "K_SECRETS": "TOKEN_VAZIO_NO_VERIFIED_GITHUB_PATCH_OR_PROVIDER_BINDING"
+  },
+  "required_gates": [
+    "SOURCE_LICENSE_AND_AUTHORSHIP",
+    "SANITIZED_METADATA_NO_CORPUS",
+    "GITHUB_HUMAN_PR_APPROVAL",
+    "PROTECTED_RULESET_READBACK",
+    "NEGATIVE_REJECTION_PROOF",
+    "EXACT_HEAD_CI",
+    "ARTIFACT_SHA256",
+    "LOWFALA_IR_ABI_PARITY",
+    "INDEPENDENT_SCIENTIFIC_FALSIFIER",
+    "PRIVACY_REVIEW",
+    "ROLLBACK_REPLAY"
+  ],
+  "security": {
+    "allow_secret_fallback": false,
+    "log_secret_values": false,
+    "private_to_public_export": false,
+    "network_admin_calls": false,
+    "code_mutation": false,
+    "training_executed": false,
+    "auto_merge": false,
+    "auto_approve": false,
+    "auto_dispatch": false,
+    "claim_allowed": false,
+    "automatic_adoption": false
+  },
+  "normative_mapping": [
+    {
+      "ref": "NIST SP 800-218 SSDF",
+      "applicability": "secure-development-process",
+      "state": "MAPPING_ONLY_NOT_AUDITED"
+    },
+    {
+      "ref": "NIST SP 800-53",
+      "applicability": "access-control-audit-integrity",
+      "state": "MAPPING_ONLY_NOT_AUDITED"
+    },
+    {
+      "ref": "ISO/IEC 27001:2022",
+      "applicability": "security-management",
+      "state": "MAPPING_ONLY_NOT_CERTIFIED"
+    },
+    {
+      "ref": "ISO/IEC 27002:2022",
+      "applicability": "security-control-guidance",
+      "state": "MAPPING_ONLY_NOT_CERTIFIED"
+    },
+    {
+      "ref": "ISO/IEC 27701",
+      "applicability": "privacy-controls-when-relevant",
+      "state": "VERSION_AND_CLAUSES_TO_VERIFY"
+    },
+    {
+      "ref": "SLSA",
+      "applicability": "artifact-provenance",
+      "state": "MAPPING_ONLY_NOT_COMPLIANT"
+    },
+    {
+      "ref": "BCP 47 RFC 5646 / Unicode UAX #15 #29",
+      "applicability": "language-metadata-validation",
+      "state": "PROFILE_GAP"
+    }
+  ],
+  "memory": {
+    "destination": "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE",
+    "scope": "PRIVATE_POINTER_HASH_RECEIPT_ONLY",
+    "raw_text_upload": false,
+    "drive_copy_policy": "SEPARATE_AUTHORIZED_TASK_AFTER_READBACK",
+    "append_only": true
+  },
+  "claim_allowed": false
+}

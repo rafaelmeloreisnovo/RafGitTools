@@ -60,7 +60,8 @@ fun HomeScreen(
     onNavigateToLocalRepo: (String) -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
-    onNavigateToNotifications: () -> Unit = {}
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToActions: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
@@ -82,6 +83,9 @@ fun HomeScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 actions = {
+                    IconButton(onClick = onNavigateToActions) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = "Raf Actions")
+                    }
                     IconButton(onClick = onNavigateToSearch) {
                         Icon(Icons.Default.Search, contentDescription = "Search")
                     }

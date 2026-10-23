@@ -213,6 +213,60 @@ interface GithubApiService {
         @Body merge: MergePullRequestRequest
     ): MergeResult
     
+    // GitHub Actions control plane: snapshots != accepted requests != terminal evidence.
+    // AuthInterceptor supplies the device's existing authenticated session; no CI secret in APK.
+    @GET("repos/{owner}/{repo}/actions/workflows")
+    suspend fun listActionsWorkflows(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Query("per_page") perPage: Int = 100,
+        @Query("page") page: Int = 1
+    ): retrofit2.Response<ActionsWorkflowList>
+
+    @GET("repos/{owner}/{repo}/actions/runs")
+    suspend fun listActionsRuns(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Query("per_page") perPage: Int = 50,
+        @Query("page") page: Int = 1
+    ): retrofit2.Response<ActionsRunList>
+
+    @GET("repos/{owner}/{repo}/actions/runs/{run_id}")
+    suspend fun getActionsRun(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("run_id") runId: Long
+    ): retrofit2.Response<ActionsRun>
+
+    @POST("repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches")
+    suspend fun dispatchActionsWorkflow(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("workflow_id") workflowId: Long,
+        @Body request: WorkflowDispatchRequest
+    ): retrofit2.Response<Unit>
+
+    @POST("repos/{owner}/{repo}/actions/runs/{run_id}/cancel")
+    suspend fun cancelActionsRun(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("run_id") runId: Long
+    ): retrofit2.Response<Unit>
+
+    @POST("repos/{owner}/{repo}/actions/runs/{run_id}/rerun")
+    suspend fun rerunActionsRun(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("run_id") runId: Long
+    ): retrofit2.Response<Unit>
+
+    @POST("repos/{owner}/{repo}/actions/runs/{run_id}/rerun-failed-jobs")
+    suspend fun rerunFailedActionsJobs(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("run_id") runId: Long
+    ): retrofit2.Response<Unit>
+
     // Releases
     @GET("repos/{owner}/{repo}/releases")
     suspend fun getReleases(

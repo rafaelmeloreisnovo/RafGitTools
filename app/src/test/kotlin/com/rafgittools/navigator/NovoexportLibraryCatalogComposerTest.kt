@@ -125,6 +125,56 @@ class NovoexportLibraryCatalogComposerTest {
     }
 
     @Test
+    fun excludesOwnMaterializedCatalogOutputsFromSourceProjection() {
+        val tree = "content://example.provider/tree/root"
+        val rootId = "root"
+        val catalog = NovoexportSafInventory.Entry(
+            uri = "content://example.provider/document/catalog",
+            documentId = "catalog",
+            name = "CAT-NOVO-4df16e6588727f6c0e12-1791352188644.catalog.json",
+            mimeType = "application/json",
+            sizeBytes = 4098L,
+            parentDocumentId = rootId
+        )
+        val receipt = NovoexportSafInventory.Entry(
+            uri = "content://example.provider/document/receipt",
+            documentId = "receipt",
+            name = "CAT-NOVO-4df16e6588727f6c0e12-1791352188644.receipt.json",
+            mimeType = "application/json",
+            sizeBytes = 613L,
+            parentDocumentId = rootId
+        )
+        val source = NovoexportSafInventory.Entry(
+            uri = "content://example.provider/document/source",
+            documentId = "source",
+            name = "notes.json",
+            mimeType = "application/json",
+            sizeBytes = 17L,
+            parentDocumentId = rootId
+        )
+        val inventory = NovoexportSafInventory.Result(
+            treeUri = tree,
+            visitedDocuments = 3,
+            visitedDirectories = 1,
+            candidateFiles = emptyList(),
+            knownCandidateBytes = 0L,
+            unknownSizeCandidateFiles = 0,
+            rootDocumentId = rootId,
+            allFiles = listOf(catalog, receipt, source),
+            knownTotalBytes = 4728L,
+            unknownSizeFiles = 0
+        )
+
+        val bundle = NovoexportLibraryCatalogComposer.compose(inventory, createdAtEpochMs = 42L)
+
+        assertEquals(listOf("notes.json"), bundle.items.map { it.displayName })
+        assertEquals(2, bundle.treeNodes.size)
+        assertFalse(bundle.treeNodes.any { it.displayName.startsWith("CAT-NOVO-") })
+        assertTrue(bundle.gaps.contains("CONTENT_HASH_NOT_COMPUTED"))
+        assertFalse(bundle.claimAllowed)
+    }
+
+    @Test
     fun unsupportedInventoryStateIsRejected() {
         val inventory = NovoexportSafInventory.Result(
             treeUri = "content://example.provider/tree/root",

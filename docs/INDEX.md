@@ -37,6 +37,18 @@ P0 não-compensatório
 
 `priority-selection != gap-closure != claim-promotion`. Um `TOKEN_VAZIO` bem tipado é saída válida quando identifica exatamente a fonte, autoridade, execução ou evidência ausente.
 
+
+## Federação autoral — rota P0
+
+Para conteúdo importado por autoria/proveniência, use esta rota antes de procurar no restante do corpus:
+
+- [`federation/AUTHORIAL_FEDERATION_V1.md`](federation/AUTHORIAL_FEDERATION_V1.md) — entrada humano/IA;
+- [`../configs/authorial-federation.v1.json`](../configs/authorial-federation.v1.json) — autoridade machine-readable de repo/ref/path/licença/estado;
+- [`../federation/authorial/AGENTS.md`](../federation/authorial/AGENTS.md) — contrato escopado para agentes;
+- [`../federation/authorial/README.md`](../federation/authorial/README.md) — regra de archive e promoção.
+
+Invariantes: `REPO_OWNER != AUTHOR`, `HEADER_ADDED != SOLE_AUTHORSHIP` e `IMPORTED != INTEGRATED != TESTED != PASS`. Direitos/licença são resolvidos por caminho antes de qualquer adaptação.
+
 ## Rota gradual ética / exegese
 
 Quando a intenção cruzar ética, Novo Testamento, linguagem, história e interpretação, use [`navigation/LOVE_NEIGHBOR_EXEGESIS_ROUTE_V1.md`](navigation/LOVE_NEIGHBOR_EXEGESIS_ROUTE_V1.md).

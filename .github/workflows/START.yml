@@ -6,6 +6,7 @@ on:
     tags: ['v*.*.*']
   pull_request:
     branches: [main, develop]
+    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft]
   schedule:
     - cron: '35 3 * * *'
   workflow_dispatch:
@@ -27,6 +28,23 @@ on:
           - provider_environments
           - private_ci
           - public_data
+          - repository_factory
+          - repository_factory_pat_preflight
+          - mapa_provider_pat_preflight
+          - promotion_hold_pat
+      repository_factory_owner:
+        description: 'Owner allowlist; offline planning only'
+        required: false
+        default: rafaelmeloreisnovo
+        type: choice
+        options:
+          - rafaelmeloreisnovo
+          - instituto-Rafael
+      repository_factory_name:
+        description: 'Factory name; in promotion_hold_pat mode: mapa750 / rafpolimata431 / rafpolimata432'
+        required: false
+        default: ''
+        type: string
       release_version:
         description: 'Release version without leading v (required for manual release mode)'
         required: false
@@ -38,7 +56,7 @@ on:
         default: false
         type: boolean
       provider_operation:
-        description: 'Pat_environments / PAT_ENV provider operation'
+        description: 'Provider operation; inspect_hold/mark_hold apply only to promotion_hold_pat mode'
         required: false
         default: preflight
         type: choice
@@ -46,6 +64,8 @@ on:
           - preflight
           - apply_main_protection
           - rollback_main_protection
+          - inspect_hold
+          - mark_hold
       provider_expected_main_sha:
         description: 'Optional exact main SHA guard; defaults to workflow-dispatch SHA'
         required: false
@@ -91,8 +111,10 @@ permissions:
   actions: read
 
 concurrency:
-  group: start-${{ github.ref }}-${{ github.event_name }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # Deduplicate superseded PR commits and branch pushes; never cancel
+  # scheduled, manual provider mutations or immutable tag releases.
+  group: start-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')) }}
 
 env:
   PIPELINE_SCHEMA: RAFAELIA_START_V1
@@ -150,13 +172,25 @@ jobs:
         shell: bash
         env:
           REQUESTED_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'auto' }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
           REQUESTED_PROVIDER_OPERATION: ${{ github.event_name == 'workflow_dispatch' && inputs.provider_operation || 'preflight' }}
+          REQUESTED_HOLD_TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.repository_factory_name || '' }}
           REQUESTED_PRIVATE_CI_TARGET_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.private_ci_target_id || '' }}
           REQUESTED_PRIVATE_CI_TARGET_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.private_ci_target_sha || '' }}
           REQUESTED_PRIVATE_CI_WORKFLOW_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.private_ci_workflow_id || '' }}
         run: |
           set -euo pipefail
           mode="${REQUESTED_MODE:-auto}"
+          # Draft PRs have an explicit small source-only lane; promotion to
+          # ready_for_review fires a new full auto run at the exact head SHA.
+          if [[ "$mode" == auto && "${GITHUB_EVENT_NAME}" == pull_request &&
+                "${PR_DRAFT:-false}" == true ]]; then
+            mode=fast
+            echo 'DRAFT_PR_MODE=FAST_SOURCE_ONLY'
+            echo 'ANDROID_APK_VALIDATION=NOT_RUN'
+            echo 'CODEQL_SECURITY_VALIDATION=NOT_RUN'
+            echo 'CLAIM_ALLOWED=false'
+          fi
           android=false
           federation=false
           security=false
@@ -357,6 +391,38 @@ jobs:
               private_ci_manifest_path="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read())[\"manifest_path\"])' <<<"$resolved")"
               private_ci=true
               ;;
+            repository_factory)
+              if [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch || "${GITHUB_REF}" != refs/heads/main ]]; then
+                echo '::error::repository_factory requires manual main dispatch'
+                exit 2
+              fi
+              ;;
+            repository_factory_pat_preflight)
+              if [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch || "${GITHUB_REF}" != refs/heads/main || "${GITHUB_ACTOR}" != rafaelmeloreisnovo ]]; then
+                echo '::error::PAT_AGENTS preflight is manually dispatched from main by the owner only'
+                exit 2
+              fi
+              ;;
+            mapa_provider_pat_preflight)
+              if [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch || "${GITHUB_REF}" != refs/heads/main || "${GITHUB_ACTOR}" != rafaelmeloreisnovo ]]; then
+                echo '::error::Mapa PAT_ENV read-only preflight requires owner-initiated workflow_dispatch from protected main'
+                exit 2
+              fi
+              ;;
+            promotion_hold_pat)
+              [[ "${GITHUB_EVENT_NAME}" == workflow_dispatch && "${GITHUB_REF}" == refs/heads/main && "${GITHUB_ACTOR}" == rafaelmeloreisnovo ]] || {
+                echo '::error::Promotion hold PAT_AGENTS is main/owner/manual only'
+                exit 2
+              }
+              case "${REQUESTED_PROVIDER_OPERATION}" in
+                inspect_hold|mark_hold) ;;
+                *) echo '::error::Promotion hold requires inspect_hold or mark_hold'; exit 2 ;;
+              esac
+              case "${REQUESTED_HOLD_TARGET}" in
+                mapa750|rafpolimata431|rafpolimata432) ;;
+                *) echo '::error::Target must be pinned in promotion hold contract'; exit 2 ;;
+              esac
+              ;;
             public_data)
               if [[ "${GITHUB_EVENT_NAME}" != workflow_dispatch ]]; then
                 echo "::error::public_data is manual-only"
@@ -449,7 +515,7 @@ jobs:
 
       - name: Upload workflow topology receipt
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: start-01-topology-${{ github.run_id }}
           path: artifacts/workflow-graph-audit.json
@@ -497,6 +563,33 @@ jobs:
           print(f'compiled_python_files={len(files)}')
           PY
 
+      - name: Verify repository factory contracts even in fast lane
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_repository_factory_v1.py' -v
+          python3 -m unittest discover -s tests -p 'test_repository_factory_pat_agents_preflight_v1.py' -v
+
+      - name: Verify PAT_AGENTS promotion hold source and negative tests in fast lane
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_promotion_hold_pat_agent_v1.py' -v
+          python3 scripts/promotion_hold_pat_agent_v1.py --operation validate
+
+      - name: Verify Mapa PAT_ENV preflight falsifiers in fast lane
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_mapa_provider_authority_preflight_v1.py' -v
+          python3 scripts/validate_mapa_provider_authority_preflight_v1.py
+
+      - name: Falsify chart ancestry metadata (synthetic, no provider access)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_chart_source_ancestry_v1.py' -v
+
       - name: Private CI network-isolation capability
         shell: bash
         run: |
@@ -529,6 +622,26 @@ jobs:
           make -C native/silicon_light_v1 clean
           make -C native/silicon_light_v1 host-test audit HOST_CC=clang NM=nm READELF=readelf
           make -C native/silicon_light_v1 clean
+
+      - name: RAFAELIA Authorial Keyboard L0 ARMv7 + AArch64 gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C native/authorial_keyboard_l0 clean all CLANG=clang
+          make -C native/authorial_keyboard_l0 clean
+
+      - name: RAFAELIA Authorial Keyboard L1 pixel and edit host gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 native/authorial_keyboard_l0/tests/check_panel.py
+          for target in armv7a-linux-androideabi24 aarch64-linux-android24; do
+            obj="$RUNNER_TEMP/rafkbd-panel-$target.o"
+            clang --target="$target" -std=c11 -O2 -ffreestanding -fno-builtin -nostdinc \
+              -Inative/authorial_keyboard_l0/src -c \
+              native/authorial_keyboard_l0/src/rafkbd_panel.c -o "$obj"
+            test "$(nm -u "$obj" | sed -n 's/^[[:space:]]*U[[:space:]]*//p')" = rafkbd_l0_probe
+          done
 
       - name: Omega Hypervisor L0 freestanding gate
         shell: bash
@@ -602,9 +715,18 @@ jobs:
             echo 'TOKEN_VAZIO: native/rafcode_route_exec_v1 not present'
           fi
 
+      - name: Validate LATIN 555 source policy in canonical START
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests/latin -p 'test_*.py' -v
+          python3 scripts/latin/validate_latin_authority.py
+          mkdir -p artifacts/latin
+          cp dist/latin/authority-receipt.v1.json artifacts/latin/authority-receipt.v1.json
+
       - name: Upload coherence artifacts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: start-02-coherence-${{ github.run_id }}
           path: artifacts/
@@ -614,6 +736,8 @@ jobs:
   python_tests:
     name: '03 · Python / deterministic tests'
     needs: [plan, coherence]
+    # Draft/explicit fast only checks coherence; full regression runs on ready.
+    if: ${{ needs.plan.outputs.mode != 'fast' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -686,7 +810,7 @@ jobs:
           fi
       - name: Upload federation receipt
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: start-04-federation-${{ github.run_id }}
           path: artifacts/
@@ -780,6 +904,37 @@ jobs:
           tools/rafandroid/rafandroid apk-gate "$APK"
           sha256sum "$APK" | tee "$RUNNER_TEMP/rafandroid-silicon-fixture.sha256"
 
+      - name: RAFAELIA Authorial Keyboard native demo APK gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEMO="native/authorial_keyboard_l0/android-demo"
+          ./gradlew --no-daemon -p "$DEMO" assembleDebug --stacktrace
+          APK="$(find "$DEMO/build/outputs/apk/debug" -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          test -s "$APK"
+          unzip -l "$APK" | grep -q 'lib/armeabi-v7a/librafkbd_demo.so'
+          unzip -l "$APK" | grep -q 'lib/arm64-v8a/librafkbd_demo.so'
+          unzip -Z1 "$APK" | grep -Fxq 'AndroidManifest.xml'
+          SIGNER="$(find "$ANDROID_SDK_ROOT/build-tools" -mindepth 2 -maxdepth 2 -type f -name apksigner | sort -V | tail -1)"
+          ALIGN="$(find "$ANDROID_SDK_ROOT/build-tools" -mindepth 2 -maxdepth 2 -type f -name zipalign | sort -V | tail -1)"
+          test -x "$SIGNER"
+          test -x "$ALIGN"
+          "$SIGNER" verify "$APK"
+          "$ALIGN" -c 4 "$APK"
+          sha256sum "$APK" | tee "$DEMO/build/outputs/apk/debug/SHA256SUMS.txt"
+          echo 'RAFKBD_NATIVE_APK_SCOPED_GATE=PASS'
+
+      - name: Publish RAFAELIA keyboard test APK (not a release)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rafaelia-keyboard-test-apk-${{ github.run_id }}
+          path: |
+            native/authorial_keyboard_l0/android-demo/build/outputs/apk/debug/*.apk
+            native/authorial_keyboard_l0/android-demo/build/outputs/apk/debug/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Unit tests
         run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
       - name: Compile device route instrumentation APK
@@ -799,17 +954,18 @@ jobs:
           tools/rafandroid/rafandroid dex-gate "$APK"
           tools/rafandroid/rafandroid apk-gate "$APK"
       - name: Upload APK
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: start-06-devDebug-${{ github.run_id }}
           path: |
             app/build/outputs/apk/dev/debug/*.apk
             app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+            native/authorial_keyboard_l0/android-demo/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 30
       - name: Upload Android diagnostics
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: start-06-android-diagnostics-${{ github.run_id }}
           path: |
@@ -884,7 +1040,7 @@ jobs:
             --output "artifacts/codeql-summary-${{ matrix.language }}.json"
       - name: Upload sanitized CodeQL summary
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: start-07-codeql-summary-${{ matrix.language }}-${{ github.run_id }}
           path: artifacts/codeql-summary-${{ matrix.language }}.json
@@ -1002,7 +1158,7 @@ jobs:
           esac
       - name: Upload provider actions evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: start-08a-provider-actions-${{ github.run_id }}
           path: |
@@ -1161,7 +1317,7 @@ jobs:
 
       - name: Upload sanitized private-CI evidence only
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: start-08b-private-ci-${{ github.run_id }}
           path: |
@@ -1171,6 +1327,58 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
+  mapa_provider_pat_preflight:
+    name: '08Q · Mapa PAT_ENV / read-only provider authority'
+    needs: [plan, topology, coherence]
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' &&
+        github.ref == 'refs/heads/main' &&
+        github.actor == 'rafaelmeloreisnovo' &&
+        needs.plan.outputs.mode == 'mapa_provider_pat_preflight' &&
+        needs.topology.result == 'success' &&
+        needs.coherence.result == 'success'
+      }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    environment:
+      name: Pat_environments
+      deployment: false
+    steps:
+      - name: Checkout exact immutable main source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.EXECUTION_SHA }}
+          persist-credentials: false
+      - name: Verify manual source and source-only falsifiers
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXECUTION_SHA"
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_ACTOR" = rafaelmeloreisnovo
+          python3 -m unittest discover -s tests -p 'test_mapa_provider_authority_preflight_v1.py' -v
+          python3 scripts/validate_mapa_provider_authority_preflight_v1.py
+      - name: PAT_ENV Mapa provider GET-only readback
+        shell: bash
+        env:
+          RAFAELIA_PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          python3 scripts/validate_mapa_provider_authority_preflight_v1.py --probe --receipt artifacts/mapa-provider-pat-env-readback.json
+      - name: Upload sanitized Mapa preflight receipt
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: start-08q-mapa-pat-env-readonly-${{ github.run_id }}
+          path: artifacts/mapa-provider-pat-env-readback.json
+          if-no-files-found: warn
+          retention-days: 30
+
   provider_environments:
     name: '08P · Provider environments / main enforcement'
     needs: [plan, coherence]
@@ -1178,6 +1386,8 @@ jobs:
       ${{
         needs.plan.outputs.provider_environments == 'true' &&
         needs.coherence.result == 'success' &&
+        github.actor == 'rafaelmeloreisnovo' &&
+        github.ref == 'refs/heads/main' &&
         (
           github.event_name == 'workflow_dispatch' ||
           (
@@ -1218,6 +1428,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          [[ "${GITHUB_ACTOR}" == rafaelmeloreisnovo ]] || {
+            echo '::error::provider operation denied to non-owner workflow actor'
+            exit 2
+          }
           if [[ "${GITHUB_EVENT_NAME}" == push ]]; then
             [[ "${GITHUB_REF}" == refs/heads/main ]] || {
               echo '::error::one-shot preflight push must target main'
@@ -1251,13 +1465,29 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts
+          target_repo="${GITHUB_REPOSITORY}"
+          target_branch="main"
+          target_plan="contracts/MAIN_PROVIDER_ENFORCEMENT_PLAN_20260927.v4.json"
           expected="${REQUESTED_EXPECTED_MAIN_SHA:-}"
           [[ -n "$expected" ]] || expected="${GITHUB_SHA}"
+          if [[ "${GITHUB_EVENT_NAME}" == push ]] && git diff --name-only HEAD^ HEAD | grep -Fxq "configs/provider-enforcement-stage1.once.json"; then
+            target_repo="$(python3 -c 'import json,pathlib; d=json.loads(pathlib.Path("configs/provider-enforcement-stage1.once.json").read_text(encoding="utf-8")); print(d.get("target_repository",""))')"
+            target_branch="$(python3 -c 'import json,pathlib; d=json.loads(pathlib.Path("configs/provider-enforcement-stage1.once.json").read_text(encoding="utf-8")); print(d.get("target_branch",""))')"
+            expected="$(python3 -c 'import json,pathlib; d=json.loads(pathlib.Path("configs/provider-enforcement-stage1.once.json").read_text(encoding="utf-8")); print(d.get("expected_target_sha",""))')"
+            target_plan="$(python3 -c 'import json,pathlib; d=json.loads(pathlib.Path("configs/provider-enforcement-stage1.once.json").read_text(encoding="utf-8")); print(d.get("plan",""))')"
+            case "$target_repo" in
+              rafaelmeloreisnovo/RafGitTools|rafaelmeloreisnovo/RafPolimata) ;;
+              *) echo "::error::unsupported provider enforcement target: $target_repo"; exit 2 ;;
+            esac
+            [[ "$target_branch" == main ]] || { echo "::error::target branch must be main"; exit 2; }
+            [[ "$expected" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::target requires exact lowercase SHA"; exit 2; }
+            [[ "$target_plan" == contracts/*.json ]] || { echo "::error::target plan must be contracts JSON"; exit 2; }
+          fi
           args=(
-            --repo "${GITHUB_REPOSITORY}"
-            --branch main
+            --repo "$target_repo"
+            --branch "$target_branch"
             --expected-main-sha "$expected"
-            --plan contracts/MAIN_PROVIDER_ENFORCEMENT_PLAN_20260927.v4.json
+            --plan "$target_plan"
             --receipt artifacts/provider-main-enforcement.json
             --token-env PROVIDER_TOKEN
           )
@@ -1278,7 +1508,7 @@ jobs:
           python3 scripts/apply_rafgittools_main_protection.py "${args[@]}"
       - name: Upload provider enforcement receipt
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: start-08p-provider-environments-${{ github.run_id }}
           path: artifacts/provider-main-enforcement.json
@@ -1385,7 +1615,7 @@ jobs:
           test -s CHANGELOG.md || echo '- Release generated by START pipeline.' > CHANGELOG.md
           echo "apk=$out" >> "$GITHUB_OUTPUT"
       - name: Upload signed release artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: start-08-release-${{ steps.release_meta.outputs.version }}
           path: |
@@ -1415,7 +1645,7 @@ jobs:
 
   receipt:
     name: '09 · Final receipt / fechamento'
-    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_actions, private_ci_bridge, provider_environments, release, public_data_custody]
+    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_actions, private_ci_bridge, provider_environments, release, public_data_custody, promotion_hold_pat_agent]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -1433,6 +1663,7 @@ jobs:
       PROVIDER_ENVIRONMENTS_RESULT: ${{ needs.provider_environments.result }}
       RELEASE_RESULT: ${{ needs.release.result }}
       PUBLIC_DATA_RESULT: ${{ needs.public_data_custody.result }}
+      PROMOTION_HOLD_RESULT: ${{ needs.promotion_hold_pat_agent.result }}
       ROUTE_MODE: ${{ needs.plan.outputs.mode }}
     steps:
       - name: Emit append-only pipeline receipt
@@ -1456,6 +1687,7 @@ jobs:
               'provider_environments': os.environ['PROVIDER_ENVIRONMENTS_RESULT'],
               'release': os.environ['RELEASE_RESULT'],
               'public_data_custody': os.environ['PUBLIC_DATA_RESULT'],
+              'promotion_hold_pat_agent': os.environ['PROMOTION_HOLD_RESULT'],
           }
           mapped = {
               k: ('TOKEN_VAZIO_NOT_SELECTED' if v == 'skipped' else v.upper())
@@ -1506,7 +1738,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload final receipt
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: start-09-receipt-${{ github.run_id }}
           path: artifacts/START_RECEIPT.json
@@ -1591,7 +1823,7 @@ jobs:
 
       - name: Upload custody and RLL-atlas receipts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: public-data-custody-${{ github.run_id }}
           path: |
@@ -1600,3 +1832,147 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+
+  repository_factory_plan:
+    name: '09X · Repository factory / offline plan only'
+    needs: [plan, topology, coherence]
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.plan.outputs.mode == 'repository_factory' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout immutable execution SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.EXECUTION_SHA }}
+          persist-credentials: false
+      - name: Record offline repo plan without PAT or POST
+        shell: bash
+        env:
+          FACTORY_OWNER: ${{ inputs.repository_factory_owner }}
+          FACTORY_NAME: ${{ inputs.repository_factory_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          python3 scripts/repository_factory_v1.py --owner "$FACTORY_OWNER" --name "$FACTORY_NAME" --operation plan --receipt artifacts/repository-factory-plan.json
+      - name: Upload offline plan receipt
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: repository-factory-plan-${{ github.run_id }}
+          path: artifacts/repository-factory-plan.json
+          if-no-files-found: error
+          retention-days: 30
+
+  repository_factory_pat_preflight:
+    name: '09Y · PAT_AGENTS / identity and org preflight (read-only)'
+    needs: [plan, topology, coherence]
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' &&
+        github.ref == 'refs/heads/main' &&
+        github.actor == 'rafaelmeloreisnovo' &&
+        needs.plan.outputs.mode == 'repository_factory_pat_preflight' &&
+        needs.topology.result == 'success' &&
+        needs.coherence.result == 'success'
+      }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    environment:
+      name: Pat_environments
+      deployment: false
+    steps:
+      - name: Checkout immutable execution SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.EXECUTION_SHA }}
+          persist-credentials: false
+      - name: Verify no provider writes and no secret fallback
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_ACTOR" = rafaelmeloreisnovo
+          python3 -m unittest discover -s tests -p test_repository_factory_pat_agents_preflight_v1.py -v
+      - name: PAT_AGENTS read-only provider preflight
+        shell: bash
+        env:
+          RAFAELIA_PREFLIGHT_TOKEN: ${{ secrets.PAT_AGENTS }}
+          FACTORY_OWNER: ${{ inputs.repository_factory_owner }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          python3 scripts/repository_factory_pat_agents_preflight_v1.py --owner "$FACTORY_OWNER" --receipt artifacts/repository-factory-pat-agents-preflight.json
+      - name: Upload typed non-secret receipt
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: repository-factory-pat-agents-preflight-${{ github.run_id }}
+          path: artifacts/repository-factory-pat-agents-preflight.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  promotion_hold_pat_agent:
+    name: '09Z · PAT_AGENTS / P0 title hold only (owner manual)'
+    needs: [plan, topology, coherence]
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' &&
+        github.ref == 'refs/heads/main' &&
+        github.actor == 'rafaelmeloreisnovo' &&
+        needs.plan.outputs.mode == 'promotion_hold_pat' &&
+        needs.topology.result == 'success' &&
+        needs.coherence.result == 'success'
+      }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    environment:
+      name: Pat_environments
+      deployment: false
+    steps:
+      - name: Checkout exact protected executor SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.EXECUTION_SHA }}
+          persist-credentials: false
+      - name: Verify bounded target and payload contract without PAT
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_ACTOR" = rafaelmeloreisnovo
+          python3 -m unittest discover -s tests -p 'test_promotion_hold_pat_agent_v1.py' -v
+          python3 scripts/promotion_hold_pat_agent_v1.py --operation validate
+      - name: Inspect or apply P0 title using PAT_AGENTS only
+        shell: bash
+        env:
+          RAFAELIA_AGENTS_TOKEN: ${{ secrets.PAT_AGENTS }}
+          HOLD_TARGET: ${{ inputs.repository_factory_name }}
+          HOLD_PROVIDER_OPERATION: ${{ inputs.provider_operation }}
+          PROMOTION_HOLD_CONFIRM: ${{ inputs.provider_operation == 'mark_hold' && 'EXPLICIT_HOLD_ONLY' || '' }}
+        run: |
+          set -euo pipefail
+          case "$HOLD_TARGET" in mapa750|rafpolimata431|rafpolimata432) ;; *) exit 3 ;; esac
+          case "$HOLD_PROVIDER_OPERATION" in
+            inspect_hold) operation=inspect ;;
+            mark_hold) operation=mark ;;
+            *) exit 3 ;;
+          esac
+          mkdir -p artifacts
+          python3 scripts/promotion_hold_pat_agent_v1.py \
+            --operation "$operation" --target "$HOLD_TARGET" \
+            --receipt artifacts/promotion-hold-receipt.json
+      - name: Preserve typed non-secret hold receipt
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: promotion-hold-${{ github.run_id }}
+          path: artifacts/promotion-hold-receipt.json
+          if-no-files-found: warn
+          retention-days: 30

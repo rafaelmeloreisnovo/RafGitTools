@@ -50,3 +50,7 @@ The refactor changes workflow topology, not scientific or physical claim authori
 ## Rollback
 
 The full prior `.github/workflows` tree is retained as an immutable Git tree under the legacy archive directory. Restoring the old topology is a tree-level revert; no legacy workflow body was rewritten during migration.
+
+## PAT_AGENTS Promotion Hold Agent (source v1)
+
+The existing `START.yml` coherence lane now tests `scripts/promotion_hold_pat_agent_v1.py` on its own PR/push runs. The manual owner/environment-gated `promotion_hold_pat` mode may inspect or apply a **title-only** warning for the exact three allowlisted external PR heads in `configs/promotion-hold-agent.v1.json`. It never merges, reviews, alters protections or auto-triggers on pushes in other repositories. A successful source test is **not** PAT write permission; see `docs/governance/PROMOTION_HOLD_PAT_AGENT_V1.md`. If provider permissions are missing, the agent fails closed, and the target PR remains non-promotable.

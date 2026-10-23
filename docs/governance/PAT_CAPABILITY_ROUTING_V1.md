@@ -78,3 +78,11 @@ Mapa should store only capability ID, executor pointer, state, source ref, opera
 `F_ok`: six distinct PAT secret IDs typed; `PAT_ACTIONS` and `PAT_ENV` retain bounded wired routes; `PAT_ENVIRONMENTS` is represented without aliasing or silent fallback.  
 `F_gap`: provider scope/binding/permissions for `PAT_ENVIRONMENTS` remain unread; `PAT_AGENTS`, `PAT_CODESPACES` and `PAT_DEPENDABOT` provider permissions are not yet probed.  
 `F_next`: obtain provider readback for unresolved PAT metadata, then wire only operations justified by that evidence; keep `PAT_ENV` 08P unchanged until a separate gate authorizes modification.
+
+## Candidate Promotion Hold title-only lane (successor, 2026-10-12)
+
+RafGitTools proposes source-only `START.yml` mode `promotion_hold_pat`, separate from the established repository-factory `PAT_AGENTS` GET preflight, existing `PAT_ACTIONS` access lane and `PAT_ENV` provider administration route. It is **not** proof that `PAT_AGENTS` has repository write or `Administration:write` permission.
+
+The new lane is owner-initiated from `main`, under the existing `Pat_environments` Environment and exact-head three-PR allowlist. It can inspect a single PR or conditionally PATCH **only its non-promotion title**; `claim_allowed=false` remains. It never writes provider security settings, merges, removes blocks or substitutes any PAT. Unverified secrets/permissions and target-title drift fail closed. Source tests run on every RafGitTools PR/push without secrets. Full route and rollback: `docs/governance/PROMOTION_HOLD_PAT_AGENT_V1.md`.
+
+State: `SOURCE_PROPOSED / PAT_AGENTS_WRITE_PERMISSION_TOKEN_VAZIO / LIVE_HOLD_PATCH_NOT_RUN`. The table above describes the last **proven** operational states; this addition does not silently promote `PAT_AGENTS` from `REGISTERED_NOT_WIRED`.
