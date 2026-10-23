@@ -42,6 +42,10 @@ Core invariants:
 Canonical federation reference: `docs/AGENT_FEDERATION_ENTRY_V1.md`.
 
 
+### One-pass DMAIC ★ † ‡ — PR portfolio (review rule)
+
+For a material observation on the first source read, register `★` exact fact/HEAD, `†` typed alternatives/authority/risk/falsifier and `‡` minimal reversible fix or blocked gate. Route to [bounded PR snapshot](docs/audit/RAFGITTOOLS_PR_DMAIC_ONEPASS_20261023.md) and [machine registry](configs/rafgittools-pr-dmaic-20261023.v1.json). The federated Mapa rule is proposed in PR #767, not merged authority. The local snapshot is dated, not live. No silent second crawl, auto-merge, CI PASS inflation or certification claim. Follow Q01–Q12, exact-head gates and a readback receipt; `TOKEN_VAZIO != 0`.
+
 ### Authorial federation / imported-source gate
 
 If the task reads, copies, adapts, relicenses or promotes `federation/authorial/**`, read `federation/authorial/AGENTS.md` before acting. Machine authority: `configs/authorial-federation.v1.json`. Human/AI route: `docs/federation/AUTHORIAL_FEDERATION_V1.md`.
