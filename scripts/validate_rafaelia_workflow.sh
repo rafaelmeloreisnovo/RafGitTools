@@ -219,3 +219,9 @@ python3 scripts/validate_runtime_lock_successor.py \
   data/runtime-lock-candidates/runtime-lock-candidate-20261003T214824Z.json \
   data/runtime-lock-candidates/runtime-lock-refresh-receipt-20261003T214824Z.json \
   --report artifacts/runtime-lock-successor-validation-report.json
+
+# Specialized freestanding L0 kernel via existing START coherence shell.
+# PASS means detector caught the incompatible legacy baseline, NOT Gradle readiness.
+python3 -m unittest discover -s tests -p 'test_l0_toolchain_matrix_v1.py' -v
+python3 scripts/verify_l0_toolchain_shell_v1.py \
+  --report artifacts/toolchain-l0-v1.json
