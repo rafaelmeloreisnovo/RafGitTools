@@ -1,0 +1,68 @@
+{
+  "schema": "rafgittools.observer-conduct-correction-router.contract/v1",
+  "status": "SOURCE_CONTRACT",
+  "accepted_intake_schema": "rafaelia.observer-observation-intake/v1",
+  "observation_only_conduct": [
+    "ATTENTION",
+    "ATTEND",
+    "THINK",
+    "PERMUTE",
+    "ANOMALY",
+    "DELTA",
+    "EMPTY_OR_GAP"
+  ],
+  "correction_candidate_conduct": [
+    "BUG",
+    "ERROR",
+    "UPDATE",
+    "EDIT",
+    "ACT"
+  ],
+  "refusal_conduct": [
+    "REFUSE"
+  ],
+  "epistemic_hold_states": [
+    "UNCERTAIN",
+    "UNKNOWN",
+    "OPPORTUNITY",
+    "CONTRADICTION",
+    "ANOMALY",
+    "REJECTED"
+  ],
+  "correction_envelope_required": [
+    "explicit_target",
+    "exact_source_revision",
+    "deterministic_reproducer_or_falsifier",
+    "root_cause_evidence",
+    "bounded_patch",
+    "pre_patch_receipt",
+    "rollback_condition",
+    "required_post_patch_tests",
+    "non_regression_invariants"
+  ],
+  "states": [
+    "OBSERVATION_ONLY_NO_MUTATION",
+    "REVIEW_ONLY_HOLD",
+    "OBSERVATION_REFUSED_PRESERVED",
+    "HOTFIX_HOLD_TARGET_REQUIRED",
+    "HOTFIX_ELIGIBLE_BOUNDED",
+    "BLOCKED"
+  ],
+  "forbidden_actions": [
+    "DIRECT_MAIN_WRITE",
+    "FORCE_PUSH",
+    "REMOTE_DELETE",
+    "AUTO_MERGE",
+    "AUTO_CLAIM_PROMOTION"
+  ],
+  "invariants": [
+    "OBSERVATION != ROOT_CAUSE",
+    "ANOMALY != BUG",
+    "OPPORTUNITY != PATCH_AUTHORITY",
+    "UNKNOWN != ERROR",
+    "REFUSAL_PRESERVES_PROVENANCE",
+    "HOTFIX_ELIGIBLE != MERGE_ALLOWED"
+  ],
+  "claim_allowed": false,
+  "merge_allowed": false
+}
