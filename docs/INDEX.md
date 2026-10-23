@@ -55,6 +55,13 @@ Quando a intenção cruzar ética, Novo Testamento, linguagem, história e inter
 
 A rota começa em **amar o próximo como a si mesmo** e preserva a separação `TEXT != VARIANT != HISTORY != THEOLOGY != ETHICAL_APPLICATION`. Ela permite leitura espiritual/metafórica sem promover hipótese como fato, e usa `TOKEN_VAZIO` quando a fonte não sustenta a próxima passagem.
 
+### Portfolio PRs — DMAIC one-pass ★ † ‡ (snapshot scoped)
+
+- [Auditoria de 23 PRs abertas](audit/RAFGITTOOLS_PR_DMAIC_ONEPASS_20261023.md) — sobreposições, bifurcações, gates e R3 em leitura única.
+- [Snapshot JSON](../configs/rafgittools-pr-dmaic-20261023.v1.json) — prova de indexação com SHA observado, estado Draft e limites epistêmicos.
+- [Teste do snapshot](../tests/test_rafgittools_pr_dmaic_onepass_v1.py) — assertivas de invariantes e dados, **não** validação de CI nem integração.
+- O HEAD observado é histórico, revalide provedor antes de agir. Nunca substituir bootstrap Google Drive, CURRENT_STATE ou receipts.
+
 ## Fonte de verdade — ordem de leitura
 
 1. [`RAFGITTOOLS_CURRENT_STATE.md`](RAFGITTOOLS_CURRENT_STATE.md) — estado editorial corrente; reconciliação de 2026-09-28 observada contra `main@8af97a580e535d2015e8211000850e282b031763`.
