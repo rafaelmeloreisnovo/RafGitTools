@@ -625,6 +625,12 @@ jobs:
           path: ${{ runner.temp }}/rmr-pai-build/pai
           if-no-files-found: error
           retention-days: 1
+      - name: BrowserRaf bounded wire C fixture (no network / no secrets)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_browser_wire_bounds.py' -v
+
       - name: Verify repository factory contracts even in fast lane
         shell: bash
         run: |
