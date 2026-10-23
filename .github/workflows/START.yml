@@ -563,6 +563,63 @@ jobs:
           print(f'compiled_python_files={len(files)}')
           PY
 
+      - name: Checkout pinned RMR PAI for Drive canary (no Drive credentials)
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/drive-ci-custody-rmr-pai-single-root-v1-20261015'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: rafaelmeloreisnovo/BLAKE3
+          ref: 584a686ed68d3fb0189797a661884678a78df01b
+          path: rmr-pai-source
+          persist-credentials: false
+      - name: Build pinned RMR PAI and run BLAKE3 custody KAT and negative canary
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/drive-ci-custody-rmr-pai-single-root-v1-20261015'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C rmr-pai-source rev-parse HEAD)" = 584a686ed68d3fb0189797a661884678a78df01b
+          cmake -S rmr-pai-source/rmr -B "$RUNNER_TEMP/rmr-pai-build" -DCMAKE_BUILD_TYPE=Release \
+            -DRMR_BUILD_TESTS=OFF -DRMR_BUILD_HWIF=OFF -DRMR_BUILD_TOPOLOGY=OFF \
+            -DRMR_BUILD_CRYPTO_RUNTIME=OFF
+          cmake --build "$RUNNER_TEMP/rmr-pai-build" --target pai --parallel 2
+          mkdir -p "$RUNNER_TEMP/drive-custody-canary"
+          printf 'PUBLIC-RAFAELIA-CANARY-NO-PRIVATE-DATA\n' > "$RUNNER_TEMP/drive-custody-canary/source.bin"
+          cp "$RUNNER_TEMP/drive-custody-canary/source.bin" "$RUNNER_TEMP/drive-custody-canary/readback.bin"
+          expected="$(sha256sum "$RUNNER_TEMP/drive-custody-canary/source.bin" | cut -d' ' -f1)"
+          echo "RMR_PAI_BINARY_SHA256=$(sha256sum "$RUNNER_TEMP/rmr-pai-build/pai" | cut -d' ' -f1)"
+          python3 scripts/drive_custody_rmr_pair_v1.py \
+            --source "$RUNNER_TEMP/drive-custody-canary/source.bin" \
+            --drive-readback "$RUNNER_TEMP/drive-custody-canary/readback.bin" \
+            --provider-sha256 "$expected" --source-commit "$EXECUTION_SHA" \
+            --source-repo rafaelmeloreisnovo/RafGitTools \
+            --workflow-run-id "$GITHUB_RUN_ID" --artifact-id 1 \
+            --drive-file-id SIMULATED_CI_NO_ACTUAL_DRIVE_ID \
+            --previous-receipt-sha256 "$(printf '0%.0s' {1..64})" \
+            --pai "$RUNNER_TEMP/rmr-pai-build/pai" \
+            --output "$RUNNER_TEMP/drive-custody-canary/receipt.json"
+          printf 'X' >> "$RUNNER_TEMP/drive-custody-canary/readback.bin"
+          if python3 scripts/drive_custody_rmr_pair_v1.py \
+            --source "$RUNNER_TEMP/drive-custody-canary/source.bin" \
+            --drive-readback "$RUNNER_TEMP/drive-custody-canary/readback.bin" \
+            --provider-sha256 "$expected" --source-commit "$EXECUTION_SHA" \
+            --source-repo rafaelmeloreisnovo/RafGitTools \
+            --workflow-run-id "$GITHUB_RUN_ID" --artifact-id 1 \
+            --drive-file-id SIMULATED_CI_NO_ACTUAL_DRIVE_ID \
+            --previous-receipt-sha256 "$(printf '0%.0s' {1..64})" \
+            --pai "$RUNNER_TEMP/rmr-pai-build/pai" \
+            --output "$RUNNER_TEMP/drive-custody-canary/rejected.json"; then
+            echo "CORRUPT_TRANSFER_UNEXPECTEDLY_ACCEPTED" >&2
+            exit 1
+          fi
+          test ! -e "$RUNNER_TEMP/drive-custody-canary/rejected.json"
+          echo "RMR_PAI_KAT_AND_FAIL_CLOSED_CUSTODY=PASS_CI_SIMULATION_NOT_LIVE_DRIVE"
+      - name: Preserve pinned RMR pai binary for private readback verification
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/drive-ci-custody-rmr-pai-single-root-v1-20261015'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rmr-pai-pinned-binary-584a686e
+          path: ${{ runner.temp }}/rmr-pai-build/pai
+          if-no-files-found: error
+          retention-days: 1
       - name: Verify repository factory contracts even in fast lane
         shell: bash
         run: |
