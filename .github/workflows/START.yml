@@ -551,6 +551,32 @@ jobs:
           if [[ -f scripts/validate_documentation_claim_boundary.py ]]; then
             python3 scripts/validate_documentation_claim_boundary.py --strict
           fi
+      - name: Field Lab V1 | federated bounded contract and negative controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest -v tests.test_federated_field_lab
+          python3 scripts/federated_field_lab.py --contract configs/federated-field-lab.v1.json --receipt artifacts/federated-field-lab/receipt.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          receipt=json.loads(Path('artifacts/federated-field-lab/receipt.json').read_text())
+          assert receipt['result'] == 'PASS_SCOPED_CONTRACT_ONLY'
+          assert receipt['claim_allowed'] is False and receipt['release_allowed'] is False
+          assert receipt['private_source_exported'] is False
+          assert receipt['device_executed'] is False
+          assert receipt['private_access'] == 'TOKEN_VAZIO_NOT_RUN'
+          print('FIELD_LAB=PASS_SCOPED_NO_REMOTE_EXECUTION')
+          PY
+      - name: Upload secretless field lab contract receipt
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: start-02-field-lab-${{ github.run_id }}
+          path: artifacts/federated-field-lab/receipt.json
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Compile Python sources and tests
         shell: bash
         run: |
