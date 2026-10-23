@@ -105,6 +105,11 @@ on:
         required: false
         default: '{"pagina":1}'
         type: string
+      blake3_historical_replay:
+        description: 'Opt-in replay of pinned 2026-10-15 BLAKE3 APK; NOT the latest master and NOT a release'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -1981,9 +1986,11 @@ jobs:
     name: '10 · BLAKE3 triple APK (RMR / fork / official; dual ABI)'
     needs: [plan, topology]
     if: >-
-      ${{ github.event_name == 'pull_request' &&
-          github.head_ref == 'feat/blake3-triple-abi-apk-build-bridge-20261015' &&
-          needs.topology.result == 'success' }}
+      ${{ needs.topology.result == 'success' &&
+          ((github.event_name == 'pull_request' &&
+            github.head_ref == 'feat/blake3-triple-abi-apk-build-bridge-20261015') ||
+           (github.event_name == 'workflow_dispatch' &&
+            inputs.blake3_historical_replay == true)) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     permissions:
