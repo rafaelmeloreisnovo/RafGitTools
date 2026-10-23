@@ -1,0 +1,101 @@
+{
+  "schema": "rafaelia.federated-field-lab.v1",
+  "version": "1.0.0",
+  "control_plane": "rafaelmeloreisnovo/RafGitTools",
+  "routing_authority": "rafaelmeloreisnovo/Mapa",
+  "operation": "READ_ONLY_COMPOSITION",
+  "claim_allowed": false,
+  "auto_merge": false,
+  "auto_release": false,
+  "auto_dispatch": false,
+  "review_required": true,
+  "privacy": {
+    "minimize": true,
+    "raw_private_export": false,
+    "child_protection": true,
+    "human_dignity": true,
+    "license_check": true
+  },
+  "credentials": {
+    "PAT_ACTIONS": "EXISTING_APPROVED_PRIVATE_CI_BRIDGE_ONLY",
+    "PAT_AGENTS": "TOKEN_VAZIO_NOT_WIRED",
+    "PAT_ENV": "HUMAN_APPROVED_PROTECTED_ENVIRONMENT_ONLY",
+    "PAT_ENVIRONMENTS": "TOKEN_VAZIO_PROVIDER_READBACK"
+  },
+  "members": [
+    {
+      "id": "router",
+      "repo": "rafaelmeloreisnovo/Mapa",
+      "role": "ROUTING_AND_STATE",
+      "visibility": "public",
+      "source_sha": "fa1253a69f4c87939c118e9f6f78199115e2d625",
+      "execution": "NO_REMOTE_CODE"
+    },
+    {
+      "id": "controller",
+      "repo": "rafaelmeloreisnovo/RafGitTools",
+      "role": "CI_CONTROL_AND_EVIDENCE",
+      "visibility": "public",
+      "source_sha": "38a20b00dbf789e6366d026a374bf63dba4a1220",
+      "execution": "NO_REMOTE_CODE"
+    },
+    {
+      "id": "compiler",
+      "repo": "rafaelmeloreisnovo/RafPolimata",
+      "role": "FREESTANDING_COMPILER_AND_APKC",
+      "visibility": "public",
+      "source_sha": "54d2cb7a0efaced06a53afa870e618554686dc6e",
+      "execution": "NO_REMOTE_CODE"
+    },
+    {
+      "id": "device",
+      "repo": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "role": "ANDROID_FIELD_RUNTIME",
+      "visibility": "public",
+      "source_sha": "bca1f47b6ec83d307777fb2fb309719b00653dd6",
+      "execution": "NO_REMOTE_CODE"
+    },
+    {
+      "id": "virtualization",
+      "repo": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "role": "DEVICE_VM_RESEARCH",
+      "visibility": "public",
+      "source_sha": "6e4d99c8d90a3a1ddcb68933c693815d7c6e847b",
+      "execution": "NO_REMOTE_CODE"
+    },
+    {
+      "id": "media",
+      "repo": "rafaelmeloreisnovo/EstudioAudio",
+      "role": "AUDIO_EXPERIMENTS",
+      "visibility": "public",
+      "source_sha": "8d79e91e4d4f6a0a5daa304baa430e0796489546",
+      "execution": "NO_REMOTE_CODE"
+    },
+    {
+      "id": "private-evidence",
+      "registry_id": "rafaelia-private",
+      "role": "PRIVATE_EVIDENCE_CUSTODY",
+      "visibility": "private",
+      "source_sha": "TOKEN_VAZIO",
+      "execution": "BLOCKED_UNTIL_MANUAL_PRIVATE_CI"
+    }
+  ],
+  "gates": [
+    "EXACT_SHA",
+    "NO_REMOTE_EXECUTION",
+    "SOURCE_LICENSE",
+    "DATA_MINIMIZATION",
+    "PRIVACY",
+    "CHILD_PROTECTION",
+    "HUMAN_DIGNITY",
+    "HUMAN_REVIEW",
+    "INDEPENDENT_EVIDENCE",
+    "ROLLBACK"
+  ],
+  "invariants": [
+    "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "TOKEN_VAZIO != 0",
+    "SKIPPED != PASS",
+    "HOST_PASS != PHYSICAL_PASS"
+  ]
+}
