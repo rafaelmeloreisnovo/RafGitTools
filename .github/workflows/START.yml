@@ -677,6 +677,32 @@ jobs:
             echo '::error::eval is forbidden in rafandroid execution path'
             exit 1
           fi
+      # Hosted build tool only: Ubuntu lld-18 (LLVM, Apache-2.0 WITH LLVM-exception).
+      # Existing cross-ELF verifier requires LLD; no dependency is linked into L0.
+      # Rollback: revert this provisioning step and the scoped LD override together.
+      - name: Provision hosted LLD 18 for cross-ELF verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ld.lld-18 >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y lld-18
+          fi
+          command -v ld.lld-18
+          ld.lld-18 --version
+          dpkg-query -W lld-18
+      - name: Raf Lens L0 freestanding exact-head gate
+        shell: bash
+        env:
+          LD: ld.lld-18
+        run: |
+          set -euo pipefail
+          command -v clang
+          command -v "$LD"
+          command -v nm
+          command -v readelf
+          sh freestanding/lens/verify_l0.sh
+
       - name: Silicon Light L0 freestanding gate
         shell: bash
         run: |
