@@ -9,26 +9,56 @@
 
 /* Parse de URL → preenche BCtx */
 static s32 URL_PARSE(const char*url,BCtx*ctx){
+    /* Host/path storage is bounded. Invalid URLs must not be truncated into
+     * a DIFFERENT destination: this includes embedded controls and overflow. */
+    if(!url||!ctx)return-1;
+    u32 input_len=SL(url);
+    if(input_len==0u)return-1;
     MC0(ctx->host,256u);MC0(ctx->path,512u);
     ctx->port=80u;ctx->use_tls=0;
     const char*p=url;
-    /* Detecta scheme */
-    if(BR_MEMCMP(p,"https://",8u)==0){ctx->use_tls=1;ctx->port=443u;p+=8;}
-    else if(BR_MEMCMP(p,"http://",7u)==0){p+=7;}
-    else if(BR_MEMCMP(p,"//",2u)==0){p+=2;}
-    /* Copia host até '/' ou ':' ou '\0' */
-    u32 hi=0;
+    if(input_len>=8u&&BR_MEMCMP(p,"https://",8u)==0){
+        ctx->use_tls=1;ctx->port=443u;p+=8;
+    }else if(input_len>=7u&&BR_MEMCMP(p,"http://",7u)==0){
+        p+=7;
+    }else if(input_len>=2u&&BR_MEMCMP(p,"//",2u)==0){
+        p+=2;
+    }
+    u32 hi=0u;
     while(*p&&*p!='/'&&*p!=':'){
-        if(hi<255u)ctx->host[hi++]=(char)*p;
+        u8 c=(u8)*p;
+        if(hi>=255u||c<=0x20u||c>=0x7Fu||
+           c=='@'||c=='?'||c=='#'||c=='\\')return-1;
+        ctx->host[hi++]=(char)c;
         p++;
     }
     ctx->host[hi]=0;
-    /* Porta customizada? */
-    if(*p==':'){p++;u32 port=0;while(*p>='0'&&*p<='9'){port=port*10u+(u32)(*p-'0');p++;}ctx->port=port;}
-    /* Path */
-    if(*p=='/'){u32 pi=0;while(*p&&pi<511u){ctx->path[pi++]=(char)*p;p++;}ctx->path[pi]=0;}
+    if(!hi)return-1;
+    if(*p==':'){
+        u32 port=0u,digits=0u;
+        p++;
+        while(*p>='0'&&*p<='9'){
+            u32 digit=(u32)(*p-'0');
+            if(port>6553u||(port==6553u&&digit>5u))return-1;
+            port=port*10u+digit;
+            digits++;
+            p++;
+        }
+        if(!digits||!port||(*p&&*p!='/'))return-1;
+        ctx->port=port;
+    }
+    if(*p=='/'){
+        u32 pi=0u;
+        while(*p){
+            u8 c=(u8)*p;
+            if(pi>=511u||c<0x20u||c==0x7Fu)return-1;
+            ctx->path[pi++]=(char)c;
+            p++;
+        }
+        ctx->path[pi]=0;
+    }else if(*p)return-1;
     else{ctx->path[0]='/';ctx->path[1]=0;}
-    return hi>0?0:-1;
+    return 0;
 }
 
 /* DNS query record A via UDP (porta 53)

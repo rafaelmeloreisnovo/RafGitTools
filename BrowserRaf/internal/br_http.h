@@ -103,6 +103,32 @@ static u32 STR2U32(const u8*s,u32 n){
     return v;
 }
 
+/* Strict bounded Content-Length: 0 absent, 1 valid, -1 malformed.
+ * Do not reuse STR2U32: HTML numeric entities need separate semantics. */
+static s32 HTTP_CONTENT_LENGTH(const u8*buf,u32 n,u32*out){
+    if(!buf||!out)return-1;
+    u32 hend=HTTP_HEADERS_END(buf,n);
+    if(!hend)return-1;
+    const u8*value=HTTP_FIND_HEADER(buf,n,"Content-Length");
+    if(!value)return 0;
+    u32 off=(u32)(value-buf);
+    u32 v=0u,digits=0u;
+    for(u32 i=off;i<hend;i++){
+        u8 c=buf[i];
+        if(c=='\r'){
+            if(!digits||i+1u>=hend||buf[i+1u]!='\n')return-1;
+            *out=v;
+            return 1;
+        }
+        if(c<'0'||c>'9')return-1;
+        u32 digit=(u32)(c-'0');
+        if(v>429496729u||(v==429496729u&&digit>5u))return-1;
+        v=v*10u+digit;
+        digits++;
+    }
+    return-1;
+}
+
 /* ── FIND END OF HEADERS ──────────────────────────────────────────────────── */
 /* Retorna offset do início do body (após \r\n\r\n) */
 
@@ -135,12 +161,18 @@ static u32 HTTP_DECHUNK(u8*buf,u32 n){
         r++;
 
         if(sz==0u){
-            if(r+1u<n&&buf[r]=='\r'&&buf[r+1u]=='\n')r+=2u;
+            if(r+1u>=n||buf[r]!='\r'||buf[r+1u]!='\n')return 0xFFFFFFFFu;
+            /* Only an explicit terminal CRLF is accepted here. Trailer
+             * support is deliberately NOT implied by this subset parser. */
+            r+=2u;
+            if(r!=n)return 0xFFFFFFFFu;
             return w;
         }
 
-        if(r+sz>n)return 0xFFFFFFFFu;
-        MC(buf+w,buf+r,sz);
+        if(sz>n-r)return 0xFFFFFFFFu; /* subtraction avoids unsigned wrap */
+        /* In-place dechunk writes below source (w<=r). MC copies backwards,
+         * which corrupts overlapping ranges when dest<src. Move forwards. */
+        for(u32 i=0u;i<sz;i++)buf[w+i]=buf[r+i];
         w+=sz;
         r+=sz;
 
@@ -154,5 +186,5 @@ static u32 HTTP_HEADERS_END(const u8*buf,u32 n){
         if(buf[i]=='\r'&&buf[i+1]=='\n'&&buf[i+2]=='\r'&&buf[i+3]=='\n')
             return i+4u;
     }
-    return n; /* headers não terminados ainda */
+    return 0u; /* incomplete header: reject, not a zero-length page */
 }

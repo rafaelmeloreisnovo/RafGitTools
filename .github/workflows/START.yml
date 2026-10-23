@@ -630,6 +630,10 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m unittest discover -s tests -p 'test_browser_wire_bounds.py' -v
+          python3 -m unittest discover -s tests -p 'test_browser_html_safety.py' -v
+          python3 -m unittest discover -s tests -p 'test_browser_phase_transition.py' -v
+          python3 -m unittest discover -s tests -p 'test_browser_url_failclosed.py' -v
+          python3 -m unittest discover -s tests -p 'test_browser_response_framing.py' -v
 
       - name: Verify repository factory contracts even in fast lane
         shell: bash
