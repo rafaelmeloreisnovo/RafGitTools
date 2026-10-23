@@ -25,9 +25,9 @@ static u32 HTTP_BUILD_REQ(const char*host,const char*path,u8*buf,u32 cap){
     /* User-Agent: RAFAELIA-Browser/1.0\r\n */
     MC(p,(const u8*)"User-Agent: RAFAELIA-Browser/1.0 (ARM; freestanding; nolibc)\r\n",62u);p+=62;
     /* Accept: text/html,text/plain\r\n */
-    MC(p,(const u8*)"Accept: text/html,text/plain;q=0.9,*/*;q=0.8\r\n",47u);p+=47;
+    MC(p,(const u8*)"Accept: text/html,text/plain;q=0.9,*/*;q=0.8\r\n",46u);p+=46;
     /* Accept-Language: pt-BR,pt;q=0.9,en;q=0.8\r\n */
-    MC(p,(const u8*)"Accept-Language: pt-BR,pt;q=0.9,en;q=0.8\r\n",43u);p+=43;
+    MC(p,(const u8*)"Accept-Language: pt-BR,pt;q=0.9,en;q=0.8\r\n",42u);p+=42;
     /* \r\n final */
     MC(p,(const u8*)"\r\n",2u);p+=2;
     return(u32)(p-buf);
