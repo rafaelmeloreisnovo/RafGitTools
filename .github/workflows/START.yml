@@ -105,6 +105,11 @@ on:
         required: false
         default: '{"pagina":1}'
         type: string
+      blake3_historical_replay:
+        description: 'Opt-in replay of pinned 2026-10-15 BLAKE3 APK; NOT the latest master and NOT a release'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -563,6 +568,63 @@ jobs:
           print(f'compiled_python_files={len(files)}')
           PY
 
+      - name: Checkout pinned RMR PAI for Drive canary (no Drive credentials)
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/drive-ci-custody-rmr-pai-single-root-v1-20261015'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: rafaelmeloreisnovo/BLAKE3
+          ref: 584a686ed68d3fb0189797a661884678a78df01b
+          path: rmr-pai-source
+          persist-credentials: false
+      - name: Build pinned RMR PAI and run BLAKE3 custody KAT and negative canary
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/drive-ci-custody-rmr-pai-single-root-v1-20261015'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C rmr-pai-source rev-parse HEAD)" = 584a686ed68d3fb0189797a661884678a78df01b
+          cmake -S rmr-pai-source/rmr -B "$RUNNER_TEMP/rmr-pai-build" -DCMAKE_BUILD_TYPE=Release \
+            -DRMR_BUILD_TESTS=OFF -DRMR_BUILD_HWIF=OFF -DRMR_BUILD_TOPOLOGY=OFF \
+            -DRMR_BUILD_CRYPTO_RUNTIME=OFF
+          cmake --build "$RUNNER_TEMP/rmr-pai-build" --target pai --parallel 2
+          mkdir -p "$RUNNER_TEMP/drive-custody-canary"
+          printf 'PUBLIC-RAFAELIA-CANARY-NO-PRIVATE-DATA\n' > "$RUNNER_TEMP/drive-custody-canary/source.bin"
+          cp "$RUNNER_TEMP/drive-custody-canary/source.bin" "$RUNNER_TEMP/drive-custody-canary/readback.bin"
+          expected="$(sha256sum "$RUNNER_TEMP/drive-custody-canary/source.bin" | cut -d' ' -f1)"
+          echo "RMR_PAI_BINARY_SHA256=$(sha256sum "$RUNNER_TEMP/rmr-pai-build/pai" | cut -d' ' -f1)"
+          python3 scripts/drive_custody_rmr_pair_v1.py \
+            --source "$RUNNER_TEMP/drive-custody-canary/source.bin" \
+            --drive-readback "$RUNNER_TEMP/drive-custody-canary/readback.bin" \
+            --provider-sha256 "$expected" --source-commit "$EXECUTION_SHA" \
+            --source-repo rafaelmeloreisnovo/RafGitTools \
+            --workflow-run-id "$GITHUB_RUN_ID" --artifact-id 1 \
+            --drive-file-id SIMULATED_CI_NO_ACTUAL_DRIVE_ID \
+            --previous-receipt-sha256 "$(printf '0%.0s' {1..64})" \
+            --pai "$RUNNER_TEMP/rmr-pai-build/pai" \
+            --output "$RUNNER_TEMP/drive-custody-canary/receipt.json"
+          printf 'X' >> "$RUNNER_TEMP/drive-custody-canary/readback.bin"
+          if python3 scripts/drive_custody_rmr_pair_v1.py \
+            --source "$RUNNER_TEMP/drive-custody-canary/source.bin" \
+            --drive-readback "$RUNNER_TEMP/drive-custody-canary/readback.bin" \
+            --provider-sha256 "$expected" --source-commit "$EXECUTION_SHA" \
+            --source-repo rafaelmeloreisnovo/RafGitTools \
+            --workflow-run-id "$GITHUB_RUN_ID" --artifact-id 1 \
+            --drive-file-id SIMULATED_CI_NO_ACTUAL_DRIVE_ID \
+            --previous-receipt-sha256 "$(printf '0%.0s' {1..64})" \
+            --pai "$RUNNER_TEMP/rmr-pai-build/pai" \
+            --output "$RUNNER_TEMP/drive-custody-canary/rejected.json"; then
+            echo "CORRUPT_TRANSFER_UNEXPECTEDLY_ACCEPTED" >&2
+            exit 1
+          fi
+          test ! -e "$RUNNER_TEMP/drive-custody-canary/rejected.json"
+          echo "RMR_PAI_KAT_AND_FAIL_CLOSED_CUSTODY=PASS_CI_SIMULATION_NOT_LIVE_DRIVE"
+      - name: Preserve pinned RMR pai binary for private readback verification
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/drive-ci-custody-rmr-pai-single-root-v1-20261015'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rmr-pai-pinned-binary-584a686e
+          path: ${{ runner.temp }}/rmr-pai-build/pai
+          if-no-files-found: error
+          retention-days: 1
       - name: Verify repository factory contracts even in fast lane
         shell: bash
         run: |
@@ -615,6 +677,32 @@ jobs:
             echo '::error::eval is forbidden in rafandroid execution path'
             exit 1
           fi
+      # Hosted build tool only: Ubuntu lld-18 (LLVM, Apache-2.0 WITH LLVM-exception).
+      # Existing cross-ELF verifier requires LLD; no dependency is linked into L0.
+      # Rollback: revert this provisioning step and the scoped LD override together.
+      - name: Provision hosted LLD 18 for cross-ELF verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ld.lld-18 >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y lld-18
+          fi
+          command -v ld.lld-18
+          ld.lld-18 --version
+          dpkg-query -W lld-18
+      - name: Raf Lens L0 freestanding exact-head gate
+        shell: bash
+        env:
+          LD: ld.lld-18
+        run: |
+          set -euo pipefail
+          command -v clang
+          command -v "$LD"
+          command -v nm
+          command -v readelf
+          sh freestanding/lens/verify_l0.sh
+
       - name: Silicon Light L0 freestanding gate
         shell: bash
         run: |
@@ -1976,3 +2064,127 @@ jobs:
           path: artifacts/promotion-hold-receipt.json
           if-no-files-found: warn
           retention-days: 30
+
+  blake3_triple_abi_apk:
+    name: '10 · BLAKE3 triple APK (RMR / fork / official; dual ABI)'
+    needs: [plan, topology]
+    if: >-
+      ${{ needs.topology.result == 'success' &&
+          ((github.event_name == 'pull_request' &&
+            github.head_ref == 'feat/blake3-triple-abi-apk-build-bridge-20261015') ||
+           (github.event_name == 'workflow_dispatch' &&
+            inputs.blake3_historical_replay == true)) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    env:
+      BLAKE3_FORK_SOURCE_SHA: 46c5f88f073a7aafb062953bc56a2fe8e36089c5
+      B3_UPSTREAM_SHA: f55849f89cd85083c1c9daa2c5de20766f309c00
+      RMR_SOURCE_SHA: 46c5f88f073a7aafb062953bc56a2fe8e36089c5
+    steps:
+      - name: Source checkout isolated from RafGitTools CI control
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Checkout exact BLAKE3 fork source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/blake3-work/fork"
+          cd "$RUNNER_TEMP/blake3-work/fork"
+          git init -q
+          git remote add origin https://github.com/rafaelmeloreisnovo/BLAKE3.git
+          git fetch --no-tags --depth=1 origin "$BLAKE3_FORK_SOURCE_SHA"
+          git checkout --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$BLAKE3_FORK_SOURCE_SHA"
+          test -s rmr/android/app/src/main/cpp/b3_compare_jni.c
+      - name: Checkout official upstream at exact commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          fork="$RUNNER_TEMP/blake3-work/fork"
+          official="$fork/rmr/android/upstream_official"
+          mkdir -p "$official"
+          git -C "$official" init -q
+          git -C "$official" remote add origin https://github.com/BLAKE3-team/BLAKE3.git
+          git -C "$official" fetch --no-tags --depth=1 origin "$B3_UPSTREAM_SHA"
+          git -C "$official" checkout --detach FETCH_HEAD
+          test "$(git -C "$official" rev-parse HEAD)" = "$B3_UPSTREAM_SHA"
+          for name in LICENSE_A2 LICENSE_A2LLVM LICENSE_CC0; do
+            test -s "$official/$name"
+          done
+          echo "BLAKE3_OFFICIAL_DIR=$official" >> "$GITHUB_ENV"
+      - name: Configure existing Android build tools without auto-accepting licenses
+        shell: bash
+        run: |
+          set -euo pipefail
+          export JAVA_HOME="${JAVA_HOME_17_X64:-$JAVA_HOME}"
+          test -x "$JAVA_HOME/bin/java"
+          echo "JAVA_HOME=$JAVA_HOME" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME/bin" >> "$GITHUB_PATH"
+          sdk="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          test -n "$sdk"
+          test -x "$sdk/cmdline-tools/latest/bin/sdkmanager"
+          "$sdk/cmdline-tools/latest/bin/sdkmanager"             'platforms;android-36' 'build-tools;36.0.0'             'ndk;27.2.12479018' 'cmake;3.22.1'
+          echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$sdk" >> "$GITHUB_ENV"
+          version=8.11.1
+          expected=f397b287023acdba1e9f6fc5ea72d22dd63669d59ed4a289a29b1a76eee151c6
+          mkdir -p "$RUNNER_TEMP/rmr-gradle"
+          curl -fsSL "https://services.gradle.org/distributions/gradle-$version-bin.zip"             -o "$RUNNER_TEMP/rmr-gradle/gradle.zip"
+          printf '%s  %s\n' "$expected" "$RUNNER_TEMP/rmr-gradle/gradle.zip"             | sha256sum -c --strict
+          unzip -q "$RUNNER_TEMP/rmr-gradle/gradle.zip" -d "$RUNNER_TEMP/rmr-gradle"
+          echo "$RUNNER_TEMP/rmr-gradle/gradle-$version/bin" >> "$GITHUB_PATH"
+      - name: Assemble real Android APK with 3 native libraries times 2 ABIs
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle --project-dir "$RUNNER_TEMP/blake3-work/fork/rmr/android" --no-daemon :app:assembleDebug
+      - name: Binary, license and signature gates with receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          fork="$RUNNER_TEMP/blake3-work/fork"
+          official="$fork/rmr/android/upstream_official"
+          apk="$fork/rmr/android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$apk"
+          for abi in armeabi-v7a arm64-v8a; do
+            for lib in officialhash forkhash rmrhash; do
+              unzip -Z1 "$apk" | grep -Fx "lib/$abi/lib$lib.so"
+              unzip -p "$apk" "lib/$abi/lib$lib.so" > "$RUNNER_TEMP/$abi-$lib.so"
+              test -s "$RUNNER_TEMP/$abi-$lib.so"
+              file "$RUNNER_TEMP/$abi-$lib.so"
+            done
+          done
+          for asset in OFFICIAL_LICENSE_A2 OFFICIAL_LICENSE_A2LLVM OFFICIAL_LICENSE_CC0             LICENSE_RMR LICENSE_A2 LICENSE_A2LLVM LICENSE_CC0             LICENSE_RMR_INDIVIDUAL_RESEARCH_V1.txt THIRD_PARTY_NOTICES_RAFAELIA.md PROVENANCE.txt; do
+            unzip -Z1 "$apk" | grep -Fx "assets/$asset"
+          done
+          "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --verbose "$apk"
+          "$ANDROID_SDK_ROOT/build-tools/36.0.0/zipalign" -c -p 4 "$apk"
+          mkdir -p "$RUNNER_TEMP/blake3-output"
+          cp "$apk" "$RUNNER_TEMP/blake3-output/RAFAELIA_BLAKE3_3PATHS_ARM32_ARM64_DEBUG.apk"
+          {
+            echo "state=APK_CREATED_ABI_LICENSE_SIGNATURE_CHECKED"
+            echo "claim_allowed=false"
+            echo "apk_sha256=$(sha256sum "$apk" | cut -d' ' -f1)"
+            echo "apk_bytes=$(stat -c '%s' "$apk")"
+            echo "fork_sha=$BLAKE3_FORK_SOURCE_SHA"
+            echo "official_sha=$B3_UPSTREAM_SHA"
+            echo "fork_core_sha256=$(sha256sum "$fork/c/blake3.c" | cut -d' ' -f1)"
+            echo "official_core_sha256=$(sha256sum "$official/c/blake3.c" | cut -d' ' -f1)"
+            echo "abis=armeabi-v7a,arm64-v8a"
+            echo "libraries=officialhash,forkhash,rmrhash"
+            echo "licenses=OFFICIAL,FORK,RMR_PRESENT"
+            echo "signature=DEBUG_VERIFIED"
+            echo "physical_arm32=TOKEN_VAZIO"
+            echo "physical_arm64=TOKEN_VAZIO"
+          } > "$RUNNER_TEMP/blake3-output/RECEIPT.txt"
+          cat "$RUNNER_TEMP/blake3-output/RECEIPT.txt"
+      - name: Publish single installable APK and scoped receipt
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rafaelia-blake3-triple-abi-debug-${{ github.run_id }}
+          path: ${{ runner.temp }}/blake3-output/
+          if-no-files-found: error
+          retention-days: 14
