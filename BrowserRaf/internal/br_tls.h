@@ -81,6 +81,15 @@ static s32 TLS_INIT(TLSCtx*t){
  * [0x01][0x00]                           ← compression = null
  * extensions...                          */
 static u32 TLS_BUILD_CLIENT_HELLO(TLSCtx*t,const char*host,u8*buf,u32 cap){
+    /* Wire serialization ONLY. HTTPS/TLS authentication remains disabled. */
+    if(!t||!host||!buf)return 0u;
+    u32 hlen=0u;
+    while(hlen<254u&&host[hlen])hlen++;
+    if(!hlen||hlen>253u||cap<92u+hlen)return 0u;
+    for(u32 i=0u;i<hlen;i++){
+        u8 c=(u8)host[i];
+        if(c<=0x20u||c>=0x7Fu)return 0u;
+    }
     /* Usamos ponteiro p que avança — sem nomes de variável adicionais */
     u8*p=buf+5;   /* reserva 5 bytes para o record header */
     u8*hs=p;      /* handshake header começa aqui */
@@ -108,7 +117,6 @@ static u32 TLS_BUILD_CLIENT_HELLO(TLSCtx*t,const char*host,u8*buf,u32 cap){
     *p++=0x02;           /* versions list length = 2 */
     *p++=0x03;*p++=0x04; /* TLS 1.3 */
     /* EXT: server_name (0x0000) — SNI */
-    u32 hlen=SL(host);
     *p++=0x00;*p++=0x00; /* type */
     u32 sni_ext_len=hlen+5u;
     *p++=(u8)(sni_ext_len>>8u);*p++=(u8)(sni_ext_len);
