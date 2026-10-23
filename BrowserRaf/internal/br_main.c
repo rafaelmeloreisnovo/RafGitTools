@@ -182,6 +182,11 @@ static s32 DO_FETCH(BCtx*ctx){
     /* ── FASE 4: HTTP request ────────────────────────────────────────── */
     STATUS(ctx->flags,"Enviando request HTTP...");
     u32 reqlen=HTTP_BUILD_REQ(ctx->host,ctx->path,_NB,NET_BUF);
+    if(!reqlen){
+        FF_SET(ctx->flags,FL_ERROR);
+        STATUS(ctx->flags,"HTTP request rejeitada: comprimento ou entrada invalida");
+        goto done;
+    }
     PS("  Request (");PN(reqlen);PS("B):\n");
     WR_SAFE(2,_NB,reqlen); /* debug: imprime request no stderr */
     s32 sent=SEND_ALL(ctx->fd,_NB,reqlen);

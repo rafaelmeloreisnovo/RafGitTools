@@ -11,23 +11,39 @@
 
 /* ── BUILDER DE REQUEST HTTP ────────────────────────────────────────────── */
 static u32 HTTP_BUILD_REQ(const char*host,const char*path,u8*buf,u32 cap){
+    /* Bounded input; reject before writing to buf. */
+    if(!host||!path||!buf)return 0u;
+    u32 hlen=0u,plen=0u;
+    while(hlen<254u&&host[hlen])hlen++;
+    while(plen<512u&&path[plen])plen++;
+    if(!hlen||hlen>253u||!plen||plen>=512u||path[0]!='/')return 0u;
+    for(u32 i=0u;i<hlen;i++){
+        u8 c=(u8)host[i];
+        if(c<=0x20u||c>=0x7Fu)return 0u;
+    }
+    for(u32 i=0u;i<plen;i++){
+        u8 c=(u8)path[i];
+        if(c<=0x20u||c==0x7Fu)return 0u;
+    }
+    /* Literal payload 194 bytes; each variable field checked above. */
+    if(cap<194u+hlen+plen)return 0u;
     u8*p=buf;
     /* GET {path} HTTP/1.1\r\n */
     MC(p,(const u8*)"GET ",4u);p+=4;
-    u32 plen=SL(path);MC(p,(const u8*)path,plen);p+=plen;
+    MC(p,(const u8*)path,plen);p+=plen;
     MC(p,(const u8*)" HTTP/1.1\r\n",11u);p+=11;
     /* Host: {host}\r\n */
     MC(p,(const u8*)"Host: ",6u);p+=6;
-    u32 hlen=SL(host);MC(p,(const u8*)host,hlen);p+=hlen;
+    MC(p,(const u8*)host,hlen);p+=hlen;
     MC(p,(const u8*)"\r\n",2u);p+=2;
     /* Connection: close\r\n */
     MC(p,(const u8*)"Connection: close\r\n",19u);p+=19;
     /* User-Agent: RAFAELIA-Browser/1.0\r\n */
     MC(p,(const u8*)"User-Agent: RAFAELIA-Browser/1.0 (ARM; freestanding; nolibc)\r\n",62u);p+=62;
     /* Accept: text/html,text/plain\r\n */
-    MC(p,(const u8*)"Accept: text/html,text/plain;q=0.9,*/*;q=0.8\r\n",47u);p+=47;
+    MC(p,(const u8*)"Accept: text/html,text/plain;q=0.9,*/*;q=0.8\r\n",46u);p+=46;
     /* Accept-Language: pt-BR,pt;q=0.9,en;q=0.8\r\n */
-    MC(p,(const u8*)"Accept-Language: pt-BR,pt;q=0.9,en;q=0.8\r\n",43u);p+=43;
+    MC(p,(const u8*)"Accept-Language: pt-BR,pt;q=0.9,en;q=0.8\r\n",42u);p+=42;
     /* \r\n final */
     MC(p,(const u8*)"\r\n",2u);p+=2;
     return(u32)(p-buf);
