@@ -33,8 +33,9 @@ Modo econômico (somente contagens e compromissos lexicais, três shards):
       --first 0 --last 50 --max-shards 3
 
 Os caminhos de saída devem ser NOVOS, fora da origem. Pasta 0700 e arquivos 0600, criação exclusiva sem sobrescrever. Para cada shard:
-- SHARD_NNN/INTERACTIONS_PRIVATE.jsonl — texto de usuário e IA, nunca subir em repositório público.
-- SHARD_NNN/RECEIPT.json — SHA-256 origem antes/depois, SHA-256 output, contagens, lacunas e status.
+- SHARD_NNN/INTERACTIONS_PRIVATE.jsonl — uma linha por nó, textos originais de usuário/IA e lexemas opcionais; não subir em GitHub público.
+- SHARD_NNN/INTERACTION_INDEX_PRIVATE.jsonl — uma linha por prompt/interação, com ponteiros para o prompt e todas as respostas alternativas da IA, contagem por papel e tokens lexicais por papel; não duplica os corpos privados.
+- SHARD_NNN/RECEIPT.json — SHA-256 origem antes/depois, dois hashes de output, contagens, lacunas e status.
 
 ## Tokens: réguas distintas
 
