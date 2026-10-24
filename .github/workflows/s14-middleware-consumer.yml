@@ -1,0 +1,31 @@
+name: S14 Authorial Middleware Consumer Contract
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'contracts/authorial_middleware_s14_handoff.v1.json'
+      - 'scripts/validate_s14_authorial_middleware.py'
+      - 'tests/test_s14_authorial_middleware.py'
+      - '.github/workflows/s14-middleware-consumer.yml'
+  pull_request:
+    paths:
+      - 'contracts/authorial_middleware_s14_handoff.v1.json'
+      - 'scripts/validate_s14_authorial_middleware.py'
+      - 'tests/test_s14_authorial_middleware.py'
+permissions:
+  contents: read
+jobs:
+  consumer_contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Fail closed on inaccurate producer and runtime claims
+        run: |
+          python3 scripts/validate_s14_authorial_middleware.py contracts/authorial_middleware_s14_handoff.v1.json
+          python3 -m unittest discover -s tests -p test_s14_authorial_middleware.py -v
+      - name: Never inherit producer or device PASS
+        if: always()
+        run: |
+          echo 'Only producer-consumer contract structure was checked.'
+          echo 'No Android, GPU/NUMA, rights review or automated rollback has been executed.'
