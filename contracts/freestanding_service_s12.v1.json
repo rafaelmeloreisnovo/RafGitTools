@@ -73,5 +73,18 @@
     "runtime_device_receipt_for_android_claims"
   ],
   "rollback": "NO_MERGE_APPEND_ONLY",
-  "source_not_equal_execution": true
+  "source_not_equal_execution": true,
+  "module_admission": {
+    "implemented_pure_module_ids": [
+      1,
+      2
+    ],
+    "reserved_platform_module_ids": [
+      3,
+      4
+    ],
+    "external_capability_mask": 511,
+    "runtime_dispatch_implemented": false,
+    "verified_execution": false
+  }
 }
