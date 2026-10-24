@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafgittools.local/contracts/novoexport-four-node-handoff.v1.schema.json",
+  "title": "RafGitTools NOVOexport Four-Node Metadata Handoff — PLAN ONLY",
+  "description": "Shape constraints. Built-in Python validator enforces additional security checks. Neither tool authorizes execution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "intent", "origin", "snapshot", "data_boundary", "plan", "gates", "claim_allowed"],
+  "properties": {
+    "schema": {"const": "rafaelia.novoexport-four-node-handoff.v1"},
+    "intent": {"const": "NAME_CATALOG_METADATA"},
+    "origin": {
+      "type": "object", "additionalProperties": false,
+      "required": ["provider", "file_name", "source_ref", "source_sha256", "role"],
+      "properties": {
+        "provider": {"enum": ["ANDROID_SAF", "GOOGLE_DRIVE", "GITHUB"]},
+        "file_name": {"type": "string", "minLength": 1, "maxLength": 512},
+        "source_ref": {"type": "string", "minLength": 1, "maxLength": 1024},
+        "source_sha256": {"type": "string", "pattern": "^([a-f0-9]{64}|TOKEN_VAZIO(?:_[A-Z0-9_]+)?)$"},
+        "role": {"enum": ["METADATA_OBSERVATION", "CUSTODY_POINTER"]}
+      }
+    },
+    "snapshot": {
+      "type": "object", "additionalProperties": false,
+      "required": ["novoexport_repository", "novoexport_commit", "rafgittools_repository", "rafgittools_commit", "drive_receipt_ref"],
+      "properties": {
+        "novoexport_repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+        "novoexport_commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "rafgittools_repository": {"const": "rafaelmeloreisnovo/RafGitTools"},
+        "rafgittools_commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "drive_receipt_ref": {"type": "string", "pattern": "^drive:.+"}
+      }
+    },
+    "data_boundary": {
+      "type": "object", "additionalProperties": false,
+      "required": ["transfer_mode", "raw_corpus_in_payload", "secret_values_in_payload", "destination_visibility"],
+      "properties": {
+        "transfer_mode": {"const": "METADATA_ONLY"},
+        "raw_corpus_in_payload": {"const": false},
+        "secret_values_in_payload": {"const": false},
+        "destination_visibility": {"const": "private"}
+      }
+    },
+    "plan": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "write_requires_human_approval", "execution_authorized", "name_relation_state", "rollback"],
+      "properties": {
+        "state": {"const": "PLAN_ONLY"},
+        "write_requires_human_approval": {"const": true},
+        "execution_authorized": {"const": false},
+        "name_relation_state": {"const": "CANDIDATE_ONLY"},
+        "rollback": {"const": "APPEND_ONLY_SUCCESSOR"}
+      }
+    },
+    "gates": {
+      "type": "object", "additionalProperties": false,
+      "required": ["physical_device", "github_exact_head_ci", "drive_readback", "independent_review"],
+      "properties": {
+        "physical_device": {"enum": ["TOKEN_VAZIO_NOT_RUN", "TOKEN_VAZIO_UNVERIFIED", "TOKEN_VAZIO_UNRESOLVED"]},
+        "github_exact_head_ci": {"enum": ["TOKEN_VAZIO_NOT_RUN", "TOKEN_VAZIO_UNVERIFIED", "TOKEN_VAZIO_UNRESOLVED"]},
+        "drive_readback": {"enum": ["TOKEN_VAZIO_NOT_RUN", "TOKEN_VAZIO_UNVERIFIED", "TOKEN_VAZIO_UNRESOLVED"]},
+        "independent_review": {"enum": ["TOKEN_VAZIO_NOT_RUN", "TOKEN_VAZIO_UNVERIFIED", "TOKEN_VAZIO_UNRESOLVED"]}
+      }
+    },
+    "claim_allowed": {"const": false}
+  }
+}
