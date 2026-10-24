@@ -1,0 +1,68 @@
+{
+  "schema": "rafaelia.middleware.s15.android_hosted_handoff.v1",
+  "claim_allowed": false,
+  "producer": {
+    "repository": "rafaelmeloreisnovo/RafPolimata",
+    "commit": "68195995718b9f0653ca4ce4575d375ce60ac756",
+    "c_source_blob": "e46b1e24191f901edf91d6ce4c5003fa5d74438f",
+    "h_source_blob": "ad97c24a2c9c3ea291e26ce3d74322f89d84f9d5",
+    "abi_words": 16,
+    "pure_core_external_undefined_symbols": 0,
+    "reported_executed_slot": 14,
+    "reported_executed_value": 0
+  },
+  "consumer": {
+    "repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+    "branch": "rafaelia/s15-android-hosted-middleware-20261024",
+    "exact_head": "0d7fd37eb100f3d0310b1621f0a6603eaa2f935c",
+    "java_surface": "app/src/main/java/com/termux/app/rafaelia/RafaeliaMiddlewareBridge.java",
+    "jni_bridge": "app/src/main/cpp/lowlevel/middleware_s15/raf_mw_jni.c",
+    "native_module": "termux_rafaelia_middleware_s15",
+    "enable_flag": "RAFAELIA_S15_MIDDLEWARE",
+    "default_enabled": false,
+    "abi_profiles": [
+      "armeabi-v7a",
+      "arm64-v8a"
+    ]
+  },
+  "evidence": {
+    "run_id": 40140221144,
+    "run_url": "https://github.com/rafaelmeloreisnovo/termux-app-rafacodephi/actions/runs/40140221144",
+    "host_contract": "PASS_SCOPED",
+    "ndk_shared_link": "PASS_SCOPED",
+    "android_mk_module": "PASS_SCOPED",
+    "ndk_version": "26.3.11579264",
+    "java_fail_closed_cases": 6,
+    "android_apk": "TOKEN_VAZIO_NOT_BUILT",
+    "device_install": "TOKEN_VAZIO_NOT_RUN",
+    "jni_on_device": "TOKEN_VAZIO_NOT_RUN",
+    "watchdog_live": "TOKEN_VAZIO_NOT_RUN",
+    "gpu_numa_execution": "TOKEN_VAZIO_NOT_RUN",
+    "authorization_to_release": "TOKEN_VAZIO_NOT_OBSERVED"
+  },
+  "boundary": [
+    "PURE_CORE_C_STILL_OS_NEUTRAL",
+    "JNI_AND_JAVA_ARE_HOSTED_ONLY",
+    "SOURCE_BLOB_BYTE_MATCH",
+    "PLAN_IS_NOT_EXECUTION",
+    "NO_BOOSTRAP_MODIFICATION",
+    "NO_AUTO_MERGE",
+    "ZERO_DELETE",
+    "HUMAN_LICENSE_REVIEW_REQUIRED"
+  ],
+  "rollback": {
+    "code": "RAFAELIA_S15_MIDDLEWARE=0",
+    "device": "NO_DEVICE_MUTATION_WAS_PERFORMED",
+    "branch": "KEEP_PREDECESSORS_AND_CLOSE_OR_SUPERSEDE_WITHOUT_MERGE",
+    "authorization": "HUMAN_REVIEW_REQUIRED"
+  },
+  "claim_gate": "BLOCKED_PHYSICAL_RUNTIME_AND_RELEASE",
+  "f_next": [
+    "review_source_rights",
+    "assemble_debug_canary_without_overwriting_existing_app",
+    "inspect_signed_APK_libraries_and_package_identity",
+    "authorize_physical_ARM32_AND_ARM64_tests",
+    "test_bootstrap_keyboard_and_fail_closed_JNI",
+    "compare_startup_energy_latency_if_real"
+  ]
+}
