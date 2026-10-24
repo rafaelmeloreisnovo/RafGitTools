@@ -1,0 +1,64 @@
+{
+  "schema": "rafaelia.middleware.s14.producer_consumer_handoff.v1",
+  "producer": {
+    "repository": "rafaelmeloreisnovo/RafPolimata",
+    "head": "68195995718b9f0653ca4ce4575d375ce60ac756",
+    "source": "freestanding/deterministic_middleware/raf_mw.c",
+    "blob_sha1": "e46b1e24191f901edf91d6ce4c5003fa5d74438f",
+    "header_blob_sha1": "ad97c24a2c9c3ea291e26ce3d74322f89d84f9d5",
+    "ci_run": 40135846363,
+    "proof": "OBJECT_AND_HOST_SCENARIOS_ONLY"
+  },
+  "consumer": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "owner": "GOVERNANCE_ONLY",
+    "runtime_connector": "NOT_IMPLEMENTED"
+  },
+  "android": {
+    "repository": "rafaelmeloreisnovo/termux-app-rafacodephi",
+    "adapter": "NOT_IMPLEMENTED",
+    "device": "TOKEN_VAZIO_NOT_RUN",
+    "abi": [
+      "armeabi-v7a",
+      "arm64-v8a"
+    ]
+  },
+  "pure_core": {
+    "one_entry": "raf_mw_route",
+    "words": 16,
+    "byte_size_per_word": 4,
+    "output_executed_always_zero": true,
+    "external_runtime_symbols": 0,
+    "libc": false,
+    "heap": false,
+    "jni": false,
+    "syscalls": false,
+    "gpu_driver": false,
+    "numa_api": false
+  },
+  "lanes": {
+    "scalar": 1,
+    "neon": 2,
+    "simd": 4,
+    "gpu_host_only": 8,
+    "numa_host_only": 16
+  },
+  "safety": {
+    "watchdogs": "TWO_PASSIVE_COUNTER_COMPARATORS",
+    "fallback": "PLANNED_ROUTE_ONLY",
+    "failover": "PLANNED_ROUTE_ONLY",
+    "rollback": "RECOMMENDATION_ONLY",
+    "host_scope_permission": "NOT_HUMAN_AUTHORIZATION",
+    "human_review": "TOKEN_VAZIO_NOT_COMPLETED",
+    "license": "TOKEN_VAZIO_AUTHORIAL_RIGHTS_REVIEW"
+  },
+  "evidence": {
+    "local": "14_ROUTING_SCENARIOS_PLUS_4_BOUNDS_GUARDS",
+    "exact_head_ci": "PASS_OBJECT_HARNESS",
+    "physical_arm_device": "NOT_RUN",
+    "actual_neon_simd": "NOT_RUN",
+    "actual_gpu_numa": "NOT_RUN"
+  },
+  "allow_claim": false,
+  "rollback": "BRANCH_ONLY_NO_MERGE_NO_DELETE"
+}
