@@ -1,0 +1,32 @@
+name: S15 Android Handoff Evidence Contract
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'contracts/authorial_middleware_s15_android_handoff.v1.json'
+      - 'scripts/validate_s15_android_handoff.py'
+      - 'tests/test_s15_android_handoff.py'
+      - '.github/workflows/s15-android-evidence-contract.yml'
+  pull_request:
+    paths:
+      - 'contracts/authorial_middleware_s15_android_handoff.v1.json'
+      - 'scripts/validate_s15_android_handoff.py'
+      - 'tests/test_s15_android_handoff.py'
+      - '.github/workflows/s15-android-evidence-contract.yml'
+permissions:
+  contents: read
+jobs:
+  evidence_only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3, Node 24
+      - name: Exact-source and no-runtime-claim policy validation
+        run: |
+          python3 scripts/validate_s15_android_handoff.py contracts/authorial_middleware_s15_android_handoff.v1.json
+          python3 -m unittest discover -s tests -p 'test_s15_android_handoff.py' -v
+      - name: Scope
+        if: always()
+        run: |
+          echo 'Policy gate only; S15 Android NDK pass bound to consumer run 40140221144.'
+          echo 'No signed APK, device, active watchdog, GPU, NUMA or human license grant.'
