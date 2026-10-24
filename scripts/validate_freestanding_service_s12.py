@@ -4,7 +4,7 @@ import json
 import sys
 from pathlib import Path
 
-REQUIRED = ("schema", "kernel_profile", "runtime_external_dependencies", "binary_prefix_families", "friction_lanes", "matrix_cells", "constraints", "claim_allowed", "promotion_requires", "test_evidence", "rollback")
+REQUIRED = ("schema", "kernel_profile", "runtime_external_dependencies", "binary_prefix_families", "friction_lanes", "matrix_cells", "constraints", "claim_allowed", "promotion_requires", "test_evidence", "rollback", "module_admission")
 FORBIDDEN = ("libc", "heap", "syscalls", "jni", "java", "jit", "platform_functions", "external_symbols")
 FAMILIES = ("ELF", "DEX", "CDEX", "OAT", "VDEX", "ART", "ZIP", "AR", "WASM", "PNG", "GZIP", "MZ", "MACHO")
 LANES = ("JNI_JAVA", "ART_JIT", "ANDROID_SDK_NDK", "HEAP_GC", "GRADLE_R8_D8_JDK", "ELF_LINKER_SYSCALL", "FLAGS_BRANCH_TAIL_SHADOW_HEX")
@@ -26,6 +26,13 @@ def validate(d):
         return "HUMAN_PROMOTION_GATE_MISSING"
     if d["test_evidence"].get("physical_android") != "TOKEN_VAZIO_NOT_RUN":
         return "UNSUPPORTED_ANDROID_CLAIM"
+    adm=d.get("module_admission")
+    if (not isinstance(adm,dict) or adm.get("implemented_pure_module_ids") != [1,2]
+        or adm.get("reserved_platform_module_ids") != [3,4]
+        or adm.get("external_capability_mask") != 511
+        or adm.get("runtime_dispatch_implemented") is not False
+        or adm.get("verified_execution") is not False):
+        return "MODULE_ADMISSION_DRIFT"
     if d["rollback"] != "NO_MERGE_APPEND_ONLY":
         return "ROLLBACK_MISSING"
     return "PASS_SCOPED_CONTRACT_ONLY"
