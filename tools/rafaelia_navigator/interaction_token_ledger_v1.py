@@ -180,6 +180,7 @@ def emit_shard(source: Path, output: Path, *, emit_tokens=False):
     output.mkdir(parents=True, mode=0o700)
     output.chmod(0o700)
     payload_path = output / "INTERACTIONS_PRIVATE.jsonl"
+    turns_path = output / "INTERACTION_INDEX_PRIVATE.jsonl"
     receipt_path = output / "RECEIPT.json"
     before = sha256_file(source)
     counts = {"conversations": 0, "mapping_nodes": 0, "user_nodes": 0,
@@ -187,8 +188,10 @@ def emit_shard(source: Path, output: Path, *, emit_tokens=False):
               "empty_nodes": 0, "interactions_anchored": 0,
               "topology_gaps": 0, "lexical_tokens": 0}
     user_roots = set()
-    with payload_path.open("x", encoding="utf-8", newline="\n") as out:
+    with payload_path.open("x", encoding="utf-8", newline="\n") as out, \
+         turns_path.open("x", encoding="utf-8", newline="\n") as turns_out:
         payload_path.chmod(0o600)
+        turns_path.chmod(0o600)
         for ci, convo in enumerate(iter_json_array(source)):
             if not isinstance(convo, dict):
                 raise Blocked(f"conversation[{ci}] is not an object")
@@ -199,6 +202,7 @@ def emit_shard(source: Path, output: Path, *, emit_tokens=False):
                       or "TOKEN_VAZIO_CONVERSATION_ID")
             counts["conversations"] += 1
             memo = {}
+            grouped = {}
             for nid, node in mapping.items():
                 if not isinstance(node, dict):
                     raise Blocked(f"conversation[{ci}] invalid node {nid}")
@@ -221,6 +225,35 @@ def emit_shard(source: Path, output: Path, *, emit_tokens=False):
                     counts["lexical_tokens"] += row["content"]["lexical_tokenization"]["lexical_count"]
                 out.write(json.dumps(row, ensure_ascii=False, sort_keys=True,
                                      separators=(",", ":")) + "\n")
+                # A per-interaction view has pointers, not duplicated private text.
+                iid = row["interaction_id"]
+                if iid is not None:
+                    entry = grouped.setdefault(iid, {
+                        "schema": "rafaelia.interaction-turn-index/v1",
+                        "interaction_id": iid, "conversation_id": cid,
+                        "source_shard": source.name, "conversation_ordinal": ci,
+                        "prompt_source_pointer": None,
+                        "assistant_source_pointers": [],
+                        "tool_or_other_source_pointers": [],
+                        "role_counts": {}, "lexical_tokens_by_role": {},
+                        "model_token_count": "TOKEN_VAZIO_MODEL_TOKENIZER_UNPINNED",
+                        "privacy_class": "PRIVATE_DEFAULT_DENY",
+                        "claim_allowed": False,
+                    })
+                    entry["role_counts"][row["role"]] = entry["role_counts"].get(row["role"], 0) + 1
+                    count_here = (row["content"]["lexical_tokenization"]["lexical_count"]
+                                  if row["content"] is not None else 0)
+                    entry["lexical_tokens_by_role"][row["role"]] = (
+                        entry["lexical_tokens_by_role"].get(row["role"], 0) + count_here)
+                    if row["role"] == "user":
+                        entry["prompt_source_pointer"] = row["source_pointer"]
+                    elif row["role"] == "assistant":
+                        entry["assistant_source_pointers"].append(row["source_pointer"])
+                    else:
+                        entry["tool_or_other_source_pointers"].append(row["source_pointer"])
+            for entry in grouped.values():
+                turns_out.write(json.dumps(entry, ensure_ascii=False, sort_keys=True,
+                                           separators=(",", ":")) + "\n")
     after = sha256_file(source)
     if after != before:
         raise Blocked("source file changed during processing, receipt withheld")
@@ -232,6 +265,8 @@ def emit_shard(source: Path, output: Path, *, emit_tokens=False):
         "source_file": source.name, "source_sha256_before": before,
         "source_sha256_after": after, "source_size_bytes": source.stat().st_size,
         "output_file": payload_path.name, "output_sha256": sha256_file(payload_path),
+        "interaction_index_file": turns_path.name,
+        "interaction_index_sha256": sha256_file(turns_path),
         "counts": counts,
         "gaps": ["TOKEN_VAZIO_MODEL_TOKENIZER_UNPINNED",
                  "TOKEN_VAZIO_PHYSICAL_EXECUTION_NOT_OBSERVED"],
