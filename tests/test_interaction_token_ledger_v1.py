@@ -45,6 +45,14 @@ class InteractionLedgerTests(unittest.TestCase):
             receipt = emit_shard(src, out, emit_tokens=True)
             rows = [json.loads(line) for line in (out / "INTERACTIONS_PRIVATE.jsonl").read_text().splitlines()]
             self.assertEqual(receipt["counts"]["mapping_nodes"], 8)
+            turns = [json.loads(line) for line in
+                     (out / "INTERACTION_INDEX_PRIVATE.jsonl").read_text().splitlines()]
+            self.assertEqual(len(turns), 3)
+            self.assertEqual(len(set(t["interaction_id"] for t in turns)), 3)
+            self.assertTrue(any(len(t["assistant_source_pointers"]) == 2 for t in turns))
+            self.assertTrue(all(t["model_token_count"] ==
+                "TOKEN_VAZIO_MODEL_TOKENIZER_UNPINNED" for t in turns))
+            self.assertIn("interaction_index_sha256", receipt)
             self.assertEqual(receipt["counts"]["interactions_anchored"], 3)
             self.assertEqual(rows[1]["interaction_id"], rows[2]["interaction_id"])
             self.assertEqual(rows[1]["interaction_id"], rows[3]["interaction_id"])
