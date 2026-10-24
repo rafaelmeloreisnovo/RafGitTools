@@ -182,3 +182,7 @@ For every material dependency delta record:
 <!-- RAFAELIA_S12_CONTROL_DEPENDENCY_GATE -->
 ## S12 cross-repository dependency matrix gate
 For the authorial L0 13×7 service program, read `docs/architecture/FREESTANDING_SERVICE_S12_BOUNDARY.md` and validate `contracts/freestanding_service_s12.v1.json` with `scripts/validate_freestanding_service_s12.py` before proposing any producer→consumer promotion. The contract gate is structural only and cannot certify low-level object, ART/JIT, signed APK, CI exact HEAD, or physical Android execution. `RafPolimata` owns C source, `termux-app-rafacodephi` owns Android integration, `Mapa` owns federation; no broad claim from one receipt. Human review, no auto-merge and typed TOKEN_VAZIO remain mandatory.
+
+<!-- RAFAELIA_S14_MIDDLEWARE_CONTROL_ENTRY -->
+## S14 deterministic L0 middleware — consumer evidence gate
+Before any middleware delegation, check `contracts/authorial_middleware_s14_handoff.v1.json` against the actual RafPolimata source SHA and service_matrix predecessor. Route only policy/receipt interpretation; never claim this controller executed JNI, ARM CPU, GPU, NUMA or a real rollback. The 16-cell L0 routing status has `EXECUTED=0`, and two watchdog values are passive host-provided counters. Absence of signed APK, licensing/rights approval, independent capability tests or hardware receipt remains `TOKEN_VAZIO`; no auto-merge, upstream replacement or claim promotion.
