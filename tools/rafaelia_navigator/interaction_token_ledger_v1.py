@@ -149,10 +149,17 @@ def row_for(shard, index, conversation_id, mapping, nid, node, memo, emit_tokens
         content = {"content_type": kind, "original_content_canonical_sha256": obj_hash,
                    "text_parts": texts, "opaque_part_descriptors": opaque,
                    "lexical_tokenization": tokens_of(texts, emit_tokens)}
+        exported_metadata = message.get("metadata")
+        exported_metadata = exported_metadata if isinstance(exported_metadata, dict) else {}
+        model_hint = exported_metadata.get("model_slug")
         metadata = {"create_time": message.get("create_time"),
                     "end_turn": message.get("end_turn"),
                     "status": message.get("status"),
-                    "recipient": message.get("recipient")}
+                    "recipient": message.get("recipient"),
+                    "model_slug_from_export": (
+                        model_hint if isinstance(model_hint, str) and model_hint
+                        else "TOKEN_VAZIO_MODEL_SLUG_NOT_OBSERVED"),
+                    "model_slug_is_tokenizer_proof": False}
     source_pointer = (f"{shard.name}#conversation[{index}]"
                       f".mapping[{json.dumps(nid, ensure_ascii=False)}]")
     return {"schema": SCHEMA, "scope": identity,
@@ -237,6 +244,7 @@ def emit_shard(source: Path, output: Path, *, emit_tokens=False):
                         "tool_or_other_source_pointers": [],
                         "role_counts": {}, "lexical_tokens_by_role": {},
                         "model_token_count": "TOKEN_VAZIO_MODEL_TOKENIZER_UNPINNED",
+                        "exported_model_slugs": [],
                         "privacy_class": "PRIVATE_DEFAULT_DENY",
                         "claim_allowed": False,
                     })
@@ -249,6 +257,9 @@ def emit_shard(source: Path, output: Path, *, emit_tokens=False):
                         entry["prompt_source_pointer"] = row["source_pointer"]
                     elif row["role"] == "assistant":
                         entry["assistant_source_pointers"].append(row["source_pointer"])
+                        slug = row["message_metadata"]["model_slug_from_export"]
+                        if slug not in entry["exported_model_slugs"]:
+                            entry["exported_model_slugs"].append(slug)
                     else:
                         entry["tool_or_other_source_pointers"].append(row["source_pointer"])
             for entry in grouped.values():
