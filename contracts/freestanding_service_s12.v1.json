@@ -1,0 +1,77 @@
+{
+  "schema": "rafaelia.freestanding-service-s12.v1",
+  "version": "1.0.0",
+  "owner": "rafaelmeloreisnovo/RafGitTools",
+  "producer": "rafaelmeloreisnovo/RafPolimata",
+  "federated_authority": "rafaelmeloreisnovo/Mapa",
+  "claim_allowed": false,
+  "kernel_profile": "PURE_CORE",
+  "runtime_external_dependencies": [],
+  "build_time_dependencies": [
+    "clang",
+    "nm",
+    "readelf",
+    "sh"
+  ],
+  "constraints": {
+    "libc": false,
+    "heap": false,
+    "syscalls": false,
+    "jni": false,
+    "java": false,
+    "jit": false,
+    "platform_functions": false,
+    "external_symbols": false
+  },
+  "binary_prefix_families": [
+    "ELF",
+    "DEX",
+    "CDEX",
+    "OAT",
+    "VDEX",
+    "ART",
+    "ZIP",
+    "AR",
+    "WASM",
+    "PNG",
+    "GZIP",
+    "MZ",
+    "MACHO"
+  ],
+  "friction_lanes": [
+    "JNI_JAVA",
+    "ART_JIT",
+    "ANDROID_SDK_NDK",
+    "HEAP_GC",
+    "GRADLE_R8_D8_JDK",
+    "ELF_LINKER_SYSCALL",
+    "FLAGS_BRANCH_TAIL_SHADOW_HEX"
+  ],
+  "matrix_cells": [
+    "state",
+    "family",
+    "input_bytes",
+    "min_bytes",
+    "ambiguous",
+    "validated_format",
+    "ownership",
+    "abi_version"
+  ],
+  "test_evidence": {
+    "physical_android": "TOKEN_VAZIO_NOT_RUN",
+    "remote_ci_exact_head": "TOKEN_VAZIO_NOT_RUN",
+    "compiler_host": "CLANG17_LOCAL",
+    "cross_obj_armv7": "PASS_SCOPED_LOCAL",
+    "cross_obj_aarch64": "PASS_SCOPED_LOCAL"
+  },
+  "promotion_requires": [
+    "human_review",
+    "source_authorship_and_license_review",
+    "exact_head_ci",
+    "ABI_and_binary_tests",
+    "provider_authority",
+    "runtime_device_receipt_for_android_claims"
+  ],
+  "rollback": "NO_MERGE_APPEND_ONLY",
+  "source_not_equal_execution": true
+}
