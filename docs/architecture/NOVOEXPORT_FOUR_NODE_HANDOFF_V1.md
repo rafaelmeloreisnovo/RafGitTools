@@ -14,11 +14,11 @@ Existing `NovoexportLibraryCatalogComposer` explicitly excludes its own `CAT-NOV
 ## V1 packet and validator
 
 - `contracts/novoexport-four-node-handoff.v1.schema.json` describes the JSON shape.
-- `scripts/verify_novoexport_four_node_handoff.py` uses Python 3 stdlib, checks structure, authority, secret/capability leakage, typed gaps, and immutable **PLAN_ONLY** state. It makes no network calls and publishes nothing.
-- `examples/handoff.plan.v1.json` is entirely **synthetic**, except the public RafGitTools commit pin used as an illustrative ref; the private producer SHA and Drive receipt are deliberate examples **not observed provider proofs**.
-- `tests/test_verify_novoexport_four_node_handoff.py` contains adversarial and deterministic tests. The validator's success is `PASS_SCOPED_PLAN_ONLY`, not `PASS_DEVICE`, `PASS_PRIVACY_GLOBAL`, `PASS_SECRET_SECURITY`, nor evidence that a Git SHA actually exists in a specific repository.
+- `scripts/verify_novoexport_four_node_handoff.py` exists in the **local downloadable pilot bundle only**, not on this GitHub branch. Its attempted publication was blocked by the tool security layer; no bypass was attempted. It makes no network calls and publishes nothing.
+- `examples/handoff.plan.v1.json` exists in the **local pilot bundle only** and uses synthetic references, except a public illustrative RafGitTools commit pin; none of these constitute provider proofs.
+- `tests/test_verify_novoexport_four_node_handoff.py` exists in the **local pilot bundle only**; 12 local checks succeeded for that bundle. No GitHub CI has tested this branch. Success is `PASS_SCOPED_PLAN_ONLY`, not `PASS_DEVICE`, `PASS_PRIVACY_GLOBAL`, `PASS_SECRET_SECURITY`, nor evidence that a Git SHA actually exists in a specific repository.
 
-Run from the repository root:
+The commands below apply **only after extracting the linked local pilot bundle** (not directly from this GitHub branch):
 
 ```sh
 python3 scripts/verify_novoexport_four_node_handoff.py examples/handoff.plan.v1.json
