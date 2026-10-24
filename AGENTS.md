@@ -178,3 +178,7 @@ For every material dependency delta record:
 `boundary -> previous dependency -> replacement/retention reason -> execution -> evidence -> rollback -> remaining TOKEN_VAZIO`.
 
 <!-- /RAFAELIA_FREESTANDING_POLICY_V1 -->
+
+<!-- RAFAELIA_S12_CONTROL_DEPENDENCY_GATE -->
+## S12 cross-repository dependency matrix gate
+For the authorial L0 13×7 service program, read `docs/architecture/FREESTANDING_SERVICE_S12_BOUNDARY.md` and validate `contracts/freestanding_service_s12.v1.json` with `scripts/validate_freestanding_service_s12.py` before proposing any producer→consumer promotion. The contract gate is structural only and cannot certify low-level object, ART/JIT, signed APK, CI exact HEAD, or physical Android execution. `RafPolimata` owns C source, `termux-app-rafacodephi` owns Android integration, `Mapa` owns federation; no broad claim from one receipt. Human review, no auto-merge and typed TOKEN_VAZIO remain mandatory.
