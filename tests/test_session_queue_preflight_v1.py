@@ -84,5 +84,48 @@ class SessionQueuePreflightTests(unittest.TestCase):
         self.assertIn("PROMOTION_BLOCKED", validate(item))
 
 
+    def test_array_types_fail_cleanly(self):
+        item = candidate()
+        item["state"] = ["IN"]
+        item["privacy_class"] = ["PRIVATE_REQUIRED"]
+        item["idempotency_key"] = digest(item)
+        result = validate(item)
+        self.assertIn("EXECUTION_STATE_BLOCKED", result)
+        self.assertIn("PRIVACY_BLOCKED", result)
+
+    def test_duplicate_json_keys_blocked_without_echo(self):
+        import contextlib
+        import io
+        import json
+        import tempfile
+        from pathlib import Path
+        from scripts.validate_session_queue_preflight_v1 import main
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "intent.json"
+            raw = json.dumps(candidate())
+            raw = raw.replace('"operation": "PLAN_ONLY"',
+                              '"operation": "PLAN_ONLY", "operation": "PLAN_ONLY"')
+            src.write_text(raw, encoding="utf-8")
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                code = main(["preflight", str(src)])
+            self.assertEqual(code, 2)
+            self.assertIn('"state":"HOLD"', out.getvalue())
+            self.assertNotIn("PLAN_ONLY", out.getvalue())
+
+    def test_large_input_is_rejected(self):
+        import contextlib
+        import io
+        import tempfile
+        from pathlib import Path
+        from scripts.validate_session_queue_preflight_v1 import main
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "large.json"
+            src.write_bytes(b"X" * 6000)
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(main(["preflight", str(src)]), 2)
+
+
+
 if __name__ == "__main__":
     unittest.main()
