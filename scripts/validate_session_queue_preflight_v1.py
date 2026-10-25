@@ -48,9 +48,9 @@ def validate(record):
         errors.append("PACKET_ID_BLOCKED")
     if record["mapa_commit"] != MAPA_COMMIT or record["mapa_blob"] != MAPA_BLOB:
         errors.append("AUTHORITY_PIN_BLOCKED")
-    if record["operation"] != "PLAN_ONLY" or record["state"] not in STATES:
+    if record["operation"] != "PLAN_ONLY" or type(record["state"]) is not str or record["state"] not in STATES:
         errors.append("EXECUTION_STATE_BLOCKED")
-    if record["privacy_class"] not in PRIVACY:
+    if type(record["privacy_class"]) is not str or record["privacy_class"] not in PRIVACY:
         errors.append("PRIVACY_BLOCKED")
     if record["payload_mode"] != "NONE":
         errors.append("PAYLOAD_BLOCKED")
@@ -67,15 +67,26 @@ def allowed_transition(before, after):
     return before in TRANSITIONS and after in TRANSITIONS[before]
 
 
+def unique_pairs(pairs):
+    """Reject ambiguous duplicate JSON keys, including in nested values."""
+    obj = {}
+    for key, value in pairs:
+        if key in obj:
+            raise ValueError("duplicate JSON key")
+        obj[key] = value
+    return obj
+
+
 def main(argv):
     if len(argv) != 2:
         print('{"state":"HOLD","error":"USAGE"}')
         return 2
     try:
-        raw = Path(argv[1]).read_bytes()
+        with Path(argv[1]).open("rb") as source:
+            raw = source.read(4097)
         if len(raw) > 4096:
             raise ValueError("size")
-        obj = json.loads(raw)
+        obj = json.loads(raw, object_pairs_hook=unique_pairs)
         codes = validate(obj)
     except (OSError, UnicodeError, ValueError, TypeError, KeyError):
         codes = ["INPUT_BLOCKED"]
