@@ -1,0 +1,32 @@
+name: S16 Seven Closure Gates — Evidence Integrity
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'contracts/s16_seven_gate_closure.v1.json'
+      - 'scripts/validate_s16_seven_gates.py'
+      - 'tests/test_s16_seven_gates.py'
+      - '.github/workflows/s16-seven-gate-integrity.yml'
+  pull_request:
+    paths:
+      - 'contracts/s16_seven_gate_closure.v1.json'
+      - 'scripts/validate_s16_seven_gates.py'
+      - 'tests/test_s16_seven_gates.py'
+      - '.github/workflows/s16-seven-gate-integrity.yml'
+permissions:
+  contents: read
+jobs:
+  anti_promotion:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3 Node24
+      - name: Verify non-compensatory seven closure gates
+        run: |
+          python3 scripts/validate_s16_seven_gates.py contracts/s16_seven_gate_closure.v1.json
+          python3 -m unittest discover -s tests -p 'test_s16_seven_gates.py' -v
+          python3 -O -m unittest discover -s tests -p 'test_s16_seven_gates.py' -v
+      - name: Scope
+        if: always()
+        run: |
+          echo 'A policy PASS does NOT attest physical APK runtime, apt/pkg, watchdog or provider enforcement.'
