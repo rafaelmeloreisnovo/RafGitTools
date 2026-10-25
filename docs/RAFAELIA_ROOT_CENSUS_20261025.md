@@ -42,7 +42,7 @@ Todos os arquivos da raiz foram preservados. A classe abaixo é *inferida por no
 | [`RAFAELIA_10_CODE_MODELS.zip`](../RAFAELIA_10_CODE_MODELS.zip) | 11998 | `8ae319a32dff1f7f780edf0df7867d75875fe4b9` | Artefato binário — não inferir execução |
 | [`RAFAELIA_20_BAREMETAL_C_MODELS.zip`](../RAFAELIA_20_BAREMETAL_C_MODELS.zip) | 23124 | `49537cc9aee779b4e1b3af4c8ce402d7ca7954fe` | Artefato binário — não inferir execução |
 | [`RAFAELIA_BARE_METAL_LAB_50_TOPS.zip`](../RAFAELIA_BARE_METAL_LAB_50_TOPS.zip) | 18448 | `599d067eb7ad287cb678ad9a0e028cc3b7e41f28` | Artefato binário — não inferir execução |
-| [`rafaelia_tudo_bundle_manifest (1).json`](../rafaelia_tudo_bundle_manifest%20(1).json) | 4032 | `65492b5dea6167440aa52519b0e2e68161e8f850` | Configuração/esquema — verificar consumidores |
+| [`rafaelia_tudo_bundle_manifest (1).json`](../rafaelia_tudo_bundle_manifest%20%281%29.json) | 4032 | `65492b5dea6167440aa52519b0e2e68161e8f850` | Configuração/esquema — verificar consumidores |
 | [`rafaelia_tudo_bundle_manifest.json`](../rafaelia_tudo_bundle_manifest.json) | 4032 | `65492b5dea6167440aa52519b0e2e68161e8f850` | Configuração/esquema — verificar consumidores |
 | [`rafaelia_tudo_bundle.sha256.txt`](../rafaelia_tudo_bundle.sha256.txt) | 91 | `b472a44936126cce6c98f8a08784bc8b0d8cc372` | Arquivo sem papel confirmado |
 | [`Rafaelmatematica3.md`](../Rafaelmatematica3.md) | 8110 | `9b2fb6c90b0c81da8a52e6500f6e8b9d6701cceb` | Documento/registro — verificar atualidade |
