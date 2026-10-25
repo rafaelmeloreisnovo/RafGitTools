@@ -1,0 +1,141 @@
+{
+  "schema": "rafaelia.s16.seven_gate_closure.v2",
+  "predecessor": "contracts/s16_seven_gate_closure.v1.json",
+  "provenance": {
+    "producer_commit": "68195995718b9f0653ca4ce4575d375ce60ac756",
+    "producer_c_git_blob": "e46b1e24191f901edf91d6ce4c5003fa5d74438f",
+    "producer_h_git_blob": "ad97c24a2c9c3ea291e26ce3d74322f89d84f9d5",
+    "android_branch": "rafaelia/s16-apk-canary-evidence-20261024",
+    "android_commit": "9607b3fe03077584c47e43f473faa42688c58aec",
+    "android_workflow_run": 40146110344,
+    "apk_receipt_sha256": "f7c6f0bd05fbba1485d029a089a40fe5c0b698816be049f13a969725e0008b56",
+    "bootstrap_receipt_sha256": "0d76486bfcf9ce2f1257df6b616cfb1af27983dd412da567a221e9a668f54d24",
+    "bundle_sha256": "7173b907f19d321d10018e9de50ae24275a8622f384e7cedafc544f0a3fcecab",
+    "git_artifact_id": 12581206607,
+    "drive_file_id": "1Vzmu12OkAYkB4evEdl2YmBNaRkCvjDGG",
+    "drive_readback_sha256_equal": true
+  },
+  "gates": [
+    {
+      "id": "G1",
+      "status": "PASS_SCOPED_SOURCE_IDENTICAL",
+      "scope": "source commit and Git blobs only",
+      "still_open": [
+        "rightsholder_license_review"
+      ]
+    },
+    {
+      "id": "G2",
+      "status": "PASS_SCOPED_RELOCATABLE_ABI",
+      "scope": "S14 C object/negative tests no external undefined symbols",
+      "still_open": [
+        "physical_codegen_and_perf"
+      ]
+    },
+    {
+      "id": "G3",
+      "status": "PASS_SCOPED_ANDROID_JNI_BUILD",
+      "scope": "S15 HOSTED JNI ARMv7 and ARM64 NDK Android.mk",
+      "still_open": [
+        "physical_JNI_execution"
+      ]
+    },
+    {
+      "id": "G4",
+      "status": "PASS_SCOPED_DEBUG_APK_STATIC",
+      "scope": "3 debug diagnostic APKs, static identity/signature/ELF/DEX/bootstrap inspected",
+      "still_open": [
+        "real_pkg_bootstrap",
+        "release_signing_and_authorization",
+        "physical_install"
+      ]
+    },
+    {
+      "id": "G5",
+      "status": "TOKEN_VAZIO_DEVICE_NOT_RUN",
+      "scope": "no authorized phone execution",
+      "still_open": [
+        "ARM32_ARM64_keyboard_boot_pkg_apt_tests"
+      ]
+    },
+    {
+      "id": "G6",
+      "status": "TOKEN_VAZIO_RESILIENCE_NOT_RUN",
+      "scope": "two passive counters and plan-only fallback/rollback",
+      "still_open": [
+        "live_watchdog_and_transactional_rollback"
+      ]
+    },
+    {
+      "id": "G7",
+      "status": "TOKEN_VAZIO_PROVIDER_HUMAN_NOT_ENFORCED",
+      "scope": "CI success not mandatory provider check",
+      "still_open": [
+        "required_checks_permissions",
+        "human_approval_and_rights"
+      ]
+    }
+  ],
+  "apk_artifacts": [
+    {
+      "abi": "arm64-v8a",
+      "size_bytes": 12716944,
+      "sha256": "2b93d57d3324dbb01b31babddfad919080f7c055331a27ec14d0c5c11ca87dc0"
+    },
+    {
+      "abi": "armeabi-v7a",
+      "size_bytes": 12640086,
+      "sha256": "1fe8c499f80e672120565e03b4a06f16f2b6f75e8ae8850f102e0abb9dfafe54"
+    },
+    {
+      "abi": "universal",
+      "size_bytes": 13743507,
+      "sha256": "8797a59a123a77d73b5922216d1f6925e578d7c899c45aa99ce9f6cbb1b9b9b1"
+    }
+  ],
+  "bootstraps": [
+    {
+      "arch": "aarch64",
+      "sha256": "fcdfe95a608e4cab96d8d8c374d8aba8977552e53d6152696ee38c43dfb6bee8"
+    },
+    {
+      "arch": "arm",
+      "sha256": "62521e782c113eb3d721e8c31fc96fde641ef3e74a7aece097595be124d518d8"
+    },
+    {
+      "arch": "i686",
+      "sha256": "13337257d45821613c09b303837af2737aada4046696ec1ca123d56007384b21"
+    },
+    {
+      "arch": "x86_64",
+      "sha256": "dcb3d8cdca919f783ca7641c2666a0e865d0c262eb9afded940d6b12a28ed071"
+    }
+  ],
+  "classification": {
+    "bootstrap": "BRIDGE_ONLY_DIAGNOSTIC_NOT_REAL_PKG",
+    "real_apt_pkg_proot": false,
+    "apk_signed": "DEBUG_SIGNATURE_ONLY",
+    "apk_runtime": false,
+    "core_executed": false,
+    "device": false,
+    "physical_rollback": false,
+    "license_certified": false,
+    "claim_allowed": false
+  },
+  "environment": {
+    "pure_core": "FREESTANDING_C11",
+    "android_hosted": "JNI_ART_JAVA_NDK_GRADLE_REQUIRED",
+    "tooling": "JDK21_GRADLE_NDK_26_3",
+    "binary_published_as_release": false
+  },
+  "risk_policy": [
+    "NO_MERGE",
+    "NO_INSTALL",
+    "NO_APK_PUBLISHED",
+    "NO_DELETE",
+    "NO_FALSE_AUTHORITY",
+    "HUMAN_REVIEW_REQUIRED"
+  ],
+  "rollback": "RAFAELIA_S15_MIDDLEWARE=0",
+  "claim_allowed": false
+}
