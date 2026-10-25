@@ -14,6 +14,8 @@ def validate(d):
         return "INCOMPLETE_GATES"
     if any(not x.get("blockers") for x in g):
         return "SILENTLY_CLOSED_GAPS"
+    if g[4]["state"]!="TOKEN_VAZIO_NOT_RUN" or g[5]["state"]!="TOKEN_VAZIO_NOT_RUN":
+        return "UNVERIFIED_HARDWARE_CLAIM"
     if any(x.get("state","").startswith("PASS") and not x.get("evidence") for x in g):
         return "PASS_WITHOUT_EVIDENCE"
     if any(not x.get("state") or not isinstance(x.get("evidence"),list) for x in g):
@@ -22,8 +24,6 @@ def validate(d):
         return "FALSE_APK_GATE_COMPLETION"
     if "REAL_SOURCE_BUILT_BOOTSTRAP" not in g[3]["blockers"]:
         return "FALSE_PKG_CLAIM"
-    if g[4]["state"]!="TOKEN_VAZIO_NOT_RUN" or g[5]["state"]!="TOKEN_VAZIO_NOT_RUN":
-        return "UNVERIFIED_HARDWARE_CLAIM"
     if g[6]["state"]!="TOKEN_VAZIO_NOT_ENFORCED":
         return "FALSE_PROVIDER_ENFORCEMENT"
     if d.get("reversal",{}).get("runtime")!="RAFAELIA_S15_MIDDLEWARE=0":
