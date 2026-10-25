@@ -1,0 +1,124 @@
+{
+  "schema": "rafaelia.s16.seven_gate_closure.v1",
+  "status": "SCOPED_PROGRESS_NO_GLOBAL_PROMOTION",
+  "claim_allowed": false,
+  "source": {
+    "producer": "rafaelmeloreisnovo/RafPolimata",
+    "producer_commit": "68195995718b9f0653ca4ce4575d375ce60ac756",
+    "core_c_blob": "e46b1e24191f901edf91d6ce4c5003fa5d74438f",
+    "core_h_blob": "ad97c24a2c9c3ea291e26ce3d74322f89d84f9d5",
+    "android_consumer": "rafaelmeloreisnovo/termux-app-rafacodephi",
+    "prior_consumer_s15": "0d7fd37eb100f3d0310b1621f0a6603eaa2f935c",
+    "s16_branch": "rafaelia/s16-apk-canary-evidence-20261024",
+    "human_approval": "TOKEN_VAZIO_NOT_RECORDED"
+  },
+  "gates": [
+    {
+      "id": "G1",
+      "title": "SOURCE_RIGHTS",
+      "state": "PASS_SCOPED_SOURCE_PIN_ONLY",
+      "evidence": [
+        "S14_SOURCE_GIT_BLOBS_MATCH"
+      ],
+      "blockers": [
+        "LICENSE_HUMAN_REVIEW",
+        "PROVENANCE_INDEPENDENT_REVIEW"
+      ]
+    },
+    {
+      "id": "G2",
+      "title": "L0_ABI",
+      "state": "PASS_SCOPED_COMPILE_OBJECT_ONLY",
+      "evidence": [
+        "S14_CI_40135846363",
+        "S15_CORE_UNDEFINED_SYMBOLS_EMPTY"
+      ],
+      "blockers": [
+        "DEVICE_CODEGEN_BENCHMARKS"
+      ]
+    },
+    {
+      "id": "G3",
+      "title": "JNI_HOST",
+      "state": "PASS_SCOPED_NDK_MODULE",
+      "evidence": [
+        "S15_CI_40140221144"
+      ],
+      "blockers": [
+        "NATIVE_RUNTIME_EXECUTION_ON_DEVICE"
+      ]
+    },
+    {
+      "id": "G4",
+      "title": "DIAGNOSTIC_APK_STATIC",
+      "state": "PASS_SCOPED_PRIOR_RUN_ENHANCED_PENDING",
+      "evidence": [
+        "S16_RUN_40145818068_SUCCESS_DIAGNOSTIC_ONLY",
+        "S16_ENHANCED_STRICT_SIGNATURE_AND_BOOTSTRAP_PENDING"
+      ],
+      "blockers": [
+        "REAL_SOURCE_BUILT_BOOTSTRAP",
+        "APK_RUNTIME",
+        "ENHANCED_GATE_EXACT_HEAD_PASS"
+      ]
+    },
+    {
+      "id": "G5",
+      "title": "DEVICE_RUNTIME",
+      "state": "TOKEN_VAZIO_NOT_RUN",
+      "evidence": [],
+      "blockers": [
+        "AUTHORIZED_PHYSICAL_ARM32_ARM64_TEST",
+        "BOOTSTRAP_KEYBOARD_APT",
+        "SIGNED_TEST_VARIANT_AND_ROLLBACK"
+      ]
+    },
+    {
+      "id": "G6",
+      "title": "ACTUAL_RESILIENCE",
+      "state": "TOKEN_VAZIO_NOT_RUN",
+      "evidence": [],
+      "blockers": [
+        "MONOTONIC_WATCHDOG_OUTER_HOST",
+        "PHYSICAL_FAILOVER",
+        "TRANSACTIONAL_ROLLBACK_AND_HASHES"
+      ]
+    },
+    {
+      "id": "G7",
+      "title": "PROVIDER_HUMAN_AUTHORITY",
+      "state": "TOKEN_VAZIO_NOT_ENFORCED",
+      "evidence": [
+        "S13_RULESET_AUDIT"
+      ],
+      "blockers": [
+        "REQUIRED_STATUS_CHECKS_UNOBSERVED",
+        "PERMISSION_403_BRANCH_PROTECTION",
+        "LICENSE_REVIEW",
+        "HUMAN_MERGE_APPROVAL"
+      ]
+    }
+  ],
+  "nonnegotiables": [
+    "NO_DELETE",
+    "NO_AUTO_MERGE",
+    "PRESERVE_SIGNING_IDENTITY",
+    "NO_CREDENTIAL_UPLOAD",
+    "SOURCE_NOT_EXECUTION",
+    "TOKEN_VAZIO_NOT_ZERO",
+    "CHILD_PRIVACY_AND_DIGNITY",
+    "CULTURAL_RIGHTS_AND_AUTHORSHIP",
+    "REAL_APT_NOT_EQUAL_BRIDGE_HELP"
+  ],
+  "freestanding_boundary": {
+    "l0": "C11_NO_LIBC_HEAP_SYSCALL_JNI",
+    "hosted": "ANDROID_JNI_ART_JAVA_GPU_NUMA_OS",
+    "tooling": "JDK21_GRADLE_NDK_APKSIGNER_PYTHON_CI"
+  },
+  "reversal": {
+    "source": "GIT_BRANCH_UNMERGED",
+    "runtime": "RAFAELIA_S15_MIDDLEWARE=0",
+    "phone": "NO_INSTALL_PERFORMED"
+  },
+  "human_review": "TOKEN_VAZIO_NOT_COMPLETED"
+}
