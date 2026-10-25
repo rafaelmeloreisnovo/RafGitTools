@@ -1,0 +1,33 @@
+name: S16 V2 Exact APK Custody Closure Gate
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'contracts/s16_seven_gate_closure.v2.json'
+      - 'scripts/validate_s16_seven_gates_v2.py'
+      - 'tests/test_s16_seven_gates_v2.py'
+      - '.github/workflows/s16-v2-apk-custody.yml'
+  pull_request:
+    paths:
+      - 'contracts/s16_seven_gate_closure.v2.json'
+      - 'scripts/validate_s16_seven_gates_v2.py'
+      - 'tests/test_s16_seven_gates_v2.py'
+      - '.github/workflows/s16-v2-apk-custody.yml'
+permissions:
+  contents: read
+jobs:
+  exact_custody:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # Node24 immutable
+      - name: Inspect gate states and check 15 negative fixtures
+        run: |
+          python3 scripts/validate_s16_seven_gates_v2.py contracts/s16_seven_gate_closure.v2.json
+          python3 -m unittest discover -s tests -p 'test_s16_seven_gates_v2.py' -v
+          python3 -O -m unittest discover -s tests -p 'test_s16_seven_gates_v2.py' -v
+      - name: Never inherit physical, copyright or provider status
+        if: always()
+        run: |
+          echo 'Success is structural custody only. Does not run Android devices or an apt backend.'
+          echo 'No release, sign/merge/install or license grant performed.'
