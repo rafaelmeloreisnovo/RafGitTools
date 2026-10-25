@@ -25,6 +25,14 @@ class SessionQueuePreflightTests(unittest.TestCase):
         self.assertFalse(item["execution_enabled"])
         self.assertFalse(item["claim_allowed"])
 
+    def test_idempotency_survives_status_and_privacy_classification(self):
+        item = candidate()
+        key = item["idempotency_key"]
+        item["state"] = "GATES"
+        item["privacy_class"] = "PRIVATE_REQUIRED"
+        self.assertEqual(digest(item), key)
+        self.assertEqual(validate(item), [])
+
     def test_replay_idempotency_is_session_bound(self):
         item = candidate()
         item["session_id"] = "4" * 32
