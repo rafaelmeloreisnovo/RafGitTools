@@ -27,9 +27,15 @@ TRANSITIONS = {"IN": frozenset(("GATES", "HOLD")),
                "HOLD": frozenset(("GATES",))}
 
 
+KEY_FIELDS = frozenset((
+    "schema", "envelope_id", "session_id", "target_id", "packet_id",
+    "mapa_commit", "mapa_blob", "operation",
+))
+
+
 def digest(record):
-    """Stable *correlation* hash; NOT a signature, MAC or authorization."""
-    body = {key: record[key] for key in sorted(FIELDS - {"idempotency_key"})}
+    """Stable *correlation* hash of immutable identity; NOT an authentication MAC."""
+    body = {key: record[key] for key in sorted(KEY_FIELDS)}
     encoded = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
     return hashlib.sha256(b"RAFAELIA-PREFLIGHT-V1\x00" + encoded.encode("utf-8")).hexdigest()
 
