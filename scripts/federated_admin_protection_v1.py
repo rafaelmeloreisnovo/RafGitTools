@@ -147,24 +147,34 @@ def run(provider, repo: str, expected_sha: str, operation: str) -> dict:
     if prestate(provider, repo, expected_sha) != state:
         raise Denied("PROVIDER_PRESTATE_DRIFT")
     receipt["apply_attempted"] = True
-    status, response = provider.request("PUT", "/repos/" + repo + "/branches/main/protection", PROTECTION)
-    if status != 200:
-        raise Denied("PROVIDER_APPLY_NOT_CONFIRMED")
-    # Confirm live branch SHA, protection state, protection semantics and rulesets.
-    base = "/repos/" + repo
-    status, branch = provider.request("GET", base + "/branches/main")
-    if status != 200 or branch.get("commit", {}).get("sha") != expected_sha or branch.get("protected") is not True:
-        raise Denied("PROVIDER_POSTSTATE_BRANCH_NOT_VERIFIED")
-    status, details = provider.request("GET", base + "/branches/main/protection")
-    if status != 200 or not isinstance(details, dict):
-        raise Denied("PROVIDER_POSTSTATE_PROTECTION_NOT_VERIFIED")
-    for field in ("allow_force_pushes", "allow_deletions", "enforce_admins"):
-        obj = details.get(field)
-        if not isinstance(obj, dict) or obj.get("enabled") is not (field == "enforce_admins"):
-            raise Denied("PROVIDER_POSTSTATE_POLICY_MISMATCH")
-    status, rulesets = provider.request("GET", base + "/rulesets")
-    if status != 200 or not isinstance(rulesets, list):
-        raise Denied("PROVIDER_POSTSTATE_RULESETS_UNVERIFIED")
+    receipt["manual_readback_required"] = True
+    try:
+        status, response = provider.request("PUT", "/repos/" + repo + "/branches/main/protection", PROTECTION)
+        if status != 200:
+            raise Denied("PROVIDER_APPLY_NOT_CONFIRMED")
+        # Confirm SHA, protection settings and rulesets after a possible mutation.
+        base = "/repos/" + repo
+        status, branch = provider.request("GET", base + "/branches/main")
+        if (status != 200 or not isinstance(branch, dict)
+                or branch.get("commit", {}).get("sha") != expected_sha
+                or branch.get("protected") is not True):
+            raise Denied("PROVIDER_POSTSTATE_BRANCH_NOT_VERIFIED")
+        status, details = provider.request("GET", base + "/branches/main/protection")
+        if status != 200 or not isinstance(details, dict):
+            raise Denied("PROVIDER_POSTSTATE_PROTECTION_NOT_VERIFIED")
+        for field in ("allow_force_pushes", "allow_deletions", "enforce_admins"):
+            obj = details.get(field)
+            if not isinstance(obj, dict) or obj.get("enabled") is not (field == "enforce_admins"):
+                raise Denied("PROVIDER_POSTSTATE_POLICY_MISMATCH")
+        status, rulesets = provider.request("GET", base + "/rulesets")
+        if status != 200 or not isinstance(rulesets, list):
+            raise Denied("PROVIDER_POSTSTATE_RULESETS_UNVERIFIED")
+    except Denied as exc:
+        # A timeout/403 or failed poststate after PUT is NOT a negative write proof.
+        # Preserve this ambiguity in the receipt; NEVER blindly retry the mutation.
+        receipt["status"] = "HOLD_POSSIBLE_MUTATION_" + str(exc)
+        return receipt
+    receipt["manual_readback_required"] = False
     receipt["provider_write_verified"] = True
     receipt["status"] = "PASS_SCOPED_FORCE_PUSH_DELETE_GUARD_ONLY"
     return receipt
@@ -188,7 +198,7 @@ def main(argv=None):
                  os.environ.get("GITHUB_RUN_ATTEMPT", ""))
         provider = Provider(os.environ.get("PROVIDER_TOKEN", ""))
         result = run(provider, args.repository, args.expected_sha, args.operation)
-        ok = True
+        ok = result["status"] in ("PREFLIGHT_SCOPED_NOT_APPLIED", "PASS_SCOPED_FORCE_PUSH_DELETE_GUARD_ONLY")
     except Denied as exc:
         result["status"] = "HOLD_" + str(exc)
     path = Path(args.receipt)
