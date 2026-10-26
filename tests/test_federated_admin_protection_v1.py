@@ -118,6 +118,32 @@ class Tests(unittest.TestCase):
                     m.run(p, p.repo, SHA, "protect")
                 self.assertEqual(p.mutation_count, 0)
 
+    def test_after_put_readback_failure_is_ambiguous(self):
+        class PostFailed(Fake):
+            def request(self, method, path, payload=None):
+                if self.mutation_count and method == "GET" and path.endswith("/protection"):
+                    raise m.Denied("POSTSTATE_UNAVAILABLE")
+                return super().request(method, path, payload)
+        provider = PostFailed()
+        receipt = m.run(provider, provider.repo, SHA, "protect")
+        self.assertEqual(provider.mutation_count, 1)
+        self.assertTrue(receipt["apply_attempted"])
+        self.assertFalse(receipt["provider_write_verified"])
+        self.assertTrue(receipt["manual_readback_required"])
+        self.assertEqual(receipt["status"], "HOLD_POSSIBLE_MUTATION_POSTSTATE_UNAVAILABLE")
+
+    def test_failed_put_also_preserves_ambiguity(self):
+        class WriteFailed(Fake):
+            def request(self, method, path, payload=None):
+                if method == "PUT":
+                    return 403, None
+                return super().request(method, path, payload)
+        provider = WriteFailed()
+        receipt = m.run(provider, provider.repo, SHA, "protect")
+        self.assertEqual(receipt["status"], "HOLD_POSSIBLE_MUTATION_PROVIDER_APPLY_NOT_CONFIRMED")
+        self.assertTrue(receipt["manual_readback_required"])
+        self.assertFalse(receipt["provider_write_verified"])
+
     def test_guard_policy_never_relaxes_existing(self):
         self.assertIsNone(m.PROTECTION["required_status_checks"])
         self.assertTrue(m.PROTECTION["enforce_admins"])
