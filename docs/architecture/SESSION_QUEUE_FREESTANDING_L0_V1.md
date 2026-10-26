@@ -128,3 +128,45 @@ Verification of *GitHub runner* execution and exact HEAD is separately
 required before stating a provider PASS; selftest locally returning 0 is
 not enough. The rollback is a reviewed revert of this one inserted START
 step and the three new files. All original workflow lines are preserved.
+
+## P0 successor — binary proof anti-false-PASS
+
+P0 observation: the previous START native audit scanned only undefined symbols
+with binding GLOBAL. A synthetic freestanding object with a WEAK undefined
+reference `optional_external` passed that old audit: old query returned zero,
+while a binding-independent readelf predicate found one. This is a real
+false-PASS mode, not evidence of a production compromise.
+
+P0 remediation (Draft branch, not main):
+1. Require both native source and native selftest at exact checkout; missing
+   source now fails closed instead of printing SOURCE_NOT_PRESENT with exit 0.
+2. Check every named undefined ELF symbol, regardless of GLOBAL/WEAK binding,
+   for x86_64, ARMv7 and AArch64 combined relocatable native objects.
+3. Compile an ephemeral freestanding WEAK-negative-control object for both
+   ARMv7/AArch64; verify the same parser recognizes its external reference.
+4. Add an exhaustive 1-bit-flip test over the canonical native fixture
+   in the freestanding selftest; every flipped fixture must return HOLD.
+5. Run an instrumented copy of C core + native test under ASan and UBSan
+   only as a hosted CI *test* binary. Neither sanitizer nor libc becomes a
+   dependency of any produced core/ARM object.
+6. Keep one existing START workflow; no new trigger, workflow, PAT scope or
+   secret. Preserve revert path and provider readback.
+
+Before this P0 delta, `main` had advanced from
+`93711b96e70d22881991178edff59d84a2dc983f` to
+`a8a0cb1efa82bcec73c5ce0f63cec300b9e395d0`. The observed main-side
+commit differences touched three credentials-contract/documentation paths;
+they did not include START.yml. This is **not** integration acceptance
+and does not imply that any future, moving main remains non-conflicting.
+
+The selftest passing locally in an earlier commit cannot be inherited across
+this new P0 HEAD; require direct exact-commit Github Actions readback for the
+new exhaustive fixture and sanitizer gate. Negative controls must pass and no
+native source may be absent. Run-state TOKEN_VAZIO until terminal evidence.
+
+F_ok P0 before hosted readback: false-PASS observed and bounded hotfix source
+written to Draft PR.
+F_gap P0: exact-HEAD hosted test and sanitizer completion, physical ARM32/64,
+independent security review and privileged bridge proof.
+F_next P0: check terminal CI and individual native step output; retain
+claim_allowed=false and PROMOTION=HOLD until non-compensatory gates are proven.
