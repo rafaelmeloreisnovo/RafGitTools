@@ -573,7 +573,10 @@ jobs:
           C
             clang -std=c11 -Wall -Wextra -Werror "$workdir/host_test_entry.c" "$workdir/core-x86.o" "$workdir/test-x86.o" -o "$workdir/host_test_entry"
             "$workdir/host_test_entry"
-            echo 'NATIVE_L0=PASS_SCOPED_SYNTHETIC_COMPILE_AND_SELFTEST'
+            # Test-only hosted instrumentation; production L0 objects remain freestanding.
+            clang -std=c11 -ffreestanding -fno-builtin -O1 -g -Wall -Wextra -Werror -fno-omit-frame-pointer -fsanitize=address,undefined "$core" "$suite" "$workdir/host_test_entry.c" -o "$workdir/host_sanitized"
+            ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 "$workdir/host_sanitized"
+            echo 'NATIVE_L0=PASS_SCOPED_SYNTHETIC_COMPILE_AND_SELFTEST_AND_SANITIZERS'
 
       - name: Python 3.12
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
