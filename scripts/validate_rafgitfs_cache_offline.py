@@ -106,14 +106,14 @@ def validate(root: Path) -> dict[str, Any]:
         raise ValidationError("partial remote content must not be persisted")
     persist_start = manager.index("private suspend fun persistObserved")
     persist_end = manager.index("private suspend fun readVerified", persist_start)
-    if "withCapacityReservation" not in manager[persist_start:persist_end]:
+    if "maintenance.withCapacityReservation(" not in manager[persist_start:persist_end]:
         raise ValidationError("capacity admission must cover cache persistence")
     pin_start = manager.index("suspend fun setPinned")
     remove_start = manager.index("suspend fun remove", pin_start)
     reconcile_start = manager.index("suspend fun reconcile", remove_start)
-    if "withProfileLock" not in manager[pin_start:remove_start]:
+    if "maintenance.withProfileLock(" not in manager[pin_start:remove_start]:
         raise ValidationError("pin/unpin must share the profile mutation gate")
-    if "withProfileLock" not in manager[remove_start:reconcile_start]:
+    if "maintenance.withProfileLock(" not in manager[remove_start:reconcile_start]:
         raise ValidationError("removal must share the profile mutation gate")
 
     for marker in ("CACHE_DOWNLOAD", "PIN_OFFLINE", "QUEUED_OFFLINE", "WAITING_RETRY", "claimAllowed = false"):

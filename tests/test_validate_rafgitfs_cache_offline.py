@@ -50,7 +50,11 @@ class RafGitFsCacheOfflineGateTest(unittest.TestCase):
             validate(self.root)
 
     def test_capacity_persistence_gate_is_required(self) -> None:
-        self.mutate(FILES[5], "withCapacityReservation", "withoutCapacityReservation")
+        self.mutate(
+            FILES[5],
+            "maintenance.withCapacityReservation(",
+            "maintenance.withoutCapacityReservation(",
+        )
         with self.assertRaises(ValidationError):
             validate(self.root)
 
