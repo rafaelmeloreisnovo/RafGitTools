@@ -518,6 +518,21 @@ jobs:
           mode: report
           output-json: artifacts/workflow-graph-audit.json
 
+      - name: RAFCODE exact source — reuse immutable owned Action
+        if: github.event_name == 'pull_request'
+        uses: rafaelmeloreisnovo/actions/rafcode/verify-source@47e0ad95703009bfaaa902f605fd3bf69aae4b48
+        with:
+          expected-sha: ${{ env.EXECUTION_SHA }}
+
+      - name: RAFCODE provisional run/artifact/falsifier receipt — same Actions core
+        if: github.event_name == 'pull_request'
+        uses: rafaelmeloreisnovo/actions/rafcode/evidence-receipt@885b6f4c4356d5e1cea352653cbe69a4e141d198
+        with:
+          expected-source-sha: ${{ env.EXECUTION_SHA }}
+          artifact-path: README.md
+          falsifier-script: .github/rafcode/falsifier_source_integrity.sh
+          falsifier-id: SOURCE_DIGEST_NEGATIVE
+
       - name: Upload workflow topology receipt
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -538,10 +553,44 @@ jobs:
         with:
           ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
+      - name: P0 queue already in main | freestanding native exact-SHA selftest
+        shell: bash
+        run: |
+          set -euo pipefail
+          core=scripts/freestanding/session_queue_core_v1.c
+          suite=scripts/freestanding/test_session_queue_core_v1.c
+          header=scripts/freestanding/session_queue_core_v1.h
+          [[ -f "$core" && -f "$suite" && -f "$header" ]] || { echo 'QUEUE707=HOLD_MISSING_SOURCE'; exit 1; }
+          command -v clang >/dev/null
+          command -v readelf >/dev/null
+          workdir="$(mktemp -d)"
+          for target in armv7a-linux-gnueabihf aarch64-linux-gnu; do
+            clang -target "$target" -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -O1 -Wall -Wextra -Werror -c "$core" -o "$workdir/core-$target.o"
+            clang -target "$target" -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -O1 -Wall -Wextra -Werror -c "$suite" -o "$workdir/test-$target.o"
+            clang -target "$target" -fuse-ld=lld -nostdlib -r "$workdir/core-$target.o" "$workdir/test-$target.o" -o "$workdir/combined-$target.o"
+            unresolved="$(LC_ALL=C readelf -sW "$workdir/combined-$target.o" | awk '$7=="UND" && $8!="" {print $8}')"
+            [[ -z "$unresolved" ]] || { echo "QUEUE707=HOLD_EXTERNAL_SYMBOL_$target"; exit 1; }
+          done
+          cat > "$workdir/entry.c" <<'C'
+          #include <stdint.h>
+          extern uint32_t raf_queue_selftest_v1(void);
+          int main(void) { return raf_queue_selftest_v1() == 0u ? 0 : 1; }
+          C
+          clang -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -O1 -Wall -Wextra -Werror "$core" "$suite" "$workdir/entry.c" -o "$workdir/test"
+          "$workdir/test"
+          echo 'QUEUE707_NATIVE=PASS_SCOPED_HOST_ONLY; ARM_PHYSICAL=NOT_RUN; CLAIM_ALLOWED=false'
+
       - name: Python 3.12
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
+      - name: P0 queue JSON boundary existing deterministic regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest -v tests.test_session_queue_preflight_v1
+          echo 'QUEUE707_HOSTED_REFERENCE=PASS_SCOPED_ONLY; CLAIM_ALLOWED=false'
+
       - name: Validate RAFAELIA coherence boundary
         shell: bash
         run: |
