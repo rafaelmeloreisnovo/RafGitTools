@@ -49,6 +49,20 @@ class RafGitFsCacheOfflineGateTest(unittest.TestCase):
         with self.assertRaises(ValidationError):
             validate(self.root)
 
+    def test_capacity_persistence_gate_is_required(self) -> None:
+        self.mutate(
+            FILES[5],
+            "maintenance.withCapacityReservation(",
+            "maintenance.withoutCapacityReservation(",
+        )
+        with self.assertRaises(ValidationError):
+            validate(self.root)
+
+    def test_profile_gate_must_release_mutex(self) -> None:
+        self.mutate(FILES[13], "mutex.unlock()", "mutex.noUnlock()")
+        with self.assertRaises(ValidationError):
+            validate(self.root)
+
     def test_remote_mutation_is_rejected(self) -> None:
         path = self.root / FILES[6]
         path.write_text(path.read_text(encoding="utf-8") + "\n@retrofit2.http.DELETE(\"repos/x/y\")\n", encoding="utf-8")

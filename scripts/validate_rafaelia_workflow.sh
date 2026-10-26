@@ -228,3 +228,8 @@ python3 scripts/validate_runtime_lock_successor.py \
 python3 -m unittest discover -s tests -p 'test_l0_toolchain_matrix_v1.py' -v
 python3 scripts/verify_l0_toolchain_shell_v1.py \
   --report artifacts/toolchain-l0-v1.json
+
+# RafGitFS cache admission/commit serialization contract and negative controls.
+python3 -m unittest discover -s tests \
+  -p 'test_validate_rafgitfs_cache_offline.py' -v
+python3 scripts/validate_rafgitfs_cache_offline.py
