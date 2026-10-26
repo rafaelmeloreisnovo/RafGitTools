@@ -24,6 +24,7 @@ FILES = (
     "app/src/main/kotlin/com/rafgittools/ui/screens/rafgitfs/VirtualFileViewerViewModel.kt",
     "app/src/main/kotlin/com/rafgittools/ui/screens/rafgitfs/VirtualFileViewerScreen.kt",
     ".github/workflows-legacy-20260907/rafgitfs-room-v6-validation.yml",
+    "app/src/main/kotlin/com/rafgittools/rafgitfs/cache/RafGitFsCacheProfileGate.kt",
 )
 
 STATES = {
@@ -58,7 +59,8 @@ def validate(root: Path) -> dict[str, Any]:
     models, checksums, keys, store, maintenance, manager, queue = [source[p] for p in FILES[:7]]
     cache_dao, tree_dao, job_dao = source[FILES[7]], source[FILES[8]], source[FILES[9]]
     viewer_vm, viewer, workflow = source[FILES[10]], source[FILES[11]], source[FILES[12]]
-    all_cache = "\n".join(source[p] for p in FILES[:12])
+    gate = source[FILES[13]]
+    all_cache = "\n".join(source[p] for p in FILES[:12] + (FILES[13],))
 
     missing_states = sorted(state for state in STATES if state not in models)
     if missing_states:
@@ -80,19 +82,39 @@ def validate(root: Path) -> dict[str, Any]:
         raise ValidationError("pinned-safe LRU guard missing")
     if "evictionCandidates" not in maintenance:
         raise ValidationError("pinned-safe LRU candidate selection missing")
-    if "ensureCapacity" not in maintenance or "maxCacheBytes" not in maintenance:
+    if "ensureCapacityLocked" not in maintenance or "maxCacheBytes" not in maintenance:
         raise ValidationError("storage budget gate missing")
+    for marker in ("withCapacityReservation", "profileGate.withProfile"):
+        if marker not in maintenance:
+            raise ValidationError(f"profile capacity serialization missing: {marker}")
+    for marker in ("Array(64)", "mutex.lock()", "finally", "mutex.unlock()"):
+        if marker not in gate:
+            raise ValidationError(f"profile gate lock lifecycle missing: {marker}")
+    if "RafGitFsCacheProfileGate" not in maintenance:
+        raise ValidationError("bounded profile gate is not wired into maintenance")
 
     for marker in (
         "RafGitFsChecksums.verifyGitBlob(snapshot.bytes, identity.blobSha)",
         "RafGitFsChecksums.verifyGitBlob(bytes, entry.gitSha)",
         "writeAtomic", "CACHE_BUDGET_EXHAUSTED", "OFFLINE_CACHE_MISS",
         "markOlderGenerationsStale", "PINNED_ENTRY_REQUIRES_UNPIN",
+        "withCapacityReservation", "withProfileLock",
     ):
         if marker not in manager:
             raise ValidationError(f"cache manager invariant missing: {marker}")
     if "partialValue = null" not in manager:
         raise ValidationError("partial remote content must not be persisted")
+    persist_start = manager.index("private suspend fun persistObserved")
+    persist_end = manager.index("private suspend fun readVerified", persist_start)
+    if "withCapacityReservation" not in manager[persist_start:persist_end]:
+        raise ValidationError("capacity admission must cover cache persistence")
+    pin_start = manager.index("suspend fun setPinned")
+    remove_start = manager.index("suspend fun remove", pin_start)
+    reconcile_start = manager.index("suspend fun reconcile", remove_start)
+    if "withProfileLock" not in manager[pin_start:remove_start]:
+        raise ValidationError("pin/unpin must share the profile mutation gate")
+    if "withProfileLock" not in manager[remove_start:reconcile_start]:
+        raise ValidationError("removal must share the profile mutation gate")
 
     for marker in ("CACHE_DOWNLOAD", "PIN_OFFLINE", "QUEUED_OFFLINE", "WAITING_RETRY", "claimAllowed = false"):
         if marker not in queue:
@@ -140,6 +162,8 @@ def validate(root: Path) -> dict[str, Any]:
         "http_range_resume_claimed": False,
         "remote_write_enabled": False,
         "claim_allowed": False,
+        "per_profile_mutations_serialized": True,
+        "lock_free_claimed": False,
         "sha256": digest(root),
     }
 
