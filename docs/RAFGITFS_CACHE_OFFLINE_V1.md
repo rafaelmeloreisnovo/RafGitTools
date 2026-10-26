@@ -78,7 +78,11 @@ Uma cópia parcial não recebe `CONTENT_CACHED` nem `PINNED_OFFLINE`.
 - itens não fixados podem expirar após sete dias;
 - LRU remove os mais antigos não fixados;
 - `pinned=true` nunca é candidato de expulsão;
-- se os itens fixados ocuparem todo o orçamento, o novo download retorna `CACHE_BUDGET_EXHAUSTED`.
+- se os itens fixados ocuparem todo o orçamento, o novo download retorna `CACHE_BUDGET_EXHAUSTED`;
+- mutações do mesmo perfil são serializadas desde a admissão até o commit de Room/arquivo, incluindo pin/unpin, remoção e reconciliação;
+- o gate usa 64 mutexes em faixas fixas: perfis distintos podem colidir na mesma faixa; o escopo é um único processo Android;
+- o download remoto continua fora da seção crítica; a seção protege orçamento e mutações locais;
+- o teste de concorrência é teste de correção, não benchmark; nenhuma garantia lock-free/wait-free é declarada.
 
 ## Fixação offline
 
@@ -133,6 +137,7 @@ Essas operações modificam apenas o cache local. Não há upload, commit, push,
 python3 scripts/validate_rafgitfs_cache_offline.py
 python3 -m unittest tests/test_validate_rafgitfs_cache_offline.py -v
 ./gradlew --no-daemon :app:testDevDebugUnitTest --tests '*RafGitFsCacheCoreTest*'
+# inclui stress de 64 operações no mesmo perfil e colisão de faixa entre perfis
 ./gradlew --no-daemon :app:compileDevDebugKotlin
 ```
 
@@ -143,6 +148,9 @@ background_worker: TOKEN_VAZIO
 http_range_resume: false
 android_device_execution: TOKEN_VAZIO
 remote_ci_pass: TOKEN_VAZIO
+same_process_profile_serialization: IMPLEMENTED_UNTESTED
+multiprocess_cache_serialization: TOKEN_VAZIO
+performance_profile: TOKEN_VAZIO
 remote_write_enabled: false
 claim_allowed: false
 ```

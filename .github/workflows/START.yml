@@ -518,6 +518,21 @@ jobs:
           mode: report
           output-json: artifacts/workflow-graph-audit.json
 
+      - name: RAFCODE exact source — reuse immutable owned Action
+        if: github.event_name == 'pull_request'
+        uses: rafaelmeloreisnovo/actions/rafcode/verify-source@47e0ad95703009bfaaa902f605fd3bf69aae4b48
+        with:
+          expected-sha: ${{ env.EXECUTION_SHA }}
+
+      - name: RAFCODE provisional run/artifact/falsifier receipt — same Actions core
+        if: github.event_name == 'pull_request'
+        uses: rafaelmeloreisnovo/actions/rafcode/evidence-receipt@885b6f4c4356d5e1cea352653cbe69a4e141d198
+        with:
+          expected-source-sha: ${{ env.EXECUTION_SHA }}
+          artifact-path: README.md
+          falsifier-script: .github/rafcode/falsifier_source_integrity.sh
+          falsifier-id: SOURCE_DIGEST_NEGATIVE
+
       - name: Upload workflow topology receipt
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

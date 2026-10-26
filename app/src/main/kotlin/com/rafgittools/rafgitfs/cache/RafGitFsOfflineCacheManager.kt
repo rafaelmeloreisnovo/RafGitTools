@@ -95,42 +95,50 @@ class RafGitFsOfflineCacheManager @Inject constructor(
     }
 
     suspend fun setPinned(cacheKey: String, pinned: Boolean): RafGitFsCacheResult<RafGitFsCachedContent> {
-        val entry = cacheDao.getByKey(cacheKey)
+        val initial = cacheDao.getByKey(cacheKey)
             ?: return RafGitFsCacheResult.TokenVazio("CACHE_ENTRY_NOT_FOUND")
-        val profile = profileDao.getById(entry.profileId)
-            ?: return RafGitFsCacheResult.TokenVazio("PROFILE_NOT_FOUND")
-        val verified = readVerified(entry, minOf(profile.maxCacheBytes, MAX_SINGLE_FILE_BYTES))
-        if (verified !is RafGitFsCacheResult.Success) return verified
-        val now = System.currentTimeMillis()
-        val state = if (pinned) RafGitFsCacheState.PINNED_OFFLINE else RafGitFsCacheState.CONTENT_CACHED
-        cacheDao.setPinned(
-            cacheKey = cacheKey,
-            pinned = pinned,
-            cacheState = state.name,
-            expiresAt = if (pinned) null else now + DEFAULT_EXPIRY_MILLIS
-        )
-        treeDao.setCacheState(
-            entry.profileId, entry.repositoryFullName, entry.refName, entry.path,
-            state.name, entry.localPath, now
-        )
-        return RafGitFsCacheResult.Success(
-            verified.value.copy(state = state, pinned = pinned, observedAt = now)
-        )
+        return maintenance.withProfileLock(initial.profileId) {
+            val entry = cacheDao.getByKey(cacheKey)
+                ?: return@withProfileLock RafGitFsCacheResult.TokenVazio("CACHE_ENTRY_NOT_FOUND")
+            val profile = profileDao.getById(entry.profileId)
+                ?: return@withProfileLock RafGitFsCacheResult.TokenVazio("PROFILE_NOT_FOUND")
+            val verified = readVerified(entry, minOf(profile.maxCacheBytes, MAX_SINGLE_FILE_BYTES))
+            if (verified !is RafGitFsCacheResult.Success) return@withProfileLock verified
+            val now = System.currentTimeMillis()
+            val state = if (pinned) RafGitFsCacheState.PINNED_OFFLINE else RafGitFsCacheState.CONTENT_CACHED
+            cacheDao.setPinned(
+                cacheKey = cacheKey,
+                pinned = pinned,
+                cacheState = state.name,
+                expiresAt = if (pinned) null else now + DEFAULT_EXPIRY_MILLIS
+            )
+            treeDao.setCacheState(
+                entry.profileId, entry.repositoryFullName, entry.refName, entry.path,
+                state.name, entry.localPath, now
+            )
+            RafGitFsCacheResult.Success(
+                verified.value.copy(state = state, pinned = pinned, observedAt = now)
+            )
+        }
     }
 
     suspend fun remove(cacheKey: String): RafGitFsCacheResult<Unit> {
-        val entry = cacheDao.getByKey(cacheKey)
-            ?: return RafGitFsCacheResult.Success(Unit)
-        if (entry.pinned) return RafGitFsCacheResult.TokenVazio("PINNED_ENTRY_REQUIRES_UNPIN")
-        if (!fileStore.delete(cacheKey)) {
-            return RafGitFsCacheResult.Failure("CACHE_FILE_DELETE_FAILED", cacheKey, true)
+        val initial = cacheDao.getByKey(cacheKey) ?: return RafGitFsCacheResult.Success(Unit)
+        return maintenance.withProfileLock(initial.profileId) {
+            val entry = cacheDao.getByKey(cacheKey) ?: return@withProfileLock RafGitFsCacheResult.Success(Unit)
+            if (entry.pinned) {
+                return@withProfileLock RafGitFsCacheResult.TokenVazio("PINNED_ENTRY_REQUIRES_UNPIN")
+            }
+            if (!fileStore.delete(cacheKey)) {
+                return@withProfileLock RafGitFsCacheResult.Failure("CACHE_FILE_DELETE_FAILED", cacheKey, true)
+            }
+            cacheDao.deleteUnpinned(cacheKey)
+            treeDao.setCacheState(
+                entry.profileId, entry.repositoryFullName, entry.refName, entry.path,
+                RafGitFsCacheState.REMOTE_ONLY.name, null
+            )
+            RafGitFsCacheResult.Success(Unit)
         }
-        cacheDao.deleteUnpinned(cacheKey)
-        treeDao.setCacheState(
-            entry.profileId, entry.repositoryFullName, entry.refName, entry.path,
-            RafGitFsCacheState.REMOTE_ONLY.name, null
-        )
-        return RafGitFsCacheResult.Success(Unit)
     }
 
     suspend fun reconcile(profileId: String): RafGitFsCacheMaintenanceReport = maintenance.reconcile(profileId)
@@ -152,68 +160,75 @@ class RafGitFsOfflineCacheManager @Inject constructor(
         }
 
         val cacheKey = RafGitFsCacheKeys.key(identity)
-        if (!maintenance.ensureCapacity(identity.profileId, snapshot.sizeBytes, cacheKey)) {
-            return RafGitFsCacheResult.TokenVazio("CACHE_BUDGET_EXHAUSTED")
-        }
+        return maintenance.withCapacityReservation(
+            profileId = identity.profileId,
+            incomingBytes = snapshot.sizeBytes,
+            replacingCacheKey = cacheKey,
+            onCapacityExhausted = {
+                RafGitFsCacheResult.TokenVazio("CACHE_BUDGET_EXHAUSTED")
+            }
+        ) {
+            val now = System.currentTimeMillis()
+            val partialPath = fileStore.partial(cacheKey).absolutePath
+            cacheDao.upsert(
+                ContentCacheEntity(
+                    cacheKey = cacheKey,
+                    profileId = identity.profileId,
+                    repositoryFullName = identity.repositoryFullName,
+                    refName = identity.refName,
+                    path = identity.path,
+                    gitSha = identity.blobSha,
+                    localPath = partialPath,
+                    sizeBytes = snapshot.sizeBytes,
+                    cacheState = RafGitFsCacheState.PARTIAL.name,
+                    pinned = false,
+                    checksumAlgorithm = "SHA-256",
+                    checksumHex = "",
+                    createdAt = now,
+                    lastAccessedAt = now,
+                    expiresAt = now + policy.expiresAfterMillis
+                )
+            )
+            treeDao.setCacheState(
+                identity.profileId, identity.repositoryFullName, identity.refName, identity.path,
+                RafGitFsCacheState.PARTIAL.name, partialPath, now
+            )
 
-        val now = System.currentTimeMillis()
-        val partialPath = fileStore.partial(cacheKey).absolutePath
-        cacheDao.upsert(
-            ContentCacheEntity(
+            val finalFile = try {
+                fileStore.writeAtomic(cacheKey, snapshot.bytes)
+            } catch (error: IOException) {
+                return@withCapacityReservation RafGitFsCacheResult.Failure(
+                    "ATOMIC_CACHE_WRITE_FAILED", error.message.orEmpty(), true
+                )
+            }
+            val checksum = RafGitFsChecksums.sha256(finalFile)
+            val state = if (pinned) RafGitFsCacheState.PINNED_OFFLINE else RafGitFsCacheState.CONTENT_CACHED
+            val finalEntry = ContentCacheEntity(
                 cacheKey = cacheKey,
                 profileId = identity.profileId,
                 repositoryFullName = identity.repositoryFullName,
                 refName = identity.refName,
                 path = identity.path,
                 gitSha = identity.blobSha,
-                localPath = partialPath,
+                localPath = finalFile.absolutePath,
                 sizeBytes = snapshot.sizeBytes,
-                cacheState = RafGitFsCacheState.PARTIAL.name,
-                pinned = false,
+                cacheState = state.name,
+                pinned = pinned,
                 checksumAlgorithm = "SHA-256",
-                checksumHex = "",
+                checksumHex = checksum,
                 createdAt = now,
                 lastAccessedAt = now,
-                expiresAt = now + policy.expiresAfterMillis
+                expiresAt = if (pinned) null else now + policy.expiresAfterMillis
             )
-        )
-        treeDao.setCacheState(
-            identity.profileId, identity.repositoryFullName, identity.refName, identity.path,
-            RafGitFsCacheState.PARTIAL.name, partialPath, now
-        )
-
-        val finalFile = try {
-            fileStore.writeAtomic(cacheKey, snapshot.bytes)
-        } catch (error: IOException) {
-            return RafGitFsCacheResult.Failure("ATOMIC_CACHE_WRITE_FAILED", error.message.orEmpty(), true)
+            cacheDao.upsert(finalEntry)
+            treeDao.setCacheState(
+                identity.profileId, identity.repositoryFullName, identity.refName, identity.path,
+                state.name, finalFile.absolutePath, now
+            )
+            return@withCapacityReservation RafGitFsCacheResult.Success(
+                RafGitFsCachedContent(snapshot, finalFile.absolutePath, checksum, state, pinned, now)
+            )
         }
-        val checksum = RafGitFsChecksums.sha256(finalFile)
-        val state = if (pinned) RafGitFsCacheState.PINNED_OFFLINE else RafGitFsCacheState.CONTENT_CACHED
-        val finalEntry = ContentCacheEntity(
-            cacheKey = cacheKey,
-            profileId = identity.profileId,
-            repositoryFullName = identity.repositoryFullName,
-            refName = identity.refName,
-            path = identity.path,
-            gitSha = identity.blobSha,
-            localPath = finalFile.absolutePath,
-            sizeBytes = snapshot.sizeBytes,
-            cacheState = state.name,
-            pinned = pinned,
-            checksumAlgorithm = "SHA-256",
-            checksumHex = checksum,
-            createdAt = now,
-            lastAccessedAt = now,
-            expiresAt = if (pinned) null else now + policy.expiresAfterMillis
-        )
-        cacheDao.upsert(finalEntry)
-        treeDao.setCacheState(
-            identity.profileId, identity.repositoryFullName, identity.refName, identity.path,
-            state.name, finalFile.absolutePath, now
-        )
-        return RafGitFsCacheResult.Success(
-            RafGitFsCachedContent(snapshot, finalFile.absolutePath, checksum, state, pinned, now)
-        )
     }
 
     private suspend fun readVerified(
