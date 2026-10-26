@@ -550,6 +550,9 @@ jobs:
             workdir="$(mktemp -d)"
             clang -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -nostdlib -O2 -Wall -Wextra -Wconversion -Werror -c "$core" -o "$workdir/core-x86.o"
             clang -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -nostdlib -O2 -Wall -Wextra -Wconversion -Werror -c "$suite" -o "$workdir/test-x86.o"
+            clang -fuse-ld=lld -nostdlib -r "$workdir/core-x86.o" "$workdir/test-x86.o" -o "$workdir/combined-x86.o"
+            host_unresolved="$(LC_ALL=C readelf -sW "$workdir/combined-x86.o" | awk '$7=="UND" && $8!="" {print $8}')"
+            [[ -z "$host_unresolved" ]] || { echo 'NATIVE_L0=HOLD_UNRESOLVED_SYMBOLS_x86'; exit 1; }
             cat > "$workdir/weak_probe.c" <<'WEAK'
           __attribute__((weak)) extern void optional_external(void);
           void freestanding_probe(void) { if (optional_external) optional_external(); }
@@ -561,7 +564,7 @@ jobs:
               unresolved="$(LC_ALL=C readelf -sW "$workdir/combined-$target.o" | awk '$7=="UND" && $8!="" {print $8}')"
               [[ -z "$unresolved" ]] || { echo "NATIVE_L0=HOLD_UNRESOLVED_SYMBOLS_$target"; exit 1; }
               clang -target "$target" -std=c11 -ffreestanding -fno-builtin -nostdlib -O0 -c "$workdir/weak_probe.c" -o "$workdir/weak-$target.o"
-              weak_found="$(LC_ALL=C readelf -sW "$workdir/weak-$target.o" | awk '$7=="UND" && $8=="optional_external" {print $8}')"
+              weak_found="$(LC_ALL=C readelf -sW "$workdir/weak-$target.o" | awk '$7=="UND" && $8!="" {print $8}')"
               [[ "$weak_found" == "optional_external" ]] || { echo "NATIVE_L0=HOLD_WEAK_FALSIFIER_$target"; exit 1; }
             done
             cat > "$workdir/host_test_entry.c" <<'C'
