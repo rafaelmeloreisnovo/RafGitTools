@@ -1,11 +1,9 @@
-/* Host test only; never linked into the freestanding core. */
+/* Freestanding deterministic self-test, no hosted I/O or runtime. */
 #include "session_queue_core_v1.h"
-#include <stdio.h>
-#include <string.h>
 #define SP(s) (raf_span_v1){ (const uint8_t *)(s), (uint32_t)(sizeof(s)-1u) }
-#define VERIFY(x) do{ ++count; if(!(x)){ ++failed; printf("FAILED:%d\n",__LINE__); } }while(0)
-int main(void) {
-    unsigned count=0,failed=0;
+#define VERIFY(x) do{ if(!(x)) ++failed; }while(0)
+uint32_t raf_queue_selftest_v1(void) {
+    uint32_t failed=0u;
     raf_queue_intent_v1 x={
         .schema=SP("rafgittools.session-queue-preflight.v1"),
         .envelope_id=SP("11111111111111111111111111111111"),
@@ -58,6 +56,5 @@ int main(void) {
     VERIFY(!raf_queue_transition_v1(RAFQ_GATES,4));
     VERIFY(!raf_queue_transition_v1(RAFQ_HOLD,4));
     VERIFY((raf_queue_preflight_v1(0)&RAFQ_BAD_POINTER)!=0u);
-    printf("freestanding_core: %u checks %u failed\n",count,failed);
-    return failed ? 1 : 0;
+    return failed;
 }
