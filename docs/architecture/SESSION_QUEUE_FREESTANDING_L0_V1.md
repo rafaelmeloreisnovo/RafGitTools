@@ -104,3 +104,27 @@ additions with an approved successor commit; preserve every historical object.
 SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM.
 TOKEN_VAZIO != 0. FREESTANDING_CORE != HOSTED_ADAPTER.
 claim_allowed=false; no default-branch mutation; no secret disclosures.
+
+
+## Additive single-root CI hotfix (Draft branch only)
+
+An additional exact-HEAD native-only *gate* was inserted into the existing
+START.yml coherence job on this PR branch. This is not a second workflow,
+scheduler, PAT lane, checkout of a private repository, or release operation.
+It compiles and executes the in-memory selftest in an **explicit hosted CI
+test-entry boundary**. The freestanding L0 core itself remains unchanged,
+unlinked to libc and independently inspected for undefined symbols on both
+ARMv7 and AArch64. The test adapter uses a C main entry point only in CI,
+never in the freestanding runtime artifact.
+
+The gate fails closed when only one native asset exists, C11 compilation,
+cross-target object linking, undefined-symbol scan or native test fails.
+Existing branches with neither source file report
+NATIVE_L0=TOKEN_VAZIO_SOURCE_NOT_PRESENT rather than implying a PASS.
+Original plan, checkout, coherence tests, policy and release rules are
+preserved. This workflow change is limited to this Draft PR until reviewed.
+
+Verification of *GitHub runner* execution and exact HEAD is separately
+required before stating a provider PASS; selftest locally returning 0 is
+not enough. The rollback is a reviewed revert of this one inserted START
+step and the three new files. All original workflow lines are preserved.
