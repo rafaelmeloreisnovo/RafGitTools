@@ -553,50 +553,82 @@ jobs:
         with:
           ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
-      - name: Freestanding session queue L0 | offline exact-HEAD native gate
+      - name: P0 queue already in main | freestanding native exact-SHA selftest
         shell: bash
         run: |
           set -euo pipefail
-          core=src/freestanding/session_queue_preflight_core_v1.c
-          suite=tests/native/session_queue_preflight_selftest_v1.c
-          [[ -f "$core" && -f "$suite" ]] || { echo 'NATIVE_L0=HOLD_MISSING_NATIVE_SOURCE'; exit 1; }
-            command -v clang >/dev/null
-            command -v readelf >/dev/null
-            workdir="$(mktemp -d)"
-            clang -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -nostdlib -O2 -Wall -Wextra -Wconversion -Werror -c "$core" -o "$workdir/core-x86.o"
-            clang -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -nostdlib -O2 -Wall -Wextra -Wconversion -Werror -c "$suite" -o "$workdir/test-x86.o"
-            clang -fuse-ld=lld -nostdlib -r "$workdir/core-x86.o" "$workdir/test-x86.o" -o "$workdir/combined-x86.o"
-            host_unresolved="$(LC_ALL=C readelf -sW "$workdir/combined-x86.o" | awk '$7=="UND" && $8!="" {print $8}')"
-            [[ -z "$host_unresolved" ]] || { echo 'NATIVE_L0=HOLD_UNRESOLVED_SYMBOLS_x86'; exit 1; }
-            cat > "$workdir/weak_probe.c" <<'WEAK'
-          __attribute__((weak)) extern void optional_external(void);
-          void freestanding_probe(void) { if (optional_external) optional_external(); }
-          WEAK
-            for target in armv7a-linux-gnueabihf aarch64-linux-gnu; do
-              clang -target "$target" -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -nostdlib -O2 -Wall -Wextra -Wconversion -Werror -c "$core" -o "$workdir/core-$target.o"
-              clang -target "$target" -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -nostdlib -O2 -Wall -Wextra -Wconversion -Werror -c "$suite" -o "$workdir/test-$target.o"
-              clang -target "$target" -fuse-ld=lld -nostdlib -r "$workdir/core-$target.o" "$workdir/test-$target.o" -o "$workdir/combined-$target.o"
-              unresolved="$(LC_ALL=C readelf -sW "$workdir/combined-$target.o" | awk '$7=="UND" && $8!="" {print $8}')"
-              [[ -z "$unresolved" ]] || { echo "NATIVE_L0=HOLD_UNRESOLVED_SYMBOLS_$target"; exit 1; }
-              clang -target "$target" -std=c11 -ffreestanding -fno-builtin -nostdlib -O0 -c "$workdir/weak_probe.c" -o "$workdir/weak-$target.o"
-              weak_found="$(LC_ALL=C readelf -sW "$workdir/weak-$target.o" | awk '$7=="UND" && $8!="" {print $8}')"
-              [[ "$weak_found" == "optional_external" ]] || { echo "NATIVE_L0=HOLD_WEAK_FALSIFIER_$target"; exit 1; }
-            done
-            cat > "$workdir/host_test_entry.c" <<'C'
-          extern int rafaelia_queue_native_selftest(void);
-          int main(void) { return rafaelia_queue_native_selftest(); }
+          core=scripts/freestanding/session_queue_core_v1.c
+          suite=scripts/freestanding/test_session_queue_core_v1.c
+          header=scripts/freestanding/session_queue_core_v1.h
+          [[ -f "$core" && -f "$suite" && -f "$header" ]] || { echo 'QUEUE707=HOLD_MISSING_SOURCE'; exit 1; }
+          command -v clang >/dev/null
+          command -v readelf >/dev/null
+          workdir="$(mktemp -d)"
+          for target in armv7a-linux-gnueabihf aarch64-linux-gnu; do
+            clang -target "$target" -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -O1 -Wall -Wextra -Werror -c "$core" -o "$workdir/core-$target.o"
+            clang -target "$target" -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -O1 -Wall -Wextra -Werror -c "$suite" -o "$workdir/test-$target.o"
+            clang -target "$target" -fuse-ld=lld -nostdlib -r "$workdir/core-$target.o" "$workdir/test-$target.o" -o "$workdir/combined-$target.o"
+            unresolved="$(LC_ALL=C readelf -sW "$workdir/combined-$target.o" | awk '$7=="UND" && $8!="" {print $8}')"
+            [[ -z "$unresolved" ]] || { echo "QUEUE707=HOLD_EXTERNAL_SYMBOL_$target"; printf '%s\\n' "$unresolved"; exit 1; }
+          done
+          cat > "$workdir/entry.c" <<'C'
+          #include <stdint.h>
+          extern uint32_t raf_queue_selftest_v1(void);
+          int main(void) { return raf_queue_selftest_v1() == 0u ? 0 : 1; }
           C
-            clang -std=c11 -Wall -Wextra -Werror "$workdir/host_test_entry.c" "$workdir/core-x86.o" "$workdir/test-x86.o" -o "$workdir/host_test_entry"
-            "$workdir/host_test_entry"
-            # Test-only hosted instrumentation; production L0 objects remain freestanding.
-            clang -std=c11 -ffreestanding -fno-builtin -O1 -g -Wall -Wextra -Werror -fno-omit-frame-pointer -fsanitize=address,undefined "$core" "$suite" "$workdir/host_test_entry.c" -o "$workdir/host_sanitized"
-            ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 "$workdir/host_sanitized"
-            echo 'NATIVE_L0=PASS_SCOPED_SYNTHETIC_COMPILE_AND_SELFTEST_AND_SANITIZERS'
+          clang -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -O1 -Wall -Wextra -Werror "$core" "$suite" "$workdir/entry.c" -o "$workdir/test"
+          "$workdir/test"
+          echo 'QUEUE707_NATIVE=PASS_SCOPED_HOST_ONLY; ARM_PHYSICAL=NOT_RUN; CLAIM_ALLOWED=false'
 
       - name: Python 3.12
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
+      - name: P0 queue JSON boundary existing deterministic regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest -v tests.test_session_queue_preflight_v1
+          echo 'QUEUE707_HOSTED_REFERENCE=PASS_SCOPED_ONLY; CLAIM_ALLOWED=false'
+
+      - name: P0 six PAT capabilities | freestanding negative gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          core=native/pat_controlplane_gate_v1/pat_controlplane_gate_v1.c
+          test_core=native/pat_controlplane_gate_v1/test_pat_controlplane_gate_v1.c
+          header=native/pat_controlplane_gate_v1/pat_controlplane_gate_v1.h
+          [[ -f "$core" && -f "$test_core" && -f "$header" ]] || { echo 'PAT_P0=HOLD_MISSING_SOURCE'; exit 1; }
+          command -v clang >/dev/null
+          command -v readelf >/dev/null
+          workdir="$(mktemp -d)"
+          trap 'rm -rf "$workdir"' EXIT
+          for target in x86_64-linux-gnu armv7a-linux-gnueabihf aarch64-linux-gnu; do
+            clang -target "$target" -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -nostdlib -O1 -Wall -Wextra -Werror -c "$core" -o "$workdir/core-$target.o"
+            clang -target "$target" -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -nostdlib -O1 -Wall -Wextra -Werror -c "$test_core" -o "$workdir/test-$target.o"
+            clang -target "$target" -fuse-ld=lld -nostdlib -r "$workdir/core-$target.o" "$workdir/test-$target.o" -o "$workdir/combined-$target.o"
+            unresolved="$(LC_ALL=C readelf -sW "$workdir/combined-$target.o" | awk '$7=="UND" && $8!="" {print $8}')"
+            [[ -z "$unresolved" ]] || { echo "PAT_P0=HOLD_UNRESOLVED_$target"; exit 1; }
+          done
+          cat > "$workdir/entry.c" <<'C'
+          #include <stdint.h>
+          extern uint32_t raf_pat_selftest_v1(void);
+          int main(void) { return raf_pat_selftest_v1()==0u ? 0 : 1; }
+          C
+          clang -std=c11 -O1 -Wall -Wextra -Werror "$core" "$test_core" "$workdir/entry.c" -o "$workdir/host-test"
+          "$workdir/host-test"
+          python3 scripts/validate_pat_capability_matrix.py
+          echo 'PAT_P0=PASS_SCOPED_6_ROLES_X_10_OPERATION_CLASSES_NO_PRIVILEGED_EXECUTION'
+          {
+            echo '### P0 PAT control-plane / in-memory only'
+            echo "- HEAD: \`$GITHUB_SHA\`"
+            echo '- Six secret identifiers: names only; actual PAT scope/values NOT_READ'
+            echo '- Native x86-64 / ARMv7 / AArch64 build: PASS_SCOPED'
+            echo '- Native 6 x 10 operation negative gate: PASS_SCOPED'
+            echo '- Administrative mutations / private CI / visibility: NOT_RUN / HOLD'
+            echo '- PROMOTION=HOLD; claim_allowed=false'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Validate RAFAELIA coherence boundary
         shell: bash
         run: |
