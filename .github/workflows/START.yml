@@ -1635,7 +1635,6 @@ jobs:
       name: Pat_environments
       deployment: false
     env:
-      PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
       REQUESTED_PROVIDER_OPERATION: ${{ needs.plan.outputs.provider_operation }}
       REQUESTED_EXPECTED_MAIN_SHA: ${{ inputs.provider_expected_main_sha }}
     steps:
@@ -1651,6 +1650,8 @@ jobs:
           set -euo pipefail
           python3 scripts/validate_provider_capability_environments.py configs/provider-capability-environments.v1.json
       - name: Enforce manual main-only execution boundary
+        env:
+          PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
         shell: bash
         run: |
           set -euo pipefail
@@ -1687,6 +1688,8 @@ jobs:
             exit 3
           }
       - name: Apply or preflight canonical main protection
+        env:
+          PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
         if: ${{ needs.plan.outputs.provider_operation != 'federated_preflight' && needs.plan.outputs.provider_operation != 'federated_protect' }}
         shell: bash
         run: |
@@ -1734,6 +1737,8 @@ jobs:
           esac
           python3 scripts/apply_rafgittools_main_protection.py "${args[@]}"
       - name: Federated admin scoped protection | owner manual only
+        env:
+          PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
         if: >-
           ${{
             github.event_name == 'workflow_dispatch' &&
