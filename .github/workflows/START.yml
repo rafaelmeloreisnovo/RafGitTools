@@ -591,6 +591,44 @@ jobs:
           python3 -m unittest -v tests.test_session_queue_preflight_v1
           echo 'QUEUE707_HOSTED_REFERENCE=PASS_SCOPED_ONLY; CLAIM_ALLOWED=false'
 
+      - name: P0 six PAT capabilities | freestanding negative gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          core=native/pat_controlplane_gate_v1/pat_controlplane_gate_v1.c
+          test_core=native/pat_controlplane_gate_v1/test_pat_controlplane_gate_v1.c
+          header=native/pat_controlplane_gate_v1/pat_controlplane_gate_v1.h
+          [[ -f "$core" && -f "$test_core" && -f "$header" ]] || { echo 'PAT_P0=HOLD_MISSING_SOURCE'; exit 1; }
+          command -v clang >/dev/null
+          command -v readelf >/dev/null
+          workdir="$(mktemp -d)"
+          trap 'rm -rf "$workdir"' EXIT
+          for target in x86_64-linux-gnu armv7a-linux-gnueabihf aarch64-linux-gnu; do
+            clang -target "$target" -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -nostdlib -O1 -Wall -Wextra -Werror -c "$core" -o "$workdir/core-$target.o"
+            clang -target "$target" -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -nostdlib -O1 -Wall -Wextra -Werror -c "$test_core" -o "$workdir/test-$target.o"
+            clang -target "$target" -fuse-ld=lld -nostdlib -r "$workdir/core-$target.o" "$workdir/test-$target.o" -o "$workdir/combined-$target.o"
+            unresolved="$(LC_ALL=C readelf -sW "$workdir/combined-$target.o" | awk '$7=="UND" && $8!="" {print $8}')"
+            [[ -z "$unresolved" ]] || { echo "PAT_P0=HOLD_UNRESOLVED_$target"; exit 1; }
+          done
+          cat > "$workdir/entry.c" <<'C'
+          #include <stdint.h>
+          extern uint32_t raf_pat_selftest_v1(void);
+          int main(void) { return raf_pat_selftest_v1()==0u ? 0 : 1; }
+          C
+          clang -std=c11 -O1 -Wall -Wextra -Werror "$core" "$test_core" "$workdir/entry.c" -o "$workdir/host-test"
+          "$workdir/host-test"
+          python3 scripts/validate_pat_capability_matrix.py
+          echo 'PAT_P0=PASS_SCOPED_6_ROLES_X_10_OPERATION_CLASSES_NO_PRIVILEGED_EXECUTION'
+          {
+            echo '### P0 PAT control-plane / in-memory only'
+            echo "- HEAD: \`$GITHUB_SHA\`"
+            echo '- Six secret identifiers: names only; actual PAT scope/values NOT_READ'
+            echo '- Native x86-64 / ARMv7 / AArch64 build: PASS_SCOPED'
+            echo '- Native 6 x 10 operation negative gate: PASS_SCOPED'
+            echo '- Administrative mutations / private CI / visibility: NOT_RUN / HOLD'
+            echo '- PROMOTION=HOLD; claim_allowed=false'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Validate RAFAELIA coherence boundary
         shell: bash
         run: |
