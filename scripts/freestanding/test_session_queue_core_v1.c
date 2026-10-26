@@ -12,7 +12,7 @@ static void raf_copy_test_intent_v1(raf_queue_intent_v1 *dst, const raf_queue_in
 #define VERIFY(x) do{ if(!(x)) ++failed; }while(0)
 uint32_t raf_queue_selftest_v1(void) {
     uint32_t failed=0u;
-    raf_queue_intent_v1 x={
+    static const raf_queue_intent_v1 fixture={
         .schema=SP("rafgittools.session-queue-preflight.v1"),
         .envelope_id=SP("11111111111111111111111111111111"),
         .session_id=SP("22222222222222222222222222222222"),
@@ -26,6 +26,8 @@ uint32_t raf_queue_selftest_v1(void) {
         .idempotency_key=SP("a55180ecbfd5fd0bb948f402d64fdf5457914e43d07993467b4fa7e82734e1bc"),
         .execution_enabled=0,.human_approved=0,.claim_allowed=0,.boolean_types_verified=1
     };
+    raf_queue_intent_v1 x;
+    raf_copy_test_intent_v1(&x,&fixture);
     raf_queue_intent_v1 y;
     raf_copy_test_intent_v1(&y,&x);
     VERIFY(raf_queue_preflight_v1(&x)==0u);
