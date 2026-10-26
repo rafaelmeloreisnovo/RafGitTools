@@ -569,7 +569,7 @@ jobs:
             clang -target "$target" -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -O1 -Wall -Wextra -Werror -c "$suite" -o "$workdir/test-$target.o"
             clang -target "$target" -fuse-ld=lld -nostdlib -r "$workdir/core-$target.o" "$workdir/test-$target.o" -o "$workdir/combined-$target.o"
             unresolved="$(LC_ALL=C readelf -sW "$workdir/combined-$target.o" | awk '$7=="UND" && $8!="" {print $8}')"
-            [[ -z "$unresolved" ]] || { echo "QUEUE707=HOLD_EXTERNAL_SYMBOL_$target"; exit 1; }
+            [[ -z "$unresolved" ]] || { echo "QUEUE707=HOLD_EXTERNAL_SYMBOL_$target"; printf '%s\\n' "$unresolved"; exit 1; }
           done
           cat > "$workdir/entry.c" <<'C'
           #include <stdint.h>
