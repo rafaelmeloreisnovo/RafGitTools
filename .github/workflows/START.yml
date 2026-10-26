@@ -64,6 +64,8 @@ on:
           - preflight
           - apply_main_protection
           - rollback_main_protection
+          - federated_preflight
+          - federated_protect
           - inspect_hold
           - mark_hold
       provider_expected_main_sha:
@@ -370,7 +372,7 @@ jobs:
                 exit 2
               fi
               case "${REQUESTED_PROVIDER_OPERATION:-preflight}" in
-                preflight|apply_main_protection|rollback_main_protection) ;;
+                preflight|apply_main_protection|rollback_main_protection|federated_preflight|federated_protect) ;;
                 *)
                   echo "::error::unsupported provider operation: ${REQUESTED_PROVIDER_OPERATION}"
                   exit 2
@@ -628,6 +630,13 @@ jobs:
             echo '- Administrative mutations / private CI / visibility: NOT_RUN / HOLD'
             echo '- PROMOTION=HOLD; claim_allowed=false'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Federated admin executor | offline adversarial provider test
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest -v tests.test_federated_admin_protection_v1
+          echo 'FEDERATED_ADMIN=PASS_SCOPED_MOCKED_PROVIDER_NO_NETWORK_OR_WRITE'
 
       - name: Validate RAFAELIA coherence boundary
         shell: bash
@@ -1626,7 +1635,6 @@ jobs:
       name: Pat_environments
       deployment: false
     env:
-      PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
       REQUESTED_PROVIDER_OPERATION: ${{ needs.plan.outputs.provider_operation }}
       REQUESTED_EXPECTED_MAIN_SHA: ${{ inputs.provider_expected_main_sha }}
     steps:
@@ -1642,6 +1650,8 @@ jobs:
           set -euo pipefail
           python3 scripts/validate_provider_capability_environments.py configs/provider-capability-environments.v1.json
       - name: Enforce manual main-only execution boundary
+        env:
+          PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
         shell: bash
         run: |
           set -euo pipefail
@@ -1678,6 +1688,9 @@ jobs:
             exit 3
           }
       - name: Apply or preflight canonical main protection
+        env:
+          PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
+        if: ${{ needs.plan.outputs.provider_operation != 'federated_preflight' && needs.plan.outputs.provider_operation != 'federated_protect' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -1723,12 +1736,54 @@ jobs:
               ;;
           esac
           python3 scripts/apply_rafgittools_main_protection.py "${args[@]}"
+      - name: Federated admin scoped protection | owner manual only
+        if: >-
+          ${{
+            github.event_name == 'workflow_dispatch' &&
+            (
+              needs.plan.outputs.provider_operation == 'federated_preflight' ||
+              needs.plan.outputs.provider_operation == 'federated_protect'
+            )
+          }}
+        shell: bash
+        env:
+          PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
+          FED_TARGET_OWNER: ${{ inputs.repository_factory_owner }}
+          FED_TARGET_NAME: ${{ inputs.repository_factory_name }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_ACTOR" == rafaelmeloreisnovo ]]
+          [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]
+          [[ "$GITHUB_REF" == refs/heads/main ]]
+          [[ "$FED_TARGET_OWNER" == rafaelmeloreisnovo ]] || {
+            echo '::error::federated admin owner not allowlisted'; exit 2;
+          }
+          [[ "$FED_TARGET_NAME" == Mapa || "$FED_TARGET_NAME" == actions ]] || {
+            echo '::error::federated admin repository not allowlisted'; exit 2;
+          }
+          [[ "${REQUESTED_EXPECTED_MAIN_SHA:-}" =~ ^[0-9a-f]{40}$ ]] || {
+            echo '::error::explicit exact target main SHA required'; exit 2;
+          }
+          case "$REQUESTED_PROVIDER_OPERATION" in
+            federated_preflight) suboperation=preflight ;;
+            federated_protect) suboperation=protect ;;
+            *) echo '::error::operation not approved'; exit 2 ;;
+          esac
+          python3 scripts/federated_admin_protection_v1.py \
+            --repository "$FED_TARGET_OWNER/$FED_TARGET_NAME" \
+            --expected-sha "$REQUESTED_EXPECTED_MAIN_SHA" \
+            --operation "$suboperation" \
+            --receipt artifacts/federated-admin-protection.json
+          echo 'FED_ADMIN=REVIEW_RECEIPT_REQUIRED; CLAIM_ALLOWED=false' >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload provider enforcement receipt
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: start-08p-provider-environments-${{ github.run_id }}
-          path: artifacts/provider-main-enforcement.json
+          path: |
+            artifacts/provider-main-enforcement.json
+            artifacts/federated-admin-protection.json
           if-no-files-found: warn
           retention-days: 90
 
