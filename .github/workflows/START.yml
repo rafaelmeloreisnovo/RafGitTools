@@ -1737,8 +1737,6 @@ jobs:
           esac
           python3 scripts/apply_rafgittools_main_protection.py "${args[@]}"
       - name: Federated admin scoped protection | owner manual only
-        env:
-          PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
         if: >-
           ${{
             github.event_name == 'workflow_dispatch' &&
@@ -1749,6 +1747,7 @@ jobs:
           }}
         shell: bash
         env:
+          PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
           FED_TARGET_OWNER: ${{ inputs.repository_factory_owner }}
           FED_TARGET_NAME: ${{ inputs.repository_factory_name }}
         run: |
