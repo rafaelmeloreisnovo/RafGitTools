@@ -65,5 +65,16 @@ int rafaelia_queue_native_selftest(void){
  if(!rafaelia_queue_transition(1,2)||!rafaelia_queue_transition(1,3)||
     !rafaelia_queue_transition(2,3)||!rafaelia_queue_transition(3,2)||
      rafaelia_queue_transition(2,1)||rafaelia_queue_transition(3,4))return 13;
+ /* Exhaustive one-bit changes: no valid envelope may survive a raw mutation.
+  * The canonical fixture has no insignificant whitespace outside strings. */
+ for(i=0;i<n;++i){
+  uint32_t bit;
+  for(bit=0u;bit<8u;++bit){
+   size_t j;
+   for(j=0;j<n;++j)x[j]=fixture[j];
+   x[i]^=(unsigned char)(1u<<bit);
+   if(rafaelia_queue_preflight(x,n,&r) || r.state!=0u)return 14;
+  }
+ }
  return 0;
 }
