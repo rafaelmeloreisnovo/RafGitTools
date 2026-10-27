@@ -28,6 +28,7 @@ fun PrivateGithubTreeIndexCard(
     var busy by remember { mutableStateOf(false) }
     var snapshot by remember { mutableStateOf<PrivateGitHubTreeIndexGate.Snapshot?>(null) }
     var outcome by remember { mutableStateOf("TOKEN_VAZIO_NOT_RUN") }
+    var destinationConfirmed by remember { mutableStateOf(false) }
 
     val destination = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         val current = snapshot
@@ -50,7 +51,7 @@ fun PrivateGithubTreeIndexCard(
                         )
                     }
                     outcome = if (exported.exportedArtifactCount == 1) {
-                        "PRIVATE_DRIVE_READBACK_VERIFIED"
+                        "SAF_READBACK_VERIFIED_SHARING_UNVERIFIED"
                     } else "BLOCKED_INCOMPLETE_EXPORT"
                 } catch (_: Exception) {
                     outcome = "BLOCKED_DRIVE_EXPORT"
@@ -67,7 +68,8 @@ fun PrivateGithubTreeIndexCard(
             Text(
                 "Indexa somente metadados do commit do repositório privado selecionado. " +
                     "Nenhum texto das conversas entra na CI pública. A exportação usa " +
-                    "uma pasta privada escolhida pelo Android/Drive e confirma SHA-256 por leitura.",
+                    "uma pasta escolhida no Android/Drive e confirma SHA-256 por leitura. " +
+                    "O SAF não comprova as permissões de compartilhamento da pasta.",
                 style = MaterialTheme.typography.bodySmall
             )
             Button(
@@ -98,10 +100,17 @@ fun PrivateGithubTreeIndexCard(
                         "arquivos acima de 2 MiB: ${current.largeBlobCount}",
                     style = MaterialTheme.typography.bodySmall
                 )
+                Row {
+                    Checkbox(checked = destinationConfirmed, onCheckedChange = { destinationConfirmed = it })
+                    Text(
+                        "Confirmo que verifiquei no Google Drive que a pasta de destino não é pública nem compartilhada.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
                 Button(
                     onClick = { destination.launch(null) },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !busy
+                    enabled = !busy && destinationConfirmed
                 ) {
                     Text("Exportar índice para pasta privada do Drive")
                 }
