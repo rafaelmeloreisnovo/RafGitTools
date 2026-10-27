@@ -4,11 +4,36 @@ import com.google.gson.annotations.SerializedName
 import com.rafgittools.domain.model.github.*
 import com.rafgittools.domain.model.github.GithubEvent
 import retrofit2.http.*
+import com.google.gson.JsonObject
 
 /**
  * GitHub API service interface
  */
 interface GithubApiService {
+
+    // Metadata-only private source index; authenticated existing Retrofit client.
+    // No raw blobs, no token logging, pinned commit -> tree object.
+    @GET("repos/{owner}/{repo}/git/ref/heads/{branch}")
+    suspend fun getExactBranchRef(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("branch") branch: String
+    ): JsonObject
+
+    @GET("repos/{owner}/{repo}/git/commits/{sha}")
+    suspend fun getGitCommitObject(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("sha") sha: String
+    ): JsonObject
+
+    @GET("repos/{owner}/{repo}/git/trees/{sha}")
+    suspend fun getGitTreeMetadata(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("sha") sha: String,
+        @Query("recursive") recursive: Int = 1
+    ): JsonObject
     
     // Repositories
     @GET("user/repos")
