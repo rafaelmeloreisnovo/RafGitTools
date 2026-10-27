@@ -1,7 +1,8 @@
-# Dependabot  configuration for automated dependency updates
+# RAFAELIA Dependabot V3: review-only; CI validates the exact dependency PR head.
+# GitHub security advisories/alerts and provider configuration remain separate gates.
+# A Dependabot PR is a proposal, not approval/merge/license or runtime evidence.
 version: 2
 updates:
-  # Enable version updates for Gradle dependencies
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
@@ -25,47 +26,50 @@ updates:
     allow:
       - dependency-type: "direct"
       - dependency-type: "indirect"
+    # First-match-wins: specific groups MUST precede broad androidx.*.
+    # Major upgrades remain individual PRs for a human-reviewed AGP/Kotlin/
+    # Gradle/JDK17/KSP/ABI compatibility matrix; never auto-merge.
+    # Security updates are not bundled into the version-only groups.
     groups:
-      # Group Android dependencies together
-      android:
-        patterns:
-          - "androidx.*"
-          - "com.android.*"
-      # Group Compose dependencies
       compose:
+        applies-to: "version-updates"
         patterns:
           - "androidx.compose.*"
           - "com.google.accompanist.*"
-      # Group Kotlin dependencies
-      kotlin:
-        patterns:
-          - "org.jetbrains.kotlin.*"
-          - "org.jetbrains.kotlinx.*"
-      # Group Hilt dependencies
+        update-types: ["minor", "patch"]
       hilt:
+        applies-to: "version-updates"
         patterns:
           - "com.google.dagger.*"
           - "androidx.hilt.*"
-      # Group testing dependencies
+        update-types: ["minor", "patch"]
+      kotlin:
+        applies-to: "version-updates"
+        patterns:
+          - "org.jetbrains.kotlin.*"
+          - "org.jetbrains.kotlinx.*"
+        update-types: ["minor", "patch"]
       testing:
+        applies-to: "version-updates"
         patterns:
           - "*junit*"
           - "*mockk*"
           - "*espresso*"
           - "*truth*"
-      # Group networking dependencies
+        update-types: ["minor", "patch"]
       networking:
+        applies-to: "version-updates"
         patterns:
           - "com.squareup.retrofit2.*"
           - "com.squareup.okhttp3.*"
-    ignore:
-      # Ignore major version updates for stable dependencies
-      - dependency-name: "com.android.tools.build:gradle"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "org.jetbrains.kotlin:*"
-        update-types: ["version-update:semver-major"]
-  
-  # Enable version updates for GitHub Actions
+        update-types: ["minor", "patch"]
+      android:
+        applies-to: "version-updates"
+        patterns:
+          - "androidx.*"
+          - "com.android.*"
+        update-types: ["minor", "patch"]
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -86,3 +90,14 @@ updates:
       include: "scope"
     allow:
       - dependency-type: "direct"
+    groups:
+      github-core-actions:
+        applies-to: "version-updates"
+        patterns:
+          - "actions/*"
+        update-types: ["minor", "patch"]
+      codeql-actions:
+        applies-to: "version-updates"
+        patterns:
+          - "github/codeql-action*"
+        update-types: ["minor", "patch"]
