@@ -6,6 +6,7 @@ import com.rafgittools.data.auth.AuthRepository
 import com.rafgittools.data.privacy.RepositoryPrivacyBulkResult
 import com.rafgittools.data.privacy.RepositoryPrivacyCandidate
 import com.rafgittools.data.privacy.RepositoryPrivacyManager
+import com.rafgittools.data.privacy.PrivacyVisibilityTarget
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,10 +52,25 @@ class RepositoryPrivacyViewModel @Inject constructor(
         }
     }
 
+    /** The owner filter covers personal accounts and organization owners. */
+    fun selectOwner(owner: String?) {
+        val state = _uiState.value
+        if (state.executing) return
+        _uiState.value = state.copy(selectedOwner = owner, selectedIds = emptySet(), error = null)
+    }
+
+    fun selectTarget(target: PrivacyVisibilityTarget) {
+        val state = _uiState.value
+        if (state.executing) return
+        _uiState.value = state.copy(targetVisibility = target, selectedIds = emptySet(), error = null)
+    }
+
     fun toggleRepository(id: Long) {
         val state = _uiState.value
         val candidate = state.candidates.firstOrNull { it.id == id } ?: return
-        if (!candidate.eligible || state.executing) return
+        if (!candidate.eligibleFor(state.targetVisibility) || state.executing ||
+            (state.selectedOwner != null && state.selectedOwner != candidate.ownerLogin)
+        ) return
         val selected = state.selectedIds.toMutableSet()
         if (!selected.add(id)) selected.remove(id)
         _uiState.value = state.copy(selectedIds = selected)
@@ -63,7 +79,10 @@ class RepositoryPrivacyViewModel @Inject constructor(
     fun toggleOwner(owner: String) {
         val state = _uiState.value
         if (state.executing) return
-        val ids = state.candidates.filter { it.ownerLogin == owner && it.eligible }.map { it.id }.toSet()
+        val ids = state.candidates.filter {
+            it.ownerLogin == owner && it.eligibleFor(state.targetVisibility) &&
+                (state.selectedOwner == null || state.selectedOwner == owner)
+        }.map { it.id }.toSet()
         if (ids.isEmpty()) return
         val selected = state.selectedIds.toMutableSet()
         if (ids.all { it in selected }) selected.removeAll(ids) else selected.addAll(ids)
@@ -74,7 +93,10 @@ class RepositoryPrivacyViewModel @Inject constructor(
         val state = _uiState.value
         if (state.executing) return
         _uiState.value = state.copy(
-            selectedIds = state.candidates.filter { it.eligible }.mapTo(linkedSetOf()) { it.id }
+            selectedIds = state.candidates.filter {
+                it.eligibleFor(state.targetVisibility) &&
+                    (state.selectedOwner == null || state.selectedOwner == it.ownerLogin)
+            }.mapTo(linkedSetOf()) { it.id }
         )
     }
 
@@ -82,18 +104,21 @@ class RepositoryPrivacyViewModel @Inject constructor(
         if (!_uiState.value.executing) _uiState.value = _uiState.value.copy(selectedIds = emptySet())
     }
 
-    fun executeMakePrivate(confirmation: String) {
+    fun executeChangeVisibility(confirmation: String) {
         val state = _uiState.value
-        val selected = state.candidates.filter { it.id in state.selectedIds && it.eligible }
+        val selected = state.candidates.filter {
+            it.id in state.selectedIds && it.eligibleFor(state.targetVisibility) &&
+                (state.selectedOwner == null || state.selectedOwner == it.ownerLogin)
+        }
         if (selected.isEmpty() || state.executing) return
-        val expected = confirmationPhrase(selected.size)
+        val expected = confirmationPhrase(selected.size, state.targetVisibility)
         if (confirmation.trim() != expected) {
             _uiState.value = state.copy(error = "Confirmation phrase does not match: $expected")
             return
         }
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(executing = true, error = null)
-            val result = manager.makePrivate(selected)
+            val result = manager.changeVisibility(selected, state.targetVisibility)
             _uiState.value = _uiState.value.copy(
                 executing = false,
                 selectedIds = emptySet(),
@@ -122,7 +147,8 @@ class RepositoryPrivacyViewModel @Inject constructor(
     }
 
     companion object {
-        fun confirmationPhrase(count: Int): String = "PRIVATIZAR $count"
+        fun confirmationPhrase(count: Int, target: PrivacyVisibilityTarget = PrivacyVisibilityTarget.PRIVATE): String =
+            "${target.confirmationVerb} $count"
     }
 }
 
@@ -131,6 +157,8 @@ data class RepositoryPrivacyUiState(
     val executing: Boolean = false,
     val requiresAuthentication: Boolean = false,
     val candidates: List<RepositoryPrivacyCandidate> = emptyList(),
+    val selectedOwner: String? = null,
+    val targetVisibility: PrivacyVisibilityTarget = PrivacyVisibilityTarget.PRIVATE,
     val selectedIds: Set<Long> = emptySet(),
     val error: String? = null,
     val lastResult: RepositoryPrivacyBulkResult? = null
