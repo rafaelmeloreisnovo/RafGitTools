@@ -42,6 +42,7 @@ fun RepositoryPrivacyScreen(
     var confirmationOpen by remember { mutableStateOf(false) }
     var showExceptions by remember { mutableStateOf(false) }
     val selected = state.selectedCandidates()
+    val selectedIds = selected.mapTo(linkedSetOf()) { it.id }
 
     Scaffold(
         topBar = {
@@ -75,7 +76,7 @@ fun RepositoryPrivacyScreen(
                     item {
                         Text("Etapa ${step + 1} de 3", style = MaterialTheme.typography.labelLarge)
                         LinearProgressIndicator(
-                            progress = { (step + 1) / 3f },
+                            progress = (step + 1) / 3f,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -160,7 +161,7 @@ fun RepositoryPrivacyScreen(
                                 ) { candidate ->
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Checkbox(
-                                            checked = candidate.id in selected.map { it.id },
+                                            checked = candidate.id in selectedIds,
                                             onCheckedChange = { viewModel.toggleRepository(candidate.id) },
                                             enabled = !state.executing
                                         )
