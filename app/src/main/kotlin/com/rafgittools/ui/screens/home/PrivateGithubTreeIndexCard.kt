@@ -19,12 +19,10 @@ import kotlinx.coroutines.withContext
 /** Explicit user gesture gates both private GitHub metadata read and private Drive SAF export. */
 @Composable
 fun PrivateGithubTreeIndexCard(
-    repositories: List<GithubRepository>,
+    repository: GithubRepository?,
     onBuild: suspend (GithubRepository) -> Result<PrivateGitHubTreeIndexGate.Snapshot>
 ) {
-    val repo = repositories.firstOrNull {
-        it.isPrivate && it.fullName == PrivateGitHubTreeIndexGate.TARGET
-    }
+    val repo = repository?.takeIf { it.isPrivate }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
@@ -67,7 +65,7 @@ fun PrivateGithubTreeIndexCard(
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("GitHub privado → Índice no Google Drive", style = MaterialTheme.typography.titleMedium)
             Text(
-                "Indexa somente metadados do commit do CONVERSATIONS_CHUNKS_PRIVATE. " +
+                "Indexa somente metadados do commit do repositório privado selecionado. " +
                     "Nenhum texto das conversas entra na CI pública. A exportação usa " +
                     "uma pasta privada escolhida pelo Android/Drive e confirma SHA-256 por leitura.",
                 style = MaterialTheme.typography.bodySmall
