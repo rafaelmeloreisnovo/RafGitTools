@@ -2481,7 +2481,7 @@ jobs:
           java -cp "$work" org.rafaelia.atlas.InventorySafetyTest
           grep -Fq 'InventorySafety.mayReadRow(rowsSeen)' \
             atlas-apk/app/src/main/java/org/rafaelia/atlas/MainActivity.java
-          grep -Fq 'InventorySafety.coverageState(truncated,errors,repeatedIds)' \
+          grep -Fq 'InventorySafety.coverageState(truncated,errors,repeatedIds,unknownMimes)' \
             atlas-apk/app/src/main/java/org/rafaelia/atlas/MainActivity.java
       - name: Android SDK
         if: steps.scope.outputs.changed == 'true'

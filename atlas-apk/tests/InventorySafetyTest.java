@@ -24,7 +24,6 @@ public final class InventorySafetyTest {
     ok(!InventorySafety.knownMime(""));
     ok(InventorySafety.coverageState(false,0,0,1).equals("PARTIAL_OR_AMBIGUOUS"));
     ok(InventorySafety.coverageState(false,0,0,0).equals("PROVIDER_ENUMERATED_UNVERIFIED"));
-    ok(InventorySafety.coverageState(false,0,0,0).equals("PROVIDER_ENUMERATED_UNVERIFIED"));
     ok(InventorySafety.coverageState(true,0,0,0).equals("PARTIAL_OR_AMBIGUOUS"));
     ok(InventorySafety.coverageState(false,1,0,0).equals("PARTIAL_OR_AMBIGUOUS"));
     ok(InventorySafety.coverageState(false,0,1,0).equals("PARTIAL_OR_AMBIGUOUS"));
