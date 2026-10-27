@@ -452,7 +452,7 @@ private fun DriveBridgeContent(
     ) {
         item {
             PrivateGithubTreeIndexCard(
-                repositories = privateRepositories,
+                repository = selectedPrivateRepository,
                 onBuild = onBuildPrivateGitHubIndex
             )
         }
