@@ -56,7 +56,10 @@ fun RepositoryPrivacyScreen(
                     state = state,
                     onToggleRepository = viewModel::toggleRepository,
                     onToggleOwner = viewModel::toggleOwner,
-                    onSelectOwner = viewModel::selectOwner,
+                    onToggleOwnerFilter = viewModel::toggleOwnerFilter,
+                    onSelectAllOwners = viewModel::selectAllOwners,
+                    onClearAllOwners = viewModel::clearAllOwners,
+                    onSelectSource = viewModel::selectSource,
                     onSelectTarget = viewModel::selectTarget,
                     onSelectAll = viewModel::selectAllEligible,
                     onClear = viewModel::clearSelection,
@@ -68,10 +71,7 @@ fun RepositoryPrivacyScreen(
 
     if (showConfirmation) {
         PrivacyConfirmationDialog(
-            selected = state.candidates.filter {
-                it.id in state.selectedIds && it.eligibleFor(state.targetVisibility) &&
-                    (state.selectedOwner == null || it.ownerLogin == state.selectedOwner)
-            },
+            selected = state.selectedCandidates(),
             target = state.targetVisibility,
             executing = state.executing,
             onDismiss = { if (!state.executing) showConfirmation = false },
@@ -102,21 +102,23 @@ private fun PrivacyInventory(
     state: RepositoryPrivacyUiState,
     onToggleRepository: (Long) -> Unit,
     onToggleOwner: (String) -> Unit,
-    onSelectOwner: (String?) -> Unit,
+    onToggleOwnerFilter: (String) -> Unit,
+    onSelectAllOwners: () -> Unit,
+    onClearAllOwners: () -> Unit,
+    onSelectSource: (PrivacyVisibilityTarget) -> Unit,
     onSelectTarget: (PrivacyVisibilityTarget) -> Unit,
     onSelectAll: () -> Unit,
     onClear: () -> Unit,
     onExecute: () -> Unit
 ) {
-    val visible = state.candidates.filter {
-        state.selectedOwner == null || it.ownerLogin == state.selectedOwner
-    }
+    val visible = state.candidates.filter { state.ownerIncluded(it.ownerLogin) }
     val eligible = visible.count { it.eligibleFor(state.targetVisibility) }
     val alreadyTarget = visible.count { it.currentVisibility == state.targetVisibility.apiValue }
     val blocked = visible.size - eligible - alreadyTarget
     val owners = visible.groupBy { it.ownerLogin }.toSortedMap(String.CASE_INSENSITIVE_ORDER)
     val ownerOptions = state.candidates.map { it.ownerLogin }.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER)
     var ownerMenuExpanded by remember { mutableStateOf(false) }
+    var sourceMenuExpanded by remember { mutableStateOf(false) }
     var targetMenuExpanded by remember { mutableStateOf(false) }
 
     LazyColumn(
@@ -129,30 +131,63 @@ private fun PrivacyInventory(
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Repositórios pessoais e organizações", style = MaterialTheme.typography.titleMedium)
                     Text("Mostrando ${visible.size} de ${state.candidates.size} · elegíveis=$eligible · bloqueados=$blocked")
-                    Text("1. Selecione conta/organização", fontWeight = FontWeight.SemiBold)
+                    Text("1. Contas / organizações (seleção múltipla)", fontWeight = FontWeight.SemiBold)
                     Box {
                         OutlinedButton(
                             onClick = { ownerMenuExpanded = true },
                             enabled = !state.executing,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(state.selectedOwner ?: "Todas as contas / organizações", modifier = Modifier.weight(1f))
+                            val selectedCount = ownerOptions.count { state.ownerIncluded(it) }
+                            Text(
+                                when (selectedCount) {
+                                    0 -> "Nenhuma conta selecionada"
+                                    ownerOptions.size -> "Todas as contas / organizações (${ownerOptions.size})"
+                                    else -> "$selectedCount de ${ownerOptions.size} contas / organizações"
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
                             Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                         }
                         DropdownMenu(expanded = ownerMenuExpanded, onDismissRequest = { ownerMenuExpanded = false }) {
-                            DropdownMenuItem(
-                                text = { Text("Todas as contas / organizações") },
-                                onClick = { onSelectOwner(null); ownerMenuExpanded = false }
-                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextButton(onClick = onSelectAllOwners) { Text("Todas") }
+                                TextButton(onClick = onClearAllOwners) { Text("Nenhuma") }
+                            }
                             ownerOptions.forEach { owner ->
                                 DropdownMenuItem(
                                     text = { Text(owner) },
-                                    onClick = { onSelectOwner(owner); ownerMenuExpanded = false }
+                                    leadingIcon = { Checkbox(checked = state.ownerIncluded(owner), onCheckedChange = null) },
+                                    onClick = { onToggleOwnerFilter(owner) }
                                 )
                             }
                         }
                     }
-                    Text("2. Visibilidade desejada", fontWeight = FontWeight.SemiBold)
+                    Text("2. Origem (de)", fontWeight = FontWeight.SemiBold)
+                    Box {
+                        OutlinedButton(
+                            onClick = { sourceMenuExpanded = true },
+                            enabled = !state.executing,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                if (state.sourceVisibility == PrivacyVisibilityTarget.PUBLIC) "Público" else "Privado",
+                                modifier = Modifier.weight(1f)
+                            )
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                        }
+                        DropdownMenu(expanded = sourceMenuExpanded, onDismissRequest = { sourceMenuExpanded = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Público") },
+                                onClick = { onSelectSource(PrivacyVisibilityTarget.PUBLIC); sourceMenuExpanded = false }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Privado") },
+                                onClick = { onSelectSource(PrivacyVisibilityTarget.PRIVATE); sourceMenuExpanded = false }
+                            )
+                        }
+                    }
+                    Text("3. Destino (para)", fontWeight = FontWeight.SemiBold)
                     Box {
                         OutlinedButton(
                             onClick = { targetMenuExpanded = true },
@@ -177,17 +212,19 @@ private fun PrivacyInventory(
                         }
                     }
                     Text(
-                        "Only GitHub-confirmed admin repositories are eligible. Forks are always blocked. " +
-                            "Every PATCH is preceded by a fresh live preflight and durable receipt checkpoint.",
+                        "Transformação: ${state.sourceVisibility.apiValue} → ${state.targetVisibility.apiValue}. " +
+                            "Origem e destino não podem ser iguais; mudar filtros limpa a seleção. " +
+                            "Somente admin confirmado; forks bloqueados. Cada PATCH exige preflight e recibo.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Text("4. Repositórios: seleção individual ou por organização", fontWeight = FontWeight.SemiBold)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = onSelectAll, enabled = eligible > 0 && !state.executing) {
-                            Text("Select all eligible")
+                            Text("Selecionar elegíveis")
                         }
                         TextButton(onClick = onClear, enabled = state.selectedIds.isNotEmpty() && !state.executing) {
-                            Text("Clear")
+                            Text("Limpar seleção")
                         }
                     }
                     Button(
