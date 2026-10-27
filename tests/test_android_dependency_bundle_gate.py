@@ -57,6 +57,25 @@ class AndroidDependencyBundleGateTests(unittest.TestCase):
         self.assertEqual(result["status"], "FAIL")
         self.assertIn("ANDROID_LINT_ERRORS_NOT_BLOCKING", result["reasons"])
 
+    def test_android_apk_is_verified_before_strict_lint_and_no_error_waiver(self):
+        workflow = (ROOT / ".github/workflows/START.yml").read_text(encoding="utf-8")
+        android = workflow.split("\n  android:\n", 1)[1].split("\n  security:\n", 1)[0]
+        positions = [
+            android.index("      - name: " + label)
+            for label in (
+                "Unit tests",
+                "Compile device route instrumentation APK",
+                "Assemble devDebug",
+                "Verify APK and SHA-256",
+                "Upload APK",
+                "Android lint",
+            )
+        ]
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn("run: ./gradlew --no-daemon lintDevDebug --stacktrace", android)
+        self.assertNotIn("continue-on-error: true", android)
+        self.assertIn("abortOnError true", self.app)
+
     def test_missing_version_is_fail_closed(self):
         result = module.validate(self.root.replace("hilt-android-gradle-plugin:2.48",
                                                   "hilt-gradle-unknown:2.48"), self.app)
