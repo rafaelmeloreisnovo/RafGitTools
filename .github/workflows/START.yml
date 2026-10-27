@@ -575,6 +575,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m unittest discover -s tests -p 'test_draft_lane_guard.py' -v
+          python3 -m unittest discover -s tests -p 'test_dependabot_policy_gate_v1.py' -v
       - name: P0 queue already in main | freestanding native exact-SHA selftest
         shell: bash
         run: |
@@ -1126,6 +1127,16 @@ jobs:
           else
             echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
           fi
+      # Run app-specific CI first. An unrelated native-fixture failure must not
+      # conceal the Kotlin/Compose/Dependabot gate result.
+      - name: Unit tests
+        run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
+      - name: Compile device route instrumentation APK
+        run: ./gradlew --no-daemon assembleDevDebugAndroidTest --stacktrace
+      - name: Android lint
+        run: ./gradlew --no-daemon lintDevDebug --stacktrace
+      - name: Assemble devDebug
+        run: ./gradlew --no-daemon assembleDevDebug --stacktrace
       - name: RAFANDROID bound Android/NDK gate
         shell: bash
         run: |
@@ -1181,14 +1192,6 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Unit tests
-        run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
-      - name: Compile device route instrumentation APK
-        run: ./gradlew --no-daemon assembleDevDebugAndroidTest --stacktrace
-      - name: Android lint
-        run: ./gradlew --no-daemon lintDevDebug --stacktrace
-      - name: Assemble devDebug
-        run: ./gradlew --no-daemon assembleDevDebug --stacktrace
       - name: Verify APK and SHA-256
         shell: bash
         run: |
