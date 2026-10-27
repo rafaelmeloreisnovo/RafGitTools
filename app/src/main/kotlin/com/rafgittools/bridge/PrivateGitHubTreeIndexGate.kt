@@ -12,7 +12,7 @@ import java.io.IOException
  * Export ONLY through the existing user-selected Android SAF tree gate.
  */
 object PrivateGitHubTreeIndexGate {
-    const val TARGET = "rafaelmeloreisnovo/CONVERSATIONS_CHUNKS_PRIVATE"
+    private val REPOSITORY = Regex("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
     private val SHA = Regex("^[0-9a-f]{40}$")
 
     data class Snapshot(
@@ -30,7 +30,7 @@ object PrivateGitHubTreeIndexGate {
         expectedTreeSha: String,
         githubTree: JsonObject
     ): JsonObject {
-        require(repository == TARGET) { "Private index target not allowlisted" }
+        require(REPOSITORY.matches(repository)) { "Invalid repository name" }
         require(SHA.matches(commitSha) && SHA.matches(expectedTreeSha)) { "Invalid exact SHA" }
         require(githubTree.get("truncated")?.asBoolean == false) { "GitHub tree incomplete" }
         require(githubTree.get("sha")?.asString == expectedTreeSha) { "GitHub tree identity mismatch" }
