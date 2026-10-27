@@ -77,7 +77,7 @@ class RepositoryPrivacyViewModel @Inject constructor(
         val available = state.candidates.mapTo(linkedSetOf()) { it.ownerLogin }
         if (owner != null && owner !in available) return
         _uiState.value = state.copy(
-            selectedOwners = owner?.let(::setOf),
+            selectedOwners = owner?.let { setOf(it) },
             selectedIds = emptySet(),
             manualSelection = false,
             error = null
