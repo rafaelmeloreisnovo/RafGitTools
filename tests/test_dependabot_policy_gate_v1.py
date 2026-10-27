@@ -53,7 +53,7 @@ class DependabotPolicyGateTests(unittest.TestCase):
         def pins(source):
             return {
                 phase: re.findall(
-                    rf"(?m)^\\s*uses:\\s*github/codeql-action/{phase}@([0-9a-f]{{40}})\\s",
+                    rf"(?m)^\s*uses:\s*github/codeql-action/{phase}@([0-9a-f]{{40}})\s",
                     source,
                 )
                 for phase in ("init", "analyze")
