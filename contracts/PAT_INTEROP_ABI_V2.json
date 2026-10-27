@@ -1,0 +1,94 @@
+{
+  "schema": "rafaelia.pat-interop-abi.v2",
+  "version": "2.0.0",
+  "authority": "rafaelmeloreisnovo/RafGitTools",
+  "route_authority": "rafaelmeloreisnovo/Mapa",
+  "status": "SOURCE_CANDIDATE_NO_PROVIDER_MUTATION",
+  "claim_allowed": false,
+  "secrets_exposed": false,
+  "provider_metadata_readback": "TOKEN_VAZIO_NOT_READ",
+  "no_alias_or_token_fallback": true,
+  "current_environment_display": "Pat_environments",
+  "canonical_environment_target": "PAT_ENVIRONMENTS",
+  "environment_rename_authorized": false,
+  "secret_ids": [
+    "PAT_ACTIONS",
+    "PAT_AGENTS",
+    "PAT_CODESPACES",
+    "PAT_DEPENDABOT",
+    "PAT_ENV",
+    "PAT_ENVIRONMENTS"
+  ],
+  "capabilities": [
+    {
+      "secret": "PAT_ACTIONS",
+      "provider_scope_state": "TOKEN_VAZIO_PROVIDER_METADATA",
+      "declared_storage": "REPOSITORY_SECRET",
+      "route": "exact_sha_read_only",
+      "mutation": false
+    },
+    {
+      "secret": "PAT_AGENTS",
+      "provider_scope_state": "TOKEN_VAZIO_PROVIDER_METADATA",
+      "declared_storage": "REPOSITORY_SECRET",
+      "route": "preflight_only",
+      "mutation": false
+    },
+    {
+      "secret": "PAT_CODESPACES",
+      "provider_scope_state": "TOKEN_VAZIO_PROVIDER_METADATA",
+      "declared_storage": "REPOSITORY_SECRET",
+      "route": "preflight_only",
+      "mutation": false
+    },
+    {
+      "secret": "PAT_DEPENDABOT",
+      "provider_scope_state": "TOKEN_VAZIO_PROVIDER_METADATA",
+      "declared_storage": "REPOSITORY_SECRET",
+      "route": "alert_read_candidate_only",
+      "mutation": false
+    },
+    {
+      "secret": "PAT_ENV",
+      "provider_scope_state": "TOKEN_VAZIO_PROVIDER_METADATA",
+      "declared_storage": "ENVIRONMENT_SECRET",
+      "route": "manual_provider_gate_only",
+      "mutation": "MANUAL_REVIEW_READBACK_ONLY"
+    },
+    {
+      "secret": "PAT_ENVIRONMENTS",
+      "provider_scope_state": "TOKEN_VAZIO_PROVIDER_METADATA",
+      "declared_storage": "TOKEN_VAZIO_PROVIDER_SCOPE_PENDING",
+      "route": "UNWIRED",
+      "mutation": false
+    }
+  ],
+  "execution": {
+    "default_token": "GITHUB_TOKEN",
+    "default_permissions": "contents:read",
+    "cross_repository": "EXACT_TARGET_SCOPED_GITHUB_APP_OR_FINE_GRAINED_PAT",
+    "never_in_android_apk": true,
+    "no_workflow_pr_to_admin": true,
+    "no_automatic_secret_or_permission_fallback": true,
+    "read_only_first": true,
+    "mutation_requires": "SEPARATE_EXPLICIT_OWNER_APPROVAL_EXACT_SHA_PROVIDER_READBACK",
+    "secret_inventory": "METADATA_NAMES_ONLY",
+    "account_private_repo_index": "DO_NOT_COMMIT_PUBLICLY"
+  },
+  "abi": {
+    "formats": [
+      "ELF32_ARM_EABI",
+      "ELF64_AARCH64"
+    ],
+    "android_min_sdk": 24,
+    "android_shell": "HOSTED_OS_BOUNDARY_JNI_DEX_APIS",
+    "pure_core": "FREESTANDING_C11_NO_LIBC_NO_HEAP_NO_GC_NO_IO_NO_SYSCALL",
+    "runtime_device_evidence": "TOKEN_VAZIO_NOT_TESTED",
+    "physical_arm32": "TOKEN_VAZIO_NOT_TESTED",
+    "physical_arm64": "TOKEN_VAZIO_NOT_TESTED",
+    "claim_zero_overhead": false,
+    "asm_optional_after_measurement": true,
+    "operation_failover": "READ_ONLY_LOCAL_METADATA_OR_HOLD_NEVER_SWAP_PAT",
+    "rollback": "NEW_REVERT_COMMIT_AND_PROVIDER_READBACK"
+  }
+}
