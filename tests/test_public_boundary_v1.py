@@ -20,7 +20,7 @@ class PublicOnlyTests(unittest.TestCase):
     def test_missing_schedule(self):
         self.assertIn("NO_SCHEDULE",guard.validate(self.src.replace("  schedule:","  absent:",1)))
     def test_reenabled_job(self):
-        bad=self.src.replace("    if: \${{ false }}","    if: \${{ true }}",1)
+        bad=self.src.replace("    if: ${{ false }}","    if: ${{ true }}",1)
         self.assertTrue(any(x.startswith("ENABLED_") for x in guard.validate(bad)))
     def test_missing_route_guard(self):
         self.assertIn("NO_ROUTE_GUARD",guard.validate(self.src.replace('if [[ "$private_ci" == true ]]; then',"NEVER",1)))
