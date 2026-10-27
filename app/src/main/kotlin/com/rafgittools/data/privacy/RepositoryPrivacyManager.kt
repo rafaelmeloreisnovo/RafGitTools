@@ -45,12 +45,19 @@ class RepositoryPrivacyManager @Inject constructor(
             .sortedWith(compareBy(RepositoryPrivacyCandidate::ownerLogin, RepositoryPrivacyCandidate::name))
     }
 
-    suspend fun makePrivate(selected: Collection<RepositoryPrivacyCandidate>): RepositoryPrivacyBulkResult {
+    suspend fun makePrivate(selected: Collection<RepositoryPrivacyCandidate>): RepositoryPrivacyBulkResult =
+        changeVisibility(selected, PrivacyVisibilityTarget.PRIVATE)
+
+    suspend fun changeVisibility(
+        selected: Collection<RepositoryPrivacyCandidate>,
+        target: PrivacyVisibilityTarget
+    ): RepositoryPrivacyBulkResult {
         val ordered = selected.distinctBy { it.id }.sortedBy { it.fullName.lowercase() }
         val createdAt = System.currentTimeMillis()
-        val operationId = "visibility-$createdAt-${UUID.randomUUID()}"
+        val operationId = "visibility-${target.apiValue}-$createdAt-${UUID.randomUUID()}"
         val mutations = ordered.map {
             it.mutation(
+                target,
                 PrivacyMutationStatus.NOT_ATTEMPTED,
                 "Planned; no mutation attempted yet"
             )
@@ -104,16 +111,19 @@ class RepositoryPrivacyManager @Inject constructor(
         ordered.forEachIndexed { index, candidate ->
             if (abortReason != null) {
                 mutations[index] = candidate.mutation(
+                    target,
                     PrivacyMutationStatus.NOT_ATTEMPTED,
                     abortReason!!
                 )
                 return@forEachIndexed
             }
 
-            if (candidate.blockReason != null) {
+            val initialBlock = candidate.blockReasonFor(target)
+            if (initialBlock != null) {
                 mutations[index] = candidate.mutation(
+                    target,
                     PrivacyMutationStatus.SKIPPED,
-                    candidate.blockReason
+                    initialBlock
                 )
                 if (!persistCheckpoint(PrivacyReceiptPhase.MUTATING)) {
                     provenanceState = PrivacyProvenanceState.PARTIAL_DURABILITY_LOSS
@@ -130,6 +140,7 @@ class RepositoryPrivacyManager @Inject constructor(
             } catch (error: HttpException) {
                 val message = safeHttpMessage(error.code(), "preflight")
                 mutations[index] = candidate.mutation(
+                    target,
                     PrivacyMutationStatus.FAILED,
                     message,
                     error.code()
@@ -143,6 +154,7 @@ class RepositoryPrivacyManager @Inject constructor(
                 return@forEachIndexed
             } catch (_: Exception) {
                 mutations[index] = candidate.mutation(
+                    target,
                     PrivacyMutationStatus.FAILED,
                     "GitHub preflight failed due to a network/runtime error"
                 )
@@ -154,8 +166,11 @@ class RepositoryPrivacyManager @Inject constructor(
                 return@forEachIndexed
             }
 
-            if (liveCandidate.id != candidate.id) {
+            if (liveCandidate.id != candidate.id || liveCandidate.fullName != candidate.fullName ||
+                liveCandidate.ownerLogin != candidate.ownerLogin || liveCandidate.name != candidate.name
+            ) {
                 mutations[index] = candidate.mutation(
+                    target,
                     PrivacyMutationStatus.SKIPPED,
                     "Live preflight repository identity changed; mutation blocked fail-closed"
                 )
@@ -167,10 +182,12 @@ class RepositoryPrivacyManager @Inject constructor(
                 return@forEachIndexed
             }
 
-            if (!liveCandidate.eligible) {
+            val liveBlock = liveCandidate.blockReasonFor(target)
+            if (liveBlock != null) {
                 mutations[index] = candidate.mutation(
+                    target,
                     PrivacyMutationStatus.SKIPPED,
-                    "Live preflight blocked: ${liveCandidate.blockReason ?: "repository is no longer eligible"}"
+                    "Live preflight blocked: $liveBlock"
                 )
                 if (!persistCheckpoint(PrivacyReceiptPhase.MUTATING)) {
                     provenanceState = PrivacyProvenanceState.PARTIAL_DURABILITY_LOSS
@@ -184,11 +201,13 @@ class RepositoryPrivacyManager @Inject constructor(
             // If the process dies after GitHub accepts the request, reconciliation can
             // identify the exact repository whose result was not yet confirmed locally.
             mutations[index] = candidate.mutation(
+                    target,
                 PrivacyMutationStatus.ATTEMPTING,
                 "Live preflight passed; visibility PATCH is the next external action"
             )
             if (!persistCheckpoint(PrivacyReceiptPhase.MUTATING)) {
                 mutations[index] = candidate.mutation(
+                    target,
                     PrivacyMutationStatus.NOT_ATTEMPTED,
                     "Pre-mutation receipt checkpoint failed; PATCH was not sent"
                 )
@@ -202,25 +221,30 @@ class RepositoryPrivacyManager @Inject constructor(
                 val updated = api.updateVisibility(
                     candidate.ownerLogin,
                     candidate.name,
-                    VisibilityPatchRequest("private")
+                    VisibilityPatchRequest(target.apiValue)
                 )
                 mutations[index] = if (
                     updated.id == candidate.id &&
-                    (updated.isPrivate || updated.visibility == "private")
+                    updated.fullName == candidate.fullName &&
+                    updated.isPrivate == (target == PrivacyVisibilityTarget.PRIVATE) &&
+                    (updated.visibility == null || updated.visibility == target.apiValue)
                 ) {
                     candidate.mutation(
+                    target,
                         PrivacyMutationStatus.UPDATED,
-                        "GitHub response confirmed private visibility"
+                        "GitHub response confirmed ${target.apiValue} visibility"
                     )
                 } else {
                     candidate.mutation(
+                    target,
                         PrivacyMutationStatus.FAILED,
-                        "GitHub response did not confirm the expected repository as private"
+                        "GitHub response did not confirm the expected repository as ${target.apiValue}"
                     )
                 }
             } catch (error: HttpException) {
                 val message = safeHttpMessage(error.code(), "mutation")
                 mutations[index] = candidate.mutation(
+                    target,
                     PrivacyMutationStatus.FAILED,
                     message,
                     error.code()
@@ -228,6 +252,7 @@ class RepositoryPrivacyManager @Inject constructor(
                 if (error.code() == 401) abortReason = message
             } catch (_: Exception) {
                 mutations[index] = candidate.mutation(
+                    target,
                     PrivacyMutationStatus.FAILED,
                     "GitHub visibility mutation failed due to a network/runtime error"
                 )
@@ -250,6 +275,7 @@ class RepositoryPrivacyManager @Inject constructor(
                     mutations[index].message == "Planned; no mutation attempted yet"
                 ) {
                     mutations[index] = ordered[index].mutation(
+                        target,
                         PrivacyMutationStatus.NOT_ATTEMPTED,
                         abortReason!!
                     )
@@ -297,6 +323,11 @@ private fun safeHttpMessage(code: Int, stage: String): String = when (code) {
     else -> "GitHub HTTP $code rejected $stage"
 }
 
+enum class PrivacyVisibilityTarget(val apiValue: String, val confirmationVerb: String) {
+    PRIVATE("private", "PRIVATIZAR"),
+    PUBLIC("public", "PUBLICAR")
+}
+
 internal fun PrivacyRepositoryDto.toCandidate(): RepositoryPrivacyCandidate {
     val reason = when {
         isPrivate || visibility == "private" -> "Already private"
@@ -327,6 +358,7 @@ internal fun PrivacyRepositoryDto.toCandidate(): RepositoryPrivacyCandidate {
 }
 
 private fun RepositoryPrivacyCandidate.mutation(
+    target: PrivacyVisibilityTarget,
     status: PrivacyMutationStatus,
     message: String,
     httpStatus: Int? = null
@@ -335,7 +367,7 @@ private fun RepositoryPrivacyCandidate.mutation(
     fullName = fullName,
     ownerType = ownerType,
     fromVisibility = currentVisibility,
-    targetVisibility = "private",
+    targetVisibility = target.apiValue,
     status = status,
     httpStatus = httpStatus,
     message = message
@@ -360,6 +392,25 @@ data class RepositoryPrivacyCandidate(
     val blockReason: String?
 ) {
     val eligible: Boolean get() = blockReason == null
+
+    /**
+     * Both directions require explicit admin authority and consistent GitHub state.
+     * Unverified/internal visibility cannot authorize a PATCH.
+     */
+    fun blockReasonFor(target: PrivacyVisibilityTarget): String? = when {
+        isFork -> "Fork visibility is controlled by its repository network"
+        archived -> "Archived repository: mutation blocked fail-closed"
+        disabled -> "Disabled repository: mutation blocked fail-closed"
+        !admin -> "TOKEN_VAZIO: GitHub did not confirm admin permission"
+        currentVisibility !in setOf("public", "private") ->
+            "TOKEN_VAZIO: Unsupported or unknown current visibility"
+        isPrivate != (currentVisibility == "private") ->
+            "TOKEN_VAZIO: Inconsistent GitHub visibility fields"
+        currentVisibility == target.apiValue -> "Already ${target.apiValue}"
+        else -> null
+    }
+
+    fun eligibleFor(target: PrivacyVisibilityTarget): Boolean = blockReasonFor(target) == null
     val organizationOwned: Boolean get() = ownerType.equals("Organization", ignoreCase = true)
     val hasPublicImpactWarning: Boolean get() = hasPages || stars > 0 || watchers > 0 || forks > 0
 }
