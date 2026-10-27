@@ -806,6 +806,30 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_mapa_provider_authority_preflight_v1.py' -v
           python3 scripts/validate_mapa_provider_authority_preflight_v1.py
 
+      - name: Six-PAT identity + ARM32/ARM64 freestanding L0 gate (offline)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/validate_pat_interop_abi_v2.py
+          python3 -m unittest discover -s tests -p 'test_pat_interop_abi_v2.py' -v
+          command -v clang
+          command -v readelf
+          mkdir -p "$RUNNER_TEMP/pat-interop-l0"
+          for target in armv7a-linux-gnueabihf aarch64-linux-gnu; do
+            clang -std=c11 -O2 -Wall -Wextra -Werror -ffreestanding \
+              -fno-builtin -fno-stack-protector \
+              -fno-unwind-tables -fno-asynchronous-unwind-tables \
+              -target "$target" \
+              -c native/pat_interop_l0_v2/raf_pat_interop_v2.c \
+              -o "$RUNNER_TEMP/pat-interop-l0/$target.o"
+            readelf -h "$RUNNER_TEMP/pat-interop-l0/$target.o"
+            if readelf -Ws "$RUNNER_TEMP/pat-interop-l0/$target.o" | grep -E 'UND[[:space:]]+[^[:space:]]'; then
+              echo "::error::freestanding ABI object has undefined external symbols"
+              exit 2
+            fi
+          done
+          echo 'PAT_INTEROP_ABI_V2=PASS_SCOPED_SOURCE_ONLY; PROVIDER_AND_DEVICE=TOKEN_VAZIO'
+
       - name: Falsify chart ancestry metadata (synthetic, no provider access)
         shell: bash
         run: |
