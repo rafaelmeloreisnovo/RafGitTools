@@ -196,7 +196,8 @@ android {
     }
 
     lint {
-        abortOnError false
+        // Android errors are release/PR blockers; warnings remain observable.
+        abortOnError true
         checkReleaseBuilds true
         warningsAsErrors false
     }
