@@ -23,7 +23,7 @@ import java.util.HashSet;
 
 /** Hosted Android SAF boundary; L0 classifier is in atlas_core.c. No network permissions. */
 public final class MainActivity extends Activity {
-    private static final int PICK_TREE=101, SAVE_INDEX=102, MAX_OBJECTS=5000, MAX_DEPTH=16, MAX_PATH=2048;
+    private static final int PICK_TREE=101, SAVE_INDEX=102;
     private static final String[] COLUMNS={
         DocumentsContract.Document.COLUMN_DOCUMENT_ID,
         DocumentsContract.Document.COLUMN_DISPLAY_NAME,
@@ -51,7 +51,7 @@ public final class MainActivity extends Activity {
         layout.addView(title);
         status=new TextView(this);
         status.setText("Escolha uma pasta. Somente metadados; arquivos originais intactos. Limites: "
-            +MAX_OBJECTS+" objetos, "+MAX_DEPTH+" níveis.\nExportação pode conter nomes privados.");
+            +InventorySafety.MAX_OBJECTS+" objetos, "+InventorySafety.MAX_DEPTH+" níveis; "+InventorySafety.MAX_ROWS+" linhas observadas.\nExportação pode conter nomes privados.");
         layout.addView(status);
         pick=new Button(this);
         pick.setText("Selecionar pasta e inventariar");
@@ -117,30 +117,37 @@ public final class MainActivity extends Activity {
     }
     private void scan(Uri tree) {
         long files=0,dirs=0,bytes=0;
-        int records=0,errors=0;
+        int records=0,errors=0,rowsSeen=0,repeatedIds=0,unknownSizes=0;
         boolean truncated=false,overflow=false;
         File temp=new File(getCacheDir(),"atlas-index-v1.jsonl");
         try {
             MessageDigest digest=MessageDigest.getInstance("SHA-256");
             String rootId=DocumentsContract.getTreeDocumentId(tree);
+            if(!InventorySafety.validRootId(rootId))
+                throw new java.io.IOException("Invalid SAF root identity");
             ArrayDeque<Pending> queue=new ArrayDeque<>();
             HashSet<String> seen=new HashSet<>();
             queue.add(new Pending(rootId,"",0)); seen.add(rootId);
             try(BufferedWriter out=new BufferedWriter(new OutputStreamWriter(new FileOutputStream(temp,false),StandardCharsets.UTF_8))) {
                 while(!queue.isEmpty()) {
                     Pending node=queue.removeFirst();
-                    if(node.depth>=MAX_DEPTH){truncated=true;continue;}
+                    if(node.depth>=InventorySafety.MAX_DEPTH){truncated=true;continue;}
                     Uri children=DocumentsContract.buildChildDocumentsUriUsingTree(tree,node.id);
                     try(Cursor cursor=getContentResolver().query(children,COLUMNS,null,null,null)) {
                         if(cursor==null){errors++;continue;}
                         while(cursor.moveToNext()) {
-                            if(records>=MAX_OBJECTS){truncated=true;queue.clear();break;}
+                            ++rowsSeen;
+                            if(!InventorySafety.mayReadRow(rowsSeen) || !InventorySafety.mayEmit(records)){
+                                truncated=true;queue.clear();break;
+                            }
                             String id=cursor.getString(0), name=cursor.getString(1), mime=cursor.getString(2);
-                            if(id==null||name==null||name.length()==0){errors++;continue;}
-                            if(!seen.add(id))continue;
-                            boolean dir=DocumentsContract.Document.MIME_TYPE_DIR.equals(mime);
+                            // Limits include malformed/duplicate rows, not just accepted objects.
+                            if(id==null||name==null||name.length()>InventorySafety.MAX_NAME
+                                    ||id.length()>InventorySafety.MAX_ID){errors++;continue;}
                             String path=node.path+"/"+name;
-                            if(path.length()>MAX_PATH){errors++;continue;}
+                            if(!InventorySafety.validEntry(id,name,mime,path)){errors++;continue;}
+                            if(!seen.add(id)){repeatedIds++;continue;}
+                            boolean dir=DocumentsContract.Document.MIME_TYPE_DIR.equals(mime);
                             long size=cursor.isNull(3)?-1:cursor.getLong(3);
                             long modified=cursor.isNull(4)?-1:cursor.getLong(4);
                             long traits=classifyName(name,dir);
@@ -150,6 +157,7 @@ public final class MainActivity extends Activity {
                             int ext=(int)((traits>>24)&65535L);
                             String rec="{\"schema\":\"raf.atlas.object.v1\",\"path\":"+quote(path)
                                 +",\"document_id\":"+quote(id)
+                                +",\"parent_document_id\":"+quote(node.id)
                                 +",\"mime\":"+quote(mime==null?"TOKEN_VAZIO_MIME":mime)
                                 +",\"kind\":"+kind+",\"numeric_prefix_bytes\":"+prefix
                                 +",\"extension_offset_bytes\":"+ext
@@ -165,24 +173,33 @@ public final class MainActivity extends Activity {
                                 if(size>=0){
                                     if(Long.MAX_VALUE-bytes<size)overflow=true;
                                     else bytes+=size;
-                                }
+                                } else ++unknownSizes;
                             }
                         }
                     } catch(Exception e){errors++;}
                 }
                 String receipt="{\"schema\":\"raf.atlas.receipt.v1\",\"kind\":\"RECEIPT\""
                     +",\"records\":"+records+",\"files\":"+files+",\"directories\":"+dirs
+                    +",\"rows_seen\":"+rowsSeen+",\"duplicate_document_ids\":"+repeatedIds
+                    +",\"unknown_size_count\":"+unknownSizes+",\"root_document_id\":"+quote(rootId)
+                    +",\"provider_authority\":"+quote(tree.getAuthority())
                     +",\"known_file_bytes\":"+(overflow?"null":Long.toString(bytes))
                     +",\"bytes_overflow\":"+overflow+",\"errors\":"+errors
-                    +",\"truncated\":"+truncated+",\"complete\":"+(!truncated&&errors==0)
+                    +",\"truncated\":"+truncated+",\"complete\":false"
+                    +",\"enumeration_finished\":"+(!truncated&&errors==0)
+                    +",\"coverage_state\":"+quote(InventorySafety.coverageState(truncated,errors,repeatedIds))
                     +",\"scope\":\"USER_SELECTED_SAF_TREE\",\"source_bytes_verified\":false"
+                    +",\"hash_scope\":\"UTF8_JSONL_ENTRIES_EXCLUDING_RECEIPT\""
                     +",\"entries_sha256\":\""+hex(digest.digest())+"\""
                     +",\"claim_allowed\":false,\"timestamp_ms\":"+System.currentTimeMillis()+"}";
                 out.write(receipt);out.write('\n');
             }
             output=temp;
             show("Registros="+records+" arquivos="+files+" pastas="+dirs
-                +" erros="+errors+" truncado="+truncated+".\nFonte: hashes TOKEN_VAZIO_UNREAD. Exportação explícita.",true);
+                +" linhas="+rowsSeen+" repetidos="+repeatedIds+" tamanhos desconhecidos="+unknownSizes
+                +" erros="+errors+" truncado="+truncated+".\nCobertura: "
+                +InventorySafety.coverageState(truncated,errors,repeatedIds)
+                +". Hashes da fonte TOKEN_VAZIO. Exportação explícita.",true);
         } catch(Exception e){
             output=null;
             show("Inventário bloqueado: "+e.getClass().getSimpleName()+"; recibo não confiável.",false);
