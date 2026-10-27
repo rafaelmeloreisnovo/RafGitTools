@@ -23,3 +23,8 @@ R3: F_ok=arquitetura+L0 local; F_gap=CI/Android/Drive; F_next=exact-head CI, pil
 - `entries_sha256` refere-se somente às linhas UTF-8 JSONL anteriores ao receipt, conforme `hash_scope`. Não comprova SHA dos arquivos de origem ou autenticidade de assinatura.
 - Gate host: 21 testes negativos Java sem dependências/Android; CI job 10Z compila o helper, roda fixtures e compila o APK. Contenção de provedor travado, execução física Android, restauração semântica e revisão independente permanecem `TOKEN_VAZIO_NOT_RUN`.
 - Esta revisão preserva o diretório NOVOexport original e não autoriza publicação/treinamento/merge. Rollback = regressar à revisão anterior no PR ou fechar a branch DRAFT.
+
+## S5 — MIME ausente: correção de cobertura (candidato, NÃO promovido)
+- Um DocumentsProvider pode retornar MIME nulo ou vazio; isso não comprova que o item seja arquivo em vez de diretório. Anteriormente esse estado contabilizava um arquivo e podia esconder uma subárvore sem advertência.
+- Novo `unknown_mime_count` conserva o registro original e classificador de nome, mas não soma bytes/arquivos tipados como conhecidos. `coverage_state=PARTIAL_OR_AMBIGUOUS` e `enumeration_finished=false` quando o MIME falta ou IDs são repetidos.
+- Não muda o contrato L0 C/JNI, SAF permissions, manifesto, dependências ou original app. Testes de JVM devem confirmar os novos falsificadores; execução em aparelho e garantia de enumeração integral continuam TOKEN_VAZIO. Sem promoção automática.

@@ -117,7 +117,7 @@ public final class MainActivity extends Activity {
     }
     private void scan(Uri tree) {
         long files=0,dirs=0,bytes=0;
-        int records=0,errors=0,rowsSeen=0,repeatedIds=0,unknownSizes=0;
+        int records=0,errors=0,rowsSeen=0,repeatedIds=0,unknownSizes=0,unknownMimes=0;
         boolean truncated=false,overflow=false;
         File temp=new File(getCacheDir(),"atlas-index-v1.jsonl");
         try {
@@ -147,6 +147,8 @@ public final class MainActivity extends Activity {
                             String path=node.path+"/"+name;
                             if(!InventorySafety.validEntry(id,name,mime,path)){errors++;continue;}
                             if(!seen.add(id)){repeatedIds++;continue;}
+                            boolean mimeKnown=InventorySafety.knownMime(mime);
+                            if(!mimeKnown)++unknownMimes; // May hide a subtree: never claim full enumeration.
                             boolean dir=DocumentsContract.Document.MIME_TYPE_DIR.equals(mime);
                             long size=cursor.isNull(3)?-1:cursor.getLong(3);
                             long modified=cursor.isNull(4)?-1:cursor.getLong(4);
@@ -168,7 +170,7 @@ public final class MainActivity extends Activity {
                             digest.update((rec+"\n").getBytes(StandardCharsets.UTF_8));
                             records++;
                             if(dir){dirs++;queue.add(new Pending(id,path,node.depth+1));}
-                            else {
+                            else if(mimeKnown) {
                                 files++;
                                 if(size>=0){
                                     if(Long.MAX_VALUE-bytes<size)overflow=true;
@@ -181,13 +183,14 @@ public final class MainActivity extends Activity {
                 String receipt="{\"schema\":\"raf.atlas.receipt.v1\",\"kind\":\"RECEIPT\""
                     +",\"records\":"+records+",\"files\":"+files+",\"directories\":"+dirs
                     +",\"rows_seen\":"+rowsSeen+",\"duplicate_document_ids\":"+repeatedIds
-                    +",\"unknown_size_count\":"+unknownSizes+",\"root_document_id\":"+quote(rootId)
+                     +",\"unknown_size_count\":"+unknownSizes+",\"unknown_mime_count\":"+unknownMimes
+                    +",\"root_document_id\":"+quote(rootId)
                     +",\"provider_authority\":"+quote(tree.getAuthority())
                     +",\"known_file_bytes\":"+(overflow?"null":Long.toString(bytes))
                     +",\"bytes_overflow\":"+overflow+",\"errors\":"+errors
                     +",\"truncated\":"+truncated+",\"complete\":false"
-                    +",\"enumeration_finished\":"+(!truncated&&errors==0)
-                    +",\"coverage_state\":"+quote(InventorySafety.coverageState(truncated,errors,repeatedIds))
+                    +",\"enumeration_finished\":"+(!truncated&&errors==0&&repeatedIds==0&&unknownMimes==0)
+                    +",\"coverage_state\":"+quote(InventorySafety.coverageState(truncated,errors,repeatedIds,unknownMimes))
                     +",\"scope\":\"USER_SELECTED_SAF_TREE\",\"source_bytes_verified\":false"
                     +",\"hash_scope\":\"UTF8_JSONL_ENTRIES_EXCLUDING_RECEIPT\""
                     +",\"entries_sha256\":\""+hex(digest.digest())+"\""
@@ -196,9 +199,9 @@ public final class MainActivity extends Activity {
             }
             output=temp;
             show("Registros="+records+" arquivos="+files+" pastas="+dirs
-                +" linhas="+rowsSeen+" repetidos="+repeatedIds+" tamanhos desconhecidos="+unknownSizes
+                +" linhas="+rowsSeen+" repetidos="+repeatedIds+" MIME desconhecido="+unknownMimes+" tamanhos desconhecidos="+unknownSizes
                 +" erros="+errors+" truncado="+truncated+".\nCobertura: "
-                +InventorySafety.coverageState(truncated,errors,repeatedIds)
+                +InventorySafety.coverageState(truncated,errors,repeatedIds,unknownMimes)
                 +". Hashes da fonte TOKEN_VAZIO. Exportação explícita.",true);
         } catch(Exception e){
             output=null;

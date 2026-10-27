@@ -19,10 +19,15 @@ public final class InventorySafetyTest {
     ok(!InventorySafety.validEntry("id","f","m".repeat(InventorySafety.MAX_MIME+1),"/f"));
     ok(!InventorySafety.validEntry("id","f","text/plain","x".repeat(InventorySafety.MAX_PATH+1)));
     ok(InventorySafety.validEntry("id","f",null,"/f"));
-    ok(InventorySafety.coverageState(false,0,0).equals("PROVIDER_ENUMERATED_UNVERIFIED"));
-    ok(InventorySafety.coverageState(true,0,0).equals("PARTIAL_OR_AMBIGUOUS"));
-    ok(InventorySafety.coverageState(false,1,0).equals("PARTIAL_OR_AMBIGUOUS"));
-    ok(InventorySafety.coverageState(false,0,1).equals("PARTIAL_OR_AMBIGUOUS"));
+    ok(InventorySafety.knownMime("text/plain"));
+    ok(!InventorySafety.knownMime(null));
+    ok(!InventorySafety.knownMime(""));
+    ok(InventorySafety.coverageState(false,0,0,1).equals("PARTIAL_OR_AMBIGUOUS"));
+    ok(InventorySafety.coverageState(false,0,0,0).equals("PROVIDER_ENUMERATED_UNVERIFIED"));
+    ok(InventorySafety.coverageState(false,0,0,0).equals("PROVIDER_ENUMERATED_UNVERIFIED"));
+    ok(InventorySafety.coverageState(true,0,0,0).equals("PARTIAL_OR_AMBIGUOUS"));
+    ok(InventorySafety.coverageState(false,1,0,0).equals("PARTIAL_OR_AMBIGUOUS"));
+    ok(InventorySafety.coverageState(false,0,1,0).equals("PARTIAL_OR_AMBIGUOUS"));
     System.out.println("INVENTORY_SAFETY_HOST_PASS checks="+checks);
   }
 }
