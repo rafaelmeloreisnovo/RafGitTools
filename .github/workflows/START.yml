@@ -174,6 +174,13 @@ jobs:
           test "$actual" = "$EXECUTION_SHA"
           echo "EXECUTION_SHA=$actual"
 
+      - name: Public-only boundary + redacted scanner tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/verify_public_boundary_v1.py --workflow .github/workflows/START.yml
+          python3 -m unittest discover -s tests -p 'test_public_boundary_v1.py' -q
+
       - name: Resolve execution lane
         id: route
         shell: bash
@@ -480,6 +487,10 @@ jobs:
             echo "private_ci_workflow_id=$private_ci_workflow_id"
             echo "private_ci_manifest_path=$private_ci_manifest_path"
             echo "public_data=$public_data"
+          if [[ "$private_ci" == true ]]; then
+            echo '::error::PRIVATE_CI_DISABLED_ON_PUBLIC_RUNNER'
+            exit 2
+          fi
           } >> "$GITHUB_OUTPUT"
 
           {
@@ -1315,14 +1326,8 @@ jobs:
   provider_actions:
     name: '08A · Provider actions / exact cross-repo read-only'
     needs: [plan, coherence]
-    if: >-
-      ${{
-        needs.plan.outputs.provider_actions == 'true' &&
-        needs.coherence.result == 'success' &&
-        github.event_name == 'push' &&
-        github.ref == 'refs/heads/main' &&
-        github.actor == 'rafaelmeloreisnovo'
-      }}
+    # PUBLIC_ONLY_DISABLED_PRIVATE_EXECUTION | controlled HOLD, no public secrets
+    if: ${{ false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -1436,19 +1441,8 @@ jobs:
   private_ci_bridge:
     name: '08B · Private CI bridge / exact-SHA secretless replay'
     needs: [plan, coherence]
-    if: >-
-      ${{
-        needs.plan.outputs.private_ci == 'true' &&
-        needs.coherence.result == 'success' &&
-        github.actor == 'rafaelmeloreisnovo' &&
-        (
-          github.event_name == 'workflow_dispatch' ||
-          (
-            github.event_name == 'push' &&
-            github.ref == 'refs/heads/main'
-          )
-        )
-      }}
+    # PUBLIC_ONLY_DISABLED_PRIVATE_EXECUTION | controlled HOLD, no public secrets
+    if: ${{ false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -1595,15 +1589,8 @@ jobs:
   mapa_provider_pat_preflight:
     name: '08Q · Mapa PAT_ENV / read-only provider authority'
     needs: [plan, topology, coherence]
-    if: >-
-      ${{
-        github.event_name == 'workflow_dispatch' &&
-        github.ref == 'refs/heads/main' &&
-        github.actor == 'rafaelmeloreisnovo' &&
-        needs.plan.outputs.mode == 'mapa_provider_pat_preflight' &&
-        needs.topology.result == 'success' &&
-        needs.coherence.result == 'success'
-      }}
+    # PUBLIC_ONLY_DISABLED_PRIVATE_EXECUTION | controlled HOLD, no public secrets
+    if: ${{ false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     permissions:
@@ -1647,25 +1634,8 @@ jobs:
   provider_environments:
     name: '08P · Provider environments / main enforcement'
     needs: [plan, coherence]
-    if: >-
-      ${{
-        needs.plan.outputs.provider_environments == 'true' &&
-        needs.coherence.result == 'success' &&
-        github.actor == 'rafaelmeloreisnovo' &&
-        github.ref == 'refs/heads/main' &&
-        (
-          github.event_name == 'workflow_dispatch' ||
-          (
-            github.event_name == 'push' &&
-            github.ref == 'refs/heads/main' &&
-            github.actor == 'rafaelmeloreisnovo' &&
-            (
-              needs.plan.outputs.provider_operation == 'preflight' ||
-              needs.plan.outputs.provider_operation == 'apply_main_protection'
-            )
-          )
-        )
-      }}
+    # PUBLIC_ONLY_DISABLED_PRIVATE_EXECUTION | controlled HOLD, no public secrets
+    if: ${{ false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -1829,14 +1799,8 @@ jobs:
   release:
     name: '08 · Signed release'
     needs: [plan, coherence, android, security]
-    if: >-
-      ${{
-        always() &&
-        needs.plan.outputs.release == 'true' &&
-        needs.coherence.result == 'success' &&
-        needs.android.result == 'success' &&
-        needs.security.result == 'success'
-      }}
+    # PUBLIC_ONLY_DISABLED_PRIVATE_EXECUTION | controlled HOLD, no public secrets
+    if: ${{ false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     permissions:
@@ -2076,7 +2040,8 @@ jobs:
   public_data_custody:
     name: 'Public data custody / PLECT public-money lane'
     needs: [plan, topology, coherence]
-    if: ${{ needs.plan.outputs.public_data == 'true' }}
+    # PUBLIC_ONLY_DISABLED_PRIVATE_EXECUTION | controlled HOLD, no public secrets
+    if: ${{ false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: Pat_environments
@@ -2195,15 +2160,8 @@ jobs:
   repository_factory_pat_preflight:
     name: '09Y · PAT_AGENTS / identity and org preflight (read-only)'
     needs: [plan, topology, coherence]
-    if: >-
-      ${{
-        github.event_name == 'workflow_dispatch' &&
-        github.ref == 'refs/heads/main' &&
-        github.actor == 'rafaelmeloreisnovo' &&
-        needs.plan.outputs.mode == 'repository_factory_pat_preflight' &&
-        needs.topology.result == 'success' &&
-        needs.coherence.result == 'success'
-      }}
+    # PUBLIC_ONLY_DISABLED_PRIVATE_EXECUTION | controlled HOLD, no public secrets
+    if: ${{ false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -2246,15 +2204,8 @@ jobs:
   promotion_hold_pat_agent:
     name: '09Z · PAT_AGENTS / P0 title hold only (owner manual)'
     needs: [plan, topology, coherence]
-    if: >-
-      ${{
-        github.event_name == 'workflow_dispatch' &&
-        github.ref == 'refs/heads/main' &&
-        github.actor == 'rafaelmeloreisnovo' &&
-        needs.plan.outputs.mode == 'promotion_hold_pat' &&
-        needs.topology.result == 'success' &&
-        needs.coherence.result == 'success'
-      }}
+    # PUBLIC_ONLY_DISABLED_PRIVATE_EXECUTION | controlled HOLD, no public secrets
+    if: ${{ false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
