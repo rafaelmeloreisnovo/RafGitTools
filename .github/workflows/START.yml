@@ -1065,6 +1065,41 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+  docs_integrity:
+    # S7: independent, nonpromoting docs check moved inside the canonical
+    # single-root orchestrator. The historical YAML is archived byte-for-byte.
+    # This job does not depend on topology/coherence: its failures stay visible.
+    name: '05Z · Docs Integrity / source references (scoped)'
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && (inputs.mode == 'docs' || inputs.mode == 'full'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.EXECUTION_SHA }}
+          persist-credentials: false
+      - name: Verify exact source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXECUTION_SHA"
+      - name: Python isolated tests (no network)
+        run: python3 -m unittest discover -s tools -p 'test_doc_ref_integrity_gate.py' -v
+      - name: Current navigation documents (blocking, scoped)
+        run: |
+          python3 tools/doc_ref_integrity_gate.py \
+            --file README.md \
+            --file docs/INDEX.md \
+            --file docs/RAFAELIA_DOCS_RECONCILIATION_20261025.md \
+            --file docs/RAFAELIA_ROOT_CENSUS_20261025.md --file tools/rafymlc/README.md
+      - name: Historical Markdown audit (nonblocking inventory)
+        run: python3 tools/doc_ref_integrity_gate.py --all --audit-only
+
   docs:
     name: '05 · Documentation / claim boundary'
     needs: [plan, coherence]
@@ -1956,7 +1991,7 @@ jobs:
 
   receipt:
     name: '09 · Final receipt / fechamento'
-    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_actions, private_ci_bridge, provider_environments, release, public_data_custody, promotion_hold_pat_agent]
+    needs: [plan, topology, coherence, python_tests, federation, docs, docs_integrity, android, security, provider_actions, private_ci_bridge, provider_environments, release, public_data_custody, promotion_hold_pat_agent]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -1967,6 +2002,7 @@ jobs:
       PYTHON_RESULT: ${{ needs.python_tests.result }}
       FEDERATION_RESULT: ${{ needs.federation.result }}
       DOCS_RESULT: ${{ needs.docs.result }}
+      DOCS_INTEGRITY_RESULT: ${{ needs.docs_integrity.result }}
       ANDROID_RESULT: ${{ needs.android.result }}
       SECURITY_RESULT: ${{ needs.security.result }}
       PROVIDER_ACTIONS_RESULT: ${{ needs.provider_actions.result }}
@@ -1979,6 +2015,7 @@ jobs:
       ANDROID_REQUIRED: ${{ needs.plan.outputs.android }}
       SECURITY_REQUIRED: ${{ needs.plan.outputs.security }}
       DOCS_REQUIRED: ${{ needs.plan.outputs.docs }}
+      DOCS_INTEGRITY_REQUIRED: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && (inputs.mode == 'docs' || inputs.mode == 'full')) }}
       FEDERATION_REQUIRED: ${{ needs.plan.outputs.federation }}
     steps:
       - name: Emit append-only pipeline receipt
@@ -1995,6 +2032,7 @@ jobs:
               'python_tests': os.environ['PYTHON_RESULT'],
               'federation': os.environ['FEDERATION_RESULT'],
               'docs': os.environ['DOCS_RESULT'],
+              'docs_integrity': os.environ['DOCS_INTEGRITY_RESULT'],
               'android': os.environ['ANDROID_RESULT'],
               'security': os.environ['SECURITY_RESULT'],
               'provider_actions': os.environ['PROVIDER_ACTIONS_RESULT'],
@@ -2013,6 +2051,7 @@ jobs:
               'android': os.environ['ANDROID_REQUIRED'] == 'true',
               'security': os.environ['SECURITY_REQUIRED'] == 'true',
               'docs': os.environ['DOCS_REQUIRED'] == 'true',
+              'docs_integrity': os.environ['DOCS_INTEGRITY_REQUIRED'] == 'true',
               'federation': os.environ['FEDERATION_REQUIRED'] == 'true',
           }
           missing_required = [
