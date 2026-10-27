@@ -29,6 +29,7 @@ import com.rafgittools.bridge.CorpusCatalogTreeGate
 import com.rafgittools.bridge.CorpusIntakeGate
 import com.rafgittools.bridge.CorpusIntakeResult
 import com.rafgittools.bridge.DriveStagingGate
+import com.rafgittools.bridge.PrivateGitHubTreeIndexGate
 import com.rafgittools.navigator.ConversationManifoldProcessor
 import com.rafgittools.navigator.ConversationManifoldPublication
 import com.rafgittools.navigator.NovoexportSafInventory
@@ -63,6 +64,7 @@ fun HomeScreen(
     onNavigateToNotifications: () -> Unit = {},
     onNavigateToActions: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
     val user by viewModel.user.collectAsStateWithLifecycle()
@@ -179,7 +181,8 @@ fun HomeScreen(
                     onRunGithubTest = viewModel::runGithubConnectivityTest,
                     onCreateRemoteReceipt = viewModel::createRemoteConnectivityReceipt,
                     onPublishPrivateProcessingReceipt = viewModel::publishPrivateProcessingReceipt,
-                    onPublishManifold = viewModel::publishConversationManifold
+                    onPublishManifold = viewModel::publishConversationManifold,
+                    onBuildPrivateGitHubIndex = { repository -> viewModel.buildPrivateGithubIndex(context, repository) }
                 )
             }
         }
@@ -208,7 +211,8 @@ private fun SourceDashboard(
         String,
         CorpusIntakeResult
     ) -> Unit,
-    onPublishManifold: suspend (GithubRepository, ConversationManifoldPublication.Plan, String, android.content.ContentResolver) -> Result<ConversationManifoldPublication.Published>
+    onPublishManifold: suspend (GithubRepository, ConversationManifoldPublication.Plan, String, android.content.ContentResolver) -> Result<ConversationManifoldPublication.Published>,
+    onBuildPrivateGitHubIndex: suspend (GithubRepository) -> Result<PrivateGitHubTreeIndexGate.Snapshot>
 ) {
     Column(Modifier.fillMaxSize()) {
         TabRow(selectedTabIndex = activeTab.ordinal) {
@@ -248,7 +252,8 @@ private fun SourceDashboard(
                 privateRepositories = remoteRepositories.filter { it.isPrivate },
                 publishState = privateProcessingPublishState,
                 onPublishReceipt = onPublishPrivateProcessingReceipt,
-                onPublishManifold = onPublishManifold
+                onPublishManifold = onPublishManifold,
+                onBuildPrivateGitHubIndex = onBuildPrivateGitHubIndex
             )
             HomeViewModel.HomeTab.LOCAL -> LocalRepositoryList(localRepositories, onLocalRepositoryClick)
         }
@@ -285,7 +290,8 @@ private fun DriveBridgeContent(
     privateRepositories: List<GithubRepository>,
     publishState: PrivateProcessingPublishState,
     onPublishReceipt: (GithubRepository, Long, String, String, CorpusIntakeResult) -> Unit,
-    onPublishManifold: suspend (GithubRepository, ConversationManifoldPublication.Plan, String, android.content.ContentResolver) -> Result<ConversationManifoldPublication.Published>
+    onPublishManifold: suspend (GithubRepository, ConversationManifoldPublication.Plan, String, android.content.ContentResolver) -> Result<ConversationManifoldPublication.Published>,
+    onBuildPrivateGitHubIndex: suspend (GithubRepository) -> Result<PrivateGitHubTreeIndexGate.Snapshot>
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -444,6 +450,12 @@ private fun DriveBridgeContent(
         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        item {
+            PrivateGithubTreeIndexCard(
+                repositories = privateRepositories,
+                onBuild = onBuildPrivateGitHubIndex
+            )
+        }
         item {
             SafDirectoryIntakeCard()
         }
