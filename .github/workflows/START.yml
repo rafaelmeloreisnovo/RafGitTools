@@ -9,6 +9,7 @@ on:
     types: [opened, reopened, synchronize, ready_for_review, converted_to_draft]
   schedule:
     - cron: '35 3 * * *'
+    - cron: '43 * * * *' # public-only hourly heartbeat; no private data
   workflow_dispatch:
     inputs:
       mode:
@@ -186,6 +187,7 @@ jobs:
         shell: bash
         env:
           REQUESTED_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'auto' }}
+          PUBLIC_SCHEDULE: ${{ github.event.schedule }}
           PR_DRAFT: ${{ github.event.pull_request.draft }}
           REQUESTED_PROVIDER_OPERATION: ${{ github.event_name == 'workflow_dispatch' && inputs.provider_operation || 'preflight' }}
           REQUESTED_HOLD_TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.repository_factory_name || '' }}
@@ -241,7 +243,13 @@ jobs:
 
           case "${GITHUB_EVENT_NAME}" in
             schedule)
-              mode=full
+              if [[ "${PUBLIC_SCHEDULE:-}" == '43 * * * *' ]]; then
+                mode=public_heartbeat
+              elif [[ "${PUBLIC_SCHEDULE:-}" == '35 3 * * *' ]]; then
+                mode=full
+              else
+                echo '::error::UNKNOWN_SCHEDULE' ; exit 2
+              fi
               ;;
             push)
               if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
@@ -368,6 +376,11 @@ jobs:
           fi
 
           case "$mode" in
+            public_heartbeat)
+              [[ "${GITHUB_EVENT_NAME}" == schedule && "${PUBLIC_SCHEDULE:-}" == '43 * * * *' ]] || {
+                echo '::error::public heartbeat is hourly-schedule-only'; exit 2;
+              }
+              ;;
             fast)
               ;;
             full)
@@ -518,9 +531,49 @@ jobs:
             echo '- claim_allowed: `false`'
           } >> "$GITHUB_STEP_SUMMARY"
 
+  public_hourly:
+    name: '00H · Public control heartbeat / C0 only'
+    needs: [plan]
+    if: ${{ github.event_name == 'schedule' && github.event.schedule == '43 * * * *' && needs.plan.outputs.mode == 'public_heartbeat' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact public source without stored credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.EXECUTION_SHA }}
+          persist-credentials: false
+      - name: Public-only structural gate / Python negative tests
+        shell: bash
+        env:
+          GITHUB_REPOSITORY_VISIBILITY: ${{ github.event.repository.visibility }}
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/verify_public_boundary_v1.py --workflow .github/workflows/START.yml
+          python3 -m unittest discover -s tests -p 'test_public_boundary_v1.py' -q
+          python3 -m unittest discover -s tests -p 'test_hourly_public_control_v1.py' -q
+      - name: Emit bounded C0 public receipt only
+        shell: bash
+        env:
+          GITHUB_REPOSITORY_VISIBILITY: ${{ github.event.repository.visibility }}
+          PUBLIC_SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/hourly_public_control_v1.py --manifest configs/federation/public-hourly-control.v1.json --output "$RUNNER_TEMP/public-hourly.json"
+      - name: Upload sanitized control receipt only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: public-hourly-${{ github.run_id }}
+          path: ${{ runner.temp }}/public-hourly.json
+          retention-days: 7
+          if-no-files-found: error
+
   topology:
     name: '01 · Workflow topology / single-root invariant'
     needs: plan
+    if: ${{ needs.plan.outputs.mode != 'public_heartbeat' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -1921,7 +1974,7 @@ jobs:
   receipt:
     name: '09 · Final receipt / fechamento'
     needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_actions, private_ci_bridge, provider_environments, release, public_data_custody, promotion_hold_pat_agent]
-    if: always()
+    if: ${{ always() && needs.plan.outputs.mode != 'public_heartbeat' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
