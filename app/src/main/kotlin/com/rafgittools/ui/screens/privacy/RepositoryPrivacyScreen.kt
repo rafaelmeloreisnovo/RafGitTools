@@ -16,6 +16,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rafgittools.data.privacy.PrivacyProvenanceState
 import com.rafgittools.data.privacy.RepositoryPrivacyCandidate
+import com.rafgittools.data.privacy.PrivacyVisibilityTarget
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,6 +56,8 @@ fun RepositoryPrivacyScreen(
                     state = state,
                     onToggleRepository = viewModel::toggleRepository,
                     onToggleOwner = viewModel::toggleOwner,
+                    onSelectOwner = viewModel::selectOwner,
+                    onSelectTarget = viewModel::selectTarget,
                     onSelectAll = viewModel::selectAllEligible,
                     onClear = viewModel::clearSelection,
                     onExecute = { showConfirmation = true }
@@ -65,11 +68,15 @@ fun RepositoryPrivacyScreen(
 
     if (showConfirmation) {
         PrivacyConfirmationDialog(
-            selected = state.candidates.filter { it.id in state.selectedIds && it.eligible },
+            selected = state.candidates.filter {
+                it.id in state.selectedIds && it.eligibleFor(state.targetVisibility) &&
+                    (state.selectedOwner == null || it.ownerLogin == state.selectedOwner)
+            },
+            target = state.targetVisibility,
             executing = state.executing,
             onDismiss = { if (!state.executing) showConfirmation = false },
             onConfirm = { phrase ->
-                viewModel.executeMakePrivate(phrase)
+                viewModel.executeChangeVisibility(phrase)
                 showConfirmation = false
             }
         )
@@ -95,14 +102,22 @@ private fun PrivacyInventory(
     state: RepositoryPrivacyUiState,
     onToggleRepository: (Long) -> Unit,
     onToggleOwner: (String) -> Unit,
+    onSelectOwner: (String?) -> Unit,
+    onSelectTarget: (PrivacyVisibilityTarget) -> Unit,
     onSelectAll: () -> Unit,
     onClear: () -> Unit,
     onExecute: () -> Unit
 ) {
-    val eligible = state.candidates.count { it.eligible }
-    val privateCount = state.candidates.count { it.isPrivate || it.currentVisibility == "private" }
-    val blocked = state.candidates.size - eligible - privateCount
-    val owners = state.candidates.groupBy { it.ownerLogin }.toSortedMap(String.CASE_INSENSITIVE_ORDER)
+    val visible = state.candidates.filter {
+        state.selectedOwner == null || it.ownerLogin == state.selectedOwner
+    }
+    val eligible = visible.count { it.eligibleFor(state.targetVisibility) }
+    val alreadyTarget = visible.count { it.currentVisibility == state.targetVisibility.apiValue }
+    val blocked = visible.size - eligible - alreadyTarget
+    val owners = visible.groupBy { it.ownerLogin }.toSortedMap(String.CASE_INSENSITIVE_ORDER)
+    val ownerOptions = state.candidates.map { it.ownerLogin }.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER)
+    var ownerMenuExpanded by remember { mutableStateOf(false) }
+    var targetMenuExpanded by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -112,8 +127,55 @@ private fun PrivacyInventory(
         item {
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Personal + organization repositories", style = MaterialTheme.typography.titleMedium)
-                    Text("inventory=${state.candidates.size} eligible=$eligible private=$privateCount blocked=$blocked")
+                    Text("Repositórios pessoais e organizações", style = MaterialTheme.typography.titleMedium)
+                    Text("Mostrando ${visible.size} de ${state.candidates.size} · elegíveis=$eligible · bloqueados=$blocked")
+                    Text("1. Selecione conta/organização", fontWeight = FontWeight.SemiBold)
+                    Box {
+                        OutlinedButton(
+                            onClick = { ownerMenuExpanded = true },
+                            enabled = !state.executing,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(state.selectedOwner ?: "Todas as contas / organizações", modifier = Modifier.weight(1f))
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                        }
+                        DropdownMenu(expanded = ownerMenuExpanded, onDismissRequest = { ownerMenuExpanded = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Todas as contas / organizações") },
+                                onClick = { onSelectOwner(null); ownerMenuExpanded = false }
+                            )
+                            ownerOptions.forEach { owner ->
+                                DropdownMenuItem(
+                                    text = { Text(owner) },
+                                    onClick = { onSelectOwner(owner); ownerMenuExpanded = false }
+                                )
+                            }
+                        }
+                    }
+                    Text("2. Visibilidade desejada", fontWeight = FontWeight.SemiBold)
+                    Box {
+                        OutlinedButton(
+                            onClick = { targetMenuExpanded = true },
+                            enabled = !state.executing,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                if (state.targetVisibility == PrivacyVisibilityTarget.PRIVATE) "Privado" else "Público",
+                                modifier = Modifier.weight(1f)
+                            )
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                        }
+                        DropdownMenu(expanded = targetMenuExpanded, onDismissRequest = { targetMenuExpanded = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Privado — restringir acesso") },
+                                onClick = { onSelectTarget(PrivacyVisibilityTarget.PRIVATE); targetMenuExpanded = false }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Público — conteúdo acessível a todos") },
+                                onClick = { onSelectTarget(PrivacyVisibilityTarget.PUBLIC); targetMenuExpanded = false }
+                            )
+                        }
+                    }
                     Text(
                         "Only GitHub-confirmed admin repositories are eligible. Forks are always blocked. " +
                             "Every PATCH is preceded by a fresh live preflight and durable receipt checkpoint.",
@@ -133,9 +195,16 @@ private fun PrivacyInventory(
                         enabled = state.selectedIds.isNotEmpty() && !state.executing,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Default.Lock, contentDescription = null)
+                        Icon(
+                            if (state.targetVisibility == PrivacyVisibilityTarget.PRIVATE) Icons.Default.Lock else Icons.Default.Public,
+                            contentDescription = null
+                        )
                         Spacer(Modifier.width(8.dp))
-                        Text("Make selected private (${state.selectedIds.size})")
+                        Text(
+                            if (state.targetVisibility == PrivacyVisibilityTarget.PRIVATE)
+                                "Tornar privados (${state.selectedIds.size})"
+                            else "Tornar públicos (${state.selectedIds.size})"
+                        )
                     }
                 }
             }
@@ -183,7 +252,7 @@ private fun PrivacyInventory(
         }
 
         owners.forEach { (owner, repos) ->
-            val ownerEligible = repos.filter { it.eligible }
+            val ownerEligible = repos.filter { it.eligibleFor(state.targetVisibility) }
             val ownerSelected = ownerEligible.isNotEmpty() && ownerEligible.all { it.id in state.selectedIds }
             item(key = "owner:$owner") {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -201,7 +270,7 @@ private fun PrivacyInventory(
                 }
             }
             items(repos, key = { it.id }) { repo ->
-                RepositoryRow(repo, repo.id in state.selectedIds, state.executing) {
+                RepositoryRow(repo, repo.id in state.selectedIds, state.executing, state.targetVisibility) {
                     onToggleRepository(repo.id)
                 }
             }
@@ -215,6 +284,7 @@ private fun RepositoryRow(
     candidate: RepositoryPrivacyCandidate,
     selected: Boolean,
     executing: Boolean,
+    target: PrivacyVisibilityTarget,
     onToggle: () -> Unit
 ) {
     Card(Modifier.fillMaxWidth()) {
@@ -222,22 +292,22 @@ private fun RepositoryRow(
             Checkbox(
                 checked = selected,
                 onCheckedChange = { onToggle() },
-                enabled = candidate.eligible && !executing
+                enabled = candidate.eligibleFor(target) && !executing
             )
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
                 Text(candidate.name, style = MaterialTheme.typography.titleSmall)
                 Text(candidate.fullName, style = MaterialTheme.typography.bodySmall)
                 Text(
-                    candidate.blockReason ?: "Eligible · admin confirmed",
+                    candidate.blockReasonFor(target) ?: "Elegível · admin confirmado",
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (candidate.eligible) MaterialTheme.colorScheme.primary
+                    color = if (candidate.eligibleFor(target)) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             when {
                 candidate.isPrivate -> Icon(Icons.Default.Lock, contentDescription = "Private")
-                candidate.hasPublicImpactWarning && candidate.eligible ->
+                candidate.hasPublicImpactWarning && candidate.eligibleFor(target) ->
                     Icon(Icons.Default.Warning, contentDescription = "Impact warning")
             }
         }
@@ -247,12 +317,13 @@ private fun RepositoryRow(
 @Composable
 private fun PrivacyConfirmationDialog(
     selected: List<RepositoryPrivacyCandidate>,
+    target: PrivacyVisibilityTarget,
     executing: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
-    var confirmation by remember(selected.size) { mutableStateOf("") }
-    val phrase = RepositoryPrivacyViewModel.confirmationPhrase(selected.size)
+    var confirmation by remember(selected.size, target) { mutableStateOf("") }
+    val phrase = RepositoryPrivacyViewModel.confirmationPhrase(selected.size, target)
     val pages = selected.count { it.hasPages }
     val social = selected.count { it.stars > 0 || it.watchers > 0 }
     val forks = selected.count { it.forks > 0 }
@@ -263,10 +334,15 @@ private fun PrivacyConfirmationDialog(
         title = { Text("Confirm visibility change") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Make ${selected.size} repositories private.")
+                Text("Alterar ${selected.size} repositórios para ${target.apiValue}.")
                 Text(
-                    "GitHub may erase stars/watchers, detach existing public forks, and unpublish Pages depending on plan.",
-                    style = MaterialTheme.typography.bodySmall
+                    if (target == PrivacyVisibilityTarget.PRIVATE)
+                        "Privatizar pode afetar estrelas, forks, Pages e recursos do plano."
+                    else
+                        "ATENÇÃO: tornar público permite que qualquer pessoa leia, copie e indexe código, histórico e arquivos. Revise segredos e dados pessoais ANTES de confirmar.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (target == PrivacyVisibilityTarget.PUBLIC) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text("impact: pages=$pages stars/watchers=$social forks=$forks")
                 Text("A live GitHub preflight and durable journal checkpoint run before each PATCH.")
@@ -284,7 +360,7 @@ private fun PrivacyConfirmationDialog(
             Button(
                 onClick = { onConfirm(confirmation) },
                 enabled = !executing && confirmation.trim() == phrase
-            ) { Text("Make private") }
+            ) { Text(if (target == PrivacyVisibilityTarget.PRIVATE) "Tornar privado" else "Tornar público") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !executing) { Text("Cancel") }
