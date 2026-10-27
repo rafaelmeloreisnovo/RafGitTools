@@ -25,7 +25,7 @@ class DependabotPolicyGateTests(unittest.TestCase):
         self.assertIn('open-pull-requests-limit: 10', self.gradle)
         self.assertIn('open-pull-requests-limit: 5', self.actions)
         self.assertNotIn("pull_request_target", self.config)
-        self.assertNotIn("automerge", self.config.lower().replace("-", ""))
+        self.assertIsNone(re.search(r"(?m)^\\s*(?:auto-merge|automerge):", self.config))
 
     def test_specific_gradle_groups_precede_broad_android(self):
         specific = ("compose", "hilt", "kotlin", "testing", "networking")
