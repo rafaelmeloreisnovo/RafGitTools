@@ -23,3 +23,7 @@ Rollback before merge: close this draft PR and discard isolated branch.
 Rollback after permitted merge: revert S7 commit to restore both active YAMLs **only as a diagnostic recovery** (the prior topology fault returns). Prefer forward fixing a failing docs job while preserving its invariant.
 Falsifiers: changed or missing five target checks; ignored test failure; topology allowing >1 active workflows; receipt marking failed required docs as PASS; security/permissions increase; unrelated APK regressions.
 Scope: source/CI only. Android physical validation, cross-repository producer+consumer, all-history reference integrity and global runtime remain `TOKEN_VAZIO_NOT_RUN`.
+
+## S7.1 negative CI falsifier / surgical link repair
+
+First exact-head run: `40529849174`, job `01` SUCCESS_SCOPED; job `05Z` failed with a true `MISSING_TRACKED_TARGET` at `docs/RAFAELIA_DOCS_RECONCILIATION_20261025.md:73` (legacy workflow was correctly archived). The 14 independent unit tests passed. This negative finding is retained, not reclassified as PASS. Follow-up changes only the historical link to the byte-identical archived file and adds a successor pointer to active START 05Z. Re-run must verify job `01`, `05Z`, and global receipt on the new exact SHA. `claim_allowed=false`.
