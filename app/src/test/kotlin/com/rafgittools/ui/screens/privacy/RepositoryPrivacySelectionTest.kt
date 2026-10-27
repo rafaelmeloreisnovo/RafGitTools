@@ -57,6 +57,18 @@ class RepositoryPrivacySelectionTest {
         assertEquals(listOf(1L, 3L), allOwners.selectedCandidates().map { it.id })
     }
 
+    @Test
+    fun `source and target always remain opposite directions`() {
+        val initial = RepositoryPrivacyUiState()
+        assertEquals(PrivacyVisibilityTarget.PUBLIC, initial.sourceVisibility)
+        assertEquals(PrivacyVisibilityTarget.PRIVATE, initial.targetVisibility)
+        assertFalse(initial.sourceVisibility == initial.targetVisibility)
+
+        val reversed = initial.copy(targetVisibility = PrivacyVisibilityTarget.PUBLIC)
+        assertEquals(PrivacyVisibilityTarget.PRIVATE, reversed.sourceVisibility)
+        assertFalse(reversed.sourceVisibility == reversed.targetVisibility)
+    }
+
     private fun candidate(id: Long, owner: String, private: Boolean) = PrivacyRepositoryDto(
         id = id,
         name = "repo-$id",
