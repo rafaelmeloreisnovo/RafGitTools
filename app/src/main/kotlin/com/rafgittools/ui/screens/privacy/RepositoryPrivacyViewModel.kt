@@ -40,7 +40,8 @@ class RepositoryPrivacyViewModel @Inject constructor(
                         loading = false,
                         requiresAuthentication = false,
                         candidates = repositories,
-                        selectedIds = emptySet()
+                        selectedIds = emptySet(),
+                        manualSelection = false
                     )
                 }
                 .onFailure { error ->
@@ -64,6 +65,21 @@ class RepositoryPrivacyViewModel @Inject constructor(
         _uiState.value = state.copy(
             selectedOwners = PrivacyOwnerSelection.toggle(state.selectedOwners, available, owner),
             selectedIds = emptySet(),
+            manualSelection = false,
+            error = null
+        )
+    }
+
+    /** Wizard scope: one authorized owner or every authorized owner. */
+    fun selectOwnerScope(owner: String?) {
+        val state = _uiState.value
+        if (state.executing) return
+        val available = state.candidates.mapTo(linkedSetOf()) { it.ownerLogin }
+        if (owner != null && owner !in available) return
+        _uiState.value = state.copy(
+            selectedOwners = owner?.let(::setOf),
+            selectedIds = emptySet(),
+            manualSelection = false,
             error = null
         )
     }
@@ -71,13 +87,13 @@ class RepositoryPrivacyViewModel @Inject constructor(
     fun selectAllOwners() {
         val state = _uiState.value
         if (!state.executing) _uiState.value =
-            state.copy(selectedOwners = null, selectedIds = emptySet(), error = null)
+            state.copy(selectedOwners = null, selectedIds = emptySet(), manualSelection = false, error = null)
     }
 
     fun clearAllOwners() {
         val state = _uiState.value
         if (!state.executing) _uiState.value =
-            state.copy(selectedOwners = emptySet(), selectedIds = emptySet(), error = null)
+            state.copy(selectedOwners = emptySet(), selectedIds = emptySet(), manualSelection = false, error = null)
     }
 
     /** Source and destination are mutually exclusive: same-state PATCH is impossible. */
@@ -89,16 +105,16 @@ class RepositoryPrivacyViewModel @Inject constructor(
     fun selectTarget(target: PrivacyVisibilityTarget) {
         val state = _uiState.value
         if (state.executing) return
-        _uiState.value = state.copy(targetVisibility = target, selectedIds = emptySet(), error = null)
+        _uiState.value = state.copy(targetVisibility = target, selectedIds = emptySet(), manualSelection = false, error = null)
     }
 
     fun toggleRepository(id: Long) {
         val state = _uiState.value
         val candidate = state.candidates.firstOrNull { it.id == id } ?: return
         if (!state.isSelectable(candidate) || state.executing) return
-        val selected = state.selectedIds.toMutableSet()
+        val selected = state.selectedCandidates().mapTo(linkedSetOf()) { it.id }
         if (!selected.add(id)) selected.remove(id)
-        _uiState.value = state.copy(selectedIds = selected)
+        _uiState.value = state.copy(selectedIds = selected, manualSelection = true)
     }
 
     fun toggleOwner(owner: String) {
@@ -108,9 +124,9 @@ class RepositoryPrivacyViewModel @Inject constructor(
             it.ownerLogin == owner && state.isSelectable(it)
         }.map { it.id }.toSet()
         if (ids.isEmpty()) return
-        val selected = state.selectedIds.toMutableSet()
+        val selected = state.selectedCandidates().mapTo(linkedSetOf()) { it.id }
         if (ids.all { it in selected }) selected.removeAll(ids) else selected.addAll(ids)
-        _uiState.value = state.copy(selectedIds = selected)
+        _uiState.value = state.copy(selectedIds = selected, manualSelection = true)
     }
 
     fun selectAllEligible() {
@@ -119,18 +135,37 @@ class RepositoryPrivacyViewModel @Inject constructor(
         _uiState.value = state.copy(
             selectedIds = state.candidates.filter {
                 state.isSelectable(it)
-            }.mapTo(linkedSetOf()) { it.id }
+            }.mapTo(linkedSetOf()) { it.id },
+            manualSelection = true
         )
     }
 
     fun clearSelection() {
-        if (!_uiState.value.executing) _uiState.value = _uiState.value.copy(selectedIds = emptySet())
+        if (!_uiState.value.executing) _uiState.value = _uiState.value.copy(
+            selectedIds = emptySet(), manualSelection = true
+        )
     }
 
-    fun executeChangeVisibility(confirmation: String) {
+    fun useAutomaticSelection() {
+        if (!_uiState.value.executing) _uiState.value = _uiState.value.copy(
+            selectedIds = emptySet(), manualSelection = false, error = null
+        )
+    }
+
+    fun executeChangeVisibility(
+        confirmation: String,
+        expectedRepositoryIds: Set<Long>? = null,
+        expectedTarget: PrivacyVisibilityTarget? = null
+    ) {
         val state = _uiState.value
         val selected = state.selectedCandidates()
-        if (selected.isEmpty() || state.executing) return
+        if (state.loading || state.requiresAuthentication || selected.isEmpty() || state.executing) return
+        if ((expectedRepositoryIds != null && selected.mapTo(linkedSetOf()) { it.id } != expectedRepositoryIds) ||
+            (expectedTarget != null && state.targetVisibility != expectedTarget)
+        ) {
+            _uiState.value = state.copy(error = "A seleção mudou. Revise o plano antes de confirmar.")
+            return
+        }
         val expected = confirmationPhrase(selected.size, state.targetVisibility)
         if (confirmation.trim() != expected) {
             _uiState.value = state.copy(error = "Confirmation phrase does not match: $expected")
@@ -142,6 +177,7 @@ class RepositoryPrivacyViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(
                 executing = false,
                 selectedIds = emptySet(),
+                manualSelection = false,
                 lastResult = result
             )
             reloadAfterMutation(result)
@@ -180,6 +216,7 @@ data class RepositoryPrivacyUiState(
     val selectedOwners: Set<String>? = null,
     val targetVisibility: PrivacyVisibilityTarget = PrivacyVisibilityTarget.PRIVATE,
     val selectedIds: Set<Long> = emptySet(),
+    val manualSelection: Boolean = false,
     val error: String? = null,
     val lastResult: RepositoryPrivacyBulkResult? = null
 ) {
@@ -192,8 +229,9 @@ data class RepositoryPrivacyUiState(
     fun isSelectable(candidate: RepositoryPrivacyCandidate): Boolean =
         ownerIncluded(candidate.ownerLogin) && candidate.eligibleFor(targetVisibility)
 
+    /** Automatic plan is preview-only until the user confirms the final dialog. */
     fun selectedCandidates(): List<RepositoryPrivacyCandidate> =
-        candidates.filter { it.id in selectedIds && isSelectable(it) }
+        candidates.filter { isSelectable(it) && (!manualSelection || it.id in selectedIds) }
 }
 
 /** Pure selection function: independently testable without Android or GitHub network. */
