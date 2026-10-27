@@ -46,7 +46,7 @@ class PrivateGitHubTreeIndexGateTest {
         }
     }
     @Test fun rejectsDuplicate() {
-        val same = """,""{"path":"data/chunks/chunk_01.json","type":"blob","sha":"$blob","size":3}"""
+        val same = "," + """{"path":"data/chunks/chunk_01.json","type":"blob","sha":"$blob","size":3}"""
         assertThrows(IllegalArgumentException::class.java) {
             PrivateGitHubTreeIndexGate.buildIndex(PrivateGitHubTreeIndexGate.TARGET,commit,tree,json(extra=same))
         }
