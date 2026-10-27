@@ -188,14 +188,29 @@ jobs:
         run: |
           set -euo pipefail
           mode="${REQUESTED_MODE:-auto}"
-          # Draft PRs have an explicit small source-only lane; promotion to
-          # ready_for_review fires a new full auto run at the exact head SHA.
+          # A Draft is not a waiver of code/Android validation. Select
+          # the required lane using the exact PR diff, offline and fail-closed.
           if [[ "$mode" == auto && "${GITHUB_EVENT_NAME}" == pull_request &&
                 "${PR_DRAFT:-false}" == true ]]; then
-            mode=fast
-            echo 'DRAFT_PR_MODE=FAST_SOURCE_ONLY'
-            echo 'ANDROID_APK_VALIDATION=NOT_RUN'
-            echo 'CODEQL_SECURITY_VALIDATION=NOT_RUN'
+            base='${{ github.event.pull_request.base.sha }}'
+            [[ "$base" =~ ^[0-9a-f]{40}$ ]] || {
+              echo '::error::missing exact base SHA for draft classification'
+              exit 2
+            }
+            git cat-file -e "${base}^{commit}" || {
+              echo '::error::PR base commit unavailable; draft cannot be classified'
+              exit 2
+            }
+            mode="$(git diff --no-ext-diff --name-only -z "$base" HEAD | python3 scripts/ci/draft_lane_guard.py)"
+            case "$mode" in
+              fast|android|full) ;;
+              *) echo '::error::invalid draft route'; exit 2 ;;
+            esac
+            echo "DRAFT_PR_MODE=$mode"
+            if [[ "$mode" == fast ]]; then
+              echo 'ANDROID_APK_VALIDATION=NOT_RUN (docs/source-only draft)'
+              echo 'CODEQL_SECURITY_VALIDATION=NOT_RUN (docs/source-only draft)'
+            fi
             echo 'CLAIM_ALLOWED=false'
           fi
           android=false
@@ -555,6 +570,11 @@ jobs:
         with:
           ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
+      - name: Draft source routing falsifiers (offline)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_draft_lane_guard.py' -v
       - name: P0 queue already in main | freestanding native exact-SHA selftest
         shell: bash
         run: |
@@ -1937,6 +1957,10 @@ jobs:
       PUBLIC_DATA_RESULT: ${{ needs.public_data_custody.result }}
       PROMOTION_HOLD_RESULT: ${{ needs.promotion_hold_pat_agent.result }}
       ROUTE_MODE: ${{ needs.plan.outputs.mode }}
+      ANDROID_REQUIRED: ${{ needs.plan.outputs.android }}
+      SECURITY_REQUIRED: ${{ needs.plan.outputs.security }}
+      DOCS_REQUIRED: ${{ needs.plan.outputs.docs }}
+      FEDERATION_REQUIRED: ${{ needs.plan.outputs.federation }}
     steps:
       - name: Emit append-only pipeline receipt
         shell: bash
@@ -1966,6 +1990,16 @@ jobs:
               for k, v in keys.items()
           }
           failures = [k for k, v in keys.items() if v in {'failure', 'cancelled'}]
+          required = {
+              'android': os.environ['ANDROID_REQUIRED'] == 'true',
+              'security': os.environ['SECURITY_REQUIRED'] == 'true',
+              'docs': os.environ['DOCS_REQUIRED'] == 'true',
+              'federation': os.environ['FEDERATION_REQUIRED'] == 'true',
+          }
+          missing_required = [
+              name for name, selected in required.items()
+              if selected and keys[name] != 'success'
+          ]
           receipt = {
               'schema': os.environ['PIPELINE_SCHEMA'],
               'mode': os.environ.get('ROUTE_MODE') or 'TOKEN_VAZIO_ROUTE',
@@ -1979,7 +2013,9 @@ jobs:
               'run_id': os.environ['GITHUB_RUN_ID'],
               'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
               'event': os.environ['GITHUB_EVENT_NAME'],
-              'state': 'FAIL' if failures else 'PASS_WITH_TYPED_SKIPS',
+              'state': 'FAIL_REQUIRED_GATE' if missing_required else ('FAIL' if failures else 'PASS_WITH_TYPED_SKIPS'),
+              'required_gates': required,
+              'missing_required_gates': missing_required,
               'stages': mapped,
               'claim_allowed': False,
               'automatic_promotion': False,
@@ -1992,8 +2028,9 @@ jobs:
               json.dump(receipt, f, ensure_ascii=False, indent=2, sort_keys=True)
               f.write('\n')
           print(json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True))
-          if failures:
-              raise SystemExit('failed stages: ' + ', '.join(failures))
+          if failures or missing_required:
+              raise SystemExit('failed stages: ' + ', '.join(failures) +
+                               '; required gates missing: ' + ', '.join(missing_required))
           PY
       - name: Publish receipt summary
         if: always()
