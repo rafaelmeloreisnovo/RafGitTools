@@ -2468,6 +2468,21 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Negative SAF provider-boundary tests (21 offline JVM fixtures)
+        if: steps.scope.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/atlas-safety-test"
+          mkdir -p "$work"
+          javac --release 17 -d "$work" \
+            atlas-apk/app/src/main/java/org/rafaelia/atlas/InventorySafety.java \
+            atlas-apk/tests/InventorySafetyTest.java
+          java -cp "$work" org.rafaelia.atlas.InventorySafetyTest
+          grep -Fq 'InventorySafety.mayReadRow(rowsSeen)' \
+            atlas-apk/app/src/main/java/org/rafaelia/atlas/MainActivity.java
+          grep -Fq 'InventorySafety.coverageState(truncated,errors,repeatedIds)' \
+            atlas-apk/app/src/main/java/org/rafaelia/atlas/MainActivity.java
       - name: Android SDK
         if: steps.scope.outputs.changed == 'true'
         uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
