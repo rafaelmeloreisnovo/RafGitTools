@@ -1,6 +1,8 @@
 package com.rafgittools.ui.screens.home
 
 import android.os.Build
+import android.content.Context
+import com.rafgittools.bridge.PrivateGitHubTreeIndexGate
 import android.content.ContentResolver
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -99,6 +101,14 @@ class HomeViewModel @Inject constructor(
             loadLocalRepositories()
         }
     }
+
+    suspend fun buildPrivateGithubIndex(
+        context: Context,
+        repository: GithubRepoModel
+    ): Result<PrivateGitHubTreeIndexGate.Snapshot> =
+        withContext(Dispatchers.IO) {
+            githubRepository.indexPrivateConversationRepository(context.applicationContext, repository)
+        }
 
     /** Load every GitHub page; never confuse the API's first 30 items with a full inventory. */
     fun loadUserData() {
