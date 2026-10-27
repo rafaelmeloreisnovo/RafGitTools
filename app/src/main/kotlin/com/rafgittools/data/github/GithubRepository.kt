@@ -41,9 +41,6 @@ class GithubDataRepository @Inject constructor(
         repository: GithubRepoModel
     ): Result<PrivateGitHubTreeIndexGate.Snapshot> {
         return try {
-            require(repository.fullName == PrivateGitHubTreeIndexGate.TARGET) {
-                "Source repository not allowlisted"
-            }
             val current = githubApiService.getRepository(repository.owner.login, repository.name)
             require(current.isPrivate && current.fullName == repository.fullName) {
                 "Current repository visibility is not private"
