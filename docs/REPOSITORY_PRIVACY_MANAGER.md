@@ -128,3 +128,19 @@ Source implementation and newly added target-path tests are in branch `feat/priv
 - No remote visibility mutation occurs during unit tests or builds (test API is mocked).
 - Before promotion: confirm Android build, compose preview/instrumentation for both dropdowns, exact-head unit tests, authority/SSO checks, and a manual canary on a non-sensitive test repository.
 - Reverting this source feature does **not** automatically reverse a repository visibility change already accepted by GitHub; treat those as separately authorized mutations with separate receipts.
+
+
+## Hotfix Wizard V4 — outubro de 2026
+
+Raf Privacy agora opera como um assistente de **3 passos** (não uma planilha de controles):
+1. **Conta ou organização:** escolha uma conta no menu ou todas. O inventário GitHub é carregado automaticamente.
+2. **Privacidade desejada:** selecione **Privado** ou **Público** uma única vez; o estado de origem é deduzido automaticamente como o oposto.
+3. **Prévia automática:** todos os repositórios elegíveis do escopo entram no plano sem clicar em checkboxes; são exibidos total, nomes, bloqueios e riscos. Exceções individuais permanecem opcionais, ocultas por padrão.
+
+A execução continua **somente após** a ação explícita "Revisar e confirmar" e "Sim, tornar privado/público". A frase técnica é montada internamente depois do clique; o usuário não precisa digitá-la, mas o `ViewModel` valida os IDs e o destino do plano que foi revisado. O `RepositoryPrivacyManager` mantém os bloqueios de fork/arquivado/sem admin, preflight **live** por repositório, journal/recibo durável antes do PATCH e falha fechada. A seleção automática é **preparação**, jamais aplicação silenciosa.
+
+**YAML/Android:** o START único chama validação da matriz de Kotlin/KSP/Compose/MockK e o novo guard Hilt/Gradle/lint antes dos jobs Android e CodeQL Kotlin. Hilt runtime/processor voltaram ao **2.48**, alinhados ao plugin já definido no `build.gradle`, removendo a incompatibilidade observada em Hilt 2.60.1 com Kotlin 1.9.24. `abortOnError true` faz erros do lint reprovarem, sem esconder warnings (`warningsAsErrors false`).
+
+**Provas requeridas:** `testDevDebugUnitTest`, `assembleDevDebugAndroidTest`, `lintDevDebug`, `assembleDevDebug`, CodeQL Kotlin e recibo final no **HEAD exato**, mais validação física Android. Testes dos guards são negativos e independentes da rede; não inferir compilação ou deployment de sucesso antes do CI. `CLAIM_ALLOWED=false`; sem auto-merge, sem alteração de visibilidade remota durante CI. Reversão: um novo commit revertendo apenas este hotfix, preservando trilha de evidências.
+
+**CI P0 follow-up (evidência do run 40455236883):** os 875 testes Python, os testes unitários Android, o APK de instrumentação, a compilação e a análise CodeQL Kotlin passaram. O lint estrito revelou **68 erros, 89 warnings e 2 hints** espalhados no projeto legado; o primeiro erro de permissão está em `core/haptics/HapticFeedbackManager.kt`, fora do wizard. A falha **não foi suprimida**, e nenhum erro foi reclassificado como warning. Ajustamos apenas a **ordem do START.yml** para compilar, verificar o hash e publicar o APK debug antes do lint; o lint continua podendo reprovar o pipeline inteiro. O debug APK é evidência de build, **não** é release nem promoção. A dívida de lint precisa de correções próprias, conservando cada diagnóstico e provas específicas. O HEAD dessa nota requer novo run para comprovar a ordem.

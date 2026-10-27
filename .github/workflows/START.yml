@@ -576,6 +576,7 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s tests -p 'test_draft_lane_guard.py' -v
           python3 -m unittest discover -s tests -p 'test_dependabot_policy_gate_v1.py' -v
+          python3 -m unittest discover -s tests -p 'test_android_dependency_bundle_gate.py' -v
       - name: P0 queue already in main | freestanding native exact-SHA selftest
         shell: bash
         run: |
@@ -1101,6 +1102,12 @@ jobs:
         with:
           ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
+      - name: P0 · Kotlin/KSP/Hilt/lint toolchain admission before SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/validate_android_toolchain_matrix.py
+          python3 tools/validate_android_dependency_bundle.py
       - name: Java 17
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.0
         with:
@@ -1133,10 +1140,32 @@ jobs:
         run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
       - name: Compile device route instrumentation APK
         run: ./gradlew --no-daemon assembleDevDebugAndroidTest --stacktrace
-      - name: Android lint
-        run: ./gradlew --no-daemon lintDevDebug --stacktrace
+      # App APK must be reproducible and hashed even if independent lint
+      # or native fixtures later fail. APK is DEBUG ARTIFACT, never release.
       - name: Assemble devDebug
         run: ./gradlew --no-daemon assembleDevDebug --stacktrace
+      - name: Verify APK and SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find app/build/outputs/apk/dev/debug -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          test -s "$APK"
+          sha256sum "$APK" | tee app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+          tools/rafandroid/rafandroid dex-gate "$APK"
+          tools/rafandroid/rafandroid apk-gate "$APK"
+      - name: Upload APK
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: start-06-devDebug-${{ github.run_id }}
+          path: |
+            app/build/outputs/apk/dev/debug/*.apk
+            app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+            native/authorial_keyboard_l0/android-demo/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Android lint
+        run: ./gradlew --no-daemon lintDevDebug --stacktrace
       - name: RAFANDROID bound Android/NDK gate
         shell: bash
         run: |
@@ -1192,26 +1221,6 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Verify APK and SHA-256
-        shell: bash
-        run: |
-          set -euo pipefail
-          APK="$(find app/build/outputs/apk/dev/debug -type f -name '*.apk' -print -quit)"
-          test -n "$APK"
-          test -s "$APK"
-          sha256sum "$APK" | tee app/build/outputs/apk/dev/debug/SHA256SUMS.txt
-          tools/rafandroid/rafandroid dex-gate "$APK"
-          tools/rafandroid/rafandroid apk-gate "$APK"
-      - name: Upload APK
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: start-06-devDebug-${{ github.run_id }}
-          path: |
-            app/build/outputs/apk/dev/debug/*.apk
-            app/build/outputs/apk/dev/debug/SHA256SUMS.txt
-            native/authorial_keyboard_l0/android-demo/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-          retention-days: 30
       - name: Upload Android diagnostics
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -1248,6 +1257,13 @@ jobs:
         with:
           ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
+      - name: P0 · CodeQL Kotlin dependency admission
+        if: matrix.language == 'java-kotlin'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/validate_android_toolchain_matrix.py
+          python3 tools/validate_android_dependency_bundle.py
       - name: Java 17
         if: matrix.language == 'java-kotlin'
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.0

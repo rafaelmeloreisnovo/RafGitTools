@@ -40,6 +40,7 @@ class RepositoryPrivacySelectionTest {
             candidates = all,
             selectedOwners = setOf("org-a"),
             selectedIds = setOf(1L, 2L, 3L),
+            manualSelection = true,
             targetVisibility = PrivacyVisibilityTarget.PRIVATE
         )
         assertEquals(PrivacyVisibilityTarget.PUBLIC, state.sourceVisibility)
@@ -55,6 +56,39 @@ class RepositoryPrivacySelectionTest {
         assertTrue(noOwners.selectedCandidates().isEmpty())
         val allOwners = state.copy(selectedOwners = null)
         assertEquals(listOf(1L, 3L), allOwners.selectedCandidates().map { it.id })
+    }
+
+    @Test
+    fun `wizard automatically selects only authorized eligible repositories`() {
+        val personalPublic = candidate(1, "personal", private = false)
+        val orgPublic = candidate(2, "org-a", private = false)
+        val orgPrivate = candidate(3, "org-a", private = true)
+        val candidates = listOf(personalPublic, orgPublic, orgPrivate)
+        val automatic = RepositoryPrivacyUiState(
+            candidates = candidates,
+            selectedOwners = setOf("org-a"),
+            targetVisibility = PrivacyVisibilityTarget.PRIVATE
+        )
+        assertFalse(automatic.manualSelection)
+        assertEquals(listOf(2L), automatic.selectedCandidates().map { it.id })
+        val allOwners = automatic.copy(selectedOwners = null)
+        assertEquals(listOf(1L, 2L), allOwners.selectedCandidates().map { it.id })
+    }
+
+    @Test
+    fun `exceptions only act in manual mode and never include opposite owner`() {
+        val all = listOf(candidate(1, "personal", private = false),
+            candidate(2, "org-a", private = false), candidate(3, "org-a", private = true))
+        val state = RepositoryPrivacyUiState(
+            candidates = all, selectedOwners = setOf("org-a"),
+            targetVisibility = PrivacyVisibilityTarget.PRIVATE
+        )
+        val manualNone = state.copy(manualSelection = true, selectedIds = emptySet())
+        assertTrue(manualNone.selectedCandidates().isEmpty())
+        val manuallyChosen = manualNone.copy(selectedIds = setOf(1L, 2L, 3L))
+        assertEquals(listOf(2L), manuallyChosen.selectedCandidates().map { it.id })
+        val resetAutomatic = manuallyChosen.copy(manualSelection = false, selectedIds = emptySet())
+        assertEquals(listOf(2L), resetAutomatic.selectedCandidates().map { it.id })
     }
 
     @Test
