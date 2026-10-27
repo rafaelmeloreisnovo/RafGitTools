@@ -46,6 +46,31 @@ class DependabotPolicyGateTests(unittest.TestCase):
         self.assertNotIn("\n    ignore:\n", self.gradle)
         self.assertNotIn("applies-to: security-updates", self.config)
 
+    def test_codeql_init_and_analyze_share_one_immutable_digest(self):
+        # PR #717 demonstrated a real 4.38.2 vs 4.39.1 CodeQL failure.
+        workflow = (ROOT / ".github/workflows/START.yml").read_text(encoding="utf-8")
+
+        def pins(source):
+            return {
+                phase: re.findall(
+                    rf"(?m)^\\s*uses:\\s*github/codeql-action/{phase}@([0-9a-f]{{40}})\\s",
+                    source,
+                )
+                for phase in ("init", "analyze")
+            }
+
+        current = pins(workflow)
+        self.assertEqual(len(current["init"]), 1)
+        self.assertEqual(len(current["analyze"]), 1)
+        self.assertEqual(current["init"][0], current["analyze"][0])
+
+        altered = workflow.replace(
+            "github/codeql-action/analyze@" + current["analyze"][0],
+            "github/codeql-action/analyze@" + "0" * 40,
+            1,
+        )
+        self.assertNotEqual(pins(altered)["init"][0], pins(altered)["analyze"][0])
+
     def test_compatibility_and_source_guard_remain(self):
         for expected in (
             'com.android.*', 'androidx.compose.*', 'org.jetbrains.kotlin.*',
