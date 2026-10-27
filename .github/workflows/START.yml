@@ -576,6 +576,7 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s tests -p 'test_draft_lane_guard.py' -v
           python3 -m unittest discover -s tests -p 'test_dependabot_policy_gate_v1.py' -v
+          python3 -m unittest discover -s tests -p 'test_android_dependency_bundle_gate.py' -v
       - name: P0 queue already in main | freestanding native exact-SHA selftest
         shell: bash
         run: |
@@ -1101,6 +1102,12 @@ jobs:
         with:
           ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
+      - name: P0 · Kotlin/KSP/Hilt/lint toolchain admission before SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/validate_android_toolchain_matrix.py
+          python3 tools/validate_android_dependency_bundle.py
       - name: Java 17
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.0
         with:
@@ -1248,6 +1255,13 @@ jobs:
         with:
           ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
+      - name: P0 · CodeQL Kotlin dependency admission
+        if: matrix.language == 'java-kotlin'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/validate_android_toolchain_matrix.py
+          python3 tools/validate_android_dependency_bundle.py
       - name: Java 17
         if: matrix.language == 'java-kotlin'
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.0
