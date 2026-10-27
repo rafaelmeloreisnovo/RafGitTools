@@ -1,0 +1,68 @@
+name: 'P0 · Provider fleet gate candidate (secretless)'
+on:
+  push:
+    branches:
+      - 'security/pat-fleet-gate-20261027-v1'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: fleet-gate-candidate-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  source-and-negative-fixtures:
+    if: ${{ github.repository == 'rafaelmeloreisnovo/RafGitTools' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      CLAIM_ALLOWED: 'false'
+      ADMIN_MUTATION: 'false'
+    steps:
+      - name: Checkout pinned action without persisting credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify source ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/security/pat-fleet-gate-20261027-v1'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 --version
+      - name: Compile Python syntax without imports or provider access
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import ast
+          from pathlib import Path
+          for path in [
+              'scripts/provider_fleet_gate_v1.py',
+              'tests/test_provider_fleet_gate_v1.py',
+              'tests/test_provider_fleet_gate_security_v1.py',
+          ]:
+              ast.parse(Path(path).read_text(encoding='utf-8'), filename=path)
+          print('PASS scoped syntax parser')
+          PY
+      - name: Run isolated fake-provider negatives (no PAT)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_provider_fleet_gate*_v1.py' -v
+      - name: Assert deny-by-default controls in source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          src=Path('scripts/provider_fleet_gate_v1.py').read_text()
+          assert 'PREEXISTING_PROTECTION_HOLD' in src
+          assert 'PRIVATE_POLICY_PLAN_OR_REVIEW_REQUIRED' in src
+          assert 'PROVIDER_RULESETS_UNREADABLE_OR_PLAN' in src
+          assert 'EXACT_OPERATOR_CONFIRMATION_MISSING' in src
+          assert 'negative_rejection_test' in src
+          assert 'os.environ.get("PAT_ENV","")' in src
+          assert 'os.environ.get("PAT_ACTIONS"' not in src
+          assert 'PROVIDER_POLICY_READBACK_PASS_NEGATIVE_TEST_PENDING' in src
+          print('PASS source-only policy guard (not provider enforcement)')
+          PY
