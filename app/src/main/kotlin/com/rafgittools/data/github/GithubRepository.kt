@@ -1,6 +1,8 @@
 package com.rafgittools.data.github
 
 import android.util.Base64
+import android.content.Context
+import com.rafgittools.bridge.PrivateGitHubTreeIndexGate
 import com.rafgittools.data.auth.AuthRepository
 import com.rafgittools.data.cache.AsyncCacheManager
 import com.rafgittools.data.cache.RepositoryNameCache
@@ -30,6 +32,45 @@ class GithubDataRepository @Inject constructor(
     private val cacheManager: AsyncCacheManager
 ) {
     
+    /**
+     * Fetch only private Git object metadata; never open blob contents.
+     * No cached authorization fallback: current provider must say private.
+     */
+    suspend fun indexPrivateConversationRepository(
+        context: Context,
+        repository: GithubRepoModel
+    ): Result<PrivateGitHubTreeIndexGate.Snapshot> {
+        return try {
+            require(repository.fullName == PrivateGitHubTreeIndexGate.TARGET) {
+                "Source repository not allowlisted"
+            }
+            val current = githubApiService.getRepository(repository.owner.login, repository.name)
+            require(current.isPrivate && current.fullName == repository.fullName) {
+                "Current repository visibility is not private"
+            }
+            val ref = githubApiService.getExactBranchRef(
+                repository.owner.login, repository.name, current.defaultBranch
+            )
+            val commit = ref.getAsJsonObject("object")?.get("sha")?.asString
+                ?: error("Provider did not return exact commit")
+            val gitCommit = githubApiService.getGitCommitObject(
+                repository.owner.login, repository.name, commit
+            )
+            val treeSha = gitCommit.getAsJsonObject("tree")?.get("sha")?.asString
+                ?: error("Provider did not return commit tree")
+            val tree = githubApiService.getGitTreeMetadata(
+                repository.owner.login, repository.name, treeSha
+            )
+            val index = PrivateGitHubTreeIndexGate.buildIndex(
+                repository.fullName, commit, treeSha, tree
+            )
+            Result.success(PrivateGitHubTreeIndexGate.storePrivate(context, index))
+        } catch (error: Exception) {
+            // Neither token nor provider exception text is emitted to public logs.
+            Result.failure(IllegalStateException("PRIVATE_GITHUB_INDEX_BLOCKED", error))
+        }
+    }
+
     /**
      * Get current authenticated user
      * 
