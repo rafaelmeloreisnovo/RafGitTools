@@ -2,6 +2,21 @@
 
 RafGitTools has a **Raf Privacy** launcher surface for authenticated inventory and fail-closed repository visibility changes. The new UI offers a company/organization/account dropdown (derived from authenticated repository owners) and a **Private / Public** target dropdown. The target defaults to **Private** for backward compatibility. Selecting a new owner or target clears prior checkbox selections.
 
+## V3 — organization checklist + explicit origin/destination (scoped candidate)
+
+The top of **Raf Privacy** now has four separate choices:
+
+1. **Accounts/organizations (checkbox multi-select)**: the dropdown lists the authenticated owner set, with **All**, **None**, and independent owner checkboxes. The default is All. An empty selection displays zero repositories and cannot execute a mutation.
+2. **Source visibility (De)**: Public or Private.
+3. **Target visibility (Para)**: Private or Public. Source and target are always opposite. Changing either recomputes the other; an invalid same-state transformation is not representable.
+4. **Repository selection**: independent repo checkboxes, owner-section bulk checkboxes, and "select eligible" restricted to the active owner selection and target.
+
+Changing the owner scope or either direction clears previously selected repository IDs. A confirmation dialog takes the selected IDs only after re-filtering by the current owner scope and eligible target. The ViewModel repeats that check before passing the immutable candidate list to the existing manager. The manager continues live identity/permission preflight and durable receipt checkpoints before any GitHub PATCH.
+
+**Source ≠ runtime.** The changes in branch `feat/privacy-multi-owner-source-target-20261027` are an additive UI/ViewModel extension; the GitHub API and authorization/mutation kernel are unchanged. New isolated JVM test *source* covers owner multi-selection, empty/unknown organization behavior, scoped selection, and symmetric source-target consistency. Tests, Android build, physical UI and authenticated canary must be observed on the exact candidate commit before any promotion claim. No visibility changes are performed by committing source.
+
+Rollback: leave the new branch unmerged; if merged only after human review, revert the source commit in a separate governed change. Any actual GitHub visibility mutation requires its own explicit reverse action and fresh receipt, not merely code rollback.
+
 ## Inventory
 
 The feature calls `GET /user/repos` with:
