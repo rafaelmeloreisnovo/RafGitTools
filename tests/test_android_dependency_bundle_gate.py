@@ -36,10 +36,19 @@ class AndroidDependencyBundleGateTests(unittest.TestCase):
         result = module.validate(self.root, broken)
         self.assertEqual(result["status"], "FAIL")
         self.assertIn("HILT_GRADLE_RUNTIME_KSP_VERSION_SPLIT", result["reasons"])
+        # Current Kotlin2 candidate still blocks Hilt version splitting.
+        self.assertNotIn("KNOWN_HILT_2601_KOTLIN19_METADATA_FAILURE", result["reasons"])
+
+    def test_hilt_2601_runtime_breaks_legacy_kotlin19_even_when_split(self):
+        legacy_root = self.root.replace("kotlin-gradle-plugin:2.4.21", "kotlin-gradle-plugin:1.9.24")
+        broken = self.app.replace("com.google.dagger:hilt-android:2.48", "com.google.dagger:hilt-android:2.60.1")
+        result = module.validate(legacy_root, broken)
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("HILT_GRADLE_RUNTIME_KSP_VERSION_SPLIT", result["reasons"])
         self.assertIn("KNOWN_HILT_2601_KOTLIN19_METADATA_FAILURE", result["reasons"])
 
     def test_unreviewed_full_hilt_bump_also_fails_with_kotlin19(self):
-        root = self.root.replace(
+        root = self.root.replace("kotlin-gradle-plugin:2.4.21", "kotlin-gradle-plugin:1.9.24").replace(
             "hilt-android-gradle-plugin:2.48", "hilt-android-gradle-plugin:2.60.1"
         )
         app = self.app.replace(
