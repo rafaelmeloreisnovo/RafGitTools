@@ -30,7 +30,9 @@ object PrivateGitHubTreeIndexGate {
         expectedTreeSha: String,
         githubTree: JsonObject
     ): JsonObject {
-        require(REPOSITORY.matches(repository)) { "Invalid repository name" }
+        require(REPOSITORY.matches(repository) && repository.split('/').none { it == "." || it == ".." }) {
+            "Invalid repository name"
+        }
         require(SHA.matches(commitSha) && SHA.matches(expectedTreeSha)) { "Invalid exact SHA" }
         require(githubTree.get("truncated")?.asBoolean == false) { "GitHub tree incomplete" }
         require(githubTree.get("sha")?.asString == expectedTreeSha) { "GitHub tree identity mismatch" }
