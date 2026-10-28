@@ -22,7 +22,8 @@ class MatrixBoundaryTests(unittest.TestCase):
         self.assertEqual(list(data[24:30]), [2, 3, 10, 0, 0, 0])
 
     def test_fail_closed_on_tuple(self):
-        broken = dict(GATE.BASE, ksp="1.9.24")
+        # Reject malformed KSP2 legacy-suffix shape; do not infer compatibility.
+        broken = dict(GATE.BASE, ksp="2.3.10-1.0")
         with self.assertRaises(ValueError):
             GATE.matrix(broken)
 
