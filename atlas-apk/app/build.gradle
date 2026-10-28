@@ -1,0 +1,17 @@
+plugins { id 'com.android.application' }
+android {
+  namespace 'org.rafaelia.atlas'
+  compileSdk 34
+  ndkVersion '27.2.12479018'
+  defaultConfig {
+    applicationId 'org.rafaelia.atlas'
+    minSdk 24
+    targetSdk 34
+    versionCode 1
+    versionName '0.1.0-draft'
+    ndk { abiFilters 'armeabi-v7a', 'arm64-v8a' }
+  }
+  externalNativeBuild { cmake { path 'src/main/cpp/CMakeLists.txt' } }
+  buildTypes { release { minifyEnabled false } }
+  lint { abortOnError true }
+}

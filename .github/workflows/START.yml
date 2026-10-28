@@ -1065,6 +1065,41 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+  docs_integrity:
+    # S7: independent, nonpromoting docs check moved inside the canonical
+    # single-root orchestrator. The historical YAML is archived byte-for-byte.
+    # This job does not depend on topology/coherence: its failures stay visible.
+    name: '05Z · Docs Integrity / source references (scoped)'
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && (inputs.mode == 'docs' || inputs.mode == 'full'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.EXECUTION_SHA }}
+          persist-credentials: false
+      - name: Verify exact source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXECUTION_SHA"
+      - name: Python isolated tests (no network)
+        run: python3 -m unittest discover -s tools -p 'test_doc_ref_integrity_gate.py' -v
+      - name: Current navigation documents (blocking, scoped)
+        run: |
+          python3 tools/doc_ref_integrity_gate.py \
+            --file README.md \
+            --file docs/INDEX.md \
+            --file docs/RAFAELIA_DOCS_RECONCILIATION_20261025.md \
+            --file docs/RAFAELIA_ROOT_CENSUS_20261025.md --file tools/rafymlc/README.md
+      - name: Historical Markdown audit (nonblocking inventory)
+        run: python3 tools/doc_ref_integrity_gate.py --all --audit-only
+
   docs:
     name: '05 · Documentation / claim boundary'
     needs: [plan, coherence]
@@ -1956,7 +1991,7 @@ jobs:
 
   receipt:
     name: '09 · Final receipt / fechamento'
-    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_actions, private_ci_bridge, provider_environments, release, public_data_custody, promotion_hold_pat_agent]
+    needs: [plan, topology, coherence, python_tests, federation, docs, docs_integrity, android, security, provider_actions, private_ci_bridge, provider_environments, release, public_data_custody, promotion_hold_pat_agent, semchaos_scoped]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -1967,6 +2002,8 @@ jobs:
       PYTHON_RESULT: ${{ needs.python_tests.result }}
       FEDERATION_RESULT: ${{ needs.federation.result }}
       DOCS_RESULT: ${{ needs.docs.result }}
+      DOCS_INTEGRITY_RESULT: ${{ needs.docs_integrity.result }}
+      SEMCHAOS_RESULT: ${{ needs.semchaos_scoped.result }}
       ANDROID_RESULT: ${{ needs.android.result }}
       SECURITY_RESULT: ${{ needs.security.result }}
       PROVIDER_ACTIONS_RESULT: ${{ needs.provider_actions.result }}
@@ -1979,6 +2016,8 @@ jobs:
       ANDROID_REQUIRED: ${{ needs.plan.outputs.android }}
       SECURITY_REQUIRED: ${{ needs.plan.outputs.security }}
       DOCS_REQUIRED: ${{ needs.plan.outputs.docs }}
+      DOCS_INTEGRITY_REQUIRED: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && (inputs.mode == 'docs' || inputs.mode == 'full')) }}
+      SEMCHAOS_REQUIRED: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'full') }}
       FEDERATION_REQUIRED: ${{ needs.plan.outputs.federation }}
     steps:
       - name: Emit append-only pipeline receipt
@@ -1995,6 +2034,8 @@ jobs:
               'python_tests': os.environ['PYTHON_RESULT'],
               'federation': os.environ['FEDERATION_RESULT'],
               'docs': os.environ['DOCS_RESULT'],
+              'docs_integrity': os.environ['DOCS_INTEGRITY_RESULT'],
+              'semchaos_scoped': os.environ['SEMCHAOS_RESULT'],
               'android': os.environ['ANDROID_RESULT'],
               'security': os.environ['SECURITY_RESULT'],
               'provider_actions': os.environ['PROVIDER_ACTIONS_RESULT'],
@@ -2013,6 +2054,8 @@ jobs:
               'android': os.environ['ANDROID_REQUIRED'] == 'true',
               'security': os.environ['SECURITY_REQUIRED'] == 'true',
               'docs': os.environ['DOCS_REQUIRED'] == 'true',
+              'docs_integrity': os.environ['DOCS_INTEGRITY_REQUIRED'] == 'true',
+              'semchaos_scoped': os.environ['SEMCHAOS_REQUIRED'] == 'true',
               'federation': os.environ['FEDERATION_REQUIRED'] == 'true',
           }
           missing_required = [
@@ -2428,3 +2471,135 @@ jobs:
           path: ${{ runner.temp }}/blake3-output/
           if-no-files-found: error
           retention-days: 14
+
+  atlas_apk:
+    name: '10Z · RAFAELIA Atlas standalone · exact source'
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout candidate exact HEAD
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.EXECUTION_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Detect Atlas files at exact base/head
+        id: scope
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXECUTION_SHA"
+          git cat-file -e "${BASE_SHA}^{commit}"
+          if git diff --no-ext-diff --name-only "$BASE_SHA" HEAD | grep -Eq '^(atlas-apk/|docs/atlas/)'; then
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            echo 'Atlas unchanged: skip isolated APK build'
+          fi
+      - name: Compile/test freestanding L0; enforce no INTERNET permission
+        if: steps.scope.outputs.changed == 'true'
+        shell: bash
+        run: |
+          sh atlas-apk/tests/test_core.sh
+          ! grep -q 'android.permission.INTERNET' atlas-apk/app/src/main/AndroidManifest.xml
+      - name: Java 17
+        if: steps.scope.outputs.changed == 'true'
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Negative SAF provider-boundary tests (21 offline JVM fixtures)
+        if: steps.scope.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/atlas-safety-test"
+          mkdir -p "$work"
+          javac --release 17 -d "$work" \
+            atlas-apk/app/src/main/java/org/rafaelia/atlas/InventorySafety.java \
+            atlas-apk/tests/InventorySafetyTest.java
+          java -cp "$work" org.rafaelia.atlas.InventorySafetyTest
+          grep -Fq 'InventorySafety.mayReadRow(rowsSeen)' \
+            atlas-apk/app/src/main/java/org/rafaelia/atlas/MainActivity.java
+          grep -Fq 'InventorySafety.coverageState(truncated,errors,repeatedIds,unknownMimes)' \
+            atlas-apk/app/src/main/java/org/rafaelia/atlas/MainActivity.java
+      - name: Android SDK
+        if: steps.scope.outputs.changed == 'true'
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
+      - name: Pin Android build toolchain
+        if: steps.scope.outputs.changed == 'true'
+        shell: bash
+        run: sdkmanager 'platforms;android-34' 'build-tools;34.0.0' 'ndk;27.2.12479018' 'cmake;3.22.1'
+      - name: Build standalone APK and lint
+        if: steps.scope.outputs.changed == 'true'
+        shell: bash
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon -p atlas-apk :app:assembleDebug :app:lintDebug --stacktrace
+      - name: Verify ABI, signature and exact-source receipt
+        if: steps.scope.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          file='atlas-apk/app/build/outputs/apk/debug/app-debug.apk'
+          test -s "$file"
+          unzip -Z -1 "$file" | grep -Fx 'lib/armeabi-v7a/librafaelia_atlas.so'
+          unzip -Z -1 "$file" | grep -Fx 'lib/arm64-v8a/librafaelia_atlas.so'
+          "${ANDROID_HOME}/build-tools/34.0.0/apksigner" verify --verbose "$file"
+          mkdir -p atlas-apk/receipts
+          {
+            echo 'schema=raf.atlas.apk.build.v2'
+            echo "source_head=${EXECUTION_SHA}"
+            echo "actual_checkout=$(git rev-parse HEAD)"
+            echo "apk_sha256=$(sha256sum "$file" | cut -d' ' -f1)"
+            echo 'abi=armeabi-v7a,arm64-v8a'
+            echo 'device=TOKEN_VAZIO_NOT_RUN'
+            echo 'drive_ingestion=TOKEN_VAZIO_NOT_RUN'
+            echo 'claim_allowed=false'
+          } > atlas-apk/receipts/build.env
+      - name: Upload test APK and scoped receipt
+        if: steps.scope.outputs.changed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: atlas-debug-${{ env.EXECUTION_SHA }}
+          if-no-files-found: error
+          path: |
+            atlas-apk/app/build/outputs/apk/debug/app-debug.apk
+            atlas-apk/receipts/build.env
+          retention-days: 7
+
+  semchaos_scoped:
+    # Transferred from independent SEMCHAOS YAML: tests are preserved, not suppressed.
+    # Run on all PRs (stronger than the old changed-path-only trigger), and manual full.
+    name: '10S · SEMCHAOS typed-token scoped gate'
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && inputs.mode == 'full')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.EXECUTION_SHA }}
+          persist-credentials: false
+      - name: Verify source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXECUTION_SHA"
+      - name: Platform evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          cc --version | head -n 1
+          python3 --version
+          nm --version | head -n 1
+      - name: Freestanding object and synthetic JSONL lossless roundtrip
+        shell: bash
+        run: sh tools/semantic_chaos_lab/tests/selftest.sh
