@@ -64,10 +64,9 @@ android {
     // Use a modern namespace that matches the package name
     namespace 'com.rafgittools'
 
-    // Compile and target the latest stable API level (Android 14 / API 34) for
-    // compatibility with Google Play and modern devices.  Earlier versions (35,36)
-    // referenced in the original project are not publicly available.
-    compileSdk 34
+    // API 37 is required by the current AAR dependency set (AGP 9.1.1 candidate).
+    // Compile SDK only; preserve targetSdk/minSdk and runtime behavior until review.
+    compileSdk 37
 
     defaultConfig {
         applicationId "com.rafgittools"

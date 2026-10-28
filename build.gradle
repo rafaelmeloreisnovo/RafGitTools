@@ -10,8 +10,9 @@ buildscript {
         maven { url = uri('https://repo.eclipse.org/content/groups/releases/') }
     }
     dependencies {
-        // Android Gradle Plugin 8.13.2 requires Gradle 8.13+ and supports Java 17.
-        classpath 'com.android.tools.build:gradle:8.13.2'
+        // Isolated AGP 9.1.1 / API 37 AAR-compatibility candidate (not a release).
+        // Keep Kotlin/Compose/KSP legacy tuple until hosted negative and device gates pass.
+        classpath 'com.android.tools.build:gradle:9.1.1'
 
         // Kotlin plugin 1.9.24 is compatible with Compose Compiler 1.5.14 and KSP 1.9.24-1.0.20.
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24'
