@@ -80,3 +80,7 @@ Estados: `OBSERVED_SOURCE`, `DOCUMENTED`, `TESTED_SCOPED`, `RUNTIME_PROVEN`, `TO
 - O fluxo S2 acima foi preservado como snapshot histórico de SHA Git `6a1bffe03ed4cd0f5075ec94f6cd59bd994e8cfe`; seu caminho original não é mais ativo.
 - A execução atual dos mesmos testes e do link-checker está no job `05Z · Docs Integrity` de [START.yml](../.github/workflows/START.yml), com SHA exato, recibo final e modo `docs` manual.
 - Resultado de S7: somente os checks de CI observados em SHA exato autorizam um estado `EVIDENCED_SCOPED`; até lá, `TOKEN_VAZIO_NOT_RUN` / `HOLD`. Não herdar automaticamente o PASS do S2.
+
+## Sucessor: contrato e esquema — 27/10/2026
+
+> **DRAFT/HOLD · Fonte pinada:** [Inventário de contratos, JSON Schema, autoridade e consumidores](../contracts/README.md). Superfícies contratuais não são provas de execução, certificação, compatibilidade sem adaptador ou autorização humana. Documentos de 25/10 preservados.
