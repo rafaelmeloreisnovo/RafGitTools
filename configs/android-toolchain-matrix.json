@@ -29,7 +29,10 @@
     "https://kotlinlang.org/docs/compose-compiler-migration-guide.html",
     "https://github.com/google/ksp/issues/2965",
     "https://repo1.maven.org/maven2/io/mockk/mockk-jvm/1.14.11/mockk-jvm-1.14.11.pom",
-    "https://repo1.maven.org/maven2/io/mockk/mockk/1.13.10/mockk-1.13.10.pom"
+    "https://repo1.maven.org/maven2/io/mockk/mockk/1.13.10/mockk-1.13.10.pom",
+    "https://kotlinlang.org/docs/ksp-quickstart.html",
+    "https://kotlinlang.org/docs/gradle-configure-project.html",
+    "https://developer.android.com/build/migrate-to-built-in-kotlin"
   ],
   "invariants": [
     "KOTLIN_BUMP != ATOMIC_TOOLCHAIN_MIGRATION",
@@ -38,5 +41,19 @@
     "CI_BUILD_FAILURE != SOURCE_CODE_REGRESSION_WITHOUT_CAUSAL_EVIDENCE",
     "UNKNOWN_TOOLCHAIN_TUPLE == FAIL_CLOSED",
     "TOKEN_VAZIO != PASS"
+  ],
+  "ci_candidates": [
+    {
+      "kotlin": "2.4.21",
+      "ksp": "2.3.10",
+      "compose_mode": "compose_plugin",
+      "compose_compiler": "2.4.21",
+      "mockk": "1.13.10",
+      "mockk_artifact": "mockk-jvm",
+      "state": "PASS_SCOPED_CI_CANDIDATE_NOT_PRODUCTION",
+      "admission": "SCOPED_CI_ONLY",
+      "promotion": "HOLD",
+      "claim_allowed": false
+    }
   ]
 }
