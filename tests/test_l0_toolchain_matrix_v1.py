@@ -14,15 +14,16 @@ class MatrixBoundaryTests(unittest.TestCase):
         self.assertEqual(GATE.BASE, GATE.source_values(ROOT))
 
     def test_exact_size_and_offsets(self):
-        # AGP9 candidate changes byte 8 only; unsupported Kotlin1 remains BLOCKED.
+        # AGP9/Kotlin2/Compose2/KSP2 snapshot; independent KSP needs separate evidence.
         data = GATE.matrix(GATE.BASE)
         self.assertEqual(len(data), 64)
         self.assertEqual([data[0], data[8], data[16], data[24], data[32], data[40], data[48], data[56]],
-                         [9, 9, 1, 1, 1, 17, 3, 0])
-        self.assertEqual(list(data[24:30]), [1, 9, 24, 1, 0, 20])
+                         [9, 9, 2, 2, 2, 17, 3, 0])
+        self.assertEqual(list(data[24:30]), [2, 3, 10, 0, 0, 0])
 
     def test_fail_closed_on_tuple(self):
-        broken = dict(GATE.BASE, ksp="1.9.24")
+        # Reject malformed KSP2 legacy-suffix shape; do not infer compatibility.
+        broken = dict(GATE.BASE, ksp="2.3.10-1.0")
         with self.assertRaises(ValueError):
             GATE.matrix(broken)
 

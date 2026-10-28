@@ -13,11 +13,10 @@ import shutil
 import subprocess
 import tempfile
 
-# Exact AGP9 candidate tuple: still HOLD due to Gradle9/Kotlin1 conflict.
-# Source synchronization is not runtime compatibility evidence.
+# Exact AGP9/Kotlin2/Compose2/KSP2 CI-only tuple; legacy KSP prefix mask is not interoperability proof.
 BASE = {
-    "gradle": "9.5.1", "agp": "9.1.1", "kotlin": "1.9.24",
-    "ksp": "1.9.24-1.0.20", "compose": "1.5.14", "jdk": "17",
+    "gradle": "9.5.1", "agp": "9.1.1", "kotlin": "2.4.21",
+    "ksp": "2.3.10", "compose": "2.4.21", "jdk": "17",
 }
 PATTERNS = {
     "gradle": ("gradle/wrapper/gradle-wrapper.properties",
@@ -27,9 +26,9 @@ PATTERNS = {
     "kotlin": ("build.gradle",
                r"^\s*classpath ['\"]org\.jetbrains\.kotlin:kotlin-gradle-plugin:([0-9.]+)['\"]"),
     "ksp": ("build.gradle",
-            r"^\s*id ['\"]com\.google\.devtools\.ksp['\"] version ['\"]([0-9.]+-[0-9.]+)['\"]"),
-    "compose": ("app/build.gradle",
-                r"^\s*kotlinCompilerExtensionVersion ['\"]([0-9.]+)['\"]"),
+            r"^\s*id ['\"]com\.google\.devtools\.ksp['\"] version ['\"]([0-9.]+(?:-[0-9.]+)?)['\"]"),
+    "compose": ("build.gradle",
+                r"^\s*id ['\"]org\.jetbrains\.kotlin\.plugin\.compose['\"] version ['\"]([0-9.]+)['\"]"),
     "jdk": ("app/build.gradle",
             r"^\s*sourceCompatibility JavaVersion\.VERSION_([0-9]+)"),
 }
@@ -58,7 +57,10 @@ def matrix(values):
         if len(nums) != 3 or any(x > 255 or x < 0 for x in nums):
             raise ValueError("TOKEN_VAZIO_INVALID_%s_TUPLE" % key.upper())
         b[base:base + 3] = bytes(nums)
-    left, right = values["ksp"].split("-")
+    components = values["ksp"].split("-")
+    if len(components) > 2:
+        raise ValueError("TOKEN_VAZIO_KSP_VERSION_SHAPE")
+    left, right = components[0], components[1] if len(components) == 2 else "0.0.0"
     nums = list(map(int, left.split(".") + right.split(".")))
     if len(nums) != 6 or any(x > 255 or x < 0 for x in nums):
         raise ValueError("TOKEN_VAZIO_INVALID_KSP_TUPLE")
@@ -116,19 +118,23 @@ def execute(values, native_src):
             return (output[0], output[1])
 
         baseline = matrix(values)
-        if sample(baseline) != (1, 1):
-            raise RuntimeError("EXPECTED_GRADLE9_KOTLIN1_BLOCK_NOT_OBSERVED")
+        if sample(baseline) != (2, 1):
+            raise RuntimeError("EXPECTED_KSP2_INDEPENDENT_VERSION_UNCERTAINTY")
         for offset, changed_byte, expected_mask in (
-            (24, 2, 3), (34, 15, 5), (40, 21, 9),
-            (48, 1, 17), (56, 1, 33),
+            (16, 1, 3), (40, 21, 10), (48, 1, 18), (56, 1, 34),
         ):
             negative = bytearray(baseline)
             negative[offset] = changed_byte
             if sample(negative) != (expected_mask, 1):
                 raise RuntimeError("NEGATIVE_FIXTURE_FAILED_%d" % offset)
+        # KSP2 independent versions do not imply a Kotlin-version prefix match.
+        ksp_prefix_only = bytearray(baseline)
+        ksp_prefix_only[24:27] = bytes((2, 4, 21))
+        if sample(ksp_prefix_only) != (0, 1):
+            raise RuntimeError("KSP_PREFIX_BYTE_COMPARISON_REGRESSION")
         result.update({"host_execution": "PASS_SCOPED_6_CASES",
-                       "conflict_mask": 1, "build_readiness":
-                       "BLOCKED_UNSUPPORTED_GRADLE9_KOTLIN1",
+                       "conflict_mask": 2, "build_readiness":
+                       "TOKEN_VAZIO_UNVALIDATED_INDEPENDENT_KSP2",
                        "claim_allowed": False})
     return result
 
@@ -147,7 +153,7 @@ def main():
             raise RuntimeError("CONFIG_CHANGED_REQUIRES_COORDINATED_MATRIX_REVIEW")
         result.update(execute(values, opts.root /
                               "native/authorial_toolchain_l0/toolchain_l0.c"))
-        result["status"] = "PASS_SCOPED_DETECTS_BLOCKED_BASELINE"
+        result["status"] = "PASS_SCOPED_KSP2_UNCERTAINTY"
     except (OSError, ValueError, RuntimeError) as exc:
         result["error"] = str(exc)
     serialized = json.dumps(result, sort_keys=True, indent=2) + "\n"
