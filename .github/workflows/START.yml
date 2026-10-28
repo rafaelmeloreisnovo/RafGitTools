@@ -1157,7 +1157,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sdkmanager 'platforms;android-37' 'build-tools;36.0.0'
+          sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
       - name: Prepare build environment
         shell: bash
         run: |
@@ -1321,7 +1321,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sdkmanager 'platforms;android-37' 'build-tools;36.0.0'
+          sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
       - name: Generate local.properties
         if: matrix.language == 'java-kotlin'
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
