@@ -169,6 +169,43 @@ def selftest():
         assert (root/"run1/chaos.jsonl").read_bytes() == (root/"run2/chaos.jsonl").read_bytes()
         assert receipt["source_sha256"] == restore(root/"run1/chaos.jsonl", root/"run1/order.json", root/"restored.jsonl")
         assert (root/"restored.jsonl").read_bytes() == original
+        assert receipt["source_entropy_bits_per_byte"] == receipt["chaos_entropy_bits_per_byte"]
+        # Fail-closed type and privacy negative controls.
+        common = {"id":"bad","source":"CREATED_SYNTHETIC","privacy_class":"SYNTHETIC"}
+        negatives = [
+            dict(common,kind="JSON_NULL"),                              # absent != null
+            dict(common,kind="MISSING_FIELD",payload=None),            # null != absent
+            dict(common,kind="ZERO_NUMBER",payload=False),             # false != integer zero
+            dict(common,kind="EMPTY_STRING",payload=" "),             # one space != empty
+            dict(common,kind="SPACE_ONLY",payload="\t"),              # tab != ASCII U+0020
+            dict(common,kind="EMPTY_GLYPH",payload=""),                # glyph != empty
+            dict(common,kind="UNKNOWN",payload=""),                    # unknown tag needs data
+            dict(common,kind="RAW_TEXT",payload="private",privacy_class="PRIVATE"),
+        ]
+        for negative in negatives:
+            try:
+                validate(canonical(negative))
+                raise AssertionError("NEGATIVE_TOKEN_GATE_DID_NOT_REJECT")
+            except ValueError:
+                pass
+        try:
+            validate(canonical(records[0]) + canonical(records[0]))
+            raise AssertionError("DUPLICATE_SOURCE_ID_NOT_REJECTED")
+        except ValueError:
+            pass
+        try:
+            shuffled_indices(2, 0)
+            raise AssertionError("INVALID_SEED_NOT_REJECTED")
+        except ValueError:
+            pass
+        order_bad = json.loads((root/"run1/order.json").read_text())
+        order_bad["order"] = list(reversed(order_bad["order"]))
+        (root/"order_bad.json").write_bytes(canonical(order_bad))
+        try:
+            restore(root/"run1/chaos.jsonl", root/"order_bad.json", root/"badrestore.jsonl")
+            raise AssertionError("MODIFIED_ORDER_NOT_REJECTED")
+        except ValueError:
+            pass
         # Mutation: whitespace-class collision must fail.
         try:
             validate(canonical({"id":"bad","kind":"SPACE_ONLY","payload":"",
@@ -183,7 +220,7 @@ def selftest():
             raise AssertionError("EXPECTED_HASH_REJECTION")
         except ValueError:
             pass
-    print("SEMCHAOS_HOST_SELFTEST PASS 12 cases + 2 negative gates + deterministic replay")
+    print("SEMCHAOS_HOST_SELFTEST PASS 12 cases + 13 negative gates + deterministic replay")
 
 def main():
     ap = argparse.ArgumentParser()
