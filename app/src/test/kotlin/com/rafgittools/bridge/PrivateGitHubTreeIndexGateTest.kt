@@ -29,6 +29,13 @@ class PrivateGitHubTreeIndexGateTest {
             PrivateGitHubTreeIndexGate.buildIndex("../escape",commit,tree,json())
         }
     }
+    @Test fun rejectsDotRepositorySegmentsInBothPositions() {
+        for (invalid in arrayOf("../escape", "./repo", "owner/..", "owner/.")) {
+            assertThrows(IllegalArgumentException::class.java) {
+                PrivateGitHubTreeIndexGate.buildIndex(invalid, commit, tree, json())
+            }
+        }
+    }
     @Test fun rejectsTruncated() {
         val input=json()
         input.addProperty("truncated",true)
