@@ -108,3 +108,8 @@ O contrato documentation_no_regression.v1 é changed-file-strict e NÃO quita d�
 7. **Rollback**: reverter somente adições do PR de documentação, sem alterações nos esquemas originais.
 
 **F_ok:** arquivos e blobs enumerados em HEAD observado; **F_gap:** parser/validator/runtime não executados, consumidor completo não fechado; **F_next:** adaptadores/versionamento, testes negativos e revisão de segurança por responsável. `claim_allowed=false`.
+
+## Matriz federada de compatibilidade
+
+- [Comparação de 18 JSON Schemas em seis famílias, com SHAs e divergências](../docs/contracts/RAFAELIA_FEDERATED_SCHEMA_COMPATIBILITY_20261027.md).
+- Essa análise **não** autoriza conversão silenciosa, reclassificação de proveniência, promoção de permissões nem merge sem revisão.
