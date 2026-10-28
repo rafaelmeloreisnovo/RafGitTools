@@ -70,6 +70,13 @@ Estados: `OBSERVED_SOURCE`, `DOCUMENTED`, `TESTED_SCOPED`, `RUNTIME_PROVEN`, `TO
 ## Sucessor S2 — capacidade operacional e índice local (2026-10-25)
 
 - [Índice funcional confirmado](../tools/rafymlc/README.md): funções, entradas/saídas documentadas e riscos, sem execução presumida.
-- [Verificador determinístico](../tools/doc_ref_integrity_gate.py), [testes negativos](../tools/test_doc_ref_integrity_gate.py) e [workflow de CI](../.github/workflows/rafaelia-docs-integrity-v1.yml).
+- [Verificador determinístico](../tools/doc_ref_integrity_gate.py), [testes negativos](../tools/test_doc_ref_integrity_gate.py) e [workflow de CI](../.github/workflows-legacy-20260907/rafaelia-docs-integrity-v1.yml).
 - O gate fornece estado JSON (PASS_SCOPED/FAIL_SCOPED) para links Markdown locais e censo de diretórios raiz sem índice direto. É **heurístico**, não prova de abandono, segurança, autoria ou certificação; referências HTML/anchors fora do escopo.
 - Verificação depende de execução hospedada no SHA exato; proteção do provedor e revisão humana continuam obrigatórias. `claim_allowed=false` e `PROMOTION=HOLD`.
+
+
+## Sucessor S7 — integração no orquestrador (2026-10-27)
+
+- O fluxo S2 acima foi preservado como snapshot histórico de SHA Git `6a1bffe03ed4cd0f5075ec94f6cd59bd994e8cfe`; seu caminho original não é mais ativo.
+- A execução atual dos mesmos testes e do link-checker está no job `05Z · Docs Integrity` de [START.yml](../.github/workflows/START.yml), com SHA exato, recibo final e modo `docs` manual.
+- Resultado de S7: somente os checks de CI observados em SHA exato autorizam um estado `EVIDENCED_SCOPED`; até lá, `TOKEN_VAZIO_NOT_RUN` / `HOLD`. Não herdar automaticamente o PASS do S2.
