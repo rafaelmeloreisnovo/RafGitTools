@@ -2428,3 +2428,102 @@ jobs:
           path: ${{ runner.temp }}/blake3-output/
           if-no-files-found: error
           retention-days: 14
+
+  atlas_apk:
+    name: '10Z · RAFAELIA Atlas standalone · exact source'
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout candidate exact HEAD
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.EXECUTION_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Detect Atlas files at exact base/head
+        id: scope
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXECUTION_SHA"
+          git cat-file -e "${BASE_SHA}^{commit}"
+          if git diff --no-ext-diff --name-only "$BASE_SHA" HEAD | grep -Eq '^(atlas-apk/|docs/atlas/)'; then
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            echo 'Atlas unchanged: skip isolated APK build'
+          fi
+      - name: Compile/test freestanding L0; enforce no INTERNET permission
+        if: steps.scope.outputs.changed == 'true'
+        shell: bash
+        run: |
+          sh atlas-apk/tests/test_core.sh
+          ! grep -q 'android.permission.INTERNET' atlas-apk/app/src/main/AndroidManifest.xml
+      - name: Java 17
+        if: steps.scope.outputs.changed == 'true'
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Negative SAF provider-boundary tests (21 offline JVM fixtures)
+        if: steps.scope.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/atlas-safety-test"
+          mkdir -p "$work"
+          javac --release 17 -d "$work" \
+            atlas-apk/app/src/main/java/org/rafaelia/atlas/InventorySafety.java \
+            atlas-apk/tests/InventorySafetyTest.java
+          java -cp "$work" org.rafaelia.atlas.InventorySafetyTest
+          grep -Fq 'InventorySafety.mayReadRow(rowsSeen)' \
+            atlas-apk/app/src/main/java/org/rafaelia/atlas/MainActivity.java
+          grep -Fq 'InventorySafety.coverageState(truncated,errors,repeatedIds,unknownMimes)' \
+            atlas-apk/app/src/main/java/org/rafaelia/atlas/MainActivity.java
+      - name: Android SDK
+        if: steps.scope.outputs.changed == 'true'
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
+      - name: Pin Android build toolchain
+        if: steps.scope.outputs.changed == 'true'
+        shell: bash
+        run: sdkmanager 'platforms;android-34' 'build-tools;34.0.0' 'ndk;27.2.12479018' 'cmake;3.22.1'
+      - name: Build standalone APK and lint
+        if: steps.scope.outputs.changed == 'true'
+        shell: bash
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon -p atlas-apk :app:assembleDebug :app:lintDebug --stacktrace
+      - name: Verify ABI, signature and exact-source receipt
+        if: steps.scope.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          file='atlas-apk/app/build/outputs/apk/debug/app-debug.apk'
+          test -s "$file"
+          unzip -Z -1 "$file" | grep -Fx 'lib/armeabi-v7a/librafaelia_atlas.so'
+          unzip -Z -1 "$file" | grep -Fx 'lib/arm64-v8a/librafaelia_atlas.so'
+          "${ANDROID_HOME}/build-tools/34.0.0/apksigner" verify --verbose "$file"
+          mkdir -p atlas-apk/receipts
+          {
+            echo 'schema=raf.atlas.apk.build.v2'
+            echo "source_head=${EXECUTION_SHA}"
+            echo "actual_checkout=$(git rev-parse HEAD)"
+            echo "apk_sha256=$(sha256sum "$file" | cut -d' ' -f1)"
+            echo 'abi=armeabi-v7a,arm64-v8a'
+            echo 'device=TOKEN_VAZIO_NOT_RUN'
+            echo 'drive_ingestion=TOKEN_VAZIO_NOT_RUN'
+            echo 'claim_allowed=false'
+          } > atlas-apk/receipts/build.env
+      - name: Upload test APK and scoped receipt
+        if: steps.scope.outputs.changed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: atlas-debug-${{ env.EXECUTION_SHA }}
+          if-no-files-found: error
+          path: |
+            atlas-apk/app/build/outputs/apk/debug/app-debug.apk
+            atlas-apk/receipts/build.env
+          retention-days: 7
