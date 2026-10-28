@@ -20,12 +20,23 @@ def one(pattern: str, source: str, name: str) -> str:
     return matches[0]
 
 
+def hilt_plugin_version(root: str) -> tuple[str, bool]:
+    """Accept exactly one legacy classpath OR a root plugins-DSL declaration."""
+    legacy = re.findall(
+        r"^\s*classpath\s+['\"]com\.google\.dagger:hilt-android-gradle-plugin:([^'\"]+)",
+        root, flags=re.MULTILINE)
+    dsl = re.findall(
+        r"^\s*id\s+['\"]com\.google\.dagger\.hilt\.android['\"]\s+version\s+['\"]([^'\"]+)",
+        root, flags=re.MULTILINE)
+    if len(legacy) + len(dsl) != 1:
+        raise ValueError("EXPECTED_EXACTLY_ONE_HILT_PLUGIN_DECLARATION")
+    return (dsl[0], True) if dsl else (legacy[0], False)
+
+
 def validate(root: str, app: str) -> dict:
     reasons = []
     try:
-        gradle_plugin = one(
-            r"^\s*classpath\s+['\"]com\.google\.dagger:hilt-android-gradle-plugin:([^'\"]+)",
-            root, "Hilt Gradle plugin")
+        gradle_plugin, plugin_dsl = hilt_plugin_version(root)
         runtime = one(
             r"^\s*implementation\s+['\"]com\.google\.dagger:hilt-android:([^'\"]+)",
             app, "Hilt runtime")
@@ -42,6 +53,11 @@ def validate(root: str, app: str) -> dict:
 
     if len({gradle_plugin, runtime, processor}) != 1:
         reasons.append("HILT_GRADLE_RUNTIME_KSP_VERSION_SPLIT")
+    if plugin_dsl and not re.search(
+        r"^\s*id\s+['\"]com\.google\.devtools\.ksp['\"]\s+version\s+['\"][^'\"]+['\"]",
+        root, flags=re.MULTILINE
+    ):
+        reasons.append("HILT_KSP_ROOT_PLUGIN_SCOPE_SPLIT")
     # Exact negative runtime evidence: Hilt 2.60.1 includes Kotlin-2.x
     # metadata incompatible with this project's Kotlin 1.9.x compiler.
     if kotlin.startswith("1.9.") and any(
