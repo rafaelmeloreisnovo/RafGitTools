@@ -1,0 +1,25 @@
+name: SEMCHAOS typed-token scoped gate
+on:
+  pull_request:
+    paths:
+      - 'tools/semantic_chaos_lab/**'
+      - '.github/workflows/semchaos-lab.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: semchaos-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  scoped-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Platform evidence
+        run: |
+          cc --version | head -n 1
+          python3 --version
+          nm --version | head -n 1
+      - name: Freestanding object and synthetic JSONL lossless roundtrip
+        run: sh tools/semantic_chaos_lab/tests/selftest.sh
