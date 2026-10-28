@@ -13,8 +13,10 @@ import shutil
 import subprocess
 import tempfile
 
+# Exact AGP9 candidate tuple: still HOLD due to Gradle9/Kotlin1 conflict.
+# Source synchronization is not runtime compatibility evidence.
 BASE = {
-    "gradle": "9.5.1", "agp": "8.13.2", "kotlin": "1.9.24",
+    "gradle": "9.5.1", "agp": "9.1.1", "kotlin": "1.9.24",
     "ksp": "1.9.24-1.0.20", "compose": "1.5.14", "jdk": "17",
 }
 PATTERNS = {

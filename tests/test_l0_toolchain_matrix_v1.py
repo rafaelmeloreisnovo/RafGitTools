@@ -14,10 +14,11 @@ class MatrixBoundaryTests(unittest.TestCase):
         self.assertEqual(GATE.BASE, GATE.source_values(ROOT))
 
     def test_exact_size_and_offsets(self):
+        # AGP9 candidate changes byte 8 only; unsupported Kotlin1 remains BLOCKED.
         data = GATE.matrix(GATE.BASE)
         self.assertEqual(len(data), 64)
         self.assertEqual([data[0], data[8], data[16], data[24], data[32], data[40], data[48], data[56]],
-                         [9, 8, 1, 1, 1, 17, 3, 0])
+                         [9, 9, 1, 1, 1, 17, 3, 0])
         self.assertEqual(list(data[24:30]), [1, 9, 24, 1, 0, 20])
 
     def test_fail_closed_on_tuple(self):
