@@ -529,6 +529,24 @@ jobs:
           test "${active[0]}" = '.github/workflows/START.yml'
           test -d .github/workflows-legacy-20260907
 
+      - name: Human impact P0 | explicit unknown, child protection and rollback falsifiers
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_human_impact*.py' -v
+          python3 - <<'PY'
+          import importlib.util
+          spec = importlib.util.spec_from_file_location("human", "scripts/human_impact_gate.py")
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+          decision = module.evaluate({"schemaVersion": module.SCHEMA_VERSION})
+          assert decision["gateState"] == "BLOCKED", decision
+          assert decision["deploymentAuthorized"] is False
+          assert decision["claimAllowed"] is False
+          print("P0_HUMAN_GATE=PASS_TEST_ONLY; DEPLOYMENT=DENIED; HUMAN_REVIEW=REQUIRED")
+          PY
+
       - name: Run workflow graph audit
         uses: ./.github/actions/workflow-graph-audit
         with:
