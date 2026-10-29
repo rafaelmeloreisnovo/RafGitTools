@@ -54,3 +54,14 @@ Watchdog envelope: `timeout-minutes: 6`, cancellation on superseding PR runs, de
 F_ok: candidate source + synthetic falsifiers prepared.  
 F_gap: actual workflow run, exact-head result, independent review, real permissions and deployment boundary not yet validated.  
 F_next: create draft PR, observe Actions run/jobs for exact head, present test failures/success to human reviewer; **do not merge without subsequent approval**.
+
+## Successor ★†‡ — exact-head CI falsified the additional YAML
+
+Observed at 2026-10-29 UTC on PR #735: synthetic-only workflow run 40866681383 completed SUCCESS, 16/16 tests PASS, with deployment authorization denied. However the independent canonical `START.yml` workflow run 40866681320 completed FAILURE: job `01 · Workflow topology / single-root invariant` rejected a second active `.github/workflows/*.yml` file. The final receipt also failed due to the required topology gate. This is a proven regression in the **candidate branch**, not a failure of production `main`.
+
+Corrective successor on the same unmerged branch:
+- Commit `5e9342a91aa7b57e343f2130dcad8546a1a7ef4b`: embed 16 existing+new synthetic human-impact tests and deny check as a PR step in the existing `.github/workflows/START.yml` topology job.
+- Commit `801af4c4a8bae97d414214cc7d2525381aedd947`: delete the temporary `human-impact-review-gate.yml`; the branch directory once again has exactly one active YAML: `START.yml`.
+- The failed runs remain immutable negative evidence; closing gaps requires a **new successful exact-head START run**, not treating the earlier narrow PASS as global PASS.
+
+New typed gap `HI-P0-011`: `TOKEN_VAZIO_CONTRADICTORY` at the initial candidate, now `FIX_PREPARED / RUN_PENDING`, urgency P0; falsifier: assert single active workflow and inspect START topology + final receipt. Rollback: close draft; no main commit or production runtime changed. No deployment or merge without human approval.
