@@ -28,7 +28,8 @@ def _get(mapping: Dict[str, Any], key: str, default: Any = None) -> Any:
 
 
 def _missing_ref(value: Any) -> bool:
-    return value in EMPTY_STATES or not isinstance(value, str) or not value.strip()
+    # Check the type first: list/dict inputs are unhashable and must fail closed.
+    return not isinstance(value, str) or not value.strip() or value in EMPTY_STATES
 
 
 def _require_true(case: Dict[str, Any], key: str, blockers: List[str]) -> None:
@@ -39,6 +40,15 @@ def _require_true(case: Dict[str, Any], key: str, blockers: List[str]) -> None:
 def _require_ref(case: Dict[str, Any], key: str, blockers: List[str]) -> None:
     if _missing_ref(_get(case, key)):
         blockers.append(f"{key}:TOKEN_VAZIO")
+
+
+def _explicit_bool(case: Dict[str, Any], key: str, blockers: List[str]) -> bool:
+    """Require an explicit boolean. Unknown is never interpreted as False."""
+    value = _get(case, key)
+    if type(value) is not bool:
+        blockers.append(f"{key}:TOKEN_VAZIO_OR_INVALID_BOOLEAN")
+        return False
+    return value
 
 
 def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
@@ -74,8 +84,8 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
     _require_ref(case, "safety.rollbackRef", blockers)
     _require_ref(case, "safety.incidentResponseRef", blockers)
 
-    personal_data = bool(_get(case, "data.personalData", False))
-    sensitive_data = bool(_get(case, "data.sensitiveData", False))
+    personal_data = _explicit_bool(case, "data.personalData", blockers)
+    sensitive_data = _explicit_bool(case, "data.sensitiveData", blockers)
     if personal_data:
         _require_ref(case, "data.lawfulBasisReviewRef", blockers)
         _require_true(case, "data.minimizationDocumented", blockers)
@@ -83,7 +93,7 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
         _require_true(case, "data.securityControlsDocumented", blockers)
         _require_ref(case, "data.privacyImpactAssessmentRef", blockers)
 
-    children_possible = bool(_get(case, "population.childrenPossible", False))
+    children_possible = _explicit_bool(case, "population.childrenPossible", blockers)
     if children_possible:
         # Best interests, participation and child-rights review are mandatory project gates.
         _require_ref(case, "children.bestInterestAssessmentRef", blockers)
@@ -97,7 +107,7 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
         if personal_data or sensitive_data:
             _require_ref(case, "children.dataProtectionImpactRef", blockers)
 
-    indigenous_affected = bool(_get(case, "population.indigenousPeoplesAffected", False))
+    indigenous_affected = _explicit_bool(case, "population.indigenousPeoplesAffected", blockers)
     if indigenous_affected:
         # FPIC applicability is context dependent; the assessment itself may not be omitted.
         _require_ref(case, "culture.communityConsultationRef", blockers)
@@ -107,15 +117,18 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
         _require_true(case, "culture.traditionalKnowledgeProtection", blockers)
         _require_true(case, "culture.communityWithdrawalRespected", blockers)
 
-    vulnerable = bool(_get(case, "population.vulnerableGroupsAffected", False))
-    public_impact = bool(_get(case, "population.publicImpact", False))
+    vulnerable = _explicit_bool(case, "population.vulnerableGroupsAffected", blockers)
+    public_impact = _explicit_bool(case, "population.publicImpact", blockers)
     if vulnerable or public_impact:
         _require_ref(case, "equity.equityImpactAssessmentRef", blockers)
         _require_ref(case, "equity.accessibilityPlanRef", blockers)
         _require_ref(case, "equity.benefitHarmDistributionRef", blockers)
         _require_ref(case, "equity.stakeholderEngagementRef", blockers)
 
-    risk_tier = str(_get(case, "safety.riskTier", "TOKEN_VAZIO")).upper()
+    risk_tier_raw = _get(case, "safety.riskTier")
+    risk_tier = risk_tier_raw.upper() if isinstance(risk_tier_raw, str) else ""
+    if risk_tier not in {"LOW", "MEDIUM", "HIGH", "CRITICAL"}:
+        blockers.append("safety.riskTier:TOKEN_VAZIO_OR_INVALID_TIER")
     if risk_tier in HIGH_RISK_TIERS:
         _require_ref(case, "safety.safetyCaseRef", blockers)
         _require_ref(case, "safety.independentReviewRef", blockers)
