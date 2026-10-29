@@ -118,6 +118,22 @@ class HumanImpactUnknownScopeTests(unittest.TestCase):
         self.assertIn("safety.monitoringDocumented:REQUIRED_TRUE", r["blockers"])
         self.assertIn("safety.rollbackRef:TOKEN_VAZIO", r["blockers"])
 
+    def test_typed_token_vazio_variants_never_count_as_documentary_evidence(self):
+        for field, value in (
+            ("owner", "TOKEN_VAZIO_UNKNOWN"),
+            ("caseId", "TOKEN_VAZIO_UNIDENTIFIABLE"),
+            ("purpose", "TOKEN_VAZIO_WITHHELD"),
+        ):
+            with self.subTest(field=field):
+                data = safe_fixture()
+                data[field] = value
+                self.assertEqual("BLOCKED", self.evaluate(data)["gateState"])
+        data = safe_fixture()
+        data["evidenceRefs"] = ["TOKEN_VAZIO_UNMEASURED"]
+        r = self.evaluate(data)
+        self.assertEqual("BLOCKED", r["gateState"])
+        self.assertIn("evidenceRefs:NONEMPTY_VERIFIABLE_LIST_REQUIRED", r["blockers"])
+
     def test_no_case_implicitly_authorizes_deployment(self):
         for children in (False, True, "TOKEN_VAZIO", None):
             data = safe_fixture()
