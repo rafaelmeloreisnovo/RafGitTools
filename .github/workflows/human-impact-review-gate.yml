@@ -1,0 +1,54 @@
+name: Human Impact · Fail-Closed Review Gate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+    paths:
+      - 'scripts/human_impact_gate.py'
+      - 'tests/test_human_impact_gate.py'
+      - 'tests/test_human_impact_unknown_scope_watchdog.py'
+      - '.github/workflows/human-impact-review-gate.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: human-impact-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  synthetic-negative-controls:
+    name: Synthetic negative tests only · never deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONNOUSERSITE: "1"
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Test known-good and negative human-impact scenarios
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_human_impact*.py' -v
+      - name: Confirm deployment is never authorized by this workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import importlib.util
+          spec = importlib.util.spec_from_file_location("human", "scripts/human_impact_gate.py")
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+          result = module.evaluate({"schemaVersion": module.SCHEMA_VERSION})
+          assert result["gateState"] == "BLOCKED", result
+          assert result["deploymentAuthorized"] is False
+          assert result["claimAllowed"] is False
+          print("REVIEW_ONLY=true / DEPLOYMENT=BLOCKED / CLAIM_ALLOWED=false")
+          PY
