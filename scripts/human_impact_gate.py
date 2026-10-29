@@ -29,7 +29,7 @@ def _get(mapping: Dict[str, Any], key: str, default: Any = None) -> Any:
 
 def _missing_ref(value: Any) -> bool:
     # Check the type first: list/dict inputs are unhashable and must fail closed.
-    return not isinstance(value, str) or not value.strip() or value in EMPTY_STATES
+    return not isinstance(value, str) or not value.strip() or value in EMPTY_STATES or value.startswith("TOKEN_VAZIO")
 
 
 def _require_true(case: Dict[str, Any], key: str, blockers: List[str]) -> None:
