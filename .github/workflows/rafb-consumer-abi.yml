@@ -25,3 +25,35 @@ jobs:
         run: python3 -m unittest discover -s scripts/termux/tests -p test_rafb_merge_unsigned.py -v
       - name: Shell syntax check
         run: sh -n scripts/termux/build_apkc_rafb_auto.sh
+  apkc-native-integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: RafGitTools
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: rafaelmeloreisnovo/ninja_Rafcode
+          ref: f9822388a2909aa54ce4d959a861686bd96aab97
+          path: ninja_Rafcode
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: rafaelmeloreisnovo/RafPolimata
+          ref: bcdc4ed3491a61ba3aba9ea5533abfcbc5c2c48f
+          path: RafPolimata
+          persist-credentials: false
+      - name: Build real dual ABI unsigned ApkC overlay from exact SHA sources
+        working-directory: RafGitTools
+        run: sh scripts/termux/build_apkc_rafb_auto.sh
+      - name: Readback exact generated archive and receipt; no signing claims
+        working-directory: RafGitTools
+        run: |
+          test -s dist/rafb-auto/rafgittools-rafb-dual-unsigned.apk
+          test -s dist/rafb-auto/rafgittools-rafb-dual-unsigned.apk.receipt.env
+          grep -qx 'state=UNSIGNED_STRUCTURAL_ONLY' dist/rafb-auto/rafgittools-rafb-dual-unsigned.apk.receipt.env
+          grep -qx 'claim_allowed=false' dist/rafb-auto/rafgittools-rafb-dual-unsigned.apk.receipt.env
+          sha256sum dist/rafb-auto/rafgittools-rafb-dual-unsigned.apk
+          echo 'APK_SIGNING=TOKEN_VAZIO ANDROID_INSTALL=TOKEN_VAZIO DEVICE=TOKEN_VAZIO'
