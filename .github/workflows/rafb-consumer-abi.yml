@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Overlay negative tests (synthetic ZIP, not an installable APK)
         run: python3 -m unittest discover -s scripts/termux/tests -p test_rafb_merge_unsigned.py -v
       - name: Shell syntax check
