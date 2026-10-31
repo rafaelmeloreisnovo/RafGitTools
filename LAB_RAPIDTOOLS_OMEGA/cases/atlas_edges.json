@@ -1,0 +1,211 @@
+{
+  "schema": "rafaelia.lab.typed_graph.v1",
+  "states": [
+    "HISTORICAL_DOCUMENT_ONLY",
+    "SOURCE_ONLY",
+    "HYPOTHESIS",
+    "UNIT_VERIFIED_LOCAL",
+    "TOKEN_VAZIO"
+  ],
+  "l9": [
+    "L",
+    "O",
+    "T",
+    "P",
+    "C",
+    "R",
+    "I",
+    "E",
+    "A"
+  ],
+  "nodes": [
+    {
+      "id": "ARM32",
+      "kind": "device_abi",
+      "authority": "RafGitTools",
+      "state": "TOKEN_VAZIO"
+    },
+    {
+      "id": "ARM64",
+      "kind": "device_abi",
+      "authority": "RafGitTools",
+      "state": "TOKEN_VAZIO"
+    },
+    {
+      "id": "NEON",
+      "kind": "kernel_family",
+      "authority": "Termux",
+      "state": "HISTORICAL_DOCUMENT_ONLY"
+    },
+    {
+      "id": "CACHE",
+      "kind": "memory",
+      "authority": "RafGitTools",
+      "state": "HYPOTHESIS"
+    },
+    {
+      "id": "TLB",
+      "kind": "memory",
+      "authority": "Termux",
+      "state": "HISTORICAL_DOCUMENT_ONLY"
+    },
+    {
+      "id": "BUFFER_150M",
+      "kind": "memory",
+      "authority": "RafGitTools",
+      "state": "HYPOTHESIS"
+    },
+    {
+      "id": "WORKERS_8",
+      "kind": "concurrency",
+      "authority": "RafGitTools",
+      "state": "SOURCE_ONLY"
+    },
+    {
+      "id": "Q16",
+      "kind": "math",
+      "authority": "RafGitTools",
+      "state": "SOURCE_ONLY"
+    },
+    {
+      "id": "RLE",
+      "kind": "codec",
+      "authority": "RafGitTools",
+      "state": "SOURCE_ONLY"
+    },
+    {
+      "id": "ZIPRAF",
+      "kind": "codec_reference",
+      "authority": "BITRAF64",
+      "state": "TOKEN_VAZIO"
+    },
+    {
+      "id": "SHADER",
+      "kind": "gpu",
+      "authority": "RafGitTools",
+      "state": "SOURCE_ONLY"
+    },
+    {
+      "id": "ATLAS",
+      "kind": "knowledge",
+      "authority": "Mapa",
+      "state": "SOURCE_ONLY"
+    },
+    {
+      "id": "RLL",
+      "kind": "physics",
+      "authority": "RLL",
+      "state": "HYPOTHESIS"
+    },
+    {
+      "id": "RECEIPT",
+      "kind": "governance",
+      "authority": "RafGitTools",
+      "state": "SOURCE_ONLY"
+    },
+    {
+      "id": "B7",
+      "kind": "historical_kernel",
+      "authority": "RafGitTools",
+      "state": "TOKEN_VAZIO"
+    }
+  ],
+  "edges": [
+    {
+      "from": "ARM32",
+      "to": "NEON",
+      "relation": "uses_optional",
+      "axis": "T",
+      "proof": "https://docs.google.com/document/d/1RQTJ50PcQEn8_u2EIEepZBjN6b5z2wJ2xI7dcfM1RtI/edit",
+      "state": "HISTORICAL_DOCUMENT_ONLY"
+    },
+    {
+      "from": "ARM64",
+      "to": "NEON",
+      "relation": "has_simd_family",
+      "axis": "T",
+      "proof": null,
+      "state": "HYPOTHESIS"
+    },
+    {
+      "from": "ARM32",
+      "to": "TLB",
+      "relation": "observed_aliasing",
+      "axis": "E",
+      "proof": "https://docs.google.com/document/d/1aZVss73eYKfcVi-BEjsMGT2sPld7xYVLb0BBnVLtapk/edit",
+      "state": "HISTORICAL_DOCUMENT_ONLY"
+    },
+    {
+      "from": "CACHE",
+      "to": "BUFFER_150M",
+      "relation": "capacity_vs_cache_hypothesis",
+      "axis": "O",
+      "proof": null,
+      "state": "HYPOTHESIS"
+    },
+    {
+      "from": "BUFFER_150M",
+      "to": "WORKERS_8",
+      "relation": "test_grid",
+      "axis": "I",
+      "proof": null,
+      "state": "SOURCE_ONLY"
+    },
+    {
+      "from": "WORKERS_8",
+      "to": "RECEIPT",
+      "relation": "requires_evidence",
+      "axis": "P",
+      "proof": null,
+      "state": "SOURCE_ONLY"
+    },
+    {
+      "from": "Q16",
+      "to": "SHADER",
+      "relation": "geometry_analogy_only",
+      "axis": "O",
+      "proof": null,
+      "state": "HYPOTHESIS"
+    },
+    {
+      "from": "Q16",
+      "to": "ATLAS",
+      "relation": "route_reference",
+      "axis": "R",
+      "proof": null,
+      "state": "SOURCE_ONLY"
+    },
+    {
+      "from": "RLE",
+      "to": "ZIPRAF",
+      "relation": "NOT_equivalent",
+      "axis": "P",
+      "proof": null,
+      "state": "TOKEN_VAZIO"
+    },
+    {
+      "from": "ATLAS",
+      "to": "RLL",
+      "relation": "semantic_reference_not_validation",
+      "axis": "R",
+      "proof": null,
+      "state": "HYPOTHESIS"
+    },
+    {
+      "from": "B7",
+      "to": "ARM32",
+      "relation": "port_required",
+      "axis": "E",
+      "proof": null,
+      "state": "TOKEN_VAZIO"
+    },
+    {
+      "from": "B7",
+      "to": "ARM64",
+      "relation": "port_required",
+      "axis": "E",
+      "proof": null,
+      "state": "TOKEN_VAZIO"
+    }
+  ]
+}

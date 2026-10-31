@@ -1,0 +1,41 @@
+{
+  "schema": "rafaelia.lab.claim_policy.v1",
+  "states": [
+    "SOURCE_ONLY",
+    "IMPLEMENTED_UNTESTED",
+    "PASS_HOST_SCOPED",
+    "PASS_CROSS_OBJECT_COMPILE",
+    "PASS_ARM32_PHYSICAL",
+    "PASS_ARM64_PHYSICAL",
+    "INDEPENDENT_REPLICATION"
+  ],
+  "transitions_require_receipt": true,
+  "non_equivalences": [
+    "CI_BUILD != ANDROID_DEVICE_RUN",
+    "MALLOC_OR_MMAP != L3_HARDWARE",
+    "WORKERS != PHYSICAL_CORES",
+    "RLE != ZIPRAF",
+    "SHADER_GLSL != GPU_RUN",
+    "HISTORICAL != CURRENT_SAMPLE",
+    "SHA256_LOCAL != EXTERNAL_ATTESTATION"
+  ],
+  "required_for_abi_comparison": [
+    "same_workload_sha256",
+    "same_buffer_bytes",
+    "same_rounds",
+    "same_stride",
+    "same_cpu_governor_evidence",
+    "same_thermal_window",
+    "n_repetitions",
+    "physical_device_receipt_both_ABIs",
+    "error_bars"
+  ],
+  "policy": {
+    "global_claim_allowed": false,
+    "promote_on_ci_only": false,
+    "auto_merge": false,
+    "auto_secret_read": false,
+    "store_private_drive_ids_in_repo": false
+  },
+  "rollback": "Leave experimental PR draft; append superseding records if measurements are corrected"
+}

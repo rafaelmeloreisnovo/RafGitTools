@@ -1,0 +1,42 @@
+{
+  "schema": "rafaelia.lab.workloads.v1",
+  "units": "MiB",
+  "workers": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "buffers_mib": [
+    0.25,
+    2,
+    16,
+    64,
+    150
+  ],
+  "rounds": 4,
+  "stride": 4093,
+  "modes": [
+    "stream",
+    "reuse",
+    "compute",
+    "stride",
+    "q16"
+  ],
+  "class_map": {
+    "stream": "write bandwidth proxy, not DRAM bandwidth",
+    "reuse": "cache reuse proxy, not cache level isolation",
+    "compute": "integer compute proxy, not FLOPS",
+    "stride": "random-like stride proxy, TLB/cache confounded",
+    "q16": "Q16 geometry integer projection, not physical geometry"
+  },
+  "tiers": {
+    "2": "smoke",
+    "16": "medium",
+    "64": "consent",
+    "150": "consent",
+    "0.25": "smoke"
+  },
+  "concurrency_note": "workers are software pthreads; CPU logical counts and exact physical topology remain unmeasured",
+  "evidence_rule": "same mode, bytes, rounds, stride and algorithm across worker counts; compare checksum and FNV output before speed claim"
+}

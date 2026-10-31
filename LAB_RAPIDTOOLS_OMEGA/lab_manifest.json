@@ -1,0 +1,100 @@
+{
+  "schema": "rafaelia.rapidtools.lab.v1",
+  "lab_id": "LAB_RAPIDTOOLS_OMEGA",
+  "stage": "PROTOTYPE_HOLD",
+  "scope": "EXPERIMENTAL_ISOLATED_GITHUB_BRANCH",
+  "producer": "rafaelmeloreisnovo/RafGitTools",
+  "properties": {
+    "parent_pr_741": "MERGED_HISTORICAL",
+    "parent_pr_742": "MERGED_HISTORICAL",
+    "independent_app_release": false,
+    "no_android_manifest_changes": true,
+    "claim_allowed": false,
+    "release_allowed": false,
+    "freestanding_core": true,
+    "core_libc": false,
+    "posix_test_adapter_libc": true,
+    "core_malloc": false,
+    "host_mmap": true
+  },
+  "references": {
+    "catalog_90": "app/src/main/kotlin/com/rafgittools/benchmark/RafApplicationsCatalog.kt",
+    "baseline": "cases/benchmark_history.json",
+    "atlas": "cases/atlas_edges.json",
+    "drive": "Aplicações Rafael IA/RafGitTools/LAB_RAPIDTOOLS_OMEGA — ARM32 ARM64 Atlas"
+  },
+  "suites": [
+    {
+      "id": "S01",
+      "domain": "ARM32_ARM64",
+      "exercise": "same binary source, different runtime and compiler flags",
+      "state": "IMPLEMENTED_HOST_RUNNER_UNTESTED_DEVICE"
+    },
+    {
+      "id": "S02",
+      "domain": "CACHE_BUFFER_STRIDE",
+      "exercise": "0.25/2/16/64/150 MiB, stride and reuse, capacity versus throughput",
+      "state": "IMPLEMENTED_HOST_RUNNER_UNTESTED_DEVICE"
+    },
+    {
+      "id": "S03",
+      "domain": "WORKERS",
+      "exercise": "1/2/4/8 pthread workers, same-workload checksum",
+      "state": "IMPLEMENTED_HOST_RUNNER_UNTESTED_DEVICE"
+    },
+    {
+      "id": "S04",
+      "domain": "Q16_GEOMETRY",
+      "exercise": "fixed 56756 sqrt3over2 projection",
+      "state": "IMPLEMENTED_UNIT_LEVEL"
+    },
+    {
+      "id": "S05",
+      "domain": "RLE_CODEC",
+      "exercise": "roundtrip and bounds tests, NOT ZIPRAF compatibility",
+      "state": "IMPLEMENTED_UNIT_LEVEL"
+    },
+    {
+      "id": "S06",
+      "domain": "SHADER",
+      "exercise": "GLSL450 source experiment, no GPU run or shader timing",
+      "state": "SOURCE_ONLY"
+    },
+    {
+      "id": "S07",
+      "domain": "ATLAS_GRAPH",
+      "exercise": "typed graph path and missing provenance fail closed",
+      "state": "IMPLEMENTED_PYTHON_LEVEL"
+    },
+    {
+      "id": "S08",
+      "domain": "HISTORIC_COMPARISON",
+      "exercise": "ARMv7 NEON, BLAKE3 negative, EDGE unroll negative, Stage7 aliases; read-only",
+      "state": "HISTORICAL_SOURCES"
+    },
+    {
+      "id": "S09",
+      "domain": "RECEIPT_CUSTODY",
+      "exercise": "local append-only SHA256 chain, no external signature",
+      "state": "IMPLEMENTED_PYTHON_LEVEL"
+    }
+  ],
+  "denied": [
+    "auto_merge",
+    "remote_agent_dispatch",
+    "git_secret_read",
+    "unverified_scientific_claim",
+    "production_apk_promotion",
+    "big_buffer_without_explicit_consent",
+    "independent_evidence_claim_without_device"
+  ],
+  "gaps": [
+    "TOKEN_VAZIO_ARM32_PHYSICAL",
+    "TOKEN_VAZIO_ARM64_PHYSICAL",
+    "TOKEN_VAZIO_NEON_NATIVE",
+    "TOKEN_VAZIO_B7_HISTORICAL_COMPATIBILITY",
+    "TOKEN_VAZIO_GPU_PHYSICAL",
+    "TOKEN_VAZIO_THERMAL",
+    "TOKEN_VAZIO_PROVIDER_ANCHOR"
+  ]
+}
