@@ -1,3 +1,5 @@
+> **Rota corrente verificada por fontes (31/10/2026) — DRAFT/HOLD:** [HEAD-bound documentation truth router](docs/HEAD_TRUTH_ROUTER_20261031.md). Evidências e configurações atuais devem ser lidas no código do HEAD indicado; os blocos de setembro abaixo são predecessores e não comprovam build/CI/device atuais.
+
 > **Reconciliação documental 25/10/2026 — DRAFT/HOLD:** [Novo mapa de diretórios, aplicações, evidências e lacunas](docs/RAFAELIA_DOCS_RECONCILIATION_20261025.md). Os textos datados abaixo permanecem como predecessores; claims operacionais dependem do HEAD e de testes próprios.
 
 # RafGitTools
@@ -165,7 +167,7 @@ document files      = TOKEN_VAZIO_RECOUNT_REQUIRED
 
 ## Build and development
 
-The Android project currently uses the repository Gradle Wrapper 9.5.1, AGP 8.13.2 and JDK 17 as the documented baseline. Build variants and signing details are documented in [`docs/BUILD.md`](docs/BUILD.md). Security/authentication boundaries are documented in the security/auth documents routed from [`docs/INDEX.md`](docs/INDEX.md).
+The historical 2026-09 toolchain baseline was Gradle Wrapper 9.5.1 / AGP 8.13.2 / JDK 17. The 2026-10-31 observed *candidate source configuration* instead declares AGP 9.1.1 and compileSdk 37 (targetSdk remains 34, minSdk 24); see [HEAD source-bound router](docs/HEAD_TRUTH_ROUTER_20261031.md). No current-head build PASS is inferred. Build variants and signing details are documented in [`docs/BUILD.md`](docs/BUILD.md). Security/authentication boundaries are documented in the security/auth documents routed from [`docs/INDEX.md`](docs/INDEX.md).
 
 Do not treat an unsigned/internal artifact as an official release.
 

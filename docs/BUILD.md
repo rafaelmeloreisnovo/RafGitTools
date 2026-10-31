@@ -18,13 +18,13 @@ This document provides detailed instructions for building RafGitTools from sourc
 3. **Android SDK**
    - Minimum SDK: API 24 (Android 7.0)
    - Target SDK: API 34 (Android 14)
-   - Compile SDK: API 34
+   - Compile SDK: API 37 (**configured candidate**, not verified build)
 
 4. **Git** (optional, for cloning)
    - Download: https://git-scm.com/
 
 
-> ⚠️ Important: the observed build baseline is `Gradle Wrapper 9.5.1` + `AGP 8.13.2`, with project Java/Kotlin compatibility pinned to **JDK 17**. Use the repository wrapper/helper rather than assuming either a system Gradle or a different JDK is equivalent.
+> ⚠️ **Current code-bound configuration at main@79d3cabba55fca3c3ed4eeb15126155d24289395 (2026-10-31)**: wrapper `9.5.1`; root `build.gradle` AGP `9.1.1` **candidate**, Kotlin plugin `2.4.21`, KSP `2.3.10`, Hilt plugin `2.60.1`; app `compileSdk=37`, `targetSdk=34`, `minSdk=24`, ABIs ARM32/ARM64. Toolchain compatibility/build remains `NOT_RUN` by this documentation reconciliation; see [HEAD router](HEAD_TRUTH_ROUTER_20261031.md). JDK 17 is the documented helper target, not a validated 2026-10-31 build environment. Use the repository wrapper/helper rather than assuming either a system Gradle or a different JDK is equivalent.
 > If your machine has multiple JDKs, force JDK 17 before calling `./gradlew`.
 > You can use the helper script, which now auto-detects common JDK 17 installs
 > (including `mise`) and exports `JAVA_HOME` automatically. If `JAVA_HOME`
@@ -45,7 +45,7 @@ This document provides detailed instructions for building RafGitTools from sourc
 
 ### Gradle / AGP Compatibility Baseline
 
-Observed on 2026-09-28:
+Historical baseline observed on 2026-09-28 (**superseded for current configuration**, retained for rollback):
 
 - **Android Gradle Plugin (AGP)**: `8.13.2` in root `build.gradle`
 - **Gradle Wrapper**: `9.5.1` in `gradle/wrapper/gradle-wrapper.properties`

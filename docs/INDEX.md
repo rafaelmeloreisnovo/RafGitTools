@@ -1,3 +1,5 @@
+> **Current navigation successor — 2026-10-31 · DRAFT/HOLD:** [HEAD-bound code/documentation reconciliation](HEAD_TRUTH_ROUTER_20261031.md) → [build guide](BUILD.md) → [dated current-state history](RAFGITTOOLS_CURRENT_STATE.md). This is a scoped code/config correction; the index below is a historical route until each target is individually verified.
+
 > **Sucessor de navegação — 2026-10-25 · DRAFT/HOLD:** [censo integral da raiz e lacunas por Git HEAD](RAFAELIA_DOCS_RECONCILIATION_20261025.md). Este índice segue preservado como fotografia histórica até verificação individual dos alvos e status.
 
 # Documentação RafGitTools
