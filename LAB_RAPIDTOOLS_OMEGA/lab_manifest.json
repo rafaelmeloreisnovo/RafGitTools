@@ -77,6 +77,12 @@
       "domain": "RECEIPT_CUSTODY",
       "exercise": "local append-only SHA256 chain, no external signature",
       "state": "IMPLEMENTED_PYTHON_LEVEL"
+    },
+    {
+      "id": "S10",
+      "domain": "NOVOEXPORT_LOCAL",
+      "exercise": "bounded offline redacted metadata inventory for shaders, leader/ledger, conversão.jsum, benchmarks, maps/routes",
+      "state": "IMPLEMENTED_PYTHON_LEVEL"
     }
   ],
   "denied": [

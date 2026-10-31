@@ -29,3 +29,6 @@ The large command prompts for explicit permission. It may still be denied if dev
 
 See `001_PONTEIRO/START_HERE.md`, `docs/EXPERIMENT_MATRIX.md` and `lab_manifest.json`.
 Claim policy: **PROTOTYPE_HOLD / claim_allowed=false / release_allowed=false**.
+
+## NOVOexport offline metadata scanner
+Use python3 tools/nov_export_scan.py /path/to/NOVOexport to inventory only bounded metadata. No raw conversations copied, no JSUM guesses, no network calls. See docs/NOVOEXPORT_LOCAL.md.

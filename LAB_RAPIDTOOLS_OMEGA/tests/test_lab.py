@@ -19,7 +19,7 @@ class LabGovernanceTests(unittest.TestCase):
         self.assertTrue(m["properties"]["freestanding_core"])
         self.assertFalse(m["properties"]["core_malloc"])
         self.assertFalse(m["properties"]["no_android_manifest_changes"] is False)
-        self.assertEqual(len(m["suites"]), 9)
+        self.assertEqual(len(m["suites"]), 10)
 
     def test_historical_negative_and_missing_abi(self):
         rows = json.loads((LAB / "cases/benchmark_history.json").read_text())["records"]
