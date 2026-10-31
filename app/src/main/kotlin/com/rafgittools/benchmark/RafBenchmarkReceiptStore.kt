@@ -39,7 +39,12 @@ class RafBenchmarkReceiptStore(private val context: Context) {
     }
 
     @Synchronized
-    fun append(result: RafBenchmarkCore.Result): Receipt {
+    fun append(
+        result: RafBenchmarkCore.Result,
+        proposalSha256: String = "TOKEN_VAZIO_MANUAL_JOB"
+    ): Receipt {
+        require(proposalSha256 == "TOKEN_VAZIO_MANUAL_JOB" ||
+            Regex("[0-9a-f]{64}").matches(proposalSha256)) { "BLOCKED_PROPOSAL_ID" }
         // Fail closed: do not append to a known corrupt local chain.
         verify()
         val previous = directory.listFiles().orEmpty()
@@ -55,7 +60,7 @@ class RafBenchmarkReceiptStore(private val context: Context) {
             result.workers.toString(), result.bufferKiB.toString(),
             result.rounds.toString(), result.elapsedNs.toString(),
             result.processedBytes.toString(), result.checksum.toString(),
-            result.outputSha256, result.state, result.claimAllowed.toString()
+            result.outputSha256, proposalSha256, result.state, result.claimAllowed.toString()
         ).joinToString("|")
         val hash = sha(previous + "\n" + payload)
         val json = JSONObject().apply {
@@ -76,5 +81,17 @@ class RafBenchmarkReceiptStore(private val context: Context) {
             if (tmp.exists()) tmp.delete()
         }
         return Receipt(id, hash, previous)
+    }
+
+    /** Read-only export via user-chosen SAF destination (never automatic). */
+    @Synchronized
+    fun exportJson(receiptId: String): String {
+        require(Regex("[0-9]{13}-[0-9a-f-]{36}").matches(receiptId)) {
+            "BLOCKED_RECEIPT_ID"
+        }
+        verify()
+        val file = File(directory, "$receiptId.json")
+        require(file.isFile) { "RECEIPT_NOT_FOUND" }
+        return file.readText(Charsets.UTF_8)
     }
 }
