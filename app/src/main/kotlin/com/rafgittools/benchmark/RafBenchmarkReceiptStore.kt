@@ -59,7 +59,7 @@ class RafBenchmarkReceiptStore(private val context: Context) {
             result.workers.toString(), result.bufferKiB.toString(),
             result.rounds.toString(), result.elapsedNs.toString(),
             result.processedBytes.toString(), result.checksum.toString(),
-            result.outputSha256, proposalSha256, result.state, result.claimAllowed.toString()
+            result.outputSha256, result.workload.name, proposalSha256, result.state, result.claimAllowed.toString()
         ).joinToString("|")
         val hash = sha(previous + "\n" + payload)
         val json = JSONObject().apply {
@@ -79,7 +79,7 @@ class RafBenchmarkReceiptStore(private val context: Context) {
         } finally {
             if (tmp.exists()) tmp.delete()
         }
-        return Receipt(id, hash, previous)
+        Receipt(id, hash, previous)
     }
 
     /** Read-only export via user-chosen SAF destination (never automatic). */
@@ -90,6 +90,6 @@ class RafBenchmarkReceiptStore(private val context: Context) {
         verify()
         val file = File(directory, "$receiptId.json")
         require(file.isFile) { "RECEIPT_NOT_FOUND" }
-        return file.readText(Charsets.UTF_8)
+        file.readText(Charsets.UTF_8)
     }
 }
