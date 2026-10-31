@@ -88,9 +88,10 @@ def approval_contract(a, r, p):
         or a["pipeline_sha256"] != sha(p)
         or a["scope"] != "LOCAL_CI_READONLY"
         or a["decision"] != "APPROVE"
-        or a["source"] != "EXPLICIT_CHAT_USER_TURN"
-        or not isinstance(a["nonce"], str) or len(a["nonce"]) < 16):
+        or a["source"] != "EXPLICIT_CHAT_USER_TURN"):
         raise ValueError("DENY_APPROVAL_BINDING")
+    if not isinstance(a["nonce"], str) or len(a["nonce"]) < 16:
+        raise ValueError("DENY_APPROVAL_NONCE")
     try:
         expiry = datetime.fromisoformat(a["valid_until_utc"].replace("Z","+00:00"))
     except (TypeError, ValueError) as e:
