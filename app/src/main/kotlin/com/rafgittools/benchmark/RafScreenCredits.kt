@@ -9,7 +9,7 @@ object RafScreenCredits {
     val privacy = listOf(
         ScreenCredit("Raf Privacy screen", CreditOrigin.PROJECT_AUTHORIAL,
             "Seleção e confirmação autoral para alterações de privacidade de repositórios.",
-            "RAFAELIA / RafGitTools contributors", "RafGitTools project license",
+            "RAFAELIA / RafGitTools contributors", "GPL-3.0-or-later (declared by RafGitTools root LICENSE)",
             "https://github.com/rafaelmeloreisnovo/RafGitTools",
             "app/src/main/kotlin/com/rafgittools/ui/screens/privacy/RepositoryPrivacyScreen.kt"),
         ScreenCredit("AndroidX Compose / Material3", CreditOrigin.EXTERNAL_API,
@@ -26,7 +26,7 @@ object RafScreenCredits {
     val setup = listOf(
         ScreenCredit("Raf Setup wizard", CreditOrigin.PROJECT_AUTHORIAL,
             "Fluxo autoral de configuração e registro de escolhas.",
-            "RAFAELIA / RafGitTools contributors", "RafGitTools project license",
+            "RAFAELIA / RafGitTools contributors", "GPL-3.0-or-later (declared by RafGitTools root LICENSE)",
             "https://github.com/rafaelmeloreisnovo/RafGitTools",
             "app/src/main/kotlin/com/rafgittools/ui/screens/setupwizard/SetupWizardScreen.kt"),
         ScreenCredit("AndroidX Compose / Material3", CreditOrigin.EXTERNAL_API,
@@ -38,7 +38,7 @@ object RafScreenCredits {
     val settings = listOf(
         ScreenCredit("RafGitTools Settings", CreditOrigin.PROJECT_AUTHORIAL,
             "Tela autoral de configurações locais e preferências.",
-            "RAFAELIA / RafGitTools contributors", "RafGitTools project license",
+            "RAFAELIA / RafGitTools contributors", "GPL-3.0-or-later (declared by RafGitTools root LICENSE)",
             "https://github.com/rafaelmeloreisnovo/RafGitTools",
             "app/src/main/kotlin/com/rafgittools/ui/screens/settings/SettingsScreen.kt"),
         ScreenCredit("AndroidX Compose / Material3", CreditOrigin.EXTERNAL_API,
