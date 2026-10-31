@@ -519,15 +519,25 @@ jobs:
           ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
 
-      - name: Assert START is the only active YAML workflow
+      - name: Assert scoped workflow allowlist and START ownership
         shell: bash
         run: |
           set -euo pipefail
+          # START owns the global pipeline; these three are separately scoped.
+          expected=(
+            .github/workflows/START.yml
+            .github/workflows/ci-android-atlas-consumer.yml
+            .github/workflows/rafaelia-middlefield-bridge-scoped.yml
+            .github/workflows/rafaelia-rapidtools-lab-scoped.yml
+          )
           mapfile -t active < <(find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) -print | sort)
           printf '%s\n' "${active[@]}"
-          test "${#active[@]}" -eq 1
-          test "${active[0]}" = '.github/workflows/START.yml'
+          test "${#active[@]}" -eq "${#expected[@]}"
+          for i in "${!expected[@]}"; do
+            test "${active[i]}" = "${expected[i]}"
+          done
           test -d .github/workflows-legacy-20260907
+          echo 'TOPOLOGY=PASS_4_EXACT_SCOPED_WORKFLOWS'
 
       - name: Human impact P0 | explicit unknown, child protection and rollback falsifiers
         if: github.event_name == 'pull_request'
