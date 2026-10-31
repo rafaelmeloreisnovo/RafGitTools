@@ -8,7 +8,7 @@ import org.junit.Test
 class RafBenchmarkCoreTest {
     @Test fun boundedWorkersBuffersAndCatalog() {
         assertEquals(listOf(1, 2, 4, 8), RafBenchmarkCore.allowedWorkers)
-        assertEquals(listOf(256, 1024, 4096, 16384), RafBenchmarkCore.allowedBufferKiB)
+        assertEquals(listOf(256, 2048, 16384, 65536, 153600), RafBenchmarkCore.allowedBufferKiB)
         assertEquals(90, RafApplicationsCatalog.routes.size)
         assertEquals(90, RafApplicationsCatalog.routes.map { it.id }.distinct().size)
         assertEquals(8, RafApplicationsCatalog.groups.size)
