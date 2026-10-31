@@ -22,7 +22,6 @@ def main():
     ref = json.loads(CONTRACT.read_text(encoding="utf-8"))
     markers = re.findall(r'add\(Route\("(K\d{3})"', routes)
     assert markers == [f"K{x:03}" for x in range(1, 91)], "K001..K090 nonconsecutive"
-    assert sum(int(n) for n in re.findall(r'Group\("[A-H]", "[^"]+", "[^"]+", (\d+), (\d+)\)', routes) for n in []) == 0 if False else True
     assert routes.count('Group("') == 8, "A..H count"
     assert "CATALOG_ONLY" in routes and "CLAIM_ALLOWED" not in routes
     assert "val allowedWorkers = listOf(1, 2, 4, 8)" in core
