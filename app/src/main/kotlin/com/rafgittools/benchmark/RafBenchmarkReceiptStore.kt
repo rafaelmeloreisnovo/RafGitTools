@@ -14,6 +14,7 @@ import java.util.UUID
  * it is NOT a signature, TPM attestation, WORM store or third-party proof.
  */
 class RafBenchmarkReceiptStore(private val context: Context) {
+    private companion object { val RECEIPT_LOCK = Any() }
     private val directory: File get() =
         File(context.filesDir, "rafbenchmark/receipts").also { check(it.isDirectory || it.mkdirs()) }
 
@@ -22,8 +23,7 @@ class RafBenchmarkReceiptStore(private val context: Context) {
         MessageDigest.getInstance("SHA-256").digest(bytes.toByteArray(Charsets.UTF_8))
             .joinToString("") { "%02x".format(it.toInt() and 255) }
 
-    @Synchronized
-    fun verify(): Int {
+    fun verify(): Int = synchronized(RECEIPT_LOCK) {
         var previous = "GENESIS"
         var count = 0
         for (file in directory.listFiles().orEmpty().filter { it.isFile && it.name.endsWith(".json") }
@@ -35,14 +35,13 @@ class RafBenchmarkReceiptStore(private val context: Context) {
             previous = calculated
             count++
         }
-        return count
+        count
     }
 
-    @Synchronized
     fun append(
         result: RafBenchmarkCore.Result,
         proposalSha256: String = "TOKEN_VAZIO_MANUAL_JOB"
-    ): Receipt {
+    ): Receipt = synchronized(RECEIPT_LOCK) {
         require(proposalSha256 == "TOKEN_VAZIO_MANUAL_JOB" ||
             Regex("[0-9a-f]{64}").matches(proposalSha256)) { "BLOCKED_PROPOSAL_ID" }
         // Fail closed: do not append to a known corrupt local chain.
@@ -84,8 +83,7 @@ class RafBenchmarkReceiptStore(private val context: Context) {
     }
 
     /** Read-only export via user-chosen SAF destination (never automatic). */
-    @Synchronized
-    fun exportJson(receiptId: String): String {
+    fun exportJson(receiptId: String): String = synchronized(RECEIPT_LOCK) {
         require(Regex("[0-9]{13}-[0-9a-f-]{36}").matches(receiptId)) {
             "BLOCKED_RECEIPT_ID"
         }
