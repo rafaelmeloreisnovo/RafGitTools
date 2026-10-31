@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.rafgittools.benchmark.ContextualCreditsInfo
 import com.rafgittools.benchmark.RafBenchmarkCore
 import com.rafgittools.benchmark.RafBenchmarkExchange
+import com.rafgittools.benchmark.RafApplicationsCatalogView
 import com.rafgittools.benchmark.RafBenchmarkCredits
 import com.rafgittools.benchmark.RafBenchmarkReceiptStore
 import com.rafgittools.ui.theme.RafGitToolsTheme
@@ -83,6 +84,7 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     var workers by remember { mutableStateOf(1) }
     var bufferKiB by remember { mutableStateOf(256) }
+    var workload by remember { mutableStateOf(RafBenchmarkCore.Workload.STREAM_WRITE) }
     var running by remember { mutableStateOf(false) }
     var output by remember { mutableStateOf("NOT_EXECUTED · sem acesso remoto e sem sincronização") }
     var receipt by remember { mutableStateOf("") }
@@ -110,6 +112,7 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
                 proposal = item
                 workers = item.workers
                 bufferKiB = item.bufferKiB
+                workload = item.workload
                 output = "PROPOSED (não executado) · " + item.id +
                     " · source=" + item.producer + "@" + item.sourceRevision.take(12) +
                     " · digest=" + item.digest.take(12)
@@ -161,6 +164,7 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
                     "Não mede largura de banda DRAM nem L3 diretamente.",
                     style = MaterialTheme.typography.bodySmall)
             }
+            item { RafApplicationsCatalogView() }
             item {
                 OutlinedCard {
                     Column(Modifier.fillMaxWidth().padding(12.dp),
@@ -182,7 +186,24 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
                                         else "${candidate / 1024}M") })
                             }
                         }
-                        Text("4 passagens determinísticas · dados sintéticos · sem datasets externos.",
+                        Text("Carga de teste (mesma entrada/saída, independente de workers)",
+                            style = MaterialTheme.typography.titleSmall)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            RafBenchmarkCore.allowedWorkloads.forEach { candidate ->
+                                FilterChip(
+                                    selected = workload == candidate,
+                                    enabled = !running,
+                                    onClick = { workload = candidate; proposal = null },
+                                    label = { Text(when (candidate) {
+                                        RafBenchmarkCore.Workload.STREAM_WRITE -> "Escrita"
+                                        RafBenchmarkCore.Workload.CACHE_REUSE -> "Reuso"
+                                        RafBenchmarkCore.Workload.COMPUTE_ONLY -> "CPU"
+                                    }) }
+                                )
+                            }
+                        }
+                        Text("4 rodadas determinísticas · sintéticos. Throughput de trabalho efetivo, " +
+                            "não banda DRAM/L3. JIT, escalonamento e temperatura afetam medições.",
                             style = MaterialTheme.typography.bodySmall)
                         TextButton(onClick = {
                             importPicker.launch(arrayOf("application/json", "text/plain"))
@@ -202,17 +223,19 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
                                 receipt = ""
                                 lastReceiptId = ""
                                 val selectedProposal = proposal
+                                val selectedWorkload = workload
                                 scope.launch {
                                     val outcome = withContext(Dispatchers.Default) {
                                         runCatching {
                                             if (selectedProposal != null) {
                                                 require(selectedProposal.workers == workers &&
-                                                    selectedProposal.bufferKiB == bufferKiB) {
+                                                    selectedProposal.bufferKiB == bufferKiB &&
+                                                    selectedProposal.workload == selectedWorkload) {
                                                     "BLOCKED_PROPOSAL_MISMATCH"
                                                 }
                                             }
                                             devicePreflight(context, bufferKiB)
-                                            val result = RafBenchmarkCore.run(workers, bufferKiB)
+                                            val result = RafBenchmarkCore.run(workers, bufferKiB, selectedWorkload)
                                             val stored = RafBenchmarkReceiptStore(context).append(result,
                                                 selectedProposal?.digest ?: "TOKEN_VAZIO_MANUAL_JOB")
                                             val verified = RafBenchmarkReceiptStore(context).verify()
@@ -221,9 +244,10 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
                                     }
                                     outcome.onSuccess { (result, stored, verified) ->
                                         output = String.format(Locale.US,
-                                            "EVIDENCED_LOCAL_ONLY · %.2f MiB/s · %.3f ms · " +
+                                            "EVIDENCED_LOCAL_ONLY [%s] · %.2f MiB/s efetivos · %.3f ms · " +
                                             "checksum=%016x · recebimentos locais=%d · claim_allowed=false",
-                                            result.throughputMiBs, result.elapsedNs / 1_000_000.0,
+                                            result.workload.name, result.throughputMiBs,
+                                            result.elapsedNs / 1_000_000.0,
                                             result.checksum, verified)
                                         lastReceiptId = stored.id
                                         receipt = "SHA-256 chain: " + stored.hash +
