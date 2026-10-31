@@ -7,6 +7,8 @@ import android.os.Bundle
 import android.os.PowerManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -37,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.rafgittools.benchmark.ContextualCreditsInfo
 import com.rafgittools.benchmark.RafBenchmarkCore
+import com.rafgittools.benchmark.RafBenchmarkExchange
 import com.rafgittools.benchmark.RafBenchmarkCredits
 import com.rafgittools.benchmark.RafBenchmarkReceiptStore
 import com.rafgittools.ui.theme.RafGitToolsTheme
@@ -44,6 +47,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import java.io.ByteArrayOutputStream
 
 /**
  * Raf Benchmark: additional launcher INSIDE RafGitTools, not another APK/UID.
@@ -82,6 +86,57 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
     var running by remember { mutableStateOf(false) }
     var output by remember { mutableStateOf("NOT_EXECUTED · sem acesso remoto e sem sincronização") }
     var receipt by remember { mutableStateOf("") }
+    var lastReceiptId by remember { mutableStateOf("") }
+    var proposal by remember { mutableStateOf<RafBenchmarkExchange.Proposal?>(null) }
+
+    val importPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            runCatching {
+                val bytes = context.contentResolver.openInputStream(uri)?.use { input ->
+                    val out = ByteArrayOutputStream()
+                    val chunk = ByteArray(4096)
+                    while (true) {
+                        val n = input.read(chunk)
+                        if (n < 0) break
+                        require(n > 0 && out.size() + n <= RafBenchmarkExchange.MAX_BYTES) {
+                            "BLOCKED_INPUT_SIZE"
+                        }
+                        out.write(chunk, 0, n)
+                    }
+                    out.toByteArray()
+                } ?: error("SOURCE_UNAVAILABLE")
+                RafBenchmarkExchange.parse(bytes)
+            }.onSuccess { item ->
+                proposal = item
+                workers = item.workers
+                bufferKiB = item.bufferKiB
+                output = "PROPOSED (não executado) · " + item.id +
+                    " · source=" + item.producer + "@" + item.sourceRevision.take(12) +
+                    " · digest=" + item.digest.take(12)
+            }.onFailure { e ->
+                proposal = null
+                output = "HOLD_IMPORT · " + (e.message ?: "invalid proposal")
+            }
+        }
+    }
+    val exportPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null && lastReceiptId.isNotEmpty()) {
+            runCatching {
+                val text = RafBenchmarkReceiptStore(context).exportJson(lastReceiptId)
+                context.contentResolver.openOutputStream(uri, "w")?.use { stream ->
+                    stream.write(text.toByteArray(Charsets.UTF_8))
+                    stream.flush()
+                } ?: error("SAF_DESTINATION_UNAVAILABLE")
+            }.onSuccess {
+                output = "SAF_EXPORT_COMPLETE · destino escolhido pelo usuário; " +
+                    "isso não atesta o processamento do provedor."
+            }.onFailure { e ->
+                output = "HOLD_EXPORT · " + (e.message ?: "falha de escrita")
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -114,7 +169,7 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             RafBenchmarkCore.allowedWorkers.forEach { candidate ->
                                 FilterChip(selected = workers == candidate, enabled = !running,
-                                    onClick = { workers = candidate },
+                                    onClick = { workers = candidate; proposal = null },
                                     label = { Text("$candidate") })
                             }
                         }
@@ -122,25 +177,44 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             RafBenchmarkCore.allowedBufferKiB.forEach { candidate ->
                                 FilterChip(selected = bufferKiB == candidate, enabled = !running,
-                                    onClick = { bufferKiB = candidate },
+                                    onClick = { bufferKiB = candidate; proposal = null },
                                     label = { Text(if (candidate < 1024) "256K"
                                         else "${candidate / 1024}M") })
                             }
                         }
                         Text("4 passagens determinísticas · dados sintéticos · sem datasets externos.",
                             style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = {
+                            importPicker.launch(arrayOf("application/json", "text/plain"))
+                        }, enabled = !running) {
+                            Text("Importar proposta do Drive / arquivo (SAF)")
+                        }
+                        if (proposal != null) {
+                            Text("Proposta importada (somente parâmetros), requer clique humano. " +
+                                "SHA-256: " + (proposal?.digest ?: "TOKEN_VAZIO"),
+                                style = MaterialTheme.typography.bodySmall)
+                        }
                         Button(
                             enabled = !running,
                             onClick = {
                                 running = true
                                 output = "RUNNING · aguarde encerramento local"
                                 receipt = ""
+                                lastReceiptId = ""
+                                val selectedProposal = proposal
                                 scope.launch {
                                     val outcome = withContext(Dispatchers.Default) {
                                         runCatching {
+                                            if (selectedProposal != null) {
+                                                require(selectedProposal.workers == workers &&
+                                                    selectedProposal.bufferKiB == bufferKiB) {
+                                                    "BLOCKED_PROPOSAL_MISMATCH"
+                                                }
+                                            }
                                             devicePreflight(context, bufferKiB)
                                             val result = RafBenchmarkCore.run(workers, bufferKiB)
-                                            val stored = RafBenchmarkReceiptStore(context).append(result)
+                                            val stored = RafBenchmarkReceiptStore(context).append(result,
+                                                selectedProposal?.digest ?: "TOKEN_VAZIO_MANUAL_JOB")
                                             val verified = RafBenchmarkReceiptStore(context).verify()
                                             Triple(result, stored, verified)
                                         }
@@ -151,6 +225,7 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
                                             "checksum=%016x · recebimentos locais=%d · claim_allowed=false",
                                             result.throughputMiBs, result.elapsedNs / 1_000_000.0,
                                             result.checksum, verified)
+                                        lastReceiptId = stored.id
                                         receipt = "SHA-256 chain: " + stored.hash +
                                             "\nID: " + stored.id +
                                             "\nSem âncora externa ou atestação de hardware."
@@ -173,6 +248,11 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
                         Text(output, style = MaterialTheme.typography.bodySmall)
                         if (receipt.isNotEmpty()) {
                             Text(receipt, style = MaterialTheme.typography.bodySmall)
+                            TextButton(onClick = {
+                                exportPicker.launch("rafbenchmark-" + lastReceiptId + ".json")
+                            }, enabled = !running && lastReceiptId.isNotEmpty()) {
+                                Text("Exportar recibo (escolher pasta no Drive/SAF)")
+                            }
                         }
                     }
                 }
@@ -183,8 +263,9 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
                     "verificados como autorais. Unknown → informação ativa.",
                     style = MaterialTheme.typography.bodySmall)
                 Text("Não usa GitHub secrets, não chama agentes, não grava no Drive, " +
-                    "não importa B7/Vectras/Termux automaticamente. Integração externa " +
-                    "exigirá gate e aprovação separados.",
+                    "não importa B7/Vectras/Termux automaticamente. Propostas via SAF " +
+                    "são dados não confiáveis e nunca autorizam execução por si. " +
+                    "A exportação de receipt depende da escolha explícita do usuário.",
                     style = MaterialTheme.typography.bodySmall)
             }
         }
