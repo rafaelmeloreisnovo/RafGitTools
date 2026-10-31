@@ -25,7 +25,7 @@ def main():
     assert routes.count('Group("') == 8, "A..H count"
     assert "CATALOG_ONLY" in routes and "CLAIM_ALLOWED" not in routes
     assert "val allowedWorkers = listOf(1, 2, 4, 8)" in core
-    assert "val allowedBufferKiB = listOf(256, 1024, 4096, 16384)" in core
+    assert "val allowedBufferKiB = listOf(256, 2048, 16384, 65536, 153600)" in core
     assert "val v = when (workload)" in core
     assert "xor (worker * 257)" not in core, "worker-dependent workload"
     assert "CountDownLatch" in core and "futures.map" in core
