@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -40,7 +41,7 @@ object RafBenchmarkCredits {
     val benchmarkScreen = listOf(
         ScreenCredit("Raf Benchmark kernel", CreditOrigin.PROJECT_AUTHORIAL,
             "Algoritmo de teste local, dados sintéticos e receipts.",
-            "RAFAELIA / RafGitTools contributors", "RafGitTools project license",
+            "RAFAELIA / RafGitTools contributors", "GPL-3.0-or-later (declared by RafGitTools root LICENSE)",
             "https://github.com/rafaelmeloreisnovo/RafGitTools",
             "app/src/main/kotlin/com/rafgittools/benchmark/"),
         ScreenCredit("Jetpack Compose / Material3", CreditOrigin.EXTERNAL_API,
@@ -59,6 +60,7 @@ object RafBenchmarkCredits {
 /** Dark info glyph for external use; subdued/disabled only for verified authorial-only scopes. */
 @Composable
 fun ContextualCreditsInfo(credits: List<ScreenCredit>, modifier: Modifier = Modifier) {
+    val uriHandler = LocalUriHandler.current
     var showAbout by remember { mutableStateOf(false) }
     val externalOrUnknown = credits.any { it.origin != CreditOrigin.PROJECT_AUTHORIAL }
     TextButton(
@@ -69,7 +71,7 @@ fun ContextualCreditsInfo(credits: List<ScreenCredit>, modifier: Modifier = Modi
         enabled = externalOrUnknown,
         onClick = { showAbout = true },
         colors = ButtonDefaults.textButtonColors(
-            contentColor = Color.Black,
+            contentColor = MaterialTheme.colorScheme.onSurface,
             disabledContentColor = Color.Gray
         )
     ) { Text("ⓘ", style = MaterialTheme.typography.titleLarge) }
@@ -86,11 +88,18 @@ fun ContextualCreditsInfo(credits: List<ScreenCredit>, modifier: Modifier = Modi
                     Text("Autor / mantenedor: " + credit.publisher)
                     Text("Licença declarada: " + credit.license)
                     Text("Fonte: " + credit.source)
+                    if (credit.source.startsWith("https://")) {
+                        TextButton(onClick = { uriHandler.openUri(credit.source) }) {
+                            Text("Abrir fonte oficial / licenciamento")
+                        }
+                    }
                     Text("Ponto do código: " + credit.localPointer)
                     Text(" ", modifier = Modifier.padding(4.dp))
                 }
                 Text("Inventário adicional: THIRD_PARTY_LICENSES.md e docs/LICENSE_INFO.md. " +
-                    "Uso de API não equivale a cópia de código. Em caso de procedência não verificada, manter UNKNOWN_REVIEW.")
+                    "Uso de API não equivale a cópia de código. Inventário completo de " +
+                    "dependências/versões e obrigações ainda exige SBOM e revisão. " +
+                    "Em caso de origem não verificada, manter UNKNOWN_REVIEW.")
             }
         },
         confirmButton = {

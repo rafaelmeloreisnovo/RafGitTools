@@ -20,6 +20,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rafgittools.benchmark.ContextualCreditsInfo
+import com.rafgittools.benchmark.RafScreenCredits
 import com.rafgittools.data.privacy.PrivacyProvenanceState
 import com.rafgittools.data.privacy.PrivacyVisibilityTarget
 import com.rafgittools.data.privacy.RepositoryPrivacyCandidate
@@ -54,6 +56,7 @@ fun RepositoryPrivacyScreen(
                     }
                 },
                 actions = {
+                    ContextualCreditsInfo(RafScreenCredits.privacy)
                     IconButton(
                         onClick = viewModel::refresh,
                         enabled = !state.loading && !state.executing && !confirmationOpen

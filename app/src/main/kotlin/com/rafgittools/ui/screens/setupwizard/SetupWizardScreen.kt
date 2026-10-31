@@ -22,6 +22,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.rafgittools.benchmark.ContextualCreditsInfo
+import com.rafgittools.benchmark.RafScreenCredits
 import com.rafgittools.setupwizard.SetupWizardCatalog
 import com.rafgittools.setupwizard.SetupWizardCustodyLedger
 import com.rafgittools.setupwizard.SetupWizardPreferences
@@ -48,6 +50,7 @@ fun SetupWizardScreen(
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        ContextualCreditsInfo(RafScreenCredits.setup)
         Text(
             text = "Configuração clara e revisável",
             style = MaterialTheme.typography.headlineMedium

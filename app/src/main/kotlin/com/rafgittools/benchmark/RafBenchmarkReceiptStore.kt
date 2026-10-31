@@ -46,30 +46,42 @@ class RafBenchmarkReceiptStore(private val context: Context) {
             Regex("[0-9a-f]{64}").matches(proposalSha256)) { "BLOCKED_PROPOSAL_ID" }
         // Fail closed: do not append to a known corrupt local chain.
         verify()
-        val previous = directory.listFiles().orEmpty()
+        val latest = directory.listFiles().orEmpty()
             .filter { it.isFile && it.name.endsWith(".json") }
-            .maxByOrNull { it.name }?.let {
-                JSONObject(it.readText(Charsets.UTF_8)).getString("hash")
-            } ?: "GENESIS"
-        val id = System.currentTimeMillis().toString().padStart(13, '0') +
+            .maxByOrNull { it.name }
+        val previous = latest?.let {
+            JSONObject(it.readText(Charsets.UTF_8)).getString("hash")
+        } ?: "GENESIS"
+        // Lexically sortable monotonic IDs; prevents same-millisecond UUID order from
+        // breaking the hash chain. Historical files remain immutable.
+        val latestMs = latest?.name?.substringBefore("-")?.toLongOrNull() ?: 0L
+        val observedMs = System.currentTimeMillis()
+        val orderedMs = maxOf(observedMs, latestMs + 1L)
+        val id = orderedMs.toString().padStart(13, '0') +
             "-" + UUID.randomUUID().toString()
         val abi = Build.SUPPORTED_ABIS.firstOrNull() ?: "TOKEN_VAZIO_ABI"
         val payload = listOf(
-            "rafbenchmark.receipt.v1", id, abi, Process.is64Bit().toString(),
+            "rafbenchmark.receipt.v2", id, abi, Process.is64Bit().toString(),
+            Build.VERSION.SDK_INT.toString(),
+            Runtime.getRuntime().availableProcessors().toString(),
+            "TOKEN_VAZIO_EXACT_CODE_SHA",
             result.workers.toString(), result.bufferKiB.toString(),
             result.rounds.toString(), result.elapsedNs.toString(),
             result.processedBytes.toString(), result.checksum.toString(),
-            result.outputSha256, proposalSha256, result.state, result.claimAllowed.toString()
+            result.outputSha256, result.workload.name, proposalSha256, result.state, result.claimAllowed.toString()
         ).joinToString("|")
         val hash = sha(previous + "\n" + payload)
         val json = JSONObject().apply {
-            put("schema", "rafbenchmark.receipt.v1")
+            put("schema", "rafbenchmark.receipt.v2")
             put("id", id)
             put("payload", payload)
             put("previous_hash", previous)
             put("hash", hash)
             put("attestation", "TOKEN_VAZIO_INDEPENDENT_ANCHOR")
             put("sync", "LOCAL_ONLY")
+            put("coverage_scope", "ONE_LOCAL_EXECUTION")
+            put("claim_allowed", false)
+            put("code_sha_state", "TOKEN_VAZIO_EXACT_CODE_SHA")
         }.toString(2)
         val tmp = File(directory, "$id.tmp")
         val target = File(directory, "$id.json")
@@ -79,7 +91,7 @@ class RafBenchmarkReceiptStore(private val context: Context) {
         } finally {
             if (tmp.exists()) tmp.delete()
         }
-        return Receipt(id, hash, previous)
+        Receipt(id, hash, previous)
     }
 
     /** Read-only export via user-chosen SAF destination (never automatic). */
@@ -90,6 +102,6 @@ class RafBenchmarkReceiptStore(private val context: Context) {
         verify()
         val file = File(directory, "$receiptId.json")
         require(file.isFile) { "RECEIPT_NOT_FOUND" }
-        return file.readText(Charsets.UTF_8)
+        file.readText(Charsets.UTF_8)
     }
 }
