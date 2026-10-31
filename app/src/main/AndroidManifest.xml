@@ -156,6 +156,20 @@
             </intent-filter>
         </activity>
 
+        <!-- Raf Benchmark is an additional local launcher inside the SAME APK.
+             No intent-driven execution and no additional permissions or secrets. -->
+        <activity
+            android:name=".RafBenchmarkActivity"
+            android:exported="true"
+            android:label="Raf Benchmark"
+            android:theme="@style/Theme.RafGitTools"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <!-- Clear post-install configuration wizard. No privileged operation is executed
              merely by recording a wizard choice; provider mutations keep their own gates. -->
         <activity
