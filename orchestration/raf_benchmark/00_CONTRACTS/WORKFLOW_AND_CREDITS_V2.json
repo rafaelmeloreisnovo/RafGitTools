@@ -56,7 +56,7 @@
   "consent": {
     "kind": "USER_CLICK_PER_RUN",
     "gate": "BLOCK_WITHOUT_CLICK",
-    "no_auto_agent": false
+    "no_auto_agent": true
   },
   "transitions": [
     "PROPOSED",
