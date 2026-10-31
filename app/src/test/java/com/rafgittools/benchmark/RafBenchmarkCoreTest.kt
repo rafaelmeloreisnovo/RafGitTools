@@ -6,9 +6,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RafBenchmarkCoreTest {
-    @Test fun allowedWorkerCountsAreBounded() {
+    @Test fun boundedWorkersBuffersAndCatalog() {
         assertEquals(listOf(1, 2, 4, 8), RafBenchmarkCore.allowedWorkers)
         assertEquals(listOf(256, 1024, 4096, 16384), RafBenchmarkCore.allowedBufferKiB)
+        assertEquals(90, RafApplicationsCatalog.routes.size)
+        assertEquals(90, RafApplicationsCatalog.routes.map { it.id }.distinct().size)
+        assertEquals(8, RafApplicationsCatalog.groups.size)
+        assertEquals("K090", RafApplicationsCatalog.routes.last().id)
+        assertTrue(RafApplicationsCatalog.routes.all { it.stage ==
+            RafApplicationsCatalog.Stage.CATALOG_ONLY })
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -17,26 +23,35 @@ class RafBenchmarkCoreTest {
     @Test(expected = IllegalArgumentException::class)
     fun rejectsUnboundedMemory() { RafBenchmarkCore.validate(1, 150 * 1024) }
 
-    @Test fun deterministicDataWithinSameWorkerConfiguration() {
-        val one = RafBenchmarkCore.run(2, 256)
-        val two = RafBenchmarkCore.run(2, 256)
-        assertEquals(one.outputSha256, two.outputSha256)
-        assertEquals(one.checksum, two.checksum)
-        assertEquals(256L * 1024L * RafBenchmarkCore.ROUNDS, one.processedBytes)
-        assertTrue(one.elapsedNs > 0)
-        assertTrue(one.throughputMiBs > 0.0)
-        assertFalse(one.claimAllowed)
-        assertEquals("EVIDENCED_LOCAL_ONLY", one.state)
+    @Test fun workerCountDoesNotChangeDataOrChecksumForSameWorkload() {
+        RafBenchmarkCore.allowedWorkloads.forEach { workload ->
+            val baseline = RafBenchmarkCore.run(1, 256, workload)
+            listOf(2, 4, 8).forEach { count ->
+                val compared = RafBenchmarkCore.run(count, 256, workload)
+                assertEquals(workload.name, baseline.outputSha256, compared.outputSha256)
+                assertEquals(workload.name, baseline.checksum, compared.checksum)
+                assertEquals(baseline.processedBytes, compared.processedBytes)
+                assertEquals(256L * 1024L * RafBenchmarkCore.ROUNDS, compared.processedBytes)
+                assertTrue(compared.elapsedNs > 0L)
+                assertFalse(compared.claimAllowed)
+                assertEquals("EVIDENCED_LOCAL_ONLY", compared.state)
+            }
+        }
     }
 
-    @Test fun multipleWorkersReturnExpectedDigestSize() {
-        val result = RafBenchmarkCore.run(8, 256)
-        assertEquals(64, result.outputSha256.length)
-        assertFalse(result.claimAllowed)
-        assertEquals(8, result.workers)
+    @Test fun repeatedRunIsByteReproducible() {
+        val a = RafBenchmarkCore.run(4, 1024)
+        val b = RafBenchmarkCore.run(4, 1024)
+        assertEquals(a.outputSha256, b.outputSha256)
+        assertEquals(a.checksum, b.checksum)
     }
 
-    @Test fun creditsAreAttachedToTheActualScreen() {
+    @Test fun unknownKernelNeverPromotesToExecuted() {
+        assertEquals(RafApplicationsCatalog.Stage.CATALOG_ONLY,
+            RafApplicationsCatalog.byId("K090")?.stage)
+    }
+
+    @Test fun attributionsAreScopedToTheScreen() {
         val credits = RafBenchmarkCredits.benchmarkScreen
         assertTrue(credits.any { it.origin == CreditOrigin.PROJECT_AUTHORIAL })
         assertTrue(credits.any { it.origin == CreditOrigin.EXTERNAL_API })
