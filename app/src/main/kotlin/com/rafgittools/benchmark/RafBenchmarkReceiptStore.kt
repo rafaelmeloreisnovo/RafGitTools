@@ -61,7 +61,7 @@ class RafBenchmarkReceiptStore(private val context: Context) {
             "-" + UUID.randomUUID().toString()
         val abi = Build.SUPPORTED_ABIS.firstOrNull() ?: "TOKEN_VAZIO_ABI"
         val payload = listOf(
-            "rafbenchmark.receipt.v1", id, abi, Process.is64Bit().toString(),
+            "rafbenchmark.receipt.v2", id, abi, Process.is64Bit().toString(),
             Build.VERSION.SDK_INT.toString(),
             Runtime.getRuntime().availableProcessors().toString(),
             "TOKEN_VAZIO_EXACT_CODE_SHA",
@@ -72,7 +72,7 @@ class RafBenchmarkReceiptStore(private val context: Context) {
         ).joinToString("|")
         val hash = sha(previous + "\n" + payload)
         val json = JSONObject().apply {
-            put("schema", "rafbenchmark.receipt.v1")
+            put("schema", "rafbenchmark.receipt.v2")
             put("id", id)
             put("payload", payload)
             put("previous_hash", previous)
