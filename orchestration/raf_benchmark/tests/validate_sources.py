@@ -47,6 +47,7 @@ def main():
     assert ref["release"]["allowed"] is False
     assert ref["knowledge"]["count"] == 90
     assert ref["privacy"]["no_cross_repo_secret_alias"] is True
+    assert ref["consent"]["no_auto_agent"] is True
     print("PASS_SCOPED_SOURCE: catalog90, 8 groups, launcher, bounds, credits, "
           "proposal deny, local receipts, release hold")
     print("ANDROID_BUILD=NOT_RUN DEVICE=NOT_RUN CLAIM_ALLOWED=false")
