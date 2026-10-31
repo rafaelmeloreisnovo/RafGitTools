@@ -1,0 +1,139 @@
+name: RafGitTools APK · Isolated canary build / no release
+on:
+  push:
+    branches:
+      - fix/android-apk-ci-topology-20261031-hold
+    paths:
+      - '.github/workflows/rafgittools-apk-canary.yml'
+      - '.github/workflows/START.yml'
+      - 'app/**'
+      - 'build.gradle'
+      - 'gradle/**'
+      - 'gradle.properties'
+      - 'settings.gradle'
+      - 'tools/validate_android_toolchain_matrix.py'
+      - 'tools/validate_android_dependency_bundle.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rafgittools-apk-canary-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-dev-debug:
+    if: ${{ github.ref == 'refs/heads/fix/android-apk-ci-topology-20261031-hold' }}
+    name: Build APK and report explicit gates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact candidate (secretless)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Verify commit identity
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+
+      - name: Validate toolchain tuples before SDK downloads
+        run: |
+          set -euo pipefail
+          python3 tools/validate_android_toolchain_matrix.py
+          python3 tools/validate_android_dependency_bundle.py
+
+      - name: Java 17
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Android SDK (CI only)
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          packages: ""
+
+      - name: Install Android platforms for compileSdk 37
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! sdkmanager 'platforms;android-37' 'build-tools;36.0.0'; then
+            sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
+          fi
+          yes | sdkmanager --licenses >/dev/null || true
+
+      - name: Prepare Gradle SDK mapping and wrapper
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          printf 'sdk.dir=%s\n' "$ANDROID_SDK_ROOT" > local.properties
+          ./gradlew --version
+
+      - name: Assemble real RafGitTools devDebug APK
+        id: apk_build
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon assembleDevDebug --stacktrace
+
+      - name: Verify the actual APK, no substitute fixture
+        id: apk_verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find app/build/outputs/apk/dev/debug -maxdepth 1 -name '*.apk' -type f -print -quit)"
+          test -n "$APK" && test -s "$APK"
+          unzip -t "$APK" >/dev/null
+          sha256sum "$APK" | tee app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+          echo "APK_CANARY=$APK" >> "$GITHUB_STEP_SUMMARY"
+          echo "APK_SHA256=$(sha256sum "$APK" | cut -d' ' -f1)" >> "$GITHUB_STEP_SUMMARY"
+          echo "PACKAGE=RafGitTools devDebug; RELEASE_ALLOWED=false" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve APK only if verified, not a release
+        if: ${{ steps.apk_verify.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: rafgittools-devDebug-CANARY-${{ github.run_id }}
+          path: |
+            app/build/outputs/apk/dev/debug/*.apk
+            app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Unit tests are required for CI PASS (not for preserving diagnostic APK)
+        id: unit
+        run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
+
+      - name: Lint is required for CI PASS
+        id: lint
+        run: ./gradlew --no-daemon lintDevDebug --stacktrace
+
+      - name: Final evidence is scoped; no release promotion
+        if: ${{ always() }}
+        env:
+          APK_BUILD: ${{ steps.apk_build.outcome }}
+          APK_VERIFY: ${{ steps.apk_verify.outcome }}
+          UNIT: ${{ steps.unit.outcome }}
+          LINT: ${{ steps.lint.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## RafGitTools APK canary (exact HEAD)"
+            echo "source_sha=$GITHUB_SHA"
+            echo "assemble=$APK_BUILD"
+            echo "apk_verify=$APK_VERIFY"
+            echo "unit=$UNIT"
+            echo "lint=$LINT"
+            echo "apk_is_release=false"
+            echo "claim_allowed=false"
+          } >> "$GITHUB_STEP_SUMMARY"
+          test "$APK_BUILD" = success
+          test "$APK_VERIFY" = success
+          test "$UNIT" = success
+          test "$LINT" = success
