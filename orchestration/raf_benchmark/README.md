@@ -24,6 +24,10 @@ The Android app already has network permission globally; this feature does not i
 - Bounded battery/power/memory preflight; throughput is local compute+write **not** L3/DRAM benchmark.
 - App-private SHA-256 linked local receipts. Not signed or externally anchored; file-level chain is tamper-evident only relative to separately preserved anchor.
 - No remote sync, arbitrary command, native loader, GitHub workflow dispatch, token import or user data processing.
+- Optional file exchange: the user opens a strict proposal via Android Storage Access Framework (SAF) and must click run separately. The proposal cannot contain executable code, secrets or permissions. [Example](areas/drive/PROPOSAL_EXAMPLE.json).
+- After a run, the user may choose a SAF destination (including the Google Drive documents provider if configured) to save a receipt. There is NO automatic ChatGPT-to-device channel or remote synchronization; written files require manual sharing/connector readback.
+- App-local SHA256 receipt includes the proposal digest when imported; source SHA in proposal is a declared pointer, NOT independently provider-verified by the device.
+- Android app-wide INTERNET remains; this screen does no direct network I/O. The SAF provider may synchronize externally under its own permissions.
 - B7 integration requires separate source validation and ABI/runtime gates; historical B7 tests are not this feature's tests.
 - AndroidX Compose and Kotlin are referenced with contextual credits; source authorship and dependency attribution must not be conflated.
 - Default deny: no blanket reuse of GitHub/K-Secrets across providers, repos or agents. Secret *names* do not demonstrate presence, scope or authorization. Each new capability requires an explicit provider/identity/scope/expiry/receipt preflight.
