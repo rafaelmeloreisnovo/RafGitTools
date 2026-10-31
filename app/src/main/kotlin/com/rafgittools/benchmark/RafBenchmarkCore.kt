@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit
  */
 object RafBenchmarkCore {
     val allowedWorkers = listOf(1, 2, 4, 8)
-    val allowedBufferKiB = listOf(256, 1024, 4096, 16384)
+    val allowedBufferKiB = listOf(256, 2048, 16384, 65536, 153600)
     const val ROUNDS = 4
     enum class Workload { STREAM_WRITE, CACHE_REUSE, COMPUTE_ONLY }
     val allowedWorkloads = Workload.values().toList()
