@@ -1,0 +1,11 @@
+{
+  "schema": "bridge.approval.v1",
+  "request_id": "REQ-0002",
+  "request_sha256": "99e65648b8ce657b1fb798a0ac5afa541d260726dbcb31bef3ac464f25d3a2cb",
+  "pipeline_sha256": "a4a67a318c2fbaf1b4278bd28a938e8279e9504788b8ff97aadff8816d40c452",
+  "decision": "APPROVE",
+  "scope": "LOCAL_CI_READONLY",
+  "source": "EXPLICIT_CHAT_USER_TURN",
+  "valid_until_utc": "2026-10-31T23:23:52Z",
+  "nonce": "f433cef3042094c97c388d167b764b25"
+}
