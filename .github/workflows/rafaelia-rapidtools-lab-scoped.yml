@@ -1,0 +1,33 @@
+name: RAPIDTOOLS Ω LAB · isolated source + host gate
+on:
+  push:
+    branches:
+      - lab/rafaelia-rapidtools-arm32-arm64-20261031-hold
+    paths:
+      - 'LAB_RAPIDTOOLS_OMEGA/**'
+      - '.github/workflows/rafaelia-rapidtools-lab-scoped.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rafaelia-rapidtools-lab-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  lab-source-and-host:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Exact source and freestanding core host suite
+        run: |
+          make -C LAB_RAPIDTOOLS_OMEGA test CC=gcc
+      - name: ARMv7 / AArch64 object-only compile (NO device)
+        run: |
+          make -C LAB_RAPIDTOOLS_OMEGA arm32-obj arm64-obj
+      - name: Evidence boundary (not an Android APK)
+        run: |
+          echo "PASS_SCOPE=CI_HOST_AND_CROSS_OBJECT_ONLY"
+          echo "ARM32_PHYSICAL=TOKEN_VAZIO ARM64_PHYSICAL=TOKEN_VAZIO"
+          echo "GPU=TOKEN_VAZIO RELEASE_ALLOWED=false"

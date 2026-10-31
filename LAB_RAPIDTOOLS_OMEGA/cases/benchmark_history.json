@@ -1,0 +1,152 @@
+{
+  "schema": "rafaelia.lab.history.v1",
+  "policy": "HISTORICAL != SAME_HEAD_RUN != DEVICE_PASS",
+  "records": [
+    {
+      "id": "B01",
+      "name": "ARMv7 NEON vs portable",
+      "metrics": [
+        {
+          "label": "NEON",
+          "value": 163.45,
+          "unit": "MiB/s"
+        },
+        {
+          "label": "portable",
+          "value": 132.313,
+          "unit": "MiB/s"
+        }
+      ],
+      "context": "historical ARMv7 logs 512MiB five repetitions",
+      "provenance": "https://docs.google.com/document/d/1RQTJ50PcQEn8_u2EIEepZBjN6b5z2wJ2xI7dcfM1RtI/edit",
+      "state": "HISTORICAL_DOCUMENT_ONLY"
+    },
+    {
+      "id": "B02",
+      "name": "BLAKE3 fork vs upstream negative",
+      "metrics": [
+        {
+          "label": "fork",
+          "value": 171.568,
+          "unit": "MiB/s"
+        },
+        {
+          "label": "upstream",
+          "value": 188.058,
+          "unit": "MiB/s"
+        }
+      ],
+      "context": "fork slower 8.77%; do not claim speedup",
+      "provenance": "https://docs.google.com/document/d/1RQTJ50PcQEn8_u2EIEepZBjN6b5z2wJ2xI7dcfM1RtI/edit",
+      "state": "HISTORICAL_DOCUMENT_ONLY"
+    },
+    {
+      "id": "B03",
+      "name": "EDGE V7 ARM32 negative unrolling",
+      "metrics": [
+        {
+          "label": "base",
+          "value": 338.34,
+          "unit": "MB/s"
+        },
+        {
+          "label": "unroll4",
+          "value": 243.58,
+          "unit": "MB/s"
+        },
+        {
+          "label": "unroll8",
+          "value": 234.47,
+          "unit": "MB/s"
+        }
+      ],
+      "context": "unrolling worse",
+      "provenance": "https://docs.google.com/document/d/1XFoJOYSCdN7WzgGVvDWHbD-ZhEDT_DjqErnp1RtCV1s/edit",
+      "state": "HISTORICAL_DOCUMENT_ONLY"
+    },
+    {
+      "id": "B04",
+      "name": "ARM32 CPU and RAM corrected",
+      "metrics": [
+        {
+          "label": "cpu",
+          "value": 111.956,
+          "unit": "MOPS"
+        },
+        {
+          "label": "ram",
+          "value": 1.522,
+          "unit": "GB/s"
+        }
+      ],
+      "context": "not same experiment as this lab",
+      "provenance": "https://docs.google.com/document/d/1XFoJOYSCdN7WzgGVvDWHbD-ZhEDT_DjqErnp1RtCV1s/edit",
+      "state": "HISTORICAL_DOCUMENT_ONLY"
+    },
+    {
+      "id": "B05",
+      "name": "T7 NEON Q16 speedups",
+      "metrics": [
+        {
+          "label": "lower",
+          "value": 2.55,
+          "unit": "x"
+        },
+        {
+          "label": "upper",
+          "value": 3.91,
+          "unit": "x"
+        }
+      ],
+      "context": "historical kernel-specific speedups",
+      "provenance": "https://drive.google.com/file/d/1Kz0XqWL7Yl2j1UcieBBryj66udTwy0y2/view",
+      "state": "HISTORICAL_DOCUMENT_ONLY"
+    },
+    {
+      "id": "B06",
+      "name": "Stage7 physical aliasing",
+      "metrics": [
+        {
+          "label": "samples",
+          "value": 11520,
+          "unit": "count"
+        },
+        {
+          "label": "migrations",
+          "value": 11520,
+          "unit": "count"
+        },
+        {
+          "label": "quartets",
+          "value": 2838,
+          "unit": "count"
+        }
+      ],
+      "context": "physical log but hardware cause not proven",
+      "provenance": "https://docs.google.com/document/d/1aZVss73eYKfcVi-BEjsMGT2sPld7xYVLb0BBnVLtapk/edit",
+      "state": "HISTORICAL_DOCUMENT_ONLY"
+    },
+    {
+      "id": "B07",
+      "name": "VECTRAS 79 metrics",
+      "metrics": [
+        {
+          "label": "instrumentation slots",
+          "value": 79,
+          "unit": "count"
+        }
+      ],
+      "context": "metrics schema not observed device measurements",
+      "provenance": "https://docs.google.com/document/d/1ClcleKaG8Uam7NA4l1FF8x7A0YiFyQQwGMIRkAr-_-M/edit",
+      "state": "SCHEMA_ONLY"
+    },
+    {
+      "id": "B08",
+      "name": "ARM64 paired benchmarks",
+      "metrics": [],
+      "context": "physical paired same workload is unknown",
+      "provenance": null,
+      "state": "TOKEN_VAZIO_DEVICE_ARM64"
+    }
+  ]
+}
