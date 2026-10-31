@@ -41,7 +41,7 @@ object RafBenchmarkCredits {
     val benchmarkScreen = listOf(
         ScreenCredit("Raf Benchmark kernel", CreditOrigin.PROJECT_AUTHORIAL,
             "Algoritmo de teste local, dados sintéticos e receipts.",
-            "RAFAELIA / RafGitTools contributors", "RafGitTools project license",
+            "RAFAELIA / RafGitTools contributors", "GPL-3.0-or-later (declared by RafGitTools root LICENSE)",
             "https://github.com/rafaelmeloreisnovo/RafGitTools",
             "app/src/main/kotlin/com/rafgittools/benchmark/"),
         ScreenCredit("Jetpack Compose / Material3", CreditOrigin.EXTERNAL_API,
