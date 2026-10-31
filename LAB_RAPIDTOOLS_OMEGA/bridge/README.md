@@ -33,3 +33,6 @@ python3 LAB_RAPIDTOOLS_OMEGA/bridge/bridge.py --run-safe
 - No false claims of a bidirectional real-time bridge, 100% third-party telemetry or Android runtime proof.
 - SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM. TOKEN_VAZIO != 0.
 - claim_allowed=false; release_allowed=false; no auto-merge.
+
+## Verified pipeline delta / falsifier
+V1 had steps atlas_check, unit_checks; V2 adds ci_host_smoke and reorders to unit_checks, atlas_check, ci_host_smoke. REQ-0001 remains immutable but becomes stale; REQ-0002 is a new PROPOSED request with a different pipeline SHA. An old approval cannot transfer to V2.

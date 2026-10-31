@@ -19,7 +19,7 @@ import time
 LAB = Path(__file__).resolve().parents[1]
 BRIDGE = Path(__file__).resolve().parent
 PIPELINE = BRIDGE / "pipelines/lab-quality.v1.json"
-REQUEST = BRIDGE / "inbox/REQ-0001.json"
+REQUEST = BRIDGE / "inbox/REQ-0002.json"
 
 def canonical(data):
     return json.dumps(data, sort_keys=True, separators=(",", ":"),

@@ -30,6 +30,11 @@ class MiddlefieldContractTests(unittest.TestCase):
             "nonce": "DEMO_TEST_ONLY_NONCE_NO_AUTH"
         }
 
+    def test_previous_request_is_invalid_after_pipeline_edit(self):
+        previous = sut.load(HERE / "inbox/REQ-0001.json")
+        with self.assertRaisesRegex(ValueError, "STALE_PIPELINE"):
+            sut.request_contract(previous, self.pipeline)
+
     def test_original_request_cannot_execute_without_approval(self):
         self.assertEqual(self.request["state"], "PROPOSED")
         self.assertIsNone(self.request["approval_id"])
