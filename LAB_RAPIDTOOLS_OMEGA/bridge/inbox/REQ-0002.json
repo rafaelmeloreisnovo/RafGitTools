@@ -1,0 +1,14 @@
+{
+  "schema": "bridge.request.v1",
+  "request_id": "REQ-0002",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "module": "LAB_RAPIDTOOLS_OMEGA",
+  "operation": "run_ci_local",
+  "pipeline_id": "LAB-QUALITY-001",
+  "pipeline_sha256": "a4a67a318c2fbaf1b4278bd28a938e8279e9504788b8ff97aadff8816d40c452",
+  "desired_scope": "LOCAL_CI_READONLY",
+  "state": "PROPOSED",
+  "data_class": "SYNTHETIC",
+  "approval_id": null,
+  "claim_allowed": false
+}

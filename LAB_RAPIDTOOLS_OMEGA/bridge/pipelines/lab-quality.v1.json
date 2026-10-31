@@ -1,0 +1,14 @@
+{
+  "schema": "bridge.pipeline.v1",
+  "id": "LAB-QUALITY-001",
+  "version": 2,
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "allowed_scope": "LOCAL_CI_READONLY",
+  "steps": [
+    "unit_checks",
+    "atlas_check",
+    "ci_host_smoke"
+  ],
+  "claim_allowed": false,
+  "release_allowed": false
+}

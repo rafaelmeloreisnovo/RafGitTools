@@ -1,0 +1,11 @@
+{
+  "schema": "bridge.consumption.v1",
+  "request_id": "REQ-0002",
+  "state": "CONSUMED",
+  "request_sha256": "99e65648b8ce657b1fb798a0ac5afa541d260726dbcb31bef3ac464f25d3a2cb",
+  "pipeline_sha256": "a4a67a318c2fbaf1b4278bd28a938e8279e9504788b8ff97aadff8816d40c452",
+  "result": "PASS_HOST_CI",
+  "run_id": 41250590432,
+  "commit_sha": "6c0697fd405e2701d309c64b037b3d10d28e5488",
+  "receipt_sha256": "b5c5b71a8be5032e11749ac6a76f00ceb57c85e554408bfb1f6178b6fcd59e5d"
+}

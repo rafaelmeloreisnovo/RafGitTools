@@ -1,0 +1,37 @@
+name: RAFAELIA Ω · Middlefield bridge / LAB only
+on:
+  push:
+    branches:
+      - lab/rafaelia-middlefield-bridge-20261031-hold
+    paths:
+      - 'LAB_RAPIDTOOLS_OMEGA/bridge/**'
+      - '.github/workflows/rafaelia-middlefield-bridge-scoped.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rafaelia-middlefield-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  validate-bridge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Compile local C host for bounded synthetic tests
+        run: make -C LAB_RAPIDTOOLS_OMEGA all CC=gcc
+      - name: Route active request through scoped approval or HOLD
+        run: python3 LAB_RAPIDTOOLS_OMEGA/bridge/dispatch.py
+      - name: Middlefield contract falsifiers
+        run: python3 -m unittest discover -s LAB_RAPIDTOOLS_OMEGA/bridge/tests -p 'test_*.py' -v
+      - name: Execute editable pipeline with CI-only privilege
+        run: python3 LAB_RAPIDTOOLS_OMEGA/bridge/bridge.py --run-safe
+      - name: Explicit nonpromotion receipt
+        run: |
+          echo "CHAT_AUTHORITY=TOKEN_VAZIO_PROVIDER_VERIFIED_IDENTITY"
+          echo "DRIVE_LISTENER=NOT_INSTALLED"
+          echo "REMOTE_AGENT_DISPATCH=BLOCKED"
+          echo "DEVICE_RUNTIME=TOKEN_VAZIO"
+          echo "CLAIM_ALLOWED=false RELEASE_ALLOWED=false"
