@@ -10,6 +10,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -63,11 +66,17 @@ class RafBenchmarkActivity : ComponentActivity() {
     }
 }
 
-private fun devicePreflight(context: Context, bufferKiB: Int) {
+private fun devicePreflight(context: Context, bufferKiB: Int, largeConsent: Boolean) {
+    require(bufferKiB < 65536 || largeConsent) { "BLOCKED_LARGE_BUFFER_CONSENT" }
     val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
     val info = ActivityManager.MemoryInfo()
     manager.getMemoryInfo(info)
-    require(!info.lowMemory && info.availMem >= bufferKiB.toLong() * 1024L * 3L) {
+    val bytes = bufferKiB.toLong() * 1024L
+    val runtime = Runtime.getRuntime()
+    val usedHeap = runtime.totalMemory() - runtime.freeMemory()
+    val freeHeap = runtime.maxMemory() - usedHeap
+    require(freeHeap >= bytes * 2L) { "BLOCKED_HEAP_HEADROOM" }
+    require(!info.lowMemory && info.availMem >= bytes * 3L) {
         "BLOCKED_RESOURCE: memória livre insuficiente"
     }
     val battery = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
@@ -85,6 +94,7 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
     var workers by remember { mutableStateOf(1) }
     var bufferKiB by remember { mutableStateOf(256) }
     var workload by remember { mutableStateOf(RafBenchmarkCore.Workload.STREAM_WRITE) }
+    var largeConsent by remember { mutableStateOf(false) }
     var running by remember { mutableStateOf(false) }
     var output by remember { mutableStateOf("NOT_EXECUTED · sem acesso remoto e sem sincronização") }
     var receipt by remember { mutableStateOf("") }
@@ -113,6 +123,7 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
                 workers = item.workers
                 bufferKiB = item.bufferKiB
                 workload = item.workload
+                largeConsent = false
                 output = "PROPOSED (não executado) · " + item.id +
                     " · source=" + item.producer + "@" + item.sourceRevision.take(12) +
                     " · digest=" + item.digest.take(12)
@@ -178,12 +189,21 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
                             }
                         }
                         Text("Buffer TOTAL do teste", style = MaterialTheme.typography.titleSmall)
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             RafBenchmarkCore.allowedBufferKiB.forEach { candidate ->
                                 FilterChip(selected = bufferKiB == candidate, enabled = !running,
-                                    onClick = { bufferKiB = candidate; proposal = null },
-                                    label = { Text(if (candidate < 1024) "256K"
-                                        else "${candidate / 1024}M") })
+                                    onClick = { bufferKiB = candidate; proposal = null; largeConsent = false },
+                                    label = { Text(if (candidate < 1024) "256 KiB"
+                                        else "${candidate / 1024} MiB") })
+                            }
+                        }
+                        if (bufferKiB >= 65536) {
+                            Row {
+                                Checkbox(checked = largeConsent, enabled = !running,
+                                    onCheckedChange = { largeConsent = it })
+                                Text("Autorizo buffer grande: verificar memória e bateria antes de executar.",
+                                    style = MaterialTheme.typography.bodySmall)
                             }
                         }
                         Text("Carga de teste (mesma entrada/saída, independente de workers)",
@@ -216,7 +236,7 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
                                 style = MaterialTheme.typography.bodySmall)
                         }
                         Button(
-                            enabled = !running,
+                            enabled = !running && (bufferKiB < 65536 || largeConsent),
                             onClick = {
                                 running = true
                                 output = "RUNNING · aguarde encerramento local"
@@ -224,6 +244,7 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
                                 lastReceiptId = ""
                                 val selectedProposal = proposal
                                 val selectedWorkload = workload
+                                val highResourceConsent = largeConsent
                                 scope.launch {
                                     val outcome = withContext(Dispatchers.Default) {
                                         runCatching {
@@ -234,7 +255,7 @@ private fun RafBenchmarkScreen(onBack: () -> Unit) {
                                                     "BLOCKED_PROPOSAL_MISMATCH"
                                                 }
                                             }
-                                            devicePreflight(context, bufferKiB)
+                                            devicePreflight(context, bufferKiB, highResourceConsent)
                                             val result = RafBenchmarkCore.run(workers, bufferKiB, selectedWorkload)
                                             val stored = RafBenchmarkReceiptStore(context).append(result,
                                                 selectedProposal?.digest ?: "TOKEN_VAZIO_MANUAL_JOB")
