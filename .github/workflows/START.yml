@@ -1156,7 +1156,9 @@ jobs:
 
   android:
     name: '06 · Android / test + lint + devDebug APK'
-    needs: [plan, coherence]
+    # Build may run even when an independent coherence suite fails.
+    # Final receipt still blocks promotion on any failed required gate.
+    needs: [plan, topology]
     if: needs.plan.outputs.android == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 50
@@ -1203,14 +1205,9 @@ jobs:
           else
             echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
           fi
-      # Run app-specific CI first. An unrelated native-fixture failure must not
-      # conceal the Kotlin/Compose/Dependabot gate result.
-      - name: Unit tests
-        run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
-      - name: Compile device route instrumentation APK
-        run: ./gradlew --no-daemon assembleDevDebugAndroidTest --stacktrace
-      # App APK must be reproducible and hashed even if independent lint
-      # or native fixtures later fail. APK is DEBUG ARTIFACT, never release.
+      # Build the debug APK first: the independent unit/instrumentation and
+      # lint gates still fail the job, but do not suppress an APK diagnostic.
+      # This does NOT authorize release or user installation.
       - name: Assemble devDebug
         run: ./gradlew --no-daemon assembleDevDebug --stacktrace
       - name: Verify APK and SHA-256
@@ -1233,6 +1230,10 @@ jobs:
             native/authorial_keyboard_l0/android-demo/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 30
+      - name: Unit tests (required post-APK gate)
+        run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
+      - name: Compile device route instrumentation APK (required gate)
+        run: ./gradlew --no-daemon assembleDevDebugAndroidTest --stacktrace
       - name: Android lint
         run: ./gradlew --no-daemon lintDevDebug --stacktrace
       - name: RAFANDROID bound Android/NDK gate
@@ -2141,7 +2142,7 @@ jobs:
           {
             echo '## START final receipt'
             echo
-            echo '- single active workflow: `START.yml`'
+            echo '- global orchestration owner: `START.yml` + fixed scoped workflows'
             echo '- claim_allowed: `false`'
             echo '- automatic_promotion: `false`'
             echo '- training_executed: `false`'
