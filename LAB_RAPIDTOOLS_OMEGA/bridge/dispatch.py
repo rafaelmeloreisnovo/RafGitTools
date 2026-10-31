@@ -31,6 +31,37 @@ def main():
         return 3
     request = HERE / "inbox" / (ident + ".json")
     approval = HERE / "approvals" / (ident + ".json")
+
+    # Append-only consumed marker enforces local replay stop. This file references
+    # the one verified prior CI run; a later approval cannot re-run this request.
+    consumed = HERE / "consumed" / (ident + ".json")
+    if consumed.exists():
+        try:
+            from bridge import load, pipeline_contract, request_contract, sha, PIPELINE
+            record = load(consumed)
+            expected_fields = {"schema", "request_id", "state",
+                               "request_sha256", "pipeline_sha256",
+                               "result", "run_id", "commit_sha", "receipt_sha256"}
+            p = pipeline_contract(load(PIPELINE))
+            r = request_contract(load(request), p)
+            if (set(record) != expected_fields or
+                record["schema"] != "bridge.consumption.v1" or
+                record["request_id"] != ident or record["state"] != "CONSUMED" or
+                record["result"] != "PASS_HOST_CI" or
+                record["request_sha256"] != sha(r) or
+                record["pipeline_sha256"] != sha(p) or
+                not isinstance(record["run_id"], int) or
+                not isinstance(record["commit_sha"], str) or
+                len(record["commit_sha"]) != 40 or
+                not isinstance(record["receipt_sha256"], str) or
+                len(record["receipt_sha256"]) != 64):
+                raise ValueError("DENY_CONSUMPTION_INTEGRITY")
+        except (ValueError, OSError, KeyError, TypeError) as exc:
+            print("BRIDGE_DENIED", str(exc))
+            return 3
+        print("BRIDGE_PATH=HOLD_ALREADY_CONSUMED")
+        print("BRIDGE_RECEIPT=PREVIOUSLY_EXECUTED_RUN_" + str(record["run_id"]))
+        return 0
     command = [sys.executable, str(HERE / "bridge.py"),
                "--request", str(request)]
     if approval.exists():

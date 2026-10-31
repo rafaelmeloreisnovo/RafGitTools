@@ -35,6 +35,16 @@ class MiddlefieldContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "STALE_PIPELINE"):
             sut.request_contract(previous, self.pipeline)
 
+    def test_consumption_marker_is_source_bound(self):
+        from dispatch import active_request
+        self.assertEqual(active_request(), "REQ-0002")
+        marker = HERE / "consumed/REQ-0002.json"
+        record = sut.load(marker)
+        self.assertEqual(record["state"], "CONSUMED")
+        self.assertEqual(record["request_sha256"], sut.sha(self.request))
+        self.assertEqual(record["pipeline_sha256"], sut.sha(self.pipeline))
+        self.assertEqual(record["result"], "PASS_HOST_CI")
+
     def test_original_request_cannot_execute_without_approval(self):
         self.assertEqual(self.request["state"], "PROPOSED")
         self.assertIsNone(self.request["approval_id"])
