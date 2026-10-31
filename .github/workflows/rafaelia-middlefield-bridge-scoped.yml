@@ -22,8 +22,8 @@ jobs:
           persist-credentials: false
       - name: Compile local C host for bounded synthetic tests
         run: make -C LAB_RAPIDTOOLS_OMEGA all CC=gcc
-      - name: Reject unapproved request, keep HOLD
-        run: python3 LAB_RAPIDTOOLS_OMEGA/bridge/bridge.py --check-request
+      - name: Route active request through scoped approval or HOLD
+        run: python3 LAB_RAPIDTOOLS_OMEGA/bridge/dispatch.py
       - name: Middlefield contract falsifiers
         run: python3 -m unittest discover -s LAB_RAPIDTOOLS_OMEGA/bridge/tests -p 'test_*.py' -v
       - name: Execute editable pipeline with CI-only privilege
