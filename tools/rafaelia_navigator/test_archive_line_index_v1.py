@@ -48,6 +48,28 @@ class AtlasTests(unittest.TestCase):
             self.assertEqual(db.execute("select count(*) from entries where locator='outer.zip!sub.zip!inner.py'").fetchone()[0], 1)
             db.close()
 
+    def test_three_duplicate_zip_names_are_typed_not_crash(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d) / "src"; root.mkdir()
+            with zipfile.ZipFile(root / "repeated.zip", "w") as z:
+                for _ in range(3):
+                    z.writestr("repeated.txt", "ok")
+            report = self.scan(root, Path(d) / "out")
+            self.assertFalse(report["complete"])
+            db = sqlite3.connect(Path(d) / "out" / "ATLAS.sqlite3")
+            self.assertEqual(db.execute("select count(*) from entries where status='DUPLICATE_NAME_BLOCKED'").fetchone()[0], 2)
+            db.close()
+
+    def test_zip_member_count_is_bounded(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d) / "src"; root.mkdir()
+            with zipfile.ZipFile(root / "many.zip", "w") as z:
+                for i in range(10001):
+                    z.writestr(f"e{i}.txt", b"")
+            report = self.scan(root, Path(d) / "out")
+            self.assertFalse(report["complete"])
+            self.assertIn("many.zip:ZIP_MEMBER_COUNT_LIMIT", report["gaps"])
+
     def test_partial_budget_never_claimed_complete(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d) / "src"; root.mkdir()
