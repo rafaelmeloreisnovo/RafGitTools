@@ -52,7 +52,7 @@ jobs:
         with:
           name: rafaelia-cloud-custody-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/rafaelia-cloud-custody/
-          retention-days: 14
+          retention-days: 10
           if-no-files-found: error
       - name: Explicit nonpromotion receipt
         run: |
