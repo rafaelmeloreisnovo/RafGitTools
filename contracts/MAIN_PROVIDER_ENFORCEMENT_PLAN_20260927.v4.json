@@ -53,7 +53,7 @@
       "job_id": "plan"
     },
     {
-      "context": "01 · Workflow topology / single-root invariant",
+      "context": "01 · Workflow topology / START owner + scoped workflows",
       "job_id": "topology"
     },
     {
