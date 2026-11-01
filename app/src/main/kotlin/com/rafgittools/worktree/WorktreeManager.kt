@@ -1,5 +1,6 @@
 package com.rafgittools.worktree
 
+import com.rafgittools.platform.ProcessWaitCompat
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
@@ -33,7 +34,7 @@ object WorktreeManager {
 
     private fun checkGitAvailable(): Boolean = runCatching {
         val p = ProcessBuilder("git", "--version").start()
-        p.waitFor(5, TimeUnit.SECONDS) && p.exitValue() == 0
+        ProcessWaitCompat.waitFor(p, 5L, TimeUnit.SECONDS) && p.exitValue() == 0
     }.getOrDefault(false)
 
     private fun requireRepoPath(repoPath: String): Result<Unit>? =
@@ -49,13 +50,13 @@ object WorktreeManager {
                 .redirectErrorStream(true)
                 .start()
             val outputFuture = ioScope.async { process.inputStream.bufferedReader().readText() }
-            val finished = process.waitFor(GIT_TIMEOUT_SECS, TimeUnit.SECONDS)
-            val output = runBlocking { outputFuture.await() }
+            val finished = ProcessWaitCompat.waitFor(process, GIT_TIMEOUT_SECS, TimeUnit.SECONDS)
             if (!finished) {
-                process.destroyForcibly()
-                process.waitFor()
+                ProcessWaitCompat.terminate(process)
+                outputFuture.cancel()
                 return GitResult(-1, "", "git worktree timed out after ${GIT_TIMEOUT_SECS}s")
             }
+            val output = runBlocking { outputFuture.await() }
             GitResult(exitCode = process.exitValue(), stdout = output.trimEnd(), stderr = "")
         } catch (e: Exception) {
             GitResult(-1, "", "Failed to run git: ${e.message}")
