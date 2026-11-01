@@ -5,12 +5,17 @@ CLANG ?= clang
 BASE = -std=c11 -O2 -Wall -Wextra -Wconversion -Werror -fno-builtin -fno-stack-protector
 L0 = -ffreestanding -nostdinc -fPIC
 BUILD = build
-.PHONY: test objects clean
+.PHONY: test properties objects clean
 
 test:
 	mkdir -p $(BUILD)
 	$(CC) $(BASE) inventarioraf.c test_inventarioraf.c -o $(BUILD)/selftest
 	$(BUILD)/selftest
+
+properties:
+	mkdir -p $(BUILD)
+	$(CLANG) $(BASE) -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer inventarioraf.c fuzz_inventarioraf.c -o $(BUILD)/properties
+	$(BUILD)/properties
 
 objects:
 	mkdir -p $(BUILD)
