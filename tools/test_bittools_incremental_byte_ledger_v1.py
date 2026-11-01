@@ -106,7 +106,7 @@ class IncrementalByteLedgerTests(unittest.TestCase):
             sut.run(self.root, self.root/"self.jsonl",
                     chunk_bytes=2, max_bytes=2, max_events=10)
         self.cycle(chunk=8, budget=100)
-        with self.assertRaisesRegex(ValueError, "ROOT_DRIFT"):
+        with self.assertRaisesRegex(ValueError, "DENY_LEDGER_INVALID"):
             sut.Ledger(self.ledger, self.base)
         (self.root/"hi.txt").unlink()
         with self.assertRaisesRegex(ValueError, "PREVIOUS_SOURCE_DISAPPEARED"):
