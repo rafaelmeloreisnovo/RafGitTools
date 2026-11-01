@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -43,6 +44,7 @@ fun LocalGithubInventoryCard(
     var busy by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf("TOKEN_VAZIO_LOCAL_SNAPSHOT_NOT_OBSERVED") }
     var search by remember { mutableStateOf("") }
+    var acceptsPrivateLocalMetadata by remember { mutableStateOf(false) }
     LaunchedEffect(store) {
         val previous = withContext(Dispatchers.IO) { runCatching { store.latest() } }
         previous.onSuccess { saved = it }
@@ -67,6 +69,15 @@ fun LocalGithubInventoryCard(
                     (if (listingComplete) " · paginação concluída" else " · TOKEN_VAZIO_COBERTURA"),
                 style = MaterialTheme.typography.bodySmall
             )
+            Row {
+                Checkbox(
+                    checked = acceptsPrivateLocalMetadata,
+                    onCheckedChange = { acceptsPrivateLocalMetadata = it }
+                )
+                Text("Entendo que nomes de repositórios privados continuarão guardados no aparelho, " +
+                    "inclusive para pesquisa sem internet.",
+                    style = MaterialTheme.typography.bodySmall)
+            }
             Button(
                 onClick = {
                     if (profile.isNullOrBlank()) {
@@ -93,7 +104,7 @@ fun LocalGithubInventoryCard(
                         }
                     }
                 },
-                enabled = !busy && profile != null && githubList.isNotEmpty(),
+                enabled = !busy && acceptsPrivateLocalMetadata && profile != null && githubList.isNotEmpty(),
                 modifier = Modifier.fillMaxWidth()
             ) { Text(if (busy) "Verificando…" else "Guardar inventário atual no Local") }
 
