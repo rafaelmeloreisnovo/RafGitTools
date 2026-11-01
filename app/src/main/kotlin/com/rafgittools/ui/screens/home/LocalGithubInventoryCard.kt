@@ -93,8 +93,11 @@ fun LocalGithubInventoryCard(
             }
         }
     }
-    LaunchedEffect(store) {
-        val previous = withContext(Dispatchers.IO) { runCatching { store.latest() } }
+    LaunchedEffect(store, profile) {
+        saved = null
+        val previous = withContext(Dispatchers.IO) {
+            runCatching { store.latest(expectedProfile = profile) }
+        }
         previous.onSuccess { saved = it }
             .onFailure { result = "TOKEN_VAZIO_LOCAL_READBACK_FAILED" }
     }
@@ -160,7 +163,10 @@ fun LocalGithubInventoryCard(
                 val snapshot = item.snapshot
                 val publicCount = snapshot.repositories.count { it.visibility == "PUBLIC" }
                 val privateCount = snapshot.repositories.count { it.visibility == "PRIVATE" }
-                Text("Último snapshot · @" + snapshot.profile + " · " + item.bytes + " bytes",
+                Text("Último snapshot · @" + snapshot.profile + " · " + item.bytes + " bytes · " +
+                    java.text.DateFormat.getDateTimeInstance().format(
+                        java.util.Date(snapshot.observed_epoch_ms)
+                    ),
                     style = MaterialTheme.typography.bodySmall)
                 Text(
                     snapshot.observed_repositories.toString() + " repositórios observados · " +
