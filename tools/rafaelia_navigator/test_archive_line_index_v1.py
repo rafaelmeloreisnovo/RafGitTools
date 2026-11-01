@@ -48,6 +48,19 @@ class AtlasTests(unittest.TestCase):
             self.assertEqual(db.execute("select count(*) from entries where locator='outer.zip!sub.zip!inner.py'").fetchone()[0], 1)
             db.close()
 
+    def test_symlink_file_and_directory_are_explicit_gaps(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d) / "src"; root.mkdir()
+            (root / "target.txt").write_text("safe\n")
+            (root / "link.txt").symlink_to(root / "target.txt")
+            (root / "subdir").mkdir()
+            (root / "linkdir").symlink_to(root / "subdir", target_is_directory=True)
+            report = self.scan(root, Path(d) / "out")
+            self.assertFalse(report["complete"])
+            db = sqlite3.connect(Path(d) / "out" / "ATLAS.sqlite3")
+            self.assertEqual(db.execute("select count(*) from entries where status='SYMLINK_BLOCKED'").fetchone()[0], 2)
+            db.close()
+
     def test_three_duplicate_zip_names_are_typed_not_crash(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d) / "src"; root.mkdir()
