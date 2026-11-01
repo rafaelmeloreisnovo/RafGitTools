@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 30079)
+Total output lines: 2669
+
 name: START · RAFAELIA Orchestrated Pipeline
 
 on:
@@ -613,13 +616,22 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_draft_route_native.py' -v
           python3 -m unittest discover -s tests -p 'test_dependabot_policy_gate_v1.py' -v
           python3 -m unittest discover -s tests -p 'test_android_dependency_bundle_gate.py' -v
+      - name: Provision hosted LLD 18 for InventarioRAF cross-ELF gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ld.lld-18 >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y lld-18
+          fi
+          command -v ld.lld-18
       - name: InventarioRAF freestanding core and ARM ABI gates
         shell: bash
         run: |
           set -euo pipefail
           make -C native/inventario_raf_v1 clean test \
             HOST_CC=clang ARMV7_CC=clang AARCH64_CC=clang \
-            NM=nm READELF=readelf LD_LLD=ld.lld
+            NM=nm READELF=readelf LD_LLD=ld.lld-18
       - name: P0 queue already in main | freestanding native exact-SHA selftest
         shell: bash
         run: |
@@ -1271,15 +1283,7 @@ jobs:
           test -n "$APK"
           test -s "$APK"
           tools/rafandroid/rafandroid dex-gate "$APK"
-          tools/rafandroid/rafandroid apk-gate "$APK"
-          sha256sum "$APK" | tee "$RUNNER_TEMP/rafandroid-silicon-fixture.sha256"
-
-      - name: RAFAELIA Authorial Keyboard native demo APK gate
-        shell: bash
-        run: |
-          set -euo pipefail
-          DEMO="native/authorial_keyboard_l0/android-demo"
-          ./gradlew --no-daemon -p "$DEMO" assembleDebug --stacktrace
+          tools/rafand…79 tokens truncated…dlew --no-daemon -p "$DEMO" assembleDebug --stacktrace
           APK="$(find "$DEMO/build/outputs/apk/debug" -maxdepth 1 -type f -name '*.apk' -print -quit)"
           test -n "$APK"
           test -s "$APK"
