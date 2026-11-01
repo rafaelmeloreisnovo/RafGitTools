@@ -2,6 +2,7 @@ import copy
 import importlib.util
 import json
 import unittest
+from unittest import mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,8 +25,23 @@ class MainProviderEnforcementPlanV3Tests(unittest.TestCase):
     def test_canonical_plan_passes(self):
         self.assertEqual([], MODULE.validate(self.data))
 
-    def test_single_active_yaml_root_is_start(self):
-        self.assertEqual([self.start], MODULE._active_yaml_paths())
+    def test_only_start_is_global_with_exact_scoped_workflows(self):
+        self.assertEqual(MODULE.EXPECTED_ACTIVE_YAMLS, MODULE._active_yaml_paths())
+        self.assertEqual(self.start, MODULE.EXPECTED_ACTIVE_YAMLS[0])
+        self.assertEqual(5, len(MODULE.EXPECTED_ACTIVE_YAMLS))
+
+    def test_new_active_yaml_is_falsifier_not_silent_promotion(self):
+        extra = ROOT / ".github/workflows/unknown.yml"
+        with mock.patch.object(MODULE, "_active_yaml_paths",
+                               return_value=MODULE.EXPECTED_ACTIVE_YAMLS + [extra]):
+            self.assertTrue(any("active workflow set" in error
+                                for error in MODULE.validate(self.data)))
+
+    def test_missing_scoped_workflow_fails_closed(self):
+        with mock.patch.object(MODULE, "_active_yaml_paths",
+                               return_value=[self.start]):
+            self.assertTrue(any("active workflow set" in error
+                                for error in MODULE.validate(self.data)))
 
     def test_start_pull_request_scope_is_unfiltered_and_targets_main(self):
         scope = MODULE._pull_request_properties(self.start.read_text(encoding="utf-8"))

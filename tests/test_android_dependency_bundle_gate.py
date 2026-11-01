@@ -67,11 +67,11 @@ class AndroidDependencyBundleGateTests(unittest.TestCase):
         positions = [
             android.index("      - name: " + label)
             for label in (
-                "Unit tests",
-                "Compile device route instrumentation APK",
                 "Assemble devDebug",
                 "Verify APK and SHA-256",
                 "Upload APK",
+                "Unit tests (required post-APK gate)",
+                "Compile device route instrumentation APK (required gate)",
                 "Android lint",
             )
         ]

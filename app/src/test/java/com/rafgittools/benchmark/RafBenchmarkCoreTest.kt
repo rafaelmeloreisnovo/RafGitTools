@@ -21,7 +21,7 @@ class RafBenchmarkCoreTest {
     fun rejectsUnknownWorkerCount() { RafBenchmarkCore.validate(16, 256) }
 
     @Test(expected = IllegalArgumentException::class)
-    fun rejectsUnboundedMemory() { RafBenchmarkCore.validate(1, 150 * 1024) }
+    fun rejectsUnboundedMemory() { RafBenchmarkCore.validate(1, 151 * 1024) }
 
     @Test fun workerCountDoesNotChangeDataOrChecksumForSameWorkload() {
         RafBenchmarkCore.allowedWorkloads.forEach { workload ->
@@ -40,8 +40,8 @@ class RafBenchmarkCoreTest {
     }
 
     @Test fun repeatedRunIsByteReproducible() {
-        val a = RafBenchmarkCore.run(4, 1024)
-        val b = RafBenchmarkCore.run(4, 1024)
+        val a = RafBenchmarkCore.run(4, 2048)
+        val b = RafBenchmarkCore.run(4, 2048)
         assertEquals(a.outputSha256, b.outputSha256)
         assertEquals(a.checksum, b.checksum)
     }
