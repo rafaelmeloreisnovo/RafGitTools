@@ -20,9 +20,18 @@ object DriveMetadataIndexGate {
         val mime: String,
         val size_bytes: Long?
     )
+    data class TokenizedPath(
+        val path: String,
+        val tokens: List<String>,
+        val path_components: Int,
+        val semantic_pass_mask: Int,
+        val kind_flags: Int,
+        val size_known: Boolean,
+        val parent_known: Boolean
+    )
     data class Relation(val kind: String = "CONTAINS", val from: String, val to: String)
     data class Manifest(
-        val schema: String = "rafgittools.drive-saf-metadata-index.v1",
+        val schema: String = "rafgittools.drive-saf-metadata-index.v2",
         val source_scope: String = "USER_SELECTED_SAF_TREE_ONLY",
         val global_drive_coverage: String = "TOKEN_VAZIO_NOT_ATTESTED",
         val provider_sharing_visibility: String = "TOKEN_VAZIO_SAF_UNAVAILABLE",
@@ -36,6 +45,7 @@ object DriveMetadataIndexGate {
         val unknown_size_files: Int,
         val directory_paths: List<String>,
         val files: List<FileMetadata>,
+        val semantic_token_paths: List<TokenizedPath>,
         val conversation_codex_candidates: List<String>,
         val relations: List<Relation>
     )
@@ -55,11 +65,29 @@ object DriveMetadataIndexGate {
             "TOKEN_VAZIO_PARTIAL_INVENTORY_LIMIT"
         }
         val folders = snapshot.allDirectories.map { safePath(it.relativePath) }.sorted()
+        val tokenizedDirectories = snapshot.allDirectories.map {
+            val path = safePath(it.relativePath)
+            require(it.semanticPassMask == 0x1f && it.pathComponents > 0) {
+                "TOKEN_VAZIO_NATIVE_ANALYSIS_INCOMPLETE"
+            }
+            TokenizedPath(path, it.semanticTokens, it.pathComponents,
+                it.semanticPassMask, it.semanticKindFlags,
+                size_known = false, parent_known = it.parentDocumentId != null)
+        }
         val files = snapshot.allFiles.map {
             val path = safePath(it.relativePath)
             require(it.sizeBytes == null || it.sizeBytes >= 0) { "TOKEN_VAZIO_UNSAFE_SIZE" }
+            require(it.semanticPassMask == 0x1f && it.pathComponents > 0) {
+                "TOKEN_VAZIO_NATIVE_ANALYSIS_INCOMPLETE"
+            }
             FileMetadata(path, path.substringBeforeLast('/', ""), it.mimeType, it.sizeBytes)
         }.sortedBy { it.path }
+        val tokenizedFiles = snapshot.allFiles.map {
+            TokenizedPath(safePath(it.relativePath), it.semanticTokens, it.pathComponents,
+                it.semanticPassMask, it.semanticKindFlags,
+                size_known = it.sizeBytes != null,
+                parent_known = it.parentDocumentId != null)
+        }
         val candidates = snapshot.candidateFiles.map { safePath(it.relativePath) }.sorted()
         val edges = folders.map {
             Relation(from = it.substringBeforeLast('/', ""), to = it)
@@ -71,6 +99,7 @@ object DriveMetadataIndexGate {
             unknown_size_files = snapshot.unknownSizeFiles,
             directory_paths = folders,
             files = files,
+            semantic_token_paths = (tokenizedDirectories + tokenizedFiles).sortedBy { it.path },
             conversation_codex_candidates = candidates,
             relations = edges
         )

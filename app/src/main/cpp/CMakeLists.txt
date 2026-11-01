@@ -62,6 +62,25 @@ target_compile_options(rafroute PRIVATE
     -Wall -Wextra -Werror -O2 -fno-builtin -fno-stack-protector
 )
 
+# InventarioRAF: the Android provider stays in SAF/Kotlin; only bounded
+# metadata spans cross this ABI into the freestanding C/ASM tokenizer.
+set(RAF_INVENTARIO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../native/inventario_raf_v1")
+set(RAF_INVENTARIO_SCAN_SOURCE "${RAF_INVENTARIO_DIR}/src/inventario_raf_core.c")
+if(ANDROID_ABI STREQUAL "armeabi-v7a")
+    list(APPEND RAF_INVENTARIO_SCAN_SOURCE
+        "${RAF_INVENTARIO_DIR}/asm/arm32/path_components.S")
+elseif(ANDROID_ABI STREQUAL "arm64-v8a")
+    list(APPEND RAF_INVENTARIO_SCAN_SOURCE
+        "${RAF_INVENTARIO_DIR}/asm/arm64/path_components.S")
+endif()
+add_library(rafinventory SHARED
+    raf_inventory_jni.c
+    ${RAF_INVENTARIO_SCAN_SOURCE}
+)
+target_include_directories(rafinventory PRIVATE "${RAF_INVENTARIO_DIR}/include")
+target_compile_options(rafinventory PRIVATE
+    -Wall -Wextra -Werror -O2 -fno-builtin -fno-stack-protector)
+
 # ---------------------------------------------------------------------------
 # RAF Kernel: llamaRafaelia cognitive kernel via add_subdirectory.
 # runtime-src/ is populated by CI from runtime-lock.json — not committed.
