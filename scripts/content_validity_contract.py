@@ -133,7 +133,9 @@ def validate_contract(contract: dict[str, Any]) -> dict[str, Any]:
             errors.append("TOKEN_VAZIO must not be numeric")
         low = weight_domain.get("numeric_min")
         high = weight_domain.get("numeric_max")
-        if not isinstance(low, (int, float)) or not isinstance(high, (int, float)) or low >= high:
+        if (isinstance(low, bool) or isinstance(high, bool)
+                or not isinstance(low, (int, float)) or not isinstance(high, (int, float))
+                or low >= high):
             errors.append("weight_domain numeric bounds are invalid")
 
     aggregation = contract.get("aggregation")
@@ -146,7 +148,7 @@ def validate_contract(contract: dict[str, Any]) -> dict[str, Any]:
             errors.append("aggregation must be non-compensatory")
         for field in ("valid_threshold", "valid_limited_threshold"):
             value = aggregation.get(field)
-            if not isinstance(value, (int, float)) or not 0 <= value <= 1:
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value <= 1:
                 errors.append(f"aggregation.{field} must be between 0 and 1")
         if (
             isinstance(aggregation.get("valid_threshold"), (int, float))
@@ -253,13 +255,13 @@ def validate_manifest(contract: dict[str, Any], manifest: dict[str, Any]) -> dic
         maximum = window.get("max_tokens")
         overlap = window.get("overlap_tokens")
         observed = window.get("observed_token_count")
-        if not isinstance(maximum, int) or maximum <= 0:
+        if isinstance(maximum, bool) or not isinstance(maximum, int) or maximum <= 0:
             errors.append(f"windows.{window_id}.max_tokens must be a positive integer")
-        if not isinstance(overlap, int) or overlap < 0:
+        if isinstance(overlap, bool) or not isinstance(overlap, int) or overlap < 0:
             errors.append(f"windows.{window_id}.overlap_tokens must be a non-negative integer")
         if isinstance(maximum, int) and isinstance(overlap, int) and overlap >= maximum:
             errors.append(f"windows.{window_id}: overlap must be less than max_tokens")
-        if not isinstance(observed, int) or observed < 0:
+        if isinstance(observed, bool) or not isinstance(observed, int) or observed < 0:
             errors.append(f"windows.{window_id}.observed_token_count must be non-negative")
         elif isinstance(maximum, int) and observed > maximum:
             errors.append(f"windows.{window_id}: observed_token_count exceeds max_tokens")
