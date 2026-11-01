@@ -158,6 +158,9 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+        // Android-hosted compatibility for java.time and java.util.Base64 on API 24-25.
+        // This is not part of any freestanding C/ASM producer.
+        coreLibraryDesugaringEnabled true
     }
 
     kotlinOptions {
@@ -218,6 +221,8 @@ configurations.all {
 }
 
 dependencies {
+    // Android API 24 compatibility; Google-owned runtime, pinned to 2.1.5.
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     // Core Android libraries
     implementation 'androidx.core:core-ktx:1.19.1'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.4'

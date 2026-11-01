@@ -34,9 +34,28 @@ object BisectManager {
 
     private data class GitResult(val exitCode: Int, val stdout: String, val stderr: String)
 
+    // Process.waitFor(timeout, unit) is API 26; this polling gate preserves
+    // bounded completion on minSdk 24 without invoking any API 26 method.
+    private fun awaitExit(process: Process, timeoutSeconds: Long): Boolean {
+        val startedAt = System.nanoTime()
+        val timeoutNanos = TimeUnit.SECONDS.toNanos(timeoutSeconds)
+        while (true) {
+            try {
+                process.exitValue()
+                return true
+            } catch (_: IllegalThreadStateException) {
+                // Still running. Poll on the existing IO execution context.
+            }
+            if (System.nanoTime() - startedAt >= timeoutNanos) return false
+            Thread.sleep(50L)
+        }
+    }
+
     private fun checkGitAvailable(): Boolean = runCatching {
         val p = ProcessBuilder("git", "--version").start()
-        p.waitFor(5, TimeUnit.SECONDS) && p.exitValue() == 0
+        val exited = awaitExit(p, 5L)
+        if (!exited) p.destroy()
+        exited && p.exitValue() == 0
     }.getOrDefault(false)
 
     private fun runGit(repoPath: String, vararg args: String): GitResult {
@@ -49,13 +68,15 @@ object BisectManager {
                 .redirectErrorStream(true)
                 .start()
             val outputFuture = ioScope.async { process.inputStream.bufferedReader().readText() }
-            val finished = process.waitFor(GIT_TIMEOUT_SECS, TimeUnit.SECONDS)
-            val output = runBlocking { outputFuture.await() }
+            val finished = awaitExit(process, GIT_TIMEOUT_SECS)
             if (!finished) {
-                process.destroyForcibly()
-                process.waitFor()
+                // Do not await the reader before terminating a timed-out child:
+                // a child holding stdout open could otherwise block forever.
+                process.destroy()
+                outputFuture.cancel()
                 return GitResult(-1, "", "git bisect timed out after ${GIT_TIMEOUT_SECS}s")
             }
+            val output = runBlocking { outputFuture.await() }
             GitResult(exitCode = process.exitValue(), stdout = output.trimEnd(), stderr = "")
         } catch (e: Exception) {
             GitResult(-1, "", "Failed to launch git: ${e.message}")

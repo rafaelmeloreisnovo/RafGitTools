@@ -77,11 +77,39 @@ class MasterCoverageProviderRoutingTests(unittest.TestCase):
         self.assertNotIn("eval ", provider_lane)
         self.assertNotIn("TARGET_TASK_CMD", provider_lane)
 
-    def test_single_root_workflow_file_still_exists(self) -> None:
-        workflows = sorted(
-            p.name for p in (ROOT / ".github" / "workflows").glob("*.y*ml")
-        )
-        self.assertEqual(workflows, ["START.yml"])
+    def test_single_general_root_with_allowlisted_scoped_workflows(self) -> None:
+        # START owns general orchestration. The four specialized, path/branch-
+        # constrained workflows are separate evidence lanes, not extra roots.
+        workflow_dir = ROOT / ".github" / "workflows"
+        expected_scoped = {
+            "ci-android-atlas-consumer.yml": (
+                "  pull_request:\n    branches: [main]\n    paths:",
+            ),
+            "rafaelia-middlefield-bridge-scoped.yml": (
+                "  pull_request:\n    paths:",
+                "      - lab/rafaelia-middlefield-bridge-20261031-hold",
+            ),
+            "rafaelia-rapidtools-lab-scoped.yml": (
+                "      - lab/rafaelia-rapidtools-arm32-arm64-20261031-hold",
+                "    paths:",
+            ),
+            "rafgittools-apk-canary.yml": (
+                "      - fix/android-apk-ci-topology-20261031-hold",
+                "    paths:",
+            ),
+        }
+        observed = {
+            p.name for p in workflow_dir.glob("*.y*ml")
+        }
+        self.assertEqual(observed, {"START.yml", *expected_scoped})
+        self.assertTrue(WORKFLOW.is_file())
+        for filename, required_scopes in expected_scoped.items():
+            content = (workflow_dir / filename).read_text(encoding="utf-8")
+            self.assertIn("on:\n", content, filename)
+            self.assertIn("permissions:\n  contents: read\n", content, filename)
+            self.assertNotIn("  workflow_call:", content, filename)
+            for scope in required_scopes:
+                self.assertIn(scope, content, filename)
 
 
 if __name__ == "__main__":

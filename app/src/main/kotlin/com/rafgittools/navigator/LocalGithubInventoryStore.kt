@@ -57,6 +57,7 @@ class LocalGithubInventoryStore(context: Context) {
         const val MAX_REPOS = 5000
         const val MAX_BYTES = 2 * 1024 * 1024
         const val MAX_HISTORY = 128
+        private val SAFE_FULL_NAME = Regex("[A-Za-z0-9-]{1,39}/(?!\\.{1,2}$)[A-Za-z0-9_.-]+")
         fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
             .digest(bytes).joinToString("") { "%02x".format(it) }
 
@@ -66,7 +67,7 @@ class LocalGithubInventoryStore(context: Context) {
             require(profile.matches(Regex("[A-Za-z0-9-]{1,39}"))) { "TOKEN_VAZIO_PROFILE" }
             require(rows.size <= MAX_REPOS && at > 0L) { "TOKEN_VAZIO_INVENTORY_LIMIT" }
             val records = rows.distinctBy { it.id }.map {
-                require(it.fullName.matches(Regex("[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+"))) {
+                require(it.fullName.matches(SAFE_FULL_NAME)) {
                     "TOKEN_VAZIO_REPOSITORY_NAME"
                 }
                 Repo(
@@ -156,7 +157,7 @@ class LocalGithubInventoryStore(context: Context) {
         require(!s.cloned_content && !s.claim_allowed)
         require(s.all_accounts == "TOKEN_VAZIO_NOT_ATTESTED")
         require(s.repositories.all {
-            it.full_name.matches(Regex("[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")) &&
+            it.full_name.matches(SAFE_FULL_NAME) &&
             it.visibility in setOf("PRIVATE", "PUBLIC") &&
             it.files == "TOKEN_VAZIO_NOT_SCANNED" &&
             it.workflows == "TOKEN_VAZIO_NOT_SCANNED" &&

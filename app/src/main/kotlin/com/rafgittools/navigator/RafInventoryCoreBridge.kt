@@ -71,7 +71,6 @@ internal object RafInventoryCoreBridge {
         return result
     }
 
-    companion object {
-        const val ALL_PASSES = 0x1f
-    }
+    // One constant owned by the existing singleton; no nested companion is legal here.
+    const val ALL_PASSES = 0x1f
 }
