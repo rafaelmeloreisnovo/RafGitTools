@@ -1,6 +1,13 @@
-# START — single active GitHub Actions entrypoint
+# START — single global owner + four scoped Actions workflows
 
-`START.yml` is the only active YAML workflow in this directory.
+`START.yml` is the only **global provider-required status-check owner**, NOT the only YAML file. The four auxiliary workflows are deliberately scoped to their specified branch/path or manual gate. They do not gain global authority from their presence.
+
+- `.github/workflows/ci-android-atlas-consumer.yml`
+- `.github/workflows/rafaelia-middlefield-bridge-scoped.yml`
+- `.github/workflows/rafaelia-rapidtools-lab-scoped.yml`
+- `.github/workflows/rafgittools-apk-canary.yml`
+
+The source topology validator checks the exact allowlist; unknown workflows fail closed. A candidate can be moved to immutable historical storage only after dedicated trigger, CI, and status-check dependencies have been reconciled. Do not silently delete or archive workflows during a P0 fix.
 
 The previous workflow tree is preserved byte-for-byte at:
 

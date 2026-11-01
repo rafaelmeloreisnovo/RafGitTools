@@ -201,7 +201,13 @@ jobs:
               echo '::error::PR base commit unavailable; draft cannot be classified'
               exit 2
             }
-            mode="$(git diff --no-ext-diff --name-only -z "$base" HEAD | python3 scripts/ci/draft_lane_guard.py)"
+            # L0 freestanding x86_64 router: identical contract to the
+            # preserved Python oracle, with no libc, heap, malloc or network.
+            command -v cc >/dev/null || { echo '::error::host C compiler missing'; exit 2; }
+            cc -std=c11 -O2 -ffreestanding -fno-builtin -fno-stack-protector \
+              -nostdlib -no-pie -Wl,-e,_start -Wl,--build-id=none \
+              -o "$RUNNER_TEMP/raf-route" scripts/ci/native/draft_route_l0.c
+            mode="$(git diff --no-ext-diff --name-only -z "$base" HEAD | "$RUNNER_TEMP/raf-route")"
             case "$mode" in
               fast|android|full) ;;
               *) echo '::error::invalid draft route'; exit 2 ;;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed validator for the START single-root provider plan v3.
+"""Fail-closed validator for START global owner plus exact scoped workflows.
 
 This proves only source/governance topology. It does not apply or prove GitHub
 branch protection/rulesets, human review, physical runtime, scientific claims,
@@ -15,6 +15,17 @@ ROOT = Path(__file__).resolve().parents[1]
 PLAN = ROOT / "contracts" / "MAIN_PROVIDER_ENFORCEMENT_PLAN_20260907.v3.json"
 START = ROOT / ".github" / "workflows" / "START.yml"
 LEGACY = ROOT / ".github" / "workflows-legacy-20260907"
+
+EXPECTED_SCOPED_WORKFLOWS = (
+    ".github/workflows/ci-android-atlas-consumer.yml",
+    ".github/workflows/rafaelia-middlefield-bridge-scoped.yml",
+    ".github/workflows/rafaelia-rapidtools-lab-scoped.yml",
+    ".github/workflows/rafgittools-apk-canary.yml",
+)
+EXPECTED_ACTIVE_YAMLS = sorted(
+    [START, *(ROOT / path for path in EXPECTED_SCOPED_WORKFLOWS)],
+    key=lambda path: path.as_posix(),
+)
 
 EXPECTED_GLOBAL_JOBS = {"plan", "topology", "coherence", "receipt"}
 EXPECTED_LANES = {"federation", "docs", "android", "security", "release"}
@@ -105,9 +116,9 @@ def validate(data: dict[str, Any]) -> list[str]:
         errors.append("v1 predecessor must remain preserved")
 
     active = _active_yaml_paths()
-    if active != [START]:
+    if active != EXPECTED_ACTIVE_YAMLS:
         errors.append(
-            "active workflow set must contain exactly .github/workflows/START.yml; got "
+            "active workflow set must match known scoped owner allowlist; got "
             + ", ".join(path.relative_to(ROOT).as_posix() for path in active)
         )
     if not START.is_file():
@@ -274,7 +285,7 @@ def main() -> int:
             if isinstance(item, dict) and isinstance(item.get("lane"), str)
         ),
         "errors": errors,
-        "boundary": "PASS proves only single-root source/governance policy coherence. Provider enforcement remains TOKEN_VAZIO until an authorized administration surface applies and reads back the rule.",
+        "boundary": "PASS proves only one global provider check owner plus scoped source topology. Provider enforcement remains TOKEN_VAZIO until an authorized administration surface applies and reads back the rule.",
     }
     print(json.dumps(report, indent=2, ensure_ascii=False))
     return 0 if not errors else 1
