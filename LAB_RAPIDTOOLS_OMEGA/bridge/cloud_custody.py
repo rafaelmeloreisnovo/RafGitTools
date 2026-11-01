@@ -35,7 +35,7 @@ def utc_now():
 
 
 def meta(env):
-    sha = env.get("GITHUB_SHA", "")
+    sha = env.get("CUSTODY_SOURCE_SHA") or env.get("GITHUB_SHA", "")
     run = env.get("GITHUB_RUN_ID", "")
     attempt = env.get("GITHUB_RUN_ATTEMPT", "")
     repo = env.get("GITHUB_REPOSITORY", "")
