@@ -133,23 +133,31 @@ class Indexer:
         return entry_id
 
     def zip_members(self, zf: zipfile.ZipFile, container: str, parent_id: str, depth: int) -> None:
-        names: set[str] = set()
-        for info in sorted(zf.infolist(), key=lambda x: x.filename):
+        infos = zf.infolist()
+        if len(infos) > 10000:
+            self.errors.append(f"{container}:ZIP_MEMBER_COUNT_LIMIT")
+            self.partial = True
+            return
+        counts: dict[str, int] = {}
+        for info in sorted(infos, key=lambda x: x.filename):
             locator = container + "!" + info.filename
-            if info.filename in names:
-                self.put(locator + "#duplicate", parent_id, "ZIP_MEMBER", info.file_size,
-                         None, "DUPLICATE_NAME_BLOCKED", depth)
+            counts[info.filename] = counts.get(info.filename, 0) + 1
+            if counts[info.filename] > 1:
+                self.put(locator + f"#duplicate-{counts[info.filename]}", parent_id, "ZIP_MEMBER",
+                         info.file_size, None, "DUPLICATE_NAME_BLOCKED", depth)
                 self.partial = True
                 continue
-            names.add(info.filename)
+            if not safe_member(info.filename):
+                self.put(locator, parent_id, "ZIP_MEMBER", info.file_size, None,
+                         "UNSAFE_MEMBER_PATH", depth)
+                self.partial = True
+                continue
             if info.is_dir():
                 self.put(locator, parent_id, "ZIP_DIRECTORY", 0, None, "INDEXED_METADATA", depth)
                 continue
             unix_mode = info.external_attr >> 16
             reason = None
-            if not safe_member(info.filename):
-                reason = "UNSAFE_MEMBER_PATH"
-            elif stat.S_ISLNK(unix_mode):
+            if stat.S_ISLNK(unix_mode):
                 reason = "SYMLINK_MEMBER_BLOCKED"
             elif info.flag_bits & 1:
                 reason = "ENCRYPTED_MEMBER_BLOCKED"
@@ -172,6 +180,8 @@ class Indexer:
                             continue
                         mid = self.process_stream(io.BytesIO(raw), locator, parent_id,
                                                   "ZIP", len(raw), depth, self.max_entry_bytes)
+                        if self.db.execute("select status from entries where id=?", (mid,)).fetchone()[0] != "INDEXED":
+                            continue
                         try:
                             with zipfile.ZipFile(io.BytesIO(raw)) as nested:
                                 self.zip_members(nested, locator, mid, depth + 1)
