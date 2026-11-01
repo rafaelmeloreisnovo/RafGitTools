@@ -1,5 +1,9 @@
 name: RAFAELIA Ω · Middlefield bridge / LAB only
 on:
+  pull_request:
+    paths:
+      - 'LAB_RAPIDTOOLS_OMEGA/bridge/**'
+      - '.github/workflows/rafaelia-middlefield-bridge-scoped.yml'
   push:
     branches:
       - lab/rafaelia-middlefield-bridge-20261031-hold
@@ -16,18 +20,40 @@ jobs:
   validate-bridge:
     runs-on: ubuntu-24.04
     timeout-minutes: 12
+    env:
+      CUSTODY_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source checkout
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$CUSTODY_SOURCE_SHA"
+      - name: Open source-bound cloud custody window
+        id: custody_start
+        run: python3 LAB_RAPIDTOOLS_OMEGA/bridge/cloud_custody.py --start
       - name: Compile local C host for bounded synthetic tests
         run: make -C LAB_RAPIDTOOLS_OMEGA all CC=gcc
       - name: Route active request through scoped approval or HOLD
         run: python3 LAB_RAPIDTOOLS_OMEGA/bridge/dispatch.py
       - name: Middlefield contract falsifiers
-        run: python3 -m unittest discover -s LAB_RAPIDTOOLS_OMEGA/bridge/tests -p 'test_*.py' -v
+        run: |
+          python3 -m unittest discover -s LAB_RAPIDTOOLS_OMEGA/bridge/tests -p 'test_*.py' -v
+          python3 LAB_RAPIDTOOLS_OMEGA/bridge/cloud_custody.py --selftest
       - name: Execute editable pipeline with CI-only privilege
-        run: python3 LAB_RAPIDTOOLS_OMEGA/bridge/bridge.py --run-safe
+        run: python3 LAB_RAPIDTOOLS_OMEGA/bridge/bridge.py --run-safe --out-dir "${{ runner.temp }}/rafaelia-cloud-custody/bridge-receipts"
+      - name: Close custody window even after failed tests
+        if: ${{ always() && steps.custody_start.outcome == 'success' }}
+        run: python3 LAB_RAPIDTOOLS_OMEGA/bridge/cloud_custody.py --finish --status "${{ job.status }}"
+      - name: Upload bounded CI syslog receipt (temporary provider artifact)
+        if: ${{ always() && steps.custody_start.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: rafaelia-cloud-custody-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/rafaelia-cloud-custody/
+          retention-days: 10
+          if-no-files-found: error
       - name: Explicit nonpromotion receipt
         run: |
           echo "CHAT_AUTHORITY=TOKEN_VAZIO_PROVIDER_VERIFIED_IDENTITY"
