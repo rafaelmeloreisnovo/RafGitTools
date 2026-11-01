@@ -84,7 +84,7 @@ fun DriveFirstRunIndexCard() {
                         "INDEX_METADATA_READBACK_VERIFIED bytes=$bytes sha256=$actual"
                     }
                 }
-                status = result.getOrElse { "BLOCKED_EXPORT_OR_READBACK: ${it.message ?: "TOKEN_VAZIO"}" }
+                status = result.getOrElse { "BLOCKED_EXPORT_OR_READBACK_TOKEN_VAZIO" }
                 busy = false
             }
         }
@@ -114,7 +114,7 @@ fun DriveFirstRunIndexCard() {
                     snapshot = it
                     status = "METADATA_PREVIEW_READY_NOT_EXPORTED"
                 }.onFailure {
-                    status = "BLOCKED_SOURCE_PROVIDER_OR_LIMIT: ${it.message ?: "TOKEN_VAZIO"}"
+                    status = "BLOCKED_SOURCE_PROVIDER_OR_LIMIT_TOKEN_VAZIO"
                 }
                 busy = false
             }
