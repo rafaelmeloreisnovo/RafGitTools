@@ -40,6 +40,8 @@ class LocalGithubInventoryStoreTest {
         assertEquals("TOKEN_VAZIO_NOT_SCANNED", snapshot.repositories.single().workflows)
         assertEquals("TOKEN_VAZIO_NOT_VERIFIED", snapshot.repositories.single().checks)
         assertEquals("TOKEN_VAZIO_NOT_DERIVED", snapshot.repositories.single().dependencies)
+        assertTrue(snapshot.not_indexed_facets.contains("WORKFLOWS"))
+        assertTrue(snapshot.not_indexed_facets.contains("BRANCH_PROTECTION"))
         assertEquals("Kotlin", snapshot.repositories.single().language)
     }
 
