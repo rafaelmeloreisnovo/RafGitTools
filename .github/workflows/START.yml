@@ -604,6 +604,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m unittest discover -s tests -p 'test_draft_lane_guard.py' -v
+          python3 -m unittest discover -s tests -p 'test_draft_route_native.py' -v
           python3 -m unittest discover -s tests -p 'test_dependabot_policy_gate_v1.py' -v
           python3 -m unittest discover -s tests -p 'test_android_dependency_bundle_gate.py' -v
       - name: P0 queue already in main | freestanding native exact-SHA selftest
