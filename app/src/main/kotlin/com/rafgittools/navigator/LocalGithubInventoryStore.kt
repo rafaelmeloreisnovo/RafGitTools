@@ -42,6 +42,13 @@ class LocalGithubInventoryStore(context: Context) {
         val all_accounts: String = "TOKEN_VAZIO_NOT_ATTESTED",
         val cloned_content: Boolean = false,
         val claim_allowed: Boolean = false,
+        val not_indexed_facets: List<String> = listOf(
+            "FILE_TREE", "BRANCHES", "TAGS", "WORKFLOWS",
+            "WORKFLOW_RUNS", "COMMIT_HISTORY", "PULL_REQUESTS",
+            "ISSUE_DETAILS", "LICENSE_PROVENANCE", "DEPENDENCY_GRAPH",
+            "SECURITY_ADVISORIES", "BRANCH_PROTECTION", "RELEASE_ARTIFACTS",
+            "INDEPENDENT_RUNTIME_TESTS"
+        ),
         val repositories: List<Repo>
     )
     data class Saved(val snapshot: Snapshot, val sha256: String, val bytes: Long)
@@ -78,6 +85,16 @@ class LocalGithubInventoryStore(context: Context) {
                 observed_repositories = records.size, repositories = records
             )
         }
+    }
+
+    /** Export only a locally verified snapshot, never a token or remote blob. */
+    fun verifiedJson(saved: Saved): ByteArray {
+        validate(saved.snapshot)
+        val payload = (gson.toJson(saved.snapshot) + "\n").toByteArray(Charsets.UTF_8)
+        require(payload.size <= MAX_BYTES && sha256(payload) == saved.sha256) {
+            "TOKEN_VAZIO_EXPORT_HASH_MISMATCH"
+        }
+        return payload
     }
 
     fun save(snapshot: Snapshot): Saved {
