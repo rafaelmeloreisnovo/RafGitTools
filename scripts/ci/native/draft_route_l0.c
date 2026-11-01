@@ -74,6 +74,7 @@ __attribute__((noreturn)) void _start(void){
         if(got<0)done(2);if(!got)break;
         for(long k=0;k<got;++k){
             if(!chunk[k]){
+                if(!n)continue; /* original Python classifier skips empty NUL fields */
                 int grade=classify(path,n);
                 if(grade<0)done(2);
                 if(grade>mode)mode=grade;
