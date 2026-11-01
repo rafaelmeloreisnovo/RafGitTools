@@ -92,6 +92,12 @@ int main(void) {
     CHECK("ZIP_HEADERS_TOPOLOGY", inventarioraf_step(&st,&q,&r)==IR_OK &&
         r.format==IR_FORMAT_ZIP && r.entries_observed==1u &&
         r.full_inventory==0u);
+    zip[31+46]='y';
+    CHECK("ZIP_CENTRAL_LOCAL_NAME_MISMATCH",inventarioraf_step(&st,&q,&r)==IR_BLOCKED);
+    zip[31+46]='x';
+    zip[31+16]=1u;
+    CHECK("ZIP_CENTRAL_LOCAL_CRC_MISMATCH",inventarioraf_step(&st,&q,&r)==IR_BLOCKED);
+    zip[31+16]=0u;
     zip[30]='\\';
     CHECK("ZIP_UNSAFE_PATH_BLOCKED",inventarioraf_step(&st,&q,&r)==IR_BLOCKED);
     zip[30]='x';zip[78+10]=2;
