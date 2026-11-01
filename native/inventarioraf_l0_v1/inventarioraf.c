@@ -20,7 +20,7 @@ static ir_u32 ir_sig(const ir_u8 *b, ir_size n, ir_size off,
 }
 static ir_u32 ir_table(ir_size n, ir_u64 offset, ir_u32 count, ir_u32 stride) {
     if (offset > (ir_u64)n || (count && stride == 0u)) return 0u;
-    return !count || (ir_u64)count <= ((ir_u64)n-offset)/(ir_u64)stride;
+    return !count || ((ir_u64)count * (ir_u64)stride) <= ((ir_u64)n-offset);
 }
 static ir_u32 ir_zip_name_safe(const ir_u8 *s, ir_u32 n) {
     ir_u32 i;
@@ -50,7 +50,8 @@ static ir_u32 ir_zip(const ir_u8 *b, ir_size n, ir_u32 *entries) {
             return IR_UNSUPPORTED;
         if (!ir_fit(n,p+30u,(ir_size)name+(ir_size)extra) ||
             !ir_zip_name_safe(b+p+30u,name)) return IR_BLOCKED;
-        if (compressed && (ir_u64)expanded > (ir_u64)compressed * 200u)
+        if ((!compressed && expanded) ||
+            (compressed && (ir_u64)expanded > (ir_u64)compressed * 200u))
             return IR_BLOCKED;
         body=p+30u+(ir_size)name+(ir_size)extra;
         if (!ir_fit(n,body,(ir_size)compressed)) return IR_BLOCKED;
@@ -62,6 +63,8 @@ static ir_u32 ir_zip(const ir_u8 *b, ir_size n, ir_u32 *entries) {
         ir_u32 name, extra, comment;
         ir_size span;
         if (!ir_fit(n,p,46u) || central >= IR_MAX_MEMBERS) return IR_BLOCKED;
+        /* Central-directory UNIX symlink entries must not be followed by hosts. */
+        if (((IR32(b,p+38u) >> 16) & 0170000u) == 0120000u) return IR_BLOCKED;
         name=IR16(b,p+28u); extra=IR16(b,p+30u); comment=IR16(b,p+32u);
         span=46u+(ir_size)name+(ir_size)extra+(ir_size)comment;
         if (!ir_fit(n,p,span) || !ir_zip_name_safe(b+p+46u,name))
@@ -104,8 +107,10 @@ ir_u32 inventarioraf_step(struct ir_state *state,
         q->expected_generation != state->generation ||
         state->generation == ~(ir_u64)0u ||
         (q->verified_caps & ~q->advertised_caps)) return IR_BLOCKED;
+    /* Conservative total work ceiling: hashing + bounds/name/table passes.
+       The host must enforce elapsed-time/thermal watchdogs separately. */
     if ((ir_u64)q->size > q->watchdog_bytes ||
-        (ir_u64)q->size + 1u > q->watchdog_fuel) {
+        ((ir_u64)q->size * 4u + (IR_MAX_MEMBERS * 32u)) > q->watchdog_fuel) {
         r->status=IR_BUDGET;
         return IR_BUDGET;
     }
