@@ -21,14 +21,22 @@ object NovoexportSafInventory {
         val mimeType: String,
         val sizeBytes: Long?,
         val relativePath: String = name,
-        val parentDocumentId: String? = null
+        val parentDocumentId: String? = null,
+        val semanticTokens: List<String> = emptyList(),
+        val semanticPassMask: Int = 0,
+        val semanticKindFlags: Int = 0,
+        val pathComponents: Int = 0
     )
 
     data class DirectoryEntry(
         val documentId: String,
         val parentDocumentId: String?,
         val name: String,
-        val relativePath: String
+        val relativePath: String,
+        val semanticTokens: List<String> = emptyList(),
+        val semanticPassMask: Int = 0,
+        val semanticKindFlags: Int = 0,
+        val pathComponents: Int = 0
     )
 
     data class Result(
@@ -114,12 +122,23 @@ object NovoexportSafInventory {
                             "SAF_DIRECTORY_ID_HAS_MULTIPLE_TREE_PATHS"
                         }
                         if (previousPlacement == null) {
+                            val semantic = RafInventoryCoreBridge.analyze(
+                                path = relativePath,
+                                mime = mimeType,
+                                isDirectory = true,
+                                reportedBytes = null,
+                                parentKnown = directoryId.isNotBlank()
+                            )
                             directoryPlacements[documentId] = placement
                             allDirectories += DirectoryEntry(
                                 documentId = documentId,
                                 parentDocumentId = directoryId,
                                 name = name,
-                                relativePath = relativePath
+                                relativePath = relativePath,
+                                semanticTokens = semantic.tokens,
+                                semanticPassMask = semantic.passMask,
+                                semanticKindFlags = semantic.kindFlags,
+                                pathComponents = semantic.pathComponents
                             )
                             pending.addLast(DirectoryWork(documentId, relativePath))
                         }
@@ -128,6 +147,13 @@ object NovoexportSafInventory {
 
                     val size = if (it.isNull(sizeIndex)) null
                     else it.getLong(sizeIndex).takeIf { value -> value >= 0L }
+                    val semantic = RafInventoryCoreBridge.analyze(
+                        path = relativePath,
+                        mime = mimeType,
+                        isDirectory = false,
+                        reportedBytes = size,
+                        parentKnown = directoryId.isNotBlank()
+                    )
                     val entry = Entry(
                         uri = DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId).toString(),
                         documentId = documentId,
@@ -135,7 +161,11 @@ object NovoexportSafInventory {
                         mimeType = mimeType,
                         sizeBytes = size,
                         relativePath = relativePath,
-                        parentDocumentId = directoryId
+                        parentDocumentId = directoryId,
+                        semanticTokens = semantic.tokens,
+                        semanticPassMask = semantic.passMask,
+                        semanticKindFlags = semantic.kindFlags,
+                        pathComponents = semantic.pathComponents
                     )
                     val placement = relativePath to directoryId
                     val previousPlacement = filePlacements[documentId]

@@ -613,6 +613,13 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_draft_route_native.py' -v
           python3 -m unittest discover -s tests -p 'test_dependabot_policy_gate_v1.py' -v
           python3 -m unittest discover -s tests -p 'test_android_dependency_bundle_gate.py' -v
+      - name: InventarioRAF freestanding core and ARM ABI gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C native/inventario_raf_v1 clean test \
+            HOST_CC=clang ARMV7_CC=clang AARCH64_CC=clang \
+            NM=nm READELF=readelf LD_LLD=ld.lld
       - name: P0 queue already in main | freestanding native exact-SHA selftest
         shell: bash
         run: |

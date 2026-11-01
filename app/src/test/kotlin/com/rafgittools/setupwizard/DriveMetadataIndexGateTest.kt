@@ -19,13 +19,21 @@ class DriveMetadataIndexGateTest {
             mimeType = "application/json",
             sizeBytes = size,
             relativePath = path,
-            parentDocumentId = "PRIVATE_PARENT_ID"
+            parentDocumentId = "PRIVATE_PARENT_ID",
+            semanticTokens = listOf("Private", "conversations", "json"),
+            semanticPassMask = 0x1f,
+            semanticKindFlags = 2,
+            pathComponents = 2
         )
         val folder = NovoexportSafInventory.DirectoryEntry(
             documentId = "PRIVATE_PARENT_ID",
             parentDocumentId = null,
             name = "Private",
-            relativePath = "Private"
+            relativePath = "Private",
+            semanticTokens = listOf("Private"),
+            semanticPassMask = 0x1f,
+            semanticKindFlags = 1,
+            pathComponents = 1
         )
         return NovoexportSafInventory.Result(
             treeUri = "content://private-account-secret/root",
@@ -48,6 +56,14 @@ class DriveMetadataIndexGateTest {
         assertFalse(root.get("claim_allowed").asBoolean)
         assertFalse(root.get("content_indexed").asBoolean)
         assertFalse(root.get("source_bytes_read").asBoolean)
+        assertEquals("rafgittools.drive-saf-metadata-index.v2",
+            root.get("schema").asString)
+        assertEquals("conversations",
+            root.get("semantic_token_paths").asJsonArray[1]
+                .asJsonObject.get("tokens").asJsonArray[1].asString)
+        assertEquals(0x1f,
+            root.get("semantic_token_paths").asJsonArray[1]
+                .asJsonObject.get("semantic_pass_mask").asInt)
         assertTrue(root.get("files").asJsonArray[0].asJsonObject.get("size_bytes").isJsonNull)
         assertEquals("Private",
             root.get("relations").asJsonArray[1].asJsonObject.get("from").asString)
