@@ -59,10 +59,10 @@ class NativeDraftRouteParityTests(unittest.TestCase):
                 self.assertEqual(got.returncode,2)
                 self.assertEqual(got.stdout,b"")
     def test_empty_delimiters_equal_legacy_no_diff(self):
-        for payload in (b"\\0", b"\\0\\0", b"\\0docs/a.md\\0"):
+        for payload in (b"\0", b"\0\0", b"\0docs/a.md\0"):
             with self.subTest(payload=payload):
-                path_list=[p.decode("utf-8") for p in payload.split(b"\\0") if p]
-                expected=oracle.select_lane(path_list).encode()+b"\\n"
+                path_list=[p.decode("utf-8") for p in payload.split(b"\0") if p]
+                expected=oracle.select_lane(path_list).encode()+b"\n"
                 got=self.run_native(payload)
                 self.assertEqual((got.returncode,got.stdout),(0,expected))
 
