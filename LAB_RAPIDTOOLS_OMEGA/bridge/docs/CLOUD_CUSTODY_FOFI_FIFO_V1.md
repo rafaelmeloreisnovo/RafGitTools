@@ -27,7 +27,7 @@ GitHub workflow: `.github/workflows/rafaelia-middlefield-bridge-scoped.yml`, usi
 
 `cloud_custody.py --start`: records UTC start time, GitHub run/attempt, source SHA and monotonic start. The existing CI runs controlled tests. `--finish --status <job.status>` records UTC end, monotonic elapsed milliseconds, exact CI status, PAUSED_AT_REVIEW_GATE (runner not kept alive), no delivery or deletion, and produces a local JSON receipt.
 
-The workflow uploads `start.json`, `custody-receipt.json`, and bounded `bridge-receipts/*.json` to GitHub Actions artifacts with **14-day artifact retention**. This is *not indefinite*: prompt Drive mirror and server metadata readback are needed to preserve beyond GitHub expiration. The Drive side requires an authorized live connector operation, not a fictitious cloud listener. Artifact hashes in GitHub represent bytes associated with that upload; custody copy must be independently validated before a stronger claim.
+The workflow uploads `start.json`, `custody-receipt.json`, and bounded `bridge-receipts/*.json` to GitHub Actions artifacts with a requested **14-day maximum**; the observed provider actually expires the first artifact on **2026-11-11** (about ten days). Provider policy overrides the requested value. Do not rely on GitHub for long-term custody. This is *not indefinite*: prompt Drive mirror and server metadata readback are needed to preserve beyond GitHub expiration. The Drive side requires an authorized live connector operation, not a fictitious cloud listener. Artifact hashes in GitHub represent bytes associated with that upload; custody copy must be independently validated before a stronger claim.
 
 ### Safety guarantees and non-guarantees
 
