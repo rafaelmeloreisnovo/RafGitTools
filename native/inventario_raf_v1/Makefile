@@ -20,9 +20,12 @@ CORE = src/inventario_raf_core.c
 HEADER = include/inventario_raf_core.h
 TEST = tests/selftest.c
 
-.PHONY: test host-test armv7-object aarch64-object abi-audit clean
+.PHONY: test host-test armv7-object aarch64-object abi-audit format-probe-gate clean
 
-test: host-test armv7-object aarch64-object abi-audit
+test: host-test armv7-object aarch64-object abi-audit format-probe-gate
+
+format-probe-gate:
+	$(MAKE) -C format_probe test properties objects
 
 host-test: $(BUILD)/host/selftest
 	$(BUILD)/host/selftest

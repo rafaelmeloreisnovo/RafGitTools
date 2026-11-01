@@ -32,3 +32,15 @@ cc -std=c11 -Wall -Wextra -Werror -ffreestanding -fno-builtin \
 
 The host self-test exercises the C fallback. ARM assembly and Android packaging
 still require exact-ABI CI plus physical device/provider evidence.
+
+## Binary format inspection (separate L0 submodule)
+
+The original SAF metadata tokenizer and ARM assembly above are unchanged.
+For a separately authorized **byte view**, open
+[format_probe/README.md](format_probe/README.md) for bounded ELF/DEX/ZIP header
+inspection, dual logical budgets, deterministic scalar fallback and explicit
+rollback. This stage does not read SAF/Drive, extract ZIP contents, interpret
+DEX/ART bytecode, load a NativeActivity, or constitute a signed Android APK.
+Its host/ARM gates are included in the parent Makefile test target; sanitizer
+mutation tests run without private source data. Human/AI navigation points
+back to this existing producer, rather than creating a parallel inventory.
