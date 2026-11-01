@@ -28,6 +28,10 @@ jobs:
         run: |
           set -eu
           make -C "$RUNNER_TEMP/inventarioraf-source/native/inventarioraf_l0_v1" test
+      - name: Deterministic mutated buffers under ASan/UBSan
+        run: |
+          set -eu
+          make -C "$RUNNER_TEMP/inventarioraf-source/native/inventarioraf_l0_v1" properties
       - name: ARMv7 / ARM64 freestanding ABI objects (not APK)
         run: |
           set -eu
