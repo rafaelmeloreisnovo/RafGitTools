@@ -39,6 +39,10 @@ raf_u32 raf_orchestrator_validate(
         raf_u64 bit;
 
         if (stage->module_id == 0u || stage->module_id > RAF_MAX_MODULE_ID ||
+            stage->module_kind < RAF_MODULE_ROUTE ||
+            stage->module_kind > RAF_MODULE_PLATFORM_RUNTIME ||
+            stage->boundary < RAF_BOUNDARY_FREESTANDING_CORE ||
+            stage->boundary > RAF_BOUNDARY_PLATFORM_GATE ||
             stage->execute == (raf_stage_fn)0) {
             warnings |= RAF_WARN_INVALID_PLAN;
             if (warning_mask != (raf_u32 *)0) {
