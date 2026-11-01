@@ -1,5 +1,7 @@
 package com.rafgittools.ui.screens.home
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -45,8 +47,57 @@ fun LocalGithubInventoryCard(
     var result by remember { mutableStateOf("TOKEN_VAZIO_LOCAL_SNAPSHOT_NOT_OBSERVED") }
     var search by remember { mutableStateOf("") }
     var acceptsPrivateLocalMetadata by remember { mutableStateOf(false) }
-    LaunchedEffect(store) {
-        val previous = withContext(Dispatchers.IO) { runCatching { store.latest() } }
+    var acceptsExportTarget by remember { mutableStateOf(false) }
+    val exportPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        val snapshot = saved
+        if (uri == null || snapshot == null || !acceptsExportTarget) {
+            result = "TOKEN_VAZIO_LOCAL_EXPORT_NOT_AUTHORIZED"
+        } else {
+            scope.launch {
+                busy = true
+                val exported = withContext(Dispatchers.IO) {
+                    runCatching {
+                        val bytes = store.verifiedJson(snapshot)
+                        val resolver = context.contentResolver
+                        val out = resolver.openOutputStream(uri, "w")
+                            ?: error("TOKEN_VAZIO_EXPORT_NO_WRITE")
+                        out.use { it.write(bytes); it.flush() }
+                        val back = resolver.openInputStream(uri)
+                            ?: error("TOKEN_VAZIO_EXPORT_NO_READBACK")
+                        val hash = java.security.MessageDigest.getInstance("SHA-256")
+                        var count = 0L
+                        back.use { stream ->
+                            val buffer = ByteArray(64 * 1024)
+                            while (true) {
+                                val n = stream.read(buffer)
+                                if (n < 0) break
+                                if (n == 0) continue
+                                count += n
+                                require(count <= LocalGithubInventoryStore.MAX_BYTES.toLong()) {
+                                    "TOKEN_VAZIO_EXPORT_LIMIT"
+                                }
+                                hash.update(buffer, 0, n)
+                            }
+                        }
+                        require(count == bytes.size.toLong() &&
+                            hash.digest().joinToString("") { "%02x".format(it) } == snapshot.sha256) {
+                            "TOKEN_VAZIO_EXPORT_READBACK_MISMATCH"
+                        }
+                    }
+                }
+                result = if (exported.isSuccess) "EXPORT_SHA256_READBACK_PASS" else
+                    "BLOCKED_EXPORT_READBACK"
+                busy = false
+            }
+        }
+    }
+    LaunchedEffect(store, profile) {
+        saved = null
+        val previous = withContext(Dispatchers.IO) {
+            runCatching { store.latest(expectedProfile = profile) }
+        }
         previous.onSuccess { saved = it }
             .onFailure { result = "TOKEN_VAZIO_LOCAL_READBACK_FAILED" }
     }
@@ -112,7 +163,10 @@ fun LocalGithubInventoryCard(
                 val snapshot = item.snapshot
                 val publicCount = snapshot.repositories.count { it.visibility == "PUBLIC" }
                 val privateCount = snapshot.repositories.count { it.visibility == "PRIVATE" }
-                Text("Último snapshot · @" + snapshot.profile + " · " + item.bytes + " bytes",
+                Text("Último snapshot · @" + snapshot.profile + " · " + item.bytes + " bytes · " +
+                    java.text.DateFormat.getDateTimeInstance().format(
+                        java.util.Date(snapshot.observed_epoch_ms)
+                    ),
                     style = MaterialTheme.typography.bodySmall)
                 Text(
                     snapshot.observed_repositories.toString() + " repositórios observados · " +
@@ -149,6 +203,22 @@ fun LocalGithubInventoryCard(
                         }
                     }
                 }
+                Row {
+                    Checkbox(
+                        checked = acceptsExportTarget,
+                        onCheckedChange = { acceptsExportTarget = it }
+                    )
+                    Text(
+                        "Confirmo que o destino escolhido para exportação é privado. " +
+                            "O arquivo contém nomes de repositórios privados.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                OutlinedButton(
+                    onClick = { exportPicker.launch("rafaelia-github-local-inventory.v1.json") },
+                    enabled = !busy && acceptsExportTarget,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Exportar índice JSON para humanos e IAs") }
                 Text(
                     "Não verificado neste snapshot: workflows, arquivos, checks, dependências, " +
                         "segurança, outras contas e conteúdo das conversas. A pesquisa funciona " +
