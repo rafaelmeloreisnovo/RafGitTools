@@ -48,6 +48,7 @@ fun LocalGithubInventoryCard(
     var search by remember { mutableStateOf("") }
     var acceptsPrivateLocalMetadata by remember { mutableStateOf(false) }
     var acceptsExportTarget by remember { mutableStateOf(false) }
+    var showMissingFacets by remember { mutableStateOf(false) }
     val exportPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
@@ -219,6 +220,19 @@ fun LocalGithubInventoryCard(
                     enabled = !busy && acceptsExportTarget,
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("Exportar índice JSON para humanos e IAs") }
+                OutlinedButton(
+                    onClick = { showMissingFacets = !showMissingFacets },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (showMissingFacets) "Ocultar lacunas" else
+                        "Ver " + snapshot.not_indexed_facets.size + " tipos de informação ainda não auditados")
+                }
+                if (showMissingFacets) {
+                    snapshot.not_indexed_facets.forEach { facet ->
+                        Text("∅ " + facet + " — TOKEN_VAZIO_NAO_INDEXADO",
+                            style = MaterialTheme.typography.bodySmall)
+                    }
+                }
                 Text(
                     "Não verificado neste snapshot: workflows, arquivos, checks, dependências, " +
                         "segurança, outras contas e conteúdo das conversas. A pesquisa funciona " +
