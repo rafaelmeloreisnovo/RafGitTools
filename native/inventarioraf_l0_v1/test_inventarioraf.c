@@ -54,6 +54,7 @@ int main(void) {
     CHECK("UNAUTHORIZED_SOURCE_DENIED", inventarioraf_step(&st,&q,&r)==IR_BLOCKED);
     q.authorized_source=1u;
     q.backend=IR_BACKEND_NEON;
+    q.commit=0u; /* fallback probe must not change the receipt generation */
     CHECK("NEON_REQUEST_SCALAR_FALLBACK",inventarioraf_step(&st,&q,&r)==IR_OK &&
         r.backend_used==IR_BACKEND_SCALAR && (r.warnings & IR_WARN_FALLBACK));
     q.backend=IR_BACKEND_GPU; q.verified_caps=0u;
