@@ -124,11 +124,16 @@ class LocalGithubInventoryStore(context: Context) {
         }
     }
 
-    fun latest(): Saved? {
+    fun latest(expectedProfile: String? = null): Saved? {
         if (!directory.isDirectory) return null
         val files = directory.listFiles()?.filter { it.name.endsWith(".json") }.orEmpty()
         require(files.size <= MAX_HISTORY) { "TOKEN_VAZIO_HISTORY_REVIEW_REQUIRED" }
+        val profilePrefix = expectedProfile?.let {
+            require(it.matches(Regex("[A-Za-z0-9-]{1,39}"))) { "TOKEN_VAZIO_PROFILE" }
+            "inventory-" + sha256(it.toByteArray(Charsets.UTF_8)).take(12) + "-"
+        }
         for (file in files.sortedByDescending { it.lastModified() }) {
+            if (profilePrefix != null && !file.name.startsWith(profilePrefix)) continue
             if (file.length() !in 1L..MAX_BYTES.toLong()) continue
             val bytes = file.readBytes()
             val digest = sha256(bytes)
@@ -136,6 +141,7 @@ class LocalGithubInventoryStore(context: Context) {
             val record = runCatching { gson.fromJson(String(bytes, Charsets.UTF_8), Snapshot::class.java) }
                 .getOrNull() ?: continue
             if (runCatching { validate(record) }.isFailure) continue
+            if (expectedProfile != null && record.profile != expectedProfile) continue
             return Saved(record, digest, bytes.size.toLong())
         }
         return null
