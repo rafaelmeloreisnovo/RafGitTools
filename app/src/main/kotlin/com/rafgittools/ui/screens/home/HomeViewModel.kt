@@ -47,6 +47,8 @@ class HomeViewModel @Inject constructor(
 
     private val _remoteRepositories = MutableStateFlow<List<GithubRepoModel>>(emptyList())
     val remoteRepositories: StateFlow<List<GithubRepoModel>> = _remoteRepositories.asStateFlow()
+    private val _remoteListingComplete = MutableStateFlow(false)
+    val remoteListingComplete: StateFlow<Boolean> = _remoteListingComplete.asStateFlow()
 
     private val _localRepositories = MutableStateFlow<List<LocalRepoSummary>>(emptyList())
     val localRepositories: StateFlow<List<LocalRepoSummary>> = _localRepositories.asStateFlow()
@@ -85,6 +87,7 @@ class HomeViewModel @Inject constructor(
                     _isAuthenticated.value = false
                     _user.value = null
                     _remoteRepositories.value = emptyList()
+                    _remoteListingComplete.value = false
                     _activeTab.value = HomeTab.DRIVE
                     _uiState.value = HomeUiState.Success
                 } else {
@@ -94,6 +97,7 @@ class HomeViewModel @Inject constructor(
             } else {
                 _user.value = null
                 _remoteRepositories.value = emptyList()
+                _remoteListingComplete.value = false
                 _activeTab.value = HomeTab.DRIVE
                 _uiState.value = HomeUiState.Success
             }
@@ -115,6 +119,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = HomeUiState.Loading
 
+            _remoteListingComplete.value = false
             githubRepository.getAuthenticatedUserSync()
                 .onSuccess { user -> _user.value = user }
 
@@ -123,6 +128,7 @@ class HomeViewModel @Inject constructor(
             val maxPages = 50
             var page = 1
             var terminalError: Throwable? = null
+            var exhaustedPages = false
 
             while (page <= maxPages) {
                 val result = githubRepository.getUserRepositoriesSync(page = page, perPage = perPage)
@@ -132,10 +138,14 @@ class HomeViewModel @Inject constructor(
                     break
                 }
                 allRepos += batch
-                if (batch.size < perPage) break
+                if (batch.size < perPage) {
+                    exhaustedPages = true
+                    break
+                }
                 page += 1
             }
 
+            _remoteListingComplete.value = terminalError == null && exhaustedPages
             if (allRepos.isNotEmpty() || terminalError == null) {
                 _remoteRepositories.value = allRepos.distinctBy { it.id }
                 _uiState.value = HomeUiState.Success
@@ -417,6 +427,7 @@ class HomeViewModel @Inject constructor(
             _isAuthenticated.value = false
             _user.value = null
             _remoteRepositories.value = emptyList()
+            _remoteListingComplete.value = false
             _activeTab.value = HomeTab.DRIVE
             _uiState.value = HomeUiState.Success
             loadLocalRepositories()

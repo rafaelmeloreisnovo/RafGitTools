@@ -69,6 +69,7 @@ fun HomeScreen(
     val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
     val user by viewModel.user.collectAsStateWithLifecycle()
     val remoteRepositories by viewModel.remoteRepositories.collectAsStateWithLifecycle()
+    val remoteListingComplete by viewModel.remoteListingComplete.collectAsStateWithLifecycle()
     val localRepositories by viewModel.localRepositories.collectAsStateWithLifecycle()
     val activeTab by viewModel.activeTab.collectAsStateWithLifecycle()
     val githubProbeState by viewModel.githubProbeState.collectAsStateWithLifecycle()
@@ -170,6 +171,8 @@ fun HomeScreen(
                     activeTab = activeTab,
                     isGithubAuthenticated = isAuthenticated,
                     remoteRepositories = remoteRepositories,
+                    githubProfile = user?.login,
+                    remoteListingComplete = remoteListingComplete,
                     localRepositories = localRepositories,
                     githubProbeState = githubProbeState,
                     remoteReceiptState = remoteReceiptState,
@@ -194,6 +197,8 @@ private fun SourceDashboard(
     activeTab: HomeViewModel.HomeTab,
     isGithubAuthenticated: Boolean,
     remoteRepositories: List<GithubRepository>,
+    githubProfile: String?,
+    remoteListingComplete: Boolean,
     localRepositories: List<LocalRepoSummary>,
     githubProbeState: GithubConnectivityState,
     remoteReceiptState: RemoteReceiptState,
@@ -229,7 +234,7 @@ private fun SourceDashboard(
             Tab(
                 selected = activeTab == HomeViewModel.HomeTab.LOCAL,
                 onClick = { onTabSelected(HomeViewModel.HomeTab.LOCAL) },
-                text = { Text("Local (${localRepositories.size})", maxLines = 1) }
+                text = { Text("Local", maxLines = 1) }
             )
         }
 
@@ -255,7 +260,13 @@ private fun SourceDashboard(
                 onPublishManifold = onPublishManifold,
                 onBuildPrivateGitHubIndex = onBuildPrivateGitHubIndex
             )
-            HomeViewModel.HomeTab.LOCAL -> LocalRepositoryList(localRepositories, onLocalRepositoryClick)
+            HomeViewModel.HomeTab.LOCAL -> LocalRepositoryList(
+                repositories = localRepositories,
+                githubRepositories = remoteRepositories,
+                githubProfile = githubProfile,
+                listingComplete = remoteListingComplete,
+                onRepositoryClick = onLocalRepositoryClick
+            )
         }
     }
 }
@@ -1524,6 +1535,9 @@ private fun RepositoryCard(repository: GithubRepository, onClick: () -> Unit) {
 @Composable
 private fun LocalRepositoryList(
     repositories: List<LocalRepoSummary>,
+    githubRepositories: List<GithubRepository>,
+    githubProfile: String?,
+    listingComplete: Boolean,
     onRepositoryClick: (String) -> Unit
 ) {
     LazyColumn(
@@ -1532,11 +1546,14 @@ private fun LocalRepositoryList(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
+            LocalGithubInventoryCard(githubRepositories, githubProfile, listingComplete)
+        }
+        item {
             LocalPrivateStorageTestCard()
         }
         item {
             Column {
-                Text("Workspace local (${repositories.size})", style = MaterialTheme.typography.titleMedium)
+                Text("Repositórios clonados no dispositivo (${repositories.size})", style = MaterialTheme.typography.titleMedium)
                 Text(
                     "Camada de staging e trabalho; Drive/GitHub continuam como fontes externas.",
                     style = MaterialTheme.typography.bodySmall,
@@ -1550,7 +1567,7 @@ private fun LocalRepositoryList(
                     Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.FolderOff, null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Nenhum repositório local indexado ainda.")
+                        Text("Nenhum repositório Git clonado aqui. O inventário do GitHub acima pode ser usado sem clones.")
                     }
                 }
             }

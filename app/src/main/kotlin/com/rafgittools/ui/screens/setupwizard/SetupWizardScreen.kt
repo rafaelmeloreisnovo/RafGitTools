@@ -64,6 +64,10 @@ fun SetupWizardScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
+        if (index == 0) {
+            DriveFirstRunIndexCard()
+        }
+
         Text(text = step.title, style = MaterialTheme.typography.headlineSmall)
         Text(text = step.summary, style = MaterialTheme.typography.bodyLarge)
 
