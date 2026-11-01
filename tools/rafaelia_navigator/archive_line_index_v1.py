@@ -203,10 +203,23 @@ class Indexer:
     def visit(self) -> None:
         exhausted = False
         for current, dirs, files in os.walk(self.root, followlinks=False):
+            for dirname in dirs:
+                link = Path(current) / dirname
+                if link.is_symlink():
+                    rel = link.relative_to(self.root).as_posix()
+                    self.put(rel, None, "SYMLINK_DIRECTORY", None, None, "SYMLINK_BLOCKED", 0)
+                    self.partial = True
             dirs[:] = sorted(x for x in dirs if not (Path(current) / x).is_symlink())
             for name in sorted(files):
                 source = Path(current) / name
-                if source.is_symlink() or not source.is_file():
+                if source.is_symlink():
+                    rel = source.relative_to(self.root).as_posix()
+                    self.put(rel, None, "SYMLINK_FILE", None, None, "SYMLINK_BLOCKED", 0)
+                    self.partial = True
+                    continue
+                if not source.is_file():
+                    self.partial = True
+                    self.errors.append(source.relative_to(self.root).as_posix() + ":NON_REGULAR_FILE")
                     continue
                 if self.files_seen >= self.max_files or self.bytes_seen >= self.max_bytes:
                     self.partial = True
