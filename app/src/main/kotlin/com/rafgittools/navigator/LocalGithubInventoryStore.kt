@@ -85,7 +85,7 @@ class LocalGithubInventoryStore(context: Context) {
         val bytes = (gson.toJson(snapshot) + "\n").toByteArray(Charsets.UTF_8)
         require(bytes.size <= MAX_BYTES) { "TOKEN_VAZIO_INDEX_SIZE_LIMIT" }
         require(directory.isDirectory || directory.mkdirs()) { "TOKEN_VAZIO_LOCAL_DIRECTORY" }
-        require(directory.listFiles()?.count { it.name.endsWith(".json") } ?: 0 < MAX_HISTORY) {
+        require((directory.listFiles()?.count { it.name.endsWith(".json") } ?: 0) < MAX_HISTORY) {
             "TOKEN_VAZIO_HISTORY_REVIEW_REQUIRED"
         }
         val hash = sha256(bytes)
@@ -112,7 +112,7 @@ class LocalGithubInventoryStore(context: Context) {
         val files = directory.listFiles()?.filter { it.name.endsWith(".json") }.orEmpty()
         require(files.size <= MAX_HISTORY) { "TOKEN_VAZIO_HISTORY_REVIEW_REQUIRED" }
         for (file in files.sortedByDescending { it.lastModified() }) {
-            if (file.length() !in 1..MAX_BYTES.toLong()) continue
+            if (file.length() !in 1L..MAX_BYTES.toLong()) continue
             val bytes = file.readBytes()
             val digest = sha256(bytes)
             if (!file.name.endsWith("-" + digest.take(16) + ".json")) continue
