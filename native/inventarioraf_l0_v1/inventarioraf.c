@@ -69,6 +69,22 @@ static ir_u32 ir_zip(const ir_u8 *b, ir_size n, ir_u32 *entries) {
         span=46u+(ir_size)name+(ir_size)extra+(ir_size)comment;
         if (!ir_fit(n,p,span) || !ir_zip_name_safe(b+p+46u,name))
             return IR_BLOCKED;
+        {
+            ir_size local=(ir_size)IR32(b,p+42u);
+            ir_u32 k;
+            if (local >= cdir_start ||
+                !ir_sig(b,n,local,0x50u,0x4bu,0x03u,0x04u) ||
+                !ir_fit(n,local,30u+(ir_size)name) ||
+                IR16(b,local+26u) != name ||
+                IR16(b,local+8u) != IR16(b,p+10u) ||
+                IR32(b,local+14u) != IR32(b,p+16u) ||
+                IR32(b,local+18u) != IR32(b,p+20u) ||
+                IR32(b,local+22u) != IR32(b,p+24u))
+                return IR_BLOCKED;
+            for (k=0u;k<name;++k)
+                if (b[local+30u+(ir_size)k] != b[p+46u+(ir_size)k])
+                    return IR_BLOCKED;
+        }
         p+=span;
         ++central;
     }
