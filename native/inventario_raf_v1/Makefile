@@ -20,19 +20,26 @@ CORE = src/inventario_raf_core.c
 HEADER = include/inventario_raf_core.h
 TEST = tests/selftest.c
 
-.PHONY: test host-test armv7-object aarch64-object abi-audit format-probe-gate clean
+.PHONY: test host-test host-core-audit armv7-object aarch64-object abi-audit format-probe-gate clean
 
 test: host-test armv7-object aarch64-object abi-audit format-probe-gate
 
 format-probe-gate:
 	$(MAKE) -C format_probe test properties objects
 
-host-test: $(BUILD)/host/selftest
+host-test: host-core-audit $(BUILD)/host/selftest
 	$(BUILD)/host/selftest
 
-$(BUILD)/host/selftest: $(CORE) $(TEST) $(HEADER)
+$(BUILD)/host/core.o: $(CORE) $(HEADER) Makefile
 	mkdir -p $(BUILD)/host
-	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -Iinclude $(CORE) $(TEST) -o $@
+	$(HOST_CC) $(CPPFLAGS_CORE) $(CFLAGS_CORE) -fPIC -c $(CORE) -o $@
+
+host-core-audit: $(BUILD)/host/core.o
+	@undefined="$$($(NM) -u $<)" || exit 1; \
+	if [ -n "$$undefined" ]; then echo "FAIL: host core unresolved symbols"; echo "$$undefined"; exit 1; fi
+
+$(BUILD)/host/selftest: $(BUILD)/host/core.o $(TEST) $(HEADER)
+	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -Iinclude $(TEST) $(BUILD)/host/core.o -o $@
 
 armv7-object:
 	mkdir -p $(BUILD)/armv7
