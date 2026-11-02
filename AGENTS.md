@@ -178,3 +178,9 @@ For every material dependency delta record:
 `boundary -> previous dependency -> replacement/retention reason -> execution -> evidence -> rollback -> remaining TOKEN_VAZIO`.
 
 <!-- /RAFAELIA_FREESTANDING_POLICY_V1 -->
+
+
+<!-- AGENTS_PAT_FEDERATION_ROUTE_V1 -->
+### PAT-bound federation (proposal/HOLD, no extra authority)
+For tasks naming `PAT_AGENTS`, `PAT_ACTIONS`, `PAT_ENV` or cross-repository `AGENTS.md`, read `docs/governance/PAT_CAPABILITY_ROUTING_V1.md` first, then `configs/agents-pat-federation.v1.json` and `federation/agents-pat/AGENTS.md`. Mapa owns the federated route; the target repository's own AGENTS.md owns its local implementation. These pointers do not grant permissions or enable a secret-bearing workflow. Unknown provider permissions = `TOKEN_VAZIO`; no PAT fallback, no autonomous cross-repo writes, no secret in source/Drive/Supabase. This addition is a draft only until separately reviewed and merged.
+<!-- /AGENTS_PAT_FEDERATION_ROUTE_V1 -->
