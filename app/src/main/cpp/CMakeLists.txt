@@ -73,10 +73,18 @@ elseif(ANDROID_ABI STREQUAL "arm64-v8a")
     list(APPEND RAF_INVENTARIO_SCAN_SOURCE
         "${RAF_INVENTARIO_DIR}/asm/arm64/path_components.S")
 endif()
-add_library(rafinventory SHARED
-    raf_inventory_jni.c
-    ${RAF_INVENTARIO_SCAN_SOURCE}
-)
+# Compile the pure core separately: JNI headers, ART allocation and Android
+# defaults must not silently define the core's compilation contract.
+add_library(rafinventory_core OBJECT ${RAF_INVENTARIO_SCAN_SOURCE})
+set_target_properties(rafinventory_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(rafinventory_core PRIVATE "${RAF_INVENTARIO_DIR}/include")
+target_compile_definitions(rafinventory_core PRIVATE RAFINV_FREESTANDING=1)
+target_compile_options(rafinventory_core PRIVATE
+    "$<$<COMPILE_LANGUAGE:C>:-nostdinc;-ffreestanding;-fno-builtin;-fno-stack-protector;-fno-unwind-tables;-fno-asynchronous-unwind-tables;-fno-common;-Wall;-Wextra;-Werror;-Wshadow;-Wconversion;-Wsign-conversion;-Wundef;-Wstrict-prototypes;-Wmissing-prototypes;-Wold-style-definition;-Wcast-align>")
+
+# Hosted adapter retains the existing JNI symbol and shared-library name.
+add_library(rafinventory SHARED raf_inventory_jni.c
+    $<TARGET_OBJECTS:rafinventory_core>)
 target_include_directories(rafinventory PRIVATE "${RAF_INVENTARIO_DIR}/include")
 target_compile_options(rafinventory PRIVATE
     -Wall -Wextra -Werror -O2 -fno-builtin -fno-stack-protector)
