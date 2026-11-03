@@ -78,10 +78,16 @@ class MasterCoverageProviderRoutingTests(unittest.TestCase):
         self.assertNotIn("TARGET_TASK_CMD", provider_lane)
 
     def test_single_general_root_with_allowlisted_scoped_workflows(self) -> None:
-        # START owns general orchestration. The four specialized, path/branch-
+        # START owns general orchestration. The five specialized, path/branch-
         # constrained workflows are separate evidence lanes, not extra roots.
         workflow_dir = ROOT / ".github" / "workflows"
         expected_scoped = {
+            "debianum-metadata-guard.yml": (
+                "  pull_request:\n    paths:",
+                "      - 'scripts/drive_debianum_*'",
+                "      - 'tools/github_metadata_page_cursor_v1.py'",
+                "  workflow_dispatch:",
+            ),
             "ci-android-atlas-consumer.yml": (
                 "  pull_request:\n    branches: [main]\n    paths:",
             ),
