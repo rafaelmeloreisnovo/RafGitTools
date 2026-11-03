@@ -1,0 +1,33 @@
+name: Debianum metadata-only gate
+on:
+  pull_request:
+    paths:
+      - 'scripts/drive_debianum_*'
+      - 'tests/test_drive_debianum_*'
+      - '.github/workflows/debianum-metadata-guard.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-adversarial:
+    name: Validate stdlib parser and fail-closed metadata rules
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact PR source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Python syntax
+        run: |
+          python3 -m py_compile scripts/drive_debianum_metadata_stream_v1.py
+          python3 -m py_compile scripts/drive_debianum_recursive_stream_v2.py
+          python3 -m py_compile tests/test_drive_debianum_metadata_stream_v1.py
+          python3 -m py_compile tests/test_drive_debianum_recursive_stream_v2.py
+      - name: Adversarial tests (no Drive or Supabase token)
+        run: |
+          python3 -m unittest discover -s tests -p 'test_drive_debianum_*_v1.py' -v
+          python3 -m unittest discover -s tests -p 'test_drive_debianum_*_v2.py' -v
+      - name: Reject hosted-client credentials in scripts
+        run: |
+          ! grep -En 'SUPABASE_SERVICE_ROLE_KEY|sk-proj-|ghp_[A-Za-z0-9]{30,}' scripts/drive_debianum_*.py
