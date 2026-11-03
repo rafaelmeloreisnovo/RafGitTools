@@ -270,6 +270,10 @@ private fun SourceDashboard(
                         githubProbeState = githubProbeState,
                         remoteReceiptState = remoteReceiptState,
                         onRunGithubTest = onRunGithubTest,
+                        // The diagnostics receipt always writes to RafGitTools,
+                        // never to the selected organization; block mismatched scopes.
+                        canWriteDiagnosticReceipt = selectedOwner == null ||
+                            selectedOwner.equals("rafaelmeloreisnovo", ignoreCase = true),
                         onCreateRemoteReceipt = onCreateRemoteReceipt,
                         onRepositoryClick = onRepositoryClick
                     )
@@ -1303,6 +1307,7 @@ private fun RepositoryList(
     githubProbeState: GithubConnectivityState,
     remoteReceiptState: RemoteReceiptState,
     onRunGithubTest: () -> Unit,
+    canWriteDiagnosticReceipt: Boolean,
     onCreateRemoteReceipt: () -> Unit,
     onRepositoryClick: (GithubRepository) -> Unit
 ) {
@@ -1316,6 +1321,7 @@ private fun RepositoryList(
                 probeState = githubProbeState,
                 receiptState = remoteReceiptState,
                 onRunProbe = onRunGithubTest,
+                canWriteDiagnosticReceipt = canWriteDiagnosticReceipt,
                 onCreateRemoteReceipt = onCreateRemoteReceipt
             )
         }
@@ -1337,6 +1343,7 @@ private fun GithubConnectivityCard(
     probeState: GithubConnectivityState,
     receiptState: RemoteReceiptState,
     onRunProbe: () -> Unit,
+    canWriteDiagnosticReceipt: Boolean,
     onCreateRemoteReceipt: () -> Unit
 ) {
     ElevatedCard(Modifier.fillMaxWidth()) {
@@ -1351,6 +1358,14 @@ private fun GithubConnectivityCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            if (!canWriteDiagnosticReceipt) {
+                Text(
+                    "Receipt WRITE indisponível: o destino do diagnóstico é rafaelmeloreisnovo/RafGitTools, não a organização selecionada.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
 
             when (probeState) {
                 GithubConnectivityState.Idle -> Text("GitHub READ: TOKEN_VAZIO")
@@ -1385,7 +1400,7 @@ private fun GithubConnectivityCard(
                 }
                 Button(
                     onClick = onCreateRemoteReceipt,
-                    enabled = receiptState !is RemoteReceiptState.Running,
+                    enabled = canWriteDiagnosticReceipt && receiptState !is RemoteReceiptState.Running,
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(Icons.Default.Upload, null)
