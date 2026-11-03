@@ -162,6 +162,20 @@ fun RepositoryGovernanceScreen(
                 )
             }
 
+            item {
+                GovernancePatRouteCard(
+                    repository = state.selectedRepository?.fullName,
+                    canAudit = state.selectedRepository != null &&
+                        !state.isAuditing &&
+                        state.evidenceState != GovernanceEvidenceState.APPLYING,
+                    canOpenProvider = controlCenter.providerSettingsUrl != null,
+                    onAudit = viewModel::runDeepAudit,
+                    onOpenProvider = {
+                        controlCenter.providerSettingsUrl?.let(uriHandler::openUri)
+                    }
+                )
+            }
+
             item { GovernanceEvidenceCard(state) }
 
             state.mutationPlan?.let { plan ->
