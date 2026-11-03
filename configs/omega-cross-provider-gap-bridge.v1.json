@@ -1,0 +1,463 @@
+{
+  "schema": "rafaelia.omega-cross-provider-gap.v1",
+  "version": "1.0.0",
+  "federated_authority": "rafaelmeloreisnovo/Mapa",
+  "executor": "rafaelmeloreisnovo/RafGitTools",
+  "data_transfer": "METADATA_POINTERS_ONLY",
+  "claim_allowed": false,
+  "source_boundary": "USER_SYMBOLS != VERIFIED_HISTORY; SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+  "secret_policy": "NAMES_ONLY_NEVER_VALUES_OR_HASHES",
+  "nodes": [
+    {
+      "id": "mapa",
+      "kind": "MAPA",
+      "authority": "rafaelmeloreisnovo/Mapa",
+      "source_ref": "github:rafaelmeloreisnovo/Mapa/data/control-plane/RAFAELIA_FEDERATED_WORK_SERVICE_CONTRACT.v1.json"
+    },
+    {
+      "id": "rafgittools",
+      "kind": "EXECUTOR",
+      "authority": "rafaelmeloreisnovo/RafGitTools",
+      "source_ref": "github:rafaelmeloreisnovo/RafGitTools/configs/agent-entry-kernel.v1.json"
+    },
+    {
+      "id": "supabase",
+      "kind": "DATABASE",
+      "authority": "rafaelmeloreisnovo/supabase-Rafcodephi",
+      "source_ref": "github:rafaelmeloreisnovo/supabase-Rafcodephi/pull/6"
+    },
+    {
+      "id": "drive",
+      "kind": "MEMORY",
+      "authority": "Google Drive canonical START HERE Ω V2.2",
+      "source_ref": "TOKEN_VAZIO_PRIVATE_DRIVE_POINTER_DO_NOT_PUBLISH"
+    },
+    {
+      "id": "rll",
+      "kind": "SCIENTIFIC_PRODUCER",
+      "authority": "instituto-Rafael/relativity-living-light",
+      "source_ref": "github:instituto-Rafael/relativity-living-light/ATLAS_CANONICO.md"
+    },
+    {
+      "id": "atlas",
+      "kind": "ATLAS",
+      "authority": "rafaelmeloreisnovo/Mapa",
+      "source_ref": "TOKEN_VAZIO_CURRENT_ATLAS_NODE_TO_CONFIRM"
+    },
+    {
+      "id": "shard",
+      "kind": "SHARD",
+      "authority": "Google Drive canonical START HERE Ω V2.2",
+      "source_ref": "TOKEN_VAZIO_PRIVATE_SHARD_POINTER_DO_NOT_PUBLISH"
+    },
+    {
+      "id": "leader",
+      "kind": "LEADER",
+      "authority": "rafaelmeloreisnovo/Mapa",
+      "source_ref": "TOKEN_VAZIO_CURRENT_LEADER_ID_TO_CONFIRM"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-mapa-executor",
+      "from": "mapa",
+      "to": "rafgittools",
+      "relation": "ROUTES_TO",
+      "state": "PROPOSED",
+      "producer_receipt": "TOKEN_VAZIO_PRODUCER_RUNTIME_RECEIPT_REQUIRED",
+      "consumer_receipt": "TOKEN_VAZIO_CONSUMER_RUNTIME_RECEIPT_REQUIRED",
+      "claim_allowed": false
+    },
+    {
+      "id": "edge-executor-db",
+      "from": "rafgittools",
+      "to": "supabase",
+      "relation": "REQUESTS_MIGRATION",
+      "state": "PROPOSED",
+      "producer_receipt": "TOKEN_VAZIO_PRODUCER_RUNTIME_RECEIPT_REQUIRED",
+      "consumer_receipt": "TOKEN_VAZIO_CONSUMER_RUNTIME_RECEIPT_REQUIRED",
+      "claim_allowed": false
+    },
+    {
+      "id": "edge-db-drive",
+      "from": "supabase",
+      "to": "drive",
+      "relation": "RECORDS_RECEIPT",
+      "state": "PROPOSED",
+      "producer_receipt": "TOKEN_VAZIO_PRODUCER_RUNTIME_RECEIPT_REQUIRED",
+      "consumer_receipt": "TOKEN_VAZIO_CONSUMER_RUNTIME_RECEIPT_REQUIRED",
+      "claim_allowed": false
+    },
+    {
+      "id": "edge-executor-rll",
+      "from": "rafgittools",
+      "to": "rll",
+      "relation": "CONSUMES_CONTRACT",
+      "state": "PROPOSED",
+      "producer_receipt": "TOKEN_VAZIO_PRODUCER_RUNTIME_RECEIPT_REQUIRED",
+      "consumer_receipt": "TOKEN_VAZIO_CONSUMER_RUNTIME_RECEIPT_REQUIRED",
+      "claim_allowed": false
+    },
+    {
+      "id": "edge-rll-drive",
+      "from": "rll",
+      "to": "drive",
+      "relation": "CUSTODY_LINK",
+      "state": "PROPOSED",
+      "producer_receipt": "TOKEN_VAZIO_PRODUCER_RUNTIME_RECEIPT_REQUIRED",
+      "consumer_receipt": "TOKEN_VAZIO_CONSUMER_RUNTIME_RECEIPT_REQUIRED",
+      "claim_allowed": false
+    },
+    {
+      "id": "edge-atlas-shard",
+      "from": "atlas",
+      "to": "shard",
+      "relation": "INDEXES",
+      "state": "PROPOSED",
+      "producer_receipt": "TOKEN_VAZIO_PRODUCER_RUNTIME_RECEIPT_REQUIRED",
+      "consumer_receipt": "TOKEN_VAZIO_CONSUMER_RUNTIME_RECEIPT_REQUIRED",
+      "claim_allowed": false
+    },
+    {
+      "id": "edge-leader-atlas",
+      "from": "leader",
+      "to": "atlas",
+      "relation": "ROUTES_TO",
+      "state": "PROPOSED",
+      "producer_receipt": "TOKEN_VAZIO_PRODUCER_RUNTIME_RECEIPT_REQUIRED",
+      "consumer_receipt": "TOKEN_VAZIO_CONSUMER_RUNTIME_RECEIPT_REQUIRED",
+      "claim_allowed": false
+    },
+    {
+      "id": "edge-mapa-atlas",
+      "from": "mapa",
+      "to": "atlas",
+      "relation": "ROUTES_TO",
+      "state": "PROPOSED",
+      "producer_receipt": "TOKEN_VAZIO_PRODUCER_RUNTIME_RECEIPT_REQUIRED",
+      "consumer_receipt": "TOKEN_VAZIO_CONSUMER_RUNTIME_RECEIPT_REQUIRED",
+      "claim_allowed": false
+    }
+  ],
+  "gaps": [
+    {
+      "id": "G01_PROVIDER_PAT",
+      "gap_type": "PROVIDER_AUTHORITY",
+      "state": "TOKEN_VAZIO",
+      "authority": "RafGitTools/PAT capability routing",
+      "reason": "GitHub secret names exist in documentation; provider scopes and cross-repo permissions not independently read back",
+      "next_gate": "Manual provider capability/read-only preflight; keep values unobserved",
+      "stop_condition": "No cross-repo credential use before scoped authorization",
+      "source_ref": "github:rafaelmeloreisnovo/RafGitTools/docs/governance/PAT_CAPABILITY_ROUTING_V1.md",
+      "evidence_ref": "TOKEN_VAZIO_CONCLUSIVE_EVIDENCE_REQUIRED",
+      "claim_allowed": false
+    },
+    {
+      "id": "G02_RLL_CONSUMER",
+      "gap_type": "RUNTIME",
+      "state": "BLOCKED",
+      "authority": "instituto-Rafael/relativity-living-light",
+      "reason": "Scientific repository has no observed consumer-side receipt for this four-provider bridge",
+      "next_gate": "Review private consumer contract and produce exact-ref bounded receipt",
+      "stop_condition": "Do not infer RLL execution or scientific validation from router",
+      "source_ref": "github:instituto-Rafael/relativity-living-light/data/governance/RLL_CREDENTIAL_AUTHORITY_POLICY_V1.json",
+      "evidence_ref": "TOKEN_VAZIO_CONCLUSIVE_EVIDENCE_REQUIRED",
+      "claim_allowed": false
+    },
+    {
+      "id": "G03_PR6_CI",
+      "gap_type": "CI",
+      "state": "READY_TO_TEST",
+      "authority": "rafaelmeloreisnovo/supabase-Rafcodephi",
+      "reason": "Supabase queue proposal is draft and only PG17 transaction-scoped smoke has been seen",
+      "next_gate": "Exact PR#6 HEAD CI, provider approval and runtime negatives",
+      "stop_condition": "Never merge or deploy from source smoke alone",
+      "source_ref": "github:rafaelmeloreisnovo/supabase-Rafcodephi/pull/6",
+      "evidence_ref": "TOKEN_VAZIO_CONCLUSIVE_EVIDENCE_REQUIRED",
+      "claim_allowed": false
+    },
+    {
+      "id": "G04_OLD_PG15",
+      "gap_type": "RESTORE",
+      "state": "BLOCKED",
+      "authority": "Supabase project owners",
+      "reason": "Two PG15 predecessor projects inactive; backup mapping and restoration not proven",
+      "next_gate": "Prove backup-to-project link offline, inspect independent restore plan and costs",
+      "stop_condition": "No destructive restore or synthetic ancestry",
+      "source_ref": "TOKEN_VAZIO_PRIVATE_HISTORIC_PROJECT_POINTER",
+      "evidence_ref": "TOKEN_VAZIO_CONCLUSIVE_EVIDENCE_REQUIRED",
+      "claim_allowed": false
+    },
+    {
+      "id": "G05_AUTHZ_API",
+      "gap_type": "EVIDENCE",
+      "state": "TOKEN_VAZIO",
+      "authority": "rafaelmeloreisnovo/supabase-Rafcodephi",
+      "reason": "Anon/authenticated API denial, tenant isolation and negative RLS not tested end-to-end",
+      "next_gate": "Isolated auth/IDOR negative tests using synthetic data",
+      "stop_condition": "No persistent schema or claims before successful gates",
+      "source_ref": "github:rafaelmeloreisnovo/supabase-Rafcodephi/pull/6",
+      "evidence_ref": "TOKEN_VAZIO_CONCLUSIVE_EVIDENCE_REQUIRED",
+      "claim_allowed": false
+    },
+    {
+      "id": "G06_DRIVE_CUSTODY",
+      "gap_type": "ROUTE",
+      "state": "BLOCKED",
+      "authority": "Google Drive canonical START HERE Ω V2.2",
+      "reason": "Manual cross-app receipt exists; automated exact-delivery reconciliation is not verified",
+      "next_gate": "Compare private Drive μWRITE readback with producer and consumer exact revisions",
+      "stop_condition": "No private source payload in public repo",
+      "source_ref": "TOKEN_VAZIO_PRIVATE_DRIVE_RECEIPT_REDACTED",
+      "evidence_ref": "TOKEN_VAZIO_CONCLUSIVE_EVIDENCE_REQUIRED",
+      "claim_allowed": false
+    },
+    {
+      "id": "G07_RIGHTS",
+      "gap_type": "PRIVACY",
+      "state": "TOKEN_VAZIO",
+      "authority": "respective data controllers",
+      "reason": "Retention, child safeguards, legal basis and erasure handling not authorized for physical backfill",
+      "next_gate": "Approved classification and lawful basis before any sensitive ingestion",
+      "stop_condition": "No personal or child records replicated into public GitHub",
+      "source_ref": "TOKEN_VAZIO_LEGAL_BASIS_SOURCE",
+      "evidence_ref": "TOKEN_VAZIO_CONCLUSIVE_EVIDENCE_REQUIRED",
+      "claim_allowed": false
+    },
+    {
+      "id": "G08_HOLD_ENFORCEMENT",
+      "gap_type": "PROVIDER_AUTHORITY",
+      "state": "BLOCKED",
+      "authority": "respective GitHub repository owners",
+      "reason": "Earlier HOLD-labelled PRs were merged; PR title alone did not enforce review",
+      "next_gate": "Read provider rulesets/checks and independent approvals for exact repos",
+      "stop_condition": "No auto-merge or privileged workflow on unknown rules",
+      "source_ref": "github:rafaelmeloreisnovo/RafGitTools/AGENTS.md",
+      "evidence_ref": "TOKEN_VAZIO_CONCLUSIVE_EVIDENCE_REQUIRED",
+      "claim_allowed": false
+    },
+    {
+      "id": "G09_SOURCE_SHARD_MAP",
+      "gap_type": "HISTORY",
+      "state": "TOKEN_VAZIO",
+      "authority": "rafaelmeloreisnovo/Mapa",
+      "reason": "Authoritative current LEADER-to-ATLAS-to-SHARD IDs are not bound for all four apps",
+      "next_gate": "Bind private IDs and SHAs via controlled current-state receipt, no data copy",
+      "stop_condition": "No invented shard contents, precedence or dated origin",
+      "source_ref": "TOKEN_VAZIO_AUTHORITATIVE_INDEX_BINDING",
+      "evidence_ref": "TOKEN_VAZIO_CONCLUSIVE_EVIDENCE_REQUIRED",
+      "claim_allowed": false
+    }
+  ],
+  "literal_cases": [
+    {
+      "id": "absence",
+      "present": false,
+      "expected_kind": "ABSENT",
+      "evidence_kind": "SOURCE",
+      "claim_allowed": false
+    },
+    {
+      "id": "null",
+      "present": true,
+      "expected_kind": "NULL",
+      "evidence_kind": "SOURCE",
+      "claim_allowed": false,
+      "value": null
+    },
+    {
+      "id": "empty",
+      "present": true,
+      "expected_kind": "EMPTY_STRING",
+      "evidence_kind": "SOURCE",
+      "claim_allowed": false,
+      "value": ""
+    },
+    {
+      "id": "spaces4",
+      "present": true,
+      "expected_kind": "WHITESPACE_ONLY",
+      "evidence_kind": "SOURCE",
+      "claim_allowed": false,
+      "value": "    "
+    },
+    {
+      "id": "zero",
+      "present": true,
+      "expected_kind": "NUMBER_ZERO",
+      "evidence_kind": "SOURCE",
+      "claim_allowed": false,
+      "value": 0
+    },
+    {
+      "id": "boolFalse",
+      "present": true,
+      "expected_kind": "BOOLEAN_FALSE",
+      "evidence_kind": "SOURCE",
+      "claim_allowed": false,
+      "value": false
+    },
+    {
+      "id": "unicodeEmptySign",
+      "present": true,
+      "expected_kind": "SYMBOLIC_LITERAL_UNVERIFIED",
+      "evidence_kind": "SOURCE",
+      "claim_allowed": false,
+      "value": "∅"
+    },
+    {
+      "id": "symbolEye",
+      "present": true,
+      "expected_kind": "SYMBOLIC_LITERAL_UNVERIFIED",
+      "evidence_kind": "SOURCE",
+      "claim_allowed": false,
+      "value": "𓂀"
+    },
+    {
+      "id": "textZeroHex",
+      "present": true,
+      "expected_kind": "TEXT_UNVERIFIED",
+      "evidence_kind": "SOURCE",
+      "claim_allowed": false,
+      "value": "0x00"
+    },
+    {
+      "id": "polysemy",
+      "present": true,
+      "expected_kind": "TEXT_UNVERIFIED",
+      "evidence_kind": "SOURCE",
+      "claim_allowed": false,
+      "value": "molho"
+    },
+    {
+      "id": "typedUnknown",
+      "present": true,
+      "expected_kind": "TOKEN_VAZIO_TYPED",
+      "evidence_kind": "SOURCE",
+      "claim_allowed": false,
+      "value": "TOKEN_VAZIO_UNVERIFIED_ORIGIN"
+    },
+    {
+      "id": "unknownPrivate",
+      "present": true,
+      "expected_kind": "TOKEN_VAZIO_TYPED",
+      "evidence_kind": "SOURCE",
+      "claim_allowed": false,
+      "value": "TOKEN_VAZIO:PRIVATE_REF"
+    },
+    {
+      "id": "nonzero",
+      "present": true,
+      "expected_kind": "NUMBER",
+      "evidence_kind": "SOURCE",
+      "claim_allowed": false,
+      "value": 999
+    },
+    {
+      "id": "emptyWhitespacesNotEmpty",
+      "present": true,
+      "expected_kind": "WHITESPACE_ONLY",
+      "evidence_kind": "SOURCE",
+      "claim_allowed": false,
+      "value": "\t"
+    }
+  ],
+  "symbolic_labels": [
+    {
+      "id": "Ω00",
+      "label": "molho ≠ molho ≠ molho | 🍅🗝️🪵💧",
+      "kind": "USER_SYMBOLIC_TEST_VECTOR",
+      "proof": "NOT_EVIDENCE"
+    },
+    {
+      "id": "Ω01",
+      "label": "parabis? ∅ molho de chaves no sofá-cama",
+      "kind": "USER_SYMBOLIC_TEST_VECTOR",
+      "proof": "NOT_EVIDENCE"
+    },
+    {
+      "id": "Ω02",
+      "label": "龍 ∆ panela 0x00 árvore de tomate",
+      "kind": "USER_SYMBOLIC_TEST_VECTOR",
+      "proof": "NOT_EVIDENCE"
+    },
+    {
+      "id": "Ω03",
+      "label": "ש + 空 + λ + molho_de_lenha → ¿?",
+      "kind": "USER_SYMBOLIC_TEST_VECTOR",
+      "proof": "NOT_EVIDENCE"
+    },
+    {
+      "id": "Ω04",
+      "label": "∅ ≠ '' ≠ quatro espaços ≠ NULL ≠ 0",
+      "kind": "USER_SYMBOLIC_TEST_VECTOR",
+      "proof": "NOT_EVIDENCE"
+    },
+    {
+      "id": "Ω05",
+      "label": "fogão a lenha / balde d'água / антиреверс",
+      "kind": "USER_SYMBOLIC_TEST_VECTOR",
+      "proof": "NOT_EVIDENCE"
+    },
+    {
+      "id": "Ω06",
+      "label": "reverso antes/depois",
+      "kind": "USER_SYMBOLIC_TEST_VECTOR",
+      "proof": "NOT_EVIDENCE"
+    },
+    {
+      "id": "Ω07",
+      "label": "molho verbo/substância/feixe",
+      "kind": "USER_SYMBOLIC_TEST_VECTOR",
+      "proof": "NOT_EVIDENCE"
+    },
+    {
+      "id": "Ω08",
+      "label": "τ³ ⊗ あ ⊗ Ω ⊗ ก ⊗ ∅",
+      "kind": "USER_SYMBOLIC_TEST_VECTOR",
+      "proof": "NOT_EVIDENCE"
+    },
+    {
+      "id": "Ω09",
+      "label": "silêncio exatamente quatro espaços",
+      "kind": "USER_SYMBOLIC_TEST_VECTOR",
+      "proof": "NOT_EVIDENCE"
+    },
+    {
+      "id": "Ω10",
+      "label": "código de tomate / fechadura",
+      "kind": "USER_SYMBOLIC_TEST_VECTOR",
+      "proof": "NOT_EVIDENCE"
+    },
+    {
+      "id": "Ω11",
+      "label": "panela sem panela; chave que não abre",
+      "kind": "USER_SYMBOLIC_TEST_VECTOR",
+      "proof": "NOT_EVIDENCE"
+    },
+    {
+      "id": "Ω12",
+      "label": "reversão de origem não comprovada",
+      "kind": "USER_SYMBOLIC_TEST_VECTOR",
+      "proof": "NOT_EVIDENCE"
+    },
+    {
+      "id": "Ω13",
+      "label": "ruído / verdade? / ruído",
+      "kind": "USER_SYMBOLIC_TEST_VECTOR",
+      "proof": "NOT_EVIDENCE"
+    },
+    {
+      "id": "Ω14",
+      "label": "𓂀 não comprova origem nem tradução",
+      "kind": "USER_SYMBOLIC_TEST_VECTOR",
+      "proof": "NOT_EVIDENCE"
+    },
+    {
+      "id": "Ω15",
+      "label": "fractal + token_abortado + μREAD",
+      "kind": "USER_SYMBOLIC_TEST_VECTOR",
+      "proof": "NOT_EVIDENCE"
+    }
+  ]
+}
