@@ -81,6 +81,25 @@ class CursorGateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "REPEATED_REPOSITORY"):
             self.call()
 
+    def test_cursor_cycle_and_case_insensitive_name_duplicate(self):
+        self.write(outgoing="p1")
+        self.call()
+        self.write(1, "p1", "p1", [self.row("beta", 2)])
+        with self.assertRaisesRegex(ValueError, "CURSOR_CYCLE"):
+            self.call()
+        self.write(1, "p1", None, [self.row("ALPHA", 2)])
+        with self.assertRaisesRegex(ValueError, "REPEATED_REPOSITORY"):
+            self.call()
+
+    def test_reused_cursor_across_separate_pages(self):
+        self.write(outgoing="p1")
+        self.call()
+        self.write(1, "p1", "p2", [self.row("beta", 2)])
+        self.call()
+        self.write(2, "p2", "p1", [self.row("gamma", 3)])
+        with self.assertRaisesRegex(ValueError, "CURSOR_CYCLE"):
+            self.call()
+
     def test_cross_page_cursor_mismatch(self):
         self.write(outgoing="expected")
         self.call()

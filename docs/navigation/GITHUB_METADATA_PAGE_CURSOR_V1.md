@@ -22,4 +22,4 @@ Source endpoint must be authenticated independently and stored with immutable so
 
 No SQL/DML, secret, external network call, Android/ART/DEX/ELF runtime, hardware watchdog or physical device claim. Host Python and OS syscalls are *outside* freestanding L0; L0 C/ASM policy remains in its producer. SOURCE ≠ ARTIFACT ≠ EXECUTION ≠ EVIDENCE ≠ CLAIM. claim_allowed=false; release_allowed=false.
 
-Tests: synthetic offline negative fixtures in tools/test_github_metadata_page_cursor_v1.py. Rollback before merge: close PR; after merge: reviewed revert/successor, never truncate receipts.
+Tests: synthetic offline negative fixtures in tools/test_github_metadata_page_cursor_v1.py, executed through the existing Debianum metadata-only gate (no extra workflow). Repeated cursor-out tokens and cross-page repository name collisions are also rejected. Rollback before merge: close PR; after merge: reviewed revert/successor, never truncate receipts.

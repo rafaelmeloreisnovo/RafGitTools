@@ -107,7 +107,7 @@ def replay(raw):
     if not raw.endswith(b"\n"):
         deny("TRUNCATED_LEDGER")
     receipts = []
-    seen_ids, seen_names, last_hash = set(), set(), ZERO
+    seen_ids, seen_names, seen_cursors, last_hash = set(), set(), set(), ZERO
     for line in raw.splitlines():
         if len(line) > MAX_PAGE:
             deny("RECEIPT_LIMIT")
@@ -134,15 +134,23 @@ def replay(raw):
                 rec.get("cursor_in") != previous["cursor_out"] or
                 rec.get("source_owner") != previous["source_owner"]):
                 deny("LEDGER_CURSOR")
+        outgoing = rec.get("cursor_out")
+        if outgoing is not None:
+            if (not isinstance(outgoing, str) or not outgoing or
+                outgoing == rec.get("cursor_in") or outgoing in seen_cursors):
+                deny("LEDGER_CURSOR_CYCLE")
+            seen_cursors.add(outgoing)
         refs = rec.get("repo_refs")
         if not isinstance(refs, list):
             deny("LEDGER_REFS")
         for row in refs:
+            if not isinstance(row, dict):
+                deny("LEDGER_REFS")
             ident, name = row.get("provider_repo_id"), row.get("repository")
-            if ident in seen_ids or name in seen_names:
+            if not isinstance(name, str) or ident in seen_ids or name.casefold() in seen_names:
                 deny("LEDGER_DUPLICATE")
             seen_ids.add(ident)
-            seen_names.add(name)
+            seen_names.add(name.casefold())
         receipts.append(rec)
         last_hash = claimed
     return receipts
@@ -190,8 +198,14 @@ def process(source, destination, expected_owner):
                 prior[-1]["source_owner"] != expected_owner):
                 deny("CURSOR_MISMATCH")
             used = {row["provider_repo_id"] for rec in prior for row in rec["repo_refs"]}
-            if any(row["provider_repo_id"] in used for row in candidate["repo_refs"]):
+            names = {row["repository"].casefold() for rec in prior for row in rec["repo_refs"]}
+            if any(row["provider_repo_id"] in used or
+                   row["repository"].casefold() in names for row in candidate["repo_refs"]):
                 deny("REPEATED_REPOSITORY")
+        if (candidate["cursor_out"] is not None and
+            (candidate["cursor_out"] == candidate["cursor_in"] or
+             candidate["cursor_out"] in {r["cursor_out"] for r in prior})):
+            deny("CURSOR_CYCLE")
         body = dict(candidate, schema=RECEIPT_SCHEMA, seq=index,
                     previous_receipt_sha256=prior[-1]["receipt_sha256"] if prior else ZERO,
                     claim_allowed=False, execution_state="NOT_RUN",
