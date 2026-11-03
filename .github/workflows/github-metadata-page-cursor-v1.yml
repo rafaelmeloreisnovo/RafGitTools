@@ -1,0 +1,22 @@
+name: GitHub metadata page cursor - bounded host gate
+on:
+  pull_request:
+    paths:
+      - 'tools/github_metadata_page_cursor_v1.py'
+      - 'tools/test_github_metadata_page_cursor_v1.py'
+      - 'docs/navigation/GITHUB_METADATA_PAGE_CURSOR_V1.md'
+      - 'configs/context-reconstruction-routes.v1.json'
+      - '.github/workflows/github-metadata-page-cursor-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cursor-negative-fixtures:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Python stdlib-only negative and replay fixtures
+        run: python3 -I -B -m unittest discover -s tools -p 'test_github_metadata_page_cursor_v1.py' -v
+      - name: Existing context-route validator
+        run: python3 -I -B scripts/validate_context_reconstruction_registry.py

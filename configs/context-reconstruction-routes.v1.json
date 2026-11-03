@@ -107,6 +107,20 @@
       "next_on_missing": "TOKEN_VAZIO_DISPATCH_BINDING"
     },
     {
+      "route_id": "GITHUB_METADATA_PAGE_CURSOR",
+      "purpose": "Checkpoint a single authorized GitHub metadata page and typed HEAD gaps without copying corpus.",
+      "authority": "GitHub provider readback for source; RafGitTools for hosted page/ledger adapter",
+      "source_min": [
+        "docs/navigation/GITHUB_METADATA_PAGE_CURSOR_V1.md",
+        "tools/github_metadata_page_cursor_v1.py"
+      ],
+      "service": "existing context reconstruction router / metadata page adapter",
+      "execution_target": "bounded local JSONL receipt, no provider or database writes",
+      "evidence_rule": "offline adversarial tests plus source response SHA and exact provider HEAD independently read back; unknown head stays TOKEN_VAZIO",
+      "claim_boundary": "metadata-page-receipt!=provider-authentication!=device-runtime!=claim-promotion",
+      "next_on_missing": "TOKEN_VAZIO_PROVIDER_HEAD_OR_CURSOR"
+    },
+    {
       "route_id": "GOVERNED_GIT_WRITE",
       "purpose": "Turn an approved staged change into a governed Git branch/commit/draft-PR flow.",
       "authority": "RafGitFS governed write contract",
