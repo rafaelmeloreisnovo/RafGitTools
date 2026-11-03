@@ -25,6 +25,7 @@ static u32 HTML_RENDER(const u8*html,u32 n,u8*out,u32 cap){
     u8  tc[32];u32 ti=0;     /* buffer de tag atual */
     u8  ec[8]; u32 ei=0;     /* buffer de entity atual */
     u8  in_head=0;           /* dentro de <head> */
+    u8  in_title=0;          /* only title text may render within head */
     u8  col_h=0;             /* cor de heading ativa */
     u8  raw_skip=0;          /* 1=script 2=style; never render script source */
     u8  tag_done=0;          /* tag attributes are not tag-name bytes */
@@ -65,7 +66,7 @@ static u32 HTML_RENDER(const u8*html,u32 n,u8*out,u32 cap){
         case HS_TEXT:
             if(c=='<'){st=HS_TAG;ti=0;tag_done=0u;MC0(tc,32u);break;}
             if(c=='&'){st=HS_ENT;ei=0;MC0(ec,8u);break;}
-            if(in_head)break;
+            if(in_head&&!in_title)break;
             /* Untrusted HTML must never inject terminal ESC/BEL/CSI controls. */
             if((c<0x20u&&c!='\t'&&c!='\n'&&c!='\r')||c==0x7Fu)break;
             /* wrap a 80 cols */
@@ -101,11 +102,12 @@ static u32 HTML_RENDER(const u8*html,u32 n,u8*out,u32 cap){
                     if(t[0]!='/') EMS("\033[0;36m"); /* cyan for links */
                     else EMS("\033[0m");
                 } else if(BR_MEMCMP(tt,"title",6u)==0){
-                    if(t[0]!='/'){EMS("\n\033[1;32m[TÍTULO] ");} else {EMS("\033[0m\n");}
+                    if(t[0]!='/'){in_title=1u;EMS("\n\033[1;32m[TÍTULO] ");}
+                    else {in_title=0u;EMS("\033[0m\n");}
                 } else if(BR_MEMCMP(tt,"head",5u)==0){
                     in_head=(t[0]!='/');
                 } else if(BR_MEMCMP(tt,"body",5u)==0){
-                    in_head=0;
+                    in_head=0;in_title=0u;
                 } else if(BR_MEMCMP(tt,"script",7u)==0||
                           BR_MEMCMP(tt,"style",6u)==0){
                     if(t[0]!='/')raw_skip=(u8)((tt[1]=='c')?1u:2u);
@@ -140,8 +142,12 @@ static u32 HTML_RENDER(const u8*html,u32 n,u8*out,u32 cap){
             } else if(c=='<'||c=='\n'){
                 /* entity mal formada: emite & e texto */
                 st=HS_TEXT;EM('&');
-                for(u32 j=0;j<ei;j++)EM(ec[j]);
-                if(c!='<')EM(c); else {st=HS_TAG;ti=0;}
+                for(u32 j=0;j<ei;j++){
+                    u8 v=ec[j];
+                    /* Malformed entity fallback must not relay C0/C1/DEL. */
+                    if(v>=0x20u&&v!=0x7Fu&&!(v>=0x80u&&v<=0x9Fu))EM(v);
+                }
+                if(c!='<')EM(c); else {st=HS_TAG;ti=0;tag_done=0u;MC0(tc,32u);}
             } else {
                 if(ei<7u)ec[ei++]=c;
             }

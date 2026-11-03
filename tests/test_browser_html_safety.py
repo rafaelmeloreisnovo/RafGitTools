@@ -66,6 +66,18 @@ int main(void){
     for(u32 i=0;i<sizeof(out);i++)out[i]=0u;
     HTML_RENDER((const u8*)unclosed,sizeof(unclosed)-1u,out,sizeof(out));
     if(!contains("SAFE")||contains("NO_LEAK"))return 11;
+
+    /* The head title is visible exactly once; script/style stay hidden. */
+    static const char titled[]="<head><title>HEAD_OK</title><style>CSS_HIDDEN</style></head><body>BODY_OK</body>";
+    for(u32 i=0;i<sizeof(out);i++)out[i]=0u;
+    n=HTML_RENDER((const u8*)titled,sizeof(titled)-1u,out,sizeof(out));
+    if(!n||!contains("HEAD_OK")||!contains("BODY_OK")||contains("CSS_HIDDEN"))return 12;
+
+    /* Malformed entity fallback must not smuggle raw ESC/BEL into terminal. */
+    static const char malformed[]="<body>AMP &\x1b[2J<em>SAFE</em> TAIL &\x07<X>AFTER</X></body>";
+    for(u32 i=0;i<sizeof(out);i++)out[i]=0u;
+    n=HTML_RENDER((const u8*)malformed,sizeof(malformed)-1u,out,sizeof(out));
+    if(!n||contains("\x1b[2J")||has_byte(7u,n)||!contains("SAFE")||!contains("AFTER"))return 13;
     return 0;
 }
 """
