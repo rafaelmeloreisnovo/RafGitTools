@@ -1,0 +1,21 @@
+name: Omega typed gaps — scoped structural gate
+on:
+  pull_request:
+    paths:
+      - 'configs/omega-cross-provider-gap-bridge.v1.json'
+      - 'scripts/omega_typed_gap_gate_v1.py'
+      - 'tests/test_omega_typed_gap_gate_v1.py'
+      - '.github/workflows/omega-typed-gap-scoped.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  structural-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Check typed graph, Ω vectors and no claims
+        run: python3 scripts/omega_typed_gap_gate_v1.py configs/omega-cross-provider-gap-bridge.v1.json
+      - name: Run independent scoped negative tests
+        run: python3 -m unittest discover -s tests -p 'test_omega_typed_gap_gate_v1.py' -v
