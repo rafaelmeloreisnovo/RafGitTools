@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rafaelia.local/schemas/rafaelia_historical_matrix_geometry_job.v1.schema.json",
+  "title": "Historical 8x3x2 Geometry Matrix Job V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "job_id",
+    "operation",
+    "producer",
+    "input_ref",
+    "policy",
+    "requested_outputs"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 128
+    },
+    "operation": {
+      "const": "compose_historical_matrix_geometry_v1"
+    },
+    "producer": {
+      "const": "rafaelmeloreisnovo/RafPolimata"
+    },
+    "input_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "ref",
+        "path",
+        "sha256_or_TOKEN_VAZIO"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256_or_TOKEN_VAZIO": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "topology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "positions",
+        "layers",
+        "oppositions",
+        "basis"
+      ],
+      "properties": {
+        "positions": {
+          "const": 8
+        },
+        "layers": {
+          "const": 3
+        },
+        "oppositions": {
+          "const": 2
+        },
+        "basis": {
+          "const": "cube_parity_tetra"
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "read_only_sources",
+        "allow_network",
+        "arbitrary_command_dispatch",
+        "claim_allowed"
+      ],
+      "properties": {
+        "read_only_sources": {
+          "const": true
+        },
+        "allow_network": {
+          "const": false
+        },
+        "arbitrary_command_dispatch": {
+          "const": false
+        },
+        "claim_allowed": {
+          "const": false
+        }
+      }
+    },
+    "requested_outputs": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "matrix.output.json",
+          "compose.output.hex",
+          "ifdex.v1.json",
+          "receipt.v1.json",
+          "geometry.output.v1.json",
+          "geometry.receipt.v1.json"
+        ]
+      }
+    }
+  }
+}
