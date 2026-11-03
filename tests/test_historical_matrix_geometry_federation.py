@@ -99,6 +99,26 @@ def write_fixture(folder):
 
 
 class HistoricalGeometryFederationTests(unittest.TestCase):
+    def test_canonical_federation_route_and_schema(self):
+        root = Path(__file__).resolve().parents[1]
+        cfg = json.loads((root / "configs/historical-matrix-geometry-federation.v1.json").read_text())
+        sch = json.loads((root / "schemas/rafaelia_historical_matrix_geometry_job.v1.schema.json").read_text())
+        self.assertFalse(cfg["claim_allowed"])
+        self.assertEqual(cfg["producer"]["repository"], "rafaelmeloreisnovo/RafPolimata")
+        self.assertEqual(cfg["producer"]["script"], "scripts/historical_matrix_geometry_v1.py")
+        self.assertEqual(cfg["topology"], EXPECTED_TOPOLOGY)
+        self.assertEqual(cfg["bounded_input_cell_budget"], 65536)
+        self.assertFalse(cfg["security"]["allow_network"])
+        self.assertFalse(cfg["security"]["arbitrary_command_dispatch"])
+        self.assertEqual(cfg["rll_boundary"]["coupling"], "NONE")
+        self.assertEqual(sch["properties"]["operation"]["const"],
+                         "compose_historical_matrix_geometry_v1")
+        self.assertEqual(sch["properties"]["producer"]["const"],
+                         "rafaelmeloreisnovo/RafPolimata")
+        self.assertEqual(sch["properties"]["policy"]["properties"]["claim_allowed"]["const"], False)
+        self.assertEqual(sch["properties"]["policy"]["properties"]["allow_network"]["const"], False)
+        self.assertEqual(len(sch["properties"]["requested_outputs"]["items"]["enum"]), 6)
+
     def test_valid_scoped_receipt(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp)
