@@ -162,6 +162,43 @@ def verify(directory: Path) -> list[str]:
                 ) != i or item.get("sha256") != digest(canonical(item.get("matrix"))):
                     errors.append(f"{key} projection digest mismatch {i}")
 
+    # Validate actual packed 10-bit cells, not only caller-supplied hashes.
+    def read_flat(node, dims):
+        if not dims:
+            if type(node) is not int or not 0 <= node <= 255:
+                raise ValueError("invalid uint8 cell")
+            return [node]
+        if not isinstance(node, list) or len(node) != dims[0]:
+            raise ValueError("invalid nested matrix extent")
+        result = []
+        for child in node:
+            result.extend(read_flat(child, dims[1:]))
+        return result
+
+    try:
+        expected_bytes = read_flat(matrix, shape)
+        bits = "".join(f"{value:08b}" for value in packed)
+        if any(bit == "1" for bit in bits[count * 10:]):
+            errors.append("nonzero packed padding")
+        recovered = []
+        for i in range(count):
+            cell = int(bits[10 * i:10 * i + 10], 2)
+            payload = cell & 127
+            ext = (cell >> 9) & 1
+            parity0 = ext
+            parity1 = ext
+            for bit in (0, 2, 4, 6):
+                parity0 ^= (payload >> bit) & 1
+            for bit in (1, 3, 5):
+                parity1 ^= (payload >> bit) & 1
+            if ((cell >> 7) & 1) != parity0 or ((cell >> 8) & 1) != parity1:
+                errors.append(f"invalid 10-bit parity at cell {i}")
+            recovered.append(payload | (ext << 7))
+        if recovered != expected_bytes:
+            errors.append("packed content differs from logical matrix")
+    except (ValueError, TypeError):
+        errors.append("invalid matrix shape or packed cell stream")
+
     return errors
 
 
