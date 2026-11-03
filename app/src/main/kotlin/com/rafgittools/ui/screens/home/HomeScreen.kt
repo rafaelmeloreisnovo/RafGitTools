@@ -35,6 +35,9 @@ import com.rafgittools.navigator.ConversationManifoldPublication
 import com.rafgittools.navigator.NovoexportSafInventory
 import com.rafgittools.navigator.NovoexportQueueStore
 import com.rafgittools.ui.components.ResponsiveContentFrame
+import com.rafgittools.ui.components.GithubOwnerOption
+import com.rafgittools.ui.components.GithubOwnerPicker
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.rafgittools.domain.model.github.GithubRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -219,12 +222,33 @@ private fun SourceDashboard(
     onPublishManifold: suspend (GithubRepository, ConversationManifoldPublication.Plan, String, android.content.ContentResolver) -> Result<ConversationManifoldPublication.Published>,
     onBuildPrivateGitHubIndex: suspend (GithubRepository) -> Result<PrivateGitHubTreeIndexGate.Snapshot>
 ) {
+    // The selected owner scopes all GitHub-dependent Home surfaces. A stale
+    // selected owner intentionally shows zero results instead of defaulting to All.
+    var selectedOwner by rememberSaveable(githubProfile) { mutableStateOf<String?>(null) }
+    val ownerOptions = remember(remoteRepositories) {
+        remoteRepositories.groupBy { it.owner.login.lowercase(java.util.Locale.ROOT) }
+            .values.map { repos ->
+                val owner = repos.first().owner
+                GithubOwnerOption(owner.login, owner.type, repos.size)
+            }.sortedBy { it.login.lowercase(java.util.Locale.ROOT) }
+    }
+    val scopedRepositories = remember(remoteRepositories, selectedOwner) {
+        GithubOwnerScope.filter(remoteRepositories, selectedOwner) { it.owner.login }
+    }
     Column(Modifier.fillMaxSize()) {
+        if (isGithubAuthenticated) {
+            GithubOwnerPicker(
+                options = ownerOptions,
+                selectedOwner = selectedOwner,
+                inventoryComplete = remoteListingComplete,
+                onSelect = { selectedOwner = it }
+            )
+        }
         TabRow(selectedTabIndex = activeTab.ordinal) {
             Tab(
                 selected = activeTab == HomeViewModel.HomeTab.REMOTE,
                 onClick = { onTabSelected(HomeViewModel.HomeTab.REMOTE) },
-                text = { Text("GitHub (${remoteRepositories.size})", maxLines = 1) }
+                text = { Text("GitHub (${scopedRepositories.size})", maxLines = 1) }
             )
             Tab(
                 selected = activeTab == HomeViewModel.HomeTab.DRIVE,
@@ -242,7 +266,7 @@ private fun SourceDashboard(
             HomeViewModel.HomeTab.REMOTE -> {
                 if (isGithubAuthenticated) {
                     RepositoryList(
-                        repositories = remoteRepositories,
+                        repositories = scopedRepositories,
                         githubProbeState = githubProbeState,
                         remoteReceiptState = remoteReceiptState,
                         onRunGithubTest = onRunGithubTest,
@@ -254,7 +278,7 @@ private fun SourceDashboard(
                 }
             }
             HomeViewModel.HomeTab.DRIVE -> DriveBridgeContent(
-                privateRepositories = remoteRepositories.filter { it.isPrivate },
+                privateRepositories = scopedRepositories.filter { it.isPrivate },
                 publishState = privateProcessingPublishState,
                 onPublishReceipt = onPublishPrivateProcessingReceipt,
                 onPublishManifold = onPublishManifold,
@@ -262,7 +286,7 @@ private fun SourceDashboard(
             )
             HomeViewModel.HomeTab.LOCAL -> LocalRepositoryList(
                 repositories = localRepositories,
-                githubRepositories = remoteRepositories,
+                githubRepositories = scopedRepositories,
                 githubProfile = githubProfile,
                 listingComplete = remoteListingComplete,
                 onRepositoryClick = onLocalRepositoryClick
