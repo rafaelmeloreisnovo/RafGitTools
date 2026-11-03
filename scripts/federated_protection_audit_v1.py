@@ -159,7 +159,18 @@ def main():
             raise Blocked("NOT_OWNER_MANUAL_MAIN")
         client = Github(os.environ.get("PROVIDER_TOKEN", ""))
         result = census(client)
-        status = 0 if result["page_terminal_observed"] else 2
+        unknown = sum(result["counts"][name] for name in (
+            "default_branch_unknown", "branch_protection_404_unknown",
+            "branch_protection_403_unknown", "branch_protection_other_unknown",
+            "ruleset_unknown"
+        ))
+        result["provider_unknown_observations"] = unknown
+        if unknown:
+            result["gate"] = "HOLD_PROVIDER_UNKNOWN"
+            status = 2
+        else:
+            result["gate"] = "CENSUS_OBSERVED_NOT_POLICY_CERTIFIED"
+            status = 0 if result["page_terminal_observed"] else 2
     except Blocked as error:
         result["exit_reason"] = str(error)
     result["observed_at"] = datetime.datetime.now(
