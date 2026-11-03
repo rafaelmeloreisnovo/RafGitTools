@@ -32,7 +32,7 @@ ALLOWED = {
     "application/vnd.google-apps.spreadsheet",
     "application/vnd.google-apps.presentation",
     "application/json", "text/plain", "text/markdown", "text/csv",
-    "text/x-python", "text/x-c", "text/x-asm", "text/x-shellscript-source"
+    "text/x-python", "text/x-c", "text/x-asm"
 }
 FOLDER = "application/vnd.google-apps.folder"
 
@@ -89,7 +89,8 @@ def classify(item, source_root, parent):
         return None, "INVALID_MODIFIED_TIME"
     created = time_utc(item.get("createdTime"))
     url = item.get("webViewLink")
-    if not isinstance(url, str) or not url.startswith("https://"):
+    if not isinstance(url, str) or not (url.startswith("https://drive.google.com/")
+            or url.startswith("https://docs.google.com/")):
         url = ("https://drive.google.com/drive/folders/" if kind == "FOLDER"
                else "https://drive.google.com/file/d/") + ident
         if kind == "FILE":
