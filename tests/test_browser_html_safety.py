@@ -74,10 +74,10 @@ int main(void){
     if(!n||!contains("HEAD_OK")||!contains("BODY_OK")||contains("CSS_HIDDEN"))return 12;
 
     /* Malformed entity fallback must not smuggle raw ESC/BEL into terminal. */
-    static const char malformed[]="<body>AMP &\\x1b[2J<em>SAFE</em> TAIL &\\x07<X>AFTER</X></body>";
+    static const char malformed[]="<body>AMP &\x1b[2J<em>SAFE</em> TAIL &\x07<X>AFTER</X></body>";
     for(u32 i=0;i<sizeof(out);i++)out[i]=0u;
     n=HTML_RENDER((const u8*)malformed,sizeof(malformed)-1u,out,sizeof(out));
-    if(!n||contains("\\x1b[2J")||has_byte(7u,n)||!contains("SAFE")||!contains("AFTER"))return 13;
+    if(!n||contains("\x1b[2J")||has_byte(7u,n)||!contains("SAFE")||!contains("AFTER"))return 13;
     return 0;
 }
 """
