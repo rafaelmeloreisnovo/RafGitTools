@@ -31,6 +31,8 @@ internal fun GovernancePatRouteCard(
     val documentedRoutes = listOf(
         "PAT_ACTIONS" to "Leitura/teste limitado a SHA exato; sem administracao.",
         "PAT_AGENTS" to "Preflight de identidade; escrita e acesso administrativo nao comprovados.",
+        "PAT_CODESPACES" to "Operacoes de Codespaces nao autorizadas sem readback de permissoes.",
+        "PAT_DEPENDABOT" to "Consultas/atualizacoes Dependabot exigem escopo comprovado.",
         "PAT_ENV" to "Rota administrativa manual e protegida; permissao depende do GitHub.",
         "PAT_ENVIRONMENTS" to "Identificador distinto de PAT_ENV; escopo e permissoes TOKEN_VAZIO."
     )
