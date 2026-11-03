@@ -529,10 +529,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # START owns the global pipeline; these three are separately scoped.
+          # Exact allowlist, including the pre-existing Debianum metadata gate.
+          # No broad wildcard or permission expansion.
           expected=(
             .github/workflows/START.yml
             .github/workflows/ci-android-atlas-consumer.yml
+            .github/workflows/debianum-metadata-guard.yml
             .github/workflows/rafaelia-middlefield-bridge-scoped.yml
             .github/workflows/rafaelia-rapidtools-lab-scoped.yml
             .github/workflows/rafgittools-apk-canary.yml
@@ -544,7 +546,7 @@ jobs:
             test "${active[i]}" = "${expected[i]}"
           done
           test -d .github/workflows-legacy-20260907
-          echo 'TOPOLOGY=PASS_5_EXACT_SCOPED_WORKFLOWS'
+          echo 'TOPOLOGY=PASS_6_EXACT_SCOPED_WORKFLOWS'
 
       - name: Human impact P0 | explicit unknown, child protection and rollback falsifiers
         if: github.event_name == 'pull_request'

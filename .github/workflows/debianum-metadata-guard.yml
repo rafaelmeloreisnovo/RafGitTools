@@ -4,6 +4,10 @@ on:
     paths:
       - 'scripts/drive_debianum_*'
       - 'tests/test_drive_debianum_*'
+      - 'tools/github_metadata_page_cursor_v1.py'
+      - 'tools/test_github_metadata_page_cursor_v1.py'
+      - 'docs/navigation/GITHUB_METADATA_PAGE_CURSOR_V1.md'
+      - 'configs/context-reconstruction-routes.v1.json'
       - '.github/workflows/debianum-metadata-guard.yml'
   workflow_dispatch:
 permissions:
@@ -28,6 +32,10 @@ jobs:
         run: |
           python3 -m unittest discover -s tests -p 'test_drive_debianum_*_v1.py' -v
           python3 -m unittest discover -s tests -p 'test_drive_debianum_*_v2.py' -v
+      - name: GitHub metadata cursor - offline adversarial replay
+        run: |
+          python3 -I -B -m unittest discover -s tools -p 'test_github_metadata_page_cursor_v1.py' -v
+          python3 -I -B scripts/validate_context_reconstruction_registry.py
       - name: Reject hosted-client credentials in scripts
         run: |
           ! grep -En 'SUPABASE_SERVICE_ROLE_KEY|sk-proj-|ghp_[A-Za-z0-9]{30,}' scripts/drive_debianum_*.py

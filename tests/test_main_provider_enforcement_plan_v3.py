@@ -28,7 +28,11 @@ class MainProviderEnforcementPlanV3Tests(unittest.TestCase):
     def test_only_start_is_global_with_exact_scoped_workflows(self):
         self.assertEqual(MODULE.EXPECTED_ACTIVE_YAMLS, MODULE._active_yaml_paths())
         self.assertEqual(self.start, MODULE.EXPECTED_ACTIVE_YAMLS[0])
-        self.assertEqual(5, len(MODULE.EXPECTED_ACTIVE_YAMLS))
+        self.assertEqual(6, len(MODULE.EXPECTED_ACTIVE_YAMLS))
+        self.assertIn(
+            ROOT / ".github/workflows/debianum-metadata-guard.yml",
+            MODULE.EXPECTED_ACTIVE_YAMLS,
+        )
 
     def test_new_active_yaml_is_falsifier_not_silent_promotion(self):
         extra = ROOT / ".github/workflows/unknown.yml"
