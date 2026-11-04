@@ -8,7 +8,7 @@ The historical Checks API enumerator accepted `total_count=0` as `COMPLETE_ALL_S
 
 The enumerator now labels a zero check set `NO_CHECKS_OBSERVED`, emits each check run's `head_sha`, and adds an explicit **opt-in** strict gate. Historical audit mode keeps its pre-existing exit behavior for compatibility; it still writes JSON even when checks fail. Strict mode fails closed unless all of the following are true:
 
-1. Check pagination is complete/stable, there is at least one check, and every observed check has `status=completed` and `conclusion=success`.
+1. Check pagination is complete/stable, there is at least one check, no check-run ID repeats across pages, and every observed check has `status=completed` and `conclusion=success`.
 2. Every observed Checks API `head_sha` matches the specified SHA exactly; missing SHA is rejected.
 3. The caller supplies at least one exact `--required-check`, and all named checks are present. A skipped, cancelled, timed-out, pending or failed check cannot count as success.
 4. If legacy commit statuses exist, their **combined latest state** is `success`. If no legacy statuses exist, they do not fabricate a failure when Check Runs evidence is present.
