@@ -615,6 +615,12 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_draft_route_native.py' -v
           python3 -m unittest discover -s tests -p 'test_dependabot_policy_gate_v1.py' -v
           python3 -m unittest discover -s tests -p 'test_android_dependency_bundle_gate.py' -v
+      - name: RAFEVIDENCE privacy and hash-chain falsifiers (offline, PR-only)
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_rafevidence_capture_v1.py' -v
       - name: Commit checks fail-closed falsifiers (offline, also on draft)
         shell: bash
         run: |
