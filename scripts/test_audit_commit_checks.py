@@ -39,6 +39,24 @@ class PaginationTests(unittest.TestCase):
         self.assertFalse(out["complete_enumeration"])
         self.assertEqual("INCOMPLETE_ENUMERATION", out["state"])
 
+    def test_overlapping_pages_same_total_fail_closed_even_if_all_green(self):
+        # A moving listing may repeat an ID and still reach the exact total.
+        # The old collector overwrote it and falsely marked the set stable.
+        def fetch(page, per_page):
+            self.assertEqual(100, per_page)
+            if page == 1:
+                return mod.Page(101, [run(i) for i in range(1, 101)])
+            if page == 2:
+                return mod.Page(101, [run(100), run(101)])
+            self.fail("unexpected extra page")
+
+        out = mod.collect_check_runs(fetch)
+        self.assertEqual(101, out["returned_unique_count"])
+        self.assertTrue(out["complete_enumeration"])
+        self.assertEqual([100], out["repeated_check_ids"])
+        self.assertTrue(out["snapshot_unstable"])
+        self.assertEqual("AUDIT_SNAPSHOT_UNSTABLE", out["state"])
+
     def test_total_count_drift_is_audit(self):
         def fetch(page, per_page):
             if page == 1:
