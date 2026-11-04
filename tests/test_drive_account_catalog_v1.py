@@ -23,7 +23,7 @@ class FakeEngine:
         assert root == ROOT
         pages=list(loader(root))
         assert len(pages)==1
-        payload=json.dumps({"source_file_id":CHILD,"source_parent_id":ROOT,"source_name":"doc.md"})+"\\n"
+        payload=json.dumps({"source_file_id":CHILD,"source_parent_id":ROOT,"source_name":"doc.md"})+"\n"
         output.write(payload)
         import hashlib
         return {"status":"METADATA_STREAM_COMPLETE","source_root_id":root,
@@ -34,7 +34,7 @@ class FakeEngine:
 class FailedEngine(FakeEngine):
     @staticmethod
     def walk(root, loader, output, **kwargs):
-        output.write("PARTIAL\\n")
+        output.write("PARTIAL\n")
         raise c.GateError("INCOMPLETE_PROVIDER_PAGE")
 
 class Tests(TestCase):
