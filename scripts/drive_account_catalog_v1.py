@@ -18,7 +18,7 @@ import tempfile
 from urllib.request import Request, urlopen
 
 ALIAS = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
-EMAIL = re.compile(r"^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")
+EMAIL = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 DRIVE_ABOUT = "https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)"
 SCHEMA = "rafaelia.drive.selected-account-catalog/v1"
 
@@ -107,10 +107,10 @@ def execute(account_alias, expected_email, root_id, destination, *, fixture=None
         (tmp / "RECEIPT.json").write_text(canonical(receipt) + "\n", encoding="utf-8")
         (tmp / "START_HERE.md").write_text(
             "# RAFAELIA Ω — Selected Drive Catalog (private)\n\n"
-            f"Source slot: \`{account_alias}\`; account identity represented by a one-way digest.\n\n"
-            "1. Open \`RECEIPT.json\` to verify the selection and coverage.\n"
-            "2. Traverse \`CATALOG.jsonl\` via \`source_parent_id\` ↔ \`source_file_id\`.\n"
-            "3. \`version_fingerprint_sha256\` is metadata identity, not content hash.\n"
+            f"Source slot: `{account_alias}`; account identity represented by a one-way digest.\n\n"
+            "1. Open `RECEIPT.json` to verify the selection and coverage.\n"
+            "2. Traverse `CATALOG.jsonl` via `source_parent_id` ↔ `source_file_id`.\n"
+            "3. `version_fingerprint_sha256` is metadata identity, not content hash.\n"
             "4. Items rejected by admission are counted in receipt, not indexed.\n"
             "5. RMRCTI, semantic graph, archive members, Supabase ingestion and Drive export are NOT_RUN.\n"
             "6. Preserve originals; SOURCE≠ARTIFACT≠EXECUTION≠EVIDENCE≠CLAIM.\n"
