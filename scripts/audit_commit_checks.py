@@ -66,6 +66,7 @@ def collect_check_runs(
     by_id: dict[int, dict[str, Any]] = {}
     totals: list[int] = []
     page_sizes: list[int] = []
+    repeated_check_ids: set[int] = set()
 
     for page_no in range(1, max_pages + 1):
         page = fetch_page(page_no, per_page)
@@ -73,6 +74,10 @@ def collect_check_runs(
         page_sizes.append(len(page.check_runs))
         for item in page.check_runs:
             check_id = int(item["id"])
+            if check_id in by_id:
+                # Overlapping pages can indicate a moving API snapshot even
+                # when total_count is unchanged. Never silently overwrite.
+                repeated_check_ids.add(check_id)
             by_id[check_id] = item
 
         target = max(totals)
@@ -87,7 +92,7 @@ def collect_check_runs(
     observed_totals = sorted(set(totals))
     checks = list(by_id.values())
     complete = len(checks) == total_count
-    snapshot_unstable = len(observed_totals) > 1
+    snapshot_unstable = len(observed_totals) > 1 or bool(repeated_check_ids)
 
     status_counts = Counter(str(c.get("status") or "TOKEN_VAZIO") for c in checks)
     conclusion_counts = Counter(str(c.get("conclusion") or "TOKEN_VAZIO") for c in checks)
@@ -122,6 +127,7 @@ def collect_check_runs(
         "complete_enumeration": complete,
         "snapshot_unstable": snapshot_unstable,
         "observed_total_counts": observed_totals,
+        "repeated_check_ids": sorted(repeated_check_ids),
         "pages_fetched": len(page_sizes),
         "page_sizes": page_sizes,
         "per_page_requested": per_page,
