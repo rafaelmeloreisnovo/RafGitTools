@@ -92,6 +92,35 @@ class EvidenceTests(unittest.TestCase):
         self.request({'cookie':'session-token'})
         self.assertEqual(self.run_cli(True)[0], 2)
 
+    def test_duplicate_consent_key_rejected(self):
+        self.request()
+        with open(self.input, encoding="utf-8") as f:
+            payload = f.read()
+        self.assertIn('"owner_attested": true', payload)
+        payload = payload.replace(
+            '"owner_attested": true',
+            '"owner_attested": false, "owner_attested": true',
+            1,
+        )
+        with open(self.input, "w", encoding="utf-8") as f:
+            f.write(payload)
+        self.assertEqual(self.run_cli(True)[0], 2)
+        self.assertFalse(os.path.exists(self.ledger))
+
+    def test_duplicate_nested_key_rejected(self):
+        self.request()
+        with open(self.input, encoding="utf-8") as f:
+            payload = f.read()
+        payload = payload.replace(
+            '"source_sha256":',
+            '"extra": {"consent": false, "consent": true}, "source_sha256":',
+            1,
+        )
+        with open(self.input, "w", encoding="utf-8") as f:
+            f.write(payload)
+        self.assertEqual(self.run_cli(True)[0], 2)
+        self.assertFalse(os.path.exists(self.ledger))
+
     def test_owner_consent_mandatory(self):
         self.request({'owner_attested':False})
         self.assertEqual(self.run_cli(True)[0], 2)
