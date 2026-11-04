@@ -82,13 +82,23 @@ def validate(obj):
     return obj
 
 
+def reject_duplicate_keys(pairs):
+    """Fail closed if JSON aliases an authorization or classification field."""
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise Rejected("Duplicate JSON key rejected")
+        result[key] = value
+    return result
+
+
 def parse_input(path):
     with open(path, "rb") as f:
         raw = f.read(MAX_INPUT + 1)
     if len(raw) > MAX_INPUT:
         raise Rejected("Oversize request; no bulk content ingestion")
     try:
-        return validate(json.loads(raw))
+        return validate(json.loads(raw, object_pairs_hook=reject_duplicate_keys))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise Rejected("Invalid UTF-8 JSON") from exc
 
