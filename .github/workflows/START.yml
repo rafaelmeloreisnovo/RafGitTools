@@ -615,6 +615,11 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_draft_route_native.py' -v
           python3 -m unittest discover -s tests -p 'test_dependabot_policy_gate_v1.py' -v
           python3 -m unittest discover -s tests -p 'test_android_dependency_bundle_gate.py' -v
+      - name: Commit checks fail-closed falsifiers (offline, also on draft)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_audit_commit_checks.py -v
       - name: Provision hosted LLD 18 for InventarioRAF cross-ELF gate
         shell: bash
         run: |
