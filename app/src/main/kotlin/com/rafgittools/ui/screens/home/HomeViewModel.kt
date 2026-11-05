@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rafgittools.data.auth.AuthRepository
 import com.rafgittools.data.auth.AuthTokenCache
+import com.rafgittools.diagnostics.DeviceProofV1
 import com.rafgittools.data.cache.LocalRepositoryDao
 import com.rafgittools.data.git.JGitService
 import com.rafgittools.data.github.GithubDataRepository
@@ -20,6 +21,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
@@ -70,8 +73,20 @@ class HomeViewModel @Inject constructor(
         _privateProcessingPublishState.asStateFlow()
 
     init {
-        checkAuthAndLoadData()
+        observeAuthenticationSession()
         observeLocalRepositoryRegistry()
+    }
+
+    /** DataStore emits on PAT login/logout without needing a process restart. */
+    private fun observeAuthenticationSession() {
+        viewModelScope.launch {
+            combine(
+                authRepository.isAuthenticatedFlow,
+                authRepository.usernameFlow
+            ) { authenticated, name -> authenticated to name }
+                .distinctUntilChanged()
+                .collectLatest { checkAuthAndLoadData() }
+        }
     }
 
     /** GitHub is optional: Drive and Local remain usable without a GitHub session. */
@@ -219,6 +234,34 @@ class HomeViewModel @Inject constructor(
         } catch (_: Exception) {
             null
         }
+    }
+
+    /**
+     * Explicit on-device self-report; exported by the Android SAF UI.
+     * A live GitHub identity probe is scoped independently from the cached avatar.
+     * No tokens, usernames, repository names, local paths or device IDs leave here.
+     */
+    suspend fun captureDeviceEvidence(appVersion: String, androidSdk: Int): String {
+        val authFlag = authRepository.isAuthenticated() && !authRepository.isOfflineMode()
+        val credentialPresent = authRepository.getPat().getOrNull()?.isNotBlank() == true
+        val liveProbe = if (authFlag && credentialPresent) {
+            githubRepository.probeAuthenticatedUserLive().fold(
+                onSuccess = { "PASS_SCOPED" },
+                onFailure = { "FAILED" }
+            )
+        } else {
+            "NOT_RUN"
+        }
+        return DeviceProofV1.create(
+            appVersion = appVersion,
+            androidSdk = androidSdk,
+            credentialPresent = credentialPresent,
+            authFlag = authFlag,
+            profileVisible = authFlag && _user.value != null,
+            repositoryCount = if (authFlag) _remoteRepositories.value.size else 0,
+            repositoryListingComplete = authFlag && _remoteListingComplete.value,
+            liveProbe = liveProbe
+        )
     }
 
     fun setActiveTab(tab: HomeTab) {
@@ -412,12 +455,8 @@ class HomeViewModel @Inject constructor(
     }
 
     fun refresh() {
-        if (_isAuthenticated.value) {
-            loadUserData()
-        } else {
-            _uiState.value = HomeUiState.Success
-        }
-        loadLocalRepositories()
+        // Re-read persisted auth, not merely this ViewModel's cached boolean.
+        checkAuthAndLoadData()
     }
 
     fun logout() {
