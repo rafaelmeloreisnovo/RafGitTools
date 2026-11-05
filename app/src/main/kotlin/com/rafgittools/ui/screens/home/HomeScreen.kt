@@ -1,6 +1,8 @@
 package com.rafgittools.ui.screens.home
 
 import android.content.Context
+import android.os.Build
+import android.widget.Toast
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -79,6 +81,40 @@ fun HomeScreen(
     val remoteReceiptState by viewModel.remoteReceiptState.collectAsStateWithLifecycle()
     val privateProcessingPublishState by viewModel.privateProcessingPublishState.collectAsStateWithLifecycle()
     var showMenu by remember { mutableStateOf(false) }
+    var pendingDeviceProof by remember { mutableStateOf<String?>(null) }
+    val proofScope = rememberCoroutineScope()
+    val saveProof = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        val payload = pendingDeviceProof
+        pendingDeviceProof = null
+        if (uri != null && payload != null) {
+            runCatching {
+                context.contentResolver.openOutputStream(uri, "wt")?.use { stream ->
+                    stream.write(payload.toByteArray(Charsets.UTF_8))
+                } ?: throw IOException("Selected document provider refused the file")
+            }.onSuccess {
+                Toast.makeText(context, "Prova local salva; revise antes de compartilhar", Toast.LENGTH_LONG).show()
+            }.onFailure {
+                Toast.makeText(context, "Falha ao salvar prova local", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+    val exportLocalProof: () -> Unit = {
+        proofScope.launch {
+            val version = runCatching {
+                context.packageManager.getPackageInfo(context.packageName, 0).versionName
+            }.getOrNull()?.takeIf { it.matches(Regex("[a-zA-Z0-9_.+-]{1,64}")) } ?: "TOKEN_VAZIO"
+            runCatching {
+                viewModel.captureDeviceEvidence(version, Build.VERSION.SDK_INT)
+            }.onSuccess { envelope ->
+                pendingDeviceProof = envelope
+                saveProof.launch("rafgittools-local-proof-" + System.currentTimeMillis() + ".json")
+            }.onFailure {
+                Toast.makeText(context, "Falha ao capturar prova local", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -182,6 +218,7 @@ fun HomeScreen(
                     privateProcessingPublishState = privateProcessingPublishState,
                     onTabSelected = viewModel::setActiveTab,
                     onNavigateToAuth = onNavigateToAuth,
+                    onExportLocalProof = exportLocalProof,
                     onRepositoryClick = onNavigateToRepository,
                     onLocalRepositoryClick = onNavigateToLocalRepo,
                     onRunGithubTest = viewModel::runGithubConnectivityTest,
@@ -208,6 +245,7 @@ private fun SourceDashboard(
     privateProcessingPublishState: PrivateProcessingPublishState,
     onTabSelected: (HomeViewModel.HomeTab) -> Unit,
     onNavigateToAuth: () -> Unit,
+    onExportLocalProof: () -> Unit,
     onRepositoryClick: (GithubRepository) -> Unit,
     onLocalRepositoryClick: (String) -> Unit,
     onRunGithubTest: () -> Unit,
@@ -236,6 +274,11 @@ private fun SourceDashboard(
         GithubOwnerScope.filter(remoteRepositories, selectedOwner) { it.owner.login }
     }
     Column(Modifier.fillMaxSize()) {
+        // Explicitly user-triggered export via Android SAF. No automatic upload.
+        OutlinedButton(
+            onClick = onExportLocalProof,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)
+        ) { Text("Exportar prova local · sem secrets") }
         if (isGithubAuthenticated) {
             GithubOwnerPicker(
                 options = ownerOptions,
