@@ -15,6 +15,11 @@ class LocalDeviceEvidenceSourceTests(unittest.TestCase):
         self.assertIn("authRepository.usernameFlow", src)
         self.assertIn(".distinctUntilChanged()", src)
         self.assertIn("checkAuthAndLoadData()", src)
+        self.assertIn("val epoch = ++sessionEpoch", src)
+        self.assertIn("remoteLoadJob?.cancel()", src)
+        self.assertIn("authLoadJob?.cancel()", src)
+        self.assertIn("if (epoch != sessionEpoch || !isActive", src)
+        self.assertIn("if (!wasAuthenticated) _activeTab.value = HomeTab.REMOTE", src)
 
     def test_export_needs_user_and_saf(self):
         ui = UI.read_text(encoding="utf8")
@@ -22,6 +27,8 @@ class LocalDeviceEvidenceSourceTests(unittest.TestCase):
         self.assertIn('CreateDocument("application/json")', ui)
         self.assertIn("captureDeviceEvidence", ui)
         self.assertIn("contentResolver.openOutputStream", ui)
+        self.assertIn("contentResolver.openInputStream", ui)
+        self.assertIn("MessageDigest.isEqual", ui)
         self.assertNotIn("githubRepository.createPrivateProcessingFile", ui)
 
     def test_private_self_report_boundary(self):
