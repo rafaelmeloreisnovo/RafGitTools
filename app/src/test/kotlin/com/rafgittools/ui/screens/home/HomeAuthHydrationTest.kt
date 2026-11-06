@@ -38,8 +38,9 @@ class HomeAuthHydrationTest {
         authTokenCache = AuthTokenCache()
         every { localRepositoryDao.observeAll() } returns flowOf(emptyList())
         coEvery { localRepositoryDao.loadAll() } returns emptyList()
-        coEvery { githubRepository.getAuthenticatedUserSync() } returns Result.failure(Exception("fixture"))
-        coEvery { githubRepository.getUserRepositoriesSync(any(), any()) } returns Result.failure(Exception("fixture"))
+        coEvery { githubRepository.probeAuthenticatedUserLive() } returns Result.failure(Exception("fixture"))
+        coEvery { githubRepository.getUserRepositoriesLivePage(any(), any()) } returns Result.failure(Exception("fixture"))
+        coEvery { githubRepository.getAuthenticatedOrganizationsLivePage(any()) } returns Result.success(emptyList())
     }
 
     @After
@@ -62,7 +63,7 @@ class HomeAuthHydrationTest {
 
         assertThat(authTokenCache.token).isEqualTo(TEST_CREDENTIAL)
         coVerify(exactly = 1) { authRepository.getPat() }
-        coVerify(atLeast = 1) { githubRepository.getAuthenticatedUserSync() }
+        coVerify(atLeast = 1) { githubRepository.probeAuthenticatedUserLive() }
     }
 
     @Test
@@ -83,8 +84,8 @@ class HomeAuthHydrationTest {
         assertThat(authTokenCache.token).isNull()
         assertThat(vm.isAuthenticated.value).isFalse()
         assertThat(vm.uiState.value).isNotEqualTo(HomeUiState.Loading)
-        coVerify(exactly = 0) { githubRepository.getAuthenticatedUserSync() }
-        coVerify(exactly = 0) { githubRepository.getUserRepositoriesSync(any(), any()) }
+        coVerify(exactly = 0) { githubRepository.probeAuthenticatedUserLive() }
+        coVerify(exactly = 0) { githubRepository.getUserRepositoriesLivePage(any(), any()) }
     }
 
     @Test
@@ -102,11 +103,11 @@ class HomeAuthHydrationTest {
         )
         dispatcher.scheduler.advanceUntilIdle()
         assertThat(vm.isAuthenticated.value).isFalse()
-        coVerify(exactly = 0) { githubRepository.getUserRepositoriesSync(any(), any()) }
+        coVerify(exactly = 0) { githubRepository.getUserRepositoriesLivePage(any(), any()) }
 
         // AuthScreen has already persisted the login when navigation returns.
         coEvery { authRepository.isAuthenticated() } returns true
-        coEvery { githubRepository.getUserRepositoriesSync(any(), any()) } returns Result.success(emptyList())
+        coEvery { githubRepository.getUserRepositoriesLivePage(any(), any()) } returns Result.success(emptyList())
 
         vm.onAuthReturned()
         dispatcher.scheduler.advanceUntilIdle()
@@ -115,7 +116,7 @@ class HomeAuthHydrationTest {
         assertThat(authTokenCache.token).isEqualTo(TEST_CREDENTIAL)
         assertThat(vm.uiState.value).isEqualTo(HomeUiState.Success)
         assertThat(vm.remoteListingComplete.value).isTrue()
-        coVerify(exactly = 1) { githubRepository.getUserRepositoriesSync(1, 100) }
+        coVerify(exactly = 1) { githubRepository.getUserRepositoriesLivePage(1, 100) }
     }
 
     @Test
@@ -123,7 +124,7 @@ class HomeAuthHydrationTest {
         coEvery { authRepository.isOfflineMode() } returns false
         coEvery { authRepository.isAuthenticated() } returns true
         coEvery { authRepository.getPat() } returns Result.success(TEST_CREDENTIAL)
-        coEvery { githubRepository.getUserRepositoriesSync(any(), any()) } returns Result.success(emptyList())
+        coEvery { githubRepository.getUserRepositoriesLivePage(any(), any()) } returns Result.success(emptyList())
 
         val vm = HomeViewModel(
             authRepository,
@@ -168,8 +169,8 @@ class HomeAuthHydrationTest {
         assertThat(vm.isAuthenticated.value).isFalse()
         assertThat(authTokenCache.token).isNull()
         assertThat(vm.activeTab.value).isEqualTo(HomeViewModel.HomeTab.DRIVE)
-        coVerify(exactly = 0) { githubRepository.getAuthenticatedUserSync() }
-        coVerify(exactly = 0) { githubRepository.getUserRepositoriesSync(any(), any()) }
+        coVerify(exactly = 0) { githubRepository.probeAuthenticatedUserLive() }
+        coVerify(exactly = 0) { githubRepository.getUserRepositoriesLivePage(any(), any()) }
     }
 
     @Test
@@ -193,7 +194,7 @@ class HomeAuthHydrationTest {
 
         assertThat(vm.githubProbeState.value)
             .isEqualTo(GithubConnectivityState.Passed(TEST_USER.login, 0))
-        coVerify(exactly = 1) { githubRepository.probeAuthenticatedUserLive() }
+        coVerify(exactly = 2) { githubRepository.probeAuthenticatedUserLive() }
     }
 
     @Test
