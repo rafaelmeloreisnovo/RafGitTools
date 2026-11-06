@@ -30,7 +30,10 @@ else
 fi
 # Strict CI-only ELF evidence. Local smoke checks remain compatible.
 # No missing tool, wrong ELF, unresolved externals, or nondeterminism may pass CI.
-case "${RAF_GATE_REQUIRE_CROSS:-0}" in
+REQUIRE_CROSS=${RAF_GATE_REQUIRE_CROSS:-0}
+# GitHub-hosted CI must never report green when a cross-ABI check is missing.
+if [ "${GITHUB_ACTIONS:-false}" = true ]; then REQUIRE_CROSS=1; fi
+case "$REQUIRE_CROSS" in
   0) ;;
   1)
     READELF=${READELF:-readelf}
