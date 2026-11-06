@@ -1,0 +1,22 @@
+name: RapidTools semantic L0 · scoped freestanding gate
+on:
+  pull_request:
+    paths:
+      - 'LAB_RAPIDTOOLS_OMEGA/core/raf_semantic_gate.*'
+      - 'LAB_RAPIDTOOLS_OMEGA/tests/test_semantic_gate.c'
+      - 'LAB_RAPIDTOOLS_OMEGA/scripts/verify_semantic_gate.sh'
+      - 'LAB_RAPIDTOOLS_OMEGA/docs/SEMANTIC_GATE_L0_V1.md'
+      - '.github/workflows/ci-rapidtools-semantic-l0.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  scoped-l0:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Pure C host falsifiers and cross-target objects
+        run: sh LAB_RAPIDTOOLS_OMEGA/scripts/verify_semantic_gate.sh
