@@ -783,6 +783,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m unittest discover -s tests -p 'test_interaction_token_ledger_v1.py' -v
+          python3 -m unittest discover -s tests -p 'test_verify_structural_vectors_v1.py' -v
 
       - name: Checkout pinned RMR PAI for Drive canary (no Drive credentials)
         if: github.event_name == 'pull_request' && github.head_ref == 'feat/drive-ci-custody-rmr-pai-single-root-v1-20261015'
