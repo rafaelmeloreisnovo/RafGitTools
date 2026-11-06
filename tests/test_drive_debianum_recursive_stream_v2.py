@@ -49,6 +49,30 @@ class RecursiveV2Tests(unittest.TestCase):
         self.assertIsNone(row["source_content_sha256"])
         self.assertFalse(row["claim_allowed"])
 
+    def test_uploaded_json_mime_from_drive_is_admitted_without_reading_body(self):
+        value = item(name="conversations-049.json", mime="text/x-json", size="47806754")
+        row, reason = s.classify(value, ROOT, ROOT)
+        self.assertIsNone(reason)
+        self.assertEqual(row["mime_type"], "text/x-json")
+        self.assertEqual(row["size_bytes"], 47806754)
+        self.assertEqual(row["content_evidence"], "NOT_READ")
+        self.assertIsNone(row["source_content_sha256"])
+        self.assertFalse(row["claim_allowed"])
+
+    def test_uploaded_json_mime_does_not_weaken_rejection_rules(self):
+        self.assertEqual(
+            s.classify(item(name="password.txt", mime="text/x-json"), ROOT, ROOT)[1],
+            "SENSITIVE_NAME"
+        )
+        self.assertEqual(
+            s.classify(item(name="conversations-050.json", mime="text/x-json", size="broken"), ROOT, ROOT)[1],
+            "INVALID_SIZE"
+        )
+        self.assertEqual(
+            s.classify(item(name="conversations-050.json", mime="application/octet-stream"), ROOT, ROOT)[1],
+            "DISALLOWED_MIME"
+        )
+
     def test_hidden_and_secret_names_rejected(self):
         for name in [".pid_ls", ".ssh", ".bash_history", "auth-token.json",
                      "password.txt", "private_key.pem"]:
