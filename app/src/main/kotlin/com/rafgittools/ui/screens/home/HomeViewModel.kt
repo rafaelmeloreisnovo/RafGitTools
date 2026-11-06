@@ -74,6 +74,15 @@ class HomeViewModel @Inject constructor(
         observeLocalRepositoryRegistry()
     }
 
+    /**
+     * Called by the Home navigation result after login or offline selection.
+     * Rehydrate persisted credentials and fetch current data without Activity.recreate().
+     * An ordinary repository refresh is insufficient when this VM was first created offline.
+     */
+    fun onAuthReturned() {
+        checkAuthAndLoadData()
+    }
+
     /** GitHub is optional: Drive and Local remain usable without a GitHub session. */
     private fun checkAuthAndLoadData() {
         viewModelScope.launch {
@@ -95,6 +104,8 @@ class HomeViewModel @Inject constructor(
                     loadUserData()
                 }
             } else {
+                // Switching into Drive/Local offline mode must never retain old GitHub credentials.
+                authTokenCache.token = null
                 _user.value = null
                 _remoteRepositories.value = emptyList()
                 _remoteListingComplete.value = false

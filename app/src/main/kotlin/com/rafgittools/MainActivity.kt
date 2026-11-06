@@ -69,6 +69,7 @@ import java.net.URLDecoder
 import javax.inject.Inject
 
 private const val REPO_ADDED_FLAG = "repo_added"
+private const val HOME_AUTH_RETURN_FLAG = "home_auth_return"
 
 /**
  * Main Activity for RafGitTools
@@ -149,8 +150,15 @@ fun RafGitToolsApp(
             navController = navController,
             startDestination = Screen.Home.route
         ) {
-            composable(Screen.Home.route) {
+            composable(Screen.Home.route) { backStackEntry ->
+                val authReturnSignal by backStackEntry.savedStateHandle
+                    .getStateFlow(HOME_AUTH_RETURN_FLAG, false)
+                    .collectAsState()
                 HomeScreen(
+                    authReturnSignal = authReturnSignal,
+                    onAuthReturnHandled = {
+                        backStackEntry.savedStateHandle[HOME_AUTH_RETURN_FLAG] = false
+                    },
                     onNavigateToAuth = {
                         navController.navigate(Screen.Auth.route)
                     },
@@ -179,6 +187,12 @@ fun RafGitToolsApp(
             composable(Screen.Auth.route) {
                 AuthScreen(
                     onAuthSuccess = {
+                        // The HomeViewModel survives navigation; notify it to rehydrate
+                        // the new session without restarting the Activity or reusing stale data.
+                        navController.previousBackStackEntry?.savedStateHandle?.set(
+                            HOME_AUTH_RETURN_FLAG,
+                            true
+                        )
                         navController.popBackStack()
                     }
                 )

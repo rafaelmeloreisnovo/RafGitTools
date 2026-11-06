@@ -59,6 +59,8 @@ import java.security.MessageDigest
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
+    authReturnSignal: Boolean = false,
+    onAuthReturnHandled: () -> Unit = {},
     onNavigateToAuth: () -> Unit = {},
     onNavigateToRepository: (GithubRepository) -> Unit = {},
     onNavigateToLocalRepo: (String) -> Unit = {},
@@ -79,6 +81,14 @@ fun HomeScreen(
     val remoteReceiptState by viewModel.remoteReceiptState.collectAsStateWithLifecycle()
     val privateProcessingPublishState by viewModel.privateProcessingPublishState.collectAsStateWithLifecycle()
     var showMenu by remember { mutableStateOf(false) }
+
+    LaunchedEffect(authReturnSignal) {
+        if (authReturnSignal) {
+            // Consume once: the back-stack entry is retained across login navigation.
+            viewModel.onAuthReturned()
+            onAuthReturnHandled()
+        }
+    }
 
     Scaffold(
         topBar = {
