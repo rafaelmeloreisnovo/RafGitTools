@@ -39,6 +39,10 @@ def unique_object(pairs):
     return result
 
 
+def reject_nonfinite(_value):
+    raise LineageError("NONFINITE_JSON_NUMBER")
+
+
 def read_bounded(path, limit):
     with Path(path).open("rb") as stream:
         data = stream.read(limit + 1)
@@ -55,7 +59,8 @@ def pinned_json(data, expected, limit):
     if hashlib.sha256(data).hexdigest() != expected:
         raise LineageError("BYTE_HASH_MISMATCH")
     try:
-        return json.loads(data, object_pairs_hook=unique_object)
+        return json.loads(data, object_pairs_hook=unique_object,
+                          parse_constant=reject_nonfinite)
     except (UnicodeError, json.JSONDecodeError, RecursionError):
         raise LineageError("INVALID_JSON") from None
 
