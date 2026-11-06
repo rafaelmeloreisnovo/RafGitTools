@@ -199,10 +199,11 @@ class HomeViewModel @Inject constructor(
             if (!isActive || generation != authGeneration) return@launch
             _remoteListingComplete.value = !terminalError && exhaustedPages
             _remoteRepositories.value = allRepos.distinctBy { it.id }
-            _uiState.value = if (allRepos.isNotEmpty() || !terminalError) {
-                HomeUiState.Success
-            } else {
-                HomeUiState.Error("GitHub: inventário remoto indisponível; acesso não comprovado")
+            // Keep the read-only organization lookup available if the global
+            // inventory endpoint is unavailable. No empty list becomes PASS.
+            _uiState.value = HomeUiState.Success
+            if (allRepos.isEmpty() && terminalError) {
+                _organizationStatus.value = "USER_REPOSITORY_LIST_UNAVAILABLE"
             }
 
             // A missing membership list is not proof that there are no orgs.
@@ -258,11 +259,13 @@ class HomeViewModel @Inject constructor(
             }
             if (!isActive || lookupGeneration != orgGeneration ||
                 authSnapshot != authGeneration || !_isAuthenticated.value) return@launch
-            // Replace only this owner's entries, preserving personal and other orgs.
-            val others = _remoteRepositories.value.filterNot {
+            // On error keep prior observations in the same auth session, but
+            // mark them partial; never convert a failed fetch into an empty proof.
+            val previous = _remoteRepositories.value
+            val remaining = if (complete) previous.filterNot {
                 GithubOrganizationInventory.matchesOwner(org, it.owner.login)
-            }
-            _remoteRepositories.value = (others + orgRepos).distinctBy { it.id }
+            } else previous
+            _remoteRepositories.value = (remaining + orgRepos).distinctBy { it.id }
             _organizationStatus.value = when {
                 error -> "ORG_PARTIAL_OR_PERMISSION_BLOCKED"
                 complete -> "ORG_AUTHORIZED_RESULTS_COMPLETE"
