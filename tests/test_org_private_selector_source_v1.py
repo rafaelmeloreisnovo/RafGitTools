@@ -25,7 +25,9 @@ class OrganizationPrivateSourceContract(unittest.TestCase):
         for marker in ("getUserRepositoriesLivePage", "getOrganizationRepositoriesLivePage",
                        "requireScopedOwner", "getAuthenticatedOrganizationsLivePage"):
             self.assertIn(marker, src)
-        org = src.split("suspend fun getOrganizationRepositoriesLivePage")[1].split("suspend fun")[0]
+        org = src.split("suspend fun getOrganizationRepositoriesLivePage", 1)[1].split(
+            "    /**\\n     * Get cached repositories as Flow", 1
+        )[0]
         self.assertNotIn("cachedRepos", org)
         self.assertNotIn("getCachedRepositories", org)
 
