@@ -106,6 +106,26 @@ class LineageTests(unittest.TestCase):
         with self.assertRaisesRegex(lineage.LineageError, "DUPLICATE_JSON_KEY"):
             lineage.verify(self.source, raw, digest(self.source), digest(raw))
 
+    def test_nonfinite_source_literals_fail_closed(self):
+        for literal in (b"NaN", b"Infinity", b"-Infinity"):
+            with self.subTest(literal=literal):
+                source = self.source.replace(b'"DO_NOT_EMIT_ME"', literal)
+                artifact = copy.deepcopy(self.artifact)
+                artifact["provenance"] = {
+                    "source_sha256": digest(source), "source_size_bytes": len(source)}
+                raw = encode(artifact)
+                with self.assertRaisesRegex(lineage.LineageError, "NONFINITE_JSON_NUMBER"):
+                    lineage.verify(source, raw, digest(source), digest(raw))
+
+    def test_nonfinite_artifact_literals_fail_closed(self):
+        for value in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(value=value):
+                artifact = copy.deepcopy(self.artifact)
+                artifact["extra_probe"] = value
+                raw = encode(artifact)
+                with self.assertRaisesRegex(lineage.LineageError, "NONFINITE_JSON_NUMBER"):
+                    lineage.verify(self.source, raw, digest(self.source), digest(raw))
+
     def test_dangling_parent_and_other_role_counts(self):
         conversation = {"mapping": {"a": {
             "parent": "missing", "message": {"author": {"role": "tool"}}}}}
