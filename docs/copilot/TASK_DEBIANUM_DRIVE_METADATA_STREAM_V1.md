@@ -40,3 +40,30 @@ An historical `ps`/PID snapshot cannot establish which processes currently run i
 5. CI/Android/process `ps` runtime = `NOT_RUN` until independently receipted; no auto-merge to main.
 
 Rollback: abandon review branch or append a superseding receipt; never mutate/delete Drive originals or previous evidence. `SOURCE≠ARTIFACT≠EXECUTION≠EVIDENCE≠CLAIM`.
+
+## Verify a private structural derivative
+
+For a V1 recovered-shard feature artifact, use
+`scripts/verify_structural_vectors_v1.py` after obtaining private source and
+artifact readbacks through an authorized transport. Supply both byte digests
+from a trusted receipt.
+
+```sh
+python3 scripts/verify_structural_vectors_v1.py \
+  --source "$SOURCE_JSON" --artifact "$FEATURES_JSON" \
+  --source-sha256 "$SOURCE_SHA256" --artifact-sha256 "$FEATURES_SHA256"
+python3 -m unittest discover -s tests -p 'test_verify_structural_vectors_v1.py'
+```
+
+The verifier checks byte identity, source-order ordinals, the seven declared
+integer counts and their aggregates. The JSON receipt reports
+`structural_derivation=VERIFIED` only after all checks succeed. Overall state
+is `VERIFIED_LIMITED` because the V1 artifact leaves the recipe for
+`conversation_ref_sha256` unspecified. That field receives format validation
+and retains `TOKEN_VAZIO_DERIVATION_RECIPE`.
+
+Inputs are bounded to 64 MiB for the source and 2 MiB for the artifact.
+Failures exit 3 with a typed error. Receipts contain hashes and aggregate
+counts. Corpus bytes, real identifiers and private receipts stay outside Git.
+This hosted Python standard-library utility runs on explicitly supplied
+readbacks. Provider location and permissions require their own evidence.
