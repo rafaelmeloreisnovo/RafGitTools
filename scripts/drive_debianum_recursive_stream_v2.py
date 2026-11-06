@@ -31,7 +31,7 @@ ALLOWED = {
     "application/vnd.google-apps.document",
     "application/vnd.google-apps.spreadsheet",
     "application/vnd.google-apps.presentation",
-    "application/json", "text/plain", "text/markdown", "text/csv",
+    "application/json", "text/x-json", "text/plain", "text/markdown", "text/csv",
     "text/x-python", "text/x-c", "text/x-asm"
 }
 FOLDER = "application/vnd.google-apps.folder"
