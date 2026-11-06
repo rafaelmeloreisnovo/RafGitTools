@@ -90,13 +90,25 @@ fun HomeScreen(
         pendingDeviceProof = null
         if (uri != null && payload != null) {
             runCatching {
+                val expectedBytes = payload.toByteArray(Charsets.UTF_8)
                 context.contentResolver.openOutputStream(uri, "wt")?.use { stream ->
-                    stream.write(payload.toByteArray(Charsets.UTF_8))
+                    stream.write(expectedBytes)
+                    stream.flush()
                 } ?: throw IOException("Selected document provider refused the file")
+                // SAF providers may be remote: a successful write call is not a
+                // complete custody receipt until the same bytes can be read back.
+                val readbackBytes = context.contentResolver.openInputStream(uri)?.use { stream ->
+                    stream.readBytes()
+                } ?: throw IOException("Selected document provider refused readback")
+                val sha = MessageDigest.getInstance("SHA-256")
+                if (!MessageDigest.isEqual(
+                        sha.digest(expectedBytes), sha.digest(readbackBytes)
+                    )
+                ) throw IOException("Device proof readback SHA-256 mismatch")
             }.onSuccess {
-                Toast.makeText(context, "Prova local salva; revise antes de compartilhar", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Prova local: leitura e hash conferidos", Toast.LENGTH_LONG).show()
             }.onFailure {
-                Toast.makeText(context, "Falha ao salvar prova local", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Prova local sem readback confirmado", Toast.LENGTH_LONG).show()
             }
         }
     }
