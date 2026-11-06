@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
@@ -72,6 +73,10 @@ class HomeViewModel @Inject constructor(
     val privateProcessingPublishState: StateFlow<PrivateProcessingPublishState> =
         _privateProcessingPublishState.asStateFlow()
 
+    private var authLoadJob: Job? = null
+    private var remoteLoadJob: Job? = null
+    private var sessionEpoch = 0L
+
     init {
         observeAuthenticationSession()
         observeLocalRepositoryRegistry()
@@ -89,34 +94,42 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    /** GitHub is optional: Drive and Local remain usable without a GitHub session. */
+    /** DataStore changes invalidate in-flight work from the preceding session. */
     private fun checkAuthAndLoadData() {
-        viewModelScope.launch {
+        val epoch = ++sessionEpoch
+        authLoadJob?.cancel()
+        remoteLoadJob?.cancel()
+        authLoadJob = viewModelScope.launch {
             val offlineMode = authRepository.isOfflineMode()
-            _isAuthenticated.value = authRepository.isAuthenticated() && !offlineMode
+            val authenticated = authRepository.isAuthenticated() && !offlineMode
+            if (epoch != sessionEpoch || !isActive) return@launch
 
-            if (_isAuthenticated.value) {
+            val wasAuthenticated = _isAuthenticated.value
+            _isAuthenticated.value = authenticated
+            // Never show an earlier identity or repository list while revalidating.
+            _user.value = null
+            _remoteRepositories.value = emptyList()
+            _remoteListingComplete.value = false
+            _githubProbeState.value = GithubConnectivityState.Idle
+
+            if (authenticated) {
                 val token = authRepository.getPat().getOrNull()
+                if (epoch != sessionEpoch || !isActive) return@launch
                 if (token.isNullOrBlank()) {
                     authTokenCache.token = null
                     _isAuthenticated.value = false
-                    _user.value = null
-                    _remoteRepositories.value = emptyList()
-                    _remoteListingComplete.value = false
                     _activeTab.value = HomeTab.DRIVE
                     _uiState.value = HomeUiState.Success
                 } else {
                     authTokenCache.token = token
+                    if (!wasAuthenticated) _activeTab.value = HomeTab.REMOTE
                     loadUserData()
                 }
             } else {
-                _user.value = null
-                _remoteRepositories.value = emptyList()
-                _remoteListingComplete.value = false
+                authTokenCache.token = null
                 _activeTab.value = HomeTab.DRIVE
                 _uiState.value = HomeUiState.Success
             }
-
             loadLocalRepositories()
         }
     }
@@ -129,14 +142,17 @@ class HomeViewModel @Inject constructor(
             githubRepository.indexPrivateConversationRepository(context.applicationContext, repository)
         }
 
-    /** Load every GitHub page; never confuse the API's first 30 items with a full inventory. */
+    /** Load paginated repositories; an obsolete session cannot repopulate this screen. */
     fun loadUserData() {
-        viewModelScope.launch {
+        remoteLoadJob?.cancel()
+        val epoch = sessionEpoch
+        remoteLoadJob = viewModelScope.launch {
+            if (!_isAuthenticated.value) return@launch
             _uiState.value = HomeUiState.Loading
-
             _remoteListingComplete.value = false
-            githubRepository.getAuthenticatedUserSync()
-                .onSuccess { user -> _user.value = user }
+            val userResult = githubRepository.getAuthenticatedUserSync()
+            if (epoch != sessionEpoch || !isActive || !_isAuthenticated.value) return@launch
+            _user.value = userResult.getOrNull()
 
             val allRepos = mutableListOf<GithubRepoModel>()
             val perPage = 100
@@ -146,7 +162,9 @@ class HomeViewModel @Inject constructor(
             var exhaustedPages = false
 
             while (page <= maxPages) {
+                if (epoch != sessionEpoch || !isActive || !_isAuthenticated.value) return@launch
                 val result = githubRepository.getUserRepositoriesSync(page = page, perPage = perPage)
+                if (epoch != sessionEpoch || !isActive || !_isAuthenticated.value) return@launch
                 val batch = result.getOrNull()
                 if (batch == null) {
                     terminalError = result.exceptionOrNull()
@@ -160,6 +178,7 @@ class HomeViewModel @Inject constructor(
                 page += 1
             }
 
+            if (epoch != sessionEpoch || !isActive || !_isAuthenticated.value) return@launch
             _remoteListingComplete.value = terminalError == null && exhaustedPages
             if (allRepos.isNotEmpty() || terminalError == null) {
                 _remoteRepositories.value = allRepos.distinctBy { it.id }
