@@ -178,6 +178,52 @@ class GithubDataRepository @Inject constructor(
     }
     
     /**
+     * Strict page fetch for the Home inventory. Cached first-page fallback is
+     * not evidence of current provider completeness or organization visibility.
+     */
+    suspend fun getUserRepositoriesLivePage(
+        page: Int,
+        perPage: Int
+    ): Result<List<GithubRepoModel>> = try {
+        require(page in 1..50 && perPage in 1..100)
+        Result.success(githubApiService.getUserRepositories(page = page, perPage = perPage))
+    } catch (e: Exception) {
+        Result.failure(IllegalStateException("GITHUB_REPOSITORY_INVENTORY_INCOMPLETE"))
+    }
+
+    /** Discover only organizations returned by the authenticated provider. */
+    suspend fun getAuthenticatedOrganizationsLivePage(page: Int): Result<List<String>> =
+        try {
+            require(page in 1..10)
+            val orgs = githubApiService.getAuthenticatedOrganizations(page = page)
+                .mapNotNull { org ->
+                    org.get("login")?.takeIf { it.isJsonPrimitive }?.asString
+                }
+            require(orgs.all(GithubOrganizationInventory::isValidLogin))
+            Result.success(orgs.distinctBy { it.lowercase(java.util.Locale.ROOT) })
+        } catch (e: Exception) {
+            Result.failure(IllegalStateException("GITHUB_ORGANIZATION_DISCOVERY_UNAVAILABLE"))
+        }
+
+    /**
+     * No cache fallback, no silent public-only fallback and no cross-owner
+     * leakage. GitHub is authoritative for this PAT's actual organization scope.
+     */
+    suspend fun getOrganizationRepositoriesLivePage(
+        organization: String, page: Int
+    ): Result<List<GithubRepoModel>> = try {
+        require(GithubOrganizationInventory.isValidLogin(organization))
+        require(page in 1..50)
+        val repos = githubApiService.getOrganizationRepositories(
+            organization = organization, page = page, perPage = 100
+        )
+        GithubOrganizationInventory.requireScopedOwner(organization, repos) { it.owner.login }
+        Result.success(repos.distinctBy { it.id })
+    } catch (e: Exception) {
+        Result.failure(IllegalStateException("GITHUB_ORGANIZATION_REPOSITORIES_UNAVAILABLE"))
+    }
+
+    /**
      * Get cached repositories as Flow
      * Useful for observing cache changes
      */
