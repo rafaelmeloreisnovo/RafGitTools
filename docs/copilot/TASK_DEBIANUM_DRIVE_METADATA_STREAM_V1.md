@@ -63,7 +63,9 @@ is `VERIFIED_LIMITED` because the V1 artifact leaves the recipe for
 and retains `TOKEN_VAZIO_DERIVATION_RECIPE`.
 
 Inputs are bounded to 64 MiB for the source and 2 MiB for the artifact.
-Failures exit 3 with a typed error. Receipts contain hashes and aggregate
-counts. Corpus bytes, real identifiers and private receipts stay outside Git.
+Duplicate keys and nonfinite JSON literals fail closed. Failures exit 3
+with a typed error. Receipts contain hashes and aggregate counts.
+The synthetic suite runs in the START coherence job alongside the existing
+NOVOexport genealogy tests, including draft pull requests. Corpus bytes, real identifiers and private receipts stay outside Git.
 This hosted Python standard-library utility runs on explicitly supplied
 readbacks. Provider location and permissions require their own evidence.
