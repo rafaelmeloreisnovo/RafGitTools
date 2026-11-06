@@ -78,7 +78,7 @@ class MasterCoverageProviderRoutingTests(unittest.TestCase):
         self.assertNotIn("TARGET_TASK_CMD", provider_lane)
 
     def test_single_general_root_with_allowlisted_scoped_workflows(self) -> None:
-        # START owns general orchestration. The five specialized, path/branch-
+        # START owns general orchestration. The six specialized, path/branch-
         # constrained workflows are separate evidence lanes, not extra roots.
         workflow_dir = ROOT / ".github" / "workflows"
         expected_scoped = {
@@ -102,6 +102,12 @@ class MasterCoverageProviderRoutingTests(unittest.TestCase):
             "rafgittools-apk-canary.yml": (
                 "      - fix/android-apk-ci-topology-20261031-hold",
                 "    paths:",
+            ),
+            "ci-rapidtools-semantic-l0.yml": (
+                "  pull_request:\\n    paths:",
+                "      - 'LAB_RAPIDTOOLS_OMEGA/core/raf_semantic_gate.*'",
+                "      - '.github/workflows/ci-rapidtools-semantic-l0.yml'",
+                "  workflow_dispatch:",
             ),
         }
         observed = {
