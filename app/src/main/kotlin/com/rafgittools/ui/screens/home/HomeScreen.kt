@@ -75,6 +75,8 @@ fun HomeScreen(
     val user by viewModel.user.collectAsStateWithLifecycle()
     val remoteRepositories by viewModel.remoteRepositories.collectAsStateWithLifecycle()
     val remoteListingComplete by viewModel.remoteListingComplete.collectAsStateWithLifecycle()
+    val observedOrganizations by viewModel.observedOrganizations.collectAsStateWithLifecycle()
+    val organizationStatus by viewModel.organizationStatus.collectAsStateWithLifecycle()
     val localRepositories by viewModel.localRepositories.collectAsStateWithLifecycle()
     val activeTab by viewModel.activeTab.collectAsStateWithLifecycle()
     val githubProbeState by viewModel.githubProbeState.collectAsStateWithLifecycle()
@@ -186,11 +188,14 @@ fun HomeScreen(
                     remoteRepositories = remoteRepositories,
                     githubProfile = user?.login,
                     remoteListingComplete = remoteListingComplete,
+                    observedOrganizations = observedOrganizations,
+                    organizationStatus = organizationStatus,
                     localRepositories = localRepositories,
                     githubProbeState = githubProbeState,
                     remoteReceiptState = remoteReceiptState,
                     privateProcessingPublishState = privateProcessingPublishState,
                     onTabSelected = viewModel::setActiveTab,
+                    onLoadOrganization = viewModel::loadOrganizationRepositories,
                     onNavigateToAuth = onNavigateToAuth,
                     onRepositoryClick = onNavigateToRepository,
                     onLocalRepositoryClick = onNavigateToLocalRepo,
@@ -212,11 +217,14 @@ private fun SourceDashboard(
     remoteRepositories: List<GithubRepository>,
     githubProfile: String?,
     remoteListingComplete: Boolean,
+    observedOrganizations: List<String>,
+    organizationStatus: String,
     localRepositories: List<LocalRepoSummary>,
     githubProbeState: GithubConnectivityState,
     remoteReceiptState: RemoteReceiptState,
     privateProcessingPublishState: PrivateProcessingPublishState,
     onTabSelected: (HomeViewModel.HomeTab) -> Unit,
+    onLoadOrganization: (String) -> Unit,
     onNavigateToAuth: () -> Unit,
     onRepositoryClick: (GithubRepository) -> Unit,
     onLocalRepositoryClick: (String) -> Unit,
@@ -235,12 +243,18 @@ private fun SourceDashboard(
     // The selected owner scopes all GitHub-dependent Home surfaces. A stale
     // selected owner intentionally shows zero results instead of defaulting to All.
     var selectedOwner by rememberSaveable(githubProfile) { mutableStateOf<String?>(null) }
-    val ownerOptions = remember(remoteRepositories) {
-        remoteRepositories.groupBy { it.owner.login.lowercase(java.util.Locale.ROOT) }
+    val ownerOptions = remember(remoteRepositories, observedOrganizations) {
+        val grouped = remoteRepositories.groupBy { it.owner.login.lowercase(java.util.Locale.ROOT) }
             .values.map { repos ->
                 val owner = repos.first().owner
                 GithubOwnerOption(owner.login, owner.type, repos.size)
-            }.sortedBy { it.login.lowercase(java.util.Locale.ROOT) }
+            }
+        // These organizations were returned by GitHub; repository count is unknown
+        // until a scoped authorized lookup has actually completed.
+        val extra = observedOrganizations
+            .filterNot { login -> grouped.any { it.login.equals(login, ignoreCase = true) } }
+            .map { GithubOwnerOption(it, "Organization", 0, countObserved = false) }
+        (grouped + extra).sortedBy { it.login.lowercase(java.util.Locale.ROOT) }
     }
     val scopedRepositories = remember(remoteRepositories, selectedOwner) {
         GithubOwnerScope.filter(remoteRepositories, selectedOwner) { it.owner.login }
@@ -251,7 +265,20 @@ private fun SourceDashboard(
                 options = ownerOptions,
                 selectedOwner = selectedOwner,
                 inventoryComplete = remoteListingComplete,
-                onSelect = { selectedOwner = it }
+                organizationStatus = organizationStatus,
+                onSelect = { owner ->
+                    selectedOwner = owner
+                    if (owner != null && ownerOptions.any {
+                            it.login.equals(owner, ignoreCase = true) &&
+                                it.type.equals("Organization", ignoreCase = true)
+                        }) {
+                        onLoadOrganization(owner)
+                    }
+                },
+                onLookupOrganization = { org ->
+                    selectedOwner = org
+                    onLoadOrganization(org)
+                }
             )
         }
         TabRow(selectedTabIndex = activeTab.ordinal) {
