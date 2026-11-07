@@ -223,12 +223,14 @@ object ZipCentralDirectoryRangeV1 {
         if (entries.size >= maxEntries && entries.size.toLong() < total) {
             gaps += "ENTRY_COUNT_BUDGET"
         }
-        if (directorySize <= maxCentralBytes && entries.size.toLong() != total) {
+        if (directorySize <= maxCentralBytes && entries.size.toLong() != total &&
+            "ENTRY_COUNT_BUDGET" !in gaps) {
             throw IOException("ZIP_DECLARED_ENTRY_COUNT_MISMATCH")
         }
         if (entries.any { it.unsafePath }) gaps += "UNSAFE_MEMBER_PATHS_PRESENT"
         if (entries.any { it.encrypted }) gaps += "ENCRYPTED_MEMBERS_PRESENT"
-        if (directorySize <= maxCentralBytes && pos.toLong() != directorySize) {
+        if (directorySize <= maxCentralBytes && pos.toLong() != directorySize &&
+            "ENTRY_COUNT_BUDGET" !in gaps) {
             throw IOException("ZIP_CENTRAL_DIRECTORY_SIZE_MISMATCH")
         }
         return Index(
