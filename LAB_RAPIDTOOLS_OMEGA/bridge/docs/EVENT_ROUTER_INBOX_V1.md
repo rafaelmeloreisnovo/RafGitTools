@@ -157,3 +157,66 @@ credentials, callback verification and quota counter belong in private runtime
 config, not this repository. This change creates no unattended monitor or
 message listener. CLAIM scope remains `IMPLEMENTED_UNTESTED` until exact-head
 CI. User intent and source authentication are separate from content parsing.
+
+## Broadcast / scheduled self-reminder as communication pointer (V1.2)
+
+The word **broadcast** here means a constrained event fan-out, not trust in
+email content. An email scheduled to oneself, a Calendar event, a GitHub event
+or a Supabase event can signal a known semantic route. The durable state is
+stored in Supabase receipts and indexed in Drive; **Gmail is not the queue**.
+It is also possible to trigger the route from RafGitTools or an authorized
+GPT conversation without email.
+
+`route_relay_v1.py` adds two hardcoded, reviewable route IDs:
+- `MIDDLEFIELD_STATUS_READ_V1` -> scoped public workflow status read,
+  **no** GitHub dispatch grant needed.
+- `MIDDLEFIELD_BRIDGE_CHECK_V1` -> resolve the verified canonical
+  START HERE Ω V2.2 document ID, then **propose** a dispatch of the actual
+  `.github/workflows/rafaelia-middlefield-bridge-scoped.yml` workflow on
+  `main`. This workflow has `workflow_dispatch`, but its invocation is
+  NOT a public read: it compiles, runs tests and uploads artifacts. It
+  requires separately verified standing authorization, GitHub permission
+  and exact repository/workflow/ref policy before any dispatch.
+
+A self-reminder's subject may be a non-authorizing *hint*:
+`RAFAELIA-ROUTE-V1 MIDDLEFIELD_BRIDGE_CHECK_V1`. The subject is not a
+signed capability, so the authenticated broker must map its **verified**
+Gmail provider account, event ID and approved sender/recipient scope to an
+already installed policy and deduplicate repeated deliveries. No mailbox
+search, scheduled message, message body or header gives permissions alone.
+
+Proposed delivery path, not deployed:
+
+```text
+scheduled self-email or Calendar event [signal]
+  -> authenticated Gmail/Calendar collector with verified account scope
+  -> private Supabase inbox: unique provider-event-id digest, expiry, quota
+  -> fixed route ID: known Drive doc + known GitHub repo/workflow/ref
+  -> validate standing grant and exact policy version
+  -> [status GET] OR [workflow dispatch with scoped permission]
+  -> GitHub run_id/head_sha/conclusion + provider request receipt
+  -> Supabase append-only ledger -> Drive NEXUS μWRITE and CURRENT_STATE
+  -> RapidTools Android inbox notification; GPT reads status on user turn
+```
+
+The inbox can be shared as a stateful message channel; **GPT is not a
+perpetually running process**. Scheduled mail is best-effort provider
+delivery and cannot be relied upon as an exactly-once clock. Prefer
+Supabase/Google scheduler for authoritative timing, using email as
+optional user-readable notice and catch-up signal. A scheduled self-email
+must never start privileged execution simply because its subject matched.
+
+The offline module's `per_event_confirmation_needed_if_standing_grant_valid=false`
+means the same **specific approved workflow** could be run again without
+individual approvals while the separate private grant is valid. This module
+does not create or verify a grant; it reports
+`BLOCKED_PENDING_BROKER_AND_STANDING_GRANT`,
+`dispatch_allowed=false`, `NOT_EXECUTED`, `claim_allowed=false`.
+No Gmail email scheduled or sent, no Drive read triggered, no GitHub pipeline
+dispatched by this code, and no Android notification delivered.
+`tests/test_route_relay_v1.py` contains synthetic security tests.
+
+Never place Gmail OAuth tokens, Google Drive private file contents, Supabase
+service role keys, or GitHub write tokens in a public repository or an email.
+Use per-provider scoped credentials in the private broker, typed receipts,
+anti-replay and privileged-action limits. SOURCE≠ARTIFACT≠EXECUTION≠EVIDENCE≠CLAIM.
