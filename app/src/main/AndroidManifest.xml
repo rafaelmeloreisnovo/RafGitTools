@@ -44,6 +44,14 @@
         <!-- Remote cleartext remains blocked. The network security config permits
              cleartext only for loopback, where the local model server runs. -->
 
+        <!-- Human-reviewed proposal workspace; no remote executor or exported intent. -->
+        <activity
+            android:name=".AgentWorkspaceActivity"
+            android:exported="false"
+            android:label="RAFAELIA Agent Workspace"
+            android:theme="@style/Theme.RafGitTools"
+            android:windowSoftInputMode="adjustResize" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
