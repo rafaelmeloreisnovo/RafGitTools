@@ -85,7 +85,7 @@ fun DriveAlreadyConnectedScanCard(grants: List<ExistingDriveTreeGrant.Grant>) {
             }
             Button(
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !busy && selection.writable,
+                enabled = !busy,
                 onClick = {
                     val tree = selection.tree
                     scope.launch {
@@ -100,20 +100,29 @@ fun DriveAlreadyConnectedScanCard(grants: List<ExistingDriveTreeGrant.Grant>) {
                                     context.contentResolver, tree,
                                     maxDocuments = DriveMetadataIndexGate.MAX_DOCUMENTS
                                 )
-                                val receipt = DriveAtlasSafPublisherV3.publish(
-                                    context.contentResolver, tree, snapshot
-                                )
+                                val receipt = if (selection.writable) {
+                                    DriveAtlasSafPublisherV3.publish(
+                                        context.contentResolver, tree, snapshot
+                                    )
+                                } else null
                                 Pair(snapshot, receipt)
                             }
                         }
                         result.onSuccess { pair ->
                             val snapshot = pair.first
                             val receipt = pair.second
-                            status = "DRIVE_ALREADY_CONNECTED_INDEX_VERIFIED " +
-                                "pastas=" + snapshot.allDirectories.size +
-                                " arquivos=" + snapshot.allFiles.size +
-                                " indice=" + receipt.runFolderName +
-                                " sha256=" + receipt.manifestSha256
+                            status = if (receipt == null) {
+                                "DRIVE_SCAN_PASS_READ_ONLY " +
+                                    "pastas=" + snapshot.allDirectories.size +
+                                    " arquivos=" + snapshot.allFiles.size +
+                                    " indice=BLOCKED_NO_WRITE_PERMISSION"
+                            } else {
+                                "DRIVE_ALREADY_CONNECTED_INDEX_VERIFIED " +
+                                    "pastas=" + snapshot.allDirectories.size +
+                                    " arquivos=" + snapshot.allFiles.size +
+                                    " indice=" + receipt.runFolderName +
+                                    " sha256=" + receipt.manifestSha256
+                            }
                         }.onFailure { error ->
                             status = "BLOCKED_DRIVE_EXISTING_SCAN_" +
                                 (error.message ?: "TOKEN_VAZIO")
