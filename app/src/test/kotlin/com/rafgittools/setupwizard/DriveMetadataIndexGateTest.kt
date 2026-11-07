@@ -136,6 +136,8 @@ class DriveMetadataIndexGateTest {
             DriveMetadataIndexGate.classifyArchive("Zip/file.zipraf", "application/x-zip"))
         assertEquals("SPLIT_ARCHIVE_PART",
             DriveMetadataIndexGate.classifyArchive("Zip/file.zip.001", "application/octet-stream"))
+        assertEquals("SPLIT_ARCHIVE_PART",
+            DriveMetadataIndexGate.classifyArchive("Zip/export.zip.t0.zip.004", "application/octet-stream"))
         assertEquals("TAR_CANDIDATE_UNREAD",
             DriveMetadataIndexGate.classifyArchive("Zip/backup.tgz", "application/octet-stream"))
         assertEquals(null,
