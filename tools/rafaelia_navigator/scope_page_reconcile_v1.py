@@ -37,9 +37,11 @@ def load_pages(input_dir: Path) -> list[dict]:
     return pages
 
 
-def reconcile(pages: list[dict]) -> tuple[list[dict], dict]:
+def reconcile(pages: list[dict], *, minimum_known_count: int = 0) -> tuple[list[dict], dict]:
     if not pages or len(pages) > MAX_PAGES:
         raise ValueError('PAGE_COUNT_BOUND')
+    if type(minimum_known_count) is not int or not 0 <= minimum_known_count <= MAX_ROWS:
+        raise ValueError('INVALID_MINIMUM_COUNT')
     baseline = None
     rows_by_id: dict[str, dict] = {}
     gaps: list[str] = []
@@ -92,10 +94,13 @@ def reconcile(pages: list[dict]) -> tuple[list[dict], dict]:
     if not terminal_seen:
         gaps.append('NO_TERMINAL_PAGE')
     rows = sorted(rows_by_id.values(), key=lambda r: (r['provider'], r['id']))
+    if minimum_known_count > len(rows):
+        gaps.append('BELOW_INDEPENDENTLY_OBSERVED_LOWER_BOUND')
     receipt = {
         'schema': SCHEMA, 'source_provider': baseline[0], 'scope_id': baseline[1],
         'method': baseline[2], 'pages_observed': len(pages),
         'entries_observed': rows_observed, 'unique_entries': len(rows),
+        'independent_lower_bound': minimum_known_count,
         'terminal_page_observed': terminal_seen,
         'coverage': 'PARTIAL_OR_CONFLICTED' if gaps else 'ENUMERATED_UNVERIFIED_SNAPSHOT',
         'gaps': sorted(set(gaps)), 'source_bytes_read': False,
@@ -105,7 +110,7 @@ def reconcile(pages: list[dict]) -> tuple[list[dict], dict]:
     return rows, receipt
 
 
-def write_private(input_dir: Path, output: Path) -> dict:
+def write_private(input_dir: Path, output: Path, *, minimum_known_count: int = 0) -> dict:
     src = input_dir.resolve(strict=True)
     dst = output.resolve()
     if dst.exists() or dst == src or dst in src.parents or src in dst.parents:
@@ -113,7 +118,7 @@ def write_private(input_dir: Path, output: Path) -> dict:
     # Refuse to put sensitive metadata in a tracked Git working tree.
     if any((p / '.git').exists() for p in [dst, *dst.parents]):
         raise ValueError('PRIVATE_OUTPUT_INSIDE_GIT_CHECKOUT')
-    rows, receipt = reconcile(load_pages(src))
+    rows, receipt = reconcile(load_pages(src), minimum_known_count=minimum_known_count)
     data = ''.join(json.dumps(r, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n' for r in rows).encode('utf-8')
     receipt['index_sha256'] = hashlib.sha256(data).hexdigest()
     dst.mkdir(mode=0o700, parents=True, exist_ok=False)
@@ -132,8 +137,9 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--input-pages', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--minimum-known-count', type=int, default=0)
     args = p.parse_args()
-    r = write_private(args.input_pages, args.output)
+    r = write_private(args.input_pages, args.output, minimum_known_count=args.minimum_known_count)
     print(json.dumps({k: r[k] for k in ('coverage', 'pages_observed', 'unique_entries', 'claim_allowed')}))
 
 
