@@ -30,6 +30,31 @@ object DriveMetadataIndexGate {
         val parent_known: Boolean
     )
     data class Relation(val kind: String = "CONTAINS", val from: String, val to: String)
+    /**
+     * Structural locator only. The Google Drive/SAF provider has not opened the archive.
+     * ZIPRAF is a naming candidate and MUST NOT imply a valid ZIP/ZIP64 layout.
+     */
+    data class ArchiveCandidate(
+        val path: String,
+        val kind: String,
+        val size_bytes: Long?,
+        val content_inspected: Boolean = false,
+        val source_downloaded: Boolean = false
+    )
+
+    fun classifyArchive(path: String, mime: String): String? {
+        val name = path.substringAfterLast('/').lowercase(java.util.Locale.ROOT)
+        if (Regex("""\.(?:zip|zipraf)(?:\.[a-z0-9]+)?\.\d{3,}$""").containsMatchIn(name) ||
+            Regex("""\.z\d{2,}$""").containsMatchIn(name)) return "SPLIT_ARCHIVE_PART"
+        if (name.endsWith(".zipraf")) return "ZIPRAF_CANDIDATE_UNVERIFIED_FORMAT"
+        if (name.endsWith(".zip") || mime in listOf(
+                "application/zip", "application/x-zip", "application/x-zip-compressed"
+            )) return "ZIP_CANDIDATE_UNREAD"
+        if (name.endsWith(".tgz") || name.endsWith(".tar.gz") || name.endsWith(".tar")) {
+            return "TAR_CANDIDATE_UNREAD"
+        }
+        return null
+    }
     data class Manifest(
         val schema: String = "rafgittools.drive-saf-metadata-index.v2",
         val source_scope: String = "USER_SELECTED_SAF_TREE_ONLY",
@@ -47,7 +72,12 @@ object DriveMetadataIndexGate {
         val files: List<FileMetadata>,
         val semantic_token_paths: List<TokenizedPath>,
         val conversation_codex_candidates: List<String>,
-        val relations: List<Relation>
+        val relations: List<Relation>,
+        val archive_candidates: List<ArchiveCandidate>,
+        val archive_candidates_count: Int,
+        val archive_known_bytes: Long,
+        val archive_unknown_size_count: Int,
+        val archive_content_state: String = "TOKEN_VAZIO_ARCHIVE_MEMBERS_NOT_READ"
     )
 
     private fun safePath(path: String): String {
@@ -89,6 +119,15 @@ object DriveMetadataIndexGate {
                 parent_known = it.parentDocumentId != null)
         }
         val candidates = snapshot.candidateFiles.map { safePath(it.relativePath) }.sorted()
+        // Reuse the ALL-files traversal; conversation/codex candidates are only a subset.
+        // Metadata-only: a 20 GB ZIP does not enter device storage or app heap.
+        val archiveCandidates = files.mapNotNull { file ->
+            val kind = classifyArchive(file.path, file.mime)
+            if (kind == null) null else ArchiveCandidate(file.path, kind, file.size_bytes)
+        }.sortedBy { it.path }
+        val archiveKnownBytes = archiveCandidates.fold(0L) { sum, item ->
+            Math.addExact(sum, item.size_bytes ?: 0L)
+        }
         val edges = folders.map {
             Relation(from = it.substringBeforeLast('/', ""), to = it)
         } + files.map { Relation(from = it.parent, to = it.path) }
@@ -101,7 +140,11 @@ object DriveMetadataIndexGate {
             files = files,
             semantic_token_paths = (tokenizedDirectories + tokenizedFiles).sortedBy { it.path },
             conversation_codex_candidates = candidates,
-            relations = edges
+            relations = edges,
+            archive_candidates = archiveCandidates,
+            archive_candidates_count = archiveCandidates.size,
+            archive_known_bytes = archiveKnownBytes,
+            archive_unknown_size_count = archiveCandidates.count { it.size_bytes == null }
         )
         val data = (gson.toJson(envelope) + "\n").toByteArray(Charsets.UTF_8)
         require(data.size <= MAX_INDEX_BYTES) { "TOKEN_VAZIO_INDEX_PARTITION_REQUIRED" }
