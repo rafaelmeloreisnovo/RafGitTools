@@ -32,7 +32,10 @@ import androidx.compose.ui.unit.dp
 import com.rafgittools.ui.theme.RafGitToolsTheme
 import org.json.JSONObject
 import java.security.MessageDigest
-import java.time.Instant
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import java.util.UUID
 
 /**
@@ -72,7 +75,7 @@ class AgentWorkspaceActivity : ComponentActivity() {
                 var proposedJson by remember { mutableStateOf<String?>(null) }
                 val valid = intent.isNotBlank() &&
                     intent.toByteArray(Charsets.UTF_8).size <= MAX_INTENT_BYTES
-                val readyToExport = proposedJson != null && intent == preparedIntent
+                val readyToExport = proposedJson != null && intent.trim() == preparedIntent
 
                 Surface(modifier = Modifier.fillMaxSize()) {
                     Scaffold(topBar = { TopAppBar(title = { Text("RAFAELIA Agent Workspace") }) }) { padding ->
@@ -147,7 +150,9 @@ class AgentWorkspaceActivity : ComponentActivity() {
             .put("requested_action", "PROPOSE_CHANGE")
             .put("intent", intent)
             .put("intent_sha256", sha)
-            .put("created_at_utc", Instant.now().toString())
+            .put("created_at_utc", SimpleDateFormat(
+                "yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US
+            ).apply { timeZone = TimeZone.getTimeZone("UTC") }.format(Date()))
             .put("approval_state", "PENDING_HUMAN")
             .put("execution_state", "NOT_EXECUTED")
             .put("claim_allowed", false)
