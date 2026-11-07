@@ -23,3 +23,15 @@ Old Android Drive persisted URI is a **picker starting-location hint only**, not
 
 ## Rollback
 Revert scoped GitHub PR, preserve prior implementation sources, no source Drive files changed by this engineering step.
+
+## P0 SAF provider and metadata cursor hotfix (2026-11-07)
+
+Root issue bounded to existing SAF implementation:
+- `GoogleDriveSafGate` previously accepted only `PackageManager.resolveContentProvider(authority, 0)` yielding exactly `com.google.android.apps.docs`; if Android obscured resolution, even a real Google Drive URI was rejected without meaningful diagnosis. New fallback accepts ONLY an authority listed in the **installed Google Drive package's declared providers**, never an arbitrary `google` substring. Other providers still blocked.
+- `NovoexportSafInventory` previously crashed if cloud provider omitted the optional `COLUMN_SIZE`; it now records unknown size as `null/TOKEN_VAZIO` rather than zero or a failed scan.
+- UI keeps one `ACTION_OPEN_DOCUMENT_TREE` picker and same-tree scan→publish. Grant persistence separately retries read-only when combined read/write persistence is unavailable. Scan and publishing errors are now disjoint statuses: `BLOCKED_DRIVE_SAF_READ_*` vs `DRIVE_SCAN_PASS_INDEX_WRITE_BLOCKED`. The latter proves scan returned a snapshot but does NOT claim a published index.
+- Changes are source/CI/test only until exact-head checks complete; neither Android device selection nor actual Google Drive cloud readback have been proven.
+
+**Provider limitation:** Google Drive may be available for `ACTION_OPEN_DOCUMENT` (single files) but absent for `ACTION_OPEN_DOCUMENT_TREE` (directories) on a particular Android/Google Drive version. The app cannot force a provider to implement tree selection. A single-file grant cannot ethically/safely be promoted to whole-folder access. Such a case is `BLOCKED_PROVIDER_TREE_NOT_EXPOSED`, not an APK success or an authorization bypass. If a previously granted tree URI remains present, it can be offered as a picker initial location; current UI still requires explicit selection.
+
+No changes to source Drive files, license, GitHub PAT or signed release. Rollback: revert hotfix PR and preserve all receipts. `claim_allowed=false` until a physical E2E on the Moto and index readback.
