@@ -1,0 +1,113 @@
+# RAFAELIA Ω — Event Router / Inbox V1 (DRAFT · HOLD)
+
+Status: **IMPLEMENTED_UNTESTED** until an exact-HEAD CI receipt is observed.
+Producer: `rafaelmeloreisnovo/RafGitTools`; authority for federated routing: `Mapa`.
+Scope: metadata-only, offline validator and negative security tests. **No broker deployed.**
+`SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM`; `claim_allowed=false`.
+
+## Purpose
+
+Connect future event *sources* to the already-existing Agent Workspace V1 and
+Middlefield bridge without creating an unreviewed executable command lane.
+
+- ChatGPT/user and RafGitTools APK may submit a **proposal** referencing a
+  separate, source-bound interaction ID and intent digest.
+- Gmail, Google Calendar, GitHub and Supabase may contribute **observations**.
+  Message bodies, event descriptions, free-form instructions, tokens and private
+  attachments MUST NOT become executable command payloads.
+- The current gate validates shape, bounds, expiry and authority placeholders;
+  it neither verifies identity nor dispatches anything.
+- Canonical navigation: Drive CURRENT_STATE Ω → START HERE Ω V2.2 → Mapa route
+  → RafGitTools executor. This file does not supersede any of those authorities.
+
+## Actual first slice
+
+`event_router_v1.py`: Python standard-library **host adapter**, NOT a
+freestanding C core, Edge Function, APK service, OAuth client or live watcher.
+
+```sh
+python3 -m unittest discover -s LAB_RAPIDTOOLS_OMEGA/bridge/tests -p 'test_event_router_v1.py' -v
+python3 LAB_RAPIDTOOLS_OMEGA/bridge/event_router_v1.py synthetic-envelope.json
+```
+
+An envelope has a fixed JSON key set. Origin values:
+`GMAIL_METADATA`, `GOOGLE_CALENDAR_EVENT`, `GITHUB_EVENT`,
+`SUPABASE_EVENT`, `GPT_USER_INTENT`, `RAFGITTOOLS_APK`.
+Only human sources can request `PREPARE_CI_READ` or
+`PREPARE_NOTIFICATION`; these still **do not dispatch**.
+Every other source permits only `OBSERVE_EVENT`.
+All inputs demand `PENDING_HUMAN`, `NOT_EXECUTED`,
+`METADATA_ONLY`, `authority_ref=TOKEN_VAZIO`, `claim_allowed=false`.
+Receipt includes event SHA-256 and an *advisory* idempotency key.
+A digest is an integrity address, not source authentication or authorization.
+
+## Proposed runtime architecture (NOT INSTALLED)
+
+1. **Collectors:** Gmail API watch/history or bounded authorized polling;
+   Google Calendar events/watch or authorized polling; GitHub signed webhook
+   (verify HMAC and delivery ID); Supabase database trigger/webhook/queue.
+   ChatGPT Automations can generate scheduled reports or interactive actions,
+   but do not provide an always-open external message loop for this application.
+2. **Private broker:** Supabase Edge Function or trusted service with verified
+   provider identity, signature, tenant/owner scope, allowlist and rate limits.
+   Never give service-role keys, personal tokens or webhook signing secrets to
+   the APK, email, public repo, Drive or a client.
+3. **Durable inbox:** private schema, append-only source receipt, unique
+   `(origin_kind, origin_event_id_digest, operation)`, statuses
+   `OBSERVED → PROPOSED → WAITING_APPROVAL → APPROVED → QUEUED →
+   LEASED → FINISHED/FAILED → RECEIPTED`; TTL, max attempts, dead-letter
+   queue, lease expiry, transactional idempotency and compensating successors.
+   The present `raf_private.rafdb_federated_events_v1` is metadata history,
+   **not** a durable execution queue.
+4. **Approval:** human acts in an authenticated UI; broker verifies actor,
+   scope, expiry, exact intent digest, repository/commit, anti-replay token,
+   authorized capability and selected executor. Gmail sender or calendar
+   organizer alone is not execution authority. Never infer approval from a
+   string in a document or notification.
+5. **Executor:** allowlisted `workflow_dispatch`/repository_dispatch or
+   installed RafGitTools/Polimata/Browser adapter with platform-specific
+   permissions. Return a source-bound run ID, status, SHA, environment, bounded
+   logs, exact artifact reference and evidence scope. No `sh -c` of inbox text.
+6. **Feedback:** result → Supabase private receipt → Drive μWRITE and index
+   → queried by the GPT in an authorized user turn or by a configured,
+   permitted scheduled summarizer. A notification opens a reviewed Android
+   deep link; it does not run arbitrary CLI commands just by opening the app.
+
+## Illustrative run, NOT production evidence
+
+```text
+Calendar "revisar build" → metadata event digest → OBSERVED
+  → RafaGitTools proposal "PREPARE_CI_READ" → WAITING_APPROVAL
+  → authenticated approval for exact source+action+expiry
+  → authorized GitHub Actions read-only job → run_id+SHA receipt
+  → Supabase state → Drive μWRITE → GPT reads result on next turn
+```
+
+Scheduled Gmail *sending* is a separate authenticated, permissioned action:
+draft → explicit recipient/scope/approval → schedule → revalidate approval at
+send time → Gmail provider receipt. No email was sent or draft created by
+this PR. Google Calendar events are reminders/data, not direct OS interrupts;
+Android notifications/deep links require separate user- and OS-authorized code.
+
+## Failures the V1 tests actively reject
+
+Unknown/extra JSON fields, raw email bodies, executable capabilities from
+external sources, spoofed user intent, invalid digests/UUIDs, missing expiry,
+time-travel, duplicate keys, NaN, replay-equivalent source identifiers and
+promotion states that claim approval or execution.
+
+## Evidence / rollback / next gate
+
+- Source: PR branch HEAD and three paths (validator, adversarial tests, doc).
+- Local test + exact-head provider CI + actual Android test: **TOKEN_VAZIO**
+  until independently observed. A PR merge does not prove E2E functionality.
+- Rollback: close this draft PR; `main` and existing agents, Android Manifest,
+  approvals, CI executor and Supabase tables remain unchanged.
+- Next isolated step: authenticated broker with **synthetic** events and
+  dedicated private queue migration, staged behind explicit review; install
+  actual Gmail/Calendar collectors only after their permission/privacy gates.
+- No automatic merge, sending, scheduling, device launch, remote command,
+  CI privileged runner or secrets management in this scope.
+
+Reference: Supabase Database Webhooks, Cron/pg_net, Scheduling Edge Functions.
+Provider docs must be rechecked before deploying: API behavior can change.
