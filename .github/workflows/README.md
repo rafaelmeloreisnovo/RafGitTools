@@ -1,8 +1,11 @@
-# START — single global owner + four scoped Actions workflows
+# START — single global owner + seven scoped Actions workflows
 
-`START.yml` is the only **global provider-required status-check owner**, NOT the only YAML file. The four auxiliary workflows are deliberately scoped to their specified branch/path or manual gate. They do not gain global authority from their presence.
+`START.yml` is the only **global provider-required status-check owner**, NOT the only YAML file. The seven auxiliary workflows are deliberately scoped to their specified branch/path or manual gate. They do not gain global authority from their presence.
 
 - `.github/workflows/ci-android-atlas-consumer.yml`
+- `.github/workflows/ci-rapidtools-semantic-l0.yml`
+- `.github/workflows/debianum-metadata-guard.yml`
+- `.github/workflows/rafaelia-agent-workspace-scoped.yml`
 - `.github/workflows/rafaelia-middlefield-bridge-scoped.yml`
 - `.github/workflows/rafaelia-rapidtools-lab-scoped.yml`
 - `.github/workflows/rafgittools-apk-canary.yml`
