@@ -121,6 +121,17 @@ class IntakeTests(unittest.TestCase):
         with self.assertRaisesRegex(sut.EventError, "INTENT_BINDING"):
             sut.validate(e, NOW)
 
+    def test_nonhashable_json_values_are_rejected_not_crashes(self):
+        # JSON lists/dicts are possible inputs and must never cause TypeError
+        # during a set-membership check in a long-running relay.
+        for key in ("source_kind", "requested_capability"):
+            for bad in ([], {}, [1], {"nested": "value"}):
+                event = make_event()
+                event[key] = bad
+                with self.subTest(key=key, bad=repr(bad)):
+                    with self.assertRaises(sut.EventError):
+                        sut.validate(event, NOW)
+
     def test_expiration_and_future_clock_are_fail_closed(self):
         for created, expires in (
             ("2026-11-07T11:00:00Z", "2026-11-07T11:00:00Z"),
