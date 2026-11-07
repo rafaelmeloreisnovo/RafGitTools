@@ -11,6 +11,7 @@ import com.rafgittools.data.auth.AuthTokenCache
 import com.rafgittools.data.cache.LocalRepositoryDao
 import com.rafgittools.data.git.JGitService
 import com.rafgittools.data.github.GithubDataRepository
+import com.rafgittools.data.github.GithubOrganizationInventory
 import com.rafgittools.bridge.CorpusIntakeResult
 import com.rafgittools.bridge.PrivateProcessingReceiptGateV1
 import com.rafgittools.domain.model.github.GithubUser
@@ -20,6 +21,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +52,22 @@ class HomeViewModel @Inject constructor(
     val remoteRepositories: StateFlow<List<GithubRepoModel>> = _remoteRepositories.asStateFlow()
     private val _remoteListingComplete = MutableStateFlow(false)
     val remoteListingComplete: StateFlow<Boolean> = _remoteListingComplete.asStateFlow()
+
+    private val _observedOrganizations = MutableStateFlow<List<String>>(emptyList())
+    val observedOrganizations: StateFlow<List<String>> = _observedOrganizations.asStateFlow()
+
+    // Statuses are scoped to the current PAT session, not a membership grant.
+    private val _organizationStatus = MutableStateFlow("TOKEN_VAZIO_NOT_REQUESTED")
+    val organizationStatus: StateFlow<String> = _organizationStatus.asStateFlow()
+    private val _organizationDiscoveryComplete = MutableStateFlow(false)
+    val organizationDiscoveryComplete: StateFlow<Boolean> = _organizationDiscoveryComplete.asStateFlow()
+
+    private var authGeneration = 0L
+    private var orgGeneration = 0L
+    private var authHydrationJob: Job? = null
+    private var repoListJob: Job? = null
+    private var orgListJob: Job? = null
+    private var requestedOrganization: String? = null
 
     private val _localRepositories = MutableStateFlow<List<LocalRepoSummary>>(emptyList())
     val localRepositories: StateFlow<List<LocalRepoSummary>> = _localRepositories.asStateFlow()
@@ -83,14 +102,26 @@ class HomeViewModel @Inject constructor(
         checkAuthAndLoadData()
     }
 
-    /** GitHub is optional: Drive and Local remain usable without a GitHub session. */
+    /** An authenticated session may own personal AND organization repositories. */
     private fun checkAuthAndLoadData() {
-        viewModelScope.launch {
-            val offlineMode = authRepository.isOfflineMode()
-            _isAuthenticated.value = authRepository.isAuthenticated() && !offlineMode
+        val generation = ++authGeneration
+        authHydrationJob?.cancel()
+        repoListJob?.cancel()
+        orgListJob?.cancel()
+        ++orgGeneration
+        _observedOrganizations.value = emptyList()
+        _organizationDiscoveryComplete.value = false
+        _organizationStatus.value = "TOKEN_VAZIO_NOT_REQUESTED"
 
-            if (_isAuthenticated.value) {
+        authHydrationJob = viewModelScope.launch {
+            val offlineMode = authRepository.isOfflineMode()
+            val authenticated = authRepository.isAuthenticated() && !offlineMode
+            if (!isActive || generation != authGeneration) return@launch
+            _isAuthenticated.value = authenticated
+
+            if (authenticated) {
                 val token = authRepository.getPat().getOrNull()
+                if (!isActive || generation != authGeneration) return@launch
                 if (token.isNullOrBlank()) {
                     authTokenCache.token = null
                     _isAuthenticated.value = false
@@ -101,18 +132,19 @@ class HomeViewModel @Inject constructor(
                     _uiState.value = HomeUiState.Success
                 } else {
                     authTokenCache.token = token
+                    _activeTab.value = HomeTab.REMOTE
                     loadUserData()
                 }
             } else {
-                // Switching into Drive/Local offline mode must never retain old GitHub credentials.
+                // Do not preserve an earlier identity or organization inventory.
                 authTokenCache.token = null
                 _user.value = null
                 _remoteRepositories.value = emptyList()
                 _remoteListingComplete.value = false
                 _activeTab.value = HomeTab.DRIVE
                 _uiState.value = HomeUiState.Success
+                requestedOrganization = null
             }
-
             loadLocalRepositories()
         }
     }
@@ -125,27 +157,35 @@ class HomeViewModel @Inject constructor(
             githubRepository.indexPrivateConversationRepository(context.applicationContext, repository)
         }
 
-    /** Load every GitHub page; never confuse the API's first 30 items with a full inventory. */
+    /**
+     * Page through the live /user/repos affiliation inventory. A cached page
+     * must NEVER be treated as proof that organization listing is complete.
+     */
     fun loadUserData() {
-        viewModelScope.launch {
+        repoListJob?.cancel()
+        val generation = authGeneration
+        repoListJob = viewModelScope.launch {
+            if (!_isAuthenticated.value || authTokenCache.token.isNullOrBlank()) return@launch
             _uiState.value = HomeUiState.Loading
-
             _remoteListingComplete.value = false
-            githubRepository.getAuthenticatedUserSync()
-                .onSuccess { user -> _user.value = user }
+
+            // Remote-only identity probe: don't silently use a cached login.
+            val identity = githubRepository.probeAuthenticatedUserLive()
+            if (!isActive || generation != authGeneration) return@launch
+            _user.value = identity.getOrNull()
 
             val allRepos = mutableListOf<GithubRepoModel>()
             val perPage = 100
-            val maxPages = 50
             var page = 1
-            var terminalError: Throwable? = null
+            var terminalError = false
             var exhaustedPages = false
-
-            while (page <= maxPages) {
-                val result = githubRepository.getUserRepositoriesSync(page = page, perPage = perPage)
+            while (page <= 50) {
+                if (!isActive || generation != authGeneration) return@launch
+                val result = githubRepository.getUserRepositoriesLivePage(page, perPage)
+                if (!isActive || generation != authGeneration) return@launch
                 val batch = result.getOrNull()
                 if (batch == null) {
-                    terminalError = result.exceptionOrNull()
+                    terminalError = true
                     break
                 }
                 allRepos += batch
@@ -153,17 +193,83 @@ class HomeViewModel @Inject constructor(
                     exhaustedPages = true
                     break
                 }
-                page += 1
+                page++
             }
 
-            _remoteListingComplete.value = terminalError == null && exhaustedPages
-            if (allRepos.isNotEmpty() || terminalError == null) {
-                _remoteRepositories.value = allRepos.distinctBy { it.id }
-                _uiState.value = HomeUiState.Success
-            } else {
-                _uiState.value = HomeUiState.Error(
-                    terminalError?.message ?: "Failed to load repositories"
-                )
+            if (!isActive || generation != authGeneration) return@launch
+            _remoteListingComplete.value = !terminalError && exhaustedPages
+            _remoteRepositories.value = allRepos.distinctBy { it.id }
+            // Keep the read-only organization lookup available if the global
+            // inventory endpoint is unavailable. No empty list becomes PASS.
+            _uiState.value = HomeUiState.Success
+            if (allRepos.isEmpty() && terminalError) {
+                _organizationStatus.value = "USER_REPOSITORY_LIST_UNAVAILABLE"
+            }
+
+            // A missing membership list is not proof that there are no orgs.
+            val membership = githubRepository.getAuthenticatedOrganizationsLivePage(1)
+            if (!isActive || generation != authGeneration) return@launch
+            _observedOrganizations.value = membership.getOrNull() ?: emptyList()
+            _organizationDiscoveryComplete.value =
+                membership.isSuccess && _observedOrganizations.value.size < 100
+
+            requestedOrganization?.let { loadOrganizationRepositories(it) }
+        }
+    }
+
+    /**
+     * Explicitly load an org's authorized public/private repository metadata.
+     * This does not change GitHub visibility, access or any repository content.
+     */
+    fun loadOrganizationRepositories(organization: String) {
+        val org = organization.trim()
+        if (!GithubOrganizationInventory.isValidLogin(org)) {
+            _organizationStatus.value = "INVALID_ORGANIZATION_LOGIN"
+            return
+        }
+        if (!_isAuthenticated.value || authTokenCache.token.isNullOrBlank()) {
+            _organizationStatus.value = "TOKEN_VAZIO_GITHUB_AUTH_REQUIRED"
+            return
+        }
+        requestedOrganization = org
+        orgListJob?.cancel()
+        val lookupGeneration = ++orgGeneration
+        val authSnapshot = authGeneration
+        orgListJob = viewModelScope.launch {
+            _organizationStatus.value = "ORG_LOADING"
+            val orgRepos = mutableListOf<GithubRepoModel>()
+            var complete = false
+            var error = false
+            for (page in 1..50) {
+                if (!isActive || lookupGeneration != orgGeneration ||
+                    authSnapshot != authGeneration || !_isAuthenticated.value) return@launch
+                val result = githubRepository.getOrganizationRepositoriesLivePage(org, page)
+                if (!isActive || lookupGeneration != orgGeneration ||
+                    authSnapshot != authGeneration || !_isAuthenticated.value) return@launch
+                val batch = result.getOrNull()
+                if (batch == null) {
+                    error = true
+                    break
+                }
+                orgRepos += batch
+                if (batch.size < 100) {
+                    complete = true
+                    break
+                }
+            }
+            if (!isActive || lookupGeneration != orgGeneration ||
+                authSnapshot != authGeneration || !_isAuthenticated.value) return@launch
+            // On error keep prior observations in the same auth session, but
+            // mark them partial; never convert a failed fetch into an empty proof.
+            val previous = _remoteRepositories.value
+            val remaining = if (complete) previous.filterNot {
+                GithubOrganizationInventory.matchesOwner(org, it.owner.login)
+            } else previous
+            _remoteRepositories.value = (remaining + orgRepos).distinctBy { it.id }
+            _organizationStatus.value = when {
+                error -> "ORG_PARTIAL_OR_PERMISSION_BLOCKED"
+                complete -> "ORG_AUTHORIZED_RESULTS_COMPLETE"
+                else -> "ORG_PAGE_LIMIT_PARTIAL"
             }
         }
     }
@@ -432,6 +538,15 @@ class HomeViewModel @Inject constructor(
     }
 
     fun logout() {
+        ++authGeneration
+        ++orgGeneration
+        repoListJob?.cancel()
+        orgListJob?.cancel()
+        authHydrationJob?.cancel()
+        _observedOrganizations.value = emptyList()
+        _organizationDiscoveryComplete.value = false
+        _organizationStatus.value = "TOKEN_VAZIO_NOT_REQUESTED"
+        requestedOrganization = null
         viewModelScope.launch {
             authRepository.logout()
             authTokenCache.token = null
