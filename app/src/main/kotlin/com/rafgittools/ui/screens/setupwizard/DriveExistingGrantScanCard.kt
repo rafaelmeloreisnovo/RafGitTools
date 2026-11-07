@@ -72,33 +72,48 @@ fun GoogleDriveScannerEntry() {
                     busy = true
                     status = if (persisted) "DRIVE_SCANNING_SELECTED_FOLDER"
                         else "DRIVE_SCANNING_WITH_TRANSIENT_PERMISSION"
-                    val result = withContext(Dispatchers.IO) {
+                    val scan = withContext(Dispatchers.IO) {
                         runCatching {
-                            val resolver = context.contentResolver
-                            // All child folders and files, not just conversation files.
-                            val snapshot = NovoexportSafInventory.scan(
-                                resolver,
+                            // The SAF ContentResolver must enumerate the Google
+                            // Drive tree BEFORE any index folder is created.
+                            NovoexportSafInventory.scan(
+                                context.contentResolver,
                                 selected,
                                 maxDocuments = DriveMetadataIndexGate.MAX_DOCUMENTS
                             )
-                            // Same selected tree for input and output. The scan
-                            // finishes BEFORE creating the HyperAtlas directory.
-                            val receipt = DriveAtlasSafPublisherV3.publish(
-                                resolver, selected, snapshot
-                            )
-                            snapshot to receipt
                         }
                     }
-                    result.onSuccess { (snapshot, receipt) ->
-                        status = "DRIVE_INDEX_READBACK_VERIFIED " +
-                            "pastas=" + snapshot.allDirectories.size +
-                            " arquivos=" + snapshot.allFiles.size +
-                            " indice=" + receipt.runFolderName +
-                            " partes=" + receipt.parts +
-                            " sha256=" + receipt.manifestSha256
-                    }.onFailure { error ->
-                        status = "BLOCKED_DRIVE_SCAN_OR_WRITE_" +
-                            (error.message ?: "TOKEN_VAZIO")
+                    if (scan.isFailure) {
+                        val failure = scan.exceptionOrNull()
+                        status = "BLOCKED_DRIVE_SAF_READ_" +
+                            (failure?.message ?: failure?.javaClass?.simpleName ?: "TOKEN_VAZIO")
+                    } else {
+                        val snapshot = scan.getOrThrow()
+                        status = "DRIVE_SAF_READ_PASS pastas=" +
+                            snapshot.allDirectories.size + " arquivos=" +
+                            snapshot.allFiles.size + " WRITE_IN_PROGRESS"
+                        // Always the SAME selected cloud tree, never a second
+                        // picker or a phone-local destination.
+                        val write = withContext(Dispatchers.IO) {
+                            runCatching {
+                                DriveAtlasSafPublisherV3.publish(
+                                    context.contentResolver, selected, snapshot
+                                )
+                            }
+                        }
+                        if (write.isSuccess) {
+                            val receipt = write.getOrThrow()
+                            status = "DRIVE_INDEX_READBACK_VERIFIED " +
+                                "pastas=" + snapshot.allDirectories.size +
+                                " arquivos=" + snapshot.allFiles.size +
+                                " indice=" + receipt.runFolderName +
+                                " partes=" + receipt.parts +
+                                " sha256=" + receipt.manifestSha256
+                        } else {
+                            val failure = write.exceptionOrNull()
+                            status = "BLOCKED_DRIVE_SAF_WRITE_" +
+                                (failure?.message ?: failure?.javaClass?.simpleName ?: "TOKEN_VAZIO")
+                        }
                     }
                     busy = false
                 }
