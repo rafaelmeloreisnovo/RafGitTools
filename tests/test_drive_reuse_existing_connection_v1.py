@@ -27,7 +27,7 @@ class DirectDrivePickerTests(unittest.TestCase):
         text = ENTRY.read_text(encoding="utf-8")
         self.assertIn("NovoexportSafInventory.scan(", text)
         self.assertIn("DriveAtlasSafPublisherV3.publish(", text)
-        self.assertIn("resolver, selected, snapshot", text)
+        self.assertIn("context.contentResolver, selected, snapshot", text)
         self.assertLess(text.index("NovoexportSafInventory.scan("),
                         text.index("DriveAtlasSafPublisherV3.publish("))
         self.assertNotIn("privateDestinationConfirmed", text)
