@@ -26,6 +26,7 @@ import com.rafgittools.navigator.NovoexportSafInventory
 import com.rafgittools.navigator.SafZipRangeGateV1
 import com.rafgittools.navigator.ZipCentralDirectoryRangeV1
 import com.rafgittools.setupwizard.DriveMetadataIndexGate
+import com.rafgittools.setupwizard.DriveAtlasSafPublisherV3
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -124,6 +125,36 @@ fun DriveFirstRunIndexCard() {
         }
     }
 
+    val optimizedFolderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { destination ->
+        val selected = snapshot
+        if (destination == null || selected == null || !privateDestinationConfirmed) {
+            status = "TOKEN_VAZIO_OPTIMIZED_DESTINATION_NOT_AUTHORIZED"
+        } else {
+            scope.launch {
+                busy = true
+                status = "HYPERATLAS_V3_SHARDED_EXPORT_IN_PROGRESS"
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        DriveAtlasSafPublisherV3.publish(
+                            context.contentResolver, destination, selected
+                        )
+                    }
+                }
+                result.onSuccess { receipt ->
+                    status = "HYPERATLAS_V3_READBACK_VERIFIED " +
+                        "objects=${receipt.records} parts=${receipt.parts} " +
+                        "zip_candidates=${receipt.archives} bytes=${receipt.indexBytes} " +
+                        "manifest_sha256=${receipt.manifestSha256}"
+                }.onFailure { failure ->
+                    status = "BLOCKED_HYPERATLAS_V3_EXPORT_" +
+                        (failure.message ?: failure.javaClass.simpleName)
+                }
+                busy = false
+            }
+        }
+    }
     val smallArchivePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -211,6 +242,16 @@ fun DriveFirstRunIndexCard() {
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
+                Button(
+                    onClick = { optimizedFolderPicker.launch(null) },
+                    enabled = !busy && privateDestinationConfirmed,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Salvar HyperAtlas otimizado no Drive (índice fragmentado)") }
+                Text(
+                    "Uma única seleção de pasta cria fragmentos compactos e um manifesto " +
+                        "com hashes verificados. Os ZIPs originais não são baixados.",
+                    style = MaterialTheme.typography.bodySmall
+                )
                 OutlinedButton(
                     onClick = { outputPicker.launch("rafgittools-hyperatlas-drive-map.v1.json") },
                     enabled = !busy && privateDestinationConfirmed,
