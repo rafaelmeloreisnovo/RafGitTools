@@ -1,25 +1,25 @@
-# RafGitTools · Restore existing Google Drive folder grant → scan → index
+# RafGitTools · One picker → select Google Drive folder → scan + index automatically
 
-## Observed defect
-The Google Drive app was already available to the user. The new Home/Setup cloud-only route bypassed the older Android persisted Drive document-tree grant, requiring additional Google authorization even if the app still held a valid grant. This caused unnecessary UI friction. Do not interpret ChatGPT's connected Google Drive as an Android app token; tokens are isolated across apps.
+## Exact approved user flow
+Home → Drive → 'Selecionar pasta no Google Drive' opens **one** Android ACTION_OPEN_DOCUMENT_TREE picker. User selects a folder from the Google Drive DocumentsProvider. On result, the APK:
+1. Fails closed for null/cancel, local storage or non-Google provider.
+2. Requests persistence of the one returned tree URI's read/write capability, if available.
+3. Recursively enumerates **all child files and directories** of that selected Drive tree via existing `NovoexportSafInventory.scan`, metadata only; no content ZIP/JSON copied to phone.
+4. Immediately (no second button, checkbox, login screen or destination picker) uses the **same selected URI** with existing `DriveAtlasSafPublisherV3.publish`.
+5. Creates a new `HYPERATLAS_V3_<uuid>` folder in that same Google Drive directory. Writes bounded JSONL shards and a final MANIFEST.json; checks each SHA-256 from provider readback.
+6. Displays verified counts and manifest digest, or explicit BLOCKED status.
 
-## Restored first route
-1. Read THIS app's previously persisted Android DocumentTree permissions, not any arbitrary local provider.
-2. Reject unknown/local providers using GoogleDriveSafGate exact Android package and DocumentsContract.isTreeUri; ensure previously authorized read permission.
-3. Home → Drive and Setup Wizard use GoogleDriveScannerEntry. If previously authorized Drive tree exists, show the one-click 'Escanear esta pasta do Google Drive' button, without displaying a new OAuth prompt or selecting local storage.
-4. Execute existing NovoexportSafInventory.scan on metadata only, bounded to MAX_DOCUMENTS.
-5. When the existing permission allows writing, use existing DriveAtlasSafPublisherV3.publish to create a new index run folder in the same Drive tree, with SHA-256 shard+manifest readback; append-only, originals untouched.
-6. When previously authorized grant is read-only, still allow metadata scanning; clearly report index blocked by missing write permission. No silent fallback to the phone.
-7. If no previously persisted app grant is available, fallback to GoogleDriveCloudCard: first try Google Identity authorization silently (previous Google grant) and show consent ONLY when the provider says it is necessary. No GitHub PAT reuse.
+Old Android Drive persisted URI is a **picker starting-location hint only**, not an alternate automatic choice. User always selects the folder.
 
-## Truth boundaries
-- Reused app-specific tree URI only; never transfer ChatGPT plugin credentials into APK.
-- Presence of Google Drive on the phone does not automatically grant app permission to every folder.
-- Code integrated into feature branch with source readback; build/test gates pending.
-- Physical Motorola E7 Power: NOT_RUN. OAuth config: TOKEN_VAZIO. No claim of account or folder access until tested.
-- A user who previously granted ONLY an individual file URI, not a tree URI, may need to select a Drive folder via a supported provider flow. Do not pretend otherwise.
-- Indexing only metadata, not archive members. Existing scanner has a 5000 document cap, plus size, semantic, readback bounds.
-- Rollback: revert this narrowly scoped PR; no existing Google Drive files or GitHub PAT are modified.
+## Important limits and truth
+- Android Google Drive DocumentsProvider must expose folder-tree selection in its system picker. If Drive does not appear or forbids selecting a Drive folder, an app cannot force that provider to implement ACTION_OPEN_DOCUMENT_TREE. Fail closed; do not silently select local, claim it worked, or add another OAuth flow.
+- No Google OAuth, Gmail, Google Pay, GitHub PAT or ChatGPT Drive credential required by this selected-folder SAF flow.
+- Scope = the one folder explicitly selected, including subfolders, **not entire Google account** unless the provider explicitly permits choosing its root.
+- Metadata-only index, no ZIP member contents or semantic full-body analysis. The existing gate limits inventory to **5000 documents**, 32 MiB index data, 256 shards; above bounds is BLOCKED, not an incomplete PASS.
+- Existing GoogleDriveSafGate uses the Google Drive Android application package to distinguish the provider from on-device providers. Provider visibility may differ by Android version.
+- No deletion, relocation or mutation of source documents. On interruption, partial new index folder has no committed manifest. No phone storage selected.
+- Kotlin code implementation/PR is NOT physical-device proof. GitHub CI exact-head, Android folder picker availability and provider readback require separate gates.
+- claim_allowed=false, release_allowed=false until tested.
 
-SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM
-claim_allowed=false | release_allowed=false
+## Rollback
+Revert scoped GitHub PR, preserve prior implementation sources, no source Drive files changed by this engineering step.
