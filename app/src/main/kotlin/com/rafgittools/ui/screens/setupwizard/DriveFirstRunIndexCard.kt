@@ -51,7 +51,6 @@ fun DriveFirstRunIndexCard() {
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("DRIVE_SELECT_FOLDER_READY") }
-    var scanned by remember { mutableStateOf(0) }
 
     val drivePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
@@ -86,7 +85,6 @@ fun DriveFirstRunIndexCard() {
                     }
                 }
                 result.onSuccess { (inventory, receipt) ->
-                    scanned = inventory.visitedDocuments
                     status = "DRIVE_HYPERATLAS_INDEX_READBACK_VERIFIED " +
                         "documentos=" + inventory.visitedDocuments +
                         " pastas=" + inventory.allDirectories.size +
