@@ -44,7 +44,7 @@ object DriveMetadataIndexGate {
 
     fun classifyArchive(path: String, mime: String): String? {
         val name = path.substringAfterLast('/').lowercase(java.util.Locale.ROOT)
-        if (Regex("""\.(?:zip|zipraf)(?:\.[a-z0-9]+)?\.\d{3,}$""").containsMatchIn(name) ||
+        if (Regex("""\.(?:zip|zipraf)(?:\.[a-z0-9]+)*\.\d{3,}$""").containsMatchIn(name) ||
             Regex("""\.z\d{2,}$""").containsMatchIn(name)) return "SPLIT_ARCHIVE_PART"
         if (name.endsWith(".zipraf")) return "ZIPRAF_CANDIDATE_UNVERIFIED_FORMAT"
         if (name.endsWith(".zip") || mime in listOf(
