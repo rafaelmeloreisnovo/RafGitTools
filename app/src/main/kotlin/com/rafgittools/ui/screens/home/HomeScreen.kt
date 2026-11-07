@@ -34,6 +34,7 @@ import com.rafgittools.navigator.ConversationManifoldProcessor
 import com.rafgittools.navigator.ConversationManifoldPublication
 import com.rafgittools.navigator.NovoexportSafInventory
 import com.rafgittools.navigator.NovoexportQueueStore
+import com.rafgittools.ui.screens.setupwizard.DriveFirstRunIndexCard
 import com.rafgittools.ui.components.ResponsiveContentFrame
 import com.rafgittools.ui.components.GithubOwnerOption
 import com.rafgittools.ui.components.GithubOwnerPicker
@@ -527,6 +528,10 @@ private fun DriveBridgeContent(
         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        // HyperAtlas is an actual app action: existing SAF provider picker ->
+        // DriveMetadataIndexGate -> user-selected Drive destination + SHA256 readback.
+        // No ZIP staging on the phone and no source mutation.
+        item { DriveFirstRunIndexCard() }
         item {
             PrivateGithubTreeIndexCard(
                 repository = selectedPrivateRepository,

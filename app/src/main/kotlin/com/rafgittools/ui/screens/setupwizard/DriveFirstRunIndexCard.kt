@@ -23,7 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.rafgittools.navigator.NovoexportSafInventory
+import com.rafgittools.navigator.SafZipRangeGateV1
+import com.rafgittools.navigator.ZipCentralDirectoryRangeV1
 import com.rafgittools.setupwizard.DriveMetadataIndexGate
+import com.rafgittools.setupwizard.DriveAtlasSafPublisherV3
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -41,6 +44,7 @@ fun DriveFirstRunIndexCard() {
     var busy by remember { mutableStateOf(false) }
     var privateDestinationConfirmed by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("TOKEN_VAZIO_SOURCE_NOT_SELECTED") }
+    var selectedZipIndex by remember { mutableStateOf<ZipCentralDirectoryRangeV1.Index?>(null) }
 
     val outputPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
@@ -121,16 +125,75 @@ fun DriveFirstRunIndexCard() {
         }
     }
 
+    val optimizedFolderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { destination ->
+        val selected = snapshot
+        if (destination == null || selected == null || !privateDestinationConfirmed) {
+            status = "TOKEN_VAZIO_OPTIMIZED_DESTINATION_NOT_AUTHORIZED"
+        } else {
+            scope.launch {
+                busy = true
+                status = "HYPERATLAS_V3_SHARDED_EXPORT_IN_PROGRESS"
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        DriveAtlasSafPublisherV3.publish(
+                            context.contentResolver, destination, selected
+                        )
+                    }
+                }
+                result.onSuccess { receipt ->
+                    status = "HYPERATLAS_V3_READBACK_VERIFIED " +
+                        "objects=${receipt.records} parts=${receipt.parts} " +
+                        "zip_candidates=${receipt.archives} bytes=${receipt.indexBytes} " +
+                        "manifest_sha256=${receipt.manifestSha256}"
+                }.onFailure { failure ->
+                    status = "BLOCKED_HYPERATLAS_V3_EXPORT_" +
+                        (failure.message ?: failure.javaClass.simpleName)
+                }
+                busy = false
+            }
+        }
+    }
+    val smallArchivePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        selectedZipIndex = null
+        if (uri == null) {
+            status = "TOKEN_VAZIO_ZIP_SOURCE_NOT_SELECTED"
+        } else {
+            scope.launch {
+                busy = true
+                status = "ZIP_POSITIONED_READ_IN_PROGRESS"
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        SafZipRangeGateV1.inspectSelected(context.contentResolver, uri)
+                    }
+                }
+                result.onSuccess {
+                    selectedZipIndex = it
+                    status = "ZIP_DIRECTORY_METADATA_SCOPED_READ sourceBytesRead=${it.sourceBytesRead}"
+                }.onFailure { failure ->
+                    status = if (failure is java.io.IOException) {
+                        "BLOCKED_${failure.message ?: "SAF_ZIP_READ"}"
+                    } else "BLOCKED_SAF_ZIP_UNVERIFIED"
+                }
+                busy = false
+            }
+        }
+    }
+
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text("🗝️ Primeiro: escolher o Drive e observar os arquivos",
+            Text("🗂️ HyperAtlas · Mapear pastas e ZIPs no Drive",
                 style = MaterialTheme.typography.titleMedium)
             Text(
-                "O seletor do Android permite escolher um provedor e, quando disponível, uma conta Google Drive. " +
-                    "Não há login Google dentro do RafGitTools nem acesso automático ao Drive inteiro.",
+                "Use o acesso a arquivos que o RafGitTools já possui via seletor Android. " +
+                    "Escolha uma pasta do Drive: o app mapeia a árvore e identifica ZIPs/ZIPRAFs sem baixá-los. " +
+                    "O acesso cobre apenas a árvore autorizada, não a conta inteira.",
                 style = MaterialTheme.typography.bodyMedium
             )
             Button(
@@ -140,10 +203,28 @@ fun DriveFirstRunIndexCard() {
             ) { Text("Escolher conta/pasta pelo Android") }
 
             snapshot?.let { index ->
+                val archives = remember(index) {
+                    index.allFiles.filter {
+                        DriveMetadataIndexGate.classifyArchive(it.relativePath, it.mimeType) != null
+                    }
+                }
                 Text(
-                    "Prévia: ${index.visitedDocuments} documentos, ${index.allDirectories.size} pastas, " +
-                        "${index.allFiles.size} arquivos, ${index.candidateFiles.size} possíveis conversations/codex. " +
-                        "Tamanhos ausentes: ${index.unknownSizeFiles}.",
+                    "Mapa: ${index.visitedDocuments} documentos, ${index.allDirectories.size} pastas, " +
+                        "${index.allFiles.size} arquivos, ${archives.size} compactados ou partes. " +
+                        "Tamanhos TOKEN_VAZIO: ${index.unknownSizeFiles}.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                archives.take(3).forEach { archive ->
+                    Text(
+                        "• ${archive.relativePath} · " +
+                            "${archive.sizeBytes?.toString() ?: "TOKEN_VAZIO"} bytes",
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1
+                    )
+                }
+                Text(
+                    "ZIPs grandes ficam no Drive; suas entradas internas exigem HTTP Range autorizado. " +
+                        "A prévia da pasta lê somente metadados.",
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
@@ -161,11 +242,58 @@ fun DriveFirstRunIndexCard() {
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
-                OutlinedButton(
-                    onClick = { outputPicker.launch("rafaelia-drive-metadata-index.v1.json") },
+                Button(
+                    onClick = { optimizedFolderPicker.launch(null) },
                     enabled = !busy && privateDestinationConfirmed,
                     modifier = Modifier.fillMaxWidth()
-                ) { Text("Salvar índice no Drive (com readback SHA-256)") }
+                ) { Text("Salvar HyperAtlas otimizado no Drive (índice fragmentado)") }
+                Text(
+                    "Uma única seleção de pasta cria fragmentos compactos e um manifesto " +
+                        "com hashes verificados. Os ZIPs originais não são baixados.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                OutlinedButton(
+                    onClick = { outputPicker.launch("rafgittools-hyperatlas-drive-map.v1.json") },
+                    enabled = !busy && privateDestinationConfirmed,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Salvar mapa na pasta escolhida (SHA-256 verificado)") }
+            }
+
+            OutlinedButton(
+                onClick = {
+                    smallArchivePicker.launch(arrayOf(
+                        "application/zip", "application/x-zip",
+                        "application/octet-stream"
+                    ))
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !busy
+            ) { Text("Inspecionar diretório de ZIP pequeno (até 16 MiB)") }
+            Text(
+                "Somente após escolher o arquivo. O provedor pode materializar ZIPs pequenos " +
+                    "ao abrir o descritor; ZIPs maiores ou sem tamanho conhecido são bloqueados. " +
+                    "Nenhuma extração é feita.",
+                style = MaterialTheme.typography.bodySmall
+            )
+            selectedZipIndex?.let { index ->
+                Text(
+                    "ZIP: ${index.state} · entradas ${index.observedEntries}/${index.declaredEntries} · " +
+                        "bytes lidos ${index.sourceBytesRead}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                index.entries.take(8).forEach { entry ->
+                    Text(
+                        "• ${entry.path} · ${entry.originalBytes} bytes" +
+                            if (entry.unsafePath) " [CAMINHO INSEGURO]" else "",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                if (index.gaps.isNotEmpty()) {
+                    Text(
+                        "GAPS: ${index.gaps.joinToString(", ")}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
 
             Text(status, style = MaterialTheme.typography.labelSmall)
