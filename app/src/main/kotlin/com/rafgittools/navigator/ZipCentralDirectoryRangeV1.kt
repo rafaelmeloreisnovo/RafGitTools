@@ -97,7 +97,7 @@ object ZipCentralDirectoryRangeV1 {
             if (count < 0 || offset < 0 || offset > len || count.toLong() > len - offset) {
                 throw IOException("ZIP_RANGE_OUTSIDE_SOURCE")
             }
-            if (consumed + count.toLong() > MAX_TAIL + 56L + maxCentralBytes.toLong()) {
+            if (consumed + count.toLong() > MAX_TAIL + 76L + maxCentralBytes.toLong()) {
                 throw IOException("ZIP_READ_BUDGET_EXCEEDED")
             }
             val result = source.readAt(offset, count)
