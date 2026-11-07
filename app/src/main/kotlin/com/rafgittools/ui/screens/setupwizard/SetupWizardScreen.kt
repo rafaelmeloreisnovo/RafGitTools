@@ -65,7 +65,7 @@ fun SetupWizardScreen(
         )
 
         if (index == 0) {
-            GoogleDriveCloudCard()
+            GoogleDriveScannerEntry()
         }
 
         Text(text = step.title, style = MaterialTheme.typography.headlineSmall)
