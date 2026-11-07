@@ -67,7 +67,8 @@ fun HomeScreen(
     onNavigateToSettings: () -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
-    onNavigateToActions: () -> Unit = {}
+    onNavigateToActions: () -> Unit = {},
+    onNavigateToAgentWorkspace: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
