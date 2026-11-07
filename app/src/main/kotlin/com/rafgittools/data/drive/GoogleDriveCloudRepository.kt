@@ -4,7 +4,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
@@ -240,10 +239,11 @@ class GoogleDriveCloudRepository(
         }
         val body = MultipartBody.Builder()
             .setType("multipart/related".toMediaType())
-            .addPart(Headers.headersOf("Content-Type", "application/json; charset=UTF-8"),
-                meta.toString().toRequestBody("application/json; charset=UTF-8".toMediaType()))
-            .addPart(Headers.headersOf("Content-Type", mime),
-                bytes.toRequestBody(mime.toMediaType()))
+            // OkHttp supplies each part's Content-Type from its RequestBody.
+            // Explicit Content-Type in part Headers is rejected by OkHttp.
+            .addPart(meta.toString().toRequestBody(
+                "application/json; charset=UTF-8".toMediaType()))
+            .addPart(bytes.toRequestBody(mime.toMediaType()))
             .build()
         val url = endpoint("upload/drive/v3/files").newBuilder()
             .addQueryParameter("uploadType", "multipart")
