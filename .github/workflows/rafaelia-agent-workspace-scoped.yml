@@ -6,6 +6,7 @@ on:
       - 'app/src/main/kotlin/com/rafgittools/MainActivity.kt'
       - 'app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen.kt'
       - 'app/src/main/kotlin/com/rafgittools/ui/screens/setupwizard/GoogleDriveCloudCard.kt'
+      - 'app/src/main/kotlin/com/rafgittools/ui/screens/setupwizard/DriveExistingGrantScanCard.kt'
       - 'app/src/main/kotlin/com/rafgittools/data/drive/GoogleDriveCloudRepository.kt'
       - 'app/src/test/kotlin/com/rafgittools/data/drive/GoogleDriveCloudRepositoryTest.kt'
       - 'app/build.gradle'
