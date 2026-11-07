@@ -37,7 +37,6 @@ import com.rafgittools.navigator.ConversationManifoldPublication
 import com.rafgittools.navigator.NovoexportSafInventory
 import com.rafgittools.navigator.NovoexportQueueStore
 import com.rafgittools.ui.screens.setupwizard.DriveFirstRunIndexCard
-import com.rafgittools.ui.screens.setupwizard.GoogleDriveScannerEntry
 import com.rafgittools.ui.components.ResponsiveContentFrame
 import com.rafgittools.ui.components.GithubOwnerOption
 import com.rafgittools.ui.components.GithubOwnerPicker
@@ -322,7 +321,7 @@ private fun SourceDashboard(
                 // Keep cloud folder listing scrollable on small Motorola screens.
                 // No local SAF route or hide/show toggle is reachable.
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                    GoogleDriveScannerEntry()
+                    DriveFirstRunIndexCard()
                 }
             }
         }
