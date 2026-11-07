@@ -220,3 +220,69 @@ Never place Gmail OAuth tokens, Google Drive private file contents, Supabase
 service role keys, or GitHub write tokens in a public repository or an email.
 Use per-provider scoped credentials in the private broker, typed receipts,
 anti-replay and privileged-action limits. SOURCE≠ARTIFACT≠EXECUTION≠EVIDENCE≠CLAIM.
+
+## OpenSSL fork RAFCODE integration: immutable source pointer (V1.3)
+
+Scope: integrate **control-plane evidence and a typed validation route**, NOT
+vendored crypto code, OpenSSL internals, TLS providers, native app behavior, a
+new dependency on OpenSSL, or an already-live workflow dispatch.
+
+Verified producer: `rafaelmeloreisnovo/openssl`, `master` commit
+`914c1e2b90beec80022902e715313e7ebeb396f7` (PR #9 and #10 merged).
+Local source-lock manifest:
+`contracts/OPENSSL_RAFCODE_SOURCE_LOCK_V1.json`, with exact Git blob SHA-1s
+and separate license/path attribution for these noninterchangeable modules:
+
+- `rafcode/freestanding/**`: newly added MIT-declared C11 L1 state
+  transition/rollback and non-cryptographic 24-byte wire codec; no TLS,
+  encryption, MAC, authentication, provider or device validation. The merged
+  PR #10 rejects equal-generation state conflicts. Future-generation imported
+  state still requires separate authentication from the host adapter.
+- `rafcode/l0/**`: Apache-2.0-declared capability-mask leaf; not crypto.
+- `rmr/**`: independently routed silicon/ISA/KAT and SHA-256 testing layer,
+  with `TOKEN_VAZIO_PER_COMPONENT` for detailed authorial lineage. No
+  claimed TLS replacement, certified cryptography, FIPS or speed gain.
+- All inherited `crypto/**`, `ssl/**`, `providers/**` and upstream source
+  remain governed by their own licenses and are **not changed** here.
+
+Two new named, fixed-workflow policies in `route_relay_v1.py`:
+
+```text
+OPENSSL_RAFCODE_FS_STATUS_V1
+  → READ_PUBLIC_WORKFLOW_STATUS
+  → rafaelmeloreisnovo/openssl
+  → rafcode-freestanding-v2.yml @ master
+  → expected HEAD=914c1e2b90beec80022902e715313e7ebeb396f7
+
+OPENSSL_RAFCODE_FS_VERIFY_V1
+  → PREPARE_WORKFLOW_DISPATCH (never invoke from untrusted text)
+  → same exact repo, workflow, ref and source HEAD pin
+  → standing human-granted policy + authenticated broker + GitHub permission
+  → verify branch HEAD equals pinned source immediately before dispatch
+```
+
+`verify_pinned_source()` is a **local structural comparison only**, which
+returns `MATCH_UNAUTHENTICATED_LOCAL_COMPARISON`. The broker must obtain the
+actual branch HEAD from a **provider-authenticated GitHub API response**;
+neither a Gmail sender nor a supplied JSON string can authenticate the HEAD.
+A matching SHA is not a proof of identity, permission, CI PASS, runtime Android
+behavior or crypto suitability. Drift is `DENY_SOURCE_PIN_DRIFT` and stops
+the route until an authorized successor manifest is reviewed. The
+`source-lock` file is informational and does not install or fetch code.
+
+Regression hardening: `event_router_v1.py` rejects unhashable JSON
+`source_kind`/`requested_capability` as `EventError`, rather than letting
+an attacker-controlled array/object propagate `TypeError` into consumers.
+Added adversarial tests for this and for the original Middlefield routes,
+unknown route injection, forged external capability, pin/ref/repository drift,
+noncrypto/nondevice claims and source-lock/rights cross-checks.
+
+**Deployment state**: DRAFT/HOLD. No library or platform dependency is
+introduced to the RafGitTools APK or OpenSSL. No source sync or upstream
+merge, no workflow dispatch, no Gmail send, no Supabase broker deployment, no
+phone validation. Exact-head GitHub CI and verified private broker are next
+gates; rollback is to close this draft or create a scoped follow-up correction,
+leaving upstream and both default branches unchanged.
+
+Evidence classes: GitHub blob readback != host test != CI != live hardware.
+SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM.
