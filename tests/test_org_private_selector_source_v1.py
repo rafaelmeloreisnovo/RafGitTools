@@ -39,7 +39,7 @@ class OrganizationPrivateSourceContract(unittest.TestCase):
         # Drive now uses its own existing Google Drive permission; it must not
         # promote GitHub private-repo targets or pass unfiltered repository lists.
         self.assertIn("HomeViewModel.HomeTab.DRIVE, HomeViewModel.HomeTab.LOCAL ->", home)
-        self.assertIn("GoogleDriveScannerEntry()", home)
+        self.assertIn("DriveFirstRunIndexCard()", home)
         self.assertNotIn("privateRepositories = remoteRepositories", home)
         self.assertIn("canWriteDiagnosticReceipt = selectedOwner == null ||", home)
 

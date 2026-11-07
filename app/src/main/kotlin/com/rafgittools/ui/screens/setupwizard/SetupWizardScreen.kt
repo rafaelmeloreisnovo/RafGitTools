@@ -65,7 +65,7 @@ fun SetupWizardScreen(
         )
 
         if (index == 0) {
-            GoogleDriveScannerEntry()
+            DriveFirstRunIndexCard()
         }
 
         Text(text = step.title, style = MaterialTheme.typography.headlineSmall)
