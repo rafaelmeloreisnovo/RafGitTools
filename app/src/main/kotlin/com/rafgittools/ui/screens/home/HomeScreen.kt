@@ -35,6 +35,7 @@ import com.rafgittools.navigator.ConversationManifoldPublication
 import com.rafgittools.navigator.NovoexportSafInventory
 import com.rafgittools.navigator.NovoexportQueueStore
 import com.rafgittools.ui.screens.setupwizard.DriveFirstRunIndexCard
+import com.rafgittools.ui.screens.setupwizard.GoogleDriveCloudCard
 import com.rafgittools.ui.components.ResponsiveContentFrame
 import com.rafgittools.ui.components.GithubOwnerOption
 import com.rafgittools.ui.components.GithubOwnerPicker
@@ -283,7 +284,7 @@ private fun SourceDashboard(
                 }
             )
         }
-        TabRow(selectedTabIndex = activeTab.ordinal) {
+        TabRow(selectedTabIndex = if (activeTab == HomeViewModel.HomeTab.LOCAL) 1 else activeTab.ordinal) {
             Tab(
                 selected = activeTab == HomeViewModel.HomeTab.REMOTE,
                 onClick = { onTabSelected(HomeViewModel.HomeTab.REMOTE) },
@@ -293,11 +294,6 @@ private fun SourceDashboard(
                 selected = activeTab == HomeViewModel.HomeTab.DRIVE,
                 onClick = { onTabSelected(HomeViewModel.HomeTab.DRIVE) },
                 text = { Text("Drive", maxLines = 1) }
-            )
-            Tab(
-                selected = activeTab == HomeViewModel.HomeTab.LOCAL,
-                onClick = { onTabSelected(HomeViewModel.HomeTab.LOCAL) },
-                text = { Text("Local", maxLines = 1) }
             )
         }
 
@@ -320,20 +316,10 @@ private fun SourceDashboard(
                     GithubDisconnectedContent(onNavigateToAuth)
                 }
             }
-            HomeViewModel.HomeTab.DRIVE -> DriveBridgeContent(
-                privateRepositories = scopedRepositories.filter { it.isPrivate },
-                publishState = privateProcessingPublishState,
-                onPublishReceipt = onPublishPrivateProcessingReceipt,
-                onPublishManifold = onPublishManifold,
-                onBuildPrivateGitHubIndex = onBuildPrivateGitHubIndex
-            )
-            HomeViewModel.HomeTab.LOCAL -> LocalRepositoryList(
-                repositories = localRepositories,
-                githubRepositories = scopedRepositories,
-                githubProfile = githubProfile,
-                listingComplete = remoteListingComplete,
-                onRepositoryClick = onLocalRepositoryClick
-            )
+            HomeViewModel.HomeTab.DRIVE -> GoogleDriveCloudCard()
+            // Do not expose phone-local pickers from the primary Home navigation.
+            // Legacy source remains for a future explicitly approved local workbench.
+            HomeViewModel.HomeTab.LOCAL -> GoogleDriveCloudCard()
         }
     }
 }
