@@ -59,11 +59,20 @@ fun GoogleDriveScannerEntry() {
             else -> {
                 // Keep the folder grant, if provider supports persistence, so
                 // subsequent access does not require Google login or file copies.
-                val granted = Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                // Persist READ even when Drive grants no persistent WRITE.
+                // Requesting both flags as one operation could discard an
+                // otherwise valid cloud read grant on providers with read-only
+                // folder capabilities.
                 val persisted = runCatching {
-                    context.contentResolver.takePersistableUriPermission(selected, granted)
+                    context.contentResolver.takePersistableUriPermission(
+                        selected, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
                 }.isSuccess
+                runCatching {
+                    context.contentResolver.takePersistableUriPermission(
+                        selected, Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    )
+                }
 
                 // Android also grants transient access from the system picker.
                 // Do not claim persistence when not granted. Let provider enforce
