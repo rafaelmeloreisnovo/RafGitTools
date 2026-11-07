@@ -46,12 +46,17 @@ object DriveAtlasSafPublisherV3 {
         } ?: throw IOException("HYPERATLAS_SAF_WRITE_UNAVAILABLE")
         val hash = MessageDigest.getInstance("SHA-256")
         var count = 0L
+        var zeroReads = 0
         resolver.openInputStream(file)?.use { stream ->
             val chunk = ByteArray(64 * 1024)
             while (true) {
                 val n = stream.read(chunk)
                 if (n < 0) break
-                if (n == 0) continue
+                if (n == 0) {
+                    if (++zeroReads >= 8) throw IOException("HYPERATLAS_SAF_READBACK_STALLED")
+                    continue
+                }
+                zeroReads = 0
                 count += n
                 if (count > bytes.size.toLong()) throw IOException("HYPERATLAS_READBACK_TOO_LARGE")
                 hash.update(chunk, 0, n)
