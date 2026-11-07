@@ -42,7 +42,7 @@ object HyperAtlasV4SafLocal {
             }.toByteArray(Charsets.UTF_8)
             val expected = hashBytes(data)
             // Exact replay is safe; divergent replay is rejected, never overwritten.
-            if (file.baseFile.exists()) {
+            if (file.baseFile.exists() || File(directory, name + ".bak").exists()) {
                 val prior = file.openRead().use { it.readBytes() }
                 if (!prior.contentEquals(data)) throw IOException("V4_DIVERGENT_BATCH_REPLAY")
                 return
