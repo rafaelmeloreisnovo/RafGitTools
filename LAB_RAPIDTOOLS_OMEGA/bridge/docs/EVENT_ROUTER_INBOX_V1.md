@@ -111,3 +111,49 @@ promotion states that claim approval or execution.
 
 Reference: Supabase Database Webhooks, Cron/pg_net, Scheduling Edge Functions.
 Provider docs must be rechecked before deploying: API behavior can change.
+
+## Successor clarification: policy-preauthorized read-only triggers (V1.1)
+
+An external signal **may select a trusted, predefined low-risk command** without
+a separate human approval for every event. Trust is scoped to the *operation*,
+not to arbitrary prose inside an email or calendar event.
+
+Implementation: `bounded_lookup_v1.py` plus
+`tests/test_bounded_lookup_v1.py`. It validates the existing
+`OBSERVE_EVENT` envelope, selects an immutable policy and emits a typed
+bounded `GET` command descriptor. Current policies:
+- `GITHUB_ACTIONS_PUBLIC_STATUS_V1`: fixed public GitHub Actions status URL,
+  at most five runs per response.
+- `RAFGITTOOLS_PUBLIC_GUIDE_V1`: fixed public RafGitTools README URL.
+
+The output is `ALLOW_BOUNDED_READ_CANDIDATE` with
+`per_event_human_approval_required=false`. This permits an authenticated
+broker to use **standing human-approved policy** rather than interrupting the
+user for each read. It does not imply `dispatch_allowed=true`: the current
+offline source has NO provider authentication, durable deduplication, enforced
+rate limit, runtime sandbox or network execution. Those remain required in the
+separately trusted broker before a live request is executed.
+
+Risk-based trust matrix:
+- **L0** public fixed-target metadata lookup: standing policy + verified
+  origin/tenant + replay/rate controls; no per-event human confirmation.
+- **L1** private read / limited diagnostic: explicit scoped capability,
+  least-privilege credentials and data classification, preapproval if allowed.
+- **L2** sending mail, modifying files, running native program or creating jobs:
+  authenticated actor and specific authorization for the action/scope.
+- **L3** deletion, external publication, releases, secrets or rights changes:
+  strengthened human/provider authorization, irreversible-effect gate and
+  rollback/failback where possible.
+
+Example:
+`Calendar review event → authenticated provider event ID → fixed GitHub
+Actions status lookup → bounded response → typed receipt → optional GPT
+summary`. A future broker can run the lookup at the scheduled time without
+manual repetition. It must never reinterpret the calendar *description* as
+`sh -c` or allow an arbitrary event URL, recipient or GitHub repository.
+
+The policy file is public; the user's specific authorization, account mapping,
+credentials, callback verification and quota counter belong in private runtime
+config, not this repository. This change creates no unattended monitor or
+message listener. CLAIM scope remains `IMPLEMENTED_UNTESTED` until exact-head
+CI. User intent and source authentication are separate from content parsing.
