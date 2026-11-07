@@ -180,6 +180,10 @@ fun RafGitToolsApp(
                     onNavigateToActions = {
                         val launch = Intent(navController.context, ActionsControlActivity::class.java)
                         navController.context.startActivity(launch)
+                    },
+                    onNavigateToAgentWorkspace = {
+                        val launch = Intent(navController.context, AgentWorkspaceActivity::class.java)
+                        navController.context.startActivity(launch)
                     }
                 )
             }
