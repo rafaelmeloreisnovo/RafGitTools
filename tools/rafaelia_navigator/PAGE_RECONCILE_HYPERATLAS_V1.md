@@ -28,6 +28,16 @@ The output `INDEX.jsonl` and `RECEIPT.json` are private. For any raw page, no cu
 
 A Drive folder fetch of the existing `Zip` folder reported 19 immediate children (18 files + one subfolder), while a filtered Drive search for that same folder returned 2 rows. This is a **provider-method coverage discrepancy**: neither is promoted to verified global truth by comparison alone. A GitHub installation page for `instituto-Rafael` contained 30 repositories; the next offset page returned zero. Treat this as an observed traversal of one organization installation, **not** a consistent historical snapshot or an assertion about other installations.
 
+## Provider page-size drift gate (2026-11-07)
+
+The GitHub connector returned a first 50-item personal page and zero at offset=50, even though a separate 100-item first-page call demonstrated at least 100 accessible repositories. A first 30-item organization page plus empty offset=30 also contradicted a later 49-item organization page when page_size=100. Therefore the empty offset pages **must not** be used as a completeness proof.
+
+Use the optional externally observed lower bound to prevent false completeness:
+
+    python3 scope_page_reconcile_v1.py --input-pages /private/pages --output /private/new-run --minimum-known-count 100
+
+If the reconciled unique count is below that independently observed lower bound, the receipt contains `BELOW_INDEPENDENTLY_OBSERVED_LOWER_BOUND` and `PARTIAL_OR_CONFLICTED`. This safeguard does not replace provider pagination and snapshot consistency. Never make up a count or assume a count below page_size proves a consistent snapshot. New synthetic local tests: 14/14 PASS.
+
 ## Falsification and rollback
 
 12 synthetic unit tests passed locally against the exact predecessor normalizer on 2026-11-07; exact Git blob content was verified after write. No exact-head CI or Android physical E2E claimed. Private source metadata has been kept in Drive, not committed here. No original Drive file or GitHub main branch was modified. Keep PR in DRAFT/HOLD until independent provider pilot, pagination reconciliation and privacy review. Corrections supersede through an append-only receipt; never silently delete historical records.
