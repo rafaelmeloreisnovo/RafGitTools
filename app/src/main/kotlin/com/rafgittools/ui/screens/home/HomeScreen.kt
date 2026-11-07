@@ -374,6 +374,7 @@ private fun DriveBridgeContent(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var repositoryMenuExpanded by remember { mutableStateOf(false) }
+    var showLocalFallback by remember { mutableStateOf(false) }
     var selectedPrivateRepository by remember(privateRepositories) {
         mutableStateOf(privateRepositories.firstOrNull())
     }
@@ -538,6 +539,16 @@ private fun DriveBridgeContent(
                 onBuild = onBuildPrivateGitHubIndex
             )
         }
+        item {
+            OutlinedButton(
+                onClick = { showLocalFallback = !showLocalFallback },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (showLocalFallback) "Ocultar ferramentas locais" else "Ferramentas locais (último recurso)")
+            }
+        }
+
+        if (showLocalFallback) {
         item {
             SafDirectoryIntakeCard()
         }
@@ -1245,11 +1256,12 @@ private fun DriveBridgeContent(
 
         item {
             Text(
-                "O local funciona como meio de campo: o arquivo escolhido é copiado em streaming para o armazenamento privado do app, sem carregar o corpus inteiro na memória.",
+                "Ferramentas locais opcionais: o arquivo é copiado em streaming ao armazenamento privado do app, apenas mediante ação explícita.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+        } // legacy local tools stay available, but never run by default
     }
 }
 
