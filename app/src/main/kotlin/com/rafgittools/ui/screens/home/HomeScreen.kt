@@ -365,7 +365,6 @@ private fun DriveBridgeContent(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var repositoryMenuExpanded by remember { mutableStateOf(false) }
-    var showLocalFallback by remember { mutableStateOf(false) }
     var selectedPrivateRepository by remember(privateRepositories) {
         mutableStateOf(privateRepositories.firstOrNull())
     }
@@ -530,16 +529,6 @@ private fun DriveBridgeContent(
                 onBuild = onBuildPrivateGitHubIndex
             )
         }
-        item {
-            OutlinedButton(
-                onClick = { showLocalFallback = !showLocalFallback },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (showLocalFallback) "Ocultar ferramentas locais" else "Ferramentas locais (último recurso)")
-            }
-        }
-
-        if (showLocalFallback) {
         item {
             SafDirectoryIntakeCard()
         }
@@ -1252,7 +1241,6 @@ private fun DriveBridgeContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        } // legacy local tools stay available, but never run by default
     }
 }
 
