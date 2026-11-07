@@ -19,12 +19,15 @@ class GoogleDriveCloudRepositoryTest {
     }
 
     @Test fun pathSegmentsCannotEscapeOrBreakJsonlStructure() {
-        for (name in listOf("", ".", "..", "a/b", "a\\b", "one\ntwo")) {
+        for (name in listOf("", "\u0000")) {
             assertThrows(IllegalArgumentException::class.java) {
                 GoogleDriveCloudRepository.checkedName(name)
             }
         }
         assertEquals("NOVOexport.zip", GoogleDriveCloudRepository.checkedName("NOVOexport.zip"))
+        assertEquals("a%2Fb", GoogleDriveCloudRepository.encodedSegment("a/b"))
+        assertEquals("a%5Cb", GoogleDriveCloudRepository.encodedSegment("a\\b"))
+        assertEquals("%2E%2E", GoogleDriveCloudRepository.encodedSegment(".."))
     }
 
     @Test fun restrictedDriveScopeIsAnExplicitAuthorizationBoundary() {
