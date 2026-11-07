@@ -102,7 +102,9 @@ object NovoexportSafInventory {
                 val idIndex = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
                 val nameIndex = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
                 val mimeIndex = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
-                val sizeIndex = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_SIZE)
+                // Cloud SAF providers may omit COLUMN_SIZE entirely. Treat it
+                // as unknown, never as zero and never as a reason to abort scanning.
+                val sizeIndex = it.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE)
 
                 while (it.moveToNext()) {
                     visitedDocuments += 1
@@ -145,7 +147,7 @@ object NovoexportSafInventory {
                         continue
                     }
 
-                    val size = if (it.isNull(sizeIndex)) null
+                    val size = if (sizeIndex < 0 || it.isNull(sizeIndex)) null
                     else it.getLong(sizeIndex).takeIf { value -> value >= 0L }
                     val semantic = RafInventoryCoreBridge.analyze(
                         path = relativePath,
