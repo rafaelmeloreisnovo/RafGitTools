@@ -50,12 +50,20 @@ class GoogleDriveCloudRepository(
         }
 
         internal fun checkedName(name: String): String {
+            // Google Drive permits punctuation, slash and newline in file names.
+            // Never reject a valid folder just because it cannot be a local path.
             require(name.isNotBlank() && name.length <= 512 &&
-                name != "." && name != ".." && !name.contains('/') &&
-                !name.contains('\\') && name.none { it.code < 32 }) {
+                name.none { it == '\u0000' }) {
                 "BLOCKED_DRIVE_UNSAFE_NAME"
             }
             return name
+        }
+
+        internal fun encodedSegment(name: String): String {
+            val raw = checkedName(name)
+            val encoded = java.net.URLEncoder.encode(raw, "UTF-8").replace("+", "%20")
+            return if (encoded == "." || encoded == "..") encoded.replace(".", "%2E")
+                else encoded
         }
 
         private fun sha256(bytes: ByteArray): String =
@@ -170,7 +178,8 @@ class GoogleDriveCloudRepository(
             do {
                 val page = list(token, folderId, next, 100)
                 for (item in page.items) {
-                    val path = if (parentPath.isBlank()) item.name else parentPath + "/" + item.name
+                    val segment = encodedSegment(item.name)
+                    val path = if (parentPath.isBlank()) segment else parentPath + "/" + segment
                     if (!paths.add(path)) throw IOException("BLOCKED_DRIVE_DUPLICATE_PATH")
                     if (rows.size >= MAX_DOCUMENTS) {
                         throw IOException("BLOCKED_DRIVE_INVENTORY_OVER_5000")
@@ -285,6 +294,8 @@ class GoogleDriveCloudRepository(
                 addProperty("type", if (row.item.folder) "DIRECTORY" else "FILE")
                 addProperty("path", row.path)
                 addProperty("parent", row.parent)
+                addProperty("name", row.item.name)
+                addProperty("drive_file_id", row.item.id)
                 addProperty("mime", row.item.mime)
                 if (row.item.size == null) add("size_bytes", JsonNull.INSTANCE)
                 else addProperty("size_bytes", row.item.size)
