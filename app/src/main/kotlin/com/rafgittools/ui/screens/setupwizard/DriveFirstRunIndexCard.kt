@@ -144,6 +144,7 @@ fun DriveFirstRunIndexCard() {
                 }
                 result.onSuccess { receipt ->
                     status = "HYPERATLAS_V3_READBACK_VERIFIED " +
+                        "folder=${receipt.runFolderName} " +
                         "objects=${receipt.records} parts=${receipt.parts} " +
                         "zip_candidates=${receipt.archives} bytes=${receipt.indexBytes} " +
                         "manifest_sha256=${receipt.manifestSha256}"
