@@ -42,14 +42,20 @@ object DriveMetadataIndexGate {
         val source_downloaded: Boolean = false
     )
 
+    // Compiled once: metadata-only scan can classify thousands of Drive entries.
+    private val splitNumbered = Regex("""\.(?:zip|zipraf)(?:\.[a-z0-9]+)*\.\d{3,}$""")
+    private val splitZipVolume = Regex("""\.z\d{2,}$""")
+    private val zipMimes = setOf(
+        "application/zip", "application/x-zip", "application/x-zip-compressed"
+    )
+
     fun classifyArchive(path: String, mime: String): String? {
         val name = path.substringAfterLast('/').lowercase(java.util.Locale.ROOT)
-        if (Regex("""\.(?:zip|zipraf)(?:\.[a-z0-9]+)*\.\d{3,}$""").containsMatchIn(name) ||
-            Regex("""\.z\d{2,}$""").containsMatchIn(name)) return "SPLIT_ARCHIVE_PART"
+        if (splitNumbered.containsMatchIn(name) || splitZipVolume.containsMatchIn(name)) {
+            return "SPLIT_ARCHIVE_PART"
+        }
         if (name.endsWith(".zipraf")) return "ZIPRAF_CANDIDATE_UNVERIFIED_FORMAT"
-        if (name.endsWith(".zip") || mime in listOf(
-                "application/zip", "application/x-zip", "application/x-zip-compressed"
-            )) return "ZIP_CANDIDATE_UNREAD"
+        if (name.endsWith(".zip") || mime in zipMimes) return "ZIP_CANDIDATE_UNREAD"
         if (name.endsWith(".tgz") || name.endsWith(".tar.gz") || name.endsWith(".tar")) {
             return "TAR_CANDIDATE_UNREAD"
         }
