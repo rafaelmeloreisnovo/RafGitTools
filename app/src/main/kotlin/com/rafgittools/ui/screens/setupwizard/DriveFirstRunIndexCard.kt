@@ -27,6 +27,7 @@ import com.rafgittools.navigator.SafZipRangeGateV1
 import com.rafgittools.navigator.ZipCentralDirectoryRangeV1
 import com.rafgittools.setupwizard.DriveMetadataIndexGate
 import com.rafgittools.setupwizard.DriveAtlasSafPublisherV3
+import com.rafgittools.setupwizard.HyperAtlasV4SafLocal
 import com.rafgittools.setupwizard.GoogleDriveSafGate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
