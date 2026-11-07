@@ -35,8 +35,13 @@ class OrganizationPrivateSourceContract(unittest.TestCase):
         home = UI.read_text(encoding="utf8")
         self.assertIn("onLookupOrganization = { org ->", home)
         self.assertIn("onLoadOrganization(org)", home)
-        self.assertIn("privateRepositories = scopedRepositories.filter { it.isPrivate }", home)
         self.assertIn("GithubOwnerScope.filter(remoteRepositories, selectedOwner)", home)
+        # Drive now uses its own existing Google Drive permission; it must not
+        # promote GitHub private-repo targets or pass unfiltered repository lists.
+        self.assertIn("HomeViewModel.HomeTab.DRIVE, HomeViewModel.HomeTab.LOCAL ->", home)
+        self.assertIn("GoogleDriveScannerEntry()", home)
+        self.assertNotIn("privateRepositories = remoteRepositories", home)
+        self.assertIn("canWriteDiagnosticReceipt = selectedOwner == null ||", home)
 
     def test_partial_failure_stays_partial_and_cancels_old_job(self):
         src = HOME.read_text(encoding="utf8")
