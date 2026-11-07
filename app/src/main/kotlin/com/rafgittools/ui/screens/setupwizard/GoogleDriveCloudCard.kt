@@ -58,6 +58,11 @@ fun GoogleDriveCloudCard() {
             status = "BLOCKED_GOOGLE_DRIVE_AUTH_REQUIRED"
             return
         }
+        // Never display stale children from a different Drive folder on API failure.
+        if (pageToken == null) {
+            items = emptyList()
+            nextPage = null
+        }
         scope.launch {
             busy = true
             status = "DRIVE_REST_LISTING"
