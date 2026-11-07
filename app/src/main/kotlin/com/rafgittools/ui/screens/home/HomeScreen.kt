@@ -7,6 +7,8 @@ import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -35,6 +37,7 @@ import com.rafgittools.navigator.ConversationManifoldPublication
 import com.rafgittools.navigator.NovoexportSafInventory
 import com.rafgittools.navigator.NovoexportQueueStore
 import com.rafgittools.ui.screens.setupwizard.DriveFirstRunIndexCard
+import com.rafgittools.ui.screens.setupwizard.GoogleDriveCloudCard
 import com.rafgittools.ui.components.ResponsiveContentFrame
 import com.rafgittools.ui.components.GithubOwnerOption
 import com.rafgittools.ui.components.GithubOwnerPicker
@@ -283,7 +286,7 @@ private fun SourceDashboard(
                 }
             )
         }
-        TabRow(selectedTabIndex = activeTab.ordinal) {
+        TabRow(selectedTabIndex = if (activeTab == HomeViewModel.HomeTab.LOCAL) 1 else activeTab.ordinal) {
             Tab(
                 selected = activeTab == HomeViewModel.HomeTab.REMOTE,
                 onClick = { onTabSelected(HomeViewModel.HomeTab.REMOTE) },
@@ -293,11 +296,6 @@ private fun SourceDashboard(
                 selected = activeTab == HomeViewModel.HomeTab.DRIVE,
                 onClick = { onTabSelected(HomeViewModel.HomeTab.DRIVE) },
                 text = { Text("Drive", maxLines = 1) }
-            )
-            Tab(
-                selected = activeTab == HomeViewModel.HomeTab.LOCAL,
-                onClick = { onTabSelected(HomeViewModel.HomeTab.LOCAL) },
-                text = { Text("Local", maxLines = 1) }
             )
         }
 
@@ -320,20 +318,13 @@ private fun SourceDashboard(
                     GithubDisconnectedContent(onNavigateToAuth)
                 }
             }
-            HomeViewModel.HomeTab.DRIVE -> DriveBridgeContent(
-                privateRepositories = scopedRepositories.filter { it.isPrivate },
-                publishState = privateProcessingPublishState,
-                onPublishReceipt = onPublishPrivateProcessingReceipt,
-                onPublishManifold = onPublishManifold,
-                onBuildPrivateGitHubIndex = onBuildPrivateGitHubIndex
-            )
-            HomeViewModel.HomeTab.LOCAL -> LocalRepositoryList(
-                repositories = localRepositories,
-                githubRepositories = scopedRepositories,
-                githubProfile = githubProfile,
-                listingComplete = remoteListingComplete,
-                onRepositoryClick = onLocalRepositoryClick
-            )
+            HomeViewModel.HomeTab.DRIVE, HomeViewModel.HomeTab.LOCAL -> {
+                // Keep cloud folder listing scrollable on small Motorola screens.
+                // No local SAF route or hide/show toggle is reachable.
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                    GoogleDriveCloudCard()
+                }
+            }
         }
     }
 }
@@ -374,7 +365,6 @@ private fun DriveBridgeContent(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var repositoryMenuExpanded by remember { mutableStateOf(false) }
-    var showLocalFallback by remember { mutableStateOf(false) }
     var selectedPrivateRepository by remember(privateRepositories) {
         mutableStateOf(privateRepositories.firstOrNull())
     }
@@ -539,16 +529,6 @@ private fun DriveBridgeContent(
                 onBuild = onBuildPrivateGitHubIndex
             )
         }
-        item {
-            OutlinedButton(
-                onClick = { showLocalFallback = !showLocalFallback },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (showLocalFallback) "Ocultar ferramentas locais" else "Ferramentas locais (último recurso)")
-            }
-        }
-
-        if (showLocalFallback) {
         item {
             SafDirectoryIntakeCard()
         }
@@ -1261,7 +1241,6 @@ private fun DriveBridgeContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        } // legacy local tools stay available, but never run by default
     }
 }
 
