@@ -84,7 +84,7 @@ object DriveAtlasSafPublisherV3 {
         ) ?: throw IOException("HYPERATLAS_SAF_CREATE_RUN_FOLDER_BLOCKED")
 
         val manifestBytes = DriveAtlasCompactIndexV3.build(snapshot) { name, bytes ->
-            writeAndVerify(resolver, runFolder, name, "application/x-ndjson", bytes)
+            writeAndVerify(resolver, runFolder, name, "text/plain", bytes)
         }
         // Commit record is always written last. A partial folder has no manifest.
         val hash = writeAndVerify(
