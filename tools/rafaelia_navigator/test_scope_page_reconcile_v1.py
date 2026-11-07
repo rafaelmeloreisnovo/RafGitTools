@@ -30,6 +30,15 @@ class PageReconcileTests(unittest.TestCase):
         self.assertFalse(r['snapshot_consistency_verified'])
         self.assertFalse(r['content_verified'])
 
+    def test_independent_lower_bound_prevents_false_complete(self):
+        _, r = reconcile([page(0, end=True)], minimum_known_count=100)
+        self.assertEqual(r['coverage'], 'PARTIAL_OR_CONFLICTED')
+        self.assertIn('BELOW_INDEPENDENTLY_OBSERVED_LOWER_BOUND', r['gaps'])
+
+    def test_invalid_lower_bound_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'INVALID_MINIMUM_COUNT'):
+            reconcile([page(0, end=True)], minimum_known_count=-1)
+
     def test_missing_terminal_is_partial(self):
         _, r = reconcile([page(0)])
         self.assertIn('NO_TERMINAL_PAGE', r['gaps'])
