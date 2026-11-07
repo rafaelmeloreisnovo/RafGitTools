@@ -18,7 +18,7 @@ class DriveOneFolderCloudUiTests(unittest.TestCase):
         self.assertEqual(1, text.count("ActivityResultContracts.OpenDocumentTree()"))
         self.assertIn("NovoexportSafInventory.scan(", text)
         self.assertIn("DriveAtlasSafPublisherV3.publish(", text)
-        self.assertIn("resolver, uri, inventory", text)
+        self.assertIn("context.contentResolver, selected, snapshot", text)
         self.assertNotIn("privateDestinationConfirmed", text)
         self.assertNotIn("GoogleDriveCloudCard()", text)
 

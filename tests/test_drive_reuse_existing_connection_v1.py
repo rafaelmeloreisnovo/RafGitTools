@@ -27,7 +27,7 @@ class DirectDrivePickerTests(unittest.TestCase):
         text = ENTRY.read_text(encoding="utf-8").split("fun DriveLegacyAdvancedIndexCard()", 1)[0]
         self.assertIn("NovoexportSafInventory.scan(", text)
         self.assertIn("DriveAtlasSafPublisherV3.publish(", text)
-        self.assertIn("resolver, uri, inventory", text)
+        self.assertIn("context.contentResolver, selected, snapshot", text)
         self.assertLess(text.index("NovoexportSafInventory.scan("),
                         text.index("DriveAtlasSafPublisherV3.publish("))
         self.assertNotIn("privateDestinationConfirmed", text)
@@ -38,7 +38,13 @@ class DirectDrivePickerTests(unittest.TestCase):
         text = ENTRY.read_text(encoding="utf-8").split("fun DriveLegacyAdvancedIndexCard()", 1)[0]
         self.assertIn("BLOCKED_SELECTED_FOLDER_NOT_GOOGLE_DRIVE", text)
         self.assertIn("persistedUriPermissions", text)
-        self.assertIn("takePersistableUriPermission(uri, permissionFlags)", text)
+        self.assertIn("Intent.FLAG_GRANT_READ_URI_PERMISSION", text)
+        self.assertIn("Intent.FLAG_GRANT_WRITE_URI_PERMISSION", text)
+        self.assertIn("takePersistableUriPermission(", text)
+        self.assertIn("BLOCKED_DRIVE_SAF_READ_", text)
+        self.assertIn("BLOCKED_DRIVE_SAF_WRITE_", text)
+        self.assertLess(text.index("NovoexportSafInventory.scan("),
+                        text.index("DriveAtlasSafPublisherV3.publish("))
         self.assertNotIn("ActivityResultContracts.CreateDocument", text)
 
     def test_visible_home_and_wizard_only_use_direct_entry(self):
