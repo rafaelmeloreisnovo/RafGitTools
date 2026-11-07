@@ -69,8 +69,7 @@ object ZipCentralDirectoryRangeV1 {
         path.isNotBlank() && path.length <= 4096 && !path.startsWith('/') &&
             !path.contains('\\') && !path.contains('\u0000') &&
             !path.contains(':') && path.none { it.code < 32 } &&
-            path.split('/').none { it == "." || it == ".." ||
-                (it.isEmpty() && !path.endsWith('/')) }
+            path.removeSuffix("/").split('/').none { it.isEmpty() || it == "." || it == ".." }
 
     private fun decodeName(raw: ByteArray, utf8: Boolean): String {
         if (!utf8 && raw.any { (it.toInt() and 128) != 0 }) {
