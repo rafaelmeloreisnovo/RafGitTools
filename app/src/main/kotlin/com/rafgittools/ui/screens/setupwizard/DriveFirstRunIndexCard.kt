@@ -1,5 +1,8 @@
 package com.rafgittools.ui.screens.setupwizard
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -33,13 +36,115 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.security.MessageDigest
 
+
+/**
+ * Primary entry: the original Drive SAF card is again the app's visible entry.
+ * Select ONE folder in Android DocumentsUI; auto-scan all metadata then create
+ * a new sharded index in THAT SAME selected Google Drive tree.
+ *
+ * Legacy advanced picker/ZIP UI remains below for source history and rollback,
+ * but is not part of the single-action primary experience.
+ */
+@Composable
+fun DriveFirstRunIndexCard() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf("DRIVE_SELECT_FOLDER_READY") }
+    var scanned by remember { mutableStateOf(0) }
+
+    val drivePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? ->
+        if (uri == null) {
+            status = "DRIVE_FOLDER_SELECTION_CANCELLED"
+        } else if (uri.scheme != "content" ||
+            !DocumentsContract.isTreeUri(uri) ||
+            !GoogleDriveSafGate.isGoogleDrive(context, uri)) {
+            // Never scan a local Android provider or silently redirect output.
+            status = "BLOCKED_SELECTED_FOLDER_NOT_GOOGLE_DRIVE"
+        } else if (!busy) {
+            val permissionFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            val persisted = runCatching {
+                context.contentResolver.takePersistableUriPermission(uri, permissionFlags)
+            }.isSuccess
+
+            scope.launch {
+                busy = true
+                status = "DRIVE_METADATA_SCANNING"
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        val resolver = context.contentResolver
+                        // Use the existing SAF metadata scanner: ALL children recursively.
+                        val inventory = NovoexportSafInventory.scan(
+                            resolver, uri, maxDocuments = DriveMetadataIndexGate.MAX_DOCUMENTS
+                        )
+                        // No other folder picker. Same URI for read & write.
+                        val receipt = DriveAtlasSafPublisherV3.publish(resolver, uri, inventory)
+                        inventory to receipt
+                    }
+                }
+                result.onSuccess { (inventory, receipt) ->
+                    scanned = inventory.visitedDocuments
+                    status = "DRIVE_HYPERATLAS_INDEX_READBACK_VERIFIED " +
+                        "documentos=" + inventory.visitedDocuments +
+                        " pastas=" + inventory.allDirectories.size +
+                        " arquivos=" + inventory.allFiles.size +
+                        " destino=" + receipt.runFolderName +
+                        " partes=" + receipt.parts +
+                        " sha256=" + receipt.manifestSha256 +
+                        " grant_persisted=" + persisted
+                }.onFailure { error ->
+                    status = "BLOCKED_DRIVE_SAF_SCAN_OR_WRITE_" +
+                        (error.message ?: "TOKEN_VAZIO")
+                }
+                busy = false
+            }
+        } else {
+            status = "DRIVE_SCAN_ALREADY_RUNNING"
+        }
+    }
+    val previousDriveFolder = remember(context) {
+        runCatching {
+            context.contentResolver.persistedUriPermissions.firstOrNull { permission ->
+                permission.isReadPermission &&
+                    permission.uri.scheme == "content" &&
+                    DocumentsContract.isTreeUri(permission.uri) &&
+                    GoogleDriveSafGate.isGoogleDrive(context, permission.uri)
+            }?.uri
+        }.getOrNull()
+    }
+    Card(Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text("Google Drive · scanner SAF", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Selecione uma pasta do Google Drive. O RafGitTools lê a árvore " +
+                    "e cria o HyperAtlas nessa mesma pasta, automaticamente.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Button(
+                onClick = { drivePicker.launch(previousDriveFolder) },
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text(if (busy) "Indexando no Google Drive…" else "Selecionar pasta do Google Drive") }
+            Text(status, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+/** Previous multi-picker SAF / ZIP tools, retained but detached from Home. */
+
 /**
  * Drive-only SAF path. Rejects local provider URIs before source read or index writes.
  * Availability of Drive through the system picker is not guaranteed. This is
  * not Google OAuth and does not provide account-wide Drive access.
  */
 @Composable
-fun DriveFirstRunIndexCard() {
+fun DriveLegacyAdvancedIndexCard() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var snapshot by remember { mutableStateOf<NovoexportSafInventory.Result?>(null) }
