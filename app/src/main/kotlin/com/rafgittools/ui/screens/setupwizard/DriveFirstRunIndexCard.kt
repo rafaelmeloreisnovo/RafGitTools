@@ -126,11 +126,12 @@ fun DriveFirstRunIndexCard() {
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text("🗝️ Primeiro: escolher o Drive e observar os arquivos",
+            Text("🗂️ HyperAtlas · Mapear pastas e ZIPs no Drive",
                 style = MaterialTheme.typography.titleMedium)
             Text(
-                "O seletor do Android permite escolher um provedor e, quando disponível, uma conta Google Drive. " +
-                    "Não há login Google dentro do RafGitTools nem acesso automático ao Drive inteiro.",
+                "Use o acesso a arquivos que o RafGitTools já possui via seletor Android. " +
+                    "Escolha uma pasta do Drive: o app mapeia a árvore e identifica ZIPs/ZIPRAFs sem baixá-los. " +
+                    "O acesso cobre apenas a árvore autorizada, não a conta inteira.",
                 style = MaterialTheme.typography.bodyMedium
             )
             Button(
@@ -140,10 +141,28 @@ fun DriveFirstRunIndexCard() {
             ) { Text("Escolher conta/pasta pelo Android") }
 
             snapshot?.let { index ->
+                val archives = remember(index) {
+                    index.allFiles.filter {
+                        DriveMetadataIndexGate.classifyArchive(it.relativePath, it.mimeType) != null
+                    }
+                }
                 Text(
-                    "Prévia: ${index.visitedDocuments} documentos, ${index.allDirectories.size} pastas, " +
-                        "${index.allFiles.size} arquivos, ${index.candidateFiles.size} possíveis conversations/codex. " +
-                        "Tamanhos ausentes: ${index.unknownSizeFiles}.",
+                    "Mapa: ${index.visitedDocuments} documentos, ${index.allDirectories.size} pastas, " +
+                        "${index.allFiles.size} arquivos, ${archives.size} compactados ou partes. " +
+                        "Tamanhos TOKEN_VAZIO: ${index.unknownSizeFiles}.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                archives.take(3).forEach { archive ->
+                    Text(
+                        "• ${archive.relativePath} · " +
+                            "${archive.sizeBytes?.toString() ?: "TOKEN_VAZIO"} bytes",
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1
+                    )
+                }
+                Text(
+                    "Entradas internas de ZIPs ainda não verificadas: exigem leitura seletiva posterior. " +
+                        "Só metadados são lidos aqui.",
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
@@ -162,10 +181,10 @@ fun DriveFirstRunIndexCard() {
                     )
                 }
                 OutlinedButton(
-                    onClick = { outputPicker.launch("rafaelia-drive-metadata-index.v1.json") },
+                    onClick = { outputPicker.launch("rafgittools-hyperatlas-drive-map.v1.json") },
                     enabled = !busy && privateDestinationConfirmed,
                     modifier = Modifier.fillMaxWidth()
-                ) { Text("Salvar índice no Drive (com readback SHA-256)") }
+                ) { Text("Salvar mapa na pasta escolhida (SHA-256 verificado)") }
             }
 
             Text(status, style = MaterialTheme.typography.labelSmall)
