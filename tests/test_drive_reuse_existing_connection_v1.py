@@ -38,7 +38,13 @@ class DirectDrivePickerTests(unittest.TestCase):
         text = ENTRY.read_text(encoding="utf-8")
         self.assertIn("BLOCKED_SELECTED_PROVIDER_NOT_GOOGLE_DRIVE", text)
         self.assertIn("persistedUriPermissions", text)
-        self.assertIn("takePersistableUriPermission(selected, granted)", text)
+        self.assertIn("Intent.FLAG_GRANT_READ_URI_PERMISSION", text)
+        self.assertIn("Intent.FLAG_GRANT_WRITE_URI_PERMISSION", text)
+        self.assertIn("takePersistableUriPermission(", text)
+        self.assertIn("BLOCKED_DRIVE_SAF_READ_", text)
+        self.assertIn("BLOCKED_DRIVE_SAF_WRITE_", text)
+        self.assertLess(text.index("NovoexportSafInventory.scan("),
+                        text.index("DriveAtlasSafPublisherV3.publish("))
         self.assertNotIn("ActivityResultContracts.CreateDocument", text)
 
     def test_visible_home_and_wizard_only_use_direct_entry(self):
