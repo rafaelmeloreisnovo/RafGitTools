@@ -147,8 +147,11 @@ object NovoexportSafInventory {
                         continue
                     }
 
-                    val size = if (sizeIndex < 0 || it.isNull(sizeIndex)) null
-                    else it.getLong(sizeIndex).takeIf { value -> value >= 0L }
+                    val size = optionalFileSize(
+                        sizeIndex,
+                        isNull = { it.isNull(sizeIndex) },
+                        readValue = { it.getLong(sizeIndex) }
+                    )
                     val semantic = RafInventoryCoreBridge.analyze(
                         path = relativePath,
                         mime = mimeType,
@@ -224,6 +227,18 @@ object NovoexportSafInventory {
             unknownSizeFiles = unknownSizeFiles
         )
     }
+
+    /**
+     * Some cloud SAF providers omit COLUMN_SIZE entirely. Missing, null or
+     * negative provider-reported sizes mean TOKEN_VAZIO, never zero bytes.
+     * Do not even call the cursor when the optional column is absent.
+     */
+    internal fun optionalFileSize(
+        columnIndex: Int,
+        isNull: () -> Boolean,
+        readValue: () -> Long
+    ): Long? = if (columnIndex < 0 || isNull()) null
+        else readValue().takeIf { it >= 0L }
 
     internal fun childPath(parentPath: String, name: String): String =
         if (parentPath.isBlank()) name else parentPath + "/" + name
