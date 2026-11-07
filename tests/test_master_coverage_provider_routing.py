@@ -82,6 +82,14 @@ class MasterCoverageProviderRoutingTests(unittest.TestCase):
         # constrained workflows are separate evidence lanes, not extra roots.
         workflow_dir = ROOT / ".github" / "workflows"
         expected_scoped = {
+            "ci-rapidtools-semantic-l0.yml": (
+                "  pull_request:\n    paths:",
+                "      - 'LAB_RAPIDTOOLS_OMEGA/core/raf_semantic_gate.*'",
+                "      - 'LAB_RAPIDTOOLS_OMEGA/tests/test_semantic_gate.c'",
+                "      - 'LAB_RAPIDTOOLS_OMEGA/scripts/verify_semantic_gate.sh'",
+                "      - 'LAB_RAPIDTOOLS_OMEGA/docs/SEMANTIC_GATE_L0_V1.md'",
+                "  workflow_dispatch:",
+            ),
             "debianum-metadata-guard.yml": (
                 "  pull_request:\n    paths:",
                 "      - 'scripts/drive_debianum_*'",
