@@ -23,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.rafgittools.navigator.NovoexportSafInventory
+import com.rafgittools.navigator.SafZipRangeGateV1
+import com.rafgittools.navigator.ZipCentralDirectoryRangeV1
 import com.rafgittools.setupwizard.DriveMetadataIndexGate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -41,6 +43,7 @@ fun DriveFirstRunIndexCard() {
     var busy by remember { mutableStateOf(false) }
     var privateDestinationConfirmed by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("TOKEN_VAZIO_SOURCE_NOT_SELECTED") }
+    var selectedZipIndex by remember { mutableStateOf<ZipCentralDirectoryRangeV1.Index?>(null) }
 
     val outputPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
@@ -121,6 +124,34 @@ fun DriveFirstRunIndexCard() {
         }
     }
 
+    val smallArchivePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        selectedZipIndex = null
+        if (uri == null) {
+            status = "TOKEN_VAZIO_ZIP_SOURCE_NOT_SELECTED"
+        } else {
+            scope.launch {
+                busy = true
+                status = "ZIP_POSITIONED_READ_IN_PROGRESS"
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        SafZipRangeGateV1.inspectSelected(context.contentResolver, uri)
+                    }
+                }
+                result.onSuccess {
+                    selectedZipIndex = it
+                    status = "ZIP_DIRECTORY_METADATA_SCOPED_READ sourceBytesRead=${it.sourceBytesRead}"
+                }.onFailure { failure ->
+                    status = if (failure is java.io.IOException) {
+                        "BLOCKED_${failure.message ?: "SAF_ZIP_READ"}"
+                    } else "BLOCKED_SAF_ZIP_UNVERIFIED"
+                }
+                busy = false
+            }
+        }
+    }
+
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -161,8 +192,8 @@ fun DriveFirstRunIndexCard() {
                     )
                 }
                 Text(
-                    "Entradas internas de ZIPs ainda não verificadas: exigem leitura seletiva posterior. " +
-                        "Só metadados são lidos aqui.",
+                    "ZIPs grandes ficam no Drive; suas entradas internas exigem HTTP Range autorizado. " +
+                        "A prévia da pasta lê somente metadados.",
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
@@ -185,6 +216,43 @@ fun DriveFirstRunIndexCard() {
                     enabled = !busy && privateDestinationConfirmed,
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("Salvar mapa na pasta escolhida (SHA-256 verificado)") }
+            }
+
+            OutlinedButton(
+                onClick = {
+                    smallArchivePicker.launch(arrayOf(
+                        "application/zip", "application/x-zip",
+                        "application/octet-stream"
+                    ))
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !busy
+            ) { Text("Inspecionar diretório de ZIP pequeno (até 16 MiB)") }
+            Text(
+                "Somente após escolher o arquivo. O provedor pode materializar ZIPs pequenos " +
+                    "ao abrir o descritor; ZIPs maiores ou sem tamanho conhecido são bloqueados. " +
+                    "Nenhuma extração é feita.",
+                style = MaterialTheme.typography.bodySmall
+            )
+            selectedZipIndex?.let { index ->
+                Text(
+                    "ZIP: ${index.state} · entradas ${index.observedEntries}/${index.declaredEntries} · " +
+                        "bytes lidos ${index.sourceBytesRead}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                index.entries.take(8).forEach { entry ->
+                    Text(
+                        "• ${entry.path} · ${entry.originalBytes} bytes" +
+                            if (entry.unsafePath) " [CAMINHO INSEGURO]" else "",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                if (index.gaps.isNotEmpty()) {
+                    Text(
+                        "GAPS: ${index.gaps.joinToString(", ")}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
 
             Text(status, style = MaterialTheme.typography.labelSmall)
