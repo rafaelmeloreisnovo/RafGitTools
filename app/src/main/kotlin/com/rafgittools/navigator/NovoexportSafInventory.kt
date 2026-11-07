@@ -102,8 +102,8 @@ object NovoexportSafInventory {
                 val idIndex = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
                 val nameIndex = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
                 val mimeIndex = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
-                // Cloud DocumentsProviders are permitted to omit size. Treat that
-                // as unknown metadata, not as a fatal query/empty folder.
+                // Cloud SAF providers may omit COLUMN_SIZE entirely. Treat it
+                // as unknown, never as zero and never as a reason to abort scanning.
                 val sizeIndex = it.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE)
 
                 while (it.moveToNext()) {
@@ -147,11 +147,8 @@ object NovoexportSafInventory {
                         continue
                     }
 
-                    val size = optionalFileSize(
-                        sizeIndex,
-                        isNull = { it.isNull(sizeIndex) },
-                        readValue = { it.getLong(sizeIndex) }
-                    )
+                    val size = if (sizeIndex < 0 || it.isNull(sizeIndex)) null
+                    else it.getLong(sizeIndex).takeIf { value -> value >= 0L }
                     val semantic = RafInventoryCoreBridge.analyze(
                         path = relativePath,
                         mime = mimeType,

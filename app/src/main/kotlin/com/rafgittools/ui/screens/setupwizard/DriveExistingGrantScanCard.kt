@@ -54,7 +54,8 @@ fun GoogleDriveScannerEntry() {
             selected.scheme != "content" ||
                 !DocumentsContract.isTreeUri(selected) ||
                 !GoogleDriveSafGate.isGoogleDrive(context, selected) -> {
-                status = "BLOCKED_SELECTED_PROVIDER_NOT_GOOGLE_DRIVE"
+                status = "BLOCKED_SELECTED_PROVIDER_NOT_GOOGLE_DRIVE " +
+                    GoogleDriveSafGate.diagnostic(context, selected)
             }
             else -> {
                 // Keep the folder grant, if provider supports persistence, so
@@ -64,6 +65,10 @@ fun GoogleDriveScannerEntry() {
                 // otherwise valid cloud read grant on providers with read-only
                 // folder capabilities.
                 val persisted = runCatching {
+                    context.contentResolver.takePersistableUriPermission(selected, granted)
+                }.isSuccess || runCatching {
+                    // Some providers grant persistent READ without persistent WRITE.
+                    // A failed combined request must not lose a valid READ grant.
                     context.contentResolver.takePersistableUriPermission(
                         selected, Intent.FLAG_GRANT_READ_URI_PERMISSION
                     )
@@ -90,39 +95,33 @@ fun GoogleDriveScannerEntry() {
                                 selected,
                                 maxDocuments = DriveMetadataIndexGate.MAX_DOCUMENTS
                             )
-                        }
-                    }
-                    if (scan.isFailure) {
-                        val failure = scan.exceptionOrNull()
-                        status = "BLOCKED_DRIVE_SAF_READ_" +
-                            (failure?.message ?: failure?.javaClass?.simpleName ?: "TOKEN_VAZIO")
-                    } else {
-                        val snapshot = scan.getOrThrow()
-                        status = "DRIVE_SAF_READ_PASS pastas=" +
-                            snapshot.allDirectories.size + " arquivos=" +
-                            snapshot.allFiles.size + " WRITE_IN_PROGRESS"
-                        // Always the SAME selected cloud tree, never a second
-                        // picker or a phone-local destination.
-                        val write = withContext(Dispatchers.IO) {
-                            runCatching {
+                            // Same selected tree for input and output. The scan
+                            // finishes BEFORE creating the HyperAtlas directory.
+                            val publication = runCatching {
                                 DriveAtlasSafPublisherV3.publish(
-                                    context.contentResolver, selected, snapshot
+                                    resolver, selected, snapshot
                                 )
                             }
+                            snapshot to publication
                         }
-                        if (write.isSuccess) {
-                            val receipt = write.getOrThrow()
-                            status = "DRIVE_INDEX_READBACK_VERIFIED " +
-                                "pastas=" + snapshot.allDirectories.size +
-                                " arquivos=" + snapshot.allFiles.size +
+                    }
+                    result.onSuccess { (snapshot, publication) ->
+                        val counts = " pastas=" + snapshot.allDirectories.size +
+                            " arquivos=" + snapshot.allFiles.size
+                        publication.onSuccess { receipt ->
+                            status = "DRIVE_INDEX_READBACK_VERIFIED" + counts +
                                 " indice=" + receipt.runFolderName +
                                 " partes=" + receipt.parts +
                                 " sha256=" + receipt.manifestSha256
-                        } else {
-                            val failure = write.exceptionOrNull()
-                            status = "BLOCKED_DRIVE_SAF_WRITE_" +
-                                (failure?.message ?: failure?.javaClass?.simpleName ?: "TOKEN_VAZIO")
+                        }.onFailure { failure ->
+                            // The read-only scan genuinely succeeded; do not
+                            // misreport it as a scan failure or a saved index.
+                            status = "DRIVE_SCAN_PASS_INDEX_WRITE_BLOCKED" + counts +
+                                " reason=" + failure.javaClass.simpleName
                         }
+                    }.onFailure { failure ->
+                        status = "BLOCKED_DRIVE_SAF_READ_" +
+                            failure.javaClass.simpleName
                     }
                     busy = false
                 }

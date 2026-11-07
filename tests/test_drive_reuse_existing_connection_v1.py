@@ -52,6 +52,26 @@ class DirectDrivePickerTests(unittest.TestCase):
             self.assertIn("DriveFirstRunIndexCard()", path.read_text(encoding="utf-8"))
         self.assertNotIn("showLocalFallback", HOME.read_text(encoding="utf-8"))
 
+    def test_google_drive_provider_identity_keeps_fail_closed_fallback(self):
+        gate = (ROOT / "app/src/main/kotlin/com/rafgittools/setupwizard/GoogleDriveSafGate.kt").read_text(encoding="utf-8")
+        self.assertIn("resolveContentProvider(authority, 0)", gate)
+        self.assertIn("getPackageInfo(", gate)
+        self.assertIn("PackageManager.GET_PROVIDERS", gate)
+        self.assertIn("isDeclaredByGoogleDrive(authority,", gate)
+        self.assertNotIn('authority.contains("google")', gate)
+
+    def test_cloud_documents_can_have_unknown_size(self):
+        inventory = (ROOT / "app/src/main/kotlin/com/rafgittools/navigator/NovoexportSafInventory.kt").read_text(encoding="utf-8")
+        self.assertIn("getColumnIndex(DocumentsContract.Document.COLUMN_SIZE)", inventory)
+        self.assertIn("sizeIndex < 0 || it.isNull(sizeIndex)", inventory)
+        self.assertNotIn("getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_SIZE)", inventory)
+
+    def test_scan_failure_does_not_hide_successful_read(self):
+        text = ENTRY.read_text(encoding="utf-8")
+        self.assertIn("DRIVE_SCAN_PASS_INDEX_WRITE_BLOCKED", text)
+        self.assertIn("BLOCKED_DRIVE_SAF_READ_", text)
+        self.assertIn("takePersistableUriPermission(selected, granted)", text)
+
     def test_source_changes_trigger_real_apk_build(self):
         yaml = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("DriveFirstRunIndexCard.kt", yaml)
