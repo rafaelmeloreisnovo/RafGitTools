@@ -17,6 +17,8 @@ import java.util.UUID
  */
 object DriveAtlasSafPublisherV3 {
     data class Receipt(
+        /** Discoverable in the selected Drive folder; never a capability URI. */
+        val runFolderName: String,
         val records: Int,
         val parts: Int,
         val archives: Int,
@@ -99,6 +101,7 @@ object DriveAtlasSafPublisherV3 {
             String(manifestBytes, Charsets.UTF_8)
         ).asJsonObject
         return Receipt(
+            runFolderName = runName,
             records = manifest.get("records").asInt,
             parts = manifest.getAsJsonArray("parts").size(),
             archives = manifest.get("archive_candidates").asInt,
