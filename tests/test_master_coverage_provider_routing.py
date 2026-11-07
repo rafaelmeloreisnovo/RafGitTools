@@ -78,7 +78,7 @@ class MasterCoverageProviderRoutingTests(unittest.TestCase):
         self.assertNotIn("TARGET_TASK_CMD", provider_lane)
 
     def test_single_general_root_with_allowlisted_scoped_workflows(self) -> None:
-        # START owns general orchestration. The six specialized, path/branch-
+        # START owns general orchestration. The seven specialized, path/branch-
         # constrained workflows are separate evidence lanes, not extra roots.
         workflow_dir = ROOT / ".github" / "workflows"
         expected_scoped = {
@@ -98,6 +98,11 @@ class MasterCoverageProviderRoutingTests(unittest.TestCase):
             ),
             "ci-android-atlas-consumer.yml": (
                 "  pull_request:\n    branches: [main]\n    paths:",
+            ),
+            "rafaelia-agent-workspace-scoped.yml": (
+                "  pull_request:\n    paths:",
+                "      - 'app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen.kt'",
+                "  workflow_dispatch:",
             ),
             "rafaelia-middlefield-bridge-scoped.yml": (
                 "  pull_request:\n    paths:",
