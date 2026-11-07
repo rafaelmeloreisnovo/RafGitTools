@@ -7,6 +7,8 @@ import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -316,10 +318,13 @@ private fun SourceDashboard(
                     GithubDisconnectedContent(onNavigateToAuth)
                 }
             }
-            HomeViewModel.HomeTab.DRIVE -> GoogleDriveCloudCard()
-            // Do not expose phone-local pickers from the primary Home navigation.
-            // Legacy source remains for a future explicitly approved local workbench.
-            HomeViewModel.HomeTab.LOCAL -> GoogleDriveCloudCard()
+            HomeViewModel.HomeTab.DRIVE, HomeViewModel.HomeTab.LOCAL -> {
+                // Keep cloud folder listing scrollable on small Motorola screens.
+                // No local SAF route or hide/show toggle is reachable.
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                    GoogleDriveCloudCard()
+                }
+            }
         }
     }
 }
