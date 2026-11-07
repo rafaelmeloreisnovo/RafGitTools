@@ -96,6 +96,52 @@ class DriveMetadataIndexGateTest {
         reject { DriveMetadataIndexGate.build(sample(size = -1L)) }
     }
 
+    @Test fun mapsGiantZiprafAndSplitArchivesFromExistingSafAccess() {
+        val original = sample().allFiles.first()
+        val source = sample().copy(
+            allFiles = listOf(
+                original.copy(name = "BackReal.zipraf", relativePath = "Zip/BackReal.zipraf",
+                    sizeBytes = 4_060_826_692L),
+                original.copy(name = "chunk.zip.t0.002", relativePath = "Zip/chunk.zip.t0.002",
+                    sizeBytes = 20_971_520L),
+                original.copy(name = "unknown.zip", relativePath = "Zip/unknown.zip",
+                    sizeBytes = null)
+            ),
+            visitedDocuments = 3,
+            knownTotalBytes = 4_081_798_212L,
+            unknownSizeFiles = 1
+        )
+        val encoded = String(DriveMetadataIndexGate.build(source), Charsets.UTF_8)
+        val root = JsonParser.parseString(encoded).asJsonObject
+        val archives = root.getAsJsonArray("archive_candidates")
+        assertEquals(3, root.get("archive_candidates_count").asInt)
+        assertEquals("TOKEN_VAZIO_ARCHIVE_MEMBERS_NOT_READ",
+            root.get("archive_content_state").asString)
+        assertTrue(archives.any {
+            it.asJsonObject.get("kind").asString == "ZIPRAF_CANDIDATE_UNVERIFIED_FORMAT"
+        })
+        assertTrue(archives.any {
+            it.asJsonObject.get("kind").asString == "SPLIT_ARCHIVE_PART"
+        })
+        assertEquals(1, root.get("archive_unknown_size_count").asInt)
+        assertTrue(archives.any { it.asJsonObject.get("size_bytes").isJsonNull })
+        assertFalse(encoded.contains("PRIVATE_DOC_ID"))
+        assertFalse(encoded.contains("content://"))
+    }
+
+    @Test fun archiveClassificationDoesNotImplyVerifiedContent() {
+        assertEquals("ZIP_CANDIDATE_UNREAD",
+            DriveMetadataIndexGate.classifyArchive("Zip/file.zip", "application/zip"))
+        assertEquals("ZIPRAF_CANDIDATE_UNVERIFIED_FORMAT",
+            DriveMetadataIndexGate.classifyArchive("Zip/file.zipraf", "application/x-zip"))
+        assertEquals("SPLIT_ARCHIVE_PART",
+            DriveMetadataIndexGate.classifyArchive("Zip/file.zip.001", "application/octet-stream"))
+        assertEquals("TAR_CANDIDATE_UNREAD",
+            DriveMetadataIndexGate.classifyArchive("Zip/backup.tgz", "application/octet-stream"))
+        assertEquals(null,
+            DriveMetadataIndexGate.classifyArchive("Zip/notes.txt", "text/plain"))
+    }
+
     private inline fun reject(operation: () -> Unit) {
         try {
             operation()
