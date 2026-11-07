@@ -48,8 +48,6 @@ fun GoogleDriveCloudCard() {
     var busy by remember { mutableStateOf(false) }
     var items by remember { mutableStateOf<List<GoogleDriveCloudRepository.Item>>(emptyList()) }
     var nextPage by remember { mutableStateOf<String?>(null) }
-    var source by remember { mutableStateOf<GoogleDriveCloudRepository.Selection?>(null) }
-    var destination by remember { mutableStateOf<GoogleDriveCloudRepository.Selection?>(null) }
     val folders = remember { mutableStateListOf(GoogleDriveCloudRepository.Selection("root", "Meu Drive")) }
 
     fun load(folderId: String, pageToken: String? = null) {
@@ -94,8 +92,6 @@ fun GoogleDriveCloudCard() {
             return
         }
         accessToken = token
-        source = null
-        destination = null
         folders.clear()
         folders.add(GoogleDriveCloudRepository.Selection("root", "Meu Drive"))
         load("root")
@@ -185,26 +181,11 @@ fun GoogleDriveCloudCard() {
                     ) { Text("Atualizar") }
                 }
 
-                Button(
-                    enabled = !busy,
-                    onClick = {
-                        source = current
-                        status = "DRIVE_SOURCE_FOLDER_SELECTED"
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text("Usar esta pasta do Drive como origem") }
-                Button(
-                    enabled = !busy,
-                    onClick = {
-                        destination = current
-                        status = "DRIVE_DESTINATION_FOLDER_SELECTED"
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text("Usar esta pasta do Drive como destino") }
-                Text("Origem: " + (source?.name ?: "TOKEN_VAZIO"),
-                    style = MaterialTheme.typography.bodySmall)
-                Text("Destino: " + (destination?.name ?: "TOKEN_VAZIO"),
-                    style = MaterialTheme.typography.bodySmall)
+                Text(
+                    "Abra a pasta desejada. A indexação será desta pasta, e o " +
+                        "resultado será uma NOVA subpasta HyperAtlas dentro dela no Google Drive.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
 
                 // Small provider page prevents nested unbounded lists in a scrolling parent.
                 items.forEach { item ->
@@ -232,32 +213,37 @@ fun GoogleDriveCloudCard() {
 
                 Button(
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !busy && source != null && destination != null,
+                    enabled = !busy,
                     onClick = {
-                        val origin = source
-                        val target = destination
                         val token = accessToken
-                        if (origin != null && target != null && token != null) {
+                        // One folder is selected by navigation; source and destination
+                        // are deliberately the SAME Google Drive folder.
+                        val selectedFolder = current
+                        if (!token.isNullOrBlank()) {
                             scope.launch {
                                 busy = true
-                                status = "DRIVE_CLOUD_ATLAS_SCANNING_AND_PUBLISHING"
+                                status = "DRIVE_CLOUD_INDEXING_SELECTED_FOLDER"
                                 val published = withContext(Dispatchers.IO) {
-                                    runCatching { drive.publish(token, origin, target) }
+                                    runCatching {
+                                        drive.publish(token, selectedFolder, selectedFolder)
+                                    }
                                 }
                                 published.onSuccess { receipt ->
-                                    status = "DRIVE_CLOUD_ATLAS_READBACK_VERIFIED folder=" +
+                                    status = "DRIVE_CLOUD_INDEX_VERIFIED folder=" +
                                         receipt.folderName + " records=" + receipt.records +
                                         " shards=" + receipt.shards +
                                         " manifest_sha256=" + receipt.manifestSha256
                                 }.onFailure { error ->
-                                    status = "BLOCKED_DRIVE_CLOUD_PUBLISH_" +
+                                    status = "BLOCKED_DRIVE_CLOUD_INDEX_" +
                                         (error.message ?: "TOKEN_VAZIO")
                                 }
                                 busy = false
                             }
-                        } else status = "BLOCKED_DRIVE_EXPLICIT_SELECTION_REQUIRED"
+                        } else {
+                            status = "BLOCKED_DRIVE_GOOGLE_AUTH_REQUIRED"
+                        }
                     }
-                ) { Text("Criar HyperAtlas nesta pasta do Google Drive") }
+                ) { Text("Indexar esta pasta no Google Drive") }
                 Text(
                     "Somente índices de metadados. Um MANIFEST.json é criado por último, " +
                         "após conferir hashes por leitura da API Google. Os ZIPs originais " +
