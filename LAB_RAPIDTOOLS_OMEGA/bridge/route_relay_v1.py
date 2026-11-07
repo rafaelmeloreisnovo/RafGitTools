@@ -30,6 +30,42 @@ ROUTES = {
         "needs_workflow_dispatch_grant": True,
         "requires_standing_policy": True,
     },
+    # Pinned cross-repository source route: OpenSSL fork RAFCODE L1 is an
+    # additive *noncryptographic* freestanding state machine, NOT TLS/EVP.
+    # The broker must compare master HEAD to expected_head_sha immediately
+    # before any authorized workflow dispatch; divergence fails closed.
+    "OPENSSL_RAFCODE_FS_STATUS_V1": {
+        "drive_route": "START_HERE_OMEGA_V2_2",
+        "drive_document_id": "1T4OIN2RC1I-KFsdaQTCqieeZUGYBXissWrdrZMG0DN8",
+        "repository": "rafaelmeloreisnovo/openssl",
+        "workflow": "rafcode-freestanding-v2.yml",
+        "ref": "master",
+        "expected_head_sha": "914c1e2b90beec80022902e715313e7ebeb396f7",
+        "expected_source_path": "rafcode/freestanding/",
+        "action": "READ_PUBLIC_WORKFLOW_STATUS",
+        "needs_drive_read_scope": False,
+        "needs_workflow_dispatch_grant": False,
+        "requires_standing_policy": True,
+        "requires_exact_head_pin": True,
+        "crypto_claim_allowed": False,
+        "device_runtime_claim_allowed": False,
+    },
+    "OPENSSL_RAFCODE_FS_VERIFY_V1": {
+        "drive_route": "START_HERE_OMEGA_V2_2",
+        "drive_document_id": "1T4OIN2RC1I-KFsdaQTCqieeZUGYBXissWrdrZMG0DN8",
+        "repository": "rafaelmeloreisnovo/openssl",
+        "workflow": "rafcode-freestanding-v2.yml",
+        "ref": "master",
+        "expected_head_sha": "914c1e2b90beec80022902e715313e7ebeb396f7",
+        "expected_source_path": "rafcode/freestanding/",
+        "action": "PREPARE_WORKFLOW_DISPATCH",
+        "needs_drive_read_scope": False,
+        "needs_workflow_dispatch_grant": True,
+        "requires_standing_policy": True,
+        "requires_exact_head_pin": True,
+        "crypto_claim_allowed": False,
+        "device_runtime_claim_allowed": False,
+    },
     "MIDDLEFIELD_STATUS_READ_V1": {
         "drive_route": "START_HERE_OMEGA_V2_2",
         "drive_document_id": "1T4OIN2RC1I-KFsdaQTCqieeZUGYBXissWrdrZMG0DN8",
