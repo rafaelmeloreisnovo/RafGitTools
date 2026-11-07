@@ -1,0 +1,104 @@
+name: RAFAELIA Agent Workspace · scoped admission and APK compilation
+on:
+  pull_request:
+    paths:
+      - 'app/src/main/kotlin/com/rafgittools/AgentWorkspaceActivity.kt'
+      - 'app/src/main/kotlin/com/rafgittools/MainActivity.kt'
+      - 'app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen.kt'
+      - 'app/src/main/AndroidManifest.xml'
+      - 'LAB_RAPIDTOOLS_OMEGA/bridge/agent_workspace_v1.py'
+      - 'LAB_RAPIDTOOLS_OMEGA/bridge/tests/test_agent_workspace_v1.py'
+      - '.github/workflows/rafaelia-agent-workspace-scoped.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rafaelia-agent-workspace-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  admission-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout candidate exact SHA
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Adversarial proposal contract
+        run: |
+          set -euo pipefail
+          python3 -I -B -m unittest discover -s LAB_RAPIDTOOLS_OMEGA/bridge/tests -p 'test_agent_workspace_v1.py' -v
+          python3 -I -B -m py_compile LAB_RAPIDTOOLS_OMEGA/bridge/agent_workspace_v1.py
+      - name: Scoped receipt, not runtime proof
+        if: ${{ always() }}
+        run: |
+          echo "scope=proposal_json_contract_only" >> "$GITHUB_STEP_SUMMARY"
+          echo "source_sha=${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "supabase_dispatch=NOT_CONFIGURED" >> "$GITHUB_STEP_SUMMARY"
+          echo "drive_observer=NOT_INSTALLED" >> "$GITHUB_STEP_SUMMARY"
+          echo "claim_allowed=false" >> "$GITHUB_STEP_SUMMARY"
+
+  android-compile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout candidate exact SHA
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Validate source identity
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Existing Android toolchain preflight
+        run: |
+          python3 tools/validate_android_toolchain_matrix.py
+          python3 tools/validate_android_dependency_bundle.py
+      - name: Java 17
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Android SDK
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          packages: ""
+      - name: Android platforms (matching existing canary)
+        run: |
+          set -euo pipefail
+          if ! sdkmanager 'platforms;android-37' 'build-tools;36.0.0'; then
+            sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
+          fi
+          yes | sdkmanager --licenses >/dev/null || true
+      - name: Build test APK (no distribution)
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          printf 'sdk.dir=%s\n' "$ANDROID_SDK_ROOT" > local.properties
+          ./gradlew --no-daemon assembleDevDebug --stacktrace
+      - name: Verify actual APK and SHA256
+        run: |
+          set -euo pipefail
+          APK="$(find app/build/outputs/apk/dev/debug -maxdepth 1 -name '*.apk' -type f -print -quit)"
+          test -n "$APK" && test -s "$APK"
+          unzip -t "$APK" >/dev/null
+          sha256sum "$APK" | tee app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+      - name: Upload diagnostic artifact only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: rafgittools-agent-workspace-canary-${{ github.run_id }}
+          path: |
+            app/build/outputs/apk/dev/debug/*.apk
+            app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+      - name: Explicit no-release boundary
+        if: ${{ always() }}
+        run: |
+          echo "source_sha=${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "device_e2e=NOT_RUN" >> "$GITHUB_STEP_SUMMARY"
+          echo "release_allowed=false claim_allowed=false" >> "$GITHUB_STEP_SUMMARY"
