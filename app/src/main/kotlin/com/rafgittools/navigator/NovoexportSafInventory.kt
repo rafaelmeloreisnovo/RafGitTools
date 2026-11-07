@@ -97,12 +97,14 @@ object NovoexportSafInventory {
 
             val children = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, directoryId)
             val cursor = resolver.query(children, projection, null, null, null)
-                ?: error("SAF provider returned no cursor for directory inventory")
+                ?: error("BLOCKED_SAF_PROVIDER_CHILD_QUERY_NULL")
             cursor.use {
                 val idIndex = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
                 val nameIndex = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
                 val mimeIndex = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
-                val sizeIndex = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_SIZE)
+                // Cloud DocumentsProviders are permitted to omit size. Treat that
+                // as unknown metadata, not as a fatal query/empty folder.
+                val sizeIndex = it.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE)
 
                 while (it.moveToNext()) {
                     visitedDocuments += 1
@@ -145,7 +147,7 @@ object NovoexportSafInventory {
                         continue
                     }
 
-                    val size = if (it.isNull(sizeIndex)) null
+                    val size = if (sizeIndex < 0 || it.isNull(sizeIndex)) null
                     else it.getLong(sizeIndex).takeIf { value -> value >= 0L }
                     val semantic = RafInventoryCoreBridge.analyze(
                         path = relativePath,
