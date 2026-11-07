@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -110,6 +111,31 @@ fun GoogleDriveCloudCard() {
         }
     }
 
+    // Reuse a Google authorization already granted to THIS Android app.
+    // Does not open a second login UI, prompt, or Android file picker.
+    LaunchedEffect(Unit) {
+        if (accessToken == null) {
+            busy = true
+            status = "DRIVE_CHECKING_EXISTING_AUTHORIZATION"
+            val request = AuthorizationRequest.builder()
+                .setRequestedScopes(listOf(Scope(GoogleDriveCloudRepository.SCOPE)))
+                .build()
+            authorization.authorize(request)
+                .addOnSuccessListener { answer ->
+                    busy = false
+                    if (!answer.hasResolution()) {
+                        acceptAuthorization(answer.accessToken)
+                    } else {
+                        status = "DRIVE_GOOGLE_CONSENT_REQUIRED_FOR_THIS_APP"
+                    }
+                }
+                .addOnFailureListener {
+                    busy = false
+                    status = "BLOCKED_DRIVE_NO_REUSABLE_AUTHORIZATION"
+                }
+        }
+    }
+
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -118,18 +144,11 @@ fun GoogleDriveCloudCard() {
             Text("☁️ Google Drive · pastas da nuvem",
                 style = MaterialTheme.typography.titleMedium)
             Text(
-                "Navegação pela API Google Drive, dentro do RafGitTools. " +
-                    "Não abre seletor de arquivos do celular, não usa Google Pay e " +
-                    "não copia seus ZIPs. A autorização Google é independente do PAT GitHub.",
+                "Abra sua pasta do Drive e toque em Indexar. " +
+                    "A conexão Google já autorizada será reutilizada automaticamente.",
                 style = MaterialTheme.typography.bodyMedium
             )
-            Text(
-                "Para listar e criar índices em qualquer pasta escolhida, é solicitada " +
-                    "permissão Google Drive. O Google exige configuração OAuth e, " +
-                    "para distribuição pública, verificação do escopo restrito.",
-                style = MaterialTheme.typography.bodySmall
-            )
-            Button(
+            if (accessToken == null) Button(
                 onClick = {
                     busy = true
                     status = "GOOGLE_DRIVE_AUTHORIZING"
@@ -161,7 +180,7 @@ fun GoogleDriveCloudCard() {
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !busy
-            ) { Text(if (accessToken == null) "Conectar conta Google Drive" else "Reconectar / trocar conta Google") }
+            ) { Text("Autorizar o Drive neste aplicativo") }
 
             if (accessToken != null) {
                 val current = folders.last()
