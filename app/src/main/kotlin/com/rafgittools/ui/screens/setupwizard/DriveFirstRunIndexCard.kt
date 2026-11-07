@@ -131,6 +131,37 @@ fun DriveFirstRunIndexCard() {
         }
     }
 
+    // V4 is opt-in, local/private only. Same native SAF picker; V3 remains unchanged.
+    val v4LocalPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri == null) {
+            status = "TOKEN_VAZIO_V4_SOURCE_NOT_SELECTED"
+        } else if (!GoogleDriveSafGate.isGoogleDrive(context, uri)) {
+            status = "BLOCKED_V4_SOURCE_IS_NOT_GOOGLE_DRIVE"
+        } else {
+            scope.launch {
+                busy = true
+                status = "V4_PRIVATE_INCREMENTAL_SCAN_IN_PROGRESS"
+                val result = withContext(Dispatchers.IO) {
+                    runCatching { HyperAtlasV4SafLocal.scan(context, uri) }
+                }
+                status = result.fold(
+                    onSuccess = {
+                        "V4_PRIVATE_LOCAL_ONLY state=" + it.state +
+                            " folders=" + it.completedDirectories +
+                            " records=" + it.records +
+                            " physicalE2E=NOT_ATTESTED DriveExport=NOT_RUN"
+                    },
+                    onFailure = {
+                        "BLOCKED_V4_LOCAL_SCAN_" + it.javaClass.simpleName
+                    }
+                )
+                busy = false
+            }
+        }
+    }
+
     val optimizedFolderPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { destination ->
@@ -213,6 +244,17 @@ fun DriveFirstRunIndexCard() {
                 enabled = !busy,
                 modifier = Modifier.fillMaxWidth()
             ) { Text("Selecionar pasta no Google Drive (não local)") }
+
+            OutlinedButton(
+                onClick = { v4LocalPicker.launch(null) },
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("V4 experimental · indexar Drive em lotes locais (retomável)") }
+            Text(
+                "V4 lê apenas metadados da pasta Google Drive selecionada e grava batches " +
+                    "e checkpoints no armazenamento privado do app. Ainda NÃO exporta o índice ao Drive.",
+                style = MaterialTheme.typography.bodySmall
+            )
 
             snapshot?.let { index ->
                 val archives = remember(index) {
