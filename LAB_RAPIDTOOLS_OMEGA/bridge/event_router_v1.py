@@ -85,10 +85,12 @@ def validate(event: object, now: datetime | None = None) -> dict:
         raise EventError("DENY_PROMOTION")
     if not _uuid(event["event_id"]):
         raise EventError("DENY_EVENT_ID")
-    if (event["source_kind"] not in SOURCES
+    if (not isinstance(event["source_kind"], str)
+            or event["source_kind"] not in SOURCES
             or not _digest(event["source_ref_sha256"])):
         raise EventError("DENY_SOURCE")
-    if event["requested_capability"] not in CAPABILITIES:
+    if (not isinstance(event["requested_capability"], str)
+            or event["requested_capability"] not in CAPABILITIES):
         raise EventError("DENY_CAPABILITY")
     if event["source_kind"] in HUMAN_SOURCES:
         if not _uuid(event["interaction_id"]) or not _digest(event["intent_sha256"]):
