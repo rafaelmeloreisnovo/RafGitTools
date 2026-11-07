@@ -27,14 +27,16 @@ import com.rafgittools.navigator.SafZipRangeGateV1
 import com.rafgittools.navigator.ZipCentralDirectoryRangeV1
 import com.rafgittools.setupwizard.DriveMetadataIndexGate
 import com.rafgittools.setupwizard.DriveAtlasSafPublisherV3
+import com.rafgittools.setupwizard.GoogleDriveSafGate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.security.MessageDigest
 
 /**
- * First-run source selector. SAF delegates available providers/accounts to Android.
- * Not Google OAuth and not account-wide Drive access.
+ * Drive-only SAF path. Rejects local provider URIs before source read or index writes.
+ * Availability of Drive through the system picker is not guaranteed. This is
+ * not Google OAuth and does not provide account-wide Drive access.
  */
 @Composable
 fun DriveFirstRunIndexCard() {
@@ -52,6 +54,8 @@ fun DriveFirstRunIndexCard() {
         val selected = snapshot
         if (output == null || selected == null || !privateDestinationConfirmed) {
             status = "TOKEN_VAZIO_EXPORT_NOT_AUTHORIZED"
+        } else if (!GoogleDriveSafGate.isGoogleDrive(context, output)) {
+            status = "BLOCKED_DESTINATION_IS_NOT_GOOGLE_DRIVE"
         } else {
             scope.launch {
                 busy = true
@@ -101,6 +105,8 @@ fun DriveFirstRunIndexCard() {
         privateDestinationConfirmed = false
         if (uri == null) {
             status = "TOKEN_VAZIO_SOURCE_NOT_SELECTED"
+        } else if (!GoogleDriveSafGate.isGoogleDrive(context, uri)) {
+            status = "BLOCKED_SOURCE_IS_NOT_GOOGLE_DRIVE"
         } else {
             scope.launch {
                 busy = true
@@ -131,6 +137,8 @@ fun DriveFirstRunIndexCard() {
         val selected = snapshot
         if (destination == null || selected == null || !privateDestinationConfirmed) {
             status = "TOKEN_VAZIO_OPTIMIZED_DESTINATION_NOT_AUTHORIZED"
+        } else if (!GoogleDriveSafGate.isGoogleDrive(context, destination)) {
+            status = "BLOCKED_DESTINATION_IS_NOT_GOOGLE_DRIVE"
         } else {
             scope.launch {
                 busy = true
@@ -162,6 +170,8 @@ fun DriveFirstRunIndexCard() {
         selectedZipIndex = null
         if (uri == null) {
             status = "TOKEN_VAZIO_ZIP_SOURCE_NOT_SELECTED"
+        } else if (!GoogleDriveSafGate.isGoogleDrive(context, uri)) {
+            status = "BLOCKED_ZIP_SOURCE_IS_NOT_GOOGLE_DRIVE"
         } else {
             scope.launch {
                 busy = true
@@ -192,16 +202,17 @@ fun DriveFirstRunIndexCard() {
             Text("🗂️ HyperAtlas · Mapear pastas e ZIPs no Drive",
                 style = MaterialTheme.typography.titleMedium)
             Text(
-                "Use o acesso a arquivos que o RafGitTools já possui via seletor Android. " +
-                    "Escolha uma pasta do Drive: o app mapeia a árvore e identifica ZIPs/ZIPRAFs sem baixá-los. " +
-                    "O acesso cobre apenas a árvore autorizada, não a conta inteira.",
+                "Google Drive é o destino principal. Se o seletor do Android mostrar apenas " +
+                    "armazenamento interno ou Downloads, NÃO selecione uma pasta local: " +
+                    "este fluxo bloqueia provedores que não sejam do Google Drive. " +
+                    "O Drive deve estar disponível no seletor; autorização direta pela API Google requer conector separado.",
                 style = MaterialTheme.typography.bodyMedium
             )
             Button(
                 onClick = { sourcePicker.launch(null) },
                 enabled = !busy,
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("Escolher conta/pasta pelo Android") }
+            ) { Text("Selecionar pasta no Google Drive (não local)") }
 
             snapshot?.let { index ->
                 val archives = remember(index) {
@@ -247,7 +258,7 @@ fun DriveFirstRunIndexCard() {
                     onClick = { optimizedFolderPicker.launch(null) },
                     enabled = !busy && privateDestinationConfirmed,
                     modifier = Modifier.fillMaxWidth()
-                ) { Text("Salvar HyperAtlas otimizado no Drive (índice fragmentado)") }
+                ) { Text("Salvar HyperAtlas no Google Drive (índice fragmentado)") }
                 Text(
                     "Uma única seleção de pasta cria fragmentos compactos e um manifesto " +
                         "com hashes verificados. Os ZIPs originais não são baixados.",
@@ -257,7 +268,7 @@ fun DriveFirstRunIndexCard() {
                     onClick = { outputPicker.launch("rafgittools-hyperatlas-drive-map.v1.json") },
                     enabled = !busy && privateDestinationConfirmed,
                     modifier = Modifier.fillMaxWidth()
-                ) { Text("Salvar mapa na pasta escolhida (SHA-256 verificado)") }
+                ) { Text("Salvar mapa legado no Google Drive (SHA-256)") }
             }
 
             OutlinedButton(
@@ -297,6 +308,12 @@ fun DriveFirstRunIndexCard() {
                 }
             }
 
+            Text(
+                "Se Google Drive não aparecer no Android: estado BLOCKED. " +
+                    "Este APK ainda não contém autenticação Google OAuth/Drive API; " +
+                    "não substituímos Drive por armazenamento local.",
+                style = MaterialTheme.typography.bodySmall
+            )
             Text(status, style = MaterialTheme.typography.labelSmall)
             Text(
                 "Conversations completas e arestas semânticas exigem uma segunda autorização para ler conteúdo. " +
