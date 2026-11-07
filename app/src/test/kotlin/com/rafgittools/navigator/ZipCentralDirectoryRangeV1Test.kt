@@ -122,6 +122,12 @@ class ZipCentralDirectoryRangeV1Test {
         assertTrue(r.gaps.contains("UNSAFE_MEMBER_PATHS_PRESENT"))
     }
 
+    @Test fun rejectsInteriorDoubleSlashInMemberPath() {
+        val r = ZipCentralDirectoryRangeV1.inspect(fromZip("a//b.txt"))
+        assertTrue(r.entries.single().unsafePath)
+        assertTrue(r.gaps.contains("UNSAFE_MEMBER_PATHS_PRESENT"))
+    }
+
     @Test fun failsOnNoCentralDirectory() {
         val empty = object : ZipCentralDirectoryRangeV1.Reader {
             override val length = 512L
