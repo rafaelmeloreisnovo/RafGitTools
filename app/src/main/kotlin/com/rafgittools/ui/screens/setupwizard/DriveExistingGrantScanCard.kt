@@ -60,8 +60,10 @@ fun GoogleDriveScannerEntry() {
             else -> {
                 // Keep the folder grant, if provider supports persistence, so
                 // subsequent access does not require Google login or file copies.
-                val granted = Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                // Persist READ even when Drive grants no persistent WRITE.
+                // Requesting both flags as one operation could discard an
+                // otherwise valid cloud read grant on providers with read-only
+                // folder capabilities.
                 val persisted = runCatching {
                     context.contentResolver.takePersistableUriPermission(selected, granted)
                 }.isSuccess || runCatching {
@@ -71,6 +73,11 @@ fun GoogleDriveScannerEntry() {
                         selected, Intent.FLAG_GRANT_READ_URI_PERMISSION
                     )
                 }.isSuccess
+                runCatching {
+                    context.contentResolver.takePersistableUriPermission(
+                        selected, Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    )
+                }
 
                 // Android also grants transient access from the system picker.
                 // Do not claim persistence when not granted. Let provider enforce
@@ -79,12 +86,12 @@ fun GoogleDriveScannerEntry() {
                     busy = true
                     status = if (persisted) "DRIVE_SCANNING_SELECTED_FOLDER"
                         else "DRIVE_SCANNING_WITH_TRANSIENT_PERMISSION"
-                    val result = withContext(Dispatchers.IO) {
+                    val scan = withContext(Dispatchers.IO) {
                         runCatching {
-                            val resolver = context.contentResolver
-                            // All child folders and files, not just conversation files.
-                            val snapshot = NovoexportSafInventory.scan(
-                                resolver,
+                            // The SAF ContentResolver must enumerate the Google
+                            // Drive tree BEFORE any index folder is created.
+                            NovoexportSafInventory.scan(
+                                context.contentResolver,
                                 selected,
                                 maxDocuments = DriveMetadataIndexGate.MAX_DOCUMENTS
                             )
