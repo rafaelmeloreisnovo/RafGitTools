@@ -135,6 +135,39 @@ def prepare(event: dict, route_id: str, now=None) -> dict:
     }
 
 
+
+def verify_pinned_source(route_id: str, observed_repository: str,
+                         observed_ref: str, observed_head_sha: str) -> dict:
+    """Fail closed on upstream drift using separately fetched provider metadata.
+
+    The caller must supply metadata from a *verified* GitHub API response, not
+    from an email, calendar description, user prompt or an untrusted envelope.
+    A pin match is not permission to execute a workflow or merge a PR.
+    """
+    if not isinstance(route_id, str) or route_id not in ROUTES:
+        raise EventError("DENY_UNKNOWN_ROUTE")
+    route = ROUTES[route_id]
+    if "expected_head_sha" not in route:
+        raise EventError("DENY_UNPINNED_ROUTE")
+    if (not isinstance(observed_repository, str)
+            or not isinstance(observed_ref, str)
+            or not isinstance(observed_head_sha, str)
+            or observed_repository != route["repository"]
+            or observed_ref != route["ref"]
+            or observed_head_sha != route["expected_head_sha"]):
+        raise EventError("DENY_SOURCE_PIN_DRIFT")
+    return {
+        "schema": "rafaelia.source-head-pin-receipt.v1",
+        "route_id": route_id,
+        "expected_sha": route["expected_head_sha"],
+        "source_pin_result": "MATCH_UNAUTHENTICATED_LOCAL_COMPARISON",
+        "provider_identity_verified": False,
+        "standing_grant_verified": False,
+        "dispatch_allowed": False,
+        "claim_allowed": False,
+    }
+
+
 def reminder_subject(route_id: str) -> str:
     """Safe, non-authorizing subject string for an optional self-reminder."""
     if not isinstance(route_id, str) or route_id not in ROUTES:
