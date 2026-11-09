@@ -27,7 +27,7 @@ class DirectDrivePickerTests(unittest.TestCase):
         text = ENTRY.read_text(encoding="utf-8").split("fun DriveLegacyAdvancedIndexCard()", 1)[0]
         self.assertIn("NovoexportSafInventory.scan(", text)
         self.assertIn("DriveAtlasSafPublisherV3.publish(", text)
-        self.assertIn("context.contentResolver, selected, snapshot", text)
+        self.assertIn("DriveAtlasSafPublisherV3.publish(resolver, uri, inventory)", text)
         self.assertLess(text.index("NovoexportSafInventory.scan("),
                         text.index("DriveAtlasSafPublisherV3.publish("))
         self.assertNotIn("privateDestinationConfirmed", text)
@@ -70,7 +70,8 @@ class DirectDrivePickerTests(unittest.TestCase):
         text = ENTRY.read_text(encoding="utf-8")
         self.assertIn("DRIVE_SCAN_PASS_INDEX_WRITE_BLOCKED", text)
         self.assertIn("BLOCKED_DRIVE_SAF_READ_", text)
-        self.assertIn("takePersistableUriPermission(selected, granted)", text)
+        self.assertIn("uri, Intent.FLAG_GRANT_READ_URI_PERMISSION", text)
+        self.assertNotIn("takePersistableUriPermission(uri, permissionFlags)", text)
 
     def test_source_changes_trigger_real_apk_build(self):
         yaml = WORKFLOW.read_text(encoding="utf-8")

@@ -64,11 +64,18 @@ fun DriveFirstRunIndexCard() {
             // Never scan a local Android provider or silently redirect output.
             status = "BLOCKED_SELECTED_FOLDER_NOT_GOOGLE_DRIVE"
         } else if (!busy) {
-            val permissionFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            // Persist READ independently; providers may not grant persistent WRITE.
             val persisted = runCatching {
-                context.contentResolver.takePersistableUriPermission(uri, permissionFlags)
+                context.contentResolver.takePersistableUriPermission(
+                    uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
             }.isSuccess
+            // WRITE persistence is best effort; the provider remains the authority.
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            }
 
             scope.launch {
                 busy = true
@@ -81,22 +88,29 @@ fun DriveFirstRunIndexCard() {
                             resolver, uri, maxDocuments = DriveMetadataIndexGate.MAX_DOCUMENTS
                         )
                         // No other folder picker. Same URI for read & write.
-                        val receipt = DriveAtlasSafPublisherV3.publish(resolver, uri, inventory)
-                        inventory to receipt
+                        val publication = runCatching {
+                            DriveAtlasSafPublisherV3.publish(resolver, uri, inventory)
+                        }
+                        inventory to publication
                     }
                 }
-                result.onSuccess { (inventory, receipt) ->
-                    status = "DRIVE_HYPERATLAS_INDEX_READBACK_VERIFIED " +
-                        "documentos=" + inventory.visitedDocuments +
-                        " pastas=" + inventory.allDirectories.size +
-                        " arquivos=" + inventory.allFiles.size +
-                        " destino=" + receipt.runFolderName +
-                        " partes=" + receipt.parts +
-                        " sha256=" + receipt.manifestSha256 +
-                        " grant_persisted=" + persisted
+                result.onSuccess { (inventory, publication) ->
+                    publication.onSuccess { receipt ->
+                        status = "DRIVE_HYPERATLAS_INDEX_READBACK_VERIFIED " +
+                            "documentos=" + inventory.visitedDocuments +
+                            " pastas=" + inventory.allDirectories.size +
+                            " arquivos=" + inventory.allFiles.size +
+                            " destino=" + receipt.runFolderName +
+                            " partes=" + receipt.parts +
+                            " sha256=" + receipt.manifestSha256 +
+                            " grant_persisted=" + persisted
+                    }.onFailure { error ->
+                        // The scan finished. Do not mislabel a WRITE failure as READ.
+                        status = "DRIVE_SCAN_PASS_INDEX_WRITE_BLOCKED " +
+                            "BLOCKED_DRIVE_SAF_WRITE_" + error.javaClass.simpleName
+                    }
                 }.onFailure { error ->
-                    status = "BLOCKED_DRIVE_SAF_SCAN_OR_WRITE_" +
-                        (error.message ?: "TOKEN_VAZIO")
+                    status = "BLOCKED_DRIVE_SAF_READ_" + error.javaClass.simpleName
                 }
                 busy = false
             }
