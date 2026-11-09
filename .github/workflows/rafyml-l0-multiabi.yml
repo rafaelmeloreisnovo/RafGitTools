@@ -1,0 +1,42 @@
+# GitHub Actions is a hosted L1 orchestrator; only compiled L0 objects are freestanding.
+# Scoped to PR #807, no external actions, no Android/JDK/NDK/Gradle, no deployment.
+name: RAFYML L0 review-only multi-ABI
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/rafyml-l0-multiabi.yml'
+      - 'scripts/ci/rafyml_l0_multiabi_gate.sh'
+      - 'src/rafyml_l0_graph.c'
+      - 'include/rafyml_l0_graph.h'
+      - 'include/rafyml_runtime.h'
+      - 'tests/rafyml_l0_graph_test.c'
+permissions:
+  contents: read
+concurrency:
+  group: rafyml-l0-pr807
+  cancel-in-progress: true
+jobs:
+  objects-and-falsifiers:
+    if: github.event.pull_request.number == 807 && github.event.pull_request.head.repo.full_name == 'rafaelmeloreisnovo/RafGitTools'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Fetch exact PR HEAD without third-party actions
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin https://github.com/rafaelmeloreisnovo/RafGitTools.git
+          git fetch --depth=1 origin refs/pull/807/head
+          git checkout -q --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          printf 'CHECKPOINT HEAD=%s\n' "$EXPECTED_SHA"
+      - name: Run bounded host vectors and freestanding object checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          sh scripts/ci/rafyml_l0_multiabi_gate.sh --ci-run
