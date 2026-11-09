@@ -65,10 +65,6 @@ fun GoogleDriveScannerEntry() {
                 // otherwise valid cloud read grant on providers with read-only
                 // folder capabilities.
                 val persisted = runCatching {
-                    context.contentResolver.takePersistableUriPermission(selected, granted)
-                }.isSuccess || runCatching {
-                    // Some providers grant persistent READ without persistent WRITE.
-                    // A failed combined request must not lose a valid READ grant.
                     context.contentResolver.takePersistableUriPermission(
                         selected, Intent.FLAG_GRANT_READ_URI_PERMISSION
                     )
@@ -90,7 +86,7 @@ fun GoogleDriveScannerEntry() {
                         runCatching {
                             // The SAF ContentResolver must enumerate the Google
                             // Drive tree BEFORE any index folder is created.
-                            NovoexportSafInventory.scan(
+                            val snapshot = NovoexportSafInventory.scan(
                                 context.contentResolver,
                                 selected,
                                 maxDocuments = DriveMetadataIndexGate.MAX_DOCUMENTS
@@ -99,13 +95,13 @@ fun GoogleDriveScannerEntry() {
                             // finishes BEFORE creating the HyperAtlas directory.
                             val publication = runCatching {
                                 DriveAtlasSafPublisherV3.publish(
-                                    resolver, selected, snapshot
+                                    context.contentResolver, selected, snapshot
                                 )
                             }
                             snapshot to publication
                         }
                     }
-                    result.onSuccess { (snapshot, publication) ->
+                    scan.onSuccess { (snapshot, publication) ->
                         val counts = " pastas=" + snapshot.allDirectories.size +
                             " arquivos=" + snapshot.allFiles.size
                         publication.onSuccess { receipt ->
