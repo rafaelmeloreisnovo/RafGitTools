@@ -78,10 +78,16 @@ class MasterCoverageProviderRoutingTests(unittest.TestCase):
         self.assertNotIn("TARGET_TASK_CMD", provider_lane)
 
     def test_single_general_root_with_allowlisted_scoped_workflows(self) -> None:
-        # START owns general orchestration. The seven specialized, path/branch-
+        # START owns general orchestration. The eight specialized, path/branch-
         # constrained workflows are separate evidence lanes, not extra roots.
         workflow_dir = ROOT / ".github" / "workflows"
         expected_scoped = {
+            "drive-snapshot-solo-apk.yml": (
+                "  pull_request:\n    paths:",
+                "      - 'standalone/drive-snapshot/**'",
+                "      - '.github/workflows/drive-snapshot-solo-apk.yml'",
+                "  workflow_dispatch:",
+            ),
             "ci-rapidtools-semantic-l0.yml": (
                 "  pull_request:\n    paths:",
                 "      - 'LAB_RAPIDTOOLS_OMEGA/core/raf_semantic_gate.*'",

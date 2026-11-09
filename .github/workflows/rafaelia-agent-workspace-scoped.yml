@@ -6,6 +6,7 @@ on:
       - 'app/src/main/kotlin/com/rafgittools/MainActivity.kt'
       - 'app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen.kt'
       - 'app/src/main/kotlin/com/rafgittools/ui/screens/setupwizard/GoogleDriveCloudCard.kt'
+      - 'app/src/main/kotlin/com/rafgittools/ui/screens/setupwizard/DriveFirstRunIndexCard.kt'
       - 'app/src/main/kotlin/com/rafgittools/ui/screens/setupwizard/DriveExistingGrantScanCard.kt'
       - 'app/src/main/kotlin/com/rafgittools/setupwizard/GoogleDriveSafGate.kt'
       - 'app/src/main/kotlin/com/rafgittools/navigator/NovoexportSafInventory.kt'
