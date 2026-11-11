@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rafaelmeloreisnovo/RafGitTools/contracts/apk-signature-receipt.v1.schema.json",
+  "title": "RAFAELIA APK signature receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "state", "artifact", "artifact_sha256", "certificate", "signature_schemes", "source", "observed_at", "claim_scope", "claim_allowed"],
+  "properties": {
+    "schema": {"const": "rafaelia.apk-signature-receipt.v1"},
+    "state": {"const": "VERIFIED_BY_APKSIGNER"},
+    "artifact": {"type": "string", "minLength": 1},
+    "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "certificate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha256"],
+      "properties": {
+        "dn": {"type": "string"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "signature_schemes": {"type": "object", "additionalProperties": {"type": "boolean"}},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "git_commit", "github_run_id"],
+      "properties": {
+        "repository": {"type": "string", "pattern": "^[^/]+/[^/]+$"},
+        "git_commit": {"type": "string", "minLength": 1},
+        "github_run_id": {"type": "string", "minLength": 1}
+      }
+    },
+    "observed_at": {"type": "string", "format": "date-time"},
+    "claim_scope": {"const": "artifact_integrity_and_signer_certificate_only"},
+    "claim_allowed": {"const": false}
+  }
+}
