@@ -1,0 +1,38 @@
+name: RAFAELIA APK signature receipt
+description: Verify an already-signed APK and emit a bounded JSON receipt without handling private keys.
+inputs:
+  apk-path:
+    description: Path to the signed APK in the caller workspace.
+    required: true
+  apksigner:
+    description: apksigner executable or absolute path.
+    required: false
+    default: apksigner
+  output-dir:
+    description: Directory for receipt.json and apksigner.txt.
+    required: false
+    default: apk-signature-receipt
+outputs:
+  receipt:
+    description: Path to the generated JSON receipt.
+    value: ${{ steps.verify.outputs.receipt }}
+runs:
+  using: composite
+  steps:
+    - id: verify
+      name: Verify APK and emit receipt
+      shell: bash
+      env:
+        APK_PATH: ${{ inputs.apk-path }}
+        APKSIGNER: ${{ inputs.apksigner }}
+        OUTPUT_DIR: ${{ inputs.output-dir }}
+      run: |
+        set -euo pipefail
+        python3 "$GITHUB_ACTION_PATH/render_receipt.py" \
+          --apk "$APK_PATH" \
+          --apksigner "$APKSIGNER" \
+          --output-dir "$OUTPUT_DIR" \
+          --repository "${GITHUB_REPOSITORY:-TOKEN_VAZIO}" \
+          --git-commit "${GITHUB_SHA:-TOKEN_VAZIO}" \
+          --run-id "${GITHUB_RUN_ID:-TOKEN_VAZIO}"
+        printf 'receipt=%s/receipt.json\n' "$OUTPUT_DIR" >> "$GITHUB_OUTPUT"
