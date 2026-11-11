@@ -8,6 +8,8 @@ Implementation: [verify_multiabi_l0.sh](../../scripts/rafyml/verify_multiabi_l0.
 
 Hosted CI adapter: [.github/workflows/ci-rapidtools-semantic-l0.yml](../../.github/workflows/ci-rapidtools-semantic-l0.yml)
 
+Private identity dedup route: [DRIVE_IDENTITY_DEDUP_SUPABASE_20261111.md](../../001_PONTEIRO/DRIVE_IDENTITY_DEDUP_SUPABASE_20261111.md) — metadata identity only, not byte-content equality.
+
 Authority: `AGENTS.md` in RafGitTools for source; Mapa for federated routing, Drive for memory receipts, Supabase for private metadata only.
 
 No raw conversation corpus, private secrets, training data, inferred symbol translations or Android APKs are imported here.
