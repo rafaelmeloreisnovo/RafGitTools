@@ -7,6 +7,10 @@ on:
       - 'LAB_RAPIDTOOLS_OMEGA/scripts/verify_semantic_gate.sh'
       - 'LAB_RAPIDTOOLS_OMEGA/docs/SEMANTIC_GATE_L0_V1.md'
       - '.github/workflows/ci-rapidtools-semantic-l0.yml'
+      - 'src/rafyml_runtime.c'
+      - 'include/rafyml_runtime.h'
+      - 'tests/rafyml_runtime_bounds_host_test.c'
+      - 'scripts/rafyml/verify_multiabi_l0.sh'
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,3 +24,20 @@ jobs:
           persist-credentials: false
       - name: Pure C host falsifiers and cross-target objects
         run: sh LAB_RAPIDTOOLS_OMEGA/scripts/verify_semantic_gate.sh
+
+  rafyml-multiabi-l0:
+    name: RAFYML host falsifiers + ARMv7/AArch64 objects
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Exact-head binding and freestanding object checks
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -eu
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          sh scripts/rafyml/verify_multiabi_l0.sh
