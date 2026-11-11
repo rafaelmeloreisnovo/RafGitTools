@@ -683,6 +683,13 @@ jobs:
           python3 -m unittest -v tests.test_session_queue_preflight_v1
           echo 'QUEUE707_HOSTED_REFERENCE=PASS_SCOPED_ONLY; CLAIM_ALLOWED=false'
 
+      - name: RAFYML L0 graph + ARMv7/AArch64 freestanding object falsifiers
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/ci/verify_rafyml_l0_multiabi.sh
+          echo 'RAFYML_L0_CI=SCOPED; TARGET_LINK=NOT_RUN; DEVICE=NOT_RUN; CLAIM_ALLOWED=false'
+
       - name: P0 six PAT capabilities | freestanding negative gate
         shell: bash
         run: |
