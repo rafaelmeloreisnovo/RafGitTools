@@ -82,9 +82,10 @@ updates:
     versioning-strategy: "increase"
     reviewers:
       - "rafaelmeloreisnovo"
+    # github-actions label is not defined (Dependabot #694); retain dependencies.
+    # Restore the additional label only after provider readback confirms it exists.
     labels:
       - "dependencies"
-      - "github-actions"
     commit-message:
       prefix: "ci(deps)"
       include: "scope"
