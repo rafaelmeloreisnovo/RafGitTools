@@ -2,13 +2,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Hosted verifier; these tools are NOT part of the freestanding C kernel.
 set -eu
-ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
-for tool in clang gcc readelf nm; do
+for tool in clang gcc readelf nm dirname mktemp grep rm; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         printf 'gate=BLOCKED missing_host_tool=%s\n' "$tool" >&2
         exit 127
     fi
 done
+ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 WORK=$(mktemp -d)
 trap 'rm -rf -- "$WORK"' EXIT HUP INT TERM
 SRC="$ROOT/native/raf_gate_l0_v1.c"
@@ -28,7 +28,11 @@ for entry in 'armv7a-none-eabi armv7 ELF32 ARM' \
     set -- $entry
     target=$1 abi=$2 elf_class=$3 expected_machine=$4
     obj="$WORK/$abi.o"
-    clang -target "$target" -std=c11 -Oz -ffreestanding \
+    case "$abi" in
+        armv7) set -- -mfloat-abi=soft -mfpu=none ;;
+        *) set -- ;;
+    esac
+    clang -target "$target" "$@" -std=c11 -Oz -ffreestanding \
         -fno-builtin -fno-stack-protector -fno-unwind-tables \
         -fno-asynchronous-unwind-tables -Wall -Wextra -Werror \
         -pedantic -c "$SRC" -o "$obj"
