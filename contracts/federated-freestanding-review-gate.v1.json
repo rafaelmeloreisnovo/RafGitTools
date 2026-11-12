@@ -1,6 +1,6 @@
 {
   "schema": "rafaelia.federated-freestanding-review-gate.v1",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "snapshot_date": "2026-11-11",
   "producer": "rafaelmeloreisnovo/RafGitTools",
   "base_commit": "164196721643a1e3ee736a29799884fb205e3f4b",
@@ -54,7 +54,11 @@
         "type": "ET_REL",
         "machine": "ARM",
         "undefined_symbols": 0,
-        "result": "OBJECT_COMPILED"
+        "result": "OBJECT_COMPILED",
+        "compiler_profile": "-mfloat-abi=soft -mfpu=none",
+        "observed_text_bytes": 68,
+        "previous_default_text_bytes": 88,
+        "runtime_speed": "NOT_MEASURED"
       },
       {
         "target": "aarch64-none-elf",
@@ -62,7 +66,8 @@
         "type": "ET_REL",
         "machine": "AArch64",
         "undefined_symbols": 0,
-        "result": "OBJECT_COMPILED"
+        "result": "OBJECT_COMPILED",
+        "observed_text_bytes": 72
       },
       {
         "target": "x86_64-unknown-none-elf",
@@ -70,7 +75,8 @@
         "type": "ET_REL",
         "machine": "X86-64",
         "undefined_symbols": 0,
-        "result": "OBJECT_COMPILED"
+        "result": "OBJECT_COMPILED",
+        "observed_text_bytes": 70
       }
     ],
     "toolchain": {
@@ -81,12 +87,12 @@
     "source_sha256": {
       "native/raf_gate_l0_v1.c": "b12dca84587a5b3c7eb7ae7df03dcda4e8c21defebc1ab01adb30bcd34c76452",
       "tests/raf_gate_l0_v1_host_test.c": "8f9bbe72583b6cfa1746fc69963a65537cd5a64b2705152e1a8bd3368d3a920d",
-      "scripts/verify_freestanding_gate_v1.sh": "fa00808c89adac71222f54b3ef372d3aa69ef8abf03c21714ba593d8fc3042d6"
+      "scripts/verify_freestanding_gate_v1.sh": "32f0d79aaf75a4df6a21c418679abb41bcc103fcfca0d6d7430b2bcd6226a48a"
     },
     "github_blob_sha1_verified_against_local": {
       "native/raf_gate_l0_v1.c": "ebf0716f8e941f59dc41df187a3a92c4b99428f7",
       "tests/raf_gate_l0_v1_host_test.c": "df67f0da342c90d482920f9e78c5aaef9fe8d5e8",
-      "scripts/verify_freestanding_gate_v1.sh": "bdddc0e78a0d47d5b39fc4a8dbecd9e17f795710"
+      "scripts/verify_freestanding_gate_v1.sh": "64c8e3a9d225a01a2e1e0fc043812e54f57234f1"
     },
     "specific_negative_falsifiers": [
       "null_pointer_mask_0x80000000",
@@ -96,7 +102,13 @@
       "not_run_3_blocks",
       "arbitrary_999_blocks",
       "five_unset_fields_yield_mask31"
-    ]
+    ],
+    "missing_host_compiler_negative": {
+      "tested": true,
+      "exit_code": 127,
+      "stderr": "gate=BLOCKED missing_host_tool=clang"
+    },
+    "toolchain_test_note": "Host GCC/Clang synthetic tests, ABI ET_REL object and local disassembly; no CI or ARM runtime. Text size measured with installed binutils only."
   },
   "producers": [
     {
@@ -191,6 +203,7 @@
     "F_gap": "CI, link, physical execution, upstream integration, Zabbix ID, licensure of firebird admin",
     "F_next": "Exact-head CI and downstream independent boundary tests"
   },
-  "supersedes": "1.0.0 (history preserved in prior branch commit)",
-  "input_type_note": "Unsigned 32-bit STATUS codes, not numeric measurement values. UNSET=0 != typed TOKEN_VAZIO=4; zero-valued measurements are separate from this structure."
+  "supersedes": "1.0.1 (history preserved in earlier branch commits)",
+  "input_type_note": "Unsigned 32-bit STATUS codes, not numeric measurement values. UNSET=0 != typed TOKEN_VAZIO=4; zero-valued measurements are separate from this structure.",
+  "falsification_status": "LOCAL_G0_PASS_SCOPED_PROVIDER_NOT_VERIFIED"
 }
