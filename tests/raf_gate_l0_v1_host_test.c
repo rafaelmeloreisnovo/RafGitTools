@@ -17,6 +17,7 @@ int main(void)
     CHECK(raf_gate_blockers_v1(&x) == 0u);
     CHECK(raf_gate_blockers_v1((const raf_gate_input_v1 *)0) == 0x80000000u);
     x.source = 0u; CHECK(raf_gate_blockers_v1(&x) == 1u); x.source = 1u;
+    x.source = 4u; CHECK(raf_gate_blockers_v1(&x) == 1u); x.source = 1u;
     x.artifact = 0u; CHECK(raf_gate_blockers_v1(&x) == 2u); x.artifact = 1u;
     x.execution = 3u; CHECK(raf_gate_blockers_v1(&x) == 4u); x.execution = 1u;
     x.evidence = 2u; CHECK(raf_gate_blockers_v1(&x) == 8u); x.evidence = 1u;
