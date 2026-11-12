@@ -1,6 +1,6 @@
 {
   "schema": "rafaelia.federated-freestanding-review-gate.v1",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "snapshot_date": "2026-11-11",
   "producer": "rafaelmeloreisnovo/RafGitTools",
   "base_commit": "164196721643a1e3ee736a29799884fb205e3f4b",
@@ -14,10 +14,11 @@
     "authority"
   ],
   "input_status": {
-    "unknown": 0,
+    "unset": 0,
     "verified_in_own_scope": 1,
     "fail": 2,
-    "not_run": 3
+    "not_run": 3,
+    "token_vazio": 4
   },
   "blockers_mask": {
     "source": 1,
@@ -78,15 +79,24 @@
       "binutils": "2.44"
     },
     "source_sha256": {
-      "native/raf_gate_l0_v1.c": "3b00aa72c5ec904f0c8609f3eff8f44b063d2c35b49aa179c873d0f8ce53b524",
-      "tests/raf_gate_l0_v1_host_test.c": "fe14c56236a015d1a8acd53eb7ac2501155376d0c1fe142ff5da2ee2dab88378",
+      "native/raf_gate_l0_v1.c": "b12dca84587a5b3c7eb7ae7df03dcda4e8c21defebc1ab01adb30bcd34c76452",
+      "tests/raf_gate_l0_v1_host_test.c": "8f9bbe72583b6cfa1746fc69963a65537cd5a64b2705152e1a8bd3368d3a920d",
       "scripts/verify_freestanding_gate_v1.sh": "fa00808c89adac71222f54b3ef372d3aa69ef8abf03c21714ba593d8fc3042d6"
     },
     "github_blob_sha1_verified_against_local": {
-      "native/raf_gate_l0_v1.c": "32ba72cf91f2c0f492263b8e3def440e7153d155",
-      "tests/raf_gate_l0_v1_host_test.c": "de87b4542985f99a7932981ee5f1f33285f9f7e7",
+      "native/raf_gate_l0_v1.c": "ebf0716f8e941f59dc41df187a3a92c4b99428f7",
+      "tests/raf_gate_l0_v1_host_test.c": "df67f0da342c90d482920f9e78c5aaef9fe8d5e8",
       "scripts/verify_freestanding_gate_v1.sh": "bdddc0e78a0d47d5b39fc4a8dbecd9e17f795710"
-    }
+    },
+    "specific_negative_falsifiers": [
+      "null_pointer_mask_0x80000000",
+      "unset_zero_blocks",
+      "typed_token_vazio_4_blocks",
+      "failed_2_blocks",
+      "not_run_3_blocks",
+      "arbitrary_999_blocks",
+      "five_unset_fields_yield_mask31"
+    ]
   },
   "producers": [
     {
@@ -180,5 +190,7 @@
     "F_ok": "Local C11 tests and three architecture ET_REL objects, Git blob readback",
     "F_gap": "CI, link, physical execution, upstream integration, Zabbix ID, licensure of firebird admin",
     "F_next": "Exact-head CI and downstream independent boundary tests"
-  }
+  },
+  "supersedes": "1.0.0 (history preserved in prior branch commit)",
+  "input_type_note": "Unsigned 32-bit STATUS codes, not numeric measurement values. UNSET=0 != typed TOKEN_VAZIO=4; zero-valued measurements are separate from this structure."
 }
