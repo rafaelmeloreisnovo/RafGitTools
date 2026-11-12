@@ -20,7 +20,16 @@ typedef struct {
 
 typedef char raf_gate_input_size_v1[(sizeof(raf_gate_input_v1) == 20u) ? 1 : -1];
 
-/* 0=UNKNOWN, 1=VERIFIED_IN_OWN_SCOPE, 2=FAIL, 3=NOT_RUN.
+enum {
+    RAF_GATE_V1_UNSET = 0u,
+    RAF_GATE_V1_VERIFIED_SCOPED = 1u,
+    RAF_GATE_V1_FAILED = 2u,
+    RAF_GATE_V1_NOT_RUN = 3u,
+    RAF_GATE_V1_TOKEN_VAZIO = 4u
+};
+
+/* 0=UNSET, 1=VERIFIED_IN_OWN_SCOPE, 2=FAIL, 3=NOT_RUN, 4=TOKEN_VAZIO.
+ * Status code 0 is NOT a zero-valued observation; data uses a separate type.
  * Only the value 1 clears its own blocker. This function does NOT
  * authenticate its inputs, inspect hardware or authorize claims.
  * Output 0 means candidate for independent review, not global PASS.
@@ -30,9 +39,9 @@ raf_gate_word raf_gate_blockers_v1(const raf_gate_input_v1 *input)
     if (input == (const raf_gate_input_v1 *)0) {
         return 0x80000000u;
     }
-    return ((raf_gate_word)(input->source != 1u) << 0u) |
-           ((raf_gate_word)(input->artifact != 1u) << 1u) |
-           ((raf_gate_word)(input->execution != 1u) << 2u) |
-           ((raf_gate_word)(input->evidence != 1u) << 3u) |
-           ((raf_gate_word)(input->authority != 1u) << 4u);
+    return ((raf_gate_word)(input->source != RAF_GATE_V1_VERIFIED_SCOPED) << 0u) |
+           ((raf_gate_word)(input->artifact != RAF_GATE_V1_VERIFIED_SCOPED) << 1u) |
+           ((raf_gate_word)(input->execution != RAF_GATE_V1_VERIFIED_SCOPED) << 2u) |
+           ((raf_gate_word)(input->evidence != RAF_GATE_V1_VERIFIED_SCOPED) << 3u) |
+           ((raf_gate_word)(input->authority != RAF_GATE_V1_VERIFIED_SCOPED) << 4u);
 }
