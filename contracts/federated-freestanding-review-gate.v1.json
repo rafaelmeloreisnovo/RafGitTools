@@ -1,0 +1,184 @@
+{
+  "schema": "rafaelia.federated-freestanding-review-gate.v1",
+  "version": "1.0.0",
+  "snapshot_date": "2026-11-11",
+  "producer": "rafaelmeloreisnovo/RafGitTools",
+  "base_commit": "164196721643a1e3ee736a29799884fb205e3f4b",
+  "implementation_path": "native/raf_gate_l0_v1.c",
+  "verification_script": "scripts/verify_freestanding_gate_v1.sh",
+  "inputs": [
+    "source",
+    "artifact",
+    "execution",
+    "evidence",
+    "authority"
+  ],
+  "input_status": {
+    "unknown": 0,
+    "verified_in_own_scope": 1,
+    "fail": 2,
+    "not_run": 3
+  },
+  "blockers_mask": {
+    "source": 1,
+    "artifact": 2,
+    "execution": 4,
+    "evidence": 8,
+    "authority": 16,
+    "null_pointer": 2147483648
+  },
+  "zero_blockers_semantics": "CANDIDATE_FOR_INDEPENDENT_REVIEW_NOT_PASS",
+  "invalid_input_semantics": "ANY_STATUS_OTHER_THAN_1_BLOCKS_ITS_OWN_DIMENSION",
+  "claims": {
+    "claim_allowed": false,
+    "certification": "NOT_CLAIMED",
+    "runtime_authentication": "NOT_IMPLEMENTED",
+    "android_apk": "NOT_BUILT",
+    "physical_device": "NOT_RUN",
+    "github_ci_exact_head": "NOT_RUN"
+  },
+  "scopes": {
+    "kernel": "C11_FREESTANDING_OBJECT_ONLY_NO_HEADERS_NO_LIBC_NO_MALLOC_NO_SYSCALLS_IN_SOURCE",
+    "verifier": "HOSTED_SHELL_COMPILER_BINUTILS_TESTS",
+    "workflow": "EXISTING_YML_UNCHANGED_NO_ACTIONS_CLAIM",
+    "license": "GPL-3.0-or-later_in_RafGitTools_no_relicensing_of_any_other_repo"
+  },
+  "local_falsification": {
+    "host_clang": "PASS_SCOPED",
+    "host_gcc": "PASS_SCOPED",
+    "cross_targets": [
+      {
+        "target": "armv7a-none-eabi",
+        "elf": "ELF32",
+        "type": "ET_REL",
+        "machine": "ARM",
+        "undefined_symbols": 0,
+        "result": "OBJECT_COMPILED"
+      },
+      {
+        "target": "aarch64-none-elf",
+        "elf": "ELF64",
+        "type": "ET_REL",
+        "machine": "AArch64",
+        "undefined_symbols": 0,
+        "result": "OBJECT_COMPILED"
+      },
+      {
+        "target": "x86_64-unknown-none-elf",
+        "elf": "ELF64",
+        "type": "ET_REL",
+        "machine": "X86-64",
+        "undefined_symbols": 0,
+        "result": "OBJECT_COMPILED"
+      }
+    ],
+    "toolchain": {
+      "clang": "17.0.0",
+      "gcc": "14.2.0",
+      "binutils": "2.44"
+    },
+    "source_sha256": {
+      "native/raf_gate_l0_v1.c": "3b00aa72c5ec904f0c8609f3eff8f44b063d2c35b49aa179c873d0f8ce53b524",
+      "tests/raf_gate_l0_v1_host_test.c": "fe14c56236a015d1a8acd53eb7ac2501155376d0c1fe142ff5da2ee2dab88378",
+      "scripts/verify_freestanding_gate_v1.sh": "fa00808c89adac71222f54b3ef372d3aa69ef8abf03c21714ba593d8fc3042d6"
+    },
+    "github_blob_sha1_verified_against_local": {
+      "native/raf_gate_l0_v1.c": "32ba72cf91f2c0f492263b8e3def440e7153d155",
+      "tests/raf_gate_l0_v1_host_test.c": "de87b4542985f99a7932981ee5f1f33285f9f7e7",
+      "scripts/verify_freestanding_gate_v1.sh": "bdddc0e78a0d47d5b39fc4a8dbecd9e17f795710"
+    }
+  },
+  "producers": [
+    {
+      "repo": "rafaelmeloreisnovo/RafGitTools",
+      "ref": "main",
+      "observed_commit": "164196721643a1e3ee736a29799884fb205e3f4b",
+      "role": "control_plane",
+      "license_scope": "GPL-3.0-or-later",
+      "runtime_gate": "NOT_RUN"
+    },
+    {
+      "repo": "rafaelmeloreisnovo/Vectras-VM-Android",
+      "ref": "master",
+      "observed_commit": "bb2807a252bcfbd09c9eb8c95b79a013e17c0249",
+      "role": "VM_consumer",
+      "license_scope": "GPL-2.0/upstream_attribution_preserved",
+      "runtime_gate": "NOT_RUN"
+    },
+    {
+      "repo": "rafaelmeloreisnovo/termux-app-rafacodephi",
+      "ref": "master",
+      "observed_commit": "126b8d8e9e5abfa0896fc1152ac4507ed5f98ab5",
+      "role": "Android_provider_bootstrap_APT",
+      "license_scope": "GPL-3.0_or_later_according_to_COPYING",
+      "runtime_gate": "NOT_VERIFIED"
+    },
+    {
+      "repo": "rafaelmeloreisnovo/Rafcode-FireBird",
+      "ref": "main",
+      "observed_commit": "054732918a5c58916ca20906aba96c7ede6beb6b",
+      "role": "original_guard_with_separate_engine",
+      "license_scope": "MIT_code_CC_BY_4.0_docs;Firebird_engine_IPL_IDPL_separate",
+      "runtime_gate": "NOT_RUN"
+    },
+    {
+      "repo": "rafaelmeloreisnovo/firebird_APK_sever_admin",
+      "ref": "main",
+      "observed_commit": "ab4371ee03c5a4d321c69279323c4d71fd235fd4",
+      "role": "standalone_L0_L1_prototype",
+      "license_scope": "UNKNOWN_FORMAL_LICENSE_README_COMMERCIAL_RESTRICTION",
+      "runtime_gate": "NOT_VERIFIED"
+    },
+    {
+      "repo": "TOKEN_VAZIO_ZABBIX_PRODUCER",
+      "ref": "TOKEN_VAZIO",
+      "observed_commit": "TOKEN_VAZIO",
+      "role": "monitoring_candidate",
+      "license_scope": "TOKEN_VAZIO",
+      "runtime_gate": "BLOCKED_REPO_ID_NOT_FOUND"
+    }
+  ],
+  "risks": [
+    {
+      "id": "P0-TERMUX-APT",
+      "urgency": "P0",
+      "status": "RUNTIME_E2E_TOKEN_VAZIO",
+      "falsifier": "exact APK/device install with pkg/apt plus signed bootstrap hash and command exit"
+    },
+    {
+      "id": "P0-MERGE-PROVIDER",
+      "urgency": "P0",
+      "status": "ENFORCEMENT_NOT_VERIFIED",
+      "falsifier": "negative test denies unreviewed/unverified merge on protected refs"
+    },
+    {
+      "id": "P1-VECTRA-TERMUX",
+      "urgency": "P1",
+      "status": "PRODUCER_CONSUMER_RUNTIME_NOT_VERIFIED",
+      "falsifier": "matching request digest -> Termux result -> observed QEMU process/exit"
+    },
+    {
+      "id": "P1-FIREBIRD",
+      "urgency": "P1",
+      "status": "ENGINE_E2E_NOT_RUN",
+      "falsifier": "licensed adapter in disposable DB with read-only/no-DML and failure injection"
+    },
+    {
+      "id": "P1-ZABBIX",
+      "urgency": "P1",
+      "status": "TOKEN_VAZIO_REPO_ID",
+      "falsifier": "resolve exact owner/repository and license; read-only observation before mutation"
+    }
+  ],
+  "privacy": {
+    "scope": "PUBLIC_REFERENCE_ONLY_NO_RAW_LOGS_NO_SECRETS_NO_PRIVATE_IDS",
+    "supabase": "METADATA_ONLY_IF_SCHEMA_AUTHORIZED"
+  },
+  "stop_condition": "No producer source edits or merger until exact authority, toolchain, ABI, CI, runtime and privacy gates are verified in their own repos",
+  "rollback": "Leave review branch unmerged; append successor for correction; no deletes, force pushes or provider changes",
+  "R3": {
+    "F_ok": "Local C11 tests and three architecture ET_REL objects, Git blob readback",
+    "F_gap": "CI, link, physical execution, upstream integration, Zabbix ID, licensure of firebird admin",
+    "F_next": "Exact-head CI and downstream independent boundary tests"
+  }
+}
