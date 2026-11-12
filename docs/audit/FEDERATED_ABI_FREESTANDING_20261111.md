@@ -13,12 +13,12 @@
 - Dois testes host, GCC 14.2.0 e Clang 17.0.0: sucesso para estados sintéticos positivos e negativos; zero não se converte em PASS.
 - Objetos ARMv7 ELF32, AArch64 ELF64 e x86_64 ELF64 gerados como ET_REL com zero símbolos indefinidos por nm -u; nenhuma linkagem/execução ARM foi feita.
 - Os Git blob SHA-1 do código, teste e script, relidos da branch, coincidem com os hashes computados localmente sobre os mesmos bytes testados.
-- SHA-256 local do C: 3b00aa72c5ec904f0c8609f3eff8f44b063d2c35b49aa179c873d0f8ce53b524.
-- Hash de blob Git do C: 32ba72cf91f2c0f492263b8e3def440e7153d155.
+- SHA-256 local do C (sucessor 1.0.1): b12dca84587a5b3c7eb7ae7df03dcda4e8c21defebc1ab01adb30bcd34c76452.
+- Hash de blob Git do C (sucessor 1.0.1): ebf0716f8e941f59dc41df187a3a92c4b99428f7.
 - CI exact-head: NOT_RUN; binário linkado: NOT_RUN; Android/VM/SQL em dispositivo: NOT_RUN. A ausência de símbolos externos em ET_REL não prova ausência de toda instrução privilegiada ou independência do sistema em tempo de execução.
 
 ## Semântica de bloqueio (contrato de cinco palavras unsigned int de 32 bits)
-Cada campo (source, artifact, execution, evidence, authority) aceita: 0=UNKNOWN, 1=VERIFIED_IN_OWN_SCOPE, 2=FAIL, 3=NOT_RUN. Qualquer valor diferente de 1 bloqueia sua dimensão; valor arbitrário 999 também bloqueia. Bits: 1,2,4,8,16. Ponteiro nulo retorna 0x80000000. Valor retornado 0 apenas habilita **revisão independente**, não prova que o campo foi atestado nem que o produto funciona. Os testes usam entradas simuladas, não observações reais autenticadas.
+Cada campo (source, artifact, execution, evidence, authority) aceita: 0=UNSET, 1=VERIFIED_IN_OWN_SCOPE, 2=FAIL, 3=NOT_RUN, 4=TOKEN_VAZIO. UNSET=0 é código de status, não o dado numérico zero; o dado pertence a tipo/campo separado. Qualquer valor diferente de 1 bloqueia sua dimensão; valor arbitrário 999 também bloqueia. Bits: 1,2,4,8,16. Ponteiro nulo retorna 0x80000000. Valor retornado 0 apenas habilita **revisão independente**, não prova que o campo foi atestado nem que o produto funciona. Os testes usam entradas simuladas, não observações reais autenticadas.
 
 ## Roteamento dos produtores observados
 | Urgência | Produtor | Fronteira | Lacuna principal |
@@ -52,7 +52,10 @@ Cada campo (source, artifact, execution, evidence, authority) aceita: 0=UNKNOWN,
 - Analyze: zero, ausente, falha e NOT_RUN precisam permanecer distinguíveis; evidência autenticada é fronteira externa.
 - Improve: um módulo C L0 sem dependências de runtime e um verificador hospedado de uso manual.
 - Control: entradas nulas, incompletas, falhas, não executadas e inválidas; compilação Clang/GCC e ELF ARM32/ARM64; CI/provider/device permanecem bloqueados.
-- **Falsificador externo:** adulterar qualquer fronteira para 0/2/3/999; a implementação deve retornar máscara não zero, e nunca publicar CLAIM_ALLOWED.
+- **Falsificador externo:** adulterar qualquer fronteira para 0/2/3/4/999; a implementação deve retornar máscara não zero, e nunca publicar CLAIM_ALLOWED.
 - **Rollback:** não mesclar a branch; correção por commit sucessor, nunca force-push, apagar histórico ou alterar rulesets.
 
 R3=<F_ok:compilação e testes locais com blob readback, F_gap:links/CI/execução real/licenças pendentes, F_next:exact-head CI e confirmação independente de produtor+consumidor>.
+
+## Correção sucessora append-only — contrato 1.0.1
+O predecessor 1.0.0 utilizou 0=UNKNOWN no texto do contrato. Isto confundia o estado desconhecido com um valor numérico zero, incompatível com o princípio TOKEN_VAZIO != 0. A correção separa UNSET=0 (código de campo de status) de TOKEN_VAZIO=4 (ausência tipada), ambos bloqueantes, sem converter um dado zero em ausência. Os commits predecessores seguem no histórico. C e teste atualizados e reexecutados no host com os três objetos ABI compilados, com blob SHA confirmado. Nenhum CI/provider/device novo foi testado.
