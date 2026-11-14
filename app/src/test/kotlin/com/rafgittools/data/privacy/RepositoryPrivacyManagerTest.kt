@@ -34,8 +34,13 @@ class RepositoryPrivacyManagerTest {
         val second = listOf(repo(100, "r100"), repo(101, "r101"))
         coEvery { api.listRepositories("all", "owner,organization_member", "full_name", "asc", 1, 100) } returns first
         coEvery { api.listRepositories("all", "owner,organization_member", "full_name", "asc", 2, 100) } returns second
-        val result = manager.loadInventory().getOrThrow()
+        val progress = mutableListOf<Pair<Int, Int>>()
+        val result = manager.loadInventory { rows, pages ->
+            progress += rows to pages
+        }.getOrThrow()
         assertEquals(101, result.size)
+        // Raw rows seen can exceed distinct repository count; this is not an audit PASS.
+        assertEquals(listOf(100 to 1, 102 to 2), progress)
     }
 
     @Test
