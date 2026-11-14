@@ -81,7 +81,21 @@ fun RepositoryPrivacyScreen(
         Box(Modifier.fillMaxSize().padding(padding)) {
             when {
                 state.requiresAuthentication -> AuthenticationRequired(onNavigateToAuth, Modifier.align(Alignment.Center))
-                state.loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                state.loading -> Column(
+                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    CircularProgressIndicator()
+                    Text("Consultando inventário GitHub…", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "${state.inventoryPagesRead} página(s) lida(s) · " +
+                            "${state.inventoryRowsSeen} registro(s) observados",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text("Consulta parcial; nenhuma seleção é autorizada até terminar.",
+                        style = MaterialTheme.typography.bodySmall)
+                }
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
@@ -389,7 +403,8 @@ private fun AccountWizardStep(
                 }
             }
             Text(
-                "${state.candidates.count { state.ownerIncluded(it.ownerLogin) }} repositórios encontrados. " +
+                "${state.candidates.count { state.ownerIncluded(it.ownerLogin) }} repositórios retornados. " +
+                    "${state.inventoryPagesRead} página(s) consultada(s). " +
                     "Nenhum repositório será alterado sem sua confirmação.",
                 style = MaterialTheme.typography.bodySmall
             )
