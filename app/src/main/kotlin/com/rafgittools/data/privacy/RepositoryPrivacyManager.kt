@@ -21,7 +21,10 @@ class RepositoryPrivacyManager @Inject constructor(
     private val api: RepositoryPrivacyApi,
     private val receiptStore: PrivacyReceiptStore
 ) {
-    suspend fun loadInventory(): Result<List<RepositoryPrivacyCandidate>> = runCatching {
+    /** Reports observed page progress; never publishes a partial list as a complete inventory. */
+    suspend fun loadInventory(
+        onProgress: (rowsRead: Int, pagesRead: Int) -> Unit = { _, _ -> }
+    ): Result<List<RepositoryPrivacyCandidate>> = runCatching {
         val all = mutableListOf<PrivacyRepositoryDto>()
         var page = 1
         while (true) {
@@ -37,6 +40,7 @@ class RepositoryPrivacyManager @Inject constructor(
                 perPage = PAGE_SIZE
             )
             all += batch
+            onProgress(all.size, page)
             if (batch.size < PAGE_SIZE) break
             page++
         }
