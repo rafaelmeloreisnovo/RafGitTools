@@ -25,6 +25,8 @@ class RepositoryPrivacyViewModel @Inject constructor(
     init { refresh() }
 
     fun refresh() {
+        // An in-flight GitHub mutation must never race with a new inventory snapshot.
+        if (_uiState.value.executing) return
         viewModelScope.launch {
             if (!authRepository.isAuthenticated() || authRepository.isOfflineMode()) {
                 _uiState.value = RepositoryPrivacyUiState(
@@ -47,7 +49,11 @@ class RepositoryPrivacyViewModel @Inject constructor(
                 .onFailure { error ->
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        error = error.message ?: "Unable to load GitHub repository inventory"
+                        candidates = emptyList(),
+                        selectedOwners = null,
+                        selectedIds = emptySet(),
+                        manualSelection = false,
+                        error = "Não foi possível atualizar o inventário GitHub. Nenhuma alteração permitida sem nova leitura confiável."
                     )
                 }
         }
@@ -120,6 +126,10 @@ class RepositoryPrivacyViewModel @Inject constructor(
     fun toggleOwner(owner: String) {
         val state = _uiState.value
         if (state.executing) return
+        if (state.targetVisibility == PrivacyVisibilityTarget.PUBLIC) {
+            _uiState.value = state.copy(error = "Publicação exige escolha individual por repositório.")
+            return
+        }
         val ids = state.candidates.filter {
             it.ownerLogin == owner && state.isSelectable(it)
         }.map { it.id }.toSet()
@@ -132,6 +142,10 @@ class RepositoryPrivacyViewModel @Inject constructor(
     fun selectAllEligible() {
         val state = _uiState.value
         if (state.executing) return
+        if (state.targetVisibility == PrivacyVisibilityTarget.PUBLIC) {
+            _uiState.value = state.copy(error = "Publicação em massa está bloqueada: selecione cada repositório individualmente.")
+            return
+        }
         _uiState.value = state.copy(
             selectedIds = state.candidates.filter {
                 state.isSelectable(it)
@@ -171,16 +185,28 @@ class RepositoryPrivacyViewModel @Inject constructor(
             _uiState.value = state.copy(error = "Confirmation phrase does not match: $expected")
             return
         }
+        // Set the guard synchronously: repeated taps cannot enqueue duplicate PATCH batches.
+        _uiState.value = state.copy(executing = true, error = null)
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(executing = true, error = null)
-            val result = manager.changeVisibility(selected, state.targetVisibility)
-            _uiState.value = _uiState.value.copy(
-                executing = false,
-                selectedIds = emptySet(),
-                manualSelection = false,
-                lastResult = result
-            )
-            reloadAfterMutation(result)
+            try {
+                val result = manager.changeVisibility(selected, state.targetVisibility)
+                _uiState.value = _uiState.value.copy(
+                    executing = false,
+                    selectedIds = emptySet(),
+                    manualSelection = false,
+                    lastResult = result
+                )
+                reloadAfterMutation(result)
+            } catch (_: Exception) {
+                // Do not expose exception strings: network errors may contain sensitive metadata.
+                _uiState.value = _uiState.value.copy(
+                    executing = false,
+                    candidates = emptyList(),
+                    selectedIds = emptySet(),
+                    manualSelection = true,
+                    error = "Operação interrompida; reconcilie o último recibo antes de tentar novamente."
+                )
+            }
         }
     }
 
@@ -190,14 +216,19 @@ class RepositoryPrivacyViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     candidates = repositories,
                     loading = false,
+                    selectedIds = emptySet(),
+                    manualSelection = false,
                     lastResult = result
                 )
             }
             .onFailure { error ->
                 _uiState.value = _uiState.value.copy(
                     loading = false,
+                    candidates = emptyList(),
+                    selectedIds = emptySet(),
+                    manualSelection = true,
                     lastResult = result,
-                    error = "Mutation finished, inventory refresh failed: ${error.message}"
+                    error = "A alteração pode ter sido aplicada, mas a reconciliação do inventário falhou. Confira o recibo; novas alterações estão bloqueadas."
                 )
             }
     }
@@ -229,9 +260,10 @@ data class RepositoryPrivacyUiState(
     fun isSelectable(candidate: RepositoryPrivacyCandidate): Boolean =
         ownerIncluded(candidate.ownerLogin) && candidate.eligibleFor(targetVisibility)
 
-    /** Automatic plan is preview-only until the user confirms the final dialog. */
+    /** Privacy-first: private-to-public changes require an individual checkbox for each repository. */
     fun selectedCandidates(): List<RepositoryPrivacyCandidate> =
-        candidates.filter { isSelectable(it) && (!manualSelection || it.id in selectedIds) }
+        if (targetVisibility == PrivacyVisibilityTarget.PUBLIC && !manualSelection) emptyList()
+        else candidates.filter { isSelectable(it) && (!manualSelection || it.id in selectedIds) }
 }
 
 /** Pure selection function: independently testable without Android or GitHub network. */
