@@ -134,6 +134,11 @@ class RepositoryPrivacyManagerTest {
             .eligibleFor(PrivacyVisibilityTarget.PUBLIC))
         assertFalse(repo(7, "contradictory").copy(visibility = "private").toCandidate()
             .eligibleFor(PrivacyVisibilityTarget.PUBLIC))
+        val absentVisibility = repo(8, "absent").copy(visibility = null).toCandidate()
+        assertEquals("TOKEN_VAZIO", absentVisibility.currentVisibility)
+        assertFalse(absentVisibility.eligibleFor(PrivacyVisibilityTarget.PRIVATE))
+        assertFalse(absentVisibility.eligibleFor(PrivacyVisibilityTarget.PUBLIC))
+        assertTrue(absentVisibility.blockReasonFor(PrivacyVisibilityTarget.PRIVATE)!!.contains("TOKEN_VAZIO"))
     }
 
     @Test
