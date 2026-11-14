@@ -333,8 +333,14 @@ enum class PrivacyVisibilityTarget(val apiValue: String, val confirmationVerb: S
 }
 
 internal fun PrivacyRepositoryDto.toCandidate(): RepositoryPrivacyCandidate {
+    // A missing GitHub visibility field is unknown, never inferred from a boolean.
+    val normalizedVisibility = visibility ?: "TOKEN_VAZIO"
     val reason = when {
-        isPrivate || visibility == "private" -> "Already private"
+        normalizedVisibility !in setOf("public", "private") ->
+            "TOKEN_VAZIO: Unsupported or missing GitHub visibility"
+        isPrivate != (normalizedVisibility == "private") ->
+            "TOKEN_VAZIO: Inconsistent GitHub visibility fields"
+        isPrivate -> "Already private"
         isFork -> "Fork visibility is controlled by its repository network"
         archived -> "Archived repository: mutation blocked fail-closed"
         disabled -> "Disabled repository: mutation blocked fail-closed"
@@ -347,7 +353,7 @@ internal fun PrivacyRepositoryDto.toCandidate(): RepositoryPrivacyCandidate {
         ownerType = owner.type,
         name = name,
         fullName = fullName,
-        currentVisibility = visibility ?: if (isPrivate) "private" else "public",
+        currentVisibility = normalizedVisibility,
         isPrivate = isPrivate,
         isFork = isFork,
         archived = archived,
