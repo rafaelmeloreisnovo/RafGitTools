@@ -1,4 +1,4 @@
-"""Single system folder picker -> automatic same-tree Drive scanner contract.
+"""Legacy SAF scanner retained; active Home and Wizard use Google Drive REST.
 
 Source-only regression, NOT proof that Motorola DocumentsUI exposes Drive folders.
 """
@@ -47,9 +47,13 @@ class DirectDrivePickerTests(unittest.TestCase):
                         text.index("DriveAtlasSafPublisherV3.publish("))
         self.assertNotIn("ActivityResultContracts.CreateDocument", text)
 
-    def test_visible_home_and_wizard_only_use_direct_entry(self):
+    def test_visible_home_and_wizard_use_cloud_rest_entry(self):
         for path in (HOME, WIZARD):
-            self.assertIn("DriveFirstRunIndexCard()", path.read_text(encoding="utf-8"))
+            self.assertIn("GoogleDriveCloudCard()", path.read_text(encoding="utf-8"))
+        cloud = (ROOT / "app/src/main/kotlin/com/rafgittools/ui/screens/setupwizard/GoogleDriveCloudCard.kt").read_text(encoding="utf-8")
+        self.assertIn("Identity.getAuthorizationClient", cloud)
+        self.assertIn("publicationAuthorized && current.id != \"root\"", cloud)
+        self.assertNotIn("ActivityResultContracts.OpenDocumentTree()", cloud)
         self.assertNotIn("showLocalFallback", HOME.read_text(encoding="utf-8"))
 
     def test_google_drive_provider_identity_keeps_fail_closed_fallback(self):
