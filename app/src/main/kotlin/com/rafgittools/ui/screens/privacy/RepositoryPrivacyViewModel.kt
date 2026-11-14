@@ -35,13 +35,26 @@ class RepositoryPrivacyViewModel @Inject constructor(
                 )
                 return@launch
             }
-            _uiState.value = _uiState.value.copy(loading = true, error = null)
-            manager.loadInventory()
+            _uiState.value = _uiState.value.copy(
+                loading = true,
+                candidates = emptyList(),
+                inventoryPagesRead = 0,
+                inventoryRowsSeen = 0,
+                inventoryComplete = false,
+                error = null
+            )
+            manager.loadInventory(onProgress = { rows, pages ->
+                _uiState.value = _uiState.value.copy(
+                    inventoryRowsSeen = rows,
+                    inventoryPagesRead = pages
+                )
+            })
                 .onSuccess { repositories ->
                     _uiState.value = _uiState.value.copy(
                         loading = false,
                         requiresAuthentication = false,
                         candidates = repositories,
+                        inventoryComplete = true,
                         selectedIds = emptySet(),
                         manualSelection = false
                     )
@@ -51,6 +64,7 @@ class RepositoryPrivacyViewModel @Inject constructor(
                         loading = false,
                         candidates = emptyList(),
                         selectedOwners = null,
+                        inventoryComplete = false,
                         selectedIds = emptySet(),
                         manualSelection = false,
                         error = "Não foi possível atualizar o inventário GitHub. Nenhuma alteração permitida sem nova leitura confiável."
@@ -192,6 +206,11 @@ class RepositoryPrivacyViewModel @Inject constructor(
                 val result = manager.changeVisibility(selected, state.targetVisibility)
                 _uiState.value = _uiState.value.copy(
                     executing = false,
+                    loading = true,
+                    candidates = emptyList(),
+                    inventoryComplete = false,
+                    inventoryPagesRead = 0,
+                    inventoryRowsSeen = 0,
                     selectedIds = emptySet(),
                     manualSelection = false,
                     lastResult = result
@@ -201,7 +220,9 @@ class RepositoryPrivacyViewModel @Inject constructor(
                 // Do not expose exception strings: network errors may contain sensitive metadata.
                 _uiState.value = _uiState.value.copy(
                     executing = false,
+                    loading = false,
                     candidates = emptyList(),
+                    inventoryComplete = false,
                     selectedIds = emptySet(),
                     manualSelection = true,
                     error = "Operação interrompida; reconcilie o último recibo antes de tentar novamente."
@@ -211,11 +232,17 @@ class RepositoryPrivacyViewModel @Inject constructor(
     }
 
     private suspend fun reloadAfterMutation(result: RepositoryPrivacyBulkResult) {
-        manager.loadInventory()
+        manager.loadInventory(onProgress = { rows, pages ->
+            _uiState.value = _uiState.value.copy(
+                inventoryRowsSeen = rows,
+                inventoryPagesRead = pages
+            )
+        })
             .onSuccess { repositories ->
                 _uiState.value = _uiState.value.copy(
                     candidates = repositories,
                     loading = false,
+                    inventoryComplete = true,
                     selectedIds = emptySet(),
                     manualSelection = false,
                     lastResult = result
@@ -225,6 +252,7 @@ class RepositoryPrivacyViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     loading = false,
                     candidates = emptyList(),
+                    inventoryComplete = false,
                     selectedIds = emptySet(),
                     manualSelection = true,
                     lastResult = result,
@@ -244,6 +272,9 @@ data class RepositoryPrivacyUiState(
     val executing: Boolean = false,
     val requiresAuthentication: Boolean = false,
     val candidates: List<RepositoryPrivacyCandidate> = emptyList(),
+    val inventoryRowsSeen: Int = 0,
+    val inventoryPagesRead: Int = 0,
+    val inventoryComplete: Boolean = false,
     val selectedOwners: Set<String>? = null,
     val targetVisibility: PrivacyVisibilityTarget = PrivacyVisibilityTarget.PRIVATE,
     val selectedIds: Set<Long> = emptySet(),
