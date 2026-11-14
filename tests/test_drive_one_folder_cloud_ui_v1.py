@@ -1,4 +1,4 @@
-"""Single-folder Google Drive index flow, one Android folder picker.
+"""Legacy SAF scanner stays testable; active navigation must use cloud Drive REST.
 
 No second picker/login/write button; no mobile-local destination.
 """
@@ -22,12 +22,14 @@ class DriveOneFolderCloudUiTests(unittest.TestCase):
         self.assertNotIn("privateDestinationConfirmed", text)
         self.assertNotIn("GoogleDriveCloudCard()", text)
 
-    def test_active_navigation_is_direct_picker_not_local_fallback(self):
+    def test_active_navigation_is_remote_cloud_not_local_picker(self):
         home = HOME.read_text(encoding="utf-8")
         setup = SETUP.read_text(encoding="utf-8")
         self.assertIn("HomeViewModel.HomeTab.DRIVE, HomeViewModel.HomeTab.LOCAL ->", home)
-        self.assertIn("DriveFirstRunIndexCard()", home)
-        self.assertIn("DriveFirstRunIndexCard()", setup)
+        self.assertIn("GoogleDriveCloudCard()", home)
+        self.assertIn("GoogleDriveCloudCard()", setup)
+        self.assertNotIn("DriveFirstRunIndexCard()", home.split("private fun DriveBridgeContent", 1)[0])
+        self.assertNotIn("DriveFirstRunIndexCard()", setup)
         self.assertIn('Text(if (busy) "Indexando no Google Drive…" else "Selecionar pasta do Google Drive")',
                       UI.read_text(encoding="utf-8"))
         self.assertNotIn("showLocalFallback", home[:home.index("private suspend fun stageDriveDocument")])
