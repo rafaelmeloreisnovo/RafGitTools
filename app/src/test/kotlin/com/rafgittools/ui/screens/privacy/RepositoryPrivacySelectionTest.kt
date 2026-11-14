@@ -103,6 +103,40 @@ class RepositoryPrivacySelectionTest {
         assertFalse(reversed.sourceVisibility == reversed.targetVisibility)
     }
 
+    @Test
+    fun `public visibility never automatically stages private repositories`() {
+        val aPrivate = candidate(1, "owner", private = true)
+        val bPrivate = candidate(2, "owner", private = true)
+        val public = candidate(3, "owner", private = false)
+        val initial = RepositoryPrivacyUiState(
+            candidates = listOf(aPrivate, bPrivate, public),
+            targetVisibility = PrivacyVisibilityTarget.PUBLIC
+        )
+        assertTrue(initial.selectedCandidates().isEmpty())
+        // An explicit per-repository choice is required. Unknown IDs and already public
+        // repositories remain excluded even when their IDs are supplied.
+        val oneChecked = initial.copy(manualSelection = true, selectedIds = setOf(1L, 3L, 999L))
+        assertEquals(listOf(1L), oneChecked.selectedCandidates().map { it.id })
+        assertTrue(oneChecked.copy(manualSelection = true, selectedIds = emptySet()).selectedCandidates().isEmpty())
+        assertTrue(oneChecked.copy(manualSelection = false).selectedCandidates().isEmpty())
+    }
+
+    @Test
+    fun `unsupported or inconsistent visibility blocks public changes`() {
+        val privateRepo = candidate(4, "owner", private = true)
+        val unknown = privateRepo.copy(currentVisibility = "internal")
+        val inconsistent = privateRepo.copy(currentVisibility = "public")
+        val state = RepositoryPrivacyUiState(
+            candidates = listOf(unknown, inconsistent),
+            targetVisibility = PrivacyVisibilityTarget.PUBLIC,
+            manualSelection = true,
+            selectedIds = setOf(4L)
+        )
+        assertTrue(state.selectedCandidates().isEmpty())
+        assertFalse(unknown.eligibleFor(PrivacyVisibilityTarget.PUBLIC))
+        assertFalse(inconsistent.eligibleFor(PrivacyVisibilityTarget.PUBLIC))
+    }
+
     private fun candidate(id: Long, owner: String, private: Boolean) = PrivacyRepositoryDto(
         id = id,
         name = "repo-$id",
