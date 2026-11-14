@@ -32,6 +32,12 @@ import com.rafgittools.data.privacy.RepositoryPrivacyCandidate
  * Inventory discovery, eligibility and safe selection are automatic.
  * Only the final, explicitly confirmed step may trigger GitHub PATCH.
  */
+private data class PrivacyReviewSnapshot(
+    val candidates: List<RepositoryPrivacyCandidate>,
+    val ids: Set<Long>,
+    val target: PrivacyVisibilityTarget
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RepositoryPrivacyScreen(
@@ -41,10 +47,15 @@ fun RepositoryPrivacyScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var step by remember { mutableIntStateOf(0) }
-    var confirmationOpen by remember { mutableStateOf(false) }
+    var confirmationSnapshot by remember { mutableStateOf<PrivacyReviewSnapshot?>(null) }
     var showExceptions by remember { mutableStateOf(false) }
+    var repositoryQuery by remember { mutableStateOf("") }
     val selected = state.selectedCandidates()
     val selectedIds = selected.mapTo(linkedSetOf()) { it.id }
+    val scopedCandidates = state.candidates.filter { state.ownerIncluded(it.ownerLogin) }
+    val listedCandidates = scopedCandidates.filter {
+        it.fullName.contains(repositoryQuery.trim(), ignoreCase = true)
+    }
 
     Scaffold(
         topBar = {
@@ -59,7 +70,7 @@ fun RepositoryPrivacyScreen(
                     ContextualCreditsInfo(RafScreenCredits.privacy)
                     IconButton(
                         onClick = viewModel::refresh,
-                        enabled = !state.loading && !state.executing && !confirmationOpen
+                        enabled = !state.loading && !state.executing && confirmationSnapshot == null
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Atualizar inventário")
                     }
@@ -106,12 +117,17 @@ fun RepositoryPrivacyScreen(
                                         val ownersLabel = state.selectedOwners?.joinToString() ?: "Todas as contas autorizadas"
                                         Text("Conta: $ownersLabel")
                                         Text("Origem: ${state.sourceVisibility.apiValue} → destino: ${state.targetVisibility.apiValue}")
-                                        Text("${selected.size} repositório(s) elegível(is) preparado(s) automaticamente.")
-                                        val blocked = state.candidates.count {
-                                            state.ownerIncluded(it.ownerLogin) && !it.eligibleFor(state.targetVisibility)
+                                        val eligibleCount = scopedCandidates.count {
+                                            it.eligibleFor(state.targetVisibility)
                                         }
-                                        Text("$blocked fora da operação (já no destino, sem permissão ou protegidos).",
-                                            style = MaterialTheme.typography.bodySmall)
+                                        val blocked = scopedCandidates.size - eligibleCount
+                                        Text("${scopedCandidates.size} inventariados · $eligibleCount elegíveis · $blocked bloqueados.")
+                                        Text(
+                                            if (state.targetVisibility == PrivacyVisibilityTarget.PUBLIC)
+                                                "${selected.size} selecionados INDIVIDUALMENTE para revisão; publicação automática desativada."
+                                            else "${selected.size} selecionados para revisão; confirmação ainda obrigatória.",
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
                                         if (state.targetVisibility == PrivacyVisibilityTarget.PUBLIC) {
                                             Text(
                                                 "ATENÇÃO: publicar expõe arquivos, histórico e código. Confira privacidade, direitos e segredos antes de confirmar.",
@@ -119,13 +135,17 @@ fun RepositoryPrivacyScreen(
                                             )
                                         }
                                         Text(
-                                            "Sem alterações ainda. O app verifica permissão e estado real no GitHub antes de cada mudança, com recibo durável.",
+                                            "Sem alterações ainda. O app verifica permissão e identidade antes de cada PATCH e registra recibos.",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                        Text(
+                                            "Segredos, licenças, histórico, políticas de Actions, proteção de branch e dados pessoais: TOKEN_VAZIO / NÃO_VERIFICADO nesta tela.",
                                             style = MaterialTheme.typography.bodySmall
                                         )
                                     }
                                 }
                             }
-                            if (selected.isNotEmpty()) {
+                            if (selected.isNotEmpty() && state.targetVisibility == PrivacyVisibilityTarget.PRIVATE) {
                                 item {
                                     Text("Prévia (${selected.size})", fontWeight = FontWeight.SemiBold)
                                     selected.take(12).forEach { candidate ->
@@ -136,39 +156,99 @@ fun RepositoryPrivacyScreen(
                                 }
                             }
                             item {
-                                TextButton(
-                                    onClick = { showExceptions = !showExceptions },
-                                    enabled = !state.executing
-                                ) {
-                                    Text(if (showExceptions) "Ocultar ajustes avançados"
-                                        else "Ajustar exceções (opcional)")
-                                }
-                                if (showExceptions) {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        TextButton(onClick = viewModel::useAutomaticSelection, enabled = !state.executing) {
-                                            Text("Automático")
-                                        }
-                                        TextButton(onClick = viewModel::clearSelection, enabled = !state.executing) {
-                                            Text("Nenhum")
-                                        }
-                                        TextButton(onClick = viewModel::selectAllEligible, enabled = !state.executing) {
-                                            Text("Todos")
+                                if (state.targetVisibility == PrivacyVisibilityTarget.PRIVATE) {
+                                    TextButton(
+                                        onClick = { showExceptions = !showExceptions },
+                                        enabled = !state.executing
+                                    ) {
+                                        Text(if (showExceptions) "Concluir ajuste de exceções"
+                                            else "Ajustar exceções (opcional)")
+                                    }
+                                    if (showExceptions) {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            TextButton(onClick = viewModel::useAutomaticSelection, enabled = !state.executing) {
+                                                Text("Automático")
+                                            }
+                                            TextButton(onClick = viewModel::clearSelection, enabled = !state.executing) {
+                                                Text("Nenhum")
+                                            }
+                                            TextButton(onClick = viewModel::selectAllEligible, enabled = !state.executing) {
+                                                Text("Todos elegíveis")
+                                            }
                                         }
                                     }
+                                } else {
+                                    Text(
+                                        "Selecione um por um. Não existe 'publicar todos'. A seleção não comprova que os dados são seguros para divulgação.",
+                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
                                 }
                             }
-                            if (showExceptions) {
-                                items(
-                                    state.candidates.filter { state.isSelectable(it) },
-                                    key = { "exception:${it.id}" }
-                                ) { candidate ->
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Checkbox(
-                                            checked = candidate.id in selectedIds,
-                                            onCheckedChange = { viewModel.toggleRepository(candidate.id) },
-                                            enabled = !state.executing
+                            item {
+                                OutlinedTextField(
+                                    value = repositoryQuery,
+                                    onValueChange = { repositoryQuery = it },
+                                    label = { Text("Buscar por conta ou repositório") },
+                                    singleLine = true,
+                                    enabled = !state.executing,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                val hiddenSelection = selected.count { it !in listedCandidates }
+                                Text(
+                                    "${listedCandidates.size} exibidos de ${scopedCandidates.size} inventariados" +
+                                        if (hiddenSelection > 0) " · $hiddenSelection selecionados fora do filtro" else "",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            items(listedCandidates, key = { "privacy:${it.id}" }) { candidate ->
+                                val selectable = state.isSelectable(candidate)
+                                val blockReason = candidate.blockReasonFor(state.targetVisibility)
+                                Card(Modifier.fillMaxWidth()) {
+                                    Column(
+                                        Modifier.padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Checkbox(
+                                                checked = candidate.id in selectedIds,
+                                                onCheckedChange = { viewModel.toggleRepository(candidate.id) },
+                                                enabled = !state.executing && selectable &&
+                                                    (showExceptions || state.targetVisibility == PrivacyVisibilityTarget.PUBLIC)
+                                            )
+                                            Column(Modifier.weight(1f)) {
+                                                Text(candidate.fullName, fontWeight = FontWeight.SemiBold)
+                                                Text(
+                                                    "Atual: ${candidate.currentVisibility} · " +
+                                                        (if (candidate.organizationOwned) "Organização" else "Conta"),
+                                                    style = MaterialTheme.typography.bodySmall
+                                                )
+                                            }
+                                        }
+                                        if (blockReason != null) {
+                                            Text("Bloqueado: $blockReason",
+                                                color = MaterialTheme.colorScheme.error,
+                                                style = MaterialTheme.typography.bodySmall)
+                                        } else {
+                                            Text(
+                                                if (state.targetVisibility == PrivacyVisibilityTarget.PUBLIC)
+                                                    "PROPOSTA: revisar dados e histórico antes de tornar público."
+                                                else "PROPOSTA: avaliar efeitos sobre acesso, forks e integrações.",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                        if (candidate.hasPublicImpactWarning) {
+                                            Text(
+                                                "Impacto a revisar: Pages=${candidate.hasPages}; " +
+                                                    "stars=${candidate.stars}; watchers=${candidate.watchers}; forks=${candidate.forks}.",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                        Text(
+                                            "Pendências: licença, secrets, histórico, Actions, branch protection, " +
+                                                "dados pessoais = TOKEN_VAZIO (não aferidos).",
+                                            style = MaterialTheme.typography.bodySmall
                                         )
-                                        Text(candidate.fullName, modifier = Modifier.weight(1f))
                                     }
                                 }
                             }
@@ -217,7 +297,11 @@ fun RepositoryPrivacyScreen(
                             }
                             Button(
                                 onClick = {
-                                    if (step < 2) step += 1 else confirmationOpen = true
+                                    if (step < 2) step += 1 else confirmationSnapshot = PrivacyReviewSnapshot(
+                                        candidates = selected.toList(),
+                                        ids = selected.mapTo(linkedSetOf()) { it.id },
+                                        target = state.targetVisibility
+                                    )
                                 },
                                 enabled = !state.executing &&
                                     (step != 2 || selected.isNotEmpty()) &&
@@ -236,24 +320,23 @@ fun RepositoryPrivacyScreen(
         }
     }
 
-    if (confirmationOpen && !state.loading && selected.isNotEmpty()) {
-        // Exact IDs and target are bound to what the user reviewed.
-        val confirmedIds = selected.mapTo(linkedSetOf()) { it.id }
-        val confirmedTarget = state.targetVisibility
-        PrivacyConfirmationDialog(
-            selected = selected,
-            target = confirmedTarget,
-            executing = state.executing,
-            onDismiss = { if (!state.executing) confirmationOpen = false },
-            onConfirm = {
-                confirmationOpen = false
-                viewModel.executeChangeVisibility(
-                    confirmation = RepositoryPrivacyViewModel.confirmationPhrase(confirmedIds.size, confirmedTarget),
-                    expectedRepositoryIds = confirmedIds,
-                    expectedTarget = confirmedTarget
-                )
-            }
-        )
+    confirmationSnapshot?.let { snapshot ->
+        if (!state.loading) {
+            PrivacyConfirmationDialog(
+                selected = snapshot.candidates,
+                target = snapshot.target,
+                executing = state.executing,
+                onDismiss = { if (!state.executing) confirmationSnapshot = null },
+                onConfirm = {
+                    confirmationSnapshot = null
+                    viewModel.executeChangeVisibility(
+                        confirmation = RepositoryPrivacyViewModel.confirmationPhrase(snapshot.ids.size, snapshot.target),
+                        expectedRepositoryIds = snapshot.ids,
+                        expectedTarget = snapshot.target
+                    )
+                }
+            )
+        }
     }
 }
 
@@ -379,8 +462,11 @@ private fun PrivacyConfirmationDialog(
                         MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text("Impactos detectados: Pages=$pages · atividade/forks=$social")
-                selected.take(5).forEach { Text("• ${it.fullName}", style = MaterialTheme.typography.bodySmall) }
-                if (selected.size > 5) Text("… mais ${selected.size - 5}")
+                LazyColumn(Modifier.heightIn(max = 180.dp)) {
+                    items(selected, key = { "confirm:${it.id}" }) {
+                        Text("• ${it.fullName}", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
                 Text("Confirmação manual desta operação. Verificação GitHub por item e recibo antes de cada PATCH.",
                     style = MaterialTheme.typography.bodySmall)
             }
