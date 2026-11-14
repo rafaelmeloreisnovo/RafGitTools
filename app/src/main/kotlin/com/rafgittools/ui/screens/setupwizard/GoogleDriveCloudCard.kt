@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -46,6 +47,7 @@ fun GoogleDriveCloudCard() {
     var accessToken by remember { mutableStateOf<String?>(null) } // volatile, never persisted/logged
     var status by remember { mutableStateOf("GOOGLE_DRIVE_NOT_CONNECTED") }
     var busy by remember { mutableStateOf(false) }
+    var publicationAuthorized by remember { mutableStateOf(false) } // per-folder; not persisted
     var items by remember { mutableStateOf<List<GoogleDriveCloudRepository.Item>>(emptyList()) }
     var nextPage by remember { mutableStateOf<String?>(null) }
     val folders = remember { mutableStateListOf(GoogleDriveCloudRepository.Selection("root", "Meu Drive")) }
@@ -58,6 +60,7 @@ fun GoogleDriveCloudCard() {
         }
         // Never display stale children from a different Drive folder on API failure.
         if (pageToken == null) {
+            publicationAuthorized = false
             items = emptyList()
             nextPage = null
         }
@@ -92,6 +95,7 @@ fun GoogleDriveCloudCard() {
             return
         }
         accessToken = token
+        publicationAuthorized = false
         folders.clear()
         folders.add(GoogleDriveCloudRepository.Selection("root", "Meu Drive"))
         load("root")
@@ -211,15 +215,32 @@ fun GoogleDriveCloudCard() {
                     ) { Text("Carregar próxima página do Google Drive") }
                 }
 
+                Text(
+                    "Navegar não publica. Criar um índice grava uma subpasta remota; " +
+                        "nomes e caminhos podem conter dados pessoais. Confira as permissões da pasta.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Checkbox(
+                        checked = publicationAuthorized,
+                        onCheckedChange = { publicationAuthorized = it },
+                        enabled = !busy && current.id != "root"
+                    )
+                    Text(
+                        "Autorizo criar um índice de metadados nesta pasta remota específica.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
                 Button(
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !busy,
+                    enabled = !busy && publicationAuthorized && current.id != "root",
                     onClick = {
                         val token = accessToken
                         // One folder is selected by navigation; source and destination
                         // are deliberately the SAME Google Drive folder.
                         val selectedFolder = current
-                        if (!token.isNullOrBlank()) {
+                        if (!token.isNullOrBlank() && publicationAuthorized && selectedFolder.id != "root") {
+                            publicationAuthorized = false
                             scope.launch {
                                 busy = true
                                 status = "DRIVE_CLOUD_INDEXING_SELECTED_FOLDER"
@@ -240,7 +261,7 @@ fun GoogleDriveCloudCard() {
                                 busy = false
                             }
                         } else {
-                            status = "BLOCKED_DRIVE_GOOGLE_AUTH_REQUIRED"
+                            status = "BLOCKED_DRIVE_AUTH_OR_EXPLICIT_WRITE_CONSENT_REQUIRED"
                         }
                     }
                 ) { Text("Indexar esta pasta no Google Drive") }

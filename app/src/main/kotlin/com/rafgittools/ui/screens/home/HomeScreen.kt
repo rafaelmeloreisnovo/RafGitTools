@@ -37,6 +37,7 @@ import com.rafgittools.navigator.ConversationManifoldPublication
 import com.rafgittools.navigator.NovoexportSafInventory
 import com.rafgittools.navigator.NovoexportQueueStore
 import com.rafgittools.ui.screens.setupwizard.DriveFirstRunIndexCard
+import com.rafgittools.ui.screens.setupwizard.GoogleDriveCloudCard
 import com.rafgittools.ui.components.ResponsiveContentFrame
 import com.rafgittools.ui.components.GithubOwnerOption
 import com.rafgittools.ui.components.GithubOwnerPicker
@@ -319,9 +320,9 @@ private fun SourceDashboard(
             }
             HomeViewModel.HomeTab.DRIVE, HomeViewModel.HomeTab.LOCAL -> {
                 // Keep cloud folder listing scrollable on small Motorola screens.
-                // No local SAF route or hide/show toggle is reachable.
+                // Cloud Drive REST is primary. The legacy SAF scanner remains separate.
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                    DriveFirstRunIndexCard()
+                    GoogleDriveCloudCard()
                 }
             }
         }
