@@ -48,7 +48,7 @@ jobs:
 
   heavy-dispatch:
     name: full / asynchronous producer-owned evidence
-    if: ${{ github.event_name == 'schedule' || inputs.lane == 'full' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.lane == 'full' }}
     needs: fast
     runs-on: ubuntu-latest
     timeout-minutes: 10
