@@ -1,0 +1,65 @@
+name: CheckValidation
+
+on:
+  pull_request:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: Validation lane
+        required: true
+        default: fast
+        type: choice
+        options: [fast, full]
+  schedule:
+    - cron: "17 4 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checkvalidation-${{ github.event.pull_request.number || github.ref }}-${{ inputs.lane || 'scheduled' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  fast:
+    name: fast / contract and provenance
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'schedule' || inputs.lane == 'fast' || inputs.lane == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact commit without persisted credentials
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0, Node 24
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Run bounded fast gate
+        run: python3 checkvalidation/check.py --profile checkvalidation/profiles/rafgittools.v1.json
+      - name: Summarize receipt
+        if: always()
+        run: |
+          test -f build/checkvalidation/receipt.json || exit 0
+          {
+            echo '## CheckValidation fast receipt'
+            echo '```json'
+            cat build/checkvalidation/receipt.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  heavy-dispatch:
+    name: full / asynchronous producer-owned evidence
+    if: ${{ github.event_name == 'schedule' || inputs.lane == 'full' }}
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Preserve truthful boundary
+        run: |
+          {
+            echo '## Full lane dispatch'
+            echo 'State: BLOCKED'
+            echo 'Reason: producer-specific Gradle/JDK/NDK/JNI/R8/Rust/C/ASM adapters are not yet bound to this exact SHA.'
+            echo 'claim_allowed=false'
+            echo 'This asynchronous job does not block development and does not claim compilation or device PASS.'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
