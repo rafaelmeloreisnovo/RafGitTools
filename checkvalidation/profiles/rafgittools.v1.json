@@ -1,0 +1,19 @@
+{
+  "schema": "rafaelia.checkvalidation.profile.v1",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "integration_branch": "develop",
+  "publication_branch": "main",
+  "claim_allowed": false,
+  "node_baseline": "24",
+  "required_abis": ["armeabi-v7a", "arm64-v8a"],
+  "fast": {"timeout_minutes": 10, "required": ["contract", "action-pins", "node20-absence", "branch-model"]},
+  "heavy": {
+    "blocking_for_development": false,
+    "required_for_publication": true,
+    "execution": "asynchronous",
+    "max_age_hours": 24,
+    "components": ["gradle", "jdk17", "android", "ndk", "jni", "r8", "rust", "c", "asm"]
+  },
+  "states": ["PASS_SCOPED", "FAIL", "BLOCKED", "NOT_RUN", "TOKEN_VAZIO"],
+  "rollback": "Revert the isolated CheckValidation commit or close its draft PR; main is never changed by this profile."
+}
