@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rafaelmeloreisnovo/RafGitTools/governance/federated-activity-governor/schemas/governor-event.v1.schema.json",
+  "title": "RAFAELIA Federated Governor Event V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "event_id",
+    "source",
+    "authority",
+    "state",
+    "urgency",
+    "risk",
+    "evidence",
+    "gap",
+    "next",
+    "rollback",
+    "claim_allowed"
+  ],
+  "properties": {
+    "schema": {
+      "const": "rafaelia.federated-governor-event.v1"
+    },
+    "event_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 200
+    },
+    "predecessor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "repository",
+        "ref",
+        "sha",
+        "observed_at"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "sha": {
+          "type": "string"
+        },
+        "path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "local",
+        "federated",
+        "write_scope"
+      ],
+      "properties": {
+        "local": {
+          "type": "string"
+        },
+        "federated": {
+          "type": "string"
+        },
+        "write_scope": {
+          "type": "string"
+        }
+      }
+    },
+    "state": {
+      "enum": [
+        "OBSERVED",
+        "TYPED",
+        "VALIDATING",
+        "REMEDIATION",
+        "INVESTIGATION",
+        "CANDIDATE",
+        "AUTHORIZED",
+        "PUBLISHED",
+        "BLOCKED",
+        "SUPERSEDED"
+      ]
+    },
+    "urgency": {
+      "enum": [
+        "P0",
+        "P1",
+        "P2",
+        "P3"
+      ]
+    },
+    "risk": {
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL"
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "gap": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "next": {
+      "type": "string",
+      "minLength": 1
+    },
+    "falsifier": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "idempotency_key": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "rollback": {
+      "type": "string",
+      "minLength": 1
+    },
+    "claim_allowed": {
+      "const": false
+    }
+  }
+}
