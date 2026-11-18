@@ -39,3 +39,7 @@ A verified core cross-object is not proof of ARM-device execution. Test independ
 - Physically degenerate data: two/three directions alone do not identify distance, lens model, gravitational-wave strain, or spin. Those remain `TOKEN_VAZIO` until calibration, many-source/time-series data and physical model selection.
 
 Rollback: do not merge additive branch; no producer existing file is replaced. `SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM`; `claim_allowed=false`.
+
+## Successor ABI hotfix (2026-11-18)
+
+Elapsed-tick fields now use 32-bit `unsigned int` (checked by `_Static_assert`), not target-dependent `unsigned long`. This removes one data-model-size discrepancy across ARMv7/AArch64/x86-64 without changing the mathematical values. **Never serialize `struct raf_geo3` by raw memory copy across targets**: alignment/padding can still differ. A canonical byte-order field-by-field wire format and independent ABI receipts remain gates.

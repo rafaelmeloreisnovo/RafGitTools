@@ -6,6 +6,7 @@
 #error "8-bit bytes required"
 #endif
 _Static_assert(sizeof(short) == 2, "16-bit short required");
+_Static_assert(sizeof(unsigned int) == 4, "32-bit unsigned int required");
 _Static_assert(sizeof(long long) == 8, "64-bit long long required");
 
 /* Presence is explicit. Zero coordinates and zero time are valid values. */
@@ -28,7 +29,7 @@ struct raf_geo3 {
     unsigned long long chord01_sq, chord12_sq, chord02_sq;
     signed long long acc_x_num2, acc_y_num2;
     /* acceleration = acc_*_num2/(dt01*dt12*dt02), factored exact */
-    unsigned long dt01, dt12, dt02;
+    unsigned int dt01, dt12, dt02;
     unsigned short collinear; /* 1 means exactly collinear */
 };
 
