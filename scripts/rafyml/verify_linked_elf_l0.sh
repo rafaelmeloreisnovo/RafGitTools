@@ -4,9 +4,26 @@ set -eu
 LC_ALL=C
 export LC_ALL
 root=$(CDPATH= cd "$(dirname "$0")/../.." && pwd)
-for tool in clang ld.lld readelf nm sha256sum mktemp grep sed; do
+for tool in clang readelf nm sha256sum mktemp grep sed; do
   command -v "$tool" >/dev/null 2>&1 || { echo "BLOCKED_MISSING_TOOL=$tool" >&2; exit 2; }
 done
+# LLVM linker may be bundled with Swift/LLVM outside runner PATH.
+# A missing linker is NOT a code or ABI failure. Never silently use GNU host ld.
+linker=lld
+if ! command -v ld.lld >/dev/null 2>&1; then
+  linker=
+  for candidate in /usr/local/swift/usr/bin/ld.lld /usr/share/swift/usr/bin/ld.lld /usr/lib/llvm-18/bin/ld.lld /usr/lib/llvm-17/bin/ld.lld /usr/lib/llvm-16/bin/ld.lld /usr/bin/ld.lld-18 /usr/bin/ld.lld-17 /usr/bin/ld.lld-16; do
+    if [ -x "$candidate" ]; then
+      linker="$candidate"
+      break
+    fi
+  done
+  if [ -z "$linker" ]; then
+    echo 'BLOCKED_MISSING_HOST_LINKER=LLVM_LLD (no apt/network/NDK fallback)' >&2
+    exit 2
+  fi
+fi
+printf 'HOST_LINKER=%s\n' "$linker"
 src="$root/src/rafyml_runtime.c"
 header="$root/include/rafyml_runtime.h"
 entry="$root/tests/rafyml_link_entry_l0.c"
@@ -31,7 +48,7 @@ for abi in armv7 aarch64; do
   clang --target="$target" $flags -I"$root/include" -c "$src" -o "$obj"
   # shellcheck disable=SC2086
   clang --target="$target" $flags -I"$root/include" -c "$entry" -o "$entry_obj"
-  clang --target="$target" -nostdlib -fuse-ld=lld \
+  clang --target="$target" -nostdlib -fuse-ld="$linker" \
     -Wl,--no-undefined -Wl,--fatal-warnings -Wl,--gc-sections \
     -Wl,--build-id=none -Wl,-e,_start "$obj" "$entry_obj" -o "$elf"
   readelf -hW "$elf" > "$out/$abi.header"
@@ -58,7 +75,7 @@ for abi in armv7 aarch64; do
   # Mutation in temporary test directory; original runtime untouched.
   # shellcheck disable=SC2086
   clang --target="$target" $flags -c "$out/mutant.c" -o "$out/$abi-mutant.o"
-  if clang --target="$target" -nostdlib -fuse-ld=lld \
+  if clang --target="$target" -nostdlib -fuse-ld="$linker" \
       -Wl,--no-undefined -Wl,--fatal-warnings -Wl,-e,_start \
       "$out/$abi-mutant.o" -o "$out/$abi-mutant.elf" > "$out/$abi-mutant.log" 2>&1; then
     echo "FAIL_MUTANT_ACCEPTED=$abi" >&2
