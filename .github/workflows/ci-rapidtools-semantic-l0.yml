@@ -11,6 +11,8 @@ on:
       - 'include/rafyml_runtime.h'
       - 'tests/rafyml_runtime_bounds_host_test.c'
       - 'scripts/rafyml/verify_multiabi_l0.sh'
+      - 'tests/rafyml_link_entry_l0.c'
+      - 'scripts/rafyml/verify_linked_elf_l0.sh'
   workflow_dispatch:
 permissions:
   contents: read
@@ -41,3 +43,20 @@ jobs:
           set -eu
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
           sh scripts/rafyml/verify_multiabi_l0.sh
+
+  rafyml-static-elf-link-l0:
+    name: RAFYML L0 static ELF32+ELF64 link (not device E2E)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Check exact head and linkable ELF32/ELF64 with negative linker test
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -eu
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          sh scripts/rafyml/verify_linked_elf_l0.sh
