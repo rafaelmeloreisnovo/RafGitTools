@@ -13,6 +13,9 @@ on:
       - 'scripts/rafyml/verify_multiabi_l0.sh'
       - 'tests/rafyml_link_entry_l0.c'
       - 'scripts/rafyml/verify_linked_elf_l0.sh'
+      - 'tests/rafyml_device_smoke_l0.c'
+      - 'scripts/rafyml/build_device_smoke_l0.sh'
+      - 'scripts/rafyml/run_device_smoke_l0.sh'
   workflow_dispatch:
 permissions:
   contents: read
@@ -60,3 +63,28 @@ jobs:
           set -eu
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
           sh scripts/rafyml/verify_linked_elf_l0.sh
+
+  rafyml-prepare-device-kit:
+    name: RAFYML ARMv7+AArch64 device smoke kit (build only)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Exact HEAD and host-sanitized synthetic device kit
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          RAFYML_SMOKE_OUT: ${{ runner.temp }}/rafyml-device-smoke
+        run: |
+          set -eu
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          sh scripts/rafyml/build_device_smoke_l0.sh
+      - name: Publish synthetic test-only binaries for opt-in device execution
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: rafyml-device-smoke-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/rafyml-device-smoke/package/
+          if-no-files-found: error
+          retention-days: 7
