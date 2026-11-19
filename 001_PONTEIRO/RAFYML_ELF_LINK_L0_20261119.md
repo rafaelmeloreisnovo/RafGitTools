@@ -1,0 +1,12 @@
+# RAFYML L0 — ELF link falsification successor (2026-11-19)
+
+- Authority: `AGENTS.md` → `001_PONTEIRO/RAFYML_MULTIABI_L0_CI_20261110.md` → this bounded successor. Local source producer `rafaelmeloreisnovo/RafGitTools`, branch `rafcode/rafyml-linked-elf-scope-20261119`, base main `6f765130aa7f693e984daf7006bf98924140ad6f`.
+- Predecessor PR #820 merged at `6fd4f257389cbe66b88b39bcd372f519778b2a01`; its START run 42934101827 completed SUCCESS. Historical DRAFT/HOLD label did **not** prevent merge. Check provider authority before any promotion; no automatic merge/release permitted here.
+- Scope: unchanged `src/rafyml_runtime.c` + `include/rafyml_runtime.h`; new test-only `tests/rafyml_link_entry_l0.c`; hosted `scripts/rafyml/verify_linked_elf_l0.sh`; additive existing 9-workflow CI entry. `_start` is a link anchor that loops forever, **not** a usable Android executable.
+- PIRC-2 N0 locally observed from independent Clang 17/lld host mirror: exact core SHA-256 `c7dbd7558543633e1252f9a09f90de0dd2963565f53d25c487c366f14c9b0487`; header SHA-256 `4de76d53fddf0bc75aff1cbfa7375bc4b1f4922007b0e8318e0d3780c2d9aa67`. ELF32 ARM and ELF64 AArch64 final ET_EXEC output; _start symbol; no nm -u undefined symbols, no relocations/dynamic linker/interpreter, no RWE load; undefined-reference mutant rejected by ld.lld for both targets.
+- N5: exact PR-head CI is **NOT_RUN/PENDING** until check result is confirmed. Physical ARMv7/AArch64 E2E, loader and calling convention compatibility, Android APK, clock/stack/latency/power remain **NOT_RUN/UNKNOWN**. Static linking alone cannot prove bootability.
+- Falsifiers: any invalid ELF class/machine/type/entry, ELF requiring runtime loader/dynamic relocations or undefined symbols, failure to reject synthetic missing dependency, tenth workflow, altered original jobs, failure exact-head SHA must fail scoped promotion.
+- Mutation safety: no source refactor of parser, no changes to main/release/signatures/licenses, no assumptions of hosted CI being freestanding. Retain GPLv3-or-later obligations from repository and third-party licenses; no independent license claim.
+- Rollback: close Draft PR unmerged. If an unrelated actor merges after this point, preserve evidence and use a compensating successor, not destructive history rewrite.
+- Claim: `SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM`, `claim_allowed=false`, `PASS_SCOPED_STATIC_LINK != PASS_GLOBAL`.
+- R3: F_ok=host-linked ELF falsifier; F_gap=GitHub CI + physical; F_next=exact-head CI and separate device tester.
