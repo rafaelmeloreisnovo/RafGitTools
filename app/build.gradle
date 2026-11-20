@@ -297,7 +297,7 @@ dependencies {
 
     // Markdown parser
     implementation 'org.commonmark:commonmark:0.29.0'
-    implementation 'org.commonmark:commonmark-ext-gfm-tables:0.29.0'
+    implementation 'org.commonmark:commonmark-ext-gfm-tables:0.32.0'
 
     // WorkManager for background tasks
     implementation 'androidx.work:work-runtime-ktx:2.12.0'
