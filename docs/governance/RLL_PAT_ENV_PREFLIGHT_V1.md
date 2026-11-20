@@ -11,6 +11,10 @@ Status: `SOURCE_WRITTEN_READBACK / CI_EXACT_HEAD_NOT_RUN / LIVE_PAT_NOT_RUN`. No
 - Other repository secrets: even equal names do not prove equal values or rights.
 - [RLL provider ruleset #23116926](https://github.com/instituto-Rafael/relativity-living-light/rules/23116926) is inspected by exact ID; a changed ruleset set blocks the probe.
 
+## Independent RLL secret authority (not automatically the same PAT)
+
+The institutional RLL producer maintains [RLL_CREDENTIAL_AUTHORITY_V1](https://github.com/instituto-Rafael/relativity-living-light/blob/a1dbcaac91b0235d21714a40b02328032869186d/docs/governance/RLL_CREDENTIAL_AUTHORITY_V1.md): its Actions repository secret is `GITPAT` and agent-side candidate is `PATGITHUB`. RafGitTools `PAT_ENV` is a distinct secret reference and provenance. This lane does **not** consume RLL `GITPAT`, read its value, or assume token equality. A successful RafGitTools `PAT_ENV` GET against RLL would prove only that token's scoped RLL read access, not RLL's separately stored credential or Administration:write.
+
 ## Manual invocation after reviewed incorporation into default branch
 
 Use **RafGitTools → Actions → START · RAFAELIA Orchestrated Pipeline → Run workflow**, branch `main`.
