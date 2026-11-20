@@ -69,13 +69,16 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.mode == 'apply' && github.ref == 'refs/heads/main' && github.actor == 'rafaelmeloreisnovo'
     runs-on: ubuntu-24.04
     timeout-minutes: 8
+    environment:
+      name: Pat_environments
+      deployment: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - name: Scoped write and immediate readback
         env:
-          GH_API_TOKEN: ${{ secrets.RAFAELIA_PROVIDER_ADMIN_TOKEN }}
+          GH_API_TOKEN: ${{ secrets.PAT_ENV }}
           EXPECTED_MAIN_SHA: ${{ inputs.expected_main_sha }}
           CONFIRM: ${{ inputs.confirm }}
         run: |
