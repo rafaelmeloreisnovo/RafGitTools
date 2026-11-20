@@ -1905,6 +1905,11 @@ jobs:
             (
               needs.plan.outputs.provider_operation == 'federated_preflight' ||
               needs.plan.outputs.provider_operation == 'federated_protect'
+            ) &&
+            !(
+              needs.plan.outputs.provider_operation == 'federated_preflight' &&
+              inputs.repository_factory_owner == 'instituto-Rafael' &&
+              inputs.repository_factory_name == 'relativity-living-light'
             )
           }}
         shell: bash
@@ -1938,6 +1943,29 @@ jobs:
             --receipt artifacts/federated-admin-protection.json
           echo 'FED_ADMIN=REVIEW_RECEIPT_REQUIRED; CLAIM_ALLOWED=false' >> "$GITHUB_STEP_SUMMARY"
 
+      - name: RLL PAT_ENV institutional provider GET-only preflight
+        if: >-
+          ${{
+            github.event_name == 'workflow_dispatch' &&
+            needs.plan.outputs.provider_operation == 'federated_preflight' &&
+            inputs.repository_factory_owner == 'instituto-Rafael' &&
+            inputs.repository_factory_name == 'relativity-living-light'
+          }}
+        shell: bash
+        env:
+          PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
+          EXPECTED_RLL_SHA: ${{ inputs.provider_expected_main_sha }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_ACTOR" = rafaelmeloreisnovo
+          test "$GITHUB_REF" = refs/heads/main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -m unittest discover -s tests -p 'test_rll_pat_env_preflight_v1.py' -v
+          python3 scripts/rll_pat_env_preflight_v1.py \
+            --expected-sha "$EXPECTED_RLL_SHA" \
+            --receipt artifacts/rll-pat-env-preflight.json
+          echo 'RLL_PAT_ENV=READ_ONLY; APPLY=NOT_RUN; ROLLBACK=NOT_REQUIRED; CLAIM_ALLOWED=false' >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload provider enforcement receipt
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -1946,6 +1974,7 @@ jobs:
           path: |
             artifacts/provider-main-enforcement.json
             artifacts/federated-admin-protection.json
+            artifacts/rll-pat-env-preflight.json
           if-no-files-found: warn
           retention-days: 90
 
