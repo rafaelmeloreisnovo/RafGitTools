@@ -1943,6 +1943,22 @@ jobs:
             --receipt artifacts/federated-admin-protection.json
           echo 'FED_ADMIN=REVIEW_RECEIPT_REQUIRED; CLAIM_ALLOWED=false' >> "$GITHUB_STEP_SUMMARY"
 
+      - name: RLL PAT_ENV bounded source falsifiers (without secret)
+        if: >-
+          ${{
+            github.event_name == 'workflow_dispatch' &&
+            needs.plan.outputs.provider_operation == 'federated_preflight' &&
+            inputs.repository_factory_owner == 'instituto-Rafael' &&
+            inputs.repository_factory_name == 'relativity-living-light'
+          }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_ACTOR" = rafaelmeloreisnovo
+          test "$GITHUB_REF" = refs/heads/main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -m unittest discover -s tests -p 'test_rll_pat_env_preflight_v1.py' -v
+
       - name: RLL PAT_ENV institutional provider GET-only preflight
         if: >-
           ${{
@@ -1960,7 +1976,6 @@ jobs:
           test "$GITHUB_ACTOR" = rafaelmeloreisnovo
           test "$GITHUB_REF" = refs/heads/main
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          python3 -m unittest discover -s tests -p 'test_rll_pat_env_preflight_v1.py' -v
           python3 scripts/rll_pat_env_preflight_v1.py \
             --expected-sha "$EXPECTED_RLL_SHA" \
             --receipt artifacts/rll-pat-env-preflight.json
