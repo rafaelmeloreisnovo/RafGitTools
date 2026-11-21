@@ -49,6 +49,9 @@ def capture(data):
         raise GateError("PROVIDER_OR_ACCOUNT_INVALID")
     if scope != "mimeType=folder;trashed=false":
         raise GateError("QUERY_SCOPE_UNVERIFIED")
+    expected = data.get("expected_positions")
+    if type(expected) is not int or expected < 0:
+        raise GateError("EXPECTED_POSITIONS_INVALID")
     pages = data.get("pages")
     if not isinstance(pages, list) or not pages or len(pages) > 256:
         raise GateError("PAGES_MISSING_OR_UNBOUNDED")
@@ -56,7 +59,7 @@ def capture(data):
     first = last = None
     positions = 0
     for index, page in enumerate(pages):
-        if not isinstance(page, dict) or page.get("page_index") != index:
+        if not isinstance(page, dict) or type(page.get("page_index")) is not int or page["page_index"] != index:
             raise GateError("PAGE_ORDER_OR_GAP")
         if page.get("incomplete_search") is not False:
             raise GateError("PROVIDER_COMPLETENESS_UNVERIFIED")
@@ -71,7 +74,7 @@ def capture(data):
         if not isinstance(items, list) or len(items) > 1000:
             raise GateError("PAGE_ITEMS_INVALID")
         for item in items:
-            if not isinstance(item, dict) or not ID.fullmatch(str(item.get("id", ""))):
+            if not isinstance(item, dict) or not isinstance(item.get("id"), str) or not ID.fullmatch(item["id"]):
                 raise GateError("IDENTITY_INVALID")
             key = "google_drive\0" + account + "\0" + item["id"]
             if key in identities:
@@ -103,12 +106,21 @@ def reconcile(first, second):
     a, b = capture(first), capture(second)
     if a["provider"] != b["provider"] or a["account"] != b["account"] or a["scope"] != b["scope"]:
         raise GateError("SNAPSHOT_SCOPE_MISMATCH")
-    same_ids = a["identity_manifest_sha256"] == b["identity_manifest_sha256"]
+    # Compare the actual validated ID sets, not merely equal digests.
+    # A digest is an external receipt, not an internal equality oracle.
+    ids_a = {item["id"] for page in first["pages"] for item in page["items"]}
+    ids_b = {item["id"] for page in second["pages"] for item in page["items"]}
+    same_ids = ids_a == ids_b
     comparable_metadata = a["metadata_manifest_sha256"] != "TOKEN_VAZIO" and b["metadata_manifest_sha256"] != "TOKEN_VAZIO"
+    selected_a = {item["id"]: (item["modified_time"], tuple(sorted(item["parent_ids"])))
+                  for page in first["pages"] for item in page["items"]} if comparable_metadata else None
+    selected_b = {item["id"]: (item["modified_time"], tuple(sorted(item["parent_ids"])))
+                  for page in second["pages"] for item in page["items"]} if comparable_metadata else None
     return {
         "capture_a": a, "capture_b": b,
         "same_identity_set": same_ids,
-        "same_metadata_if_comparable": (a["metadata_manifest_sha256"] == b["metadata_manifest_sha256"]) if comparable_metadata else "TOKEN_VAZIO",
+        "same_metadata_if_comparable": (selected_a == selected_b) if comparable_metadata else "TOKEN_VAZIO",
+        "metadata_fields_compared": ["modified_time", "parent_ids"] if comparable_metadata else "TOKEN_VAZIO",
         "temporal_result": "REOBSERVED_EQUAL_SCOPED" if same_ids else "IDENTITY_DRIFT_OBSERVED",
         "provider_snapshot_isolation": "NOT_PROVEN",
         "global_drive_completeness": "TOKEN_VAZIO",
