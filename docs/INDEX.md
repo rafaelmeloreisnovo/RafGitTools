@@ -202,3 +202,10 @@ Esse bloco é histórico e commit-bound.
 ## Navegação de trabalho entre IAs
 
 - [Adaptador de despacho de sessão IA V1](AI_SESSION_DISPATCH_ADAPTER_V1.md) — resolve pacotes e papéis do Mapa por pin exato; prova apenas navegação estrutural.
+
+## Roll-map de redes estruturais e custódia (candidato, 2026-11-21)
+
+- [Contrato de árvore multinível e custódia](contracts/ROLLMAP_COMPLEX_CUSTODY_V1.md) — AND/OR/NOT, joins entre descendentes, diretórios virtuais, hashes e STOPWALK.
+- `../tools/rollmap/rafaelia_rollmap_v2.py` — indexador hosted, somente leitura das fontes; saída SQLite derivada.
+- `../tools/rollmap/test_rollmap_contract.py` — testes sintéticos; CI e dispositivos não declarados PASS.
+- Contrato complementar: RafPolimata `contracts/rollmap-typed-path-v1.json`. Nenhum corpus privado do Drive é replicado.
