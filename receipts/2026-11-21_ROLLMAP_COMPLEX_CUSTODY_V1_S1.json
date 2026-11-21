@@ -1,0 +1,45 @@
+{
+  "schema": "rafaelia.rollmap.producer-receipt.v1",
+  "date_utc": "2026-11-21",
+  "repository": "rafaelmeloreisnovo/RafGitTools",
+  "stage": "S1",
+  "source_base_main": "a07efb3fe4def800a61514fd255c66cbb4243e31",
+  "predecessor_commit": "ec729852d742bea26fc7383c1e71a42bdc36cb4f",
+  "branch": "feature/rollmap-complex-custody-v1-20261121",
+  "task": "read-only multi-level structural query/graph; candidate hash pieces across descendants",
+  "artifacts": {
+    "source": {
+      "path": "tools/rollmap/rafaelia_rollmap_v2.py",
+      "git_blob_sha1": "e637c88fc420bdd2c8a8275b36778c22175a3b25"
+    },
+    "test": {
+      "path": "tools/rollmap/test_rollmap_contract.py",
+      "git_blob_sha1": "af9195db7a1a728d62f5580652149cd368873f47"
+    },
+    "contract": {
+      "path": "docs/contracts/ROLLMAP_COMPLEX_CUSTODY_V1.md",
+      "git_blob_sha1": "25bc51d677f2b0dad306b8b844bd4a87aa87f1c6"
+    },
+    "index": {
+      "path": "docs/INDEX.md",
+      "git_blob_sha1": "870c33fb10aa9925ba10bb11a2140aca0daf6cf8"
+    }
+  },
+  "local_checks": {
+    "original_42": "PASS_SCOPED (41 passed, 1 skipped: external V1 fixture absent)",
+    "split_fragments_positive": "PASS_SCOPED_LOCAL",
+    "split_fragments_negative": "PASS_SCOPED_LOCAL",
+    "python_compile": "PASS_SCOPED_LOCAL"
+  },
+  "github_new_tests": "TOKEN_VAZIO_NOT_RUN",
+  "github_ci": "TOKEN_VAZIO_NOT_RUN",
+  "external_drive_cursor": "TOKEN_VAZIO_NOT_IMPLEMENTED",
+  "physical_android": "TOKEN_VAZIO_NOT_RUN",
+  "public_data_policy": "ONLY_GENERIC_CODE_AND_SYNTHETIC_FIXTURES",
+  "claim_allowed": false,
+  "automatic_merge": false,
+  "rolled_out": false,
+  "stop_condition": "No public provider corpus, data mutation, auto-CI trigger, public claim or branch merge without separate authorization and evidence",
+  "rollback": "Keep main unchanged; prepare an additive revert commit if required; do not delete historical receipts",
+  "next": "Manual review; run synthetic tests on exact branch; provider pager with explicit ACL and lease separate"
+}
