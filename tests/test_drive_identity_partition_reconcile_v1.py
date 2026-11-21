@@ -102,6 +102,40 @@ class ManifestTests(unittest.TestCase):
         with self.assertRaisesRegex(m.GateError, "SNAPSHOT_SCOPE_MISMATCH"):
             m.reconcile(fixture(), value)
 
+    def test_numeric_id_rejected_not_cast_to_string(self):
+        value = fixture()
+        value["pages"][0]["items"][0]["id"] = 123456789012345
+        self.assert_blocked(value, "IDENTITY_INVALID")
+
+    def test_bool_page_index_rejected(self):
+        value = fixture()
+        value["pages"][0]["page_index"] = False
+        self.assert_blocked(value, "PAGE_ORDER")
+
+    def test_bool_position_count_rejected(self):
+        value = fixture()
+        value["expected_positions"] = True
+        self.assert_blocked(value, "EXPECTED_POSITIONS_INVALID")
+
+    def test_digest_collision_cannot_fake_set_equality(self):
+        changed = fixture()
+        changed["pages"][1]["items"][0]["id"] = "1zzzzzzzzzzzzzzzzzzzzzz"
+        original_sha = m.sha_rows
+        try:
+            m.sha_rows = lambda rows: "0" * 64  # adversarial synthetic collision
+            result = m.reconcile(fixture(), changed)
+        finally:
+            m.sha_rows = original_sha
+        self.assertFalse(result["same_identity_set"])
+
+    def test_metadata_change_does_not_change_identity(self):
+        changed = fixture()
+        changed["pages"][1]["items"][0]["modified_time"] = "2026-11-20T10:01:00Z"
+        result = m.reconcile(fixture(), changed)
+        self.assertTrue(result["same_identity_set"])
+        self.assertFalse(result["same_metadata_if_comparable"])
+        self.assertEqual(result["metadata_fields_compared"], ["modified_time", "parent_ids"])
+
     def test_opaque_cursor_not_in_manifest(self):
         value = fixture()
         out = m.capture(value)
