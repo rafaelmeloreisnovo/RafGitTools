@@ -56,6 +56,8 @@ def capture(data):
     if not isinstance(pages, list) or not pages or len(pages) > 256:
         raise GateError("PAGES_MISSING_OR_UNBOUNDED")
     identities, metadata = set(), []
+    parent_explicit_null_positions = 0
+    parent_field_absent_positions = 0
     first = last = None
     positions = 0
     for index, page in enumerate(pages):
@@ -81,19 +83,31 @@ def capture(data):
                 raise GateError("DUPLICATE_ID_ACROSS_OR_WITHIN_PAGES")
             identities.add(key)
             positions += 1
+            if "parent_ids" not in item:
+                parent_field_absent_positions += 1
+            elif item["parent_ids"] is None:
+                parent_explicit_null_positions += 1
             if "modified_time" in item and "parent_ids" in item:
                 mod = item["modified_time"]
                 parents = item["parent_ids"]
                 utc(mod)
-                if not isinstance(parents, list) or any(not isinstance(p, str) or not ID.fullmatch(p) for p in parents):
+                if parents is None:
+                    # Control-character sentinel cannot equal a valid provider parent ID.
+                    # JSON null != missing field != empty []. Keep original list digest rule.
+                    serialized_parent = "\x01"
+                elif isinstance(parents, list) and all(isinstance(p, str) and ID.fullmatch(p) for p in parents):
+                    serialized_parent = "\0".join(sorted(parents))
+                else:
                     raise GateError("PARENT_IDS_INVALID")
-                metadata.append(key + "\0" + mod + "\0" + "\0".join(sorted(parents)))
+                metadata.append(key + "\0" + mod + "\0" + serialized_parent)
     if data.get("expected_positions") != positions:
         raise GateError("EXPECTED_POSITION_MISMATCH")
     return {
         "provider": "google_drive", "account": account, "scope": scope,
         "pages": len(pages), "positions": positions,
         "unique_identities": len(identities),
+        "parent_explicit_null_positions": parent_explicit_null_positions,
+        "parent_field_absent_positions": parent_field_absent_positions,
         "identity_manifest_sha256": sha_rows(identities),
         "metadata_manifest_sha256": sha_rows(metadata) if len(metadata) == positions else "TOKEN_VAZIO",
         "first_observed_at": first.isoformat(), "last_observed_at": last.isoformat(),
@@ -112,9 +126,12 @@ def reconcile(first, second):
     ids_b = {item["id"] for page in second["pages"] for item in page["items"]}
     same_ids = ids_a == ids_b
     comparable_metadata = a["metadata_manifest_sha256"] != "TOKEN_VAZIO" and b["metadata_manifest_sha256"] != "TOKEN_VAZIO"
-    selected_a = {item["id"]: (item["modified_time"], tuple(sorted(item["parent_ids"])))
+    def parent_tuple(item):
+        parents = item["parent_ids"]
+        return (None,) if parents is None else tuple(sorted(parents))
+    selected_a = {item["id"]: (item["modified_time"], parent_tuple(item))
                   for page in first["pages"] for item in page["items"]} if comparable_metadata else None
-    selected_b = {item["id"]: (item["modified_time"], tuple(sorted(item["parent_ids"])))
+    selected_b = {item["id"]: (item["modified_time"], parent_tuple(item))
                   for page in second["pages"] for item in page["items"]} if comparable_metadata else None
     return {
         "capture_a": a, "capture_b": b,
