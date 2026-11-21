@@ -49,7 +49,7 @@ Uma rota pode ser encontrada por:
 - `SYMBOL/UNICODE`: nome byte-exato preservado + chave NFC/casefold para pesquisa; colisões e normalização conflitante não são resolvidas por suposição;
 - `SEMANTIC`: `ALIAS_CANDIDATE`, `DERIVED_FROM_DECLARED`, `ANALOGY_CANDIDATE`, `AUTHORITY_EVIDENCED`, sempre com proveniência por aresta.
 
-Para fragmentos separados ao longo de subdiretórios, **não é válido reconstruir um SHA-256 ou inferir igualdade por permutação sem esquema de fragmentação, ordem, largura e bytes validados**. Contratos futuros podem emitir `HASH_PIECE_CANDIDATE` com ordem/versionamento; no motor inicial só há busca segura de subcadeias hexadecimais >=8 caracteres. A presença de um hash em nome/cabeçalho não comprova o conteúdo referenciado.
+Para fragmentos distribuídos por subdiretórios existe um **índice de candidatos escopado**: segmentos com gramática `H00=abcd/H04=1234` declaram offsets em posições de dígitos hexadecimais de um SHA-256. O motor combina ao menos dois segmentos em qualquer ordem na árvore, rejeita posições conflitantes e comprimentos fora do digest e emite somente `HASH_PIECES_PATH_CANDIDATE`. Isso não reconstitui bytes nem prova autenticidade; permutações sem offsets, correspondência semântica e origem criptográfica distribuída permanecem `TOKEN_VAZIO` até protocolo e falsificador próprios.
 
 ## 4. Custódia e rollback
 
