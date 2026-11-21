@@ -40,6 +40,13 @@ class RollmapContractTests(unittest.TestCase):
             z.writestr("NEST/Δ/x.txt", "sample")
             z.writestr("../invalid.txt", "reject")
         (cls.root / "package.zip").write_bytes(b.getvalue())
+        good = cls.root / ("H04=" + cls.digest[4:8]) / ("H00=" + cls.digest[:4])
+        good.mkdir(parents=True)
+        (good / "hash_path.ok").write_text("candidate-only")
+        bad = cls.root / ("H04=0000") / ("H00=" + cls.digest[:4])
+        bad.mkdir(parents=True)
+        (bad / "hash_path.bad").write_text("must not match")
+
         cls.db = str(pathlib.Path(cls.temp.name) / "index.db")
         with contextlib.redirect_stdout(io.StringIO()):
             cls.build = r.build(SimpleNamespace(
@@ -110,6 +117,18 @@ class RollmapContractTests(unittest.TestCase):
         self.assertEqual(r.bsha(self.target), self.digest)
     def test_nonexistent_returns_empty(self):
         self.assertEqual(self.ids("name:*NO_EXAMPLE_MATCH*"), set())
+
+    def test_split_pieces_multilevel_permuted(self):
+        self.assertGreater(self.c.execute(
+            "SELECT count(*) FROM edges e JOIN nodes n ON n.id=e.src "
+            "WHERE e.rel='HASH_PIECES_PATH_CANDIDATE' AND e.status='CANDIDATE' "
+            "AND n.path LIKE '%hash_path.ok'").fetchone()[0], 0)
+
+    def test_split_pieces_invalid_rejected(self):
+        self.assertEqual(self.c.execute(
+            "SELECT count(*) FROM edges e JOIN nodes n ON n.id=e.src "
+            "WHERE e.rel='HASH_PIECES_PATH_CANDIDATE' "
+            "AND n.path LIKE '%hash_path.bad'").fetchone()[0], 0)
 
 if __name__ == "__main__":
     unittest.main()
