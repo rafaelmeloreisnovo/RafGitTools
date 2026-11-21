@@ -87,5 +87,65 @@ class ProducerFingerprintTests(unittest.TestCase):
         self.assertEqual(reason, "UNVERIFIED_PARENT")
 
 
+
+class SizeValidationTests(unittest.TestCase):
+    """Synthetic-only; exercise full source modules via importlib, no Drive calls."""
+
+    def setUp(self):
+        self.valid = item()
+
+    def each(self, value):
+        return (v1.admit({**self.valid, "size": value}, ROOT),
+                v2.classify({**self.valid, "size": value}, ROOT, ROOT))
+
+    def test_reject_true(self):
+        for record, reason in self.each(True):
+            self.assertIsNone(record)
+            self.assertEqual(reason, "INVALID_SIZE")
+
+    def test_reject_false(self):
+        for record, reason in self.each(False):
+            self.assertIsNone(record)
+            self.assertEqual(reason, "INVALID_SIZE")
+
+    def test_reject_fractional_float(self):
+        for record, reason in self.each(3.8):
+            self.assertIsNone(record)
+            self.assertEqual(reason, "INVALID_SIZE")
+
+    def test_reject_integral_float(self):
+        for record, reason in self.each(3.0):
+            self.assertIsNone(record)
+            self.assertEqual(reason, "INVALID_SIZE")
+
+    def test_accept_numeric_string(self):
+        for record, reason in self.each("42"):
+            self.assertIsNone(reason)
+            self.assertEqual(record["size_bytes"], 42)
+
+    def test_accept_integer(self):
+        for record, reason in self.each(42):
+            self.assertIsNone(reason)
+            self.assertEqual(record["size_bytes"], 42)
+
+    def test_negative_and_overflow(self):
+        for size in (-1, str(2**63)):
+            for record, reason in self.each(size):
+                self.assertIsNone(record)
+                self.assertEqual(reason, "INVALID_SIZE")
+
+    def test_folder_unchanged(self):
+        source = {**self.valid, "mimeType": "application/vnd.google-apps.folder", "size": None}
+        for record, reason in (v1.admit(source, ROOT), v2.classify(source, ROOT, ROOT)):
+            self.assertIsNone(reason)
+            self.assertIsNone(record["size_bytes"])
+
+    def test_native_doc_without_size_v2(self):
+        source = {**self.valid, "mimeType": "application/vnd.google-apps.document"}
+        source.pop("size")
+        record, reason = v2.classify(source, ROOT, ROOT)
+        self.assertIsNone(reason)
+        self.assertIsNone(record["size_bytes"])
+
 if __name__ == "__main__":
     unittest.main()
