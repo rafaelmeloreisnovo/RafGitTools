@@ -35,3 +35,11 @@ This metadata projection is PostgreSQL SQL, **not** ARM32/ARM64 machine code. Ho
 **Status:** `DATABASE_PASS_SCOPED` / `GITHUB_DRAFT_HOLD` / `CONTENT_EQUIVALENCE=TOKEN_VAZIO` / `claim_allowed=false`.
 
 **R3:** `F_ok` private identity projection + readback; `F_gap` cross-shard, cross-provider and byte-equality proof; `F_next` metadata convergence tests, then source-byte custody only when authorized.
+
+## Successor note: NULL-aware parent diagnostics V2 (2026-11-21, scoped)
+
+- **V1 is immutable historical authority for its original contract**, but its `count(distinct source_parent_id)` does not count SQL NULL. Do **not** interpret its `parent_variants` as including null variants.
+- **Private diagnostic successor:** `raf_private.drive_metadata_identity_nullsafe_v2`, installed via migration `20261121151557_rafaelia_private_drive_identity_nullsafe_v2_20261121`, preserving the V1 view and all source observations. New consumers asking about **parent null/value variants** should use V2 explicitly after validating private ACL and migration state.
+- **Public source contract:** [NULL-aware V2 SQL](../docs/supabase/drive_metadata_identity_nullsafe_v2.sql). [Independent readback receipt pointer](../docs/audit/DRIVE_IDENTITY_NULLSAFE_V2_MIGRATION_READBACK_20261121.md).
+- **Proof boundary:** scoped PostgreSQL conservation/claim/ACL readback and synthetic fixture checks; no original content bytes, global Drive completeness or B0160 promotion. Historical exact fingerprint preimages remain `TOKEN_VAZIO`.
+- **Rollback:** V2 is additive; corrective successor only. Neither V1 observations nor the B0159 pointer were rewritten; no destructive rollback permitted.
