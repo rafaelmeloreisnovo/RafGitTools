@@ -71,6 +71,18 @@ class DependabotPolicyGateTests(unittest.TestCase):
         )
         self.assertNotEqual(pins(altered)["init"][0], pins(altered)["analyze"][0])
 
+    def test_version_update_windows_are_staggered_without_security_hold(self):
+        self.assertIn('day: "monday"', self.gradle)
+        self.assertIn('time: "09:00"', self.gradle)
+        self.assertIn('day: "tuesday"', self.actions)
+        self.assertIn('time: "11:00"', self.actions)
+        for fragment in (self.gradle, self.actions):
+            self.assertIn("cooldown:\n      default-days: 5", fragment)
+            self.assertIn('rebase-strategy: "auto"', fragment)
+            self.assertNotIn("applies-to: \"security-updates\"", fragment)
+        self.assertIn('codeql-actions:', self.actions)
+        self.assertIn('github/codeql-action*', self.actions)
+
     def test_compatibility_and_source_guard_remain(self):
         for expected in (
             'com.android.*', 'androidx.compose.*', 'org.jetbrains.kotlin.*',
