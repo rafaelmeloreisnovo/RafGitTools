@@ -20,6 +20,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.rafgittools.benchmark.ContextualCreditsInfo
+import com.rafgittools.benchmark.RafScreenCredits
 import com.rafgittools.R
 import com.rafgittools.core.feature.FeatureFlags
 import com.rafgittools.core.localization.Language
@@ -90,6 +92,7 @@ fun SettingsScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
+                actions = { ContextualCreditsInfo(RafScreenCredits.settings) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer

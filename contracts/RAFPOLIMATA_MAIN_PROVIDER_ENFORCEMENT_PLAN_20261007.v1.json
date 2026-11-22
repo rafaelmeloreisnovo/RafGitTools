@@ -1,0 +1,86 @@
+{
+  "schema": "rafaelia.rafpolimata-main-provider-enforcement-plan.v1",
+  "version": "1.0.0-stage1",
+  "generated_at": "2026-10-07",
+  "repository": "rafaelmeloreisnovo/RafPolimata",
+  "target_branch": "main",
+  "stage": "STAGE1_CI_AND_PR_BARRIER",
+  "mode": "PREPARED_NOT_APPLIED",
+  "claim_allowed": false,
+  "purpose": "Propagate the proven Stage-1 server barrier to RafPolimata without making path-filtered workflows globally required.",
+  "authority_evidence": {
+    "control_plane": "rafaelmeloreisnovo/RafGitTools",
+    "environment": "Pat_environments",
+    "secret_reference": "PAT_ENV",
+    "target_main_sha": "d00d6ad2864936cbc7bba4108ae6546fd29cb0ca",
+    "observed_global_pr_checks": [
+      {
+        "workflow": "CI",
+        "context": "Semantic coherence and falsifiability gates",
+        "run_id": 37570308045
+      },
+      {
+        "workflow": "Internal Custody Ledger",
+        "context": "validate-internal-custody-ledger",
+        "run_id": 37570308027
+      },
+      {
+        "workflow": "Formal Science Orchestrator",
+        "context": "Units, evidence, statistics and time gates",
+        "run_id": 37570308072
+      }
+    ],
+    "excluded_from_global_required": [
+      "Freestanding L0 / six-isa-zero-runtime (path-filtered)",
+      "RafCI Authority V1 jobs (path-filtered)"
+    ],
+    "secret_value_recorded": false
+  },
+  "required_prestate": "ABSENT_OR_PRESENT",
+  "required_policy": {
+    "pull_request_required": true,
+    "direct_main_write_forbidden": true,
+    "force_push_forbidden": true,
+    "branch_deletion_forbidden": true,
+    "human_review_required": false,
+    "minimum_approving_reviews": 0,
+    "dismiss_stale_approvals_on_new_commits": false,
+    "require_last_push_approval": false,
+    "require_conversation_resolution": true,
+    "require_branch_up_to_date_before_merge": true,
+    "enforce_admins": true,
+    "rollback_required": true
+  },
+  "required_status_checks_global": [
+    {
+      "context": "Semantic coherence and falsifiability gates",
+      "job_id": "semantic-coherence"
+    },
+    {
+      "context": "validate-internal-custody-ledger",
+      "job_id": "validate-internal-custody-ledger"
+    },
+    {
+      "context": "Units, evidence, statistics and time gates",
+      "job_id": "formal-science"
+    }
+  ],
+  "stage2_gate": {
+    "state": "TOKEN_VAZIO_INDEPENDENT_REVIEWER",
+    "target_minimum_approving_reviews": 1
+  },
+  "negative_assurance": {
+    "required_after_apply": true,
+    "method": "bounded receipt-only PR; attempt merge before checks succeed; no bypass"
+  },
+  "green_path": {
+    "required_after_negative_assurance": true,
+    "success": "same bounded PR merges without bypass only after checks succeed"
+  },
+  "invariants": [
+    "SOURCE != EXECUTION != EVIDENCE != CLAIM",
+    "DETECTOR != SERVER_BARRIER",
+    "PATH_FILTERED_CHECK != GLOBAL_REQUIRED_CHECK",
+    "TOKEN_VAZIO != PASS"
+  ]
+}

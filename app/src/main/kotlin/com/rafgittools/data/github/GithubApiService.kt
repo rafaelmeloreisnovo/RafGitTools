@@ -4,11 +4,36 @@ import com.google.gson.annotations.SerializedName
 import com.rafgittools.domain.model.github.*
 import com.rafgittools.domain.model.github.GithubEvent
 import retrofit2.http.*
+import com.google.gson.JsonObject
 
 /**
  * GitHub API service interface
  */
 interface GithubApiService {
+
+    // Metadata-only private source index; authenticated existing Retrofit client.
+    // No raw blobs, no token logging, pinned commit -> tree object.
+    @GET("repos/{owner}/{repo}/git/ref/heads/{branch}")
+    suspend fun getExactBranchRef(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("branch") branch: String
+    ): JsonObject
+
+    @GET("repos/{owner}/{repo}/git/commits/{sha}")
+    suspend fun getGitCommitObject(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("sha") sha: String
+    ): JsonObject
+
+    @GET("repos/{owner}/{repo}/git/trees/{sha}")
+    suspend fun getGitTreeMetadata(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("sha") sha: String,
+        @Query("recursive") recursive: Int = 1
+    ): JsonObject
     
     // Repositories
     @GET("user/repos")
@@ -16,6 +41,24 @@ interface GithubApiService {
         @Query("page") page: Int = 1,
         @Query("per_page") perPage: Int = 30,
         @Query("sort") sort: String = "updated",
+        // GitHub rejects using 'type' together with affiliation; explicitly
+        // include organization membership and collaborators without mixing them.
+        @Query("affiliation") affiliation: String = "owner,collaborator,organization_member"
+    ): List<GithubRepository>
+
+    /** Membership discovery is metadata-only; membership alone is not a repo grant. */
+    @GET("user/orgs")
+    suspend fun getAuthenticatedOrganizations(
+        @Query("page") page: Int = 1,
+        @Query("per_page") perPage: Int = 100
+    ): List<JsonObject>
+
+    /** Read only the repositories visible to this token in the selected organization. */
+    @GET("orgs/{organization}/repos")
+    suspend fun getOrganizationRepositories(
+        @Path("organization") organization: String,
+        @Query("page") page: Int = 1,
+        @Query("per_page") perPage: Int = 100,
         @Query("type") type: String = "all"
     ): List<GithubRepository>
     
@@ -213,6 +256,60 @@ interface GithubApiService {
         @Body merge: MergePullRequestRequest
     ): MergeResult
     
+    // GitHub Actions control plane: snapshots != accepted requests != terminal evidence.
+    // AuthInterceptor supplies the device's existing authenticated session; no CI secret in APK.
+    @GET("repos/{owner}/{repo}/actions/workflows")
+    suspend fun listActionsWorkflows(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Query("per_page") perPage: Int = 100,
+        @Query("page") page: Int = 1
+    ): retrofit2.Response<ActionsWorkflowList>
+
+    @GET("repos/{owner}/{repo}/actions/runs")
+    suspend fun listActionsRuns(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Query("per_page") perPage: Int = 50,
+        @Query("page") page: Int = 1
+    ): retrofit2.Response<ActionsRunList>
+
+    @GET("repos/{owner}/{repo}/actions/runs/{run_id}")
+    suspend fun getActionsRun(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("run_id") runId: Long
+    ): retrofit2.Response<ActionsRun>
+
+    @POST("repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches")
+    suspend fun dispatchActionsWorkflow(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("workflow_id") workflowId: Long,
+        @Body request: WorkflowDispatchRequest
+    ): retrofit2.Response<Unit>
+
+    @POST("repos/{owner}/{repo}/actions/runs/{run_id}/cancel")
+    suspend fun cancelActionsRun(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("run_id") runId: Long
+    ): retrofit2.Response<Unit>
+
+    @POST("repos/{owner}/{repo}/actions/runs/{run_id}/rerun")
+    suspend fun rerunActionsRun(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("run_id") runId: Long
+    ): retrofit2.Response<Unit>
+
+    @POST("repos/{owner}/{repo}/actions/runs/{run_id}/rerun-failed-jobs")
+    suspend fun rerunFailedActionsJobs(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("run_id") runId: Long
+    ): retrofit2.Response<Unit>
+
     // Releases
     @GET("repos/{owner}/{repo}/releases")
     suspend fun getReleases(

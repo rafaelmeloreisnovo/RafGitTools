@@ -18,8 +18,19 @@ class AndroidToolchainMatrixTest(unittest.TestCase):
     def test_current_repository_tuple_is_approved(self):
         result = MOD.run()
         self.assertEqual(result["status"], "PASS")
-        self.assertEqual(result["state"], "PASS_BASELINE")
+        self.assertEqual(result["state"], "PASS_SCOPED_CI_CANDIDATE_NOT_PRODUCTION")
+        self.assertTrue(result["experimental"])
+        self.assertEqual(result["promotion"], "HOLD")
         self.assertFalse(result["claim_allowed"])
+
+    def test_candidate_rejects_relaxed_promotion_or_admission(self):
+        matrix = json.loads((ROOT / "configs/android-toolchain-matrix.json").read_text(encoding="utf-8"))
+        observed = MOD.observe((ROOT / "build.gradle").read_text(encoding="utf-8"),
+                               (ROOT / "app/build.gradle").read_text(encoding="utf-8"))
+        for field, value in (("promotion", "RELEASE"), ("admission", "PRODUCTION"), ("claim_allowed", True)):
+            invalid = json.loads(json.dumps(matrix))
+            invalid["ci_candidates"][0][field] = value
+            self.assertEqual(MOD.validate(observed, invalid)["status"], "FAIL")
 
     def test_isolated_kotlin_2420_bump_fails_closed(self):
         matrix = json.loads(

@@ -1,0 +1,23 @@
+{
+  "schema": "rafgittools.observer-conduct-correction-router.receipt/v1",
+  "date": "2026-10-20",
+  "state": "IMPLEMENTED_SOURCE_ONLY",
+  "source_intake": "RafPolimata observer-observation intake V1",
+  "claim_allowed": false,
+  "merge_allowed": false,
+  "F_ok": [
+    "conduct-aware routing",
+    "epistemic hold states",
+    "refusal preservation",
+    "bounded hotfix eligibility"
+  ],
+  "F_gap": [
+    "observer intake live cross-repo adapter",
+    "exact-head CI on this successor"
+  ],
+  "F_next": [
+    "run exact-head CI",
+    "use first reproduced BUG/ERROR observation as bounded integration proof"
+  ],
+  "rollback": "Revert only additive observer-conduct router files."
+}

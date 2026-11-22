@@ -1,0 +1,874 @@
+{
+  "schema": "rafaelia.rafgittools.dmaic_pr_portfolio.v1",
+  "snapshot_utc": "2026-10-23",
+  "provider_repo": "rafaelmeloreisnovo/RafGitTools",
+  "provider_main_sha": "38a20b00dbf789e6366d026a374bf63dba4a1220",
+  "authority": "RafGitTools: control-plane executor; Mapa: federation; Drive: memory",
+  "status": "SOURCE_SNAPSHOT_PROPOSED_IN_DRAFT",
+  "claim_allowed": false,
+  "certification_claim": false,
+  "completeness": {
+    "open_prs_observed": 23,
+    "observation_basis": "GitHub authenticated /pulls?state=open, plus per-PR /files and source read",
+    "scope": "Open PRs only in one repo; no closed PR or cross-repo completeness",
+    "complete_for_observed_open_set": true
+  },
+  "dmaic": {
+    "define": "23 PR bounded portfolio",
+    "measure": "exact SHA/overlap/draft/CI scope; no sigma numeric claim",
+    "analyze": "★ fact, † alternatives/overlap/owner",
+    "improve": "‡ minimal reversible gate or scoped hotfix, no mass merge",
+    "control": "exact head, tests, review, receipt and rollback"
+  },
+  "family_counts": {
+    "DEPENDENCY_GRADLE": 10,
+    "CI_ACTIONS": 3,
+    "CUSTODY_AND_BRIDGE": 3,
+    "FEDERATED_LENS_SAT": 2,
+    "BROWSERRAF": 3,
+    "EVIDENCE_N55": 2
+  },
+  "shared_paths": {
+    "app/build.gradle": [
+      546,
+      547,
+      548,
+      550,
+      673,
+      689,
+      691
+    ],
+    "build.gradle": [
+      675,
+      692
+    ],
+    ".github/workflows/START.yml": [
+      680,
+      681,
+      682,
+      686,
+      687,
+      693,
+      694,
+      695,
+      700
+    ],
+    "BrowserRaf/internal/br_http.h": [
+      684,
+      686,
+      687
+    ],
+    "BrowserRaf/internal/br_tls.h": [
+      686,
+      687
+    ],
+    "native/authorial_keyboard_l0": [
+      687,
+      698
+    ]
+  },
+  "baseline_metrics": {
+    "reopen_per_object": "TOKEN_VAZIO_NOT_MEASURED",
+    "minutes_per_closure": "TOKEN_VAZIO_NOT_MEASURED",
+    "defects_per_million": "TOKEN_VAZIO_NOT_MEASURED",
+    "first_pass_complete": "TOKEN_VAZIO_NOT_MEASURED"
+  },
+  "invariants": [
+    "TOKEN_VAZIO != 0",
+    "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "PR is not merge evidence",
+    "CI scoped PASS != device pass",
+    "DRAFT text != provider draft boolean"
+  ],
+  "items": [
+    {
+      "id": "PR:RafGitTools#546",
+      "number": 546,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/546",
+      "created_at": "2026-09-28T09:15:00Z",
+      "observed_head_sha": "621cff2d5125e64f4db69a87aa1a903c91865a6f",
+      "observed_base_sha": "38a20b00dbf789e6366d026a374bf63dba4a1220",
+      "draft": true,
+      "title": "HOLD — NÃO PROMOVER: topologia/Gradle/final receipt FAIL — Hilt",
+      "priority": "P1",
+      "family": "DEPENDENCY_GRADLE",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        "app/build.gradle"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† shared dependency and toolchain compatibility; partial updates may conflict",
+      "transmutation": "‡ Build version compatibility matrix JDK17/AGP/Kotlin/KSP/Gradle and rerun exact-head Android/CodeQL/rollback gates",
+      "ci": {
+        "state": "PASS_SCOPED_HISTORICAL_OBSERVATION",
+        "run_id": 39883294386,
+        "conclusion": "success",
+        "scope": "START observed SUCCESS at exact head; other Gradle automatic dependency submission FAILURE; skipped and physical gates not asserted"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "TOKEN_VAZIO_COMPATIBILITY_JDK17"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#547",
+      "number": 547,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/547",
+      "created_at": "2026-09-28T09:15:05Z",
+      "observed_head_sha": "c098fd37336034eeb1a5a0a1d1ec5b0f245ced79",
+      "observed_base_sha": "dd05812f7366411718194578ecf3494aa1e1d535",
+      "draft": true,
+      "title": "HOLD — NÃO PROMOVER: CI HEAD ausente / base antiga — OkHttp 5.5.0",
+      "priority": "P1",
+      "family": "DEPENDENCY_GRADLE",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        "app/build.gradle"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† shared dependency and toolchain compatibility; partial updates may conflict",
+      "transmutation": "‡ Build version compatibility matrix JDK17/AGP/Kotlin/KSP/Gradle and rerun exact-head Android/CodeQL/rollback gates",
+      "ci": {
+        "state": "NOT_ASSESSED_EXACT_HEAD",
+        "run_id": null,
+        "conclusion": null,
+        "scope": "Snapshot only; no CI PASS claim"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "TOKEN_VAZIO_COMPATIBILITY_JDK17"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#548",
+      "number": 548,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/548",
+      "created_at": "2026-09-28T09:15:11Z",
+      "observed_head_sha": "44aa15c7e2302099468d043c32e5ae1fb34f35a9",
+      "observed_base_sha": "2d36b7ada4149d7b15e95afa5094ec3b661d53f8",
+      "draft": true,
+      "title": "HOLD — NÃO PROMOVER: Python/Android/CodeQL FAIL — JSch",
+      "priority": "P1",
+      "family": "DEPENDENCY_GRADLE",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        "app/build.gradle"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† shared dependency and toolchain compatibility; partial updates may conflict",
+      "transmutation": "‡ Build version compatibility matrix JDK17/AGP/Kotlin/KSP/Gradle and rerun exact-head Android/CodeQL/rollback gates",
+      "ci": {
+        "state": "NOT_ASSESSED_EXACT_HEAD",
+        "run_id": null,
+        "conclusion": null,
+        "scope": "Snapshot only; no CI PASS claim"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "TOKEN_VAZIO_COMPATIBILITY_JDK17"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#550",
+      "number": 550,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/550",
+      "created_at": "2026-09-28T09:15:34Z",
+      "observed_head_sha": "a3c0c6d7d8ba13eb1794af91886781baaa1e993d",
+      "observed_base_sha": "dd05812f7366411718194578ecf3494aa1e1d535",
+      "draft": true,
+      "title": "HOLD — NÃO PROMOVER: CI HEAD ausente / base antiga — Retrofit converter-gson 3.0.0",
+      "priority": "P1",
+      "family": "DEPENDENCY_GRADLE",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        "app/build.gradle"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† shared dependency and toolchain compatibility; partial updates may conflict",
+      "transmutation": "‡ Build version compatibility matrix JDK17/AGP/Kotlin/KSP/Gradle and rerun exact-head Android/CodeQL/rollback gates",
+      "ci": {
+        "state": "NOT_ASSESSED_EXACT_HEAD",
+        "run_id": null,
+        "conclusion": null,
+        "scope": "Snapshot only; no CI PASS claim"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "TOKEN_VAZIO_COMPATIBILITY_JDK17"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#673",
+      "number": 673,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/673",
+      "created_at": "2026-10-13T02:21:37Z",
+      "observed_head_sha": "3cb023bc7209382c74f58bd96144b6355897bcdd",
+      "observed_base_sha": "42e0f550c87c92ce0d9a0cb8b37c00dd536b6d79",
+      "draft": true,
+      "title": "chore(deps): bump the testing group across 1 directory with 2 updates",
+      "priority": "P2",
+      "family": "DEPENDENCY_GRADLE",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        "app/build.gradle"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† shared dependency and toolchain compatibility; partial updates may conflict",
+      "transmutation": "‡ Build version compatibility matrix JDK17/AGP/Kotlin/KSP/Gradle and rerun exact-head Android/CodeQL/rollback gates",
+      "ci": {
+        "state": "NOT_ASSESSED_EXACT_HEAD",
+        "run_id": null,
+        "conclusion": null,
+        "scope": "Snapshot only; no CI PASS claim"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "TOKEN_VAZIO_COMPATIBILITY_JDK17"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#675",
+      "number": 675,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/675",
+      "created_at": "2026-10-13T02:23:43Z",
+      "observed_head_sha": "3f316f53221dd7a22fed7d9a986e77d36f1e2d7c",
+      "observed_base_sha": "ba9f522d7a6564abb2afdf9756499a723d9744e1",
+      "draft": true,
+      "title": "HOLD — NÃO PROMOVER: Python/Android/CodeQL FAIL — Kotlin 1.9.25",
+      "priority": "P1",
+      "family": "DEPENDENCY_GRADLE",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        "build.gradle"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† shared dependency and toolchain compatibility; partial updates may conflict",
+      "transmutation": "‡ Build version compatibility matrix JDK17/AGP/Kotlin/KSP/Gradle and rerun exact-head Android/CodeQL/rollback gates",
+      "ci": {
+        "state": "NOT_ASSESSED_EXACT_HEAD",
+        "run_id": null,
+        "conclusion": null,
+        "scope": "Snapshot only; no CI PASS claim"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "TOKEN_VAZIO_COMPATIBILITY_JDK17"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#676",
+      "number": 676,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/676",
+      "created_at": "2026-10-13T02:24:26Z",
+      "observed_head_sha": "63a2a4b060f442c7efbeeb3c33e2974fc8d315b8",
+      "observed_base_sha": "ba9f522d7a6564abb2afdf9756499a723d9744e1",
+      "draft": true,
+      "title": "HOLD — NÃO PROMOVER: Android/CodeQL/final receipt FAIL — gradle-wrapper 9.8.1",
+      "priority": "P0",
+      "family": "DEPENDENCY_GRADLE",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        "gradle/wrapper/gradle-wrapper.jar",
+        "gradle/wrapper/gradle-wrapper.properties",
+        "gradlew.bat"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† shared dependency and toolchain compatibility; partial updates may conflict",
+      "transmutation": "‡ Build version compatibility matrix JDK17/AGP/Kotlin/KSP/Gradle and rerun exact-head Android/CodeQL/rollback gates",
+      "ci": {
+        "state": "NOT_ASSESSED_EXACT_HEAD",
+        "run_id": null,
+        "conclusion": null,
+        "scope": "Snapshot only; no CI PASS claim"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "TOKEN_VAZIO_COMPATIBILITY_JDK17"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#680",
+      "number": 680,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/680",
+      "created_at": "2026-10-15T09:44:44Z",
+      "observed_head_sha": "55ffd3df07ed9eec67198234c79cd4fedb78eae2",
+      "observed_base_sha": "e5b4be4272bd5671878debe16e4385953aca0e2e",
+      "draft": false,
+      "title": "[DRAFT][NÃO PROMOVER] Google Drive CI custody: SHA256 readback + RMR/pai BLAKE3 gated receipt",
+      "priority": "P0",
+      "family": "CUSTODY_AND_BRIDGE",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        ".github/workflows/START.yml"
+      ],
+      "observation": "★ label says hold/draft but provider draft=false; open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† central START workflow, source custody, immutable BLAKE3 pin and external proof",
+      "transmutation": "‡ Check START.yml cross-PR overlap, pinned source sha and custody readback; keep private payload opaque",
+      "ci": {
+        "state": "NOT_ASSESSED_EXACT_HEAD",
+        "run_id": null,
+        "conclusion": null,
+        "scope": "Snapshot only; no CI PASS claim"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "DRAFT_LABEL_STATE_MISMATCH"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#681",
+      "number": 681,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/681",
+      "created_at": "2026-10-15T10:13:28Z",
+      "observed_head_sha": "ffdffe5829e53ae58bb1d7fa64e17633a1e8846b",
+      "observed_base_sha": "38a20b00dbf789e6366d026a374bf63dba4a1220",
+      "draft": false,
+      "title": "[DRAFT][NÃO PROMOVER] Build relay for BLAKE3 triple ABI APK at exact SHA",
+      "priority": "P0",
+      "family": "CUSTODY_AND_BRIDGE",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        ".github/workflows/START.yml"
+      ],
+      "observation": "★ label says hold/draft but provider draft=false; open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† central START workflow, source custody, immutable BLAKE3 pin and external proof",
+      "transmutation": "‡ Check START.yml cross-PR overlap, pinned source sha and custody readback; keep private payload opaque",
+      "ci": {
+        "state": "PASS_SCOPED_HISTORICAL_OBSERVATION",
+        "run_id": 39878194772,
+        "conclusion": "success",
+        "scope": "START SUCCESS observed at exact head; not APK physical/independent gate"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "DRAFT_LABEL_STATE_MISMATCH"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#682",
+      "number": 682,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/682",
+      "created_at": "2026-10-15T15:11:45Z",
+      "observed_head_sha": "3573ad90121cb5eec0ab131a6aadf49a6ab62b66",
+      "observed_base_sha": "38a20b00dbf789e6366d026a374bf63dba4a1220",
+      "draft": false,
+      "title": "HOLD — NÃO PROMOVER: lente federada V1 sem CI Android/SAF físico e autoridade provider",
+      "priority": "P1",
+      "family": "FEDERATED_LENS_SAT",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        ".github/workflows/START.yml",
+        "app/src/main/AndroidManifest.xml"
+      ],
+      "observation": "★ label says hold/draft but provider draft=false; open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† scope of claimed formal/runtime proof differs from source/CI",
+      "transmutation": "‡ Run bounded host/ABI tests; isolate physical Android and independent falsifier",
+      "ci": {
+        "state": "PASS_SCOPED_HISTORICAL_OBSERVATION",
+        "run_id": 39878964138,
+        "conclusion": "success",
+        "scope": "START SUCCESS observed at exact head; no physical SAF proof"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "DRAFT_LABEL_STATE_MISMATCH"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#683",
+      "number": 683,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/683",
+      "created_at": "2026-10-16T13:35:02Z",
+      "observed_head_sha": "c9cbe7f0f57cbae4dd6b500a78507aeef1a5c6c0",
+      "observed_base_sha": "38a20b00dbf789e6366d026a374bf63dba4a1220",
+      "draft": false,
+      "title": "NÃO PROMOVER — SAT estrutural L0: aguarda CI exact-head, revisão e ARM32",
+      "priority": "P1",
+      "family": "FEDERATED_LENS_SAT",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        "native/sat_structure_l0_v1/sat_structure_l0.c"
+      ],
+      "observation": "★ label says hold/draft but provider draft=false; open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† scope of claimed formal/runtime proof differs from source/CI",
+      "transmutation": "‡ Run bounded host/ABI tests; isolate physical Android and independent falsifier",
+      "ci": {
+        "state": "PASS_SCOPED_HISTORICAL_OBSERVATION",
+        "run_id": 39878989224,
+        "conclusion": "success",
+        "scope": "START SUCCESS observed at exact head; no physical proof"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "DRAFT_LABEL_STATE_MISMATCH"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#684",
+      "number": 684,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/684",
+      "created_at": "2026-10-18T09:42:27Z",
+      "observed_head_sha": "81351d06db974a0e7ac4352580716a79c1b184f7",
+      "observed_base_sha": "38a20b00dbf789e6366d026a374bf63dba4a1220",
+      "draft": true,
+      "title": "[DRAFT][NÃO PROMOVER] BrowserRaf: tamanhos exatos de headers HTTP sem NUL",
+      "priority": "P1",
+      "family": "BROWSERRAF",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        "BrowserRaf/internal/br_http.h",
+        "tests/test_browser_capability_claims.py"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† overlap in HTTP/TLS/DNS parser files; host checks != full browser",
+      "transmutation": "‡ Reconcile br_http.h / TLS/parser overlap by three-way diff, with negative CRLF/buffer/dechunk tests before device proof",
+      "ci": {
+        "state": "NOT_ASSESSED_EXACT_HEAD",
+        "run_id": null,
+        "conclusion": null,
+        "scope": "Snapshot only; no CI PASS claim"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "TOKEN_VAZIO_ARMV7_PHYSICAL",
+        "TOKEN_VAZIO_TLS_FULL_BROWSER"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#686",
+      "number": 686,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/686",
+      "created_at": "2026-10-19T01:18:25Z",
+      "observed_head_sha": "a6c9f94415aef4e14176850a6e9c14f0b596896f",
+      "observed_base_sha": "38a20b00dbf789e6366d026a374bf63dba4a1220",
+      "draft": true,
+      "title": "[DRAFT][NÃO PROMOVER] BrowserRaf P0: limites dos buffers HTTP/ClientHello + falsificadores nativos",
+      "priority": "P0",
+      "family": "BROWSERRAF",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        ".github/workflows/START.yml",
+        "BrowserRaf/internal/br_http.h",
+        "BrowserRaf/internal/br_tls.h",
+        "tests/test_browser_capability_claims.py"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† overlap in HTTP/TLS/DNS parser files; host checks != full browser",
+      "transmutation": "‡ Reconcile br_http.h / TLS/parser overlap by three-way diff, with negative CRLF/buffer/dechunk tests before device proof",
+      "ci": {
+        "state": "NOT_ASSESSED_EXACT_HEAD",
+        "run_id": null,
+        "conclusion": null,
+        "scope": "Snapshot only; no CI PASS claim"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "TOKEN_VAZIO_ARMV7_PHYSICAL",
+        "TOKEN_VAZIO_TLS_FULL_BROWSER"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#687",
+      "number": 687,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/687",
+      "created_at": "2026-10-19T04:01:41Z",
+      "observed_head_sha": "7b3281ea724c3d326b40649d079794fe5dcc64bd",
+      "observed_base_sha": "42e0f550c87c92ce0d9a0cb8b37c00dd536b6d79",
+      "draft": true,
+      "title": "[DRAFT][NÃO PROMOVER] BrowserRaf: navegador web freestanding, hardening HTML e gates reais para chatgpt.com",
+      "priority": "P0",
+      "family": "BROWSERRAF",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        ".github/workflows/START.yml",
+        "BrowserRaf/internal/br_http.h",
+        "BrowserRaf/internal/br_tls.h",
+        "native/authorial_keyboard_l0/README.md"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† overlap in HTTP/TLS/DNS parser files; host checks != full browser",
+      "transmutation": "‡ Reconcile br_http.h / TLS/parser overlap by three-way diff, with negative CRLF/buffer/dechunk tests before device proof",
+      "ci": {
+        "state": "PASS_SCOPED_HISTORICAL_OBSERVATION",
+        "run_id": 39878087899,
+        "conclusion": "success",
+        "scope": "START SUCCESS observed at exact head; HTML/HTTP host only, not full HTTPS browser"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "TOKEN_VAZIO_ARMV7_PHYSICAL",
+        "TOKEN_VAZIO_TLS_FULL_BROWSER"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#689",
+      "number": 689,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/689",
+      "created_at": "2026-10-19T09:10:58Z",
+      "observed_head_sha": "9014ae2682cbf56e635e5712f373c8a2b88fbf87",
+      "observed_base_sha": "42e0f550c87c92ce0d9a0cb8b37c00dd536b6d79",
+      "draft": true,
+      "title": "chore(deps): bump org.commonmark:commonmark from 0.29.0 to 0.30.1",
+      "priority": "P2",
+      "family": "DEPENDENCY_GRADLE",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        "app/build.gradle"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† shared dependency and toolchain compatibility; partial updates may conflict",
+      "transmutation": "‡ Build version compatibility matrix JDK17/AGP/Kotlin/KSP/Gradle and rerun exact-head Android/CodeQL/rollback gates",
+      "ci": {
+        "state": "NOT_ASSESSED_EXACT_HEAD",
+        "run_id": null,
+        "conclusion": null,
+        "scope": "Snapshot only; no CI PASS claim"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "TOKEN_VAZIO_COMPATIBILITY_JDK17"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#691",
+      "number": 691,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/691",
+      "created_at": "2026-10-19T09:11:54Z",
+      "observed_head_sha": "51ab5c9488fa4e255abfcce022de4fa865cda854",
+      "observed_base_sha": "42e0f550c87c92ce0d9a0cb8b37c00dd536b6d79",
+      "draft": true,
+      "title": "chore(deps): bump the android group across 1 directory with 10 updates",
+      "priority": "P0",
+      "family": "DEPENDENCY_GRADLE",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        "app/build.gradle"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† shared dependency and toolchain compatibility; partial updates may conflict",
+      "transmutation": "‡ Build version compatibility matrix JDK17/AGP/Kotlin/KSP/Gradle and rerun exact-head Android/CodeQL/rollback gates",
+      "ci": {
+        "state": "NOT_ASSESSED_EXACT_HEAD",
+        "run_id": null,
+        "conclusion": null,
+        "scope": "Snapshot only; no CI PASS claim"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "TOKEN_VAZIO_COMPATIBILITY_JDK17"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#692",
+      "number": 692,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/692",
+      "created_at": "2026-10-19T09:11:58Z",
+      "observed_head_sha": "0a73bf9eb6e8e158dff8fd9000915870fa44fe9f",
+      "observed_base_sha": "42e0f550c87c92ce0d9a0cb8b37c00dd536b6d79",
+      "draft": true,
+      "title": "chore(deps): bump com.google.devtools.ksp from 1.9.24-1.0.20 to 2.3.12",
+      "priority": "P0",
+      "family": "DEPENDENCY_GRADLE",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        "build.gradle"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† shared dependency and toolchain compatibility; partial updates may conflict",
+      "transmutation": "‡ Build version compatibility matrix JDK17/AGP/Kotlin/KSP/Gradle and rerun exact-head Android/CodeQL/rollback gates",
+      "ci": {
+        "state": "NOT_ASSESSED_EXACT_HEAD",
+        "run_id": null,
+        "conclusion": null,
+        "scope": "Snapshot only; no CI PASS claim"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION",
+        "TOKEN_VAZIO_COMPATIBILITY_JDK17"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#693",
+      "number": 693,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/693",
+      "created_at": "2026-10-19T09:12:15Z",
+      "observed_head_sha": "1b1f7f4b5baa5b0df138a60dcae09c6c129d9a51",
+      "observed_base_sha": "38a20b00dbf789e6366d026a374bf63dba4a1220",
+      "draft": true,
+      "title": "ci: bump github/codeql-action/analyze from 4.38.2 to 4.39.0",
+      "priority": "P1",
+      "family": "CI_ACTIONS",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        ".github/workflows/START.yml"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† shared single-root START workflow, action integrity and CI topology",
+      "transmutation": "‡ Resolve START.yml combined tree and check actions permissions/immutable SHAs using positive and negative fixtures",
+      "ci": {
+        "state": "NOT_ASSESSED_EXACT_HEAD",
+        "run_id": null,
+        "conclusion": null,
+        "scope": "Snapshot only; no CI PASS claim"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#694",
+      "number": 694,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/694",
+      "created_at": "2026-10-19T09:12:21Z",
+      "observed_head_sha": "37326c230feb74f05e8cd51d97b5f03665fa25d6",
+      "observed_base_sha": "42e0f550c87c92ce0d9a0cb8b37c00dd536b6d79",
+      "draft": true,
+      "title": "ci: bump actions/setup-java from 6.0.1 to 6.1.0",
+      "priority": "P1",
+      "family": "CI_ACTIONS",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        ".github/workflows/START.yml"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† shared single-root START workflow, action integrity and CI topology",
+      "transmutation": "‡ Resolve START.yml combined tree and check actions permissions/immutable SHAs using positive and negative fixtures",
+      "ci": {
+        "state": "NOT_ASSESSED_EXACT_HEAD",
+        "run_id": null,
+        "conclusion": null,
+        "scope": "Snapshot only; no CI PASS claim"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#695",
+      "number": 695,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/695",
+      "created_at": "2026-10-19T09:13:09Z",
+      "observed_head_sha": "0381c5b00185d486d8e8b78dcaf0bfc01360ad9f",
+      "observed_base_sha": "38a20b00dbf789e6366d026a374bf63dba4a1220",
+      "draft": true,
+      "title": "ci: bump github/codeql-action/init from 4.38.2 to 4.39.0",
+      "priority": "P1",
+      "family": "CI_ACTIONS",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        ".github/workflows/START.yml"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† shared single-root START workflow, action integrity and CI topology",
+      "transmutation": "‡ Resolve START.yml combined tree and check actions permissions/immutable SHAs using positive and negative fixtures",
+      "ci": {
+        "state": "NOT_ASSESSED_EXACT_HEAD",
+        "run_id": null,
+        "conclusion": null,
+        "scope": "Snapshot only; no CI PASS claim"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#697",
+      "number": 697,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/697",
+      "created_at": "2026-10-20T11:23:30Z",
+      "observed_head_sha": "9fa8b4518c8888a0574397398cf5a0f454ba1c30",
+      "observed_base_sha": "38a20b00dbf789e6366d026a374bf63dba4a1220",
+      "draft": true,
+      "title": "[DRAFT][NÃO PROMOVER] hotfix: evidence bundle + observer-conduct correction routing",
+      "priority": "P1",
+      "family": "EVIDENCE_N55",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        "contracts/chatgpt_evidence_correction_gate.v1.json"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† typed evidence and duplicate keyboard files; narrative != behavior",
+      "transmutation": "‡ Compare canonical blob bytes for keyboard subtree; preserve metaphor-vs-tested claim boundary",
+      "ci": {
+        "state": "NOT_ASSESSED_EXACT_HEAD",
+        "run_id": null,
+        "conclusion": null,
+        "scope": "Snapshot only; no CI PASS claim"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#698",
+      "number": 698,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/698",
+      "created_at": "2026-10-21T03:09:35Z",
+      "observed_head_sha": "bcaba30055e92c415e0de21ae3d8a287cc40ddd7",
+      "observed_base_sha": "42e0f550c87c92ce0d9a0cb8b37c00dd536b6d79",
+      "draft": true,
+      "title": "[DRAFT][NÃO PROMOVER] P0 N55 — léxico, proveniência e metáforas",
+      "priority": "P1",
+      "family": "EVIDENCE_N55",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        "native/authorial_keyboard_l0/README.md"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† typed evidence and duplicate keyboard files; narrative != behavior",
+      "transmutation": "‡ Compare canonical blob bytes for keyboard subtree; preserve metaphor-vs-tested claim boundary",
+      "ci": {
+        "state": "PASS_SCOPED_HISTORICAL_OBSERVATION",
+        "run_id": 39878169602,
+        "conclusion": "success",
+        "scope": "START SUCCESS observed at exact head; physical unobserved"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    },
+    {
+      "id": "PR:RafGitTools#700",
+      "number": 700,
+      "source_url": "https://github.com/rafaelmeloreisnovo/RafGitTools/pull/700",
+      "created_at": "2026-10-23T00:57:59Z",
+      "observed_head_sha": "d94ccd32368e19188c9dd94b68029adc5031fdce",
+      "observed_base_sha": "38a20b00dbf789e6366d026a374bf63dba4a1220",
+      "draft": true,
+      "title": "[DRAFT][NÃO PROMOVER][P0] Laboratório federado RAFAELIA: contrato, falsificadores, CI secretless e proteção humana",
+      "priority": "P0",
+      "family": "CUSTODY_AND_BRIDGE",
+      "claim_allowed": false,
+      "release_allowed": false,
+      "paths_observed_overlap_or_anchor": [
+        ".github/workflows/START.yml"
+      ],
+      "observation": "★ open PR at exact HEAD with overlapping files classified by path",
+      "bifurcation": "† central START workflow, source custody, immutable BLAKE3 pin and external proof",
+      "transmutation": "‡ Check START.yml cross-PR overlap, pinned source sha and custody readback; keep private payload opaque",
+      "ci": {
+        "state": "PASS_SCOPED_HISTORICAL_OBSERVATION",
+        "run_id": 39881886327,
+        "conclusion": "success",
+        "scope": "START SUCCESS observed at exact head, scoped gates only"
+      },
+      "gaps": [
+        "TOKEN_VAZIO_HUMAN_INDEPENDENT_REVIEW",
+        "TOKEN_VAZIO_PROVIDER_SCOPE",
+        "TOKEN_VAZIO_CROSS_PR_INTEGRATION"
+      ],
+      "gate": "HOLD_FOR_EXACT_HEAD_OR_HUMAN_REVIEW",
+      "rollback": "retain unchanged PR / close review branch if audit change invalid"
+    }
+  ]
+}

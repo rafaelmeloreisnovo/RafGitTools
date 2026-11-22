@@ -21,14 +21,22 @@ object NovoexportSafInventory {
         val mimeType: String,
         val sizeBytes: Long?,
         val relativePath: String = name,
-        val parentDocumentId: String? = null
+        val parentDocumentId: String? = null,
+        val semanticTokens: List<String> = emptyList(),
+        val semanticPassMask: Int = 0,
+        val semanticKindFlags: Int = 0,
+        val pathComponents: Int = 0
     )
 
     data class DirectoryEntry(
         val documentId: String,
         val parentDocumentId: String?,
         val name: String,
-        val relativePath: String
+        val relativePath: String,
+        val semanticTokens: List<String> = emptyList(),
+        val semanticPassMask: Int = 0,
+        val semanticKindFlags: Int = 0,
+        val pathComponents: Int = 0
     )
 
     data class Result(
@@ -89,12 +97,14 @@ object NovoexportSafInventory {
 
             val children = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, directoryId)
             val cursor = resolver.query(children, projection, null, null, null)
-                ?: error("SAF provider returned no cursor for directory inventory")
+                ?: error("BLOCKED_SAF_PROVIDER_CHILD_QUERY_NULL")
             cursor.use {
                 val idIndex = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
                 val nameIndex = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
                 val mimeIndex = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
-                val sizeIndex = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_SIZE)
+                // Cloud SAF providers may omit COLUMN_SIZE entirely. Treat it
+                // as unknown, never as zero and never as a reason to abort scanning.
+                val sizeIndex = it.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE)
 
                 while (it.moveToNext()) {
                     visitedDocuments += 1
@@ -114,20 +124,38 @@ object NovoexportSafInventory {
                             "SAF_DIRECTORY_ID_HAS_MULTIPLE_TREE_PATHS"
                         }
                         if (previousPlacement == null) {
+                            val semantic = RafInventoryCoreBridge.analyze(
+                                path = relativePath,
+                                mime = mimeType,
+                                isDirectory = true,
+                                reportedBytes = null,
+                                parentKnown = directoryId.isNotBlank()
+                            )
                             directoryPlacements[documentId] = placement
                             allDirectories += DirectoryEntry(
                                 documentId = documentId,
                                 parentDocumentId = directoryId,
                                 name = name,
-                                relativePath = relativePath
+                                relativePath = relativePath,
+                                semanticTokens = semantic.tokens,
+                                semanticPassMask = semantic.passMask,
+                                semanticKindFlags = semantic.kindFlags,
+                                pathComponents = semantic.pathComponents
                             )
                             pending.addLast(DirectoryWork(documentId, relativePath))
                         }
                         continue
                     }
 
-                    val size = if (it.isNull(sizeIndex)) null
+                    val size = if (sizeIndex < 0 || it.isNull(sizeIndex)) null
                     else it.getLong(sizeIndex).takeIf { value -> value >= 0L }
+                    val semantic = RafInventoryCoreBridge.analyze(
+                        path = relativePath,
+                        mime = mimeType,
+                        isDirectory = false,
+                        reportedBytes = size,
+                        parentKnown = directoryId.isNotBlank()
+                    )
                     val entry = Entry(
                         uri = DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId).toString(),
                         documentId = documentId,
@@ -135,7 +163,11 @@ object NovoexportSafInventory {
                         mimeType = mimeType,
                         sizeBytes = size,
                         relativePath = relativePath,
-                        parentDocumentId = directoryId
+                        parentDocumentId = directoryId,
+                        semanticTokens = semantic.tokens,
+                        semanticPassMask = semantic.passMask,
+                        semanticKindFlags = semantic.kindFlags,
+                        pathComponents = semantic.pathComponents
                     )
                     val placement = relativePath to directoryId
                     val previousPlacement = filePlacements[documentId]
@@ -192,6 +224,18 @@ object NovoexportSafInventory {
             unknownSizeFiles = unknownSizeFiles
         )
     }
+
+    /**
+     * Some cloud SAF providers omit COLUMN_SIZE entirely. Missing, null or
+     * negative provider-reported sizes mean TOKEN_VAZIO, never zero bytes.
+     * Do not even call the cursor when the optional column is absent.
+     */
+    internal fun optionalFileSize(
+        columnIndex: Int,
+        isNull: () -> Boolean,
+        readValue: () -> Long
+    ): Long? = if (columnIndex < 0 || isNull()) null
+        else readValue().takeIf { it >= 0L }
 
     internal fun childPath(parentPath: String, name: String): String =
         if (parentPath.isBlank()) name else parentPath + "/" + name

@@ -1,0 +1,41 @@
+{
+  "schema": "rafgittools.chatgpt-interaction-bundle-hotfix.receipt/v2",
+  "date": "2026-10-20",
+  "source_bundle": "RafPolimata:data/evidence/chatgpt/2026-10-20_three_interaction_bundle.v1.json",
+  "state": "IMPLEMENTED_SOURCE_ONLY_EXACT_HEAD_CI_REQUIRED",
+  "urgencies": [
+    {
+      "id": "URG-P0-SCI-FALSE-POSITIVE",
+      "source": [
+        "I1",
+        "I2"
+      ],
+      "gate": "GATE_SCIENTIFIC_FALSIFICATION_MESH"
+    },
+    {
+      "id": "URG-P0-SESSION-MISCLASSIFICATION",
+      "source": [
+        "I3"
+      ],
+      "gate": "GATE_OPERATIONAL_EVIDENCE_CLASSIFICATION"
+    },
+    {
+      "id": "URG-P0-AUTO-CORRECT-SAFETY",
+      "source": [
+        "I1",
+        "I2",
+        "I3"
+      ],
+      "gate": "GATE_BOUNDED_AUTOMATIC_CORRECTION"
+    }
+  ],
+  "hotfix_effect": "Adds bundle-aware fail-closed routing. P0 evidence blocks promotion but does not authorize mutation. Exact target/revision/reproducer/root-cause/patch/tests/rollback are mandatory for HOTFIX_ELIGIBLE_BOUNDED.",
+  "open_tokens": [
+    "TOKEN_VAZIO_TARGET_SPECIFIC_AUTO_CORRECTION",
+    "TOKEN_VAZIO_EXACT_HEAD_CI_V2",
+    "TOKEN_VAZIO_INDEPENDENT_REVIEW_V2"
+  ],
+  "rollback": "Close draft PR or revert only v2 additive files; v1 gate and historical evidence remain unchanged.",
+  "claim_allowed": false,
+  "merge_allowed": false
+}

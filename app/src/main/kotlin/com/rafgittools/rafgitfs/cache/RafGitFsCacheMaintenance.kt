@@ -14,14 +14,32 @@ class RafGitFsCacheMaintenance @Inject constructor(
     private val treeDao: VirtualTreeDao,
     private val fileStore: RafGitFsAtomicFileStore
 ) {
-    suspend fun ensureCapacity(
+    private val profileGate = RafGitFsCacheProfileGate()
+
+    suspend fun <T> withProfileLock(
+        profileId: String,
+        action: suspend () -> T
+    ): T = profileGate.withProfile(profileId, action)
+
+    suspend fun <T> withCapacityReservation(
+        profileId: String,
+        incomingBytes: Long,
+        replacingCacheKey: String? = null,
+        onCapacityExhausted: () -> T,
+        persist: suspend () -> T
+    ): T = profileGate.withProfile(profileId) {
+        if (ensureCapacityLocked(profileId, incomingBytes, replacingCacheKey)) persist()
+        else onCapacityExhausted()
+    }
+
+    private suspend fun ensureCapacityLocked(
         profileId: String,
         incomingBytes: Long,
         replacingCacheKey: String? = null
     ): Boolean {
         val profile = profileDao.getById(profileId) ?: return false
         if (incomingBytes < 0L || incomingBytes > profile.maxCacheBytes) return false
-        reconcile(profileId)
+        reconcileLocked(profileId)
         val replacedBytes = replacingCacheKey
             ?.let { cacheDao.getByKey(it)?.sizeBytes }
             ?: 0L
@@ -38,7 +56,10 @@ class RafGitFsCacheMaintenance @Inject constructor(
         return effectiveTotal + incomingBytes <= profile.maxCacheBytes
     }
 
-    suspend fun reconcile(profileId: String, now: Long = System.currentTimeMillis()): RafGitFsCacheMaintenanceReport {
+    suspend fun reconcile(profileId: String, now: Long = System.currentTimeMillis()): RafGitFsCacheMaintenanceReport =
+        profileGate.withProfile(profileId) { reconcileLocked(profileId, now) }
+
+    private suspend fun reconcileLocked(profileId: String, now: Long = System.currentTimeMillis()): RafGitFsCacheMaintenanceReport {
         val profile = profileDao.getById(profileId)
             ?: return RafGitFsCacheMaintenanceReport(0, 0, 0, 0, 0, 0)
         val before = cacheDao.totalBytes(profileId)

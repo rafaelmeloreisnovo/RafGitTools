@@ -66,6 +66,7 @@ def collect_check_runs(
     by_id: dict[int, dict[str, Any]] = {}
     totals: list[int] = []
     page_sizes: list[int] = []
+    repeated_check_ids: set[int] = set()
 
     for page_no in range(1, max_pages + 1):
         page = fetch_page(page_no, per_page)
@@ -73,6 +74,10 @@ def collect_check_runs(
         page_sizes.append(len(page.check_runs))
         for item in page.check_runs:
             check_id = int(item["id"])
+            if check_id in by_id:
+                # Overlapping pages can indicate a moving API snapshot even
+                # when total_count is unchanged. Never silently overwrite.
+                repeated_check_ids.add(check_id)
             by_id[check_id] = item
 
         target = max(totals)
@@ -87,7 +92,7 @@ def collect_check_runs(
     observed_totals = sorted(set(totals))
     checks = list(by_id.values())
     complete = len(checks) == total_count
-    snapshot_unstable = len(observed_totals) > 1
+    snapshot_unstable = len(observed_totals) > 1 or bool(repeated_check_ids)
 
     status_counts = Counter(str(c.get("status") or "TOKEN_VAZIO") for c in checks)
     conclusion_counts = Counter(str(c.get("conclusion") or "TOKEN_VAZIO") for c in checks)
@@ -99,7 +104,9 @@ def collect_check_runs(
         if c.get("status") == "completed" and c.get("conclusion") != "success"
     ]
 
-    if not complete:
+    if total_count == 0 and not checks:
+        state = "NO_CHECKS_OBSERVED"
+    elif not complete:
         state = "INCOMPLETE_ENUMERATION"
     elif snapshot_unstable:
         state = "AUDIT_SNAPSHOT_UNSTABLE"
@@ -120,6 +127,7 @@ def collect_check_runs(
         "complete_enumeration": complete,
         "snapshot_unstable": snapshot_unstable,
         "observed_total_counts": observed_totals,
+        "repeated_check_ids": sorted(repeated_check_ids),
         "pages_fetched": len(page_sizes),
         "page_sizes": page_sizes,
         "per_page_requested": per_page,
@@ -138,13 +146,69 @@ def collect_check_runs(
                 "details_url": c.get("details_url"),
                 "started_at": c.get("started_at"),
                 "completed_at": c.get("completed_at"),
+                "head_sha": c.get("head_sha"),
             }
             for c in checks
         ],
     }
 
 
-def audit_commit(client: GithubHttp, owner: str, repo: str, sha: str) -> dict[str, Any]:
+
+def evaluate_strict_gate(
+    checks: dict[str, Any],
+    legacy: dict[str, Any],
+    expected_sha: str,
+    required_checks: tuple[str, ...] = (),
+) -> dict[str, Any]:
+    """Exact-SHA, required-name gate. Never grants release or device claims."""
+    reasons: list[str] = []
+    if checks["state"] != "COMPLETE_ALL_SUCCESS":
+        reasons.append(f"CHECK_SET_NOT_ALL_SUCCESS:{checks['state']}")
+    if not checks["complete_enumeration"] or checks["snapshot_unstable"]:
+        reasons.append("CHECK_ENUMERATION_UNTRUSTED")
+    if checks["total_count"] == 0:
+        reasons.append("NO_CHECK_RUNS")
+    if not required_checks or any(not name.strip() for name in required_checks):
+        reasons.append("REQUIRED_CHECK_SET_EMPTY_OR_INVALID")
+
+    names: set[str] = set()
+    for check in checks["checks"]:
+        name = check.get("name")
+        if isinstance(name, str):
+            names.add(name)
+        if check.get("status") != "completed" or check.get("conclusion") != "success":
+            reasons.append(f"NON_SUCCESS_CHECK:{check.get('id')}")
+        if check.get("head_sha") != expected_sha:
+            reasons.append(f"HEAD_SHA_MISMATCH_OR_EMPTY:{check.get('id')}")
+    for required in sorted(set(required_checks)):
+        if required not in names:
+            reasons.append(f"MISSING_REQUIRED_CHECK:{required}")
+
+    # Legacy commit statuses are a separate API; GitHub computes the latest
+    # status per context in its combined state. A superseded old failure is
+    # not itself evidence of a current failed context.
+    if legacy["status_count"] and legacy.get("combined_state") != "success":
+        reasons.append(f"LEGACY_STATUS_NOT_SUCCESS:{legacy.get('combined_state')}")
+
+    return {
+        "state": "PASS_OBSERVED_REQUIRED_CHECKS" if not reasons else "BLOCKED",
+        "gate_pass": not reasons,
+        "reasons": sorted(set(reasons)),
+        "required_checks": list(required_checks),
+        "expected_sha": expected_sha,
+        "claim_allowed": False,
+        "release_allowed": False,
+        "runtime_evidence": "TOKEN_VAZIO",
+    }
+
+
+def audit_commit(
+    client: GithubHttp,
+    owner: str,
+    repo: str,
+    sha: str,
+    required_checks: tuple[str, ...] = (),
+) -> dict[str, Any]:
     def fetch(page_no: int, per_page: int) -> Page:
         data = client.get_json(
             f"/repos/{owner}/{repo}/commits/{sha}/check-runs",
@@ -183,6 +247,9 @@ def audit_commit(client: GithubHttp, owner: str, repo: str, sha: str) -> dict[st
         ],
         "claim_allowed": False,
     }
+    result["strict_gate"] = evaluate_strict_gate(
+        checks, result["legacy_status_api"], sha, required_checks
+    )
     return result
 
 
@@ -194,6 +261,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--output", required=True)
     p.add_argument("--api-base", default=DEFAULT_API)
     p.add_argument("--token-env", default="GITHUB_TOKEN")
+    p.add_argument("--strict-gate", action="store_true",
+                   help="Exit nonzero unless all exact-SHA named checks pass")
+    p.add_argument("--required-check", action="append", default=[],
+                   help="Exact GitHub check name required for --strict-gate; repeatable")
     return p.parse_args()
 
 
@@ -201,7 +272,8 @@ def main() -> int:
     args = parse_args()
     client = GithubHttp(os.environ.get(args.token_env), args.api_base)
     try:
-        result = audit_commit(client, args.owner, args.repo, args.sha)
+        result = audit_commit(client, args.owner, args.repo, args.sha,
+                              tuple(args.required_check))
     except Exception as exc:
         print(f"AUDIT_ERROR={exc}", file=sys.stderr)
         return 2
@@ -216,7 +288,10 @@ def main() -> int:
     print(f"CHECK_PAGES={checks['pages_fetched']}")
     print(f"CHECK_STATE={checks['state']}")
     print(f"LEGACY_STATUS_COUNT={result['legacy_status_api']['status_count']}")
+    print(f"STRICT_GATE_STATE={result['strict_gate']['state']}")
 
+    if args.strict_gate and not result["strict_gate"]["gate_pass"]:
+        return 4
     if not checks["complete_enumeration"] or checks["snapshot_unstable"]:
         return 3
     return 0

@@ -1,6 +1,7 @@
 package com.rafgittools.offline
 
 import java.io.File
+import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -9,7 +10,7 @@ class AtomicFileQueueStorageTest {
 
     @Test
     fun `queue survives reconstruction from atomic file`() {
-        val directory = createTempDir(prefix = "raf-offline-")
+        val directory = createTempDirectory("raf-offline-").toFile()
         try {
             val file = File(directory, "queue.bin")
             val storage = AtomicFileQueueStorage(

@@ -1,0 +1,86 @@
+{
+  "schema": "rafaelia.rafgittools-mapa-provider-authority-preflight/v1",
+  "version": "1.0.0",
+  "state": "PREPARED_READ_ONLY_NOT_EXECUTED",
+  "claim_allowed": false,
+  "intent": "Bind one least-privilege, exact-main-sha RafGitTools PAT_ENV provider readback for Mapa without secret substitution or provider mutation.",
+  "source_repository": "rafaelmeloreisnovo/RafGitTools",
+  "source_main_sha": "fb6e1a87c7aad4cdcb78896558cc62b06d1e4076",
+  "target_repository": "rafaelmeloreisnovo/Mapa",
+  "target_branch": "main",
+  "expected_target_main_sha": "de3aa28e203a84f291a61453e0e95f75f911650a",
+  "credential": {
+    "secret_id": "PAT_ENV",
+    "storage_scope": "ENVIRONMENT_SECRET",
+    "environment": "PAT_ENVIRONMENTS",
+    "source_lane": ".github/workflows/START.yml 08P",
+    "execution_state": "HISTORICAL_PROVIDER_ROUTE_NOT_EXECUTED_FOR_MAPA",
+    "cross_repo_admin_scope": "TOKEN_VAZIO_NOT_PROBED",
+    "value_persisted": false,
+    "substitution_allowed": false,
+    "forbidden_fallbacks": [
+      "PAT_ACTIONS",
+      "PAT_AGENTS",
+      "PAT_CODESPACES",
+      "PAT_DEPENDABOT",
+      "PAT_ENVIRONMENTS"
+    ]
+  },
+  "provider_prestate": {
+    "observed_at": "2026-10-11T19:16:46.137Z",
+    "branch_protected": false,
+    "status_check_enforcement": "off",
+    "observed_ruleset_id": 21909304,
+    "ruleset_enforcement": "disabled",
+    "ruleset_approvals": 0,
+    "always_bypass_integrations": [
+      20150,
+      29110,
+      73253,
+      1144995
+    ],
+    "bypass_actor_rationales": "TOKEN_VAZIO",
+    "independent_approval_count": 0,
+    "code_scan_secret_names_missing": [
+      "CODESCAN_AUTH_TOKEN",
+      "CODESCAN_ORGANIZATION_KEY",
+      "CODESCAN_PROJECT_KEY"
+    ]
+  },
+  "operation": "READ_ONLY_PREFLIGHT",
+  "mutation_allowed": false,
+  "readback_endpoints": [
+    "GET /repos/rafaelmeloreisnovo/Mapa",
+    "GET /repos/rafaelmeloreisnovo/Mapa/branches/main",
+    "GET /repos/rafaelmeloreisnovo/Mapa/branches/main/protection",
+    "GET /repos/rafaelmeloreisnovo/Mapa/rulesets",
+    "GET /repos/rafaelmeloreisnovo/Mapa/rulesets/21909304",
+    "GET /repos/rafaelmeloreisnovo/Mapa/actions/secrets"
+  ],
+  "required_before_any_apply": [
+    "PAT_ENV_PROVIDER_ADMIN_WRITE_TARGET_ACCESS_VERIFIED",
+    "BYPASS_ACTOR_IDENTITIES_AND_POLICIES_REVIEWED",
+    "AT_LEAST_ONE_INDEPENDENT_ELIGIBLE_REVIEWER_VERIFIED",
+    "CODE_SCAN_SECRET_BOUND_ANALYZER_AND_SARIF_PASS",
+    "EXACT_REQUIRED_STATUS_CHECK_NAMES_PROVIDER_VERIFIED",
+    "EXACT_MAIN_SHA_RECONFIRMED",
+    "ROLLBACK_PRESTATE_CAPTURED_AND_REHEARSED"
+  ],
+  "all_closure_gates_pass": false,
+  "zero_approval_rejection_test": "NOT_RUN_UNTIL_ACTIVE_ENFORCEMENT",
+  "next_action": "Run PAT_ENV read-only provider capability preflight through owner-gated GitHub Actions environment after reviewed wiring; then separate provider policy design and explicit apply authorization. This artifact never triggers provider mutation.",
+  "invariants": [
+    "PAT_ENV_NE_PAT_ACTIONS",
+    "PAT_ENV_NE_PAT_AGENTS",
+    "SECRET_EXISTS_NE_ADMIN_PERMISSION",
+    "SOURCE_NE_EXECUTION_NE_EVIDENCE_NE_CLAIM",
+    "PREPARED_NE_EXECUTED",
+    "NO_MAIN_MUTATION",
+    "NO_TOKEN_FALLBACK",
+    "NO_SELF_REVIEW",
+    "NO_AUTO_MERGE",
+    "NO_PLAIN_SECRET_IN_REPO",
+    "TOKEN_VAZIO_NE_PASS"
+  ],
+  "rollback": "Close draft PR; no provider mutation exists for this preflight-only plan. Preserve all existing GitHub rulesets, historical files and receipts."
+}

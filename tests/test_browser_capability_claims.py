@@ -13,6 +13,29 @@ CSPRNG_CONFIG = ROOT / "configs" / "browserraf-csprng.phase2.json"
 
 
 class BrowserCapabilityClaimTests(unittest.TestCase):
+    def test_http_header_literals_copy_exact_wire_bytes(self) -> None:
+        # Header constants must copy CRLF but never the C terminating NUL.
+        source = (ROOT / "BrowserRaf" / "internal" / "br_http.h").read_text(
+            encoding="utf-8"
+        )
+        cases = (
+            (r"Accept: text/html,text/plain;q=0.9,*/*;q=0.8\r\n", 46, 47),
+            (r"Accept-Language: pt-BR,pt;q=0.9,en;q=0.8\r\n", 42, 43),
+        )
+        for literal, exact_len, wrong_len in cases:
+            payload = literal.replace(r"\r", "\r").replace(r"\n", "\n")
+            self.assertEqual(len(payload.encode("ascii")), exact_len)
+            expected = (
+                f'MC(p,(const u8*)"{literal}",{exact_len}u);'
+                f"p+={exact_len};"
+            )
+            oversized = (
+                f'MC(p,(const u8*)"{literal}",{wrong_len}u);'
+                f"p+={wrong_len};"
+            )
+            self.assertIn(expected, source)
+            self.assertNotIn(oversized, source)
+
     def test_banner_does_not_claim_operational_tls(self) -> None:
         source = BROWSER_MAIN.read_text(encoding="utf-8")
         self.assertIn("HTTPS FAIL-CLOSED", source)

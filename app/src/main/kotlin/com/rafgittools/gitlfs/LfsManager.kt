@@ -1,5 +1,6 @@
 package com.rafgittools.gitlfs
 
+import com.rafgittools.platform.ProcessWaitCompat
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
@@ -35,7 +36,7 @@ object LfsManager {
         val p = ProcessBuilder("git", "lfs", "version")
             .redirectErrorStream(true)
             .start()
-        p.waitFor(5, TimeUnit.SECONDS) && p.exitValue() == 0
+        ProcessWaitCompat.waitFor(p, 5L, TimeUnit.SECONDS) && p.exitValue() == 0
     }.getOrDefault(false)
 
     private fun requireRepoPath(repoPath: String): Result<Unit>? =
@@ -48,13 +49,13 @@ object LfsManager {
                 .redirectErrorStream(true)
                 .start()
             val outputFuture = ioScope.async { process.inputStream.bufferedReader().readText() }
-            val finished = process.waitFor(LFS_TIMEOUT_SECS, TimeUnit.SECONDS)
-            val output = runBlocking { outputFuture.await() }
+            val finished = ProcessWaitCompat.waitFor(process, LFS_TIMEOUT_SECS, TimeUnit.SECONDS)
             if (!finished) {
-                process.destroyForcibly()
-                process.waitFor()
+                ProcessWaitCompat.terminate(process)
+                outputFuture.cancel()
                 return CmdResult(-1, "", "git lfs timed out after ${LFS_TIMEOUT_SECS}s")
             }
+            val output = runBlocking { outputFuture.await() }
             CmdResult(exitCode = process.exitValue(), stdout = output.trimEnd(), stderr = "")
         } catch (e: Exception) {
             CmdResult(-1, "", "Failed to run git lfs: ${e.message}")

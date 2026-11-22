@@ -1,0 +1,83 @@
+{
+  "schema": "rafaelia.agents-pat-federation.v1",
+  "version": "1.0.0",
+  "status": "SOURCE_PROPOSAL_HOLD",
+  "claim_allowed": false,
+  "automatic_dispatch_allowed": false,
+  "authority": {
+    "federated": "rafaelmeloreisnovo/Mapa",
+    "executor": "rafaelmeloreisnovo/RafGitTools",
+    "repository_local": "owning repository AGENTS.md",
+    "drive": "CURRENT_STATE + append-only receipt",
+    "supabase": "OPTIONAL_METADATA_PROJECTION_ONLY"
+  },
+  "sources": [
+    "AGENTS.md",
+    "configs/agent-entry-kernel.v1.json",
+    "docs/governance/PAT_CAPABILITY_ROUTING_V1.md",
+    "docs/AGENT_FEDERATION_ENTRY_V1.md",
+    "github:rafaelmeloreisnovo/Mapa/data/control-plane/RAFAELIA_FEDERATED_WORK_SERVICE_CONTRACT.v1.json"
+  ],
+  "unique_pat_identifiers": [
+    "PAT_ACTIONS",
+    "PAT_AGENTS",
+    "PAT_CODESPACES",
+    "PAT_DEPENDABOT",
+    "PAT_ENV",
+    "PAT_ENVIRONMENTS"
+  ],
+  "preexisting_lanes_not_modified": [
+    "PAT_ACTIONS bounded exact-SHA one-shot read/test",
+    "PAT_ENV protected manual provider-admin lane"
+  ],
+  "explicitly_unproven": [
+    "PAT_AGENTS general repository permissions",
+    "PAT_CODESPACES live permissions",
+    "PAT_DEPENDABOT live permissions",
+    "PAT_ENVIRONMENTS secret scope and binding",
+    "cross-repo PAT access for any target"
+  ],
+  "constraints": {
+    "secret_values": "NEVER_READ_STORE_OR_LOG",
+    "secret_name_is_permission": false,
+    "cross_repo_default": "DENY",
+    "per_repository_execution_authority": "EXPLICIT_LOCAL_GATE_REQUIRED",
+    "secret_fallback": "FORBIDDEN",
+    "secret_copying": "FORBIDDEN",
+    "token_exchange": "FORBIDDEN",
+    "pr_push_credential_use": "FORBIDDEN",
+    "untrusted_code_with_secrets": "FORBIDDEN",
+    "requests_with_secret": "ONLY_EXISTING_APPROVED_PROTECTED_LANE",
+    "http_mutation": "DENY_UNLESS_SEPARATELY_APPROVED_AND_PROVED",
+    "target": "EXACT_OWNER_REPOSITORY_REF_SHA_AND_PATH",
+    "least_privilege": true,
+    "failed_provider_readback": "BLOCKED_TOKEN_VAZIO",
+    "auto_merge": false,
+    "supabase_sync": "METADATA_ONLY_NO_PAT_VALUES",
+    "supabase_write": "BLOCKED_INACTIVE_PROJECT_NO_DDL",
+    "source_artifact_execution_evidence_claim": "ALWAYS_DISTINCT"
+  },
+  "federation_route": [
+    "INTENT",
+    "CURRENT_STATE",
+    "MINIMUM_SOURCE",
+    "MAPA_ROUTE",
+    "LOCAL_AGENTS",
+    "CAPABILITY_PERMISSION_READBACK",
+    "AUTHORITY",
+    "GATE",
+    "EXECUTE_IF_PROVEN",
+    "PRODUCER_RECEIPT",
+    "CONSUMER_RECEIPT_IF_CROSS_REPO",
+    "MUWRITE",
+    "R3"
+  ],
+  "acceptance": {
+    "static": "six case-sensitive identifiers distinct, no fallback, claim false, no autonomous dispatch",
+    "provider": "exact PAT permissions and target repo selection verified without exposing value",
+    "runtime": "producer + consumer exact-ref receipts, negative cases, no log leaks",
+    "supabase": "private/non-exposed metadata, RLS/privileges and readback if project activated",
+    "blocking": "unknown must remain TOKEN_VAZIO; other AGENTS cannot override authority"
+  },
+  "rollback": "Close draft PR; leave main, existing START.yml, secrets, permissions and Supabase unchanged."
+}

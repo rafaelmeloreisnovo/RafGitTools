@@ -38,8 +38,9 @@ class HomeAuthHydrationTest {
         authTokenCache = AuthTokenCache()
         every { localRepositoryDao.observeAll() } returns flowOf(emptyList())
         coEvery { localRepositoryDao.loadAll() } returns emptyList()
-        coEvery { githubRepository.getAuthenticatedUserSync() } returns Result.failure(Exception("fixture"))
-        coEvery { githubRepository.getUserRepositoriesSync(any(), any()) } returns Result.failure(Exception("fixture"))
+        coEvery { githubRepository.probeAuthenticatedUserLive() } returns Result.failure(Exception("fixture"))
+        coEvery { githubRepository.getUserRepositoriesLivePage(any(), any()) } returns Result.failure(Exception("fixture"))
+        coEvery { githubRepository.getAuthenticatedOrganizationsLivePage(any()) } returns Result.success(emptyList())
     }
 
     @After
@@ -62,7 +63,7 @@ class HomeAuthHydrationTest {
 
         assertThat(authTokenCache.token).isEqualTo(TEST_CREDENTIAL)
         coVerify(exactly = 1) { authRepository.getPat() }
-        coVerify(atLeast = 1) { githubRepository.getAuthenticatedUserSync() }
+        coVerify(atLeast = 1) { githubRepository.probeAuthenticatedUserLive() }
     }
 
     @Test
@@ -83,8 +84,93 @@ class HomeAuthHydrationTest {
         assertThat(authTokenCache.token).isNull()
         assertThat(vm.isAuthenticated.value).isFalse()
         assertThat(vm.uiState.value).isNotEqualTo(HomeUiState.Loading)
-        coVerify(exactly = 0) { githubRepository.getAuthenticatedUserSync() }
-        coVerify(exactly = 0) { githubRepository.getUserRepositoriesSync(any(), any()) }
+        coVerify(exactly = 0) { githubRepository.probeAuthenticatedUserLive() }
+        coVerify(exactly = 0) { githubRepository.getUserRepositoriesLivePage(any(), any()) }
+    }
+
+    @Test
+    fun `login result rehydrates existing home without activity restart`() = runTest(dispatcher) {
+        coEvery { authRepository.isOfflineMode() } returns false
+        coEvery { authRepository.isAuthenticated() } returns false
+        coEvery { authRepository.getPat() } returns Result.success(TEST_CREDENTIAL)
+
+        val vm = HomeViewModel(
+            authRepository,
+            githubRepository,
+            authTokenCache,
+            jGitService,
+            localRepositoryDao
+        )
+        dispatcher.scheduler.advanceUntilIdle()
+        assertThat(vm.isAuthenticated.value).isFalse()
+        coVerify(exactly = 0) { githubRepository.getUserRepositoriesLivePage(any(), any()) }
+
+        // AuthScreen has already persisted the login when navigation returns.
+        coEvery { authRepository.isAuthenticated() } returns true
+        coEvery { githubRepository.getUserRepositoriesLivePage(any(), any()) } returns Result.success(emptyList())
+
+        vm.onAuthReturned()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(vm.isAuthenticated.value).isTrue()
+        assertThat(authTokenCache.token).isEqualTo(TEST_CREDENTIAL)
+        assertThat(vm.uiState.value).isEqualTo(HomeUiState.Success)
+        assertThat(vm.remoteListingComplete.value).isTrue()
+        coVerify(exactly = 1) { githubRepository.getUserRepositoriesLivePage(1, 100) }
+    }
+
+    @Test
+    fun `switching to offline mode clears the in memory token without deleting drive data`() = runTest(dispatcher) {
+        coEvery { authRepository.isOfflineMode() } returns false
+        coEvery { authRepository.isAuthenticated() } returns true
+        coEvery { authRepository.getPat() } returns Result.success(TEST_CREDENTIAL)
+        coEvery { githubRepository.getUserRepositoriesLivePage(any(), any()) } returns Result.success(emptyList())
+
+        val vm = HomeViewModel(
+            authRepository,
+            githubRepository,
+            authTokenCache,
+            jGitService,
+            localRepositoryDao
+        )
+        dispatcher.scheduler.advanceUntilIdle()
+        assertThat(authTokenCache.token).isEqualTo(TEST_CREDENTIAL)
+
+        coEvery { authRepository.isOfflineMode() } returns true
+        vm.onAuthReturned()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(vm.isAuthenticated.value).isFalse()
+        assertThat(authTokenCache.token).isNull()
+        assertThat(vm.remoteRepositories.value).isEmpty()
+        assertThat(vm.activeTab.value).isEqualTo(HomeViewModel.HomeTab.DRIVE)
+        assertThat(vm.uiState.value).isEqualTo(HomeUiState.Success)
+    }
+
+    @Test
+    fun `login result without a stored credential does not call GitHub`() = runTest(dispatcher) {
+        coEvery { authRepository.isOfflineMode() } returns false
+        coEvery { authRepository.isAuthenticated() } returns false
+        coEvery { authRepository.getPat() } returns Result.failure(Exception("no credential"))
+
+        val vm = HomeViewModel(
+            authRepository,
+            githubRepository,
+            authTokenCache,
+            jGitService,
+            localRepositoryDao
+        )
+        dispatcher.scheduler.advanceUntilIdle()
+
+        coEvery { authRepository.isAuthenticated() } returns true
+        vm.onAuthReturned()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(vm.isAuthenticated.value).isFalse()
+        assertThat(authTokenCache.token).isNull()
+        assertThat(vm.activeTab.value).isEqualTo(HomeViewModel.HomeTab.DRIVE)
+        coVerify(exactly = 0) { githubRepository.probeAuthenticatedUserLive() }
+        coVerify(exactly = 0) { githubRepository.getUserRepositoriesLivePage(any(), any()) }
     }
 
     @Test
@@ -108,7 +194,7 @@ class HomeAuthHydrationTest {
 
         assertThat(vm.githubProbeState.value)
             .isEqualTo(GithubConnectivityState.Passed(TEST_USER.login, 0))
-        coVerify(exactly = 1) { githubRepository.probeAuthenticatedUserLive() }
+        coVerify(exactly = 2) { githubRepository.probeAuthenticatedUserLive() }
     }
 
     @Test

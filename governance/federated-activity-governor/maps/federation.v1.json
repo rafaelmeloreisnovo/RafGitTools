@@ -1,0 +1,119 @@
+{
+  "schema": "rafaelia.federated-activity-governor.map.v1",
+  "version": "1.0.0",
+  "state": "SOURCE_PROPOSAL_HOLD",
+  "claim_allowed": false,
+  "nodes": [
+    {
+      "id": "mapa",
+      "role": "federated_authority",
+      "authority": "rafaelmeloreisnovo/Mapa",
+      "visibility": "private"
+    },
+    {
+      "id": "rafgittools",
+      "role": "executor_validator",
+      "authority": "rafaelmeloreisnovo/RafGitTools",
+      "visibility": "public"
+    },
+    {
+      "id": "rll",
+      "role": "scientific_producer_consumer",
+      "authority": "instituto-Rafael/relativity-living-light",
+      "visibility": "public"
+    },
+    {
+      "id": "github",
+      "role": "source_ci_release",
+      "authority": "provider"
+    },
+    {
+      "id": "supabase",
+      "role": "private_metadata_index",
+      "authority": "project_policy",
+      "project_ref": "ehwltgfrvbkmjqjjfoqn"
+    },
+    {
+      "id": "drive",
+      "role": "navigation_state_reconstruction",
+      "authority": "START_HERE_V2.2"
+    },
+    {
+      "id": "notion",
+      "role": "private_decision_context",
+      "authority": "Agent_Operating_Guide_0.0.6"
+    },
+    {
+      "id": "slack",
+      "role": "public_coordination",
+      "authority": "channel_policy"
+    },
+    {
+      "id": "alphaxiv",
+      "role": "research_reference",
+      "authority": "publication_source"
+    }
+  ],
+  "edges": [
+    {
+      "from": "mapa",
+      "to": "rafgittools",
+      "type": "routes",
+      "write": "proposal_only"
+    },
+    {
+      "from": "rafgittools",
+      "to": "github",
+      "type": "validates",
+      "write": "bounded_explicit_authority"
+    },
+    {
+      "from": "rafgittools",
+      "to": "supabase",
+      "type": "indexes_metadata",
+      "write": "append_only_after_readback"
+    },
+    {
+      "from": "rll",
+      "to": "rafgittools",
+      "type": "consumes_common_gates",
+      "write": "producer_pr_only"
+    },
+    {
+      "from": "rafgittools",
+      "to": "rll",
+      "type": "returns_receipt",
+      "write": "no_claim_promotion"
+    },
+    {
+      "from": "drive",
+      "to": "mapa",
+      "type": "reconstruction_pointer",
+      "write": "cas_append_only"
+    },
+    {
+      "from": "notion",
+      "to": "mapa",
+      "type": "decision_pointer",
+      "write": "minimum_metadata"
+    },
+    {
+      "from": "slack",
+      "to": "mapa",
+      "type": "coordination_signal",
+      "write": "public_safe_only"
+    },
+    {
+      "from": "alphaxiv",
+      "to": "mapa",
+      "type": "research_falsifier",
+      "write": "reference_only"
+    }
+  ],
+  "invariants": [
+    "TOKEN_VAZIO!=0",
+    "SECRET_PRESENT!=CAPABILITY_PROVEN",
+    "SOURCE!=ARTIFACT!=EXECUTION!=EVIDENCE!=CLAIM",
+    "CROSS_REPO_CLAIM_REQUIRES_PRODUCER_AND_CONSUMER_EVIDENCE"
+  ]
+}

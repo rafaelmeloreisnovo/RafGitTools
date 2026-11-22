@@ -1,5 +1,6 @@
 package com.rafgittools.security
 
+import com.rafgittools.platform.ProcessWaitCompat
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
@@ -42,7 +43,7 @@ object GpgKeyManager {
             val p = ProcessBuilder(candidate, "--version")
                 .redirectErrorStream(true)
                 .start()
-            p.waitFor(3, TimeUnit.SECONDS) && p.exitValue() == 0
+            ProcessWaitCompat.waitFor(p, 3L, TimeUnit.SECONDS) && p.exitValue() == 0
         }.getOrDefault(false)
     }
 
@@ -57,13 +58,13 @@ object GpgKeyManager {
                 process.outputStream.bufferedWriter().use { it.write(stdinText) }
             }
             val outputFuture = ioScope.async { process.inputStream.bufferedReader().readText() }
-            val finished = process.waitFor(GPG_TIMEOUT_SECS, TimeUnit.SECONDS)
-            val output = runBlocking { outputFuture.await() }
+            val finished = ProcessWaitCompat.waitFor(process, GPG_TIMEOUT_SECS, TimeUnit.SECONDS)
             if (!finished) {
-                process.destroyForcibly()
-                process.waitFor()
+                ProcessWaitCompat.terminate(process)
+                outputFuture.cancel()
                 return GpgResult(exitCode = -1, stdout = "", stderr = "gpg operation timed out")
             }
+            val output = runBlocking { outputFuture.await() }
             GpgResult(exitCode = process.exitValue(), stdout = output, stderr = "")
         } catch (e: Exception) {
             GpgResult(exitCode = -1, stdout = "", stderr = "Failed to launch gpg: ${e.message}")

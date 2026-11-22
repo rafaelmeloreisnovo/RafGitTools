@@ -1,6 +1,8 @@
 package com.rafgittools.data.github
 
 import android.util.Base64
+import android.content.Context
+import com.rafgittools.bridge.PrivateGitHubTreeIndexGate
 import com.rafgittools.data.auth.AuthRepository
 import com.rafgittools.data.cache.AsyncCacheManager
 import com.rafgittools.data.cache.RepositoryNameCache
@@ -30,6 +32,42 @@ class GithubDataRepository @Inject constructor(
     private val cacheManager: AsyncCacheManager
 ) {
     
+    /**
+     * Fetch only private Git object metadata; never open blob contents.
+     * No cached authorization fallback: current provider must say private.
+     */
+    suspend fun indexPrivateConversationRepository(
+        context: Context,
+        repository: GithubRepoModel
+    ): Result<PrivateGitHubTreeIndexGate.Snapshot> {
+        return try {
+            val current = githubApiService.getRepository(repository.owner.login, repository.name)
+            require(current.isPrivate && current.fullName == repository.fullName) {
+                "Current repository visibility is not private"
+            }
+            val ref = githubApiService.getExactBranchRef(
+                repository.owner.login, repository.name, current.defaultBranch
+            )
+            val commit = ref.getAsJsonObject("object")?.get("sha")?.asString
+                ?: error("Provider did not return exact commit")
+            val gitCommit = githubApiService.getGitCommitObject(
+                repository.owner.login, repository.name, commit
+            )
+            val treeSha = gitCommit.getAsJsonObject("tree")?.get("sha")?.asString
+                ?: error("Provider did not return commit tree")
+            val tree = githubApiService.getGitTreeMetadata(
+                repository.owner.login, repository.name, treeSha
+            )
+            val index = PrivateGitHubTreeIndexGate.buildIndex(
+                repository.fullName, commit, treeSha, tree
+            )
+            Result.success(PrivateGitHubTreeIndexGate.storePrivate(context, index))
+        } catch (error: Exception) {
+            // Neither token nor provider exception text is emitted to public logs.
+            Result.failure(IllegalStateException("PRIVATE_GITHUB_INDEX_BLOCKED", error))
+        }
+    }
+
     /**
      * Get current authenticated user
      * 
@@ -139,6 +177,52 @@ class GithubDataRepository @Inject constructor(
         }
     }
     
+    /**
+     * Strict page fetch for the Home inventory. Cached first-page fallback is
+     * not evidence of current provider completeness or organization visibility.
+     */
+    suspend fun getUserRepositoriesLivePage(
+        page: Int,
+        perPage: Int
+    ): Result<List<GithubRepoModel>> = try {
+        require(page in 1..50 && perPage in 1..100)
+        Result.success(githubApiService.getUserRepositories(page = page, perPage = perPage))
+    } catch (e: Exception) {
+        Result.failure(IllegalStateException("GITHUB_REPOSITORY_INVENTORY_INCOMPLETE"))
+    }
+
+    /** Discover only organizations returned by the authenticated provider. */
+    suspend fun getAuthenticatedOrganizationsLivePage(page: Int): Result<List<String>> =
+        try {
+            require(page in 1..10)
+            val orgs = githubApiService.getAuthenticatedOrganizations(page = page)
+                .mapNotNull { org ->
+                    org.get("login")?.takeIf { it.isJsonPrimitive }?.asString
+                }
+            require(orgs.all(GithubOrganizationInventory::isValidLogin))
+            Result.success(orgs.distinctBy { it.lowercase(java.util.Locale.ROOT) })
+        } catch (e: Exception) {
+            Result.failure(IllegalStateException("GITHUB_ORGANIZATION_DISCOVERY_UNAVAILABLE"))
+        }
+
+    /**
+     * No cache fallback, no silent public-only fallback and no cross-owner
+     * leakage. GitHub is authoritative for this PAT's actual organization scope.
+     */
+    suspend fun getOrganizationRepositoriesLivePage(
+        organization: String, page: Int
+    ): Result<List<GithubRepoModel>> = try {
+        require(GithubOrganizationInventory.isValidLogin(organization))
+        require(page in 1..50)
+        val repos = githubApiService.getOrganizationRepositories(
+            organization = organization, page = page, perPage = 100
+        )
+        GithubOrganizationInventory.requireScopedOwner(organization, repos) { it.owner.login }
+        Result.success(repos.distinctBy { it.id })
+    } catch (e: Exception) {
+        Result.failure(IllegalStateException("GITHUB_ORGANIZATION_REPOSITORIES_UNAVAILABLE"))
+    }
+
     /**
      * Get cached repositories as Flow
      * Useful for observing cache changes

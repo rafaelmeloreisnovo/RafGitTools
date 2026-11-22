@@ -41,6 +41,17 @@ Core invariants:
 
 Canonical federation reference: `docs/AGENT_FEDERATION_ENTRY_V1.md`.
 
+
+### One-pass DMAIC ★ † ‡ — PR portfolio (review rule)
+
+For a material observation on the first source read, register `★` exact fact/HEAD, `†` typed alternatives/authority/risk/falsifier and `‡` minimal reversible fix or blocked gate. Route to [bounded PR snapshot](docs/audit/RAFGITTOOLS_PR_DMAIC_ONEPASS_20261023.md) and [machine registry](configs/rafgittools-pr-dmaic-20261023.v1.json). The federated Mapa rule is proposed in PR #767, not merged authority. The local snapshot is dated, not live. No silent second crawl, auto-merge, CI PASS inflation or certification claim. Follow Q01–Q12, exact-head gates and a readback receipt; `TOKEN_VAZIO != 0`.
+
+### Authorial federation / imported-source gate
+
+If the task reads, copies, adapts, relicenses or promotes `federation/authorial/**`, read `federation/authorial/AGENTS.md` before acting. Machine authority: `configs/authorial-federation.v1.json`. Human/AI route: `docs/federation/AUTHORIAL_FEDERATION_V1.md`.
+
+An imported snapshot is provenance evidence, not native RafGitTools implementation. Preserve exact source identity and governing rights; derive any active adapter outside the archive and prove it separately.
+
 ## 1. Local role
 
 RafGitTools owns deterministic routing, service classification, ledgers, gates, transition receipts, cross-repository contracts and control-plane validation. It must not silently promote runtime/scientific claims of repositories it indexes.
@@ -143,3 +154,33 @@ authority. The resolver is read-only, requires the pinned Mapa commit and Git bl
 and fails closed on any mismatch. A resolved assignment is not agent execution or
 runtime evidence; preserve `claim_allowed=false` and `TOKEN_VAZIO` for unobserved
 results. Do not copy the Mapa role/packet catalog into RafGitTools.
+
+<!-- RAFAELIA_FREESTANDING_POLICY_V1 -->
+## Freestanding / dependency-minimization gate
+
+Default engineering direction: move implementation toward the smallest **authorial, low-level, deterministic and freestanding** core that the target can truthfully support. This is a direction plus gate, not permission to relabel hosted code as freestanding.
+
+Rules:
+
+- Prefer repository-owned primitives over a new external dependency when the local implementation can be smaller, auditable, testable and maintainable.
+- Keep pure/freestanding cores free of network access, package managers, dynamic downloads, hosted runtimes, GC, heap, libc, syscalls and platform APIs unless the owning scoped contract explicitly permits that item.
+- Keep unavoidable OS/Android/JVM/JNI/POSIX/toolchain integrations at an explicit hosted/platform boundary. A build-time tool is not automatically a runtime dependency, and neither may be hidden.
+- Any new or retained external dependency must state: purpose, owner/source, license, version or immutable identity when available, build-time/runtime scope, reason it cannot yet be replaced, tests/evidence, rollback and the smallest credible authorial replacement path. Unknown fields remain `TOKEN_VAZIO`.
+- Never copy/vendor third-party code and call it authorial. Provenance and license survive transformation.
+- Do not add a dependency merely to shorten code. Optimize for reconstructibility, bounded complexity and falsifiable behavior, not dependency-count theater.
+- Node.js 20 is EOL and MUST NOT be introduced or retained as an active CI/tooling baseline. If Node is actually required, use a maintained LTS line; the repository migration baseline on 2026-10-07 is Node 24. Do not add Node to a repository that does not need it.
+- For low-level changes, inspect emitted artifacts/ABI where applicable; source resemblance alone is not freestanding evidence.
+- Preserve `SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM`, `TOKEN_VAZIO != 0`, and `IMPLEMENTED_UNTESTED != PASS`.
+- Before merging a dependency-reduction change, prove that required behavior did not silently disappear. Removal without equivalent behavior or an explicit scope reduction is a regression, not a freestanding win.
+
+For every material dependency delta record:
+
+`boundary -> previous dependency -> replacement/retention reason -> execution -> evidence -> rollback -> remaining TOKEN_VAZIO`.
+
+<!-- /RAFAELIA_FREESTANDING_POLICY_V1 -->
+
+
+<!-- AGENTS_PAT_FEDERATION_ROUTE_V1 -->
+### PAT-bound federation (proposal/HOLD, no extra authority)
+For tasks naming `PAT_AGENTS`, `PAT_ACTIONS`, `PAT_ENV` or cross-repository `AGENTS.md`, read `docs/governance/PAT_CAPABILITY_ROUTING_V1.md` first, then `configs/agents-pat-federation.v1.json` and `federation/agents-pat/AGENTS.md`. Mapa owns the federated route; the target repository's own AGENTS.md owns its local implementation. These pointers do not grant permissions or enable a secret-bearing workflow. Unknown provider permissions = `TOKEN_VAZIO`; no PAT fallback, no autonomous cross-repo writes, no secret in source/Drive/Supabase. This addition is a draft only until separately reviewed and merged.
+<!-- /AGENTS_PAT_FEDERATION_ROUTE_V1 -->

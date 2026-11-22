@@ -180,8 +180,19 @@ static s32 DO_FETCH(BCtx*ctx){
     }
 
     /* ── FASE 4: HTTP request ────────────────────────────────────────── */
+    /* DNS -> CONNECT happened, but HTTP_TX must be entered before
+     * BR_PHASE_NEXT(HTTP_TX -> HTTP_RX). Preserve strict phase gating. */
+    if(!BR_PHASE_NEXT(&ctx->flags,FL_CONNECT,FL_HTTP_TX,FL_CONNECT)){
+        STATUS(ctx->flags,"Estado invalido: CONNECT->HTTP_TX");
+        goto done;
+    }
     STATUS(ctx->flags,"Enviando request HTTP...");
     u32 reqlen=HTTP_BUILD_REQ(ctx->host,ctx->path,_NB,NET_BUF);
+    if(!reqlen){
+        FF_SET(ctx->flags,FL_ERROR);
+        STATUS(ctx->flags,"HTTP request rejeitada: comprimento ou entrada invalida");
+        goto done;
+    }
     PS("  Request (");PN(reqlen);PS("B):\n");
     WR_SAFE(2,_NB,reqlen); /* debug: imprime request no stderr */
     s32 sent=SEND_ALL(ctx->fd,_NB,reqlen);
@@ -201,16 +212,22 @@ static s32 DO_FETCH(BCtx*ctx){
     /* Acumula response em _NB */
     {
         u32 max=NET_BUF-1u;
+        u8 eof=0u;
+        u8 io_error=0u;
         while(total<max){
             s32 r=RECV(ctx->fd,(void*)(_NB+total),max-total);
-            if(r<=0)break;
+            if(r<0){io_error=1u;break;} /* timeout/error != EOF */
+            if(r==0){eof=1u;break;}
             total+=(u32)r;
         }
         _NB[total]=0;
-    }
-    if(total==0u){
-        FF_SET(ctx->flags,FL_ERROR);
-        goto done;
+        /* In a Connection:close HTTP/1.1 subset, a verified EOF is needed.
+         * At buffer capacity we cannot know whether bytes were truncated. */
+        if(io_error||!eof||total==0u){
+            FF_SET(ctx->flags,FL_ERROR);
+            STATUS(ctx->flags,"HTTP response incompleta ou erro de I/O");
+            goto done;
+        }
     }
     ctx->rx_bytes=total;
 
@@ -226,9 +243,13 @@ static s32 DO_FETCH(BCtx*ctx){
     }
     PS("  Status HTTP: ");PN(ctx->status);
 
-    /* Content-Length */
-    const u8*clv=HTTP_FIND_HEADER(_NB,total,"Content-Length");
-    if(clv)ctx->content_len=STR2U32(clv,16u);
+    /* Content-Length: distinguish absent, malformed and fully parsed. */
+    s32 cl_state=HTTP_CONTENT_LENGTH(_NB,total,&ctx->content_len);
+    if(cl_state<0){
+        FF_SET(ctx->flags,FL_ERROR);
+        STATUS(ctx->flags,"Content-Length invalido");
+        goto done;
+    }
     PS("  Content-Length: ");PN(ctx->content_len);
 
     /* ── FASE 6: Render HTML ─────────────────────────────────────────── */
@@ -237,8 +258,21 @@ static s32 DO_FETCH(BCtx*ctx){
         goto done;
     }
     u32 body_off=HTTP_HEADERS_END(_NB,total);
-    u32 body_len=total>body_off?total-body_off:0u;
-    if(body_len&&HTTP_IS_CHUNKED(_NB,body_off)){
+    if(!body_off){
+        FF_SET(ctx->flags,FL_ERROR);
+        STATUS(ctx->flags,"HTTP headers incompletos");
+        goto done;
+    }
+    u32 body_len=total-body_off;
+    u8 is_chunked=HTTP_IS_CHUNKED(_NB,body_off);
+    /* Concurrent chunked framing and Content-Length is ambiguous:
+     * do not guess which one controls the response body. */
+    if(is_chunked&&cl_state==1){
+        FF_SET(ctx->flags,FL_ERROR);
+        STATUS(ctx->flags,"Framing HTTP ambiguo");
+        goto done;
+    }
+    if(is_chunked){
         u32 dec=HTTP_DECHUNK(_NB+body_off,body_len);
         if(dec==0xFFFFFFFFu){
             FF_SET(ctx->flags,FL_ERROR);
@@ -246,6 +280,10 @@ static s32 DO_FETCH(BCtx*ctx){
             goto done;
         }
         body_len=dec;
+    }else if(cl_state==1&&body_len!=ctx->content_len){
+        FF_SET(ctx->flags,FL_ERROR);
+        STATUS(ctx->flags,"Content-Length divergente do body recebido");
+        goto done;
     }
     STATUS(ctx->flags,"Renderizando HTML...");
     PS("  Body: ");PN(body_len);PS("B\n");

@@ -10,6 +10,29 @@ set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$ROOT"
 
+# Hosted POSIX reporting boundary. A pipeline ending in tee would return tee's
+# status and could hide a failed validator even with set -e. Capture the command
+# status explicitly, retain its stdout report (including failure diagnostics),
+# then propagate that status. Stderr remains on the original CI channel.
+run_report() (
+  report=$1
+  shift
+  status=0
+  "$@" > "$report" || status=$?
+  cat "$report" || return $?
+  return "$status"
+)
+
+python3 -m unittest discover -s tests -p 'test_canonical_gate_exit_status.py' -v
+
+# Observation federation anti-regression: run on every quick/full START lane.
+# Offline only. PASS is a source gate; merge authority remains with the provider.
+python3 -m unittest discover -s tests -p 'test_observation_pr_receipt_v1.py' -v
+
+
+# Drive custody strict negative fixture gate; provider readback remains separate.
+python3 -m unittest discover -s tests -p 'test_drive_custody_rmr_pair_v1.py' -v
+
 python3 -m unittest discover -s tests -p 'test_workflow_session_contract.py' -v
 python3 scripts/workflow_session_contract.py validate-index workflow-master-index.json
 python3 scripts/workflow_session_contract.py validate-session \
@@ -83,25 +106,25 @@ python3 scripts/validate_uncertainty_urgency_ethics_license.py \
 # is not a resolution, and evidence cannot be inherited across commits/devices.
 python3 -m unittest discover -s tests \
   -p 'test_gap_closure_execution.py' -v
-python3 scripts/check_gap_closure_ledger.py \
-  | tee artifacts/gap-closure-execution-report.json
+run_report artifacts/gap-closure-execution-report.json \
+  python3 scripts/check_gap_closure_ledger.py
 
 # Federated entry/service gate. This proves the routing/work-envelope contract
 # only. It does not prove Mapa merge state, producer runtime, device execution,
 # dataset-wide privacy/security, or target claims.
 python3 -m unittest discover -s tests \
   -p 'test_agent_entry_kernel.py' -v
-python3 scripts/check_agent_entry_kernel.py \
-  | tee artifacts/agent-entry-kernel-report.json
+run_report artifacts/agent-entry-kernel-report.json \
+  python3 scripts/check_agent_entry_kernel.py
 
 # Seven knowledge/work guards projection. This adapter is owned by RafGitTools
 # and consumes the merged Mapa knowledge-work-house contract by reference.
 # Structural readiness is not producer/runtime/scientific claim approval.
 python3 -m unittest discover -s tests \
   -p 'test_knowledge_work_seven_guards.py' -v
-python3 scripts/validate_knowledge_work_seven_guards.py \
-  examples/knowledge-work-seven-guards.example.json \
-  | tee artifacts/knowledge-work-seven-guards-report.json
+run_report artifacts/knowledge-work-seven-guards-report.json \
+  python3 scripts/validate_knowledge_work_seven_guards.py \
+  examples/knowledge-work-seven-guards.example.json
 python3 -m unittest discover -s tests \
   -p 'test_federated_work_item.py' -v
 python3 scripts/validate_federated_work_item.py \
@@ -114,8 +137,8 @@ python3 scripts/validate_federated_work_item.py \
 # weight updates, runtime/device execution or claim promotion.
 python3 -m unittest discover -s tests \
   -p 'test_program_mission_source_cohesion.py' -v
-python3 scripts/check_program_mission_source_cohesion.py \
-  | tee artifacts/program-mission-source-cohesion-report.json
+run_report artifacts/program-mission-source-cohesion-report.json \
+  python3 scripts/check_program_mission_source_cohesion.py
 
 # NOVOexport full-recount mechanics gate. This uses only synthetic fixtures in
 # CI: the private 000..050 corpus remains external evidence. Tests require a
@@ -139,8 +162,8 @@ python3 -m unittest discover -s tests \
 # enforcement, merge rejection, physical runtime, model training or claims.
 python3 -m unittest discover -s tests \
   -p 'test_main_provider_enforcement_plan_v3.py' -v
-python3 scripts/validate_main_provider_enforcement_plan_v3.py \
-  | tee artifacts/main-provider-enforcement-plan-v3-report.json
+run_report artifacts/main-provider-enforcement-plan-v3-report.json \
+  python3 scripts/validate_main_provider_enforcement_plan_v3.py
 
 # Human-AI bivalent privacy middleware: tests and semantic validation are part
 # of the existing canonical gate, not a competing workflow. The generated
@@ -214,3 +237,14 @@ python3 scripts/validate_runtime_lock_successor.py \
   data/runtime-lock-candidates/runtime-lock-candidate-20261003T214824Z.json \
   data/runtime-lock-candidates/runtime-lock-refresh-receipt-20261003T214824Z.json \
   --report artifacts/runtime-lock-successor-validation-report.json
+
+# Specialized freestanding L0 kernel via existing START coherence shell.
+# PASS means detector caught the incompatible legacy baseline, NOT Gradle readiness.
+python3 -m unittest discover -s tests -p 'test_l0_toolchain_matrix_v1.py' -v
+python3 scripts/verify_l0_toolchain_shell_v1.py \
+  --report artifacts/toolchain-l0-v1.json
+
+# RafGitFS cache admission/commit serialization contract and negative controls.
+python3 -m unittest discover -s tests \
+  -p 'test_validate_rafgitfs_cache_offline.py' -v
+python3 scripts/validate_rafgitfs_cache_offline.py

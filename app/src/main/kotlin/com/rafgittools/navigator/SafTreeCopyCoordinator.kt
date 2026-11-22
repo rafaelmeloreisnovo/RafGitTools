@@ -107,6 +107,11 @@ object SafTreeCopyCoordinator {
             require(inventory.rootDocumentId != destinationRootId) {
                 "COPY_SOURCE_AND_DESTINATION_ARE_SAME_ROOT"
             }
+            // isChildDocument is API 29+. On older devices we cannot
+            // attest ancestry safely; reject the copy instead of guessing.
+            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
+                throw IOException("COPY_DESTINATION_ANCESTRY_UNVERIFIED_API")
+            }
             val destinationInsideSource = try {
                 DocumentsContract.isChildDocument(resolver, sourceRootUri, destinationParentUri)
             } catch (_: Exception) {

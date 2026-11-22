@@ -35,8 +35,10 @@ The public repository intentionally does **not** carry Google Drive file IDs, fo
 4. On Android, use the SAF tree picker and select the logical source route above.
 5. `NovoexportSafInventory` recursively inventories metadata only.
 6. `NovoexportConversationCorpus` validates the exact `conversations-000.json` through `conversations-050.json` namespace.
-7. `NovoexportLibraryCatalogComposer` records any missing, duplicate, or out-of-range corpus member as an explicit gap.
+7. `NovoexportLibraryCatalogComposer` records any missing, duplicate, or out-of-range corpus member as an explicit gap and excludes its own exact `CAT-NOVO-<20hex>-<epoch>.(catalog|receipt).json` materializations from the source projection.
 8. Materialize only derived catalog/receipt artifacts; do not mutate raw corpus files.
+
+The SAF inventory may observe prior CAT-NOVO outputs when they live inside the selected tree, but those files are derived artifacts rather than source corpus. Exact generated names are therefore removed only from the catalog projection, preventing recursive self-catalog growth while preserving the metadata-only boundary. Content bytes are still not opened, so `CONTENT_HASH_NOT_COMPUTED` remains an explicit gap.
 
 ## Corpus gate
 
