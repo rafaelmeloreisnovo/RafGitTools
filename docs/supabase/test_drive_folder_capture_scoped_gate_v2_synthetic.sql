@@ -77,9 +77,29 @@ WITH fixture(case_name,page_index,request_cursor,next_cursor,is_terminal,
          digest_errors=0 AND unsafe_claims=0 AND metadata_identity_errors=0 AND
          provider_variants=1 AND account_variants=1 AND contract_variants=1) strict_accept
  FROM scores
+), scope_fixture(scenario,capture_id,provider,account_id,query_contract) AS (
+ VALUES
+ ('valid_scope','A','p','a','q'), ('valid_scope','B','p','a','q'),
+ ('provider_drift_scope','A','p','a','q'), ('provider_drift_scope','B','OTHER','a','q'),
+ ('account_drift_scope','A','p','a','q'), ('account_drift_scope','B','p','OTHER','q'),
+ ('contract_drift_scope','A','p','a','q'), ('contract_drift_scope','B','p','a','OTHER'),
+ ('blank_account_scope','A','p','','q'), ('blank_account_scope','B','p','','q'),
+ ('missing_b_scope','A','p','a','q')
+), scope_results AS (
+ SELECT scenario,
+        (count(DISTINCT capture_id)=2 AND count(DISTINCT provider)=1 AND
+         count(DISTINCT account_id)=1 AND count(DISTINCT query_contract)=1 AND
+         count(*) FILTER (WHERE provider IS NULL OR btrim(provider)='' OR
+                                account_id IS NULL OR btrim(account_id)='' OR
+                                query_contract IS NULL OR btrim(query_contract)='')=0) same_scope
+ FROM scope_fixture GROUP BY scenario
+), scope_matrix AS (
+ SELECT (count(*)=6 AND bool_and((scenario='valid_scope')=same_scope)) passed
+ FROM scope_results
 )
 SELECT case_name,(case_name='valid') expected_accept,strict_accept,
        (strict_accept=(case_name='valid')) as expectation_met,
        legacy_reached_terminal,legacy_hash_failures,legacy_cursor_breaks,
-       (count(*) OVER()=18 AND bool_and(strict_accept=(case_name='valid')) OVER()) AS entire_matrix_pass
+       (count(*) OVER()=18 AND bool_and(strict_accept=(case_name='valid')) OVER() AND
+        (SELECT passed FROM scope_matrix)) AS entire_matrix_pass
 FROM graded ORDER BY case_name;
