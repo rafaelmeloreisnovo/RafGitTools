@@ -33,6 +33,13 @@ python3 -m unittest discover -s tests -p 'test_observation_pr_receipt_v1.py' -v
 # Drive custody strict negative fixture gate; provider readback remains separate.
 python3 -m unittest discover -s tests -p 'test_drive_custody_rmr_pair_v1.py' -v
 
+# Scoped Drive manifest and matrix parser guard. These are synthetic-only Python
+# tests. Private provider SQL still requires an independently authorized, exact
+# database session; a Python PASS must not promote a provider or B0160 claim.
+python3 -m unittest discover -s tests -p 'test_drive_identity_partition_reconcile_v1.py' -v
+python3 -m unittest discover -s tests -p 'test_drive_metadata_fingerprint_contracts_v1.py' -v
+python3 -m unittest discover -s tests -p 'test_drive_capture_gate_matrix_v2.py' -v
+
 python3 -m unittest discover -s tests -p 'test_workflow_session_contract.py' -v
 python3 scripts/workflow_session_contract.py validate-index workflow-master-index.json
 python3 scripts/workflow_session_contract.py validate-session \
