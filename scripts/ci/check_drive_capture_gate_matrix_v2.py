@@ -36,6 +36,10 @@ def verify_output(output: str) -> dict:
         (case_name, expected_accept, strict_accept, expectation_met,
          _legacy_terminal, _legacy_hash_failures, _legacy_cursor_breaks,
          entire_matrix_pass) = fields
+        if (_legacy_terminal not in ("t", "f")
+            or (_legacy_hash_failures and not _legacy_hash_failures.isdecimal())
+            or (_legacy_cursor_breaks and not _legacy_cursor_breaks.isdecimal())):
+            raise MatrixGateError("LEGACY_FIELD_MALFORMED")
         if case_name not in EXPECTED_CASES or case_name in seen:
             raise MatrixGateError("UNKNOWN_OR_DUPLICATE_CASE")
         seen.add(case_name)
@@ -57,7 +61,8 @@ def run_psql(sql_path: Path) -> str:
     if not sql_path.is_file():
         raise MatrixGateError("SQL_FIXTURE_MISSING")
     args = ["psql", "-X", "-q", "-A", "-t", "-F", "|",
-            "-v", "ON_ERROR_STOP=1", "-f", str(sql_path)]
+            "-v", "ON_ERROR_STOP=1", "-c", "BEGIN READ ONLY;",
+            "-f", str(sql_path), "-c", "ROLLBACK;"]
     try:
         proc = subprocess.run(args, capture_output=True, text=True,
                               timeout=60, check=False)
@@ -66,6 +71,8 @@ def run_psql(sql_path: Path) -> str:
     if proc.returncode != 0:
         # Never emit stderr: it can contain private connection details.
         raise MatrixGateError("POSTGRES_QUERY_FAILED")
+    if len(proc.stdout) > 65536:
+        raise MatrixGateError("UNBOUNDED_PSQL_OUTPUT")
     return proc.stdout
 
 
@@ -73,10 +80,12 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--psql", action="store_true",
                         help="Execute the synthetic SQL fixture through psql")
-    parser.add_argument("--sql", default="docs/supabase/test_drive_folder_capture_scoped_gate_v2_synthetic.sql")
     opts = parser.parse_args(argv)
     try:
-        raw = run_psql(Path(opts.sql)) if opts.psql else sys.stdin.read()
+        # Exact repo-owned fixture, never an arbitrary SQL path on private DB.
+        fixture = (Path(__file__).resolve().parents[2] / "docs/supabase" /
+                   "test_drive_folder_capture_scoped_gate_v2_synthetic.sql")
+        raw = run_psql(fixture) if opts.psql else sys.stdin.read()
         result = verify_output(raw)
     except MatrixGateError as exc:
         print(f"FAIL_SCOPED_MATRIX:{exc}", file=sys.stderr)
