@@ -31,9 +31,12 @@ PROFILES = {
         "baseline_updated_at": None,
         "branches": ["~DEFAULT_BRANCH"],
         "checks": [
+            # These four START jobs are universal; Python / 03 is conditional
+            # on non-fast modes and MUST NOT become globally required.
+            "00 · Plan / roteamento",
             "01 · Workflow topology / START owner + scoped workflows",
             "02 · Coherence / anti-regression",
-            "03 · Python / deterministic tests",
+            "09 · Final receipt / fechamento",
         ],
     },
 }
