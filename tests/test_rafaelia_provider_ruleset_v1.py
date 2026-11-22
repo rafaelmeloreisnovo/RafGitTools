@@ -24,6 +24,24 @@ class PolicyTests(unittest.TestCase):
             status = {x["type"]:x for x in p.policy(profile)["rules"]}["required_status_checks"]["parameters"]
             self.assertTrue(status["strict_required_status_checks_policy"])
             self.assertTrue(all(x["integration_id"] == 15368 for x in status["required_status_checks"]))
+    def test_rafgit_global_checks_are_unconditional_start_core(self):
+        checks = p.PROFILES["rafaelmeloreisnovo/RafGitTools"]["checks"]
+        expected = [
+            "00 · Plan / roteamento",
+            "01 · Workflow topology / START owner + scoped workflows",
+            "02 · Coherence / anti-regression",
+            "09 · Final receipt / fechamento",
+        ]
+        self.assertEqual(checks, expected)
+        start = (ROOT / ".github/workflows/START.yml").read_text(encoding="utf-8")
+        for job in expected:
+            self.assertIn("name: '" + job + "'", start)
+        self.assertIn("  receipt:\\n", start)
+        receipt = start.split("\\n  receipt:\\n", 1)[1].split("\\n  ", 1)[0]
+        self.assertIn("if: always()", receipt)
+        self.assertIn("if: ${{ needs.plan.outputs.mode != 'fast' }}", start)
+        self.assertNotIn("03 · Python / deterministic tests", checks)
+
     def test_bypass_falsifier(self):
         profile = next(iter(p.PROFILES.values()))
         x=p.policy(profile);x["bypass_actors"]=[{"actor_type":"Integration","bypass_mode":"always","actor_id":1}]
