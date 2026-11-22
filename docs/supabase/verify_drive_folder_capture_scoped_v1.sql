@@ -77,9 +77,17 @@ WITH expected_capture(capture_id) AS (
         ) strict_scoped_gate
  FROM per_capture c
  LEFT JOIN raf_private.drive_folder_capture_scoped_quality_v1 q ON q.capture_id=c.capture_id
+), matching_scope AS (
+ SELECT (count(DISTINCT capture_id)=2 AND count(DISTINCT provider)=1 AND
+         count(DISTINCT account_profile_id)=1 AND count(DISTINCT query_contract)=1 AND
+         count(*) FILTER (WHERE provider IS NULL OR btrim(provider)='' OR
+                                account_profile_id IS NULL OR btrim(account_profile_id)='' OR
+                                query_contract IS NULL OR btrim(query_contract)='')=0) same_scope
+ FROM selected
 )
 SELECT v.*,
-       (count(*) OVER()=2 AND bool_and(v.strict_scoped_gate) OVER() IS TRUE) both_capture_gate
+       (count(*) OVER()=2 AND bool_and(v.strict_scoped_gate) OVER() IS TRUE AND
+        (SELECT same_scope FROM matching_scope)) both_capture_gate
 FROM validated v ORDER BY v.capture_id;
 
 -- Exact A/B identity, selected metadata and page movement, plus explicit reconciliation gate.
@@ -120,14 +128,23 @@ WITH source AS MATERIALIZED (
        invalid_ids=0 AND claim_allowed IS FALSE AND
        snapshot_isolation='NOT_PROVEN' AND source_content_sha256='TOKEN_VAZIO') AS valid_captures
   FROM raf_private.drive_folder_capture_scoped_quality_v1
+), matching_scope AS (
+ SELECT (count(DISTINCT capture_id)=2 AND count(DISTINCT provider)=1 AND
+         count(DISTINCT account_profile_id)=1 AND count(DISTINCT query_contract)=1 AND
+         count(*) FILTER (WHERE provider IS NULL OR btrim(provider)='' OR
+                                account_profile_id IS NULL OR btrim(account_profile_id)='' OR
+                                query_contract IS NULL OR btrim(query_contract)='')=0) same_scope
+ FROM raf_private.drive_folder_capture_pages_v1
+ WHERE capture_id IN ('RAF_DRIVE_FOLDERS_20261121_PASS_A_V1',
+                      'RAF_DRIVE_FOLDERS_20261121_PASS_B_V1')
 )
 SELECT c.*,
        (c.a_positions=60687 AND c.b_positions=60687 AND c.only_a=0 AND c.only_b=0
         AND c.matched_ids=60687 AND c.modified_time_drift=0 AND c.created_time_drift=0
         AND c.parent_drift=0 AND c.moved_across_pages=0 AND
-        q.valid_captures=2) IS TRUE AS ab_reconciliation_scoped_gate,
+        q.valid_captures=2 AND s.same_scope IS TRUE) IS TRUE AS ab_reconciliation_scoped_gate,
        FALSE AS global_claim_allowed
-FROM comparison c CROSS JOIN quality q;
+FROM comparison c CROSS JOIN quality q CROSS JOIN matching_scope s;
 
 -- Historical B0154 (folders only) versus the current *prefix*, exact provider identity.
 with a as (
