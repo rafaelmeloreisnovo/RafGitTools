@@ -33,6 +33,12 @@ WITH fixture(case_name,page_index,request_cursor,next_cursor,is_terminal,
  ('account_drift',1,'synthetic_cursor_1',NULL,TRUE,'h','h',FALSE,'synthetic_provider','OTHER','synthetic_contract'),
  ('query_contract_drift',0,NULL,'synthetic_cursor_1',FALSE,'h','h',FALSE,'synthetic_provider','synthetic_account','synthetic_contract'),
  ('query_contract_drift',1,'synthetic_cursor_1',NULL,TRUE,'h','h',FALSE,'synthetic_provider','synthetic_account','OTHER'),
+ ('blank_provider',0,NULL,'synthetic_cursor_1',FALSE,'h','h',FALSE,'','synthetic_account','synthetic_contract'),
+ ('blank_provider',1,'synthetic_cursor_1',NULL,TRUE,'h','h',FALSE,'','synthetic_account','synthetic_contract'),
+ ('blank_account',0,NULL,'synthetic_cursor_1',FALSE,'h','h',FALSE,'synthetic_provider','   ','synthetic_contract'),
+ ('blank_account',1,'synthetic_cursor_1',NULL,TRUE,'h','h',FALSE,'synthetic_provider','   ','synthetic_contract'),
+ ('blank_query_contract',0,NULL,'synthetic_cursor_1',FALSE,'h','h',FALSE,'synthetic_provider','synthetic_account',''),
+ ('blank_query_contract',1,'synthetic_cursor_1',NULL,TRUE,'h','h',FALSE,'synthetic_provider','synthetic_account',''),
  ('duplicate_page_index',0,NULL,'synthetic_cursor_1',FALSE,'h','h',FALSE,'synthetic_provider','synthetic_account','synthetic_contract'),
  ('duplicate_page_index',0,'synthetic_cursor_1',NULL,TRUE,'h','h',FALSE,'synthetic_provider','synthetic_account','synthetic_contract')
 ), flags AS (
@@ -56,6 +62,9 @@ WITH fixture(case_name,page_index,request_cursor,next_cursor,is_terminal,
         count(*) FILTER(WHERE (next_cursor IS NULL) IS DISTINCT FROM is_terminal) terminal_cursor_errors,
         count(*) FILTER(WHERE stored_digest IS DISTINCT FROM recalc_digest) digest_errors,
         count(*) FILTER(WHERE claim_allowed IS DISTINCT FROM FALSE) unsafe_claims,
+        count(*) FILTER(WHERE provider IS NULL OR btrim(provider)='' OR
+                              account IS NULL OR btrim(account)='' OR
+                              contract IS NULL OR btrim(contract)='') metadata_identity_errors,
         count(DISTINCT provider) provider_variants,
         count(DISTINCT account) account_variants,
         count(DISTINCT contract) contract_variants
@@ -65,12 +74,12 @@ WITH fixture(case_name,page_index,request_cursor,next_cursor,is_terminal,
         (pages=2 AND distinct_page_indices=2 AND first_index=0 AND last_index=1 AND
          page_index_errors=0 AND origin_errors=0 AND cursor_errors=0 AND
          terminals=1 AND early_terminals=0 AND terminal_cursor_errors=0 AND
-         digest_errors=0 AND unsafe_claims=0 AND
+         digest_errors=0 AND unsafe_claims=0 AND metadata_identity_errors=0 AND
          provider_variants=1 AND account_variants=1 AND contract_variants=1) strict_accept
  FROM scores
 )
 SELECT case_name,(case_name='valid') expected_accept,strict_accept,
        (strict_accept=(case_name='valid')) as expectation_met,
        legacy_reached_terminal,legacy_hash_failures,legacy_cursor_breaks,
-       (count(*) OVER()=15 AND bool_and(strict_accept=(case_name='valid')) OVER()) AS entire_matrix_pass
+       (count(*) OVER()=18 AND bool_and(strict_accept=(case_name='valid')) OVER()) AS entire_matrix_pass
 FROM graded ORDER BY case_name;
