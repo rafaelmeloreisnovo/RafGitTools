@@ -77,35 +77,52 @@ SELECT v.*,
        (count(*) OVER()=2 AND bool_and(v.strict_scoped_gate) OVER() IS TRUE) both_capture_gate
 FROM validated v ORDER BY v.capture_id;
 
--- Exact set differences, provider modified/created times, parent sets and page movement.
-with source as (
-  select p.capture_id,p.page_index,e->>'id' as file_id,
-         e->>'modified_time' as modified_time,
-         e->>'created_time' as created_time,
-         e->'parent_ids' as parent_ids
-    from raf_private.drive_folder_capture_pages_v1 p
-    cross join lateral jsonb_array_elements(p.folder_ids_and_metadata) e
-   where p.capture_id in ('RAF_DRIVE_FOLDERS_20261121_PASS_A_V1',
-                          'RAF_DRIVE_FOLDERS_20261121_PASS_B_V1')
-), a as (
-  select * from source where capture_id='RAF_DRIVE_FOLDERS_20261121_PASS_A_V1'
-), b as (
-  select * from source where capture_id='RAF_DRIVE_FOLDERS_20261121_PASS_B_V1'
+-- Exact A/B identity, selected metadata and page movement, plus explicit reconciliation gate.
+-- A/B equals scoped identities only; it is NOT proof of provider snapshot isolation.
+WITH source AS MATERIALIZED (
+  SELECT p.capture_id,p.page_index,e->>'id' AS file_id,
+         e->>'modified_time' AS modified_time,
+         e->>'created_time' AS created_time,e->'parent_ids' AS parent_ids
+  FROM raf_private.drive_folder_capture_pages_v1 p
+  CROSS JOIN LATERAL jsonb_array_elements(p.folder_ids_and_metadata) e
+  WHERE p.capture_id IN ('RAF_DRIVE_FOLDERS_20261121_PASS_A_V1',
+                         'RAF_DRIVE_FOLDERS_20261121_PASS_B_V1')
+), a AS MATERIALIZED (
+  SELECT * FROM source WHERE capture_id='RAF_DRIVE_FOLDERS_20261121_PASS_A_V1'
+), b AS MATERIALIZED (
+  SELECT * FROM source WHERE capture_id='RAF_DRIVE_FOLDERS_20261121_PASS_B_V1'
+), comparison AS (
+  SELECT count(*) FILTER (WHERE a.file_id IS NOT NULL) AS a_positions,
+         count(*) FILTER (WHERE b.file_id IS NOT NULL) AS b_positions,
+         count(*) FILTER (WHERE a.file_id IS NOT NULL AND b.file_id IS NULL) AS only_a,
+         count(*) FILTER (WHERE a.file_id IS NULL AND b.file_id IS NOT NULL) AS only_b,
+         count(*) FILTER (WHERE a.file_id IS NOT NULL AND b.file_id IS NOT NULL) AS matched_ids,
+         count(*) FILTER (WHERE a.file_id IS NOT NULL AND b.file_id IS NOT NULL AND
+                         a.modified_time IS DISTINCT FROM b.modified_time) AS modified_time_drift,
+         count(*) FILTER (WHERE a.file_id IS NOT NULL AND b.file_id IS NOT NULL AND
+                         a.created_time IS DISTINCT FROM b.created_time) AS created_time_drift,
+         count(*) FILTER (WHERE a.file_id IS NOT NULL AND b.file_id IS NOT NULL AND
+                         a.parent_ids IS DISTINCT FROM b.parent_ids) AS parent_drift,
+         count(*) FILTER (WHERE a.file_id IS NOT NULL AND b.file_id IS NOT NULL AND
+                         a.page_index IS DISTINCT FROM b.page_index) AS moved_across_pages
+  FROM a FULL OUTER JOIN b USING(file_id)
+), quality AS (
+  SELECT count(*) FILTER (WHERE capture_id IN
+       ('RAF_DRIVE_FOLDERS_20261121_PASS_A_V1','RAF_DRIVE_FOLDERS_20261121_PASS_B_V1')
+       AND scoped_state='TERMINAL_CAPTURE_SCOPED'
+       AND pages=132 AND unique_ids=60687 AND duplicate_positions=0 AND
+       digest_mismatch=0 AND broken_chain=0 AND terminal_pages=1 AND
+       invalid_ids=0 AND claim_allowed IS FALSE AND
+       snapshot_isolation='NOT_PROVEN' AND source_content_sha256='TOKEN_VAZIO') AS valid_captures
+  FROM raf_private.drive_folder_capture_scoped_quality_v1
 )
-select (select count(*) from a) as a_positions,
-       (select count(*) from b) as b_positions,
-       (select count(*) from a where not exists(select 1 from b where b.file_id=a.file_id)) as only_a,
-       (select count(*) from b where not exists(select 1 from a where a.file_id=b.file_id)) as only_b,
-       (select count(*) from a join b using(file_id)) as matched_ids,
-       (select count(*) from a join b using(file_id)
-          where a.modified_time is distinct from b.modified_time) as modified_time_drift,
-       (select count(*) from a join b using(file_id)
-          where a.created_time is distinct from b.created_time) as created_time_drift,
-       (select count(*) from a join b using(file_id)
-          where a.parent_ids is distinct from b.parent_ids) as parent_drift,
-       (select count(*) from a join b using(file_id)
-          where a.page_index is distinct from b.page_index) as moved_across_pages,
-       false as global_claim_allowed;
+SELECT c.*,
+       (c.a_positions=60687 AND c.b_positions=60687 AND c.only_a=0 AND c.only_b=0
+        AND c.matched_ids=60687 AND c.modified_time_drift=0 AND c.created_time_drift=0
+        AND c.parent_drift=0 AND c.moved_across_pages=0 AND
+        q.valid_captures=2) IS TRUE AS ab_reconciliation_scoped_gate,
+       FALSE AS global_claim_allowed
+FROM comparison c CROSS JOIN quality q;
 
 -- Historical B0154 (folders only) versus the current *prefix*, exact provider identity.
 with a as (
