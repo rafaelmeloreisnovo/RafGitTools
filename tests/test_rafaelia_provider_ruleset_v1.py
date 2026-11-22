@@ -36,8 +36,8 @@ class PolicyTests(unittest.TestCase):
         start = (ROOT / ".github/workflows/START.yml").read_text(encoding="utf-8")
         for job in expected:
             self.assertIn("name: '" + job + "'", start)
-        self.assertIn("  receipt:\\n", start)
-        receipt = start.split("\\n  receipt:\\n", 1)[1].split("\\n  ", 1)[0]
+        self.assertIn("  receipt:\n", start)
+        receipt = start.split("\n  receipt:\n", 1)[1].split("\n  ", 1)[0]
         self.assertIn("if: always()", receipt)
         self.assertIn("if: ${{ needs.plan.outputs.mode != 'fast' }}", start)
         self.assertNotIn("03 · Python / deterministic tests", checks)
