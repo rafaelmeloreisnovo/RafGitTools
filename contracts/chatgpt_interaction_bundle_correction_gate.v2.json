@@ -1,0 +1,60 @@
+{
+  "schema": "rafgittools.chatgpt-interaction-bundle-correction-gate/v2",
+  "accepted_bundle_schema": "rafaelia.chatgpt-interaction-bundle/v1",
+  "required_bundle_state": "OBSERVED_CONSOLIDATED_NON_TRAINING",
+  "required_p0_urgencies": [
+    "URG-P0-SCI-FALSE-POSITIVE",
+    "URG-P0-SESSION-MISCLASSIFICATION",
+    "URG-P0-AUTO-CORRECT-SAFETY"
+  ],
+  "required_bundle_gates": [
+    "GATE_OPERATIONAL_EVIDENCE_CLASSIFICATION",
+    "GATE_SCIENTIFIC_FALSIFICATION_MESH",
+    "GATE_BOUNDED_AUTOMATIC_CORRECTION",
+    "GATE_EXACT_HEAD_TESTS",
+    "GATE_ROLLBACK_RECEIPT",
+    "GATE_INDEPENDENT_REVIEW"
+  ],
+  "correction_envelope_required": [
+    "explicit_target",
+    "exact_source_revision",
+    "deterministic_reproducer_or_falsifier",
+    "root_cause_evidence",
+    "bounded_patch",
+    "pre_patch_receipt",
+    "rollback_condition",
+    "required_post_patch_tests",
+    "non_regression_invariants"
+  ],
+  "action_lattice": {
+    "evidence_only": [
+      "CLASSIFY",
+      "TYPE_GAPS",
+      "EMIT_RECEIPT",
+      "DRY_RUN"
+    ],
+    "eligible": [
+      "DRY_RUN",
+      "WORK_BRANCH_PATCH",
+      "RUN_FALSIFIER",
+      "RUN_REGRESSION_GATES",
+      "EMIT_APPEND_ONLY_RECEIPT",
+      "ROLLBACK_IF_REQUIRED"
+    ],
+    "forbidden": [
+      "DIRECT_MAIN_WRITE",
+      "FORCE_PUSH",
+      "REMOTE_DELETE",
+      "AUTO_MERGE",
+      "AUTO_CLAIM_PROMOTION"
+    ]
+  },
+  "urgency_policy": {
+    "P0": "Blocks promotion and requires immediate reproducible falsifier/root-cause routing. P0 does not authorize mutation by itself.",
+    "P1": "High-value next evidence after P0 gates are bounded.",
+    "P2": "Deferred analytical expansion."
+  },
+  "token_vazio_policy": "TOKEN_VAZIO never satisfies a required field; every void must retain type and closure.",
+  "claim_allowed": false,
+  "merge_allowed": false
+}

@@ -2,6 +2,7 @@ package com.rafgittools.terminal
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.rafgittools.platform.ProcessWaitCompat
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -73,13 +74,9 @@ object TerminalEmulator {
             readerThread.isDaemon = true
             readerThread.start()
 
-            val finished = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
+            val finished = ProcessWaitCompat.waitFor(process, timeoutMs, TimeUnit.MILLISECONDS)
             if (!finished) {
-                process.destroy()
-                if (!process.waitFor(500, TimeUnit.MILLISECONDS)) {
-                    process.destroyForcibly()
-                    process.waitFor(1, TimeUnit.SECONDS)
-                }
+                ProcessWaitCompat.terminate(process)
                 runCatching { process.inputStream.close() }
                 readerThread.join(1_000L)
                 return@withContext CommandResult(

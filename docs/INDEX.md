@@ -1,3 +1,7 @@
+> **Current navigation successor — 2026-10-31 · DRAFT/HOLD:** [HEAD-bound code/documentation reconciliation](HEAD_TRUTH_ROUTER_20261031.md) → [build guide](BUILD.md) → [dated current-state history](RAFGITTOOLS_CURRENT_STATE.md). This is a scoped code/config correction; the index below is a historical route until each target is individually verified.
+
+> **Sucessor de navegação — 2026-10-25 · DRAFT/HOLD:** [censo integral da raiz e lacunas por Git HEAD](RAFAELIA_DOCS_RECONCILIATION_20261025.md). Este índice segue preservado como fotografia histórica até verificação individual dos alvos e status.
+
 # Documentação RafGitTools
 
 ## Reconstrução rápida de contexto — humano / IA
@@ -54,6 +58,13 @@ Invariantes: `REPO_OWNER != AUTHOR`, `HEADER_ADDED != SOLE_AUTHORSHIP` e `IMPORT
 Quando a intenção cruzar ética, Novo Testamento, linguagem, história e interpretação, use [`navigation/LOVE_NEIGHBOR_EXEGESIS_ROUTE_V1.md`](navigation/LOVE_NEIGHBOR_EXEGESIS_ROUTE_V1.md).
 
 A rota começa em **amar o próximo como a si mesmo** e preserva a separação `TEXT != VARIANT != HISTORY != THEOLOGY != ETHICAL_APPLICATION`. Ela permite leitura espiritual/metafórica sem promover hipótese como fato, e usa `TOKEN_VAZIO` quando a fonte não sustenta a próxima passagem.
+
+### Portfolio PRs — DMAIC one-pass ★ † ‡ (snapshot scoped)
+
+- [Auditoria de 23 PRs abertas](audit/RAFGITTOOLS_PR_DMAIC_ONEPASS_20261023.md) — sobreposições, bifurcações, gates e R3 em leitura única.
+- [Snapshot JSON](../configs/rafgittools-pr-dmaic-20261023.v1.json) — prova de indexação com SHA observado, estado Draft e limites epistêmicos.
+- [Teste do snapshot](../tests/test_rafgittools_pr_dmaic_onepass_v1.py) — assertivas de invariantes e dados, **não** validação de CI nem integração.
+- O HEAD observado é histórico, revalide provedor antes de agir. Nunca substituir bootstrap Google Drive, CURRENT_STATE ou receipts.
 
 ## Fonte de verdade — ordem de leitura
 

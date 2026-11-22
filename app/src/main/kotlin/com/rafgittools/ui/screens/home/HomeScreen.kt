@@ -7,6 +7,8 @@ import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -29,11 +31,17 @@ import com.rafgittools.bridge.CorpusCatalogTreeGate
 import com.rafgittools.bridge.CorpusIntakeGate
 import com.rafgittools.bridge.CorpusIntakeResult
 import com.rafgittools.bridge.DriveStagingGate
+import com.rafgittools.bridge.PrivateGitHubTreeIndexGate
 import com.rafgittools.navigator.ConversationManifoldProcessor
 import com.rafgittools.navigator.ConversationManifoldPublication
 import com.rafgittools.navigator.NovoexportSafInventory
 import com.rafgittools.navigator.NovoexportQueueStore
+import com.rafgittools.ui.screens.setupwizard.DriveFirstRunIndexCard
+import com.rafgittools.ui.screens.setupwizard.GoogleDriveCloudCard
 import com.rafgittools.ui.components.ResponsiveContentFrame
+import com.rafgittools.ui.components.GithubOwnerOption
+import com.rafgittools.ui.components.GithubOwnerPicker
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.rafgittools.domain.model.github.GithubRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -55,24 +63,39 @@ import java.security.MessageDigest
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
+    authReturnSignal: Boolean = false,
+    onAuthReturnHandled: () -> Unit = {},
     onNavigateToAuth: () -> Unit = {},
     onNavigateToRepository: (GithubRepository) -> Unit = {},
     onNavigateToLocalRepo: (String) -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
-    onNavigateToActions: () -> Unit = {}
+    onNavigateToActions: () -> Unit = {},
+    onNavigateToAgentWorkspace: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
     val user by viewModel.user.collectAsStateWithLifecycle()
     val remoteRepositories by viewModel.remoteRepositories.collectAsStateWithLifecycle()
+    val remoteListingComplete by viewModel.remoteListingComplete.collectAsStateWithLifecycle()
+    val observedOrganizations by viewModel.observedOrganizations.collectAsStateWithLifecycle()
+    val organizationStatus by viewModel.organizationStatus.collectAsStateWithLifecycle()
     val localRepositories by viewModel.localRepositories.collectAsStateWithLifecycle()
     val activeTab by viewModel.activeTab.collectAsStateWithLifecycle()
     val githubProbeState by viewModel.githubProbeState.collectAsStateWithLifecycle()
     val remoteReceiptState by viewModel.remoteReceiptState.collectAsStateWithLifecycle()
     val privateProcessingPublishState by viewModel.privateProcessingPublishState.collectAsStateWithLifecycle()
     var showMenu by remember { mutableStateOf(false) }
+
+    LaunchedEffect(authReturnSignal) {
+        if (authReturnSignal) {
+            // Consume once: the back-stack entry is retained across login navigation.
+            viewModel.onAuthReturned()
+            onAuthReturnHandled()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -168,18 +191,24 @@ fun HomeScreen(
                     activeTab = activeTab,
                     isGithubAuthenticated = isAuthenticated,
                     remoteRepositories = remoteRepositories,
+                    githubProfile = user?.login,
+                    remoteListingComplete = remoteListingComplete,
+                    observedOrganizations = observedOrganizations,
+                    organizationStatus = organizationStatus,
                     localRepositories = localRepositories,
                     githubProbeState = githubProbeState,
                     remoteReceiptState = remoteReceiptState,
                     privateProcessingPublishState = privateProcessingPublishState,
                     onTabSelected = viewModel::setActiveTab,
+                    onLoadOrganization = viewModel::loadOrganizationRepositories,
                     onNavigateToAuth = onNavigateToAuth,
                     onRepositoryClick = onNavigateToRepository,
                     onLocalRepositoryClick = onNavigateToLocalRepo,
                     onRunGithubTest = viewModel::runGithubConnectivityTest,
                     onCreateRemoteReceipt = viewModel::createRemoteConnectivityReceipt,
                     onPublishPrivateProcessingReceipt = viewModel::publishPrivateProcessingReceipt,
-                    onPublishManifold = viewModel::publishConversationManifold
+                    onPublishManifold = viewModel::publishConversationManifold,
+                    onBuildPrivateGitHubIndex = { repository -> viewModel.buildPrivateGithubIndex(context, repository) }
                 )
             }
         }
@@ -191,11 +220,16 @@ private fun SourceDashboard(
     activeTab: HomeViewModel.HomeTab,
     isGithubAuthenticated: Boolean,
     remoteRepositories: List<GithubRepository>,
+    githubProfile: String?,
+    remoteListingComplete: Boolean,
+    observedOrganizations: List<String>,
+    organizationStatus: String,
     localRepositories: List<LocalRepoSummary>,
     githubProbeState: GithubConnectivityState,
     remoteReceiptState: RemoteReceiptState,
     privateProcessingPublishState: PrivateProcessingPublishState,
     onTabSelected: (HomeViewModel.HomeTab) -> Unit,
+    onLoadOrganization: (String) -> Unit,
     onNavigateToAuth: () -> Unit,
     onRepositoryClick: (GithubRepository) -> Unit,
     onLocalRepositoryClick: (String) -> Unit,
@@ -208,24 +242,60 @@ private fun SourceDashboard(
         String,
         CorpusIntakeResult
     ) -> Unit,
-    onPublishManifold: suspend (GithubRepository, ConversationManifoldPublication.Plan, String, android.content.ContentResolver) -> Result<ConversationManifoldPublication.Published>
+    onPublishManifold: suspend (GithubRepository, ConversationManifoldPublication.Plan, String, android.content.ContentResolver) -> Result<ConversationManifoldPublication.Published>,
+    onBuildPrivateGitHubIndex: suspend (GithubRepository) -> Result<PrivateGitHubTreeIndexGate.Snapshot>
 ) {
+    // The selected owner scopes all GitHub-dependent Home surfaces. A stale
+    // selected owner intentionally shows zero results instead of defaulting to All.
+    var selectedOwner by rememberSaveable(githubProfile) { mutableStateOf<String?>(null) }
+    val ownerOptions = remember(remoteRepositories, observedOrganizations) {
+        val grouped = remoteRepositories.groupBy { it.owner.login.lowercase(java.util.Locale.ROOT) }
+            .values.map { repos ->
+                val owner = repos.first().owner
+                GithubOwnerOption(owner.login, owner.type, repos.size)
+            }
+        // These organizations were returned by GitHub; repository count is unknown
+        // until a scoped authorized lookup has actually completed.
+        val extra = observedOrganizations
+            .filterNot { login -> grouped.any { it.login.equals(login, ignoreCase = true) } }
+            .map { GithubOwnerOption(it, "Organization", 0, countObserved = false) }
+        (grouped + extra).sortedBy { it.login.lowercase(java.util.Locale.ROOT) }
+    }
+    val scopedRepositories = remember(remoteRepositories, selectedOwner) {
+        GithubOwnerScope.filter(remoteRepositories, selectedOwner) { it.owner.login }
+    }
     Column(Modifier.fillMaxSize()) {
-        TabRow(selectedTabIndex = activeTab.ordinal) {
+        if (isGithubAuthenticated) {
+            GithubOwnerPicker(
+                options = ownerOptions,
+                selectedOwner = selectedOwner,
+                inventoryComplete = remoteListingComplete,
+                organizationStatus = organizationStatus,
+                onSelect = { owner ->
+                    selectedOwner = owner
+                    if (owner != null && ownerOptions.any {
+                            it.login.equals(owner, ignoreCase = true) &&
+                                it.type.equals("Organization", ignoreCase = true)
+                        }) {
+                        onLoadOrganization(owner)
+                    }
+                },
+                onLookupOrganization = { org ->
+                    selectedOwner = org
+                    onLoadOrganization(org)
+                }
+            )
+        }
+        TabRow(selectedTabIndex = if (activeTab == HomeViewModel.HomeTab.LOCAL) 1 else activeTab.ordinal) {
             Tab(
                 selected = activeTab == HomeViewModel.HomeTab.REMOTE,
                 onClick = { onTabSelected(HomeViewModel.HomeTab.REMOTE) },
-                text = { Text("GitHub (${remoteRepositories.size})", maxLines = 1) }
+                text = { Text("GitHub (${scopedRepositories.size})", maxLines = 1) }
             )
             Tab(
                 selected = activeTab == HomeViewModel.HomeTab.DRIVE,
                 onClick = { onTabSelected(HomeViewModel.HomeTab.DRIVE) },
                 text = { Text("Drive", maxLines = 1) }
-            )
-            Tab(
-                selected = activeTab == HomeViewModel.HomeTab.LOCAL,
-                onClick = { onTabSelected(HomeViewModel.HomeTab.LOCAL) },
-                text = { Text("Local (${localRepositories.size})", maxLines = 1) }
             )
         }
 
@@ -233,10 +303,14 @@ private fun SourceDashboard(
             HomeViewModel.HomeTab.REMOTE -> {
                 if (isGithubAuthenticated) {
                     RepositoryList(
-                        repositories = remoteRepositories,
+                        repositories = scopedRepositories,
                         githubProbeState = githubProbeState,
                         remoteReceiptState = remoteReceiptState,
                         onRunGithubTest = onRunGithubTest,
+                        // The diagnostics receipt always writes to RafGitTools,
+                        // never to the selected organization; block mismatched scopes.
+                        canWriteDiagnosticReceipt = selectedOwner == null ||
+                            selectedOwner.equals("rafaelmeloreisnovo", ignoreCase = true),
                         onCreateRemoteReceipt = onCreateRemoteReceipt,
                         onRepositoryClick = onRepositoryClick
                     )
@@ -244,13 +318,13 @@ private fun SourceDashboard(
                     GithubDisconnectedContent(onNavigateToAuth)
                 }
             }
-            HomeViewModel.HomeTab.DRIVE -> DriveBridgeContent(
-                privateRepositories = remoteRepositories.filter { it.isPrivate },
-                publishState = privateProcessingPublishState,
-                onPublishReceipt = onPublishPrivateProcessingReceipt,
-                onPublishManifold = onPublishManifold
-            )
-            HomeViewModel.HomeTab.LOCAL -> LocalRepositoryList(localRepositories, onLocalRepositoryClick)
+            HomeViewModel.HomeTab.DRIVE, HomeViewModel.HomeTab.LOCAL -> {
+                // Keep cloud folder listing scrollable on small Motorola screens.
+                // Cloud Drive REST is primary. The legacy SAF scanner remains separate.
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                    GoogleDriveCloudCard()
+                }
+            }
         }
     }
 }
@@ -285,7 +359,8 @@ private fun DriveBridgeContent(
     privateRepositories: List<GithubRepository>,
     publishState: PrivateProcessingPublishState,
     onPublishReceipt: (GithubRepository, Long, String, String, CorpusIntakeResult) -> Unit,
-    onPublishManifold: suspend (GithubRepository, ConversationManifoldPublication.Plan, String, android.content.ContentResolver) -> Result<ConversationManifoldPublication.Published>
+    onPublishManifold: suspend (GithubRepository, ConversationManifoldPublication.Plan, String, android.content.ContentResolver) -> Result<ConversationManifoldPublication.Published>,
+    onBuildPrivateGitHubIndex: suspend (GithubRepository) -> Result<PrivateGitHubTreeIndexGate.Snapshot>
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -444,6 +519,16 @@ private fun DriveBridgeContent(
         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        // HyperAtlas is an actual app action: existing SAF provider picker ->
+        // DriveMetadataIndexGate -> user-selected Drive destination + SHA256 readback.
+        // No ZIP staging on the phone and no source mutation.
+        item { DriveFirstRunIndexCard() }
+        item {
+            PrivateGithubTreeIndexCard(
+                repository = selectedPrivateRepository,
+                onBuild = onBuildPrivateGitHubIndex
+            )
+        }
         item {
             SafDirectoryIntakeCard()
         }
@@ -1151,7 +1236,7 @@ private fun DriveBridgeContent(
 
         item {
             Text(
-                "O local funciona como meio de campo: o arquivo escolhido é copiado em streaming para o armazenamento privado do app, sem carregar o corpus inteiro na memória.",
+                "Ferramentas locais opcionais: o arquivo é copiado em streaming ao armazenamento privado do app, apenas mediante ação explícita.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -1256,6 +1341,7 @@ private fun RepositoryList(
     githubProbeState: GithubConnectivityState,
     remoteReceiptState: RemoteReceiptState,
     onRunGithubTest: () -> Unit,
+    canWriteDiagnosticReceipt: Boolean,
     onCreateRemoteReceipt: () -> Unit,
     onRepositoryClick: (GithubRepository) -> Unit
 ) {
@@ -1269,6 +1355,7 @@ private fun RepositoryList(
                 probeState = githubProbeState,
                 receiptState = remoteReceiptState,
                 onRunProbe = onRunGithubTest,
+                canWriteDiagnosticReceipt = canWriteDiagnosticReceipt,
                 onCreateRemoteReceipt = onCreateRemoteReceipt
             )
         }
@@ -1290,6 +1377,7 @@ private fun GithubConnectivityCard(
     probeState: GithubConnectivityState,
     receiptState: RemoteReceiptState,
     onRunProbe: () -> Unit,
+    canWriteDiagnosticReceipt: Boolean,
     onCreateRemoteReceipt: () -> Unit
 ) {
     ElevatedCard(Modifier.fillMaxWidth()) {
@@ -1304,6 +1392,14 @@ private fun GithubConnectivityCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            if (!canWriteDiagnosticReceipt) {
+                Text(
+                    "Receipt WRITE indisponível: o destino do diagnóstico é rafaelmeloreisnovo/RafGitTools, não a organização selecionada.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
 
             when (probeState) {
                 GithubConnectivityState.Idle -> Text("GitHub READ: TOKEN_VAZIO")
@@ -1338,7 +1434,7 @@ private fun GithubConnectivityCard(
                 }
                 Button(
                     onClick = onCreateRemoteReceipt,
-                    enabled = receiptState !is RemoteReceiptState.Running,
+                    enabled = canWriteDiagnosticReceipt && receiptState !is RemoteReceiptState.Running,
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(Icons.Default.Upload, null)
@@ -1512,6 +1608,9 @@ private fun RepositoryCard(repository: GithubRepository, onClick: () -> Unit) {
 @Composable
 private fun LocalRepositoryList(
     repositories: List<LocalRepoSummary>,
+    githubRepositories: List<GithubRepository>,
+    githubProfile: String?,
+    listingComplete: Boolean,
     onRepositoryClick: (String) -> Unit
 ) {
     LazyColumn(
@@ -1520,11 +1619,14 @@ private fun LocalRepositoryList(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
+            LocalGithubInventoryCard(githubRepositories, githubProfile, listingComplete)
+        }
+        item {
             LocalPrivateStorageTestCard()
         }
         item {
             Column {
-                Text("Workspace local (${repositories.size})", style = MaterialTheme.typography.titleMedium)
+                Text("Repositórios clonados no dispositivo (${repositories.size})", style = MaterialTheme.typography.titleMedium)
                 Text(
                     "Camada de staging e trabalho; Drive/GitHub continuam como fontes externas.",
                     style = MaterialTheme.typography.bodySmall,
@@ -1538,7 +1640,7 @@ private fun LocalRepositoryList(
                     Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.FolderOff, null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Nenhum repositório local indexado ainda.")
+                        Text("Nenhum repositório Git clonado aqui. O inventário do GitHub acima pode ser usado sem clones.")
                     }
                 }
             }

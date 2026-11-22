@@ -77,11 +77,70 @@ class MasterCoverageProviderRoutingTests(unittest.TestCase):
         self.assertNotIn("eval ", provider_lane)
         self.assertNotIn("TARGET_TASK_CMD", provider_lane)
 
-    def test_single_root_workflow_file_still_exists(self) -> None:
-        workflows = sorted(
-            p.name for p in (ROOT / ".github" / "workflows").glob("*.y*ml")
-        )
-        self.assertEqual(workflows, ["START.yml"])
+    def test_single_general_root_with_allowlisted_scoped_workflows(self) -> None:
+        # START owns general orchestration. The eight specialized, path/branch-
+        # constrained workflows are separate evidence lanes, not extra roots.
+        workflow_dir = ROOT / ".github" / "workflows"
+        expected_scoped = {
+            "drive-snapshot-solo-apk.yml": (
+                "  pull_request:\n    paths:",
+                "      - 'standalone/drive-snapshot/**'",
+                "      - '.github/workflows/drive-snapshot-solo-apk.yml'",
+                "  workflow_dispatch:",
+            ),
+            "ci-rapidtools-semantic-l0.yml": (
+                "  pull_request:\n    paths:",
+                "      - 'LAB_RAPIDTOOLS_OMEGA/core/raf_semantic_gate.*'",
+                "      - 'LAB_RAPIDTOOLS_OMEGA/tests/test_semantic_gate.c'",
+                "      - 'LAB_RAPIDTOOLS_OMEGA/scripts/verify_semantic_gate.sh'",
+                "      - 'LAB_RAPIDTOOLS_OMEGA/docs/SEMANTIC_GATE_L0_V1.md'",
+                "  workflow_dispatch:",
+            ),
+            "debianum-metadata-guard.yml": (
+                "  pull_request:\n    paths:",
+                "      - 'scripts/drive_debianum_*'",
+                "      - 'tools/github_metadata_page_cursor_v1.py'",
+                "  workflow_dispatch:",
+            ),
+            "ci-android-atlas-consumer.yml": (
+                "  pull_request:\n    branches: [main]\n    paths:",
+            ),
+            "rafaelia-agent-workspace-scoped.yml": (
+                "  pull_request:\n    paths:",
+                "      - 'app/src/main/kotlin/com/rafgittools/ui/screens/home/HomeScreen.kt'",
+                "  workflow_dispatch:",
+            ),
+            "rafaelia-middlefield-bridge-scoped.yml": (
+                "  pull_request:\n    paths:",
+                "      - lab/rafaelia-middlefield-bridge-20261031-hold",
+            ),
+            "rafaelia-rapidtools-lab-scoped.yml": (
+                "      - lab/rafaelia-rapidtools-arm32-arm64-20261031-hold",
+                "    paths:",
+            ),
+            "rafgittools-apk-canary.yml": (
+                "      - fix/android-apk-ci-topology-20261031-hold",
+                "    paths:",
+            ),
+            "ci-rapidtools-semantic-l0.yml": (
+                "  pull_request:\n    paths:",
+                "      - 'LAB_RAPIDTOOLS_OMEGA/core/raf_semantic_gate.*'",
+                "      - '.github/workflows/ci-rapidtools-semantic-l0.yml'",
+                "  workflow_dispatch:",
+            ),
+        }
+        observed = {
+            p.name for p in workflow_dir.glob("*.y*ml")
+        }
+        self.assertEqual(observed, {"START.yml", *expected_scoped})
+        self.assertTrue(WORKFLOW.is_file())
+        for filename, required_scopes in expected_scoped.items():
+            content = (workflow_dir / filename).read_text(encoding="utf-8")
+            self.assertIn("on:\n", content, filename)
+            self.assertIn("permissions:\n  contents: read\n", content, filename)
+            self.assertNotIn("  workflow_call:", content, filename)
+            for scope in required_scopes:
+                self.assertIn(scope, content, filename)
 
 
 if __name__ == "__main__":

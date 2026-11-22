@@ -1,3 +1,5 @@
+> **Latest bounded navigation overlay — 2026-10-31 (DRAFT/HOLD):** [HEAD-bound source truth](HEAD_TRUTH_ROUTER_20261031.md) observes `main@79d3cabba55fca3c3ed4eeb15126155d24289395` and candidate AGP 9.1.1/compileSdk 37. All older 'current' statements below are timestamped predecessor snapshots. Provider CI on this HEAD, build, runtime, device, provider protection and release remain evidence-gated; `claim_allowed=false`, `release_allowed=false`.
+
 # RAFGITTOOLS_CURRENT_STATE
 
 - Status: **ACTIVE — bounded current-state overlay; post-2026-09-28 reconciliation partitioned but still gated**

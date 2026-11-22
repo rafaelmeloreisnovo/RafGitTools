@@ -1,0 +1,71 @@
+{
+  "schema": "rafaelia.historical-matrix-geometry-federation.v1",
+  "state": "IMPLEMENTED_UNTESTED",
+  "claim_allowed": false,
+  "producer": {
+    "repository": "rafaelmeloreisnovo/RafPolimata",
+    "base_head": "9d4ab4fd0b31d2984c9cf0bb3904e159f2442c47",
+    "branch": "feature/historical-matrix-geometry-20261103",
+    "candidate_head": "79873b9a745834e68046f84427cf4fd194ae859e",
+    "script": "scripts/historical_matrix_geometry_v1.py",
+    "compiler_header": "compiler/raf_matrix_geometry_v1.h"
+  },
+  "consumer": {
+    "repository": "rafaelmeloreisnovo/RafGitTools",
+    "script": "scripts/verify_historical_matrix_geometry_receipt.py",
+    "job_schema": "schemas/rafaelia_historical_matrix_geometry_job.v1.schema.json"
+  },
+  "topology": {
+    "positions": 8,
+    "layers": 3,
+    "oppositions": 2,
+    "basis": "cube_parity_tetra"
+  },
+  "bounded_input_cell_budget": 65536,
+  "compiler_boundary": {
+    "language": "C99",
+    "freestanding": true,
+    "libc": false,
+    "heap": false,
+    "syscalls": false,
+    "q16_sqrt3_over2": 56756
+  },
+  "source_authority": {
+    "surface": "Google Drive NOVOexport",
+    "period": "2025-03..2025-07",
+    "source_shards": "004..017",
+    "copy_raw_to_public_repo": false,
+    "message_provenance": "USER_INPUT_SOURCE_QUALIFIED"
+  },
+  "rll_boundary": {
+    "repository": "instituto-Rafael/relativity-living-light",
+    "coupling": "NONE",
+    "scientific_model_change": false,
+    "physical_claim": "TOKEN_VAZIO"
+  },
+  "security": {
+    "read_only_source": true,
+    "allow_network": false,
+    "arbitrary_command_dispatch": false,
+    "publish_raw_private_data": false,
+    "auto_merge": false
+  },
+  "evidence_gates": [
+    "producer existing V1 regression",
+    "producer historical Python falsifiers",
+    "producer C99 host gate",
+    "cross-syntax ARMv7/AArch64",
+    "consumer IFDex and 10-bit parity checks",
+    "exact head CI",
+    "physical Android only with artifact/device receipts"
+  ],
+  "open_gaps": [
+    "ci_exact_head",
+    "compiler_frontend_dispatch_not_modified",
+    "arm_cross_syntax_NOT_RUN",
+    "android_physical_TOKEN_VAZIO",
+    "rll_scientific_coupling_not_authorized",
+    "historical_full_shard_scan_TOKEN_VAZIO"
+  ],
+  "rollback": "Close PRs/revert additive commits; no source shard, existing compiler dispatch or RLL likelihood mutation."
+}

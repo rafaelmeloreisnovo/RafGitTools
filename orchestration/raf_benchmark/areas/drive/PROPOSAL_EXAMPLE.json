@@ -1,0 +1,11 @@
+{
+  "schema": "rafaelia.rafbenchmark.work-proposal.v1",
+  "job_id": "RF-BENCH-EXAMPLE-001",
+  "source_repository": "rafaelmeloreisnovo/RafGitTools",
+  "source_revision": "6ee6cba43103641da94061c7262e1272ba23f88e",
+  "workers": 2,
+  "buffer_kib": 256,
+  "input": "SYNTHETIC_ONLY",
+  "approval": "REQUIRES_HUMAN_CLICK",
+  "claim_allowed": false
+}

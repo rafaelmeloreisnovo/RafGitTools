@@ -170,4 +170,8 @@
     <string name="error_title">Erro</string>
 
     <string name="settings_repository_location_path">Android/data/com.rafgittools/files/repositories</string>
+    <!-- MissingTranslation CI repair: localized without disabling lint. -->
+    <string name="date_format_short_date">dd MMM yyyy</string>
+    <string name="date_format_short_datetime">dd MMM yyyy HH:mm</string>
+    <string name="date_format_datetime_with_at">dd MMM yyyy HH:mm</string>
 </resources>

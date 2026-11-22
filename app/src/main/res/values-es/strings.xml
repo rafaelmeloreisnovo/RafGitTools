@@ -170,4 +170,24 @@
     <string name="error_title">Error</string>
 
     <string name="settings_repository_location_path">Android/data/com.rafgittools/files/repositories</string>
+    <!-- MissingTranslation CI repair: localized without disabling lint. -->
+    <string name="repo_governance_control_center">Centro de control de gobernanza</string>
+    <string name="repo_governance_surface">Protección</string>
+    <string name="repo_governance_rulesets">Conjuntos de reglas</string>
+    <string name="repo_governance_required_checks">Verificaciones obligatorias</string>
+    <string name="repo_governance_actions_short">Acciones</string>
+    <string name="repo_governance_ruleset_count">Conjuntos de reglas: %1$s · activos: %2$s</string>
+    <string name="repo_governance_status_contexts">Contextos de estado obligatorios: %1$s</string>
+    <string name="repo_governance_action_refresh">Actualizar</string>
+    <string name="repo_governance_action_audit">Auditar</string>
+    <string name="repo_governance_action_dry_run">Simular</string>
+    <string name="repo_governance_action_apply">Aplicar</string>
+    <string name="repo_governance_action_rollback">Revertir</string>
+    <string name="repo_governance_action_provider">GitHub</string>
+    <string name="repo_governance_dispatch_state">Despacho del flujo: %1$s</string>
+    <string name="repo_governance_action_dispatch">Ejecutar %1$s</string>
+    <string name="repo_governance_action_dispatch_unavailable">No hay ruta de proveedor autorizada</string>
+    <string name="date_format_short_date">dd MMM yyyy</string>
+    <string name="date_format_short_datetime">dd MMM yyyy HH:mm</string>
+    <string name="date_format_datetime_with_at">dd MMM yyyy HH:mm</string>
 </resources>

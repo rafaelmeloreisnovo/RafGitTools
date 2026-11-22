@@ -1,0 +1,47 @@
+name: RAFAELIA APK L0 consumer — pinned external source, no secrets
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/ci-android-atlas-consumer.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: atlas-apk-consumer-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-exact-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout public source at pinned SHA, no persistent credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: rafaelmeloreisnovo/actions
+          ref: 2daa8d40d401aab20f765fed9c3f229d90c8ff4c
+          persist-credentials: false
+          fetch-depth: 1
+          path: actions-source
+      - name: Validate immutable source SHA and build actual APK
+        shell: bash
+        env:
+          SOURCE_PIN: 2daa8d40d401aab20f765fed9c3f229d90c8ff4c
+        run: |
+          set -euo pipefail
+          test "$(git -C actions-source rev-parse HEAD)" = "$SOURCE_PIN"
+          bash actions-source/android/atlas_wizard/ci/build_apk.sh
+          echo 'Android debug APK, two native ABIs, no PAT, no Google auth token.' >> "$GITHUB_STEP_SUMMARY"
+          echo "Source SHA: $SOURCE_PIN" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload signed test APK and provider receipt, never the ephemeral key
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: RAFAELIA-Atlas-Wizard-dual-ABI-DEBUG
+          path: |
+            actions-source/android/atlas_wizard/out/RAFAELIA-Atlas-Wizard-arm32-arm64-debug.apk
+            actions-source/android/atlas_wizard/out/RAFAELIA-Atlas-Wizard-arm32-arm64-debug.apk.receipt.json
+          if-no-files-found: error
+          retention-days: 14

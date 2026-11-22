@@ -42,6 +42,10 @@ Core invariants:
 Canonical federation reference: `docs/AGENT_FEDERATION_ENTRY_V1.md`.
 
 
+### One-pass DMAIC ★ † ‡ — PR portfolio (review rule)
+
+For a material observation on the first source read, register `★` exact fact/HEAD, `†` typed alternatives/authority/risk/falsifier and `‡` minimal reversible fix or blocked gate. Route to [bounded PR snapshot](docs/audit/RAFGITTOOLS_PR_DMAIC_ONEPASS_20261023.md) and [machine registry](configs/rafgittools-pr-dmaic-20261023.v1.json). The federated Mapa rule is proposed in PR #767, not merged authority. The local snapshot is dated, not live. No silent second crawl, auto-merge, CI PASS inflation or certification claim. Follow Q01–Q12, exact-head gates and a readback receipt; `TOKEN_VAZIO != 0`.
+
 ### Authorial federation / imported-source gate
 
 If the task reads, copies, adapts, relicenses or promotes `federation/authorial/**`, read `federation/authorial/AGENTS.md` before acting. Machine authority: `configs/authorial-federation.v1.json`. Human/AI route: `docs/federation/AUTHORIAL_FEDERATION_V1.md`.
@@ -174,3 +178,9 @@ For every material dependency delta record:
 `boundary -> previous dependency -> replacement/retention reason -> execution -> evidence -> rollback -> remaining TOKEN_VAZIO`.
 
 <!-- /RAFAELIA_FREESTANDING_POLICY_V1 -->
+
+
+<!-- AGENTS_PAT_FEDERATION_ROUTE_V1 -->
+### PAT-bound federation (proposal/HOLD, no extra authority)
+For tasks naming `PAT_AGENTS`, `PAT_ACTIONS`, `PAT_ENV` or cross-repository `AGENTS.md`, read `docs/governance/PAT_CAPABILITY_ROUTING_V1.md` first, then `configs/agents-pat-federation.v1.json` and `federation/agents-pat/AGENTS.md`. Mapa owns the federated route; the target repository's own AGENTS.md owns its local implementation. These pointers do not grant permissions or enable a secret-bearing workflow. Unknown provider permissions = `TOKEN_VAZIO`; no PAT fallback, no autonomous cross-repo writes, no secret in source/Drive/Supabase. This addition is a draft only until separately reviewed and merged.
+<!-- /AGENTS_PAT_FEDERATION_ROUTE_V1 -->

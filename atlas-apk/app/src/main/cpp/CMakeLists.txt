@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(rafaelia_atlas C)
+add_library(rafaelia_atlas SHARED atlas_core.c atlas_jni.c)
+set_source_files_properties(atlas_core.c PROPERTIES COMPILE_FLAGS "-ffreestanding -fno-builtin -fno-stack-protector")
+target_compile_options(rafaelia_atlas PRIVATE -Wall -Wextra -Werror)

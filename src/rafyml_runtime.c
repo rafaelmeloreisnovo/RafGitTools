@@ -41,6 +41,7 @@ int rafyml_validate_document(const rafyml_document *document) {
             }
             if (cursor == RAFYML_NONE || cursor >= document->node_count) return RAFYML_ERR_GRAPH;
             while (cursor != RAFYML_NONE && count <= document->node_count) {
+                if (cursor >= document->node_count || cursor == document->root_index) return RAFYML_ERR_GRAPH;
                 ++count;
                 cursor = document->nodes[cursor].next_sibling;
             }

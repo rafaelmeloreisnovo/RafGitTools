@@ -64,6 +64,8 @@ on:
           - preflight
           - apply_main_protection
           - rollback_main_protection
+          - federated_preflight
+          - federated_protect
           - inspect_hold
           - mark_hold
       provider_expected_main_sha:
@@ -105,6 +107,11 @@ on:
         required: false
         default: '{"pagina":1}'
         type: string
+      blake3_historical_replay:
+        description: 'Opt-in replay of pinned 2026-10-15 BLAKE3 APK; NOT the latest master and NOT a release'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -181,14 +188,35 @@ jobs:
         run: |
           set -euo pipefail
           mode="${REQUESTED_MODE:-auto}"
-          # Draft PRs have an explicit small source-only lane; promotion to
-          # ready_for_review fires a new full auto run at the exact head SHA.
+          # A Draft is not a waiver of code/Android validation. Select
+          # the required lane using the exact PR diff, offline and fail-closed.
           if [[ "$mode" == auto && "${GITHUB_EVENT_NAME}" == pull_request &&
                 "${PR_DRAFT:-false}" == true ]]; then
-            mode=fast
-            echo 'DRAFT_PR_MODE=FAST_SOURCE_ONLY'
-            echo 'ANDROID_APK_VALIDATION=NOT_RUN'
-            echo 'CODEQL_SECURITY_VALIDATION=NOT_RUN'
+            base='${{ github.event.pull_request.base.sha }}'
+            [[ "$base" =~ ^[0-9a-f]{40}$ ]] || {
+              echo '::error::missing exact base SHA for draft classification'
+              exit 2
+            }
+            git cat-file -e "${base}^{commit}" || {
+              echo '::error::PR base commit unavailable; draft cannot be classified'
+              exit 2
+            }
+            # L0 freestanding x86_64 router: identical contract to the
+            # preserved Python oracle, with no libc, heap, malloc or network.
+            command -v cc >/dev/null || { echo '::error::host C compiler missing'; exit 2; }
+            cc -std=c11 -O2 -ffreestanding -fno-builtin -fno-stack-protector \
+              -nostdlib -no-pie -Wl,-e,_start -Wl,--build-id=none \
+              -o "$RUNNER_TEMP/raf-route" scripts/ci/native/draft_route_l0.c
+            mode="$(git diff --no-ext-diff --name-only -z "$base" HEAD | "$RUNNER_TEMP/raf-route")"
+            case "$mode" in
+              fast|android|full) ;;
+              *) echo '::error::invalid draft route'; exit 2 ;;
+            esac
+            echo "DRAFT_PR_MODE=$mode"
+            if [[ "$mode" == fast ]]; then
+              echo 'ANDROID_APK_VALIDATION=NOT_RUN (docs/source-only draft)'
+              echo 'CODEQL_SECURITY_VALIDATION=NOT_RUN (docs/source-only draft)'
+            fi
             echo 'CLAIM_ALLOWED=false'
           fi
           android=false
@@ -365,7 +393,7 @@ jobs:
                 exit 2
               fi
               case "${REQUESTED_PROVIDER_OPERATION:-preflight}" in
-                preflight|apply_main_protection|rollback_main_protection) ;;
+                preflight|apply_main_protection|rollback_main_protection|federated_preflight|federated_protect) ;;
                 *)
                   echo "::error::unsupported provider operation: ${REQUESTED_PROVIDER_OPERATION}"
                   exit 2
@@ -486,7 +514,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   topology:
-    name: '01 · Workflow topology / single-root invariant'
+    name: '01 · Workflow topology / START owner + scoped workflows'
     needs: plan
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -497,21 +525,70 @@ jobs:
           ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
 
-      - name: Assert START is the only active YAML workflow
+      - name: Assert exact allowlist of START and intentionally scoped workflows
         shell: bash
         run: |
           set -euo pipefail
+          # Exact allowlist, including the pre-existing Debianum metadata gate.
+          # No broad wildcard or permission expansion.
+          expected=(
+            .github/workflows/START.yml
+            .github/workflows/ci-android-atlas-consumer.yml
+            .github/workflows/ci-rapidtools-semantic-l0.yml
+            .github/workflows/debianum-metadata-guard.yml
+            .github/workflows/drive-snapshot-solo-apk.yml
+            .github/workflows/rafaelia-agent-workspace-scoped.yml
+            .github/workflows/rafaelia-middlefield-bridge-scoped.yml
+            .github/workflows/rafaelia-rapidtools-lab-scoped.yml
+            .github/workflows/rafgittools-apk-canary.yml
+          )
           mapfile -t active < <(find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) -print | sort)
           printf '%s\n' "${active[@]}"
-          test "${#active[@]}" -eq 1
-          test "${active[0]}" = '.github/workflows/START.yml'
+          test "${#active[@]}" -eq "${#expected[@]}"
+          for i in "${!expected[@]}"; do
+            test "${active[i]}" = "${expected[i]}"
+          done
           test -d .github/workflows-legacy-20260907
+          echo 'TOPOLOGY=PASS_9_EXACT_SCOPED_WORKFLOWS'
+
+      - name: Human impact P0 | explicit unknown, child protection and rollback falsifiers
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_human_impact*.py' -v
+          python3 - <<'PY'
+          import importlib.util
+          spec = importlib.util.spec_from_file_location("human", "scripts/human_impact_gate.py")
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+          decision = module.evaluate({"schemaVersion": module.SCHEMA_VERSION})
+          assert decision["gateState"] == "BLOCKED", decision
+          assert decision["deploymentAuthorized"] is False
+          assert decision["claimAllowed"] is False
+          print("P0_HUMAN_GATE=PASS_TEST_ONLY; DEPLOYMENT=DENIED; HUMAN_REVIEW=REQUIRED")
+          PY
 
       - name: Run workflow graph audit
         uses: ./.github/actions/workflow-graph-audit
         with:
           mode: report
           output-json: artifacts/workflow-graph-audit.json
+
+      - name: RAFCODE exact source — reuse immutable owned Action
+        if: github.event_name == 'pull_request'
+        uses: rafaelmeloreisnovo/actions/rafcode/verify-source@47e0ad95703009bfaaa902f605fd3bf69aae4b48
+        with:
+          expected-sha: ${{ env.EXECUTION_SHA }}
+
+      - name: RAFCODE provisional run/artifact/falsifier receipt — same Actions core
+        if: github.event_name == 'pull_request'
+        uses: rafaelmeloreisnovo/actions/rafcode/evidence-receipt@885b6f4c4356d5e1cea352653cbe69a4e141d198
+        with:
+          expected-source-sha: ${{ env.EXECUTION_SHA }}
+          artifact-path: README.md
+          falsifier-script: .github/rafcode/falsifier_source_integrity.sh
+          falsifier-id: SOURCE_DIGEST_NEGATIVE
 
       - name: Upload workflow topology receipt
         if: always()
@@ -533,10 +610,131 @@ jobs:
         with:
           ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
+      - name: Draft source routing falsifiers (offline)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_draft_lane_guard.py' -v
+          python3 -m unittest discover -s tests -p 'test_draft_route_native.py' -v
+          python3 -m unittest discover -s tests -p 'test_dependabot_policy_gate_v1.py' -v
+          python3 -m unittest discover -s tests -p 'test_android_dependency_bundle_gate.py' -v
+      - name: RAFEVIDENCE privacy and hash-chain falsifiers (offline, PR-only)
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_rafevidence_capture_v1.py' -v
+      - name: Commit checks fail-closed falsifiers (offline, also on draft)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_audit_commit_checks.py -v
+      - name: Provision hosted LLD 18 for InventarioRAF cross-ELF gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ld.lld-18 >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y lld-18
+          fi
+          command -v ld.lld-18
+      - name: InventarioRAF freestanding core and ARM ABI gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C native/inventario_raf_v1 clean test \
+            HOST_CC=clang ARMV7_CC=clang AARCH64_CC=clang \
+            NM=nm READELF=readelf LD_LLD=ld.lld-18
+      - name: P0 queue already in main | freestanding native exact-SHA selftest
+        shell: bash
+        run: |
+          set -euo pipefail
+          core=scripts/freestanding/session_queue_core_v1.c
+          suite=scripts/freestanding/test_session_queue_core_v1.c
+          header=scripts/freestanding/session_queue_core_v1.h
+          [[ -f "$core" && -f "$suite" && -f "$header" ]] || { echo 'QUEUE707=HOLD_MISSING_SOURCE'; exit 1; }
+          command -v clang >/dev/null
+          command -v readelf >/dev/null
+          workdir="$(mktemp -d)"
+          for target in armv7a-linux-gnueabihf aarch64-linux-gnu; do
+            clang -target "$target" -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -O1 -Wall -Wextra -Werror -c "$core" -o "$workdir/core-$target.o"
+            clang -target "$target" -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -O1 -Wall -Wextra -Werror -c "$suite" -o "$workdir/test-$target.o"
+            clang -target "$target" -fuse-ld=lld -nostdlib -r "$workdir/core-$target.o" "$workdir/test-$target.o" -o "$workdir/combined-$target.o"
+            unresolved="$(LC_ALL=C readelf -sW "$workdir/combined-$target.o" | awk '$7=="UND" && $8!="" {print $8}')"
+            [[ -z "$unresolved" ]] || { echo "QUEUE707=HOLD_EXTERNAL_SYMBOL_$target"; printf '%s\\n' "$unresolved"; exit 1; }
+          done
+          cat > "$workdir/entry.c" <<'C'
+          #include <stdint.h>
+          extern uint32_t raf_queue_selftest_v1(void);
+          int main(void) { return raf_queue_selftest_v1() == 0u ? 0 : 1; }
+          C
+          clang -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -O1 -Wall -Wextra -Werror "$core" "$suite" "$workdir/entry.c" -o "$workdir/test"
+          "$workdir/test"
+          echo 'QUEUE707_NATIVE=PASS_SCOPED_HOST_ONLY; ARM_PHYSICAL=NOT_RUN; CLAIM_ALLOWED=false'
+
       - name: Python 3.12
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
+      - name: P0 queue JSON boundary existing deterministic regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest -v tests.test_session_queue_preflight_v1
+          echo 'QUEUE707_HOSTED_REFERENCE=PASS_SCOPED_ONLY; CLAIM_ALLOWED=false'
+
+      - name: RAFYML L0 graph + ARMv7/AArch64 freestanding object falsifiers
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/ci/verify_rafyml_l0_multiabi.sh
+          echo 'RAFYML_L0_CI=SCOPED; TARGET_LINK=NOT_RUN; DEVICE=NOT_RUN; CLAIM_ALLOWED=false'
+
+      - name: P0 six PAT capabilities | freestanding negative gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          core=native/pat_controlplane_gate_v1/pat_controlplane_gate_v1.c
+          test_core=native/pat_controlplane_gate_v1/test_pat_controlplane_gate_v1.c
+          header=native/pat_controlplane_gate_v1/pat_controlplane_gate_v1.h
+          [[ -f "$core" && -f "$test_core" && -f "$header" ]] || { echo 'PAT_P0=HOLD_MISSING_SOURCE'; exit 1; }
+          command -v clang >/dev/null
+          command -v readelf >/dev/null
+          workdir="$(mktemp -d)"
+          trap 'rm -rf "$workdir"' EXIT
+          for target in x86_64-linux-gnu armv7a-linux-gnueabihf aarch64-linux-gnu; do
+            clang -target "$target" -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -nostdlib -O1 -Wall -Wextra -Werror -c "$core" -o "$workdir/core-$target.o"
+            clang -target "$target" -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -nostdlib -O1 -Wall -Wextra -Werror -c "$test_core" -o "$workdir/test-$target.o"
+            clang -target "$target" -fuse-ld=lld -nostdlib -r "$workdir/core-$target.o" "$workdir/test-$target.o" -o "$workdir/combined-$target.o"
+            unresolved="$(LC_ALL=C readelf -sW "$workdir/combined-$target.o" | awk '$7=="UND" && $8!="" {print $8}')"
+            [[ -z "$unresolved" ]] || { echo "PAT_P0=HOLD_UNRESOLVED_$target"; exit 1; }
+          done
+          cat > "$workdir/entry.c" <<'C'
+          #include <stdint.h>
+          extern uint32_t raf_pat_selftest_v1(void);
+          int main(void) { return raf_pat_selftest_v1()==0u ? 0 : 1; }
+          C
+          clang -std=c11 -O1 -Wall -Wextra -Werror "$core" "$test_core" "$workdir/entry.c" -o "$workdir/host-test"
+          "$workdir/host-test"
+          python3 scripts/validate_pat_capability_matrix.py
+          echo 'PAT_P0=PASS_SCOPED_6_ROLES_X_10_OPERATION_CLASSES_NO_PRIVILEGED_EXECUTION'
+          {
+            echo '### P0 PAT control-plane / in-memory only'
+            echo "- HEAD: \`$GITHUB_SHA\`"
+            echo '- Six secret identifiers: names only; actual PAT scope/values NOT_READ'
+            echo '- Native x86-64 / ARMv7 / AArch64 build: PASS_SCOPED'
+            echo '- Native 6 x 10 operation negative gate: PASS_SCOPED'
+            echo '- Administrative mutations / private CI / visibility: NOT_RUN / HOLD'
+            echo '- PROMOTION=HOLD; claim_allowed=false'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Federated admin executor | offline adversarial provider test
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest -v tests.test_federated_admin_protection_v1
+          echo 'FEDERATED_ADMIN=PASS_SCOPED_MOCKED_PROVIDER_NO_NETWORK_OR_WRITE'
+
       - name: Validate RAFAELIA coherence boundary
         shell: bash
         run: |
@@ -546,6 +744,32 @@ jobs:
           if [[ -f scripts/validate_documentation_claim_boundary.py ]]; then
             python3 scripts/validate_documentation_claim_boundary.py --strict
           fi
+      - name: Field Lab V1 | federated bounded contract and negative controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest -v tests.test_federated_field_lab
+          python3 scripts/federated_field_lab.py --contract configs/federated-field-lab.v1.json --receipt artifacts/federated-field-lab/receipt.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          receipt=json.loads(Path('artifacts/federated-field-lab/receipt.json').read_text())
+          assert receipt['result'] == 'PASS_SCOPED_CONTRACT_ONLY'
+          assert receipt['claim_allowed'] is False and receipt['release_allowed'] is False
+          assert receipt['private_source_exported'] is False
+          assert receipt['device_executed'] is False
+          assert receipt['private_access'] == 'TOKEN_VAZIO_NOT_RUN'
+          print('FIELD_LAB=PASS_SCOPED_NO_REMOTE_EXECUTION')
+          PY
+      - name: Upload secretless field lab contract receipt
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: start-02-field-lab-${{ github.run_id }}
+          path: artifacts/federated-field-lab/receipt.json
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Compile Python sources and tests
         shell: bash
         run: |
@@ -562,6 +786,80 @@ jobs:
               py_compile.compile(str(path), doraise=True)
           print(f'compiled_python_files={len(files)}')
           PY
+
+      - name: Verify NOVOexport interaction genealogy on synthetic data (fast lane)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_interaction_token_ledger_v1.py' -v
+          python3 -m unittest discover -s tests -p 'test_verify_structural_vectors_v1.py' -v
+
+      - name: Checkout pinned RMR PAI for Drive canary (no Drive credentials)
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/drive-ci-custody-rmr-pai-single-root-v1-20261015'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: rafaelmeloreisnovo/BLAKE3
+          ref: 584a686ed68d3fb0189797a661884678a78df01b
+          path: rmr-pai-source
+          persist-credentials: false
+      - name: Build pinned RMR PAI and run BLAKE3 custody KAT and negative canary
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/drive-ci-custody-rmr-pai-single-root-v1-20261015'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C rmr-pai-source rev-parse HEAD)" = 584a686ed68d3fb0189797a661884678a78df01b
+          cmake -S rmr-pai-source/rmr -B "$RUNNER_TEMP/rmr-pai-build" -DCMAKE_BUILD_TYPE=Release \
+            -DRMR_BUILD_TESTS=OFF -DRMR_BUILD_HWIF=OFF -DRMR_BUILD_TOPOLOGY=OFF \
+            -DRMR_BUILD_CRYPTO_RUNTIME=OFF
+          cmake --build "$RUNNER_TEMP/rmr-pai-build" --target pai --parallel 2
+          mkdir -p "$RUNNER_TEMP/drive-custody-canary"
+          printf 'PUBLIC-RAFAELIA-CANARY-NO-PRIVATE-DATA\n' > "$RUNNER_TEMP/drive-custody-canary/source.bin"
+          cp "$RUNNER_TEMP/drive-custody-canary/source.bin" "$RUNNER_TEMP/drive-custody-canary/readback.bin"
+          expected="$(sha256sum "$RUNNER_TEMP/drive-custody-canary/source.bin" | cut -d' ' -f1)"
+          echo "RMR_PAI_BINARY_SHA256=$(sha256sum "$RUNNER_TEMP/rmr-pai-build/pai" | cut -d' ' -f1)"
+          python3 scripts/drive_custody_rmr_pair_v1.py \
+            --source "$RUNNER_TEMP/drive-custody-canary/source.bin" \
+            --drive-readback "$RUNNER_TEMP/drive-custody-canary/readback.bin" \
+            --provider-sha256 "$expected" --source-commit "$EXECUTION_SHA" \
+            --source-repo rafaelmeloreisnovo/RafGitTools \
+            --workflow-run-id "$GITHUB_RUN_ID" --artifact-id 1 \
+            --drive-file-id SIMULATED_CI_NO_ACTUAL_DRIVE_ID \
+            --previous-receipt-sha256 "$(printf '0%.0s' {1..64})" \
+            --pai "$RUNNER_TEMP/rmr-pai-build/pai" \
+            --output "$RUNNER_TEMP/drive-custody-canary/receipt.json"
+          printf 'X' >> "$RUNNER_TEMP/drive-custody-canary/readback.bin"
+          if python3 scripts/drive_custody_rmr_pair_v1.py \
+            --source "$RUNNER_TEMP/drive-custody-canary/source.bin" \
+            --drive-readback "$RUNNER_TEMP/drive-custody-canary/readback.bin" \
+            --provider-sha256 "$expected" --source-commit "$EXECUTION_SHA" \
+            --source-repo rafaelmeloreisnovo/RafGitTools \
+            --workflow-run-id "$GITHUB_RUN_ID" --artifact-id 1 \
+            --drive-file-id SIMULATED_CI_NO_ACTUAL_DRIVE_ID \
+            --previous-receipt-sha256 "$(printf '0%.0s' {1..64})" \
+            --pai "$RUNNER_TEMP/rmr-pai-build/pai" \
+            --output "$RUNNER_TEMP/drive-custody-canary/rejected.json"; then
+            echo "CORRUPT_TRANSFER_UNEXPECTEDLY_ACCEPTED" >&2
+            exit 1
+          fi
+          test ! -e "$RUNNER_TEMP/drive-custody-canary/rejected.json"
+          echo "RMR_PAI_KAT_AND_FAIL_CLOSED_CUSTODY=PASS_CI_SIMULATION_NOT_LIVE_DRIVE"
+      - name: Preserve pinned RMR pai binary for private readback verification
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/drive-ci-custody-rmr-pai-single-root-v1-20261015'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rmr-pai-pinned-binary-584a686e
+          path: ${{ runner.temp }}/rmr-pai-build/pai
+          if-no-files-found: error
+          retention-days: 1
+      - name: BrowserRaf bounded wire C fixture (no network / no secrets)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_browser_wire_bounds.py' -v
+          python3 -m unittest discover -s tests -p 'test_browser_html_safety.py' -v
+          python3 -m unittest discover -s tests -p 'test_browser_phase_transition.py' -v
+          python3 -m unittest discover -s tests -p 'test_browser_url_failclosed.py' -v
+          python3 -m unittest discover -s tests -p 'test_browser_response_framing.py' -v
 
       - name: Verify repository factory contracts even in fast lane
         shell: bash
@@ -615,6 +913,32 @@ jobs:
             echo '::error::eval is forbidden in rafandroid execution path'
             exit 1
           fi
+      # Hosted build tool only: Ubuntu lld-18 (LLVM, Apache-2.0 WITH LLVM-exception).
+      # Existing cross-ELF verifier requires LLD; no dependency is linked into L0.
+      # Rollback: revert this provisioning step and the scoped LD override together.
+      - name: Provision hosted LLD 18 for cross-ELF verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ld.lld-18 >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y lld-18
+          fi
+          command -v ld.lld-18
+          ld.lld-18 --version
+          dpkg-query -W lld-18
+      - name: Raf Lens L0 freestanding exact-head gate
+        shell: bash
+        env:
+          LD: ld.lld-18
+        run: |
+          set -euo pipefail
+          command -v clang
+          command -v "$LD"
+          command -v nm
+          command -v readelf
+          sh freestanding/lens/verify_l0.sh
+
       - name: Silicon Light L0 freestanding gate
         shell: bash
         run: |
@@ -622,6 +946,26 @@ jobs:
           make -C native/silicon_light_v1 clean
           make -C native/silicon_light_v1 host-test audit HOST_CC=clang NM=nm READELF=readelf
           make -C native/silicon_light_v1 clean
+
+      - name: RAFAELIA Authorial Keyboard L0 ARMv7 + AArch64 gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C native/authorial_keyboard_l0 clean all CLANG=clang
+          make -C native/authorial_keyboard_l0 clean
+
+      - name: RAFAELIA Authorial Keyboard L1 pixel and edit host gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 native/authorial_keyboard_l0/tests/check_panel.py
+          for target in armv7a-linux-androideabi24 aarch64-linux-android24; do
+            obj="$RUNNER_TEMP/rafkbd-panel-$target.o"
+            clang --target="$target" -std=c11 -O2 -ffreestanding -fno-builtin -nostdinc \
+              -Inative/authorial_keyboard_l0/src -c \
+              native/authorial_keyboard_l0/src/rafkbd_panel.c -o "$obj"
+            test "$(nm -u "$obj" | sed -n 's/^[[:space:]]*U[[:space:]]*//p')" = rafkbd_l0_probe
+          done
 
       - name: Omega Hypervisor L0 freestanding gate
         shell: bash
@@ -727,7 +1071,7 @@ jobs:
           ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
       - name: Python 3.12
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
       - name: Run unittest discovery
@@ -755,7 +1099,7 @@ jobs:
           ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
       - name: Python 3.12
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
       - name: Install pinned federation audit dependencies
@@ -797,6 +1141,41 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+  docs_integrity:
+    # S7: independent, nonpromoting docs check moved inside the canonical
+    # single-root orchestrator. The historical YAML is archived byte-for-byte.
+    # This job does not depend on topology/coherence: its failures stay visible.
+    name: '05Z · Docs Integrity / source references (scoped)'
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && (inputs.mode == 'docs' || inputs.mode == 'full'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.EXECUTION_SHA }}
+          persist-credentials: false
+      - name: Verify exact source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXECUTION_SHA"
+      - name: Python isolated tests (no network)
+        run: python3 -m unittest discover -s tools -p 'test_doc_ref_integrity_gate.py' -v
+      - name: Current navigation documents (blocking, scoped)
+        run: |
+          python3 tools/doc_ref_integrity_gate.py \
+            --file README.md \
+            --file docs/INDEX.md \
+            --file docs/RAFAELIA_DOCS_RECONCILIATION_20261025.md \
+            --file docs/RAFAELIA_ROOT_CENSUS_20261025.md --file tools/rafymlc/README.md
+      - name: Historical Markdown audit (nonblocking inventory)
+        run: python3 tools/doc_ref_integrity_gate.py --all --audit-only
+
   docs:
     name: '05 · Documentation / claim boundary'
     needs: [plan, coherence]
@@ -824,7 +1203,9 @@ jobs:
 
   android:
     name: '06 · Android / test + lint + devDebug APK'
-    needs: [plan, coherence]
+    # Build may run even when an independent coherence suite fails.
+    # Final receipt still blocks promotion on any failed required gate.
+    needs: [plan, topology]
     if: needs.plan.outputs.android == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 50
@@ -834,6 +1215,12 @@ jobs:
         with:
           ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
+      - name: P0 · Kotlin/KSP/Hilt/lint toolchain admission before SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/validate_android_toolchain_matrix.py
+          python3 tools/validate_android_dependency_bundle.py
       - name: Java 17
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.0
         with:
@@ -844,6 +1231,11 @@ jobs:
         uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
         with:
           packages: ""
+      - name: Install Android API 37 required by current AARs
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
       - name: Prepare build environment
         shell: bash
         run: |
@@ -860,6 +1252,37 @@ jobs:
           else
             echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
           fi
+      # Build the debug APK first: the independent unit/instrumentation and
+      # lint gates still fail the job, but do not suppress an APK diagnostic.
+      # This does NOT authorize release or user installation.
+      - name: Assemble devDebug
+        run: ./gradlew --no-daemon assembleDevDebug --stacktrace
+      - name: Verify APK and SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find app/build/outputs/apk/dev/debug -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          test -s "$APK"
+          sha256sum "$APK" | tee app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+          tools/rafandroid/rafandroid dex-gate "$APK"
+          tools/rafandroid/rafandroid apk-gate "$APK"
+      - name: Upload APK
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: start-06-devDebug-${{ github.run_id }}
+          path: |
+            app/build/outputs/apk/dev/debug/*.apk
+            app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+            native/authorial_keyboard_l0/android-demo/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Unit tests (required post-APK gate)
+        run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
+      - name: Compile device route instrumentation APK (required gate)
+        run: ./gradlew --no-daemon assembleDevDebugAndroidTest --stacktrace
+      - name: Android lint
+        run: ./gradlew --no-daemon lintDevDebug --stacktrace
       - name: RAFANDROID bound Android/NDK gate
         shell: bash
         run: |
@@ -884,33 +1307,37 @@ jobs:
           tools/rafandroid/rafandroid apk-gate "$APK"
           sha256sum "$APK" | tee "$RUNNER_TEMP/rafandroid-silicon-fixture.sha256"
 
-      - name: Unit tests
-        run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
-      - name: Compile device route instrumentation APK
-        run: ./gradlew --no-daemon assembleDevDebugAndroidTest --stacktrace
-      - name: Android lint
-        run: ./gradlew --no-daemon lintDevDebug --stacktrace
-      - name: Assemble devDebug
-        run: ./gradlew --no-daemon assembleDevDebug --stacktrace
-      - name: Verify APK and SHA-256
+      - name: RAFAELIA Authorial Keyboard native demo APK gate
         shell: bash
         run: |
           set -euo pipefail
-          APK="$(find app/build/outputs/apk/dev/debug -type f -name '*.apk' -print -quit)"
+          DEMO="native/authorial_keyboard_l0/android-demo"
+          ./gradlew --no-daemon -p "$DEMO" assembleDebug --stacktrace
+          APK="$(find "$DEMO/build/outputs/apk/debug" -maxdepth 1 -type f -name '*.apk' -print -quit)"
           test -n "$APK"
           test -s "$APK"
-          sha256sum "$APK" | tee app/build/outputs/apk/dev/debug/SHA256SUMS.txt
-          tools/rafandroid/rafandroid dex-gate "$APK"
-          tools/rafandroid/rafandroid apk-gate "$APK"
-      - name: Upload APK
+          unzip -l "$APK" | grep -q 'lib/armeabi-v7a/librafkbd_demo.so'
+          unzip -l "$APK" | grep -q 'lib/arm64-v8a/librafkbd_demo.so'
+          unzip -Z1 "$APK" | grep -Fxq 'AndroidManifest.xml'
+          SIGNER="$(find "$ANDROID_SDK_ROOT/build-tools" -mindepth 2 -maxdepth 2 -type f -name apksigner | sort -V | tail -1)"
+          ALIGN="$(find "$ANDROID_SDK_ROOT/build-tools" -mindepth 2 -maxdepth 2 -type f -name zipalign | sort -V | tail -1)"
+          test -x "$SIGNER"
+          test -x "$ALIGN"
+          "$SIGNER" verify "$APK"
+          "$ALIGN" -c 4 "$APK"
+          sha256sum "$APK" | tee "$DEMO/build/outputs/apk/debug/SHA256SUMS.txt"
+          echo 'RAFKBD_NATIVE_APK_SCOPED_GATE=PASS'
+
+      - name: Publish RAFAELIA keyboard test APK (not a release)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: start-06-devDebug-${{ github.run_id }}
+          name: rafaelia-keyboard-test-apk-${{ github.run_id }}
           path: |
-            app/build/outputs/apk/dev/debug/*.apk
-            app/build/outputs/apk/dev/debug/SHA256SUMS.txt
+            native/authorial_keyboard_l0/android-demo/build/outputs/apk/debug/*.apk
+            native/authorial_keyboard_l0/android-demo/build/outputs/apk/debug/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
+
       - name: Upload Android diagnostics
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -947,6 +1374,13 @@ jobs:
         with:
           ref: ${{ env.EXECUTION_SHA }}
           persist-credentials: false
+      - name: P0 · CodeQL Kotlin dependency admission
+        if: matrix.language == 'java-kotlin'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/validate_android_toolchain_matrix.py
+          python3 tools/validate_android_dependency_bundle.py
       - name: Java 17
         if: matrix.language == 'java-kotlin'
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.0
@@ -959,6 +1393,12 @@ jobs:
         uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
         with:
           packages: ""
+      - name: Install Android API 37 for Java/Kotlin CodeQL build
+        if: matrix.language == 'java-kotlin'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
       - name: Generate local.properties
         if: matrix.language == 'java-kotlin'
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
@@ -1357,7 +1797,6 @@ jobs:
       name: Pat_environments
       deployment: false
     env:
-      PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
       REQUESTED_PROVIDER_OPERATION: ${{ needs.plan.outputs.provider_operation }}
       REQUESTED_EXPECTED_MAIN_SHA: ${{ inputs.provider_expected_main_sha }}
     steps:
@@ -1373,6 +1812,8 @@ jobs:
           set -euo pipefail
           python3 scripts/validate_provider_capability_environments.py configs/provider-capability-environments.v1.json
       - name: Enforce manual main-only execution boundary
+        env:
+          PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
         shell: bash
         run: |
           set -euo pipefail
@@ -1409,6 +1850,9 @@ jobs:
             exit 3
           }
       - name: Apply or preflight canonical main protection
+        env:
+          PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
+        if: ${{ needs.plan.outputs.provider_operation != 'federated_preflight' && needs.plan.outputs.provider_operation != 'federated_protect' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -1454,12 +1898,54 @@ jobs:
               ;;
           esac
           python3 scripts/apply_rafgittools_main_protection.py "${args[@]}"
+      - name: Federated admin scoped protection | owner manual only
+        if: >-
+          ${{
+            github.event_name == 'workflow_dispatch' &&
+            (
+              needs.plan.outputs.provider_operation == 'federated_preflight' ||
+              needs.plan.outputs.provider_operation == 'federated_protect'
+            )
+          }}
+        shell: bash
+        env:
+          PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
+          FED_TARGET_OWNER: ${{ inputs.repository_factory_owner }}
+          FED_TARGET_NAME: ${{ inputs.repository_factory_name }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_ACTOR" == rafaelmeloreisnovo ]]
+          [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]
+          [[ "$GITHUB_REF" == refs/heads/main ]]
+          [[ "$FED_TARGET_OWNER" == rafaelmeloreisnovo ]] || {
+            echo '::error::federated admin owner not allowlisted'; exit 2;
+          }
+          [[ "$FED_TARGET_NAME" == Mapa || "$FED_TARGET_NAME" == actions ]] || {
+            echo '::error::federated admin repository not allowlisted'; exit 2;
+          }
+          [[ "${REQUESTED_EXPECTED_MAIN_SHA:-}" =~ ^[0-9a-f]{40}$ ]] || {
+            echo '::error::explicit exact target main SHA required'; exit 2;
+          }
+          case "$REQUESTED_PROVIDER_OPERATION" in
+            federated_preflight) suboperation=preflight ;;
+            federated_protect) suboperation=protect ;;
+            *) echo '::error::operation not approved'; exit 2 ;;
+          esac
+          python3 scripts/federated_admin_protection_v1.py \
+            --repository "$FED_TARGET_OWNER/$FED_TARGET_NAME" \
+            --expected-sha "$REQUESTED_EXPECTED_MAIN_SHA" \
+            --operation "$suboperation" \
+            --receipt artifacts/federated-admin-protection.json
+          echo 'FED_ADMIN=REVIEW_RECEIPT_REQUIRED; CLAIM_ALLOWED=false' >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload provider enforcement receipt
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: start-08p-provider-environments-${{ github.run_id }}
-          path: artifacts/provider-main-enforcement.json
+          path: |
+            artifacts/provider-main-enforcement.json
+            artifacts/federated-admin-protection.json
           if-no-files-found: warn
           retention-days: 90
 
@@ -1593,7 +2079,7 @@ jobs:
 
   receipt:
     name: '09 · Final receipt / fechamento'
-    needs: [plan, topology, coherence, python_tests, federation, docs, android, security, provider_actions, private_ci_bridge, provider_environments, release, public_data_custody, promotion_hold_pat_agent]
+    needs: [plan, topology, coherence, python_tests, federation, docs, docs_integrity, android, security, provider_actions, private_ci_bridge, provider_environments, release, public_data_custody, promotion_hold_pat_agent, semchaos_scoped]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -1604,6 +2090,8 @@ jobs:
       PYTHON_RESULT: ${{ needs.python_tests.result }}
       FEDERATION_RESULT: ${{ needs.federation.result }}
       DOCS_RESULT: ${{ needs.docs.result }}
+      DOCS_INTEGRITY_RESULT: ${{ needs.docs_integrity.result }}
+      SEMCHAOS_RESULT: ${{ needs.semchaos_scoped.result }}
       ANDROID_RESULT: ${{ needs.android.result }}
       SECURITY_RESULT: ${{ needs.security.result }}
       PROVIDER_ACTIONS_RESULT: ${{ needs.provider_actions.result }}
@@ -1613,6 +2101,12 @@ jobs:
       PUBLIC_DATA_RESULT: ${{ needs.public_data_custody.result }}
       PROMOTION_HOLD_RESULT: ${{ needs.promotion_hold_pat_agent.result }}
       ROUTE_MODE: ${{ needs.plan.outputs.mode }}
+      ANDROID_REQUIRED: ${{ needs.plan.outputs.android }}
+      SECURITY_REQUIRED: ${{ needs.plan.outputs.security }}
+      DOCS_REQUIRED: ${{ needs.plan.outputs.docs }}
+      DOCS_INTEGRITY_REQUIRED: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && (inputs.mode == 'docs' || inputs.mode == 'full')) }}
+      SEMCHAOS_REQUIRED: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'full') }}
+      FEDERATION_REQUIRED: ${{ needs.plan.outputs.federation }}
     steps:
       - name: Emit append-only pipeline receipt
         shell: bash
@@ -1628,6 +2122,8 @@ jobs:
               'python_tests': os.environ['PYTHON_RESULT'],
               'federation': os.environ['FEDERATION_RESULT'],
               'docs': os.environ['DOCS_RESULT'],
+              'docs_integrity': os.environ['DOCS_INTEGRITY_RESULT'],
+              'semchaos_scoped': os.environ['SEMCHAOS_RESULT'],
               'android': os.environ['ANDROID_RESULT'],
               'security': os.environ['SECURITY_RESULT'],
               'provider_actions': os.environ['PROVIDER_ACTIONS_RESULT'],
@@ -1642,6 +2138,18 @@ jobs:
               for k, v in keys.items()
           }
           failures = [k for k, v in keys.items() if v in {'failure', 'cancelled'}]
+          required = {
+              'android': os.environ['ANDROID_REQUIRED'] == 'true',
+              'security': os.environ['SECURITY_REQUIRED'] == 'true',
+              'docs': os.environ['DOCS_REQUIRED'] == 'true',
+              'docs_integrity': os.environ['DOCS_INTEGRITY_REQUIRED'] == 'true',
+              'semchaos_scoped': os.environ['SEMCHAOS_REQUIRED'] == 'true',
+              'federation': os.environ['FEDERATION_REQUIRED'] == 'true',
+          }
+          missing_required = [
+              name for name, selected in required.items()
+              if selected and keys[name] != 'success'
+          ]
           receipt = {
               'schema': os.environ['PIPELINE_SCHEMA'],
               'mode': os.environ.get('ROUTE_MODE') or 'TOKEN_VAZIO_ROUTE',
@@ -1655,7 +2163,9 @@ jobs:
               'run_id': os.environ['GITHUB_RUN_ID'],
               'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
               'event': os.environ['GITHUB_EVENT_NAME'],
-              'state': 'FAIL' if failures else 'PASS_WITH_TYPED_SKIPS',
+              'state': 'FAIL_REQUIRED_GATE' if missing_required else ('FAIL' if failures else 'PASS_WITH_TYPED_SKIPS'),
+              'required_gates': required,
+              'missing_required_gates': missing_required,
               'stages': mapped,
               'claim_allowed': False,
               'automatic_promotion': False,
@@ -1668,8 +2178,9 @@ jobs:
               json.dump(receipt, f, ensure_ascii=False, indent=2, sort_keys=True)
               f.write('\n')
           print(json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True))
-          if failures:
-              raise SystemExit('failed stages: ' + ', '.join(failures))
+          if failures or missing_required:
+              raise SystemExit('failed stages: ' + ', '.join(failures) +
+                               '; required gates missing: ' + ', '.join(missing_required))
           PY
       - name: Publish receipt summary
         if: always()
@@ -1678,7 +2189,7 @@ jobs:
           {
             echo '## START final receipt'
             echo
-            echo '- single active workflow: `START.yml`'
+            echo '- global orchestration owner: `START.yml` + fixed scoped workflows'
             echo '- claim_allowed: `false`'
             echo '- automatic_promotion: `false`'
             echo '- training_executed: `false`'
@@ -1710,7 +2221,7 @@ jobs:
           persist-credentials: false
 
       - name: Python 3.12
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
 
@@ -1924,3 +2435,259 @@ jobs:
           path: artifacts/promotion-hold-receipt.json
           if-no-files-found: warn
           retention-days: 30
+
+  blake3_triple_abi_apk:
+    name: '10 · BLAKE3 triple APK (RMR / fork / official; dual ABI)'
+    needs: [plan, topology]
+    if: >-
+      ${{ needs.topology.result == 'success' &&
+          ((github.event_name == 'pull_request' &&
+            github.head_ref == 'feat/blake3-triple-abi-apk-build-bridge-20261015') ||
+           (github.event_name == 'workflow_dispatch' &&
+            inputs.blake3_historical_replay == true)) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    env:
+      BLAKE3_FORK_SOURCE_SHA: 46c5f88f073a7aafb062953bc56a2fe8e36089c5
+      B3_UPSTREAM_SHA: f55849f89cd85083c1c9daa2c5de20766f309c00
+      RMR_SOURCE_SHA: 46c5f88f073a7aafb062953bc56a2fe8e36089c5
+    steps:
+      - name: Source checkout isolated from RafGitTools CI control
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Checkout exact BLAKE3 fork source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/blake3-work/fork"
+          cd "$RUNNER_TEMP/blake3-work/fork"
+          git init -q
+          git remote add origin https://github.com/rafaelmeloreisnovo/BLAKE3.git
+          git fetch --no-tags --depth=1 origin "$BLAKE3_FORK_SOURCE_SHA"
+          git checkout --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$BLAKE3_FORK_SOURCE_SHA"
+          test -s rmr/android/app/src/main/cpp/b3_compare_jni.c
+      - name: Checkout official upstream at exact commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          fork="$RUNNER_TEMP/blake3-work/fork"
+          official="$fork/rmr/android/upstream_official"
+          mkdir -p "$official"
+          git -C "$official" init -q
+          git -C "$official" remote add origin https://github.com/BLAKE3-team/BLAKE3.git
+          git -C "$official" fetch --no-tags --depth=1 origin "$B3_UPSTREAM_SHA"
+          git -C "$official" checkout --detach FETCH_HEAD
+          test "$(git -C "$official" rev-parse HEAD)" = "$B3_UPSTREAM_SHA"
+          for name in LICENSE_A2 LICENSE_A2LLVM LICENSE_CC0; do
+            test -s "$official/$name"
+          done
+          echo "BLAKE3_OFFICIAL_DIR=$official" >> "$GITHUB_ENV"
+      - name: Configure existing Android build tools without auto-accepting licenses
+        shell: bash
+        run: |
+          set -euo pipefail
+          export JAVA_HOME="${JAVA_HOME_17_X64:-$JAVA_HOME}"
+          test -x "$JAVA_HOME/bin/java"
+          echo "JAVA_HOME=$JAVA_HOME" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME/bin" >> "$GITHUB_PATH"
+          sdk="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          test -n "$sdk"
+          test -x "$sdk/cmdline-tools/latest/bin/sdkmanager"
+          "$sdk/cmdline-tools/latest/bin/sdkmanager"             'platforms;android-36' 'build-tools;36.0.0'             'ndk;27.2.12479018' 'cmake;3.22.1'
+          echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$sdk" >> "$GITHUB_ENV"
+          version=8.11.1
+          expected=f397b287023acdba1e9f6fc5ea72d22dd63669d59ed4a289a29b1a76eee151c6
+          mkdir -p "$RUNNER_TEMP/rmr-gradle"
+          curl -fsSL "https://services.gradle.org/distributions/gradle-$version-bin.zip"             -o "$RUNNER_TEMP/rmr-gradle/gradle.zip"
+          printf '%s  %s\n' "$expected" "$RUNNER_TEMP/rmr-gradle/gradle.zip"             | sha256sum -c --strict
+          unzip -q "$RUNNER_TEMP/rmr-gradle/gradle.zip" -d "$RUNNER_TEMP/rmr-gradle"
+          echo "$RUNNER_TEMP/rmr-gradle/gradle-$version/bin" >> "$GITHUB_PATH"
+      - name: Assemble real Android APK with 3 native libraries times 2 ABIs
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle --project-dir "$RUNNER_TEMP/blake3-work/fork/rmr/android" --no-daemon :app:assembleDebug
+      - name: Binary, license and signature gates with receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          fork="$RUNNER_TEMP/blake3-work/fork"
+          official="$fork/rmr/android/upstream_official"
+          apk="$fork/rmr/android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$apk"
+          for abi in armeabi-v7a arm64-v8a; do
+            for lib in officialhash forkhash rmrhash; do
+              unzip -Z1 "$apk" | grep -Fx "lib/$abi/lib$lib.so"
+              unzip -p "$apk" "lib/$abi/lib$lib.so" > "$RUNNER_TEMP/$abi-$lib.so"
+              test -s "$RUNNER_TEMP/$abi-$lib.so"
+              file "$RUNNER_TEMP/$abi-$lib.so"
+            done
+          done
+          for asset in OFFICIAL_LICENSE_A2 OFFICIAL_LICENSE_A2LLVM OFFICIAL_LICENSE_CC0             LICENSE_RMR LICENSE_A2 LICENSE_A2LLVM LICENSE_CC0             LICENSE_RMR_INDIVIDUAL_RESEARCH_V1.txt THIRD_PARTY_NOTICES_RAFAELIA.md PROVENANCE.txt; do
+            unzip -Z1 "$apk" | grep -Fx "assets/$asset"
+          done
+          "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --verbose "$apk"
+          "$ANDROID_SDK_ROOT/build-tools/36.0.0/zipalign" -c -p 4 "$apk"
+          mkdir -p "$RUNNER_TEMP/blake3-output"
+          cp "$apk" "$RUNNER_TEMP/blake3-output/RAFAELIA_BLAKE3_3PATHS_ARM32_ARM64_DEBUG.apk"
+          {
+            echo "state=APK_CREATED_ABI_LICENSE_SIGNATURE_CHECKED"
+            echo "claim_allowed=false"
+            echo "apk_sha256=$(sha256sum "$apk" | cut -d' ' -f1)"
+            echo "apk_bytes=$(stat -c '%s' "$apk")"
+            echo "fork_sha=$BLAKE3_FORK_SOURCE_SHA"
+            echo "official_sha=$B3_UPSTREAM_SHA"
+            echo "fork_core_sha256=$(sha256sum "$fork/c/blake3.c" | cut -d' ' -f1)"
+            echo "official_core_sha256=$(sha256sum "$official/c/blake3.c" | cut -d' ' -f1)"
+            echo "abis=armeabi-v7a,arm64-v8a"
+            echo "libraries=officialhash,forkhash,rmrhash"
+            echo "licenses=OFFICIAL,FORK,RMR_PRESENT"
+            echo "signature=DEBUG_VERIFIED"
+            echo "physical_arm32=TOKEN_VAZIO"
+            echo "physical_arm64=TOKEN_VAZIO"
+          } > "$RUNNER_TEMP/blake3-output/RECEIPT.txt"
+          cat "$RUNNER_TEMP/blake3-output/RECEIPT.txt"
+      - name: Publish single installable APK and scoped receipt
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rafaelia-blake3-triple-abi-debug-${{ github.run_id }}
+          path: ${{ runner.temp }}/blake3-output/
+          if-no-files-found: error
+          retention-days: 14
+
+  atlas_apk:
+    name: '10Z · RAFAELIA Atlas standalone · exact source'
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout candidate exact HEAD
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.EXECUTION_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Detect Atlas files at exact base/head
+        id: scope
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXECUTION_SHA"
+          git cat-file -e "${BASE_SHA}^{commit}"
+          if git diff --no-ext-diff --name-only "$BASE_SHA" HEAD | grep -Eq '^(atlas-apk/|docs/atlas/)'; then
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            echo 'Atlas unchanged: skip isolated APK build'
+          fi
+      - name: Compile/test freestanding L0; enforce no INTERNET permission
+        if: steps.scope.outputs.changed == 'true'
+        shell: bash
+        run: |
+          sh atlas-apk/tests/test_core.sh
+          ! grep -q 'android.permission.INTERNET' atlas-apk/app/src/main/AndroidManifest.xml
+      - name: Java 17
+        if: steps.scope.outputs.changed == 'true'
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Negative SAF provider-boundary tests (21 offline JVM fixtures)
+        if: steps.scope.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/atlas-safety-test"
+          mkdir -p "$work"
+          javac --release 17 -d "$work" \
+            atlas-apk/app/src/main/java/org/rafaelia/atlas/InventorySafety.java \
+            atlas-apk/tests/InventorySafetyTest.java
+          java -cp "$work" org.rafaelia.atlas.InventorySafetyTest
+          grep -Fq 'InventorySafety.mayReadRow(rowsSeen)' \
+            atlas-apk/app/src/main/java/org/rafaelia/atlas/MainActivity.java
+          grep -Fq 'InventorySafety.coverageState(truncated,errors,repeatedIds,unknownMimes)' \
+            atlas-apk/app/src/main/java/org/rafaelia/atlas/MainActivity.java
+      - name: Android SDK
+        if: steps.scope.outputs.changed == 'true'
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
+      - name: Pin Android build toolchain
+        if: steps.scope.outputs.changed == 'true'
+        shell: bash
+        run: sdkmanager 'platforms;android-34' 'build-tools;34.0.0' 'ndk;27.2.12479018' 'cmake;3.22.1'
+      - name: Build standalone APK and lint
+        if: steps.scope.outputs.changed == 'true'
+        shell: bash
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon -p atlas-apk :app:assembleDebug :app:lintDebug --stacktrace
+      - name: Verify ABI, signature and exact-source receipt
+        if: steps.scope.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          file='atlas-apk/app/build/outputs/apk/debug/app-debug.apk'
+          test -s "$file"
+          unzip -Z -1 "$file" | grep -Fx 'lib/armeabi-v7a/librafaelia_atlas.so'
+          unzip -Z -1 "$file" | grep -Fx 'lib/arm64-v8a/librafaelia_atlas.so'
+          "${ANDROID_HOME}/build-tools/34.0.0/apksigner" verify --verbose "$file"
+          mkdir -p atlas-apk/receipts
+          {
+            echo 'schema=raf.atlas.apk.build.v2'
+            echo "source_head=${EXECUTION_SHA}"
+            echo "actual_checkout=$(git rev-parse HEAD)"
+            echo "apk_sha256=$(sha256sum "$file" | cut -d' ' -f1)"
+            echo 'abi=armeabi-v7a,arm64-v8a'
+            echo 'device=TOKEN_VAZIO_NOT_RUN'
+            echo 'drive_ingestion=TOKEN_VAZIO_NOT_RUN'
+            echo 'claim_allowed=false'
+          } > atlas-apk/receipts/build.env
+      - name: Upload test APK and scoped receipt
+        if: steps.scope.outputs.changed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: atlas-debug-${{ env.EXECUTION_SHA }}
+          if-no-files-found: error
+          path: |
+            atlas-apk/app/build/outputs/apk/debug/app-debug.apk
+            atlas-apk/receipts/build.env
+          retention-days: 7
+
+  semchaos_scoped:
+    # Transferred from independent SEMCHAOS YAML: tests are preserved, not suppressed.
+    # Run on all PRs (stronger than the old changed-path-only trigger), and manual full.
+    name: '10S · SEMCHAOS typed-token scoped gate'
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && inputs.mode == 'full')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.EXECUTION_SHA }}
+          persist-credentials: false
+      - name: Verify source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXECUTION_SHA"
+      - name: Platform evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          cc --version | head -n 1
+          python3 --version
+          nm --version | head -n 1
+      - name: Freestanding object and synthetic JSONL lossless roundtrip
+        shell: bash
+        run: sh tools/semantic_chaos_lab/tests/selftest.sh

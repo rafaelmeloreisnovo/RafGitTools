@@ -1,0 +1,106 @@
+{
+  "schema": "rafaelia.raf-applications.work-and-credits.v2",
+  "state": "CANDIDATE_HOLD",
+  "producer": "rafaelmeloreisnovo/RafGitTools",
+  "authority": {
+    "routing": "rafaelmeloreisnovo/Mapa",
+    "android": "rafaelmeloreisnovo/RafGitTools",
+    "science": "instituto-Rafael/relativity-living-light",
+    "drive": "official-user-drive-documentary-only",
+    "external_secrets": "TOKEN_VAZIO_PROVIDER_SCOPE"
+  },
+  "application_group": "Aplicações Rafael IA/RafGitTools/Raf Benchmark",
+  "knowledge": {
+    "ids": "K001..K090",
+    "groups": "A..H",
+    "catalog_state": "CATALOG_ONLY",
+    "count": 90
+  },
+  "executable_modules": [
+    {
+      "id": "raf.benchmark.synthetic.v2",
+      "state": "IMPLEMENTED_UNTESTED_ANDROID",
+      "runnable_reference_ids": [
+        "K076",
+        "K077",
+        "K078",
+        "K079",
+        "K080",
+        "K081",
+        "K082",
+        "K083"
+      ],
+      "workloads": [
+        "STREAM_WRITE",
+        "CACHE_REUSE",
+        "COMPUTE_ONLY"
+      ],
+      "workers": [
+        1,
+        2,
+        4,
+        8
+      ],
+      "buffer_kib": [
+        256,
+        2048,
+        16384,
+        65536,
+        153600
+      ],
+      "input": "SYNTHETIC_ONLY",
+      "network_dispatch": false,
+      "claim_allowed": false
+    }
+  ],
+  "consent": {
+    "kind": "USER_CLICK_PER_RUN",
+    "gate": "BLOCK_WITHOUT_CLICK",
+    "no_auto_agent": true
+  },
+  "transitions": [
+    "PROPOSED",
+    "SOURCE_DECLARED",
+    "HUMAN_CLICK",
+    "LOCAL_RUNNING",
+    "LOCAL_RECEIPTED",
+    "SAF_EXPORT_OPTIONAL",
+    "PROVIDER_READBACK_PENDING",
+    "RECONSTRUCTED_IF_VERIFIED"
+  ],
+  "privacy": {
+    "no_third_party_data": true,
+    "no_plaintext_credentials": true,
+    "no_cross_repo_secret_alias": true,
+    "hash_chain_external_anchor": "TOKEN_VAZIO",
+    "same_android_uid_as_rafgittools": true,
+    "independent_sandbox_verified": false
+  },
+  "credits": {
+    "policy": "COMPONENT_USED_IN_VISIBLE_SCREEN",
+    "dark_info_when_external_or_unknown": true,
+    "dim_when_proven_authorial_only": true,
+    "global_licenses": "THIRD_PARTY_LICENSES.md",
+    "dependency_sbom": "TOKEN_VAZIO_EXACT_DEPENDENCY_SBOM",
+    "legal_release_gate": "BLOCKED_UNTIL_REVIEW"
+  },
+  "source_boundaries": [
+    "SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM",
+    "TOKEN_VAZIO != 0",
+    "IMPLEMENTED_UNTESTED != PASS"
+  ],
+  "release": {
+    "allowed": false,
+    "automerge": false,
+    "required_gates": [
+      "EXACT_HEAD_BUILD",
+      "UNIT_TESTS",
+      "LINT",
+      "ABI_ARM32",
+      "ABI_ARM64",
+      "RECEIPT_REPLAY",
+      "LICENSE_SCOPE",
+      "PROVIDER_AUTHORITY"
+    ]
+  }
+}

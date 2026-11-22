@@ -111,6 +111,81 @@ class RepositoryPrivacyManagerTest {
         coVerify(exactly = 0) { api.updateVisibility(any(), any(), any()) }
     }
 
+    @Test
+    fun `target eligibility is symmetric and never selects unchanged visibility`() {
+        val public = repo(1, "public").toCandidate()
+        val private = repo(2, "private", isPrivate = true).toCandidate()
+        assertTrue(public.eligibleFor(PrivacyVisibilityTarget.PRIVATE))
+        assertFalse(public.eligibleFor(PrivacyVisibilityTarget.PUBLIC))
+        assertFalse(private.eligibleFor(PrivacyVisibilityTarget.PRIVATE))
+        assertTrue(private.eligibleFor(PrivacyVisibilityTarget.PUBLIC))
+        assertFalse(repo(3, "fork", isFork = true, isPrivate = true).toCandidate()
+            .eligibleFor(PrivacyVisibilityTarget.PUBLIC))
+        assertFalse(repo(4, "no-admin", isPrivate = true, admin = false).toCandidate()
+            .eligibleFor(PrivacyVisibilityTarget.PUBLIC))
+        assertFalse(repo(5, "archived", isPrivate = true).copy(archived = true).toCandidate()
+            .eligibleFor(PrivacyVisibilityTarget.PUBLIC))
+        assertFalse(repo(6, "internal", isPrivate = true).copy(visibility = "internal").toCandidate()
+            .eligibleFor(PrivacyVisibilityTarget.PUBLIC))
+        assertFalse(repo(7, "contradictory").copy(visibility = "private").toCandidate()
+            .eligibleFor(PrivacyVisibilityTarget.PUBLIC))
+    }
+
+    @Test
+    fun `public target requires fresh admin and two durable receipts before PATCH`() = runTest {
+        val privateDto = repo(11, "private", isPrivate = true)
+        val selected = privateDto.toCandidate()
+        val events = mutableListOf<String>()
+        every { receiptStore.save(any()) } answers {
+            events += "receipt"
+            Result.success("/private/checkpoint.json")
+        }
+        coEvery { api.getRepository("rafael", "private") } coAnswers {
+            events += "preflight"
+            privateDto
+        }
+        coEvery { api.updateVisibility("rafael", "private", VisibilityPatchRequest("public")) } coAnswers {
+            events += "PATCH-public"
+            privateDto.copy(isPrivate = false, visibility = "public")
+        }
+
+        val result = manager.changeVisibility(listOf(selected), PrivacyVisibilityTarget.PUBLIC)
+
+        assertEquals(1, result.receipt.updated)
+        assertEquals("public", result.receipt.mutations.single().targetVisibility)
+        assertEquals("private", result.receipt.mutations.single().fromVisibility)
+        assertEquals(PrivacyProvenanceState.DURABLE, result.provenanceState)
+        assertTrue(events.indexOf("PATCH-public") > events.indexOf("preflight"))
+        assertTrue(events.count { it == "receipt" } >= 2)
+        coVerify(exactly = 1) {
+            api.updateVisibility("rafael", "private", VisibilityPatchRequest("public"))
+        }
+    }
+
+    @Test
+    fun `public transition aborts when live preflight loses admin`() = runTest {
+        val privateDto = repo(11, "private", isPrivate = true)
+        val selected = privateDto.toCandidate()
+        coEvery { api.getRepository("rafael", "private") } returns privateDto.copy(
+            permissions = PrivacyRepositoryPermissionsDto(admin = false)
+        )
+        every { receiptStore.save(any()) } returns Result.success("/private/checkpoint.json")
+        val result = manager.changeVisibility(listOf(selected), PrivacyVisibilityTarget.PUBLIC)
+        assertEquals(0, result.receipt.updated)
+        assertEquals(1, result.receipt.skipped)
+        coVerify(exactly = 0) { api.updateVisibility(any(), any(), any()) }
+    }
+
+    @Test
+    fun `public transition never PATCHes without durable planned receipt`() = runTest {
+        val selected = repo(11, "private", isPrivate = true).toCandidate()
+        every { receiptStore.save(any()) } returns Result.failure(IllegalStateException("disk unavailable"))
+        val result = manager.changeVisibility(listOf(selected), PrivacyVisibilityTarget.PUBLIC)
+        assertEquals(PrivacyProvenanceState.FAILED_BEFORE_MUTATION, result.provenanceState)
+        coVerify(exactly = 0) { api.getRepository(any(), any()) }
+        coVerify(exactly = 0) { api.updateVisibility(any(), any(), any()) }
+    }
+
     private fun repo(
         id: Long,
         name: String,

@@ -5,6 +5,9 @@
 # Keep Kotlin metadata
 -keep class kotlin.Metadata { *; }
 
+# JNI export is resolved by the stable class/method symbol in raf_inventory_jni.c.
+-keep class com.rafgittools.navigator.RafInventoryCoreBridge { *; }
+
 # Keep JGit classes
 -keep class org.eclipse.jgit.** { *; }
 -dontwarn org.eclipse.jgit.**

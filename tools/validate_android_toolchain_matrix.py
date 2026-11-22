@@ -88,6 +88,24 @@ def validate(observed: dict[str, str], matrix: dict) -> dict:
                 "reasons": [],
             }
 
+    # CI candidate is NOT an approved production tuple or a publication gate.
+    for entry in matrix.get("ci_candidates") or []:
+        if all(observed.get(key) == entry.get(key) for key in tuple_fields):
+            if (entry.get("admission") != "SCOPED_CI_ONLY" or
+                    entry.get("promotion") != "HOLD" or
+                    entry.get("claim_allowed") is not False):
+                break
+            return {
+                "status": "PASS",
+                "state": entry["state"],
+                "claim_allowed": False,
+                "promotion": "HOLD",
+                "experimental": True,
+                "observed": observed,
+                "policy": matrix.get("policy"),
+                "reasons": ["HOSTED_AND_DEVICE_GATES_REQUIRED"],
+            }
+
     reasons = ["UNAPPROVED_ATOMIC_TOOLCHAIN_TUPLE"]
     kotlin = observed.get("kotlin", "")
     ksp = observed.get("ksp", "")
