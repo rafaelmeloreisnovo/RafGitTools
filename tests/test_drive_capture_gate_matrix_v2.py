@@ -20,8 +20,8 @@ def clean_lines():
 class MatrixParserContract(unittest.TestCase):
     def test_valid_matrix(self):
         report = m.verify_output("\n".join(clean_lines()))
-        self.assertEqual(report["matrix_cases"], 15)
-        self.assertEqual(report["negative_rejected"], 14)
+        self.assertEqual(report["matrix_cases"], 18)
+        self.assertEqual(report["negative_rejected"], 17)
         self.assertFalse(report["claim_allowed"])
 
     def test_empty(self):
@@ -75,6 +75,12 @@ class MatrixParserContract(unittest.TestCase):
     def test_malformed_legacy_numeric_rejected(self):
         lines = clean_lines()
         lines[-1] = lines[-1].replace("|0|0|t", "|not-a-count|0|t", 1)
+        with self.assertRaisesRegex(m.MatrixGateError, "LEGACY_FIELD_MALFORMED"):
+            m.verify_output("\n".join(lines))
+
+    def test_empty_legacy_numeric_rejected(self):
+        lines = clean_lines()
+        lines[-1] = lines[-1].replace("|0|0|t", "||0|t", 1)
         with self.assertRaisesRegex(m.MatrixGateError, "LEGACY_FIELD_MALFORMED"):
             m.verify_output("\n".join(lines))
 
