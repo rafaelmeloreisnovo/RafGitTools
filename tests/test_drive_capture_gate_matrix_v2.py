@@ -72,6 +72,18 @@ class MatrixParserContract(unittest.TestCase):
         with self.assertRaisesRegex(m.MatrixGateError, "UNEXPECTED_PSQL_ROW"):
             m.verify_output("WARNING: synthetic diagnostic\n" + "\n".join(clean_lines()))
 
+    def test_malformed_legacy_numeric_rejected(self):
+        lines = clean_lines()
+        lines[-1] = lines[-1].replace("|0|0|t", "|not-a-count|0|t", 1)
+        with self.assertRaisesRegex(m.MatrixGateError, "LEGACY_FIELD_MALFORMED"):
+            m.verify_output("\n".join(lines))
+
+    def test_malformed_legacy_boolean_rejected(self):
+        lines = clean_lines()
+        lines[-1] = lines[-1].replace("|t|0|0|t", "|maybe|0|0|t", 1)
+        with self.assertRaisesRegex(m.MatrixGateError, "LEGACY_FIELD_MALFORMED"):
+            m.verify_output("\n".join(lines))
+
     def test_truncated_row(self):
         lines = clean_lines()
         lines[0] = lines[0].split("|")[0]
