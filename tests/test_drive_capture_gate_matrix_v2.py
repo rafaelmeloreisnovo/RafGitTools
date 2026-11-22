@@ -68,6 +68,18 @@ class MatrixParserContract(unittest.TestCase):
         with self.assertRaisesRegex(m.MatrixGateError, "FALSIFIER_NOT_REJECTED"):
             m.verify_output("\n".join(lines))
 
+    def test_cross_capture_scope_gate_is_wired(self):
+        # Static wiring guard, not a substitute for PostgreSQL execution.
+        root = Path(__file__).resolve().parents[1]
+        verifier = (root / "docs/supabase/verify_drive_folder_capture_scoped_v1.sql").read_text()
+        matrix = (root / "docs/supabase/test_drive_folder_capture_scoped_gate_v2_synthetic.sql").read_text()
+        self.assertEqual(verifier.count("matching_scope AS ("), 2)
+        self.assertEqual(verifier.count("count(DISTINCT account_profile_id)=1"), 2)
+        self.assertIn("(SELECT same_scope FROM matching_scope)", verifier)
+        self.assertIn("AND s.same_scope IS TRUE", verifier)
+        self.assertIn("scope_fixture(", matrix)
+        self.assertIn("(SELECT passed FROM scope_matrix)", matrix)
+
     def test_extra_warning(self):
         with self.assertRaisesRegex(m.MatrixGateError, "UNEXPECTED_PSQL_ROW"):
             m.verify_output("WARNING: synthetic diagnostic\n" + "\n".join(clean_lines()))
