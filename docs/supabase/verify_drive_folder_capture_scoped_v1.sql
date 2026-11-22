@@ -44,6 +44,10 @@ WITH expected_capture(capture_id) AS (
         count(*) FILTER(WHERE (l.next_cursor IS NULL) IS DISTINCT FROM l.is_terminal)::bigint terminal_cursor_errors,
         count(*) FILTER(WHERE l.provider_positions IS DISTINCT FROM
                   jsonb_array_length(l.folder_ids_and_metadata))::bigint page_position_errors,
+        count(*) FILTER(WHERE l.page_index IS NOT NULL AND
+                  (l.provider IS NULL OR btrim(l.provider)='' OR
+                   l.account_profile_id IS NULL OR btrim(l.account_profile_id)='' OR
+                   l.query_contract IS NULL OR btrim(l.query_contract)=''))::bigint metadata_identity_errors,
         count(DISTINCT l.provider)::bigint provider_variants,
         count(DISTINCT l.account_profile_id)::bigint account_variants,
         count(DISTINCT l.query_contract)::bigint query_variants
@@ -61,6 +65,7 @@ WITH expected_capture(capture_id) AS (
           c.nonmonotonic_requests=0 AND c.page_hash_failures=0 AND
           c.terminal_pages=1 AND c.early_terminal_pages=0 AND
           c.terminal_cursor_errors=0 AND c.page_position_errors=0 AND
+          c.metadata_identity_errors=0 AND
           c.provider_variants=1 AND c.account_variants=1 AND c.query_variants=1 AND
           c.all_claims_blocked IS TRUE AND
           q.capture_id IS NOT NULL AND q.scoped_state='TERMINAL_CAPTURE_SCOPED' AND
