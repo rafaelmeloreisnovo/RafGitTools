@@ -15,6 +15,7 @@ EXPECTED_CASES = frozenset({
     "early_terminal", "two_terminal_pages", "not_terminal",
     "terminal_cursor_mismatch", "null_digest", "wrong_digest", "claim_true",
     "provider_drift", "account_drift", "query_contract_drift",
+    "blank_provider", "blank_account", "blank_query_contract",
     "duplicate_page_index",
 })
 
@@ -24,7 +25,7 @@ class MatrixGateError(ValueError):
 
 
 def verify_output(output: str) -> dict:
-    """Accept only the exact 15 rows from the declared synthetic matrix."""
+    """Accept only the exact 18 rows from the declared synthetic matrix."""
     seen = set()
     accepted = set()
     for raw in output.splitlines():
@@ -37,8 +38,8 @@ def verify_output(output: str) -> dict:
          _legacy_terminal, _legacy_hash_failures, _legacy_cursor_breaks,
          entire_matrix_pass) = fields
         if (_legacy_terminal not in ("t", "f")
-            or (_legacy_hash_failures and not _legacy_hash_failures.isdecimal())
-            or (_legacy_cursor_breaks and not _legacy_cursor_breaks.isdecimal())):
+            or not _legacy_hash_failures.isdecimal()
+            or not _legacy_cursor_breaks.isdecimal()):
             raise MatrixGateError("LEGACY_FIELD_MALFORMED")
         if case_name not in EXPECTED_CASES or case_name in seen:
             raise MatrixGateError("UNKNOWN_OR_DUPLICATE_CASE")
@@ -52,7 +53,7 @@ def verify_output(output: str) -> dict:
             accepted.add(case_name)
     if seen != EXPECTED_CASES or accepted != {"valid"}:
         raise MatrixGateError("MISSING_CASE_OR_INVALID_ACCEPTANCE_SET")
-    return {"matrix_cases": len(seen), "negative_rejected": 14,
+    return {"matrix_cases": len(seen), "negative_rejected": 17,
             "valid_accepted": 1, "claim_allowed": False,
             "scope": "SYNTHETIC_PG_MATRIX_ONLY"}
 
@@ -90,7 +91,7 @@ def main(argv=None) -> int:
     except MatrixGateError as exc:
         print(f"FAIL_SCOPED_MATRIX:{exc}", file=sys.stderr)
         return 2
-    print(f"PASS_SCOPED_SYNTHETIC:{result['matrix_cases']}/15;"
+    print(f"PASS_SCOPED_SYNTHETIC:{result['matrix_cases']}/18;"
           f"negative={result['negative_rejected']};claim_allowed=false")
     return 0
 
