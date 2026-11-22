@@ -10,6 +10,9 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "America/Sao_Paulo"
+    # Version updates only; GitHub security updates remain unaffected.
+    cooldown:
+      default-days: 5
     open-pull-requests-limit: 10
     rebase-strategy: "auto"
     versioning-strategy: "increase"
@@ -74,9 +77,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "09:00"
+      day: "tuesday"
+      time: "11:00"
       timezone: "America/Sao_Paulo"
+    # Stagger Actions dependency PRs; security updates bypass cooldown.
+    cooldown:
+      default-days: 5
     open-pull-requests-limit: 5
     rebase-strategy: "auto"
     versioning-strategy: "increase"
