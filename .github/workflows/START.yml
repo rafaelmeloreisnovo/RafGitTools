@@ -539,6 +539,7 @@ jobs:
             .github/workflows/drive-snapshot-solo-apk.yml
             .github/workflows/rafaelia-agent-workspace-scoped.yml
             .github/workflows/rafaelia-middlefield-bridge-scoped.yml
+            .github/workflows/rafaelia-provider-enforcement.yml
             .github/workflows/rafaelia-rapidtools-lab-scoped.yml
             .github/workflows/rafgittools-apk-canary.yml
           )
@@ -549,7 +550,7 @@ jobs:
             test "${active[i]}" = "${expected[i]}"
           done
           test -d .github/workflows-legacy-20260907
-          echo 'TOPOLOGY=PASS_9_EXACT_SCOPED_WORKFLOWS'
+          echo 'TOPOLOGY=PASS_10_EXACT_SCOPED_WORKFLOWS'
 
       - name: Human impact P0 | explicit unknown, child protection and rollback falsifiers
         if: github.event_name == 'pull_request'
