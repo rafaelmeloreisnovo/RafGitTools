@@ -11,7 +11,20 @@ SPEC.loader.exec_module(GATE)
 
 class MatrixBoundaryTests(unittest.TestCase):
     def test_real_source_pins_and_start_route(self):
-        self.assertEqual(GATE.BASE, GATE.source_values(ROOT))
+        values = GATE.source_values(ROOT)
+        self.assertIn(values, (GATE.BASE, GATE.CI_TRIAL))
+        self.assertIn(GATE.source_admission(values),
+                      ("SCOPED_CI_BASELINE", "SCOPED_CI_KSP_2_3_12_TRIAL"))
+
+    def test_exact_candidate_only(self):
+        self.assertEqual(GATE.source_admission(GATE.BASE), "SCOPED_CI_BASELINE")
+        self.assertEqual(GATE.source_admission(GATE.CI_TRIAL), "SCOPED_CI_KSP_2_3_12_TRIAL")
+        self.assertEqual(list(GATE.matrix(GATE.CI_TRIAL)[24:30]), [2, 3, 12, 0, 0, 0])
+        for changed in (dict(GATE.CI_TRIAL, ksp="2.3.99"),
+                        dict(GATE.CI_TRIAL, agp="9.1.2"),
+                        dict(GATE.CI_TRIAL, jdk="21")):
+            with self.assertRaises(RuntimeError):
+                GATE.source_admission(changed)
 
     def test_exact_size_and_offsets(self):
         # AGP9/Kotlin2/Compose2/KSP2 snapshot; independent KSP needs separate evidence.

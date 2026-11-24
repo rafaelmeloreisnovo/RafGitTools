@@ -15,7 +15,7 @@ SPEC.loader.exec_module(MOD)
 
 
 class AndroidToolchainMatrixTest(unittest.TestCase):
-    def test_current_repository_tuple_is_approved(self):
+    def test_current_repository_tuple_is_admitted_to_ci_only(self):
         result = MOD.run()
         self.assertEqual(result["status"], "PASS")
         self.assertEqual(result["state"], "PASS_SCOPED_CI_CANDIDATE_NOT_PRODUCTION")
@@ -25,12 +25,19 @@ class AndroidToolchainMatrixTest(unittest.TestCase):
 
     def test_candidate_rejects_relaxed_promotion_or_admission(self):
         matrix = json.loads((ROOT / "configs/android-toolchain-matrix.json").read_text(encoding="utf-8"))
-        observed = MOD.observe((ROOT / "build.gradle").read_text(encoding="utf-8"),
-                               (ROOT / "app/build.gradle").read_text(encoding="utf-8"))
-        for field, value in (("promotion", "RELEASE"), ("admission", "PRODUCTION"), ("claim_allowed", True)):
-            invalid = json.loads(json.dumps(matrix))
-            invalid["ci_candidates"][0][field] = value
-            self.assertEqual(MOD.validate(observed, invalid)["status"], "FAIL")
+        fields = ("kotlin", "ksp", "compose_mode", "compose_compiler", "mockk", "mockk_artifact")
+        for index, entry in enumerate(matrix["ci_candidates"]):
+            observed = {key: entry[key] for key in fields}
+            result = MOD.validate(observed, matrix)
+            self.assertEqual(result["status"], "PASS")
+            self.assertEqual(result["promotion"], "HOLD")
+            self.assertFalse(result["claim_allowed"])
+            for field, value in (("promotion", "RELEASE"), ("admission", "PRODUCTION"), ("claim_allowed", True)):
+                invalid = json.loads(json.dumps(matrix))
+                invalid["ci_candidates"][index][field] = value
+                self.assertEqual(MOD.validate(observed, invalid)["status"], "FAIL")
+            unknown = dict(observed, ksp="2.3.99")
+            self.assertEqual(MOD.validate(unknown, matrix)["status"], "FAIL")
 
     def test_isolated_kotlin_2420_bump_fails_closed(self):
         matrix = json.loads(
