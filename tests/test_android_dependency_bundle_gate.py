@@ -71,15 +71,34 @@ class AndroidDependencyBundleGateTests(unittest.TestCase):
                 "Assemble devDebug",
                 "Verify APK and SHA-256",
                 "Upload APK",
-                "Unit tests (required post-APK gate)",
-                "Compile device route instrumentation APK (required gate)",
-                "Android lint",
+                "Post-APK Android verification (unit tests + instrumentation + lint)",
+                "RAFANDROID bound Android/NDK gate",
             )
         ]
         self.assertEqual(positions, sorted(positions))
-        self.assertIn("run: ./gradlew --no-daemon lintDevDebug --stacktrace", android)
-        self.assertNotIn("continue-on-error: true", android)
+        post = android.split("      - name: Post-APK Android verification", 1)[1].split(
+            "      - name: RAFANDROID bound Android/NDK gate", 1
+        )[0]
+        expected = "run: ./gradlew --no-daemon testDevDebugUnitTest assembleDevDebugAndroidTest lintDevDebug --stacktrace"
+        self.assertIn(expected, post)
+        self.assertEqual(post.count("./gradlew"), 1)
+        self.assertNotIn("--rerun-tasks", post)
+        self.assertNotIn("continue-on-error:", post)
         self.assertIn("abortOnError true", self.app)
+
+    def test_post_apk_batch_fails_if_any_required_task_disappears(self):
+        workflow = (ROOT / ".github/workflows/START.yml").read_text(encoding="utf-8")
+        android = workflow.split("\n  android:\n", 1)[1].split("\n  security:\n", 1)[0]
+        post = android.split("      - name: Post-APK Android verification", 1)[1].split(
+            "      - name: RAFANDROID bound Android/NDK gate", 1
+        )[0]
+        required = ("testDevDebugUnitTest", "assembleDevDebugAndroidTest", "lintDevDebug")
+        commands = [line for line in post.splitlines() if "run: ./gradlew --no-daemon " in line]
+        self.assertEqual(len(commands), 1)
+        self.assertEqual(commands[0].split("--no-daemon ", 1)[1].split(" --stacktrace", 1)[0].split(), list(required))
+        for missing in required:
+            altered = commands[0].replace(missing, "", 1)
+            self.assertNotEqual(altered.split("--no-daemon ", 1)[1].split(" --stacktrace", 1)[0].split(), list(required))
 
     def test_hilt_ksp_root_classloader_split_is_fail_closed(self):
         # Remove the actual declaration, independent of its pinned version.
