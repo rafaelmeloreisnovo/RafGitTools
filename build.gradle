@@ -14,7 +14,7 @@ buildscript {
         // Kotlin2/Compose2/KSP2 scoped candidate; CI admission is not a release approval.
         classpath 'com.android.tools.build:gradle:9.1.1'
 
-        // Kotlin2.4.21, Compose2.4.21, KSP2.3.10 coordinated CI-only trial.
+        // Kotlin2.4.21, Compose2.4.21, KSP2.3.12 coordinated CI-only trial.
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.21'
 
         // Dagger/Hilt plugin is declared in plugins with KSP (shared loader).
@@ -22,7 +22,7 @@ buildscript {
 }
 
 plugins {
-    // KSP 2.3.10 independently versioned, integration not yet verified.
+    // KSP 2.3.12 independently versioned, integration not yet verified.
     id 'com.google.devtools.ksp' version '2.3.12' apply false
     id 'com.google.dagger.hilt.android' version '2.60.1' apply false
     id 'org.jetbrains.kotlin.plugin.compose' version '2.4.21' apply false

@@ -18,6 +18,19 @@ BASE = {
     "gradle": "9.5.1", "agp": "9.1.1", "kotlin": "2.4.21",
     "ksp": "2.3.10", "compose": "2.4.21", "jdk": "17",
 }
+# Exact independent KSP experiment; BASE remains the predecessor fixture.
+# Neither tuple establishes Gradle readiness or production compatibility.
+CI_TRIAL = dict(BASE, ksp="2.3.12")
+
+
+def source_admission(values):
+    if values == BASE:
+        return "SCOPED_CI_BASELINE"
+    if values == CI_TRIAL:
+        return "SCOPED_CI_KSP_2_3_12_TRIAL"
+    raise RuntimeError("CONFIG_CHANGED_REQUIRES_COORDINATED_MATRIX_REVIEW")
+
+
 PATTERNS = {
     "gradle": ("gradle/wrapper/gradle-wrapper.properties",
                r"^distributionUrl=.*gradle-([0-9.]+)-bin\.zip\s*$"),
@@ -149,8 +162,8 @@ def main():
     try:
         values = source_values(opts.root)
         result["source_versions"] = values
-        if values != BASE:
-            raise RuntimeError("CONFIG_CHANGED_REQUIRES_COORDINATED_MATRIX_REVIEW")
+        result["source_admission"] = source_admission(values)
+        result["promotion"] = "HOLD"
         result.update(execute(values, opts.root /
                               "native/authorial_toolchain_l0/toolchain_l0.c"))
         result["status"] = "PASS_SCOPED_KSP2_UNCERTAINTY"
