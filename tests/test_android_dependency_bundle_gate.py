@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 from pathlib import Path
 import unittest
 
@@ -81,7 +82,16 @@ class AndroidDependencyBundleGateTests(unittest.TestCase):
         self.assertIn("abortOnError true", self.app)
 
     def test_hilt_ksp_root_classloader_split_is_fail_closed(self):
-        root = self.root.replace("id 'com.google.devtools.ksp' version '2.3.10' apply false", "")
+        # Remove the actual declaration, independent of its pinned version.
+        # A zero/multiple-match mutation is itself an invalid falsifier.
+        root, count = re.subn(
+            r"^[ \t]*id[ \t]+['\"]com\.google\.devtools\.ksp['\"]"
+            r"[ \t]+version[ \t]+['\"][^'\"\r\n]+['\"]"
+            r"[ \t]+apply[ \t]+false[ \t]*(?://[^\r\n]*)?$",
+            "", self.root, flags=re.MULTILINE,
+        )
+        self.assertEqual(count, 1, "KSP mutation must remove exactly one declaration")
+        self.assertNotEqual(root, self.root)
         result = module.validate(root, self.app)
         self.assertEqual(result["status"], "FAIL")
         self.assertIn("HILT_KSP_ROOT_PLUGIN_SCOPE_SPLIT", result["reasons"])
