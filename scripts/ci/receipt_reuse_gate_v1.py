@@ -39,7 +39,7 @@ def evaluate(receipt, current, observed, artifact, now, max_age_seconds):
         reasons.add("REUSE_POLICY_UNREVIEWED")
     for key in DIGESTS:
         value = current.get(key)
-        if not hex_id(value, 64) or receipt.get(key) != value:
+        if not hex_id(value, 64) or receipt.get(key) != value or observed.get(key) != value:
             reasons.add("CLOSURE:" + key)
     for key in ("source_sha", "artifact_sha256"):
         if not hex_id(receipt.get(key), 40 if key == "source_sha" else 64):
@@ -50,7 +50,7 @@ def evaluate(receipt, current, observed, artifact, now, max_age_seconds):
         value = receipt.get(key)
         if type(value) is not int or value <= 0 or type(observed.get(key)) is not int or observed.get(key) != value:
             reasons.add("PROVIDER_ID:" + key)
-    for key in ("repository", "source_sha", "artifact_sha256"):
+    for key in (*IDENTITY, "gate_class", "source_sha", "artifact_sha256", "issued_at", "expires_at"):
         if observed.get(key) != receipt.get(key):
             reasons.add("PROVIDER_BINDING:" + key)
     if receipt.get("conclusion") != "success" or observed.get("conclusion") != "success":
@@ -67,7 +67,11 @@ def evaluate(receipt, current, observed, artifact, now, max_age_seconds):
         issued, expires = utc(receipt.get("issued_at")), utc(receipt.get("expires_at"))
         if not isinstance(now, datetime) or now.tzinfo is None or now.utcoffset() != timezone.utc.utcoffset(now):
             raise ValueError("NOW_UTC_REQUIRED")
-        if type(max_age_seconds) is not int or max_age_seconds <= 0:
+        if (type(max_age_seconds) is not int or max_age_seconds <= 0
+                or type(current.get("max_age_seconds")) is not int
+                or type(observed.get("max_age_seconds")) is not int
+                or current["max_age_seconds"] != max_age_seconds
+                or observed["max_age_seconds"] != max_age_seconds):
             raise ValueError("MAX_AGE_REQUIRED")
         if not issued <= now < expires or (now - issued).total_seconds() > max_age_seconds:
             reasons.add("EXPIRED_OR_FUTURE_RECEIPT")
