@@ -154,6 +154,44 @@ def collect_check_runs(
 
 
 
+def normalize_legacy_status(payload: dict[str, Any], expected_sha: str) -> dict[str, Any]:
+    """Bind the provider's combined status envelope to the requested commit."""
+    reasons: list[str] = []
+    raw = payload.get("statuses")
+    statuses = raw if isinstance(raw, list) else []
+    if not isinstance(raw, list) or any(not isinstance(s, dict) for s in statuses):
+        reasons.append("LEGACY_STATUS_ROWS_INVALID")
+    rows = [s for s in statuses if isinstance(s, dict)]
+    total = payload.get("total_count")
+    valid_total = type(total) is int and total >= 0
+    if not valid_total:
+        reasons.append("LEGACY_STATUS_TOTAL_UNKNOWN_OR_INVALID")
+    elif len(statuses) > total or (total > 0 and not statuses):
+        reasons.append("LEGACY_STATUS_COUNT_CONFLICT")
+    state = payload.get("state")
+    if state not in ("success", "failure", "pending", "error"):
+        reasons.append("LEGACY_STATUS_STATE_UNKNOWN")
+    if valid_total and total == 0 and state != "pending":
+        reasons.append("LEGACY_ZERO_COUNT_STATE_CONFLICT")
+    if state == "success" and any(s.get("state") != "success" for s in rows):
+        reasons.append("LEGACY_SUCCESS_ROW_CONFLICT")
+    if payload.get("sha") != expected_sha:
+        reasons.append("LEGACY_STATUS_SHA_MISMATCH_OR_EMPTY")
+    return {
+        "combined_state": state,
+        "status_count": len(statuses),
+        "provider_total_count": total if valid_total else None,
+        "sha": payload.get("sha"),
+        "snapshot_trusted": not reasons,
+        "snapshot_reasons": reasons,
+        "statuses": [
+            {key: s.get(key) for key in ("id", "context", "state", "target_url",
+                                        "created_at", "updated_at")}
+            for s in rows
+        ],
+    }
+
+
 def evaluate_strict_gate(
     checks: dict[str, Any],
     legacy: dict[str, Any],
@@ -187,6 +225,9 @@ def evaluate_strict_gate(
     # Legacy commit statuses are a separate API; GitHub computes the latest
     # status per context in its combined state. A superseded old failure is
     # not itself evidence of a current failed context.
+    if legacy.get("snapshot_trusted") is not True or legacy.get("sha") != expected_sha:
+        reasons.append("LEGACY_STATUS_SNAPSHOT_UNTRUSTED")
+        reasons.extend(legacy.get("snapshot_reasons", []))
     if legacy["status_count"] and legacy.get("combined_state") != "success":
         reasons.append(f"LEGACY_STATUS_NOT_SUCCESS:{legacy.get('combined_state')}")
 
@@ -217,29 +258,16 @@ def audit_commit(
         return Page(total_count=int(data["total_count"]), check_runs=list(data.get("check_runs", [])))
 
     checks = collect_check_runs(fetch)
-    legacy = client.get_json(f"/repos/{owner}/{repo}/commits/{sha}/status")
-    statuses = list(legacy.get("statuses", []))
+    legacy = normalize_legacy_status(
+        client.get_json(f"/repos/{owner}/{repo}/commits/{sha}/status"), sha
+    )
 
     result = {
         "schema": "RAFGITTOOLS_COMMIT_CHECK_AUDIT_V1",
         "repository": f"{owner}/{repo}",
         "sha": sha,
         "checks_api": checks,
-        "legacy_status_api": {
-            "combined_state": legacy.get("state"),
-            "status_count": len(statuses),
-            "statuses": [
-                {
-                    "id": s.get("id"),
-                    "context": s.get("context"),
-                    "state": s.get("state"),
-                    "target_url": s.get("target_url"),
-                    "created_at": s.get("created_at"),
-                    "updated_at": s.get("updated_at"),
-                }
-                for s in statuses
-            ],
-        },
+        "legacy_status_api": legacy,
         "invariants": [
             "FIRST_PAGE_CHECKS!=COMPLETE_CHECK_SET",
             "CHECKS_API!=LEGACY_STATUS_API",
