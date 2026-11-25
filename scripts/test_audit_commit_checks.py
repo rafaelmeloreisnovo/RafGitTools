@@ -79,9 +79,12 @@ class StrictGateTests(unittest.TestCase):
             return mod.Page(len(items), list(items) if page == 1 else [])
         return mod.collect_check_runs(fetch)
 
-    @staticmethod
-    def legacy(state="pending", count=0):
-        return {"combined_state": state, "status_count": count, "statuses": []}
+    @classmethod
+    def legacy(cls, state="pending", count=0):
+        return mod.normalize_legacy_status({
+            "sha": cls.SHA, "state": state, "total_count": count,
+            "statuses": [{"state": state}] * count,
+        }, cls.SHA)
 
     @classmethod
     def checked(cls, number=1, status="completed", conclusion="success", sha=None):
@@ -150,6 +153,61 @@ class StrictGateTests(unittest.TestCase):
                                        self.SHA, ("check-1",))
         self.assertFalse(out["gate_pass"])
         self.assertIn("CHECK_ENUMERATION_UNTRUSTED", out["reasons"])
+
+
+class LegacyStatusEnvelopeTests(unittest.TestCase):
+    SHA = "a" * 40
+
+    def audit(self, envelope):
+        class Client:
+            def get_json(self, path, query=None):
+                if path.endswith("/check-runs"):
+                    return {"total_count": 1, "check_runs": [{
+                        "id": 1, "name": "test", "status": "completed",
+                        "conclusion": "success", "head_sha": LegacyStatusEnvelopeTests.SHA,
+                    }]}
+                return envelope
+        return mod.audit_commit(Client(), "owner", "repo", self.SHA, ("test",))
+
+    def test_zero_confirmed_is_distinct_from_unknown(self):
+        envelope = {"sha": self.SHA, "state": "pending", "total_count": 0, "statuses": []}
+        self.assertTrue(self.audit(envelope)["strict_gate"]["gate_pass"])
+        for key in ("sha", "total_count", "statuses"):
+            with self.subTest(key=key):
+                invalid = dict(envelope)
+                del invalid[key]
+                self.assertFalse(self.audit(invalid)["strict_gate"]["gate_pass"])
+
+    def test_nonzero_count_empty_rows_cannot_mask_failure(self):
+        result = self.audit({"sha": self.SHA, "state": "failure",
+                             "total_count": 1, "statuses": []})
+        self.assertFalse(result["strict_gate"]["gate_pass"])
+        self.assertIn("LEGACY_STATUS_COUNT_CONFLICT", result["strict_gate"]["reasons"])
+
+    def test_wrong_sha_and_invalid_counts_fail_closed(self):
+        for changes in ({"sha": "b" * 40}, {"total_count": True},
+                        {"total_count": -1}, {"total_count": "0"},
+                        {"statuses": [None]}, {"state": "success"}):
+            with self.subTest(changes=changes):
+                envelope = {"sha": self.SHA, "state": "pending",
+                            "total_count": 0, "statuses": [], **changes}
+                self.assertFalse(self.audit(envelope)["strict_gate"]["gate_pass"])
+
+    def test_provider_combined_status_with_partial_detail_page(self):
+        envelope = {"sha": self.SHA, "state": "success", "total_count": 40,
+                    "statuses": [{"state": "success"}]}
+        result = self.audit(envelope)
+        self.assertTrue(result["strict_gate"]["gate_pass"])
+        self.assertEqual(40, result["legacy_status_api"]["provider_total_count"])
+        self.assertEqual(1, result["legacy_status_api"]["status_count"])
+        envelope["state"] = "failure"
+        self.assertFalse(self.audit(envelope)["strict_gate"]["gate_pass"])
+
+    def test_contradictory_success_is_rejected(self):
+        result = self.audit({"sha": self.SHA, "state": "success", "total_count": 1,
+                             "statuses": [{"state": "failure"}]})
+        self.assertFalse(result["strict_gate"]["gate_pass"])
+        self.assertIn("LEGACY_SUCCESS_ROW_CONFLICT", result["strict_gate"]["reasons"])
 
 
 if __name__ == "__main__":
