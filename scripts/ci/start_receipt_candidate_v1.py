@@ -11,6 +11,10 @@ from verify_start_receipt_artifact_v1 import verify, unique_object
 
 GATE_ID = "START_FINAL_RECEIPT_STRUCTURE"
 FINAL_JOB = "09 · Final receipt / fechamento"
+REQUIRED_KEYS = frozenset(("android", "security", "docs", "docs_integrity", "semchaos_scoped", "federation"))
+CORE_STAGES = frozenset(("plan", "topology", "coherence", "python_tests"))
+STAGE_KEYS = REQUIRED_KEYS | CORE_STAGES | frozenset(("provider_actions", "private_ci_bridge",
+    "provider_environments", "release", "public_data_custody", "promotion_hold_pat_agent"))
 
 
 def assess(archive, binding, receipt, current, observed, now, max_age_seconds):
@@ -44,6 +48,18 @@ def assess(archive, binding, receipt, current, observed, now, max_age_seconds):
             or binding.get("target_branch") != summary.get("base_ref")
             or observed.get("target_branch") != summary.get("base_ref")):
         return result({"TARGET_BRANCH_MISMATCH"})
+    # Neither the required map nor stage results may be defined by the ZIP.
+    # The trusted adapter must independently derive them from the producer
+    # route policy and exact-attempt provider jobs. No adapter is supplied here.
+    required = binding.get("expected_required_gates")
+    stages = binding.get("expected_stages")
+    if (not isinstance(required, dict) or set(required) != REQUIRED_KEYS
+            or any(type(v) is not bool for v in required.values())
+            or not isinstance(stages, dict) or set(stages) != STAGE_KEYS
+            or any(stages[k] != "SUCCESS" for k in CORE_STAGES)
+            or any(v and stages[k] != "SUCCESS" for k, v in required.items())
+            or summary.get("required_gates") != required or summary.get("stages") != stages):
+        return result({"INDEPENDENT_GATE_MAP_MISSING_OR_MISMATCHED"})
     # Independent producer closure is NOT inferred from the final summary or current manifest.
     if any(observed.get(k) != receipt.get(k) for k in DIGESTS):
         return result({"INDEPENDENT_PRODUCER_CLOSURE_MISSING_OR_MISMATCHED"})
