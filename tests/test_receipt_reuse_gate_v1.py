@@ -16,13 +16,13 @@ class ReceiptReuseTests(unittest.TestCase):
         self.now = datetime(2026, 11, 25, 12, tzinfo=timezone.utc)
         self.current = dict(repository="example/project", target_branch="main",
                             gate_id="structural-check", gate_class="STRUCTURAL_OFFLINE",
-                            reuse_reviewed=True, source_sha="b" * 40)
+                            reuse_reviewed=True, max_age_seconds=7200, source_sha="b" * 40)
         self.current.update({k: "c" * 64 for k in DIGESTS})
         self.receipt = dict(self.current, source_sha="a" * 40, run_id=1, job_id=2,
                             attempt=1, artifact_id=3, conclusion="success",
                             artifact_sha256=hashlib.sha256(self.artifact).hexdigest(),
                             issued_at="2026-11-25T11:00:00Z", expires_at="2026-11-25T13:00:00Z")
-        self.observed = {k: self.receipt[k] for k in ("repository", "source_sha", "artifact_sha256", "run_id", "job_id", "attempt", "artifact_id", "conclusion")}
+        self.observed = dict(self.receipt)
         self.observed.update({k: True for k in ATTESTATIONS})
         self.observed.update(revoked=False, superseded=False, permission_invalidated=False)
 
