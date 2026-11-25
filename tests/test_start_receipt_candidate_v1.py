@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scripts" / "ci"))
 from receipt_reuse_gate_v1 import DIGESTS
-from start_receipt_candidate_v1 import assess, GATE_ID, FINAL_JOB
+from start_receipt_candidate_v1 import assess, GATE_ID, FINAL_JOB, REQUIRED_KEYS, STAGE_KEYS, CORE_STAGES
 
 
 class StartCandidateTests(unittest.TestCase):
@@ -26,8 +26,12 @@ class StartCandidateTests(unittest.TestCase):
                             automatic_promotion=False, state="PASS_WITH_TYPED_SKIPS",
                             missing_required_gates=[], required_gates={"android":True},
                             stages={"android":"SUCCESS"})
+        required = {k: k == "android" for k in REQUIRED_KEYS}
+        stages = {k: "SUCCESS" if k in CORE_STAGES or required.get(k) else "TOKEN_VAZIO_NOT_SELECTED" for k in STAGE_KEYS}
+        self.summary.update(required_gates=dict(required), stages=dict(stages))
+        self.binding.update(expected_required_gates=dict(required), expected_stages=dict(stages))
         self.current = dict(repository="example/project", target_branch="main", gate_id=GATE_ID,
-                            gate_class="STRUCTURAL_OFFLINE", reuse_reviewed=True, source_sha="c"*40,
+                            gate_class="STRUCTURAL_OFFLINE", reuse_reviewed=True, max_age_seconds=7200, source_sha="c"*40,
                             **{k:"d"*64 for k in DIGESTS})
         self.receipt = dict(self.current, source_sha="a"*40, run_id=1, job_id=2, attempt=2,
                             artifact_id=3, conclusion="success", issued_at="2026-11-25T11:00:00Z",
@@ -98,4 +102,31 @@ class StartCandidateTests(unittest.TestCase):
         self.deny()
         self.observed["job_id"] = 2
         self.observed["revoked"] = True
+        self.deny()
+
+    def test_receipt_cannot_define_own_obligations(self):
+        for required, stages in (({"android":False},{"android":"TOKEN_VAZIO_NOT_SELECTED"}),
+                                 ({"android":False},{}), ({"invented":True},{"invented":"SUCCESS"})):
+            with self.subTest(required=required, stages=stages):
+                self.summary.update(required_gates=required, stages=stages)
+                self.deny()
+
+    def test_independent_time_custody(self):
+        for key in ("issued_at", "expires_at", "max_age_seconds"):
+            with self.subTest(key=key):
+                old = self.observed.pop(key)
+                self.deny()
+                self.observed[key] = old
+        self.observed["expires_at"] = "2026-11-25T11:30:00Z"
+        self.deny()
+        self.observed["expires_at"] = self.receipt["expires_at"]
+        self.observed["issued_at"] = "2026-11-23T11:00:00Z"
+        self.deny()
+
+    def test_independent_map_and_core_stage(self):
+        expected = self.binding.pop("expected_stages")
+        self.deny()
+        self.binding["expected_stages"] = expected
+        self.summary["stages"]["plan"] = "TOKEN_VAZIO_NOT_SELECTED"
+        self.binding["expected_stages"]["plan"] = "TOKEN_VAZIO_NOT_SELECTED"
         self.deny()
