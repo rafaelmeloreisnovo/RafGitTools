@@ -296,9 +296,40 @@ def verify_solo_source(expected_source_sha):
     return "PASS_SCOPED_DETERMINISTIC_POLICY_TESTS"
 
 
+SOLO_PREFLIGHT = Path("artifacts/rafaelia-provider-p0/solo-preflight.json")
+
+
+def write_solo_preflight(repo, source_sha):
+    # The tests execute before the admin secret is injected, not merely with a scrubbed child env.
+    if os.environ.get("GH_API_TOKEN"):
+        raise Blocked("SOLO_PREFLIGHT_MUST_BE_SECRETLESS")
+    result = verify_solo_source(source_sha)
+    data = {"repo": repo, "source_sha": source_sha, "result": result, "claim_allowed": False}
+    raw = (json.dumps(data, sort_keys=True) + "\n").encode("utf-8")
+    SOLO_PREFLIGHT.parent.mkdir(parents=True, exist_ok=True)
+    with SOLO_PREFLIGHT.open("xb") as f:
+        f.write(raw)
+    print("SOLO_PREFLIGHT_SHA256=" + hashlib.sha256(raw).hexdigest())
+    return 0
+
+
+def read_solo_preflight(repo, source_sha, digest):
+    if not re.fullmatch(r"[0-9a-f]{40}", source_sha) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+        raise Blocked("SOLO_PREFLIGHT_IDENTITY_REQUIRED")
+    with SOLO_PREFLIGHT.open("rb") as f:
+        raw = f.read(4097)
+    if not raw or len(raw) > 4096 or hashlib.sha256(raw).hexdigest() != digest:
+        raise Blocked("SOLO_PREFLIGHT_BYTES_MISMATCH")
+    if json.loads(raw) != {"repo": repo, "source_sha": source_sha,
+                           "result": "PASS_SCOPED_DETERMINISTIC_POLICY_TESTS",
+                           "claim_allowed": False}:
+        raise Blocked("SOLO_PREFLIGHT_SCOPE_MISMATCH")
+    return "PASS_SCOPED_DETERMINISTIC_POLICY_TESTS"
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=("validate", "audit", "apply", "rollback-plan"), default="validate")
+    parser.add_argument("--mode", choices=("validate", "audit", "apply", "rollback-plan", "solo-preflight"), default="validate")
     parser.add_argument("--repo", required=True, choices=list(PROFILES))
     parser.add_argument("--expected-main-sha", default="")
     parser.add_argument("--confirm", default="")
@@ -306,6 +337,7 @@ def main():
     parser.add_argument("--reviewer-login", default="", help="GitHub login eligible to review independently")
     parser.add_argument("--review-mode", choices=("independent", "solo-ci"), default="independent")
     parser.add_argument("--source-sha", default="", help="Exact tested checkout for solo-ci apply")
+    parser.add_argument("--preflight-sha256", default="", help="Exact bytes digest of secretless solo preflight")
     parser.add_argument("--prestate-file", default="", help="Local pre-mutation provider snapshot for offline rollback plan")
     parser.add_argument("--prestate-sha256", default="", help="Exact SHA-256 of prestate file bytes")
     args = parser.parse_args()
@@ -314,6 +346,10 @@ def main():
     expected = policy(profile, solo_ci=solo_ci)
     if not compliant(expected, expected):
         raise Blocked("STATIC_POLICY_INVALID")
+    if args.mode == "solo-preflight":
+        if not solo_ci:
+            raise Blocked("SOLO_PREFLIGHT_MODE_REQUIRED")
+        return write_solo_preflight(args.repo, args.source_sha)
     if args.mode == "validate":
         receipt({"state": "VALIDATED_POLICY_SHAPE_ONLY", "repo": args.repo,
                  "checks": profile["checks"], "claim_allowed": False})
@@ -396,7 +432,7 @@ def main():
             raise Blocked("SOLO_CI_MUST_NOT_CLAIM_HUMAN_REVIEW")
         if args.operator == "actions" and args.source_sha != head_sha:
             raise Blocked("SOLO_ACTIONS_SOURCE_NOT_MAIN")
-        automated_evidence = verify_solo_source(args.source_sha)
+        automated_evidence = read_solo_preflight(args.repo, args.source_sha, args.preflight_sha256)
     else:
         # Confirm a distinct collaborator with actual write-level review capability.
         reviewer = args.reviewer_login.strip()
@@ -452,6 +488,7 @@ def main():
              "review_mode": args.review_mode,
              "automated_policy_evidence": automated_evidence,
              "source_sha": args.source_sha if solo_ci else None,
+             "solo_preflight_sha256": args.preflight_sha256 if solo_ci else None,
              "independent_reviewer_login": reviewer,
              "independence_of_human_identity": "NOT_APPLICABLE_SOLO_CI" if solo_ci else "TOKEN_VAZIO_NOT_PROVED_BY_PERMISSION",
              "rollback_test": "NOT_RUN", "prestate_sha256": prestate_sha256,

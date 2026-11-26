@@ -504,6 +504,32 @@ class SoloPolicyTests(unittest.TestCase):
         with self.assertRaisesRegex(p.Blocked, "PROFILE_NOT_AUTHORIZED"):
             p.policy(p.PROFILES["instituto-Rafael/relativity-living-light"], solo_ci=True)
 
+    def test_preflight_refuses_admin_secret_before_execution(self):
+        with mock.patch.dict(os.environ, {"GH_API_TOKEN": "not-a-real-token"}), \
+             mock.patch.object(p, "verify_solo_source") as verify:
+            with self.assertRaisesRegex(p.Blocked, "MUST_BE_SECRETLESS"):
+                p.write_solo_preflight("rafaelmeloreisnovo/RafGitTools", "a" * 40)
+            verify.assert_not_called()
+
+    def test_preflight_receipt_is_bound_to_bytes_repo_and_source(self):
+        import tempfile, hashlib
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "preflight.json"
+            with mock.patch.object(p, "SOLO_PREFLIGHT", path), \
+                 mock.patch.dict(os.environ, {}, clear=True), \
+                 mock.patch.object(p, "verify_solo_source",
+                                   return_value="PASS_SCOPED_DETERMINISTIC_POLICY_TESTS"):
+                self.assertEqual(p.write_solo_preflight("rafaelmeloreisnovo/RafGitTools", "a" * 40), 0)
+                digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                self.assertEqual(p.read_solo_preflight("rafaelmeloreisnovo/RafGitTools", "a" * 40, digest),
+                                 "PASS_SCOPED_DETERMINISTIC_POLICY_TESTS")
+                with self.assertRaisesRegex(p.Blocked, "SCOPE_MISMATCH"):
+                    p.read_solo_preflight("rafaelmeloreisnovo/RafGitTools", "b" * 40, digest)
+                with self.assertRaisesRegex(p.Blocked, "BYTES_MISMATCH"):
+                    p.read_solo_preflight("rafaelmeloreisnovo/RafGitTools", "a" * 40, "0" * 64)
+                with self.assertRaises(FileExistsError):
+                    p.write_solo_preflight("rafaelmeloreisnovo/RafGitTools", "a" * 40)
+
     def test_solo_source_sha_missing_fails_before_subprocess(self):
         with mock.patch.object(p.subprocess, "run") as runner:
             with self.assertRaisesRegex(p.Blocked, "SOURCE_SHA_REQUIRED"):
