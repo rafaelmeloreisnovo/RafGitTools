@@ -55,6 +55,8 @@ def admit(file_obj, root_id):
     if kind == "FILE":
         if size is None:
             return None, "UNKNOWN_SIZE"
+        if isinstance(size, bool) or not isinstance(size, (int, str)):
+            return None, "INVALID_SIZE"
         try:
             size = int(size)
         except (ValueError, TypeError):
