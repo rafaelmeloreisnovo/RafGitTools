@@ -29,8 +29,28 @@ class AndroidToolchainMatrixTest(unittest.TestCase):
                                (ROOT / "app/build.gradle").read_text(encoding="utf-8"))
         for field, value in (("promotion", "RELEASE"), ("admission", "PRODUCTION"), ("claim_allowed", True)):
             invalid = json.loads(json.dumps(matrix))
-            invalid["ci_candidates"][0][field] = value
+            matches = [entry for entry in invalid["ci_candidates"]
+                       if all(entry.get(key) == val for key, val in observed.items())]
+            self.assertEqual(len(matches), 1)
+            matches[0][field] = value
             self.assertEqual(MOD.validate(observed, invalid)["status"], "FAIL")
+
+    def test_ksp_candidates_are_exact_and_never_production(self):
+        matrix = json.loads((ROOT / "configs/android-toolchain-matrix.json").read_text(encoding="utf-8"))
+        observed = MOD.observe((ROOT / "build.gradle").read_text(encoding="utf-8"),
+                               (ROOT / "app/build.gradle").read_text(encoding="utf-8"))
+        for version in ("2.3.10", "2.3.14"):
+            with self.subTest(version=version):
+                result = MOD.validate(dict(observed, ksp=version), matrix)
+                self.assertEqual(result["status"], "PASS")
+                self.assertEqual(result["promotion"], "HOLD")
+                self.assertTrue(result["experimental"])
+                self.assertFalse(result["claim_allowed"])
+        for version in ("2.3.13", "2.3.15", "9.9.9"):
+            with self.subTest(version=version):
+                result = MOD.validate(dict(observed, ksp=version), matrix)
+                self.assertEqual(result["status"], "FAIL")
+                self.assertFalse(result["claim_allowed"])
 
     def test_isolated_kotlin_2420_bump_fails_closed(self):
         matrix = json.loads(

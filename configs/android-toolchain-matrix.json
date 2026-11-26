@@ -54,6 +54,18 @@
       "admission": "SCOPED_CI_ONLY",
       "promotion": "HOLD",
       "claim_allowed": false
+    },
+    {
+      "kotlin": "2.4.21",
+      "ksp": "2.3.14",
+      "compose_mode": "compose_plugin",
+      "compose_compiler": "2.4.21",
+      "mockk": "1.13.10",
+      "mockk_artifact": "mockk-jvm",
+      "state": "PASS_SCOPED_CI_CANDIDATE_NOT_PRODUCTION",
+      "admission": "SCOPED_CI_ONLY",
+      "promotion": "HOLD",
+      "claim_allowed": false
     }
   ]
 }
