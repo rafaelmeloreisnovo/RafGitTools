@@ -114,6 +114,21 @@ class FederationTests(unittest.TestCase):
             m.apply(f, REPO, 42, SHA, p["plan_sha256"], Path(d) / "receipt.json")
         self.assertEqual(f.writes, 1)
 
+    def test_default_branch_drift_same_sha_requires_recovery(self):
+        class Drift(Fake):
+            def get(self, p):
+                if self.writes and p == BASE:
+                    status, data, more = super().get(p)
+                    return status, dict(data, default_branch="release"), more
+                if self.writes and p.startswith(BASE + "/branches/release"):
+                    p = p.replace("/branches/release", "/branches/main", 1)
+                return super().get(p)
+        f = Drift()
+        p = self.get_plan(f)
+        with tempfile.TemporaryDirectory() as d, self.assertRaisesRegex(m.Hold, "POSTSTATE_MISMATCH"):
+            m.apply(f, REPO, 42, SHA, p["plan_sha256"], Path(d) / "receipt.json")
+        self.assertEqual(f.writes, 1)
+
     def test_no_arbitrary_endpoint_or_payload(self):
         p = m.Provider("rafaelmeloreisnovo", REPO, "synthetic")
         with self.assertRaises(m.Hold):

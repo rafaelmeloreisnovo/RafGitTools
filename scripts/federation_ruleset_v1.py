@@ -274,7 +274,8 @@ def apply(provider, repo, rid, sha, approved, receipt):
     old = {x["id"]: x for x in before["rulesets"]}
     new = {x["id"]: x for x in after["rulesets"]}
     new_id = created["id"]
-    if (new_id in old or set(new) != set(old) | {new_id}
+    if (after["branch"] != before["branch"]
+            or new_id in old or set(new) != set(old) | {new_id}
             or any(new[k] != v for k, v in old.items())
             or after["classic_http"] != before["classic_http"] or after["classic"] != before["classic"]
             or not verify_new(new[new_id], p["new_ruleset"])):
