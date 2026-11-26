@@ -88,5 +88,67 @@ class PatAgentsPreflightTests(unittest.TestCase):
         self.assertEqual(client.calls, [])
 
 
+
+class PublicTargetPreflightTests(unittest.TestCase):
+    SHA = "a" * 40
+    REPO = "instituto-Rafael/relativity-living-light"
+
+    def responses(self):
+        return [(200, {"login": "member"}),
+                (200, {"state": "active", "role": "member"}),
+                (200, {"full_name": self.REPO, "private": False, "visibility": "public"}),
+                (200, {"ref": "refs/heads/main", "object": {"type": "commit", "sha": self.SHA}}),
+                (200, {"sha": self.SHA})]
+
+    def check(self, responses, sha=None, name="relativity-living-light"):
+        client = Client(responses)
+        result = module.target_preflight("instituto-Rafael", name, self.SHA if sha is None else sha, client)
+        return result, client.calls
+
+    def test_public_exact_main_no_write_or_scope_claim(self):
+        r, calls = self.check(self.responses())
+        self.assertEqual(r["status"], "PUBLIC_EXACT_MAIN_READBACK_ONLY")
+        self.assertTrue(all(method == "GET" for method, _ in calls))
+        self.assertEqual(calls[-1][1], "/repos/" + self.REPO + "/git/commits/" + self.SHA)
+        self.assertFalse(r["http_mutation_allowed"])
+        self.assertFalse(r["claim_allowed"])
+        self.assertEqual(r["effective_pat_scope"], "TOKEN_VAZIO_PUBLIC_READ_NOT_SCOPE_PROOF")
+
+    def test_unallowlisted_target_or_invalid_sha_never_requests(self):
+        for name, sha in (("other", self.SHA), ("../relativity-living-light", self.SHA),
+                          ("relativity-living-light", "main"), ("relativity-living-light", "")):
+            with self.subTest(name=name, sha=sha):
+                r, calls = self.check([], sha=sha, name=name)
+                self.assertEqual(r["status"], "BLOCKED_TARGET_OR_SHA")
+                self.assertEqual(calls, [])
+
+    def test_private_or_wrong_repo_stops_before_commit(self):
+        for body in ({"full_name": self.REPO, "private": True, "visibility": "private"},
+                     {"full_name": "other/repo", "private": False, "visibility": "public"},
+                     {"full_name": self.REPO, "visibility": "public"}):
+            responses = self.responses()
+            responses[2] = (200, body)
+            r, calls = self.check(responses)
+            self.assertEqual(r["status"], "BLOCKED_PUBLIC_TARGET_IDENTITY")
+            self.assertEqual(len(calls), 3)
+
+    def test_main_drift_and_commit_mismatch(self):
+        responses = self.responses()
+        responses[3][1]["object"]["sha"] = "b" * 40
+        r, calls = self.check(responses)
+        self.assertEqual(r["status"], "BLOCKED_TARGET_MAIN_DRIFT")
+        self.assertEqual(len(calls), 4)
+        responses = self.responses()
+        responses[4] = (200, {"sha": "c" * 40})
+        self.assertEqual(self.check(responses)[0]["status"], "BLOCKED_COMMIT_READBACK")
+
+    def test_denied_provider_and_identity(self):
+        responses = self.responses()
+        responses[2] = (403, None)
+        self.assertEqual(self.check(responses)[0]["status"], "BLOCKED_PUBLIC_TARGET_IDENTITY")
+        r, calls = self.check([(401, None)])
+        self.assertEqual(r["status"], "BLOCKED")
+        self.assertEqual(len(calls), 1)
+
 if __name__ == "__main__":
     unittest.main()
