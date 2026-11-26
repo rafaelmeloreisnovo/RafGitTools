@@ -6,6 +6,7 @@ import io
 import json
 import re
 import zipfile
+import zlib
 
 MAX_BYTES = 65536
 
@@ -17,6 +18,10 @@ def unique_object(pairs):
             raise ValueError("duplicate JSON key")
         out[k] = v
     return out
+
+
+def reject_non_json_constant(value):
+    raise ValueError("non-JSON numeric constant: " + value)
 
 
 def verify(archive, binding):
@@ -47,8 +52,9 @@ def verify(archive, binding):
             if len(entries) != 1 or entries[0].filename != "START_RECEIPT.json" or not 0 < entries[0].file_size <= MAX_BYTES:
                 return result("REJECTED", "INVALID_ARCHIVE_LAYOUT")
             raw = z.read(entries[0])
-        receipt = json.loads(raw, object_pairs_hook=unique_object)
-    except (ValueError, OSError, RuntimeError, zipfile.BadZipFile, NotImplementedError):
+        receipt = json.loads(raw, object_pairs_hook=unique_object,
+                             parse_constant=reject_non_json_constant)
+    except (ValueError, OSError, RuntimeError, zipfile.BadZipFile, NotImplementedError, zlib.error):
         return result("REJECTED", "INVALID_ARCHIVE_OR_JSON")
     if not isinstance(receipt, dict) or receipt.get("schema") != "RAFAELIA_START_V1":
         return result("REJECTED", "INVALID_SCHEMA")
