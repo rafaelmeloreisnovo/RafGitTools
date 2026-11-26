@@ -78,7 +78,7 @@ class MasterCoverageProviderRoutingTests(unittest.TestCase):
         self.assertNotIn("TARGET_TASK_CMD", provider_lane)
 
     def test_single_general_root_with_allowlisted_scoped_workflows(self) -> None:
-        # START owns general orchestration. The eight specialized, path/branch-
+        # START owns general orchestration. The nine specialized, path/branch-
         # constrained workflows are separate evidence lanes, not extra roots.
         workflow_dir = ROOT / ".github" / "workflows"
         expected_scoped = {
@@ -113,6 +113,12 @@ class MasterCoverageProviderRoutingTests(unittest.TestCase):
             "rafaelia-middlefield-bridge-scoped.yml": (
                 "  pull_request:\n    paths:",
                 "      - lab/rafaelia-middlefield-bridge-20261031-hold",
+            ),
+            "rafaelia-provider-enforcement.yml": (
+                "  pull_request:\n    branches: [main]\n    paths:",
+                "      - 'scripts/ci/rafaelia_provider_ruleset_v1.py'",
+                "      - 'tests/test_rafaelia_provider_ruleset_v1.py'",
+                "  workflow_dispatch:",
             ),
             "rafaelia-rapidtools-lab-scoped.yml": (
                 "      - lab/rafaelia-rapidtools-arm32-arm64-20261031-hold",

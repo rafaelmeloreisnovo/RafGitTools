@@ -539,6 +539,7 @@ jobs:
             .github/workflows/drive-snapshot-solo-apk.yml
             .github/workflows/rafaelia-agent-workspace-scoped.yml
             .github/workflows/rafaelia-middlefield-bridge-scoped.yml
+            .github/workflows/rafaelia-provider-enforcement.yml
             .github/workflows/rafaelia-rapidtools-lab-scoped.yml
             .github/workflows/rafgittools-apk-canary.yml
           )
@@ -549,7 +550,7 @@ jobs:
             test "${active[i]}" = "${expected[i]}"
           done
           test -d .github/workflows-legacy-20260907
-          echo 'TOPOLOGY=PASS_9_EXACT_SCOPED_WORKFLOWS'
+          echo 'TOPOLOGY=PASS_10_EXACT_SCOPED_WORKFLOWS'
 
       - name: Human impact P0 | explicit unknown, child protection and rollback falsifiers
         if: github.event_name == 'pull_request'
@@ -1277,12 +1278,11 @@ jobs:
             native/authorial_keyboard_l0/android-demo/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 30
-      - name: Unit tests (required post-APK gate)
-        run: ./gradlew --no-daemon testDevDebugUnitTest --stacktrace
-      - name: Compile device route instrumentation APK (required gate)
-        run: ./gradlew --no-daemon assembleDevDebugAndroidTest --stacktrace
-      - name: Android lint
-        run: ./gradlew --no-daemon lintDevDebug --stacktrace
+      # Preserve all three independent Gradle task outcomes while sharing a
+      # single configuration/JVM invocation and incremental compilation state.
+      # APK validation above remains an independent predecessor gate.
+      - name: Post-APK Android verification (unit tests + instrumentation + lint)
+        run: ./gradlew --no-daemon testDevDebugUnitTest assembleDevDebugAndroidTest lintDevDebug --stacktrace
       - name: RAFANDROID bound Android/NDK gate
         shell: bash
         run: |

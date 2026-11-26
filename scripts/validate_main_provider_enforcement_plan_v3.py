@@ -23,6 +23,7 @@ EXPECTED_SCOPED_WORKFLOWS = (
     ".github/workflows/drive-snapshot-solo-apk.yml",
     ".github/workflows/rafaelia-agent-workspace-scoped.yml",
     ".github/workflows/rafaelia-middlefield-bridge-scoped.yml",
+    ".github/workflows/rafaelia-provider-enforcement.yml",
     ".github/workflows/rafaelia-rapidtools-lab-scoped.yml",
     ".github/workflows/rafgittools-apk-canary.yml",
 )
