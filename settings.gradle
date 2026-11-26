@@ -1,4 +1,13 @@
 pluginManagement {
+    // Exact upstream marker POM delegates to this same implementation module.
+    // Candidate only: preserve all other plugin routes and repositories.
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == 'com.google.devtools.ksp' && requested.version == '2.3.14') {
+                useModule('com.google.devtools.ksp:symbol-processing-gradle-plugin:2.3.14')
+            }
+        }
+    }
     repositories {
         google()
         mavenCentral()

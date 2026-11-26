@@ -52,6 +52,14 @@ class AndroidToolchainMatrixTest(unittest.TestCase):
                 self.assertEqual(result["status"], "FAIL")
                 self.assertFalse(result["claim_allowed"])
 
+    def test_ksp_candidate_resolution_is_exact_and_not_a_fallback(self):
+        settings = (ROOT / "settings.gradle").read_text(encoding="utf-8")
+        expected = "requested.id.id == 'com.google.devtools.ksp' && requested.version == '2.3.14'"
+        self.assertEqual(settings.count(expected), 1)
+        self.assertEqual(settings.count("useModule('com.google.devtools.ksp:symbol-processing-gradle-plugin:2.3.14')"), 1)
+        self.assertEqual(settings.count("useModule("), 1)
+        self.assertNotIn("mavenLocal()", settings)
+
     def test_isolated_kotlin_2420_bump_fails_closed(self):
         matrix = json.loads(
             (ROOT / "configs" / "android-toolchain-matrix.json").read_text(encoding="utf-8")
