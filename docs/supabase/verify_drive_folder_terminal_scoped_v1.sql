@@ -64,7 +64,15 @@ select sets.*,pages.page_count,pages.ordered_page_digest_root
 from sets join pages using(capture_id) order by capture_id;
 
 -- D. Known historical folders and metadata-projection folder coverage.
-with capture as (
+-- Resolve account privately from the selected capture; never embed an account ID.
+-- Missing/mixed account scope is explicit, not a successful empty historical match.
+with source_scope as (
+ select min(account_profile_id) account_id,
+        count(distinct account_profile_id) account_variants,
+        count(*) pages,count(account_profile_id) populated
+ from raf_private.drive_folder_capture_pages_v1
+ where capture_id='RAF_DRIVE_FOLDERS_20261121_PASS_A_V1'
+), capture as (
  select distinct x.item->>'id' id
  from raf_private.drive_folder_capture_pages_v1 p
  cross join lateral jsonb_array_elements(p.folder_ids_and_metadata) x(item)
@@ -73,17 +81,21 @@ with capture as (
  select distinct provider_file_id id
  from raf_private.inventory_identity_membership_v1
  where snapshot_key='B0154_HISTORICAL_UNION_V1'
-   and account_id='100638035397025079961'
+   and account_id=(select account_id from source_scope
+                   where account_variants=1 and pages=populated)
 ), projection as (
  select distinct source_file_id id
  from raf_private.drive_metadata_index_v1
  where account_alias='oficial' and mime_type='application/vnd.google-apps.folder'
 )
-select (select count(*) from capture) captured_folder_ids,
+select case when account_variants=1 and pages=populated
+             then 'ACCOUNT_SCOPE_VERIFIED' else 'TOKEN_VAZIO_ACCOUNT_SCOPE' end account_scope,
+ (select count(*) from capture) captured_folder_ids,
  (select count(*) from b0154) historical_folders,
  (select count(*) from b0154 join capture using(id)) historical_found,
  (select count(*) from projection) projection_folder_ids,
- (select count(*) from projection join capture using(id)) projection_found;
+ (select count(*) from projection join capture using(id)) projection_found
+from source_scope;
 
 -- E. Preserve source-field absence separately from independent files.get null.
 select capture_id,
