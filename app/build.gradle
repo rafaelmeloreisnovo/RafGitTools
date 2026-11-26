@@ -264,7 +264,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:logging-interceptor:5.5.1'
 
     // Native Google Drive account authorization (not Android SAF / Google Sign-In legacy).
-    implementation 'com.google.android.gms:play-services-auth:21.6.0'
+    implementation 'com.google.android.gms:play-services-auth:22.0.0'
 
     // Gson for JSON parsing
     implementation 'com.google.code.gson:gson:2.15.0'
