@@ -155,6 +155,40 @@ class StrictGateTests(unittest.TestCase):
         self.assertIn("CHECK_ENUMERATION_UNTRUSTED", out["reasons"])
 
 
+class CheckRunEnvelopeTests(unittest.TestCase):
+    SHA = "a" * 40
+
+    def audit(self, envelope):
+        class Client:
+            def get_json(self, path, query=None):
+                if path.endswith("/check-runs"):
+                    return envelope
+                return {"sha": CheckRunEnvelopeTests.SHA, "state": "pending",
+                        "total_count": 0, "statuses": []}
+        return mod.audit_commit(Client(), "owner", "repo", self.SHA, ("test",))
+
+    def test_invalid_provider_envelopes_cannot_be_coerced_into_pass(self):
+        row = {"id": 1, "name": "test", "status": "completed",
+               "conclusion": "success", "head_sha": self.SHA}
+        cases = [
+            (None, "CHECK_RUN_ENVELOPE_INVALID"),
+            *[({"total_count": total, "check_runs": [row]}, "CHECK_RUN_TOTAL_INVALID")
+              for total in (True, 1.5, "1", -1, None)],
+            ({"total_count": 1}, "CHECK_RUN_ROWS_INVALID"),
+            ({"total_count": 1, "check_runs": {}}, "CHECK_RUN_ROWS_INVALID"),
+            *[({"total_count": 1, "check_runs": [bad]}, "CHECK_RUN_ID_INVALID")
+              for bad in (None, *[dict(row, id=value)
+                                  for value in (True, "1", 1.5, 0, -1, None)])],
+        ]
+        for envelope, reason in cases:
+            with self.subTest(envelope=envelope):
+                with self.assertRaisesRegex(ValueError, reason):
+                    self.audit(envelope)
+        valid = self.audit({"total_count": 1, "check_runs": [row]})
+        self.assertTrue(valid["strict_gate"]["gate_pass"])
+        self.assertFalse(valid["claim_allowed"])
+
+
 class LegacyStatusEnvelopeTests(unittest.TestCase):
     SHA = "a" * 40
 
