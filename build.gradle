@@ -10,9 +10,9 @@ buildscript {
         maven { url = uri('https://repo.eclipse.org/content/groups/releases/') }
     }
     dependencies {
-        // Isolated AGP 9.1.1 / API 37 AAR-compatibility candidate (not a release).
+        // Coordinated Gradle 9.9.2 / AGP 9.5.1 CI candidate (not a release).
         // Kotlin2/Compose2/KSP2 scoped candidate; CI admission is not a release approval.
-        classpath 'com.android.tools.build:gradle:9.1.1'
+        classpath 'com.android.tools.build:gradle:9.5.1'
 
         // Kotlin2.4.21, Compose2.4.21, KSP2.3.10 coordinated CI-only trial.
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.21'

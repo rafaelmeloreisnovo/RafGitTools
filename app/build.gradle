@@ -237,7 +237,7 @@ dependencies {
     // Compose BOM defines versions for all Compose artifacts.  Using a
     // timestamped BOM (e.g. 2023.10.01) ensures that all compose
     // dependencies are aligned to a compatible set.
-    def composeBom = platform('androidx.compose:compose-bom:2026.09.00')
+    def composeBom = platform('androidx.compose:compose-bom:2026.11.01')
     implementation composeBom
     implementation 'androidx.compose.ui:ui'
     implementation 'androidx.compose.ui:ui-graphics'
@@ -296,8 +296,8 @@ dependencies {
     implementation "com.google.accompanist:accompanist-swiperefresh:$accompanistVersion"
 
     // Markdown parser
-    implementation 'org.commonmark:commonmark:0.29.0'
-    implementation 'org.commonmark:commonmark-ext-gfm-tables:0.29.0'
+    implementation 'org.commonmark:commonmark:0.33.0'
+    implementation 'org.commonmark:commonmark-ext-gfm-tables:0.33.0'
 
     // WorkManager for background tasks
     implementation 'androidx.work:work-runtime-ktx:2.12.0'

@@ -17,8 +17,14 @@ on:
         description: 'Exact 40-hex main HEAD from GitHub; needed for apply'
         type: string
         required: false
+      review_mode:
+        description: 'Independent review or explicit owner-authorized solo CI policy'
+        type: choice
+        required: true
+        default: independent
+        options: [independent, solo-ci]
       reviewer_login:
-        description: 'Distinct qualified reviewer GitHub login; mandatory for apply'
+        description: 'Distinct qualified reviewer login for independent mode; empty for solo-ci'
         type: string
         required: false
       reviewer_gate_evidence:
@@ -28,7 +34,7 @@ on:
         default: NOT_VERIFIED
         options: [NOT_VERIFIED, REVIEWED_INDEPENDENT_REVIEWER_AND_ROLLBACK]
       confirm:
-        description: 'For apply only: APPLY-P0:rafaelmeloreisnovo/RafGitTools'
+        description: 'Apply: APPLY-P0:rafaelmeloreisnovo/RafGitTools or APPLY-P0-SOLO-CI:rafaelmeloreisnovo/RafGitTools'
         type: string
         required: false
 
@@ -64,7 +70,8 @@ jobs:
       - name: Read-only provider audit
         env:
           GH_API_TOKEN: ${{ github.token }}
-        run: python3 scripts/ci/rafaelia_provider_ruleset_v1.py --mode audit --repo 'rafaelmeloreisnovo/RafGitTools'
+          REVIEW_MODE: ${{ inputs.review_mode }}
+        run: python3 scripts/ci/rafaelia_provider_ruleset_v1.py --mode audit --repo 'rafaelmeloreisnovo/RafGitTools' --review-mode "$REVIEW_MODE"
       - name: Preserve scoped receipt
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -86,17 +93,30 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+      - name: Secretless exact-source solo policy tests
+        if: inputs.review_mode == 'solo-ci'
+        id: solo
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/rafaelia_provider_ruleset_v1.py --mode solo-preflight \
+            --repo 'rafaelmeloreisnovo/RafGitTools' --review-mode solo-ci --source-sha "$SOURCE_SHA"
+          printf 'sha256=%s\n' "$(sha256sum artifacts/rafaelia-provider-p0/solo-preflight.json | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
       - name: Scoped write and immediate readback
         env:
           GH_API_TOKEN: ${{ secrets.PAT_ENV }}
           EXPECTED_MAIN_SHA: ${{ inputs.expected_main_sha }}
           REVIEWER_LOGIN: ${{ inputs.reviewer_login }}
+          REVIEW_MODE: ${{ inputs.review_mode }}
+          SOURCE_SHA: ${{ github.sha }}
+          SOLO_PREFLIGHT_SHA256: ${{ steps.solo.outputs.sha256 }}
           RAFAELIA_REVIEWER_GATE_EVIDENCE: ${{ inputs.reviewer_gate_evidence }}
           CONFIRM: ${{ inputs.confirm }}
         run: |
           python3 scripts/ci/rafaelia_provider_ruleset_v1.py --mode apply --repo 'rafaelmeloreisnovo/RafGitTools' \
             --expected-main-sha "$EXPECTED_MAIN_SHA" --confirm "$CONFIRM" \
-            --reviewer-login "$REVIEWER_LOGIN"
+            --reviewer-login "$REVIEWER_LOGIN" --review-mode "$REVIEW_MODE" --source-sha "$SOURCE_SHA" --preflight-sha256 "$SOLO_PREFLIGHT_SHA256"
       - name: Preserve prestate and readback receipt
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

@@ -75,8 +75,8 @@ def classify(item, source_root, parent):
         else:
             try:
                 raw_size = item["size"]
-                if isinstance(raw_size, bool):
-                    raise ValueError("boolean-size")
+                if isinstance(raw_size, bool) or not isinstance(raw_size, (int, str)):
+                    raise ValueError("non-integral-or-boolean-size")
                 size = int(raw_size)
             except (KeyError, ValueError, TypeError):
                 return None, "INVALID_SIZE"
