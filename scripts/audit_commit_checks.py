@@ -255,7 +255,18 @@ def audit_commit(
             f"/repos/{owner}/{repo}/commits/{sha}/check-runs",
             {"page": page_no, "per_page": per_page},
         )
-        return Page(total_count=int(data["total_count"]), check_runs=list(data.get("check_runs", [])))
+        if not isinstance(data, dict):
+            raise ValueError("CHECK_RUN_ENVELOPE_INVALID")
+        total = data.get("total_count")
+        rows = data.get("check_runs")
+        if type(total) is not int or total < 0:
+            raise ValueError("CHECK_RUN_TOTAL_INVALID")
+        if not isinstance(rows, list):
+            raise ValueError("CHECK_RUN_ROWS_INVALID")
+        if any(not isinstance(row, dict) or type(row.get("id")) is not int
+               or row["id"] <= 0 for row in rows):
+            raise ValueError("CHECK_RUN_ID_INVALID")
+        return Page(total_count=total, check_runs=rows)
 
     checks = collect_check_runs(fetch)
     legacy = normalize_legacy_status(
