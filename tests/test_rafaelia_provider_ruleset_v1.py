@@ -361,16 +361,27 @@ class AdversarialPolicyTests(unittest.TestCase):
             if method == "GET" and path.endswith("/permission"):
                 return {"permission": "write"}
             raise p.Blocked("PROVIDER_NETWORK_ERROR")
-        p.WRITE_ATTEMPTED = False
-        with mock.patch.object(sys, "argv", argv), \
-             mock.patch.dict(os.environ, env, clear=True), \
-             mock.patch.object(p, "live", return_value=("a" * 40, None)), \
-             mock.patch.object(p, "api", side_effect=fake_api), \
-             mock.patch.object(p, "receipt"):
-            with self.assertRaisesRegex(p.Blocked, "PROVIDER_NETWORK_ERROR"):
-                p.main()
-            self.assertTrue(p.WRITE_ATTEMPTED)
-        p.WRITE_ATTEMPTED = False
+        import tempfile
+        cwd = os.getcwd()
+        prior_attempted = p.WRITE_ATTEMPTED
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                os.chdir(tmp)
+                p.WRITE_ATTEMPTED = False
+                with mock.patch.object(sys, "argv", argv), \
+                     mock.patch.dict(os.environ, env, clear=True), \
+                     mock.patch.object(p, "live", return_value=("a" * 40, None)), \
+                     mock.patch.object(p, "api", side_effect=fake_api), \
+                     mock.patch.object(p, "receipt"):
+                    with self.assertRaisesRegex(p.Blocked, "PROVIDER_NETWORK_ERROR"):
+                        p.main()
+                    self.assertTrue(p.WRITE_ATTEMPTED)
+                    recovery = pathlib.Path("artifacts/rafaelia-provider-p0")
+                    self.assertTrue((recovery / "prestate.json").is_file())
+                    self.assertTrue((recovery / "mutation_intent.json").is_file())
+        finally:
+            os.chdir(cwd)
+            p.WRITE_ATTEMPTED = prior_attempted
 
 
 class RecoveryFalsifiers(unittest.TestCase):
@@ -529,6 +540,24 @@ class SoloPolicyTests(unittest.TestCase):
                     p.read_solo_preflight("rafaelmeloreisnovo/RafGitTools", "a" * 40, "0" * 64)
                 with self.assertRaises(FileExistsError):
                     p.write_solo_preflight("rafaelmeloreisnovo/RafGitTools", "a" * 40)
+
+    def test_uncertain_write_fixture_preserves_real_recovery_directory(self):
+        import tempfile
+        cwd = os.getcwd()
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                os.chdir(tmp)
+                recovery = pathlib.Path("artifacts/rafaelia-provider-p0")
+                recovery.mkdir(parents=True)
+                for name in ("prestate.json", "mutation_intent.json"):
+                    (recovery / name).write_bytes(b"REAL_RECOVERY_SENTINEL")
+                result = unittest.TestResult()
+                AdversarialPolicyTests("test_uncertain_write_state_is_latched_on_exception").run(result)
+                self.assertTrue(result.wasSuccessful(), result.errors + result.failures)
+                for name in ("prestate.json", "mutation_intent.json"):
+                    self.assertEqual((recovery / name).read_bytes(), b"REAL_RECOVERY_SENTINEL")
+        finally:
+            os.chdir(cwd)
 
     def test_solo_source_sha_missing_fails_before_subprocess(self):
         with mock.patch.object(p.subprocess, "run") as runner:
