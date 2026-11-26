@@ -21,6 +21,7 @@ BASE = {
 # Exact independent KSP experiment; BASE remains the predecessor fixture.
 # Neither tuple establishes Gradle readiness or production compatibility.
 CI_TRIAL = dict(BASE, ksp="2.3.12")
+CI_TRIAL_2314 = dict(BASE, ksp="2.3.14")
 
 
 def source_admission(values):
@@ -28,6 +29,8 @@ def source_admission(values):
         return "SCOPED_CI_BASELINE"
     if values == CI_TRIAL:
         return "SCOPED_CI_KSP_2_3_12_TRIAL"
+    if values == CI_TRIAL_2314:
+        return "SCOPED_CI_KSP_2_3_14_TRIAL"
     raise RuntimeError("CONFIG_CHANGED_REQUIRES_COORDINATED_MATRIX_REVIEW")
 
 

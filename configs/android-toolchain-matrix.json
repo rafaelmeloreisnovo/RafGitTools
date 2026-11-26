@@ -69,6 +69,21 @@
       "source_reference": "https://github.com/google/ksp/releases",
       "validation": "HOSTED_AND_DEVICE_GATES_REQUIRED",
       "reason": "Exact KSP-only experiment; upstream release exists, integration and processor behavior not proven."
+    },
+    {
+      "kotlin": "2.4.21",
+      "ksp": "2.3.14",
+      "compose_mode": "compose_plugin",
+      "compose_compiler": "2.4.21",
+      "mockk": "1.13.10",
+      "mockk_artifact": "mockk-jvm",
+      "state": "PASS_SCOPED_CI_CANDIDATE_NOT_PRODUCTION",
+      "admission": "SCOPED_CI_ONLY",
+      "promotion": "HOLD",
+      "claim_allowed": false,
+      "source_reference": "https://github.com/google/ksp/releases",
+      "validation": "HOSTED_AND_DEVICE_GATES_REQUIRED",
+      "reason": "Exact KSP 2.3.14 experiment from PR #837, only admitted to CI. Prior 2.3.12 evidence does not establish 2.3.14 compatibility."
     }
   ]
 }

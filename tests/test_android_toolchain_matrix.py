@@ -38,6 +38,7 @@ class AndroidToolchainMatrixTest(unittest.TestCase):
                 self.assertEqual(MOD.validate(observed, invalid)["status"], "FAIL")
             unknown = dict(observed, ksp="2.3.99")
             self.assertEqual(MOD.validate(unknown, matrix)["status"], "FAIL")
+            self.assertEqual(MOD.validate(dict(observed, ksp="2.3.13"), matrix)["status"], "FAIL")
 
     def test_isolated_kotlin_2420_bump_fails_closed(self):
         matrix = json.loads(
