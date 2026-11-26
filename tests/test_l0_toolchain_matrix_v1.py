@@ -23,6 +23,20 @@ class MatrixBoundaryTests(unittest.TestCase):
         self.assertEqual(list(data[8:11]), [9, 5, 1])
         self.assertEqual(list(data[24:30]), [2, 3, 10, 0, 0, 0])
 
+    def test_shared_wrapper_projects_use_same_agp_candidate(self):
+        # START invokes the root wrapper for these three independent builds.
+        for path in ("tools/rafandroid/templates/minimal-jni/build.gradle",
+                     "native/authorial_keyboard_l0/android-demo/settings.gradle",
+                     "atlas-apk/build.gradle"):
+            source = (ROOT / path).read_text(encoding="utf-8")
+            self.assertEqual(source.count("id 'com.android.application' version '9.5.1'"), 1, path)
+        # Drive snapshot is separately provisioned; do not silently migrate it.
+        standalone = (ROOT / "standalone/drive-snapshot/build.gradle").read_text(encoding="utf-8")
+        route = (ROOT / ".github/workflows/drive-snapshot-solo-apk.yml").read_text(encoding="utf-8")
+        self.assertIn("version '8.6.1'", standalone)
+        self.assertIn("gradle-version: '8.7'", route)
+        self.assertIn("run: gradle --no-daemon", route)
+
     def test_fail_closed_on_tuple(self):
         # Reject malformed KSP2 legacy-suffix shape; do not infer compatibility.
         broken = dict(GATE.BASE, ksp="2.3.10-1.0")
