@@ -54,6 +54,21 @@
       "admission": "SCOPED_CI_ONLY",
       "promotion": "HOLD",
       "claim_allowed": false
+    },
+    {
+      "kotlin": "2.4.21",
+      "ksp": "2.3.10",
+      "compose_mode": "compose_plugin",
+      "compose_compiler": "2.4.21",
+      "mockk": "1.14.12",
+      "mockk_artifact": "mockk-jvm",
+      "state": "PASS_SCOPED_CI_CANDIDATE_NOT_PRODUCTION",
+      "admission": "SCOPED_CI_ONLY",
+      "promotion": "HOLD",
+      "claim_allowed": false,
+      "source_reference": "https://github.com/mockk/mockk/releases",
+      "validation": "HOSTED_AND_DEVICE_GATES_REQUIRED",
+      "reason": "Exact MockK-only experiment for PR #762, with existing Kotlin/KSP tuple. No binary compatibility or production approval inferred."
     }
   ]
 }
