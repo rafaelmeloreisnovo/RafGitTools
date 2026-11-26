@@ -66,6 +66,7 @@ on:
           - rollback_main_protection
           - federated_preflight
           - federated_protect
+          - termux_ruleset_preflight
           - inspect_hold
           - mark_hold
       provider_expected_main_sha:
@@ -393,7 +394,7 @@ jobs:
                 exit 2
               fi
               case "${REQUESTED_PROVIDER_OPERATION:-preflight}" in
-                preflight|apply_main_protection|rollback_main_protection|federated_preflight|federated_protect) ;;
+                preflight|apply_main_protection|rollback_main_protection|federated_preflight|federated_protect|termux_ruleset_preflight) ;;
                 *)
                   echo "::error::unsupported provider operation: ${REQUESTED_PROVIDER_OPERATION}"
                   exit 2
@@ -882,6 +883,10 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s tests -p 'test_mapa_provider_authority_preflight_v1.py' -v
           python3 scripts/validate_mapa_provider_authority_preflight_v1.py
+
+      - name: Falsify Termux ruleset preflight (no PAT, no network)
+        shell: bash
+        run: python3 -m unittest discover -s tests -p 'test_termux_ruleset_preflight_v1.py' -v
 
       - name: Falsify chart ancestry metadata (synthetic, no provider access)
         shell: bash
@@ -1852,7 +1857,7 @@ jobs:
       - name: Apply or preflight canonical main protection
         env:
           PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
-        if: ${{ needs.plan.outputs.provider_operation != 'federated_preflight' && needs.plan.outputs.provider_operation != 'federated_protect' }}
+        if: ${{ needs.plan.outputs.provider_operation != 'federated_preflight' && needs.plan.outputs.provider_operation != 'federated_protect' && needs.plan.outputs.provider_operation != 'termux_ruleset_preflight' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -1938,6 +1943,20 @@ jobs:
             --receipt artifacts/federated-admin-protection.json
           echo 'FED_ADMIN=REVIEW_RECEIPT_REQUIRED; CLAIM_ALLOWED=false' >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Termux ruleset preflight | owner manual GET only
+        if: ${{ github.event_name == 'workflow_dispatch' && needs.plan.outputs.provider_operation == 'termux_ruleset_preflight' }}
+        shell: bash
+        env:
+          PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
+          FED_TARGET_OWNER: ${{ inputs.repository_factory_owner }}
+          FED_TARGET_NAME: ${{ inputs.repository_factory_name }}
+        run: |
+          set -euo pipefail
+          python3 scripts/termux_ruleset_preflight_v1.py \
+            --repo "$FED_TARGET_OWNER/$FED_TARGET_NAME" \
+            --expected-sha "$REQUESTED_EXPECTED_MAIN_SHA" \
+            --receipt artifacts/termux-ruleset-preflight.json
+
       - name: Upload provider enforcement receipt
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -1946,6 +1965,7 @@ jobs:
           path: |
             artifacts/provider-main-enforcement.json
             artifacts/federated-admin-protection.json
+            artifacts/termux-ruleset-preflight.json
           if-no-files-found: warn
           retention-days: 90
 
