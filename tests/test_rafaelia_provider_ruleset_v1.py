@@ -473,5 +473,57 @@ class RecoveryFalsifiers(unittest.TestCase):
         finally:
             os.chdir(cwd)
 
+class SoloPolicyTests(unittest.TestCase):
+    RAF = p.PROFILES["rafaelmeloreisnovo/RafGitTools"]
+
+    def test_solo_keeps_required_checks_and_no_bypass(self):
+        expected = p.policy(self.RAF, solo_ci=True)
+        rules = {r["type"]: r["parameters"] for r in expected["rules"] if "parameters" in r}
+        self.assertEqual(rules["pull_request"]["required_approving_review_count"], 0)
+        self.assertFalse(rules["pull_request"]["require_last_push_approval"])
+        self.assertTrue(rules["pull_request"]["required_review_thread_resolution"])
+        self.assertEqual(expected["bypass_actors"], [])
+        self.assertTrue(rules["required_status_checks"]["strict_required_status_checks_policy"])
+        self.assertEqual(rules["required_status_checks"]["required_status_checks"],
+                         [{"context": name, "integration_id": p.APP_ID} for name in self.RAF["checks"]])
+        self.assertTrue(p.compliant(expected, expected))
+        self.assertFalse(p.compliant(expected, p.policy(self.RAF)))
+        broken = copy.deepcopy(expected)
+        next(r for r in broken["rules"] if r["type"] == "required_status_checks")["parameters"]["required_status_checks"] = []
+        self.assertFalse(p.compliant(broken, expected))
+
+    def test_solo_cannot_remove_preexisting_review(self):
+        for params in ({"required_approving_review_count": 1},
+                       {"require_last_push_approval": True},
+                       {"require_code_owner_review": True},
+                       {"required_reviewers": [{"file_pattern": "*", "minimum_approvals": 1}]}):
+            with self.subTest(params=params), self.assertRaisesRegex(p.Blocked, "WOULD_WEAKEN"):
+                p.policy(self.RAF, {"rules": [{"type": "pull_request", "parameters": params}]}, solo_ci=True)
+
+    def test_solo_is_not_authorized_for_rll(self):
+        with self.assertRaisesRegex(p.Blocked, "PROFILE_NOT_AUTHORIZED"):
+            p.policy(p.PROFILES["instituto-Rafael/relativity-living-light"], solo_ci=True)
+
+    def test_solo_source_sha_missing_fails_before_subprocess(self):
+        with mock.patch.object(p.subprocess, "run") as runner:
+            with self.assertRaisesRegex(p.Blocked, "SOURCE_SHA_REQUIRED"):
+                p.verify_solo_source("")
+            runner.assert_not_called()
+
+    def test_solo_source_drift_fails_without_testing(self):
+        with mock.patch.object(p.subprocess, "run", return_value=mock.Mock(stdout="b" * 40)) as runner:
+            with self.assertRaisesRegex(p.Blocked, "SOURCE_HEAD_DRIFT"):
+                p.verify_solo_source("a" * 40)
+            self.assertEqual(runner.call_count, 1)
+
+    def test_solo_source_tests_do_not_inherit_secret(self):
+        responses = [mock.Mock(stdout="a" * 40), mock.Mock(stdout=""), mock.Mock(stdout=""),
+                     mock.Mock(stdout="a" * 40), mock.Mock(stdout="")]
+        with mock.patch.dict(os.environ, {"GH_API_TOKEN": "not-a-real-token"}), \
+             mock.patch.object(p.subprocess, "run", side_effect=responses) as runner:
+            self.assertEqual(p.verify_solo_source("a" * 40), "PASS_SCOPED_DETERMINISTIC_POLICY_TESTS")
+            self.assertTrue(all("GH_API_TOKEN" not in call.kwargs["env"] for call in runner.call_args_list))
+
+
 if __name__ == "__main__":
     unittest.main()

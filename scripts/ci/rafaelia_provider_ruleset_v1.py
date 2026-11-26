@@ -9,6 +9,7 @@ import json
 import os
 import re
 import sys
+import subprocess
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -71,13 +72,15 @@ def api(method, path, token, payload=None):
     except urllib.error.URLError:
         raise Blocked("PROVIDER_NETWORK_ERROR") from None
 
-def policy(profile, original=None):
+def policy(profile, original=None, *, solo_ci=False):
     """Monotonic tightening: never silently weaken a pre-existing rule.
 
     If the provider's contract is ambiguous, stop before writing.
     """
     if original is not None and not isinstance(original, dict):
         raise Blocked("PRESTATE_NOT_OBJECT")
+    if solo_ci and profile is not PROFILES["rafaelmeloreisnovo/RafGitTools"]:
+        raise Blocked("SOLO_CI_PROFILE_NOT_AUTHORIZED")
     source = original or {}
     original_rules = source.get("rules", [])
     if not isinstance(original_rules, list) or any(
@@ -102,10 +105,16 @@ def policy(profile, original=None):
     if type(approval) is not int or approval < 0:
         raise Blocked("INVALID_EXISTING_APPROVAL_COUNT")
     pr_params = copy.deepcopy(prev_pr)
-    pr_params["required_approving_review_count"] = max(1, approval)
-    for key in ("dismiss_stale_reviews_on_push", "require_last_push_approval",
-                "required_review_thread_resolution"):
-        pr_params[key] = True
+    # Solo mode is additive only: never remove an existing independent review.
+    if solo_ci and (approval > 0 or prev_pr.get("require_last_push_approval") is True
+                    or prev_pr.get("require_code_owner_review") is True
+                    or prev_pr.get("required_reviewers")
+                    or prev_pr.get("require_extra_approval_for_unattributed_changes") is True):
+        raise Blocked("SOLO_CI_WOULD_WEAKEN_EXISTING_REVIEW")
+    pr_params["required_approving_review_count"] = max(0 if solo_ci else 1, approval)
+    pr_params["dismiss_stale_reviews_on_push"] = True
+    pr_params["required_review_thread_resolution"] = True
+    pr_params["require_last_push_approval"] = not solo_ci
     pr_params.setdefault("allowed_merge_methods", ["merge", "squash", "rebase"])
     if not isinstance(pr_params["allowed_merge_methods"], list) or not pr_params["allowed_merge_methods"]:
         raise Blocked("INVALID_EXISTING_MERGE_METHODS")
@@ -185,12 +194,15 @@ def compliant(found, expected):
     count = pr.get("required_approving_review_count")
     exp_count = exp_pr.get("required_approving_review_count")
     if (type(count) is not int or type(exp_count) is not int
-        or count < exp_count or count < 1):
+        or count < exp_count or exp_count < 0):
         return False
-    for flag in ("dismiss_stale_reviews_on_push", "require_last_push_approval",
-                 "required_review_thread_resolution"):
+    for flag in ("dismiss_stale_reviews_on_push", "required_review_thread_resolution"):
         if pr.get(flag) is not True:
             return False
+    if exp_pr.get("require_last_push_approval") is True and pr.get("require_last_push_approval") is not True:
+        return False
+    if type(pr.get("require_last_push_approval")) is not bool:
+        return False
     for flag in ("require_code_owner_review", "require_extra_approval_for_unattributed_changes"):
         if exp_pr.get(flag) is True and pr.get(flag) is not True:
             return False
@@ -257,6 +269,33 @@ def receipt(data):
     )
     print(json.dumps(data, ensure_ascii=False, sort_keys=True))
 
+def verify_solo_source(expected_source_sha):
+    """Run existing deterministic policy tests on the exact trusted checkout.
+    Child process inherits no provider token or repository secret.
+    """
+    if not re.fullmatch(r"[0-9a-f]{40}", expected_source_sha):
+        raise Blocked("SOLO_SOURCE_SHA_REQUIRED")
+    root = Path(__file__).resolve().parents[2]
+    env = {"PATH": os.environ.get("PATH", ""), "LANG": "C.UTF-8",
+           "PYTHONDONTWRITEBYTECODE": "1"}
+    def run(args):
+        try:
+            return subprocess.run(args, cwd=root, env=env, check=True,
+                                  capture_output=True, text=True, timeout=180).stdout.strip()
+        except (subprocess.SubprocessError, OSError):
+            raise Blocked("SOLO_SOURCE_TEST_OR_IDENTITY_FAILED") from None
+    if run(["git", "rev-parse", "HEAD"]) != expected_source_sha:
+        raise Blocked("SOLO_SOURCE_HEAD_DRIFT")
+    if run(["git", "status", "--porcelain", "--untracked-files=no"]):
+        raise Blocked("SOLO_SOURCE_DIRTY")
+    run([sys.executable, "-m", "unittest", "discover", "-s", "tests",
+         "-p", "test_rafaelia_provider_ruleset_v1.py", "-v"])
+    if run(["git", "rev-parse", "HEAD"]) != expected_source_sha or run(
+            ["git", "status", "--porcelain", "--untracked-files=no"]):
+        raise Blocked("SOLO_SOURCE_CHANGED_DURING_TEST")
+    return "PASS_SCOPED_DETERMINISTIC_POLICY_TESTS"
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=("validate", "audit", "apply", "rollback-plan"), default="validate")
@@ -265,11 +304,14 @@ def main():
     parser.add_argument("--confirm", default="")
     parser.add_argument("--operator", choices=("actions", "agent"), default="actions")
     parser.add_argument("--reviewer-login", default="", help="GitHub login eligible to review independently")
+    parser.add_argument("--review-mode", choices=("independent", "solo-ci"), default="independent")
+    parser.add_argument("--source-sha", default="", help="Exact tested checkout for solo-ci apply")
     parser.add_argument("--prestate-file", default="", help="Local pre-mutation provider snapshot for offline rollback plan")
     parser.add_argument("--prestate-sha256", default="", help="Exact SHA-256 of prestate file bytes")
     args = parser.parse_args()
     profile = PROFILES[args.repo]
-    expected = policy(profile)
+    solo_ci = args.review_mode == "solo-ci"
+    expected = policy(profile, solo_ci=solo_ci)
     if not compliant(expected, expected):
         raise Blocked("STATIC_POLICY_INVALID")
     if args.mode == "validate":
@@ -314,7 +356,7 @@ def main():
     if args.operator == "actions" and os.environ.get("GITHUB_REPOSITORY") != args.repo:
         raise Blocked("CROSS_REPOSITORY_DISPATCH_DENIED")
     head_sha, current = live(args.repo, profile, token)
-    planned = policy(profile, current)
+    planned = policy(profile, current, solo_ci=solo_ci)
     if args.mode == "audit":
         ok = compliant(current, planned)
         receipt({"state": "CONFIG_SHAPE_OBSERVED_ONLY" if ok else "BLOCKED_PROVIDER_POLICY",
@@ -322,8 +364,9 @@ def main():
                  "ruleset_id": (current or {}).get("id"),
                  "claim_allowed": False})
         return 0 if ok else 2
-    # Writes require explicit human operation + authenticated administrative secret.
-    if args.confirm != "APPLY-P0:" + args.repo:
+    # Writes require explicit owner authorization and administrative authority.
+    confirmation = ("APPLY-P0-SOLO-CI:" if solo_ci else "APPLY-P0:") + args.repo
+    if args.confirm != confirmation:
         raise Blocked("EXPLICIT_CONFIRMATION_REQUIRED")
     if args.operator == "actions":
         if (os.environ.get("GITHUB_EVENT_NAME") != "workflow_dispatch"
@@ -346,17 +389,26 @@ def main():
         raise Blocked("RULESET_BASELINE_CHANGED_REVIEW_REQUIRED")
     if current and profile["ruleset_id"] is None:
         raise Blocked("EXISTING_NEW_POLICY_CHANGED_REVIEW_REQUIRED")
-    # Confirm a distinct collaborator with actual write-level review capability.
-    reviewer = args.reviewer_login.strip()
-    if (not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?", reviewer)
-        or reviewer.lower() == ACTOR.lower()):
-        raise Blocked("INDEPENDENT_REVIEWER_LOGIN_INVALID_OR_UNKNOWN")
-    permission = api("GET", "/repos/" + args.repo + "/collaborators/" + reviewer + "/permission", token)
-    if permission.get("permission") not in ("write", "maintain", "admin"):
-        raise Blocked("REVIEWER_PERMISSION_NOT_VERIFIED")
-    # A permitted account is not proof of a distinct human. Require documented review.
-    if os.environ.get("RAFAELIA_REVIEWER_GATE_EVIDENCE") != "REVIEWED_INDEPENDENT_REVIEWER_AND_ROLLBACK":
-        raise Blocked("INDEPENDENT_REVIEWER_AND_ROLLBACK_NOT_VERIFIED")
+    reviewer = None
+    automated_evidence = "NOT_APPLICABLE"
+    if solo_ci:
+        if args.reviewer_login:
+            raise Blocked("SOLO_CI_MUST_NOT_CLAIM_HUMAN_REVIEW")
+        if args.operator == "actions" and args.source_sha != head_sha:
+            raise Blocked("SOLO_ACTIONS_SOURCE_NOT_MAIN")
+        automated_evidence = verify_solo_source(args.source_sha)
+    else:
+        # Confirm a distinct collaborator with actual write-level review capability.
+        reviewer = args.reviewer_login.strip()
+        if (not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?", reviewer)
+            or reviewer.lower() == ACTOR.lower()):
+            raise Blocked("INDEPENDENT_REVIEWER_LOGIN_INVALID_OR_UNKNOWN")
+        permission = api("GET", "/repos/" + args.repo + "/collaborators/" + reviewer + "/permission", token)
+        if permission.get("permission") not in ("write", "maintain", "admin"):
+            raise Blocked("REVIEWER_PERMISSION_NOT_VERIFIED")
+        # A permitted account is not proof of a distinct human. Require documented review.
+        if os.environ.get("RAFAELIA_REVIEWER_GATE_EVIDENCE") != "REVIEWED_INDEPENDENT_REVIEWER_AND_ROLLBACK":
+            raise Blocked("INDEPENDENT_REVIEWER_AND_ROLLBACK_NOT_VERIFIED")
     # Snapshot before mutation. This is a local recovery receipt, not a rollback execution.
     Path("artifacts/rafaelia-provider-p0").mkdir(parents=True, exist_ok=True)
     prestate = {
@@ -397,8 +449,11 @@ def main():
     receipt({"state": "CONFIG_READBACK_SCOPED_NEGATIVE_TEST_NOT_RUN", "repo": args.repo,
              "head_sha": head_sha, "ruleset_id": new_id,
              "configured_checks": profile["checks"],
+             "review_mode": args.review_mode,
+             "automated_policy_evidence": automated_evidence,
+             "source_sha": args.source_sha if solo_ci else None,
              "independent_reviewer_login": reviewer,
-             "independence_of_human_identity": "TOKEN_VAZIO_NOT_PROVED_BY_PERMISSION",
+             "independence_of_human_identity": "NOT_APPLICABLE_SOLO_CI" if solo_ci else "TOKEN_VAZIO_NOT_PROVED_BY_PERMISSION",
              "rollback_test": "NOT_RUN", "prestate_sha256": prestate_sha256,
              "negative_merge_test": "NOT_RUN", "claim_allowed": False})
     return 0
