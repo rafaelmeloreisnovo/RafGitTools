@@ -361,16 +361,27 @@ class AdversarialPolicyTests(unittest.TestCase):
             if method == "GET" and path.endswith("/permission"):
                 return {"permission": "write"}
             raise p.Blocked("PROVIDER_NETWORK_ERROR")
-        p.WRITE_ATTEMPTED = False
-        with mock.patch.object(sys, "argv", argv), \
-             mock.patch.dict(os.environ, env, clear=True), \
-             mock.patch.object(p, "live", return_value=("a" * 40, None)), \
-             mock.patch.object(p, "api", side_effect=fake_api), \
-             mock.patch.object(p, "receipt"):
-            with self.assertRaisesRegex(p.Blocked, "PROVIDER_NETWORK_ERROR"):
-                p.main()
-            self.assertTrue(p.WRITE_ATTEMPTED)
-        p.WRITE_ATTEMPTED = False
+        import tempfile
+        cwd = os.getcwd()
+        prior_attempted = p.WRITE_ATTEMPTED
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                os.chdir(tmp)
+                p.WRITE_ATTEMPTED = False
+                with mock.patch.object(sys, "argv", argv), \
+                     mock.patch.dict(os.environ, env, clear=True), \
+                     mock.patch.object(p, "live", return_value=("a" * 40, None)), \
+                     mock.patch.object(p, "api", side_effect=fake_api), \
+                     mock.patch.object(p, "receipt"):
+                    with self.assertRaisesRegex(p.Blocked, "PROVIDER_NETWORK_ERROR"):
+                        p.main()
+                    self.assertTrue(p.WRITE_ATTEMPTED)
+                    recovery = pathlib.Path("artifacts/rafaelia-provider-p0")
+                    self.assertTrue((recovery / "prestate.json").is_file())
+                    self.assertTrue((recovery / "mutation_intent.json").is_file())
+        finally:
+            os.chdir(cwd)
+            p.WRITE_ATTEMPTED = prior_attempted
 
 
 class RecoveryFalsifiers(unittest.TestCase):
@@ -472,6 +483,102 @@ class RecoveryFalsifiers(unittest.TestCase):
                 self.assertEqual((folder / "prestate.json").read_text(), "EXISTING_PRESTATE")
         finally:
             os.chdir(cwd)
+
+class SoloPolicyTests(unittest.TestCase):
+    RAF = p.PROFILES["rafaelmeloreisnovo/RafGitTools"]
+
+    def test_solo_keeps_required_checks_and_no_bypass(self):
+        expected = p.policy(self.RAF, solo_ci=True)
+        rules = {r["type"]: r["parameters"] for r in expected["rules"] if "parameters" in r}
+        self.assertEqual(rules["pull_request"]["required_approving_review_count"], 0)
+        self.assertFalse(rules["pull_request"]["require_last_push_approval"])
+        self.assertTrue(rules["pull_request"]["required_review_thread_resolution"])
+        self.assertEqual(expected["bypass_actors"], [])
+        self.assertTrue(rules["required_status_checks"]["strict_required_status_checks_policy"])
+        self.assertEqual(rules["required_status_checks"]["required_status_checks"],
+                         [{"context": name, "integration_id": p.APP_ID} for name in self.RAF["checks"]])
+        self.assertTrue(p.compliant(expected, expected))
+        self.assertFalse(p.compliant(expected, p.policy(self.RAF)))
+        broken = copy.deepcopy(expected)
+        next(r for r in broken["rules"] if r["type"] == "required_status_checks")["parameters"]["required_status_checks"] = []
+        self.assertFalse(p.compliant(broken, expected))
+
+    def test_solo_cannot_remove_preexisting_review(self):
+        for params in ({"required_approving_review_count": 1},
+                       {"require_last_push_approval": True},
+                       {"require_code_owner_review": True},
+                       {"required_reviewers": [{"file_pattern": "*", "minimum_approvals": 1}]}):
+            with self.subTest(params=params), self.assertRaisesRegex(p.Blocked, "WOULD_WEAKEN"):
+                p.policy(self.RAF, {"rules": [{"type": "pull_request", "parameters": params}]}, solo_ci=True)
+
+    def test_solo_is_not_authorized_for_rll(self):
+        with self.assertRaisesRegex(p.Blocked, "PROFILE_NOT_AUTHORIZED"):
+            p.policy(p.PROFILES["instituto-Rafael/relativity-living-light"], solo_ci=True)
+
+    def test_preflight_refuses_admin_secret_before_execution(self):
+        with mock.patch.dict(os.environ, {"GH_API_TOKEN": "not-a-real-token"}), \
+             mock.patch.object(p, "verify_solo_source") as verify:
+            with self.assertRaisesRegex(p.Blocked, "MUST_BE_SECRETLESS"):
+                p.write_solo_preflight("rafaelmeloreisnovo/RafGitTools", "a" * 40)
+            verify.assert_not_called()
+
+    def test_preflight_receipt_is_bound_to_bytes_repo_and_source(self):
+        import tempfile, hashlib
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "preflight.json"
+            with mock.patch.object(p, "SOLO_PREFLIGHT", path), \
+                 mock.patch.dict(os.environ, {}, clear=True), \
+                 mock.patch.object(p, "verify_solo_source",
+                                   return_value="PASS_SCOPED_DETERMINISTIC_POLICY_TESTS"):
+                self.assertEqual(p.write_solo_preflight("rafaelmeloreisnovo/RafGitTools", "a" * 40), 0)
+                digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                self.assertEqual(p.read_solo_preflight("rafaelmeloreisnovo/RafGitTools", "a" * 40, digest),
+                                 "PASS_SCOPED_DETERMINISTIC_POLICY_TESTS")
+                with self.assertRaisesRegex(p.Blocked, "SCOPE_MISMATCH"):
+                    p.read_solo_preflight("rafaelmeloreisnovo/RafGitTools", "b" * 40, digest)
+                with self.assertRaisesRegex(p.Blocked, "BYTES_MISMATCH"):
+                    p.read_solo_preflight("rafaelmeloreisnovo/RafGitTools", "a" * 40, "0" * 64)
+                with self.assertRaises(FileExistsError):
+                    p.write_solo_preflight("rafaelmeloreisnovo/RafGitTools", "a" * 40)
+
+    def test_uncertain_write_fixture_preserves_real_recovery_directory(self):
+        import tempfile
+        cwd = os.getcwd()
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                os.chdir(tmp)
+                recovery = pathlib.Path("artifacts/rafaelia-provider-p0")
+                recovery.mkdir(parents=True)
+                for name in ("prestate.json", "mutation_intent.json"):
+                    (recovery / name).write_bytes(b"REAL_RECOVERY_SENTINEL")
+                result = unittest.TestResult()
+                AdversarialPolicyTests("test_uncertain_write_state_is_latched_on_exception").run(result)
+                self.assertTrue(result.wasSuccessful(), result.errors + result.failures)
+                for name in ("prestate.json", "mutation_intent.json"):
+                    self.assertEqual((recovery / name).read_bytes(), b"REAL_RECOVERY_SENTINEL")
+        finally:
+            os.chdir(cwd)
+
+    def test_solo_source_sha_missing_fails_before_subprocess(self):
+        with mock.patch.object(p.subprocess, "run") as runner:
+            with self.assertRaisesRegex(p.Blocked, "SOURCE_SHA_REQUIRED"):
+                p.verify_solo_source("")
+            runner.assert_not_called()
+
+    def test_solo_source_drift_fails_without_testing(self):
+        with mock.patch.object(p.subprocess, "run", return_value=mock.Mock(stdout="b" * 40)) as runner:
+            with self.assertRaisesRegex(p.Blocked, "SOURCE_HEAD_DRIFT"):
+                p.verify_solo_source("a" * 40)
+            self.assertEqual(runner.call_count, 1)
+
+    def test_solo_source_tests_do_not_inherit_secret(self):
+        responses = [mock.Mock(stdout="a" * 40), mock.Mock(stdout=""), mock.Mock(stdout=""),
+                     mock.Mock(stdout="a" * 40), mock.Mock(stdout="")]
+        with mock.patch.dict(os.environ, {"GH_API_TOKEN": "not-a-real-token"}), \
+             mock.patch.object(p.subprocess, "run", side_effect=responses) as runner:
+            self.assertEqual(p.verify_solo_source("a" * 40), "PASS_SCOPED_DETERMINISTIC_POLICY_TESTS")
+            self.assertTrue(all("GH_API_TOKEN" not in call.kwargs["env"] for call in runner.call_args_list))
+
 
 if __name__ == "__main__":
     unittest.main()
