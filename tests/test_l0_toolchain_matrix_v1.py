@@ -19,6 +19,8 @@ class MatrixBoundaryTests(unittest.TestCase):
         self.assertEqual(len(data), 64)
         self.assertEqual([data[0], data[8], data[16], data[24], data[32], data[40], data[48], data[56]],
                          [9, 9, 2, 2, 2, 17, 3, 0])
+        self.assertEqual(list(data[0:3]), [9, 9, 2])
+        self.assertEqual(list(data[8:11]), [9, 5, 1])
         self.assertEqual(list(data[24:30]), [2, 3, 10, 0, 0, 0])
 
     def test_fail_closed_on_tuple(self):

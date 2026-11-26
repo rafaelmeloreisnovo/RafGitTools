@@ -15,7 +15,7 @@ import tempfile
 
 # Exact AGP9/Kotlin2/Compose2/KSP2 CI-only tuple; legacy KSP prefix mask is not interoperability proof.
 BASE = {
-    "gradle": "9.5.1", "agp": "9.1.1", "kotlin": "2.4.21",
+    "gradle": "9.9.2", "agp": "9.5.1", "kotlin": "2.4.21",
     "ksp": "2.3.10", "compose": "2.4.21", "jdk": "17",
 }
 PATTERNS = {
