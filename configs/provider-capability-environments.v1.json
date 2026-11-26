@@ -76,7 +76,23 @@
         "apply_main_protection",
         "rollback_main_protection"
       ],
-      "issue": 393
+      "issue": 393,
+      "candidate_operations": {
+        "state": "SOURCE_IMPLEMENTED_CI_PROVIDER_NOT_VERIFIED",
+        "operations": [
+          "termux_ruleset_preflight",
+          "federation_ruleset_inventory",
+          "federation_ruleset_plan",
+          "federation_ruleset_apply"
+        ],
+        "scope": "PUBLIC_AUTHORIZED_OWNER_EXACT_REPOSITORY_ID_DEFAULT_HEAD",
+        "write_scope": "ADDITIVE_DEFAULT_BRANCH_DELETION_NON_FAST_FORWARD_ONLY",
+        "requires_approved_plan_digest": true,
+        "private_scope": "TOKEN_VAZIO_PRIVATE_EXECUTOR_REQUIRED",
+        "advanced_rules": "TOKEN_VAZIO_PRODUCER_POLICY_REQUIRED",
+        "provider_write_observed": false,
+        "claim_allowed": false
+      }
     },
     {
       "capability": "environments_secret_reported",

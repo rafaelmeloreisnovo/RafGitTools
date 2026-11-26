@@ -41,7 +41,7 @@ on:
           - rafaelmeloreisnovo
           - instituto-Rafael
       repository_factory_name:
-        description: 'Factory name; in promotion_hold_pat mode: mapa750 / rafpolimata431 / rafpolimata432'
+        description: 'Factory name; PAT preflight: optional allowlisted public repo; hold: mapa750 / rafpolimata431 / rafpolimata432'
         required: false
         default: ''
         type: string
@@ -66,13 +66,27 @@ on:
           - rollback_main_protection
           - federated_preflight
           - federated_protect
+          - termux_ruleset_preflight
+          - federation_ruleset_inventory
+          - federation_ruleset_plan
+          - federation_ruleset_apply
           - inspect_hold
           - mark_hold
       provider_expected_main_sha:
-        description: 'Optional exact main SHA guard; defaults to workflow-dispatch SHA'
+        description: 'Exact target main SHA for PAT public preflight; otherwise existing provider main guard'
         required: false
         default: ''
         type: string
+      provider_target_repository_id:
+        description: 'Exact numeric repository ID for federation ruleset plan/apply'
+        required: false
+        type: string
+        default: ''
+      provider_approved_plan_sha256:
+        description: 'Reviewed plan digest from prior plan receipt; mandatory for apply'
+        required: false
+        type: string
+        default: ''
       private_ci_target_id:
         description: 'Public registry target id for exact-SHA private CI replay'
         required: false
@@ -393,7 +407,7 @@ jobs:
                 exit 2
               fi
               case "${REQUESTED_PROVIDER_OPERATION:-preflight}" in
-                preflight|apply_main_protection|rollback_main_protection|federated_preflight|federated_protect) ;;
+                preflight|apply_main_protection|rollback_main_protection|federated_preflight|federated_protect|termux_ruleset_preflight|federation_ruleset_inventory|federation_ruleset_plan|federation_ruleset_apply) ;;
                 *)
                   echo "::error::unsupported provider operation: ${REQUESTED_PROVIDER_OPERATION}"
                   exit 2
@@ -868,6 +882,7 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s tests -p 'test_repository_factory_v1.py' -v
           python3 -m unittest discover -s tests -p 'test_repository_factory_pat_agents_preflight_v1.py' -v
+          python3 -m unittest discover -s tests -p 'test_receipt_reuse_gate_v1.py' -v
 
       - name: Verify PAT_AGENTS promotion hold source and negative tests in fast lane
         shell: bash
@@ -882,6 +897,14 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s tests -p 'test_mapa_provider_authority_preflight_v1.py' -v
           python3 scripts/validate_mapa_provider_authority_preflight_v1.py
+
+      - name: Falsify Termux ruleset preflight (no PAT, no network)
+        shell: bash
+        run: python3 -m unittest discover -s tests -p 'test_termux_ruleset_preflight_v1.py' -v
+
+      - name: Falsify federation ruleset operations (no PAT, no network)
+        shell: bash
+        run: python3 -m unittest discover -s tests -p 'test_federation_ruleset_v1.py' -v
 
       - name: Falsify chart ancestry metadata (synthetic, no provider access)
         shell: bash
@@ -1852,7 +1875,7 @@ jobs:
       - name: Apply or preflight canonical main protection
         env:
           PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
-        if: ${{ needs.plan.outputs.provider_operation != 'federated_preflight' && needs.plan.outputs.provider_operation != 'federated_protect' }}
+        if: ${{ needs.plan.outputs.provider_operation != 'federated_preflight' && needs.plan.outputs.provider_operation != 'federated_protect' && needs.plan.outputs.provider_operation != 'termux_ruleset_preflight' && needs.plan.outputs.provider_operation != 'federation_ruleset_inventory' && needs.plan.outputs.provider_operation != 'federation_ruleset_plan' && needs.plan.outputs.provider_operation != 'federation_ruleset_apply' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -1938,6 +1961,37 @@ jobs:
             --receipt artifacts/federated-admin-protection.json
           echo 'FED_ADMIN=REVIEW_RECEIPT_REQUIRED; CLAIM_ALLOWED=false' >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Termux ruleset preflight | owner manual GET only
+        if: ${{ github.event_name == 'workflow_dispatch' && needs.plan.outputs.provider_operation == 'termux_ruleset_preflight' }}
+        shell: bash
+        env:
+          PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
+          FED_TARGET_OWNER: ${{ inputs.repository_factory_owner }}
+          FED_TARGET_NAME: ${{ inputs.repository_factory_name }}
+        run: |
+          set -euo pipefail
+          python3 scripts/termux_ruleset_preflight_v1.py \
+            --repo "$FED_TARGET_OWNER/$FED_TARGET_NAME" \
+            --expected-sha "$REQUESTED_EXPECTED_MAIN_SHA" \
+            --receipt artifacts/termux-ruleset-preflight.json
+
+      - name: Federation ruleset inventory, plan or additive apply | owner manual
+        if: ${{ github.event_name == 'workflow_dispatch' && (needs.plan.outputs.provider_operation == 'federation_ruleset_inventory' || needs.plan.outputs.provider_operation == 'federation_ruleset_plan' || needs.plan.outputs.provider_operation == 'federation_ruleset_apply') }}
+        shell: bash
+        env:
+          PROVIDER_TOKEN: ${{ secrets.PAT_ENV }}
+          FED_TARGET_OWNER: ${{ inputs.repository_factory_owner }}
+          FED_TARGET_NAME: ${{ inputs.repository_factory_name }}
+          FED_TARGET_ID: ${{ inputs.provider_target_repository_id }}
+          FED_PLAN_DIGEST: ${{ inputs.provider_approved_plan_sha256 }}
+        run: |
+          set -euo pipefail
+          python3 scripts/federation_ruleset_v1.py \
+            --operation "$REQUESTED_PROVIDER_OPERATION" \
+            --owner "$FED_TARGET_OWNER" --name "$FED_TARGET_NAME" \
+            --repository-id "$FED_TARGET_ID" --expected-sha "$REQUESTED_EXPECTED_MAIN_SHA" \
+            --approved-plan "$FED_PLAN_DIGEST" --receipt artifacts/federation-ruleset.json
+
       - name: Upload provider enforcement receipt
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -1946,6 +2000,9 @@ jobs:
           path: |
             artifacts/provider-main-enforcement.json
             artifacts/federated-admin-protection.json
+            artifacts/termux-ruleset-preflight.json
+            artifacts/federation-ruleset.json
+            artifacts/federation-ruleset-intent.json
           if-no-files-found: warn
           retention-days: 90
 
@@ -2361,10 +2418,12 @@ jobs:
         env:
           RAFAELIA_PREFLIGHT_TOKEN: ${{ secrets.PAT_AGENTS }}
           FACTORY_OWNER: ${{ inputs.repository_factory_owner }}
+          FACTORY_TARGET: ${{ inputs.repository_factory_name }}
+          EXPECTED_TARGET_MAIN_SHA: ${{ inputs.provider_expected_main_sha }}
         run: |
           set -euo pipefail
           mkdir -p artifacts
-          python3 scripts/repository_factory_pat_agents_preflight_v1.py --owner "$FACTORY_OWNER" --receipt artifacts/repository-factory-pat-agents-preflight.json
+          python3 scripts/repository_factory_pat_agents_preflight_v1.py --owner "$FACTORY_OWNER" --target-name "$FACTORY_TARGET" --target-main-sha "$EXPECTED_TARGET_MAIN_SHA" --receipt artifacts/repository-factory-pat-agents-preflight.json
       - name: Upload typed non-secret receipt
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
