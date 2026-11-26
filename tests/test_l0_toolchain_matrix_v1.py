@@ -21,7 +21,7 @@ class MatrixBoundaryTests(unittest.TestCase):
                          [9, 9, 2, 2, 2, 17, 3, 0])
         self.assertEqual(list(data[0:3]), [9, 9, 2])
         self.assertEqual(list(data[8:11]), [9, 5, 1])
-        self.assertEqual(list(data[24:30]), [2, 3, 10, 0, 0, 0])
+        self.assertEqual(list(data[24:30]), [2, 3, 14, 0, 0, 0])
 
     def test_shared_wrapper_projects_use_same_agp_candidate(self):
         # START invokes the root wrapper for these three independent builds.

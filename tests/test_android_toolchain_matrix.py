@@ -29,8 +29,36 @@ class AndroidToolchainMatrixTest(unittest.TestCase):
                                (ROOT / "app/build.gradle").read_text(encoding="utf-8"))
         for field, value in (("promotion", "RELEASE"), ("admission", "PRODUCTION"), ("claim_allowed", True)):
             invalid = json.loads(json.dumps(matrix))
-            invalid["ci_candidates"][0][field] = value
+            matches = [entry for entry in invalid["ci_candidates"]
+                       if all(entry.get(key) == val for key, val in observed.items())]
+            self.assertEqual(len(matches), 1)
+            matches[0][field] = value
             self.assertEqual(MOD.validate(observed, invalid)["status"], "FAIL")
+
+    def test_ksp_candidates_are_exact_and_never_production(self):
+        matrix = json.loads((ROOT / "configs/android-toolchain-matrix.json").read_text(encoding="utf-8"))
+        observed = MOD.observe((ROOT / "build.gradle").read_text(encoding="utf-8"),
+                               (ROOT / "app/build.gradle").read_text(encoding="utf-8"))
+        for version in ("2.3.10", "2.3.14"):
+            with self.subTest(version=version):
+                result = MOD.validate(dict(observed, ksp=version), matrix)
+                self.assertEqual(result["status"], "PASS")
+                self.assertEqual(result["promotion"], "HOLD")
+                self.assertTrue(result["experimental"])
+                self.assertFalse(result["claim_allowed"])
+        for version in ("2.3.13", "2.3.15", "9.9.9"):
+            with self.subTest(version=version):
+                result = MOD.validate(dict(observed, ksp=version), matrix)
+                self.assertEqual(result["status"], "FAIL")
+                self.assertFalse(result["claim_allowed"])
+
+    def test_ksp_candidate_resolution_is_exact_and_not_a_fallback(self):
+        settings = (ROOT / "settings.gradle").read_text(encoding="utf-8")
+        expected = "requested.id.id == 'com.google.devtools.ksp' && requested.version == '2.3.14'"
+        self.assertEqual(settings.count(expected), 1)
+        self.assertEqual(settings.count("useModule('com.google.devtools.ksp:symbol-processing-gradle-plugin:2.3.14')"), 1)
+        self.assertEqual(settings.count("useModule("), 1)
+        self.assertNotIn("mavenLocal()", settings)
 
     def test_isolated_kotlin_2420_bump_fails_closed(self):
         matrix = json.loads(

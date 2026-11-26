@@ -100,7 +100,11 @@ class AndroidDependencyBundleGateTests(unittest.TestCase):
             self.assertNotEqual(altered.split("--no-daemon ", 1)[1].split(" --stacktrace", 1)[0].split(), list(required))
 
     def test_hilt_ksp_root_classloader_split_is_fail_closed(self):
-        root = self.root.replace("id 'com.google.devtools.ksp' version '2.3.10' apply false", "")
+        declarations = [line for line in self.root.splitlines(keepends=True)
+                        if line.strip().startswith("id 'com.google.devtools.ksp' version ")]
+        self.assertEqual(len(declarations), 1, "fixture must locate one root KSP declaration")
+        root = self.root.replace(declarations[0], "", 1)
+        self.assertNotEqual(root, self.root, "negative fixture must mutate source")
         result = module.validate(root, self.app)
         self.assertEqual(result["status"], "FAIL")
         self.assertIn("HILT_KSP_ROOT_PLUGIN_SCOPE_SPLIT", result["reasons"])
