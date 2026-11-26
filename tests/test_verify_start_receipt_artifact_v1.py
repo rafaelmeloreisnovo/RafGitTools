@@ -3,6 +3,7 @@ import io
 import json
 import pathlib
 import sys
+import struct
 import unittest
 import zipfile
 
@@ -59,3 +60,27 @@ class StartReceiptReadbackTests(unittest.TestCase):
     def test_invalid_id(self):
         self.binding["artifact_id"] = True
         self.assertEqual(verify(self.archive(), self.binding)["reason"], "INVALID_PROVIDER_ID")
+
+    def test_non_json_numeric_constants_rejected(self):
+        for value in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(value=value):
+                self.receipt["unexpected"] = value
+                r = verify(self.archive(), self.binding)
+                self.assertEqual(r["reason"], "INVALID_ARCHIVE_OR_JSON")
+                self.assertEqual(r["state"], "REJECTED")
+
+    def test_corrupted_deflate_is_typed_rejection(self):
+        out = io.BytesIO()
+        with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as z:
+            z.writestr("START_RECEIPT.json", json.dumps(self.receipt))
+        data = bytearray(out.getvalue())
+        self.binding["zip_sha256"] = hashlib.sha256(data).hexdigest()
+        self.assertEqual(verify(bytes(data), self.binding)["state"], "BYTE_READBACK_ONLY")
+        name_size, extra_size = struct.unpack_from("<HH", data, 26)
+        data[30 + name_size + extra_size] = 0xff
+        self.binding["zip_sha256"] = hashlib.sha256(data).hexdigest()
+        r = verify(bytes(data), self.binding)
+        self.assertEqual(r["reason"], "INVALID_ARCHIVE_OR_JSON")
+        self.assertEqual(r["state"], "REJECTED")
+        for k in ("claim_allowed", "skip_allowed", "check_status_write_allowed"):
+            self.assertFalse(r[k])
