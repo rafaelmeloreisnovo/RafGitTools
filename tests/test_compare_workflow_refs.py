@@ -1,5 +1,5 @@
 import unittest
-from scripts.compare_workflow_refs import compare
+from scripts.compare_workflow_refs import compare, decode
 
 
 def row(unit='build', target='example/tool/.github/workflows/check.yml', ref='a'*40):
@@ -49,6 +49,13 @@ class ComparatorTests(unittest.TestCase):
 
     def test_invalid_expected(self):
         self.assertEqual(compare([row(ref='TOKEN_VAZIO')], [row()])['state'], 'BLOCKED_INPUT')
+    def test_duplicate_json_key(self):
+        with self.assertRaises(ValueError):
+            decode('[{"ref":"first","ref":"second"}]')
+
+    def test_valid_json(self):
+        self.assertEqual(decode('[{"unit":"build"}]'), [{'unit': 'build'}])
+
 
 if __name__ == '__main__':
     unittest.main()
