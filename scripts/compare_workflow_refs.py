@@ -45,6 +45,17 @@ def compare(expected, observed):
                 expected_count=len(e), observed_count=len(o), missing=missing, extra=extra, drift=drift)
 
 
+def decode(raw):
+    def unique_object(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError('duplicate JSON key')
+            result[key] = value
+        return result
+    return json.loads(raw, object_pairs_hook=unique_object)
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('expected')
@@ -56,9 +67,9 @@ def main():
                 raw = f.read(4_000_001)
             if len(raw) > 4_000_000:
                 raise ValueError('input too large')
-            return json.loads(raw)
+            return decode(raw)
         result = compare(read(args.expected), read(args.observed))
-    except (OSError, ValueError):
+    except (OSError, ValueError, RecursionError):
         result = {'state': 'BLOCKED_INPUT', 'claim_allowed': False, 'provider_execution_verified': False, 'automatic_promotion': False}
     print(json.dumps(result, sort_keys=True))
     return 0 if result['state'] == 'MATCH_SCOPED' else 2
