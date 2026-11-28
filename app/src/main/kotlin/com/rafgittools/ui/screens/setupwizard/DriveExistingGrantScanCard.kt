@@ -65,7 +65,9 @@ fun GoogleDriveScannerEntry() {
                 // otherwise valid cloud read grant on providers with read-only
                 // folder capabilities.
                 val persisted = runCatching {
-                    context.contentResolver.takePersistableUriPermission(selected, granted)
+                    context.contentResolver.takePersistableUriPermission(
+                        selected, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    )
                 }.isSuccess || runCatching {
                     // Some providers grant persistent READ without persistent WRITE.
                     // A failed combined request must not lose a valid READ grant.
@@ -86,12 +88,13 @@ fun GoogleDriveScannerEntry() {
                     busy = true
                     status = if (persisted) "DRIVE_SCANNING_SELECTED_FOLDER"
                         else "DRIVE_SCANNING_WITH_TRANSIENT_PERMISSION"
-                    val scan = withContext(Dispatchers.IO) {
+                    val result = withContext(Dispatchers.IO) {
                         runCatching {
                             // The SAF ContentResolver must enumerate the Google
                             // Drive tree BEFORE any index folder is created.
-                            NovoexportSafInventory.scan(
-                                context.contentResolver,
+                            val resolver = context.contentResolver
+                            val snapshot = NovoexportSafInventory.scan(
+                                resolver,
                                 selected,
                                 maxDocuments = DriveMetadataIndexGate.MAX_DOCUMENTS
                             )
